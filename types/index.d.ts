@@ -50,14 +50,17 @@ export interface SelectOptions {
   options: SelectOption[];
   /** 初始选中值 */
   value?: string;
-  /** 最多可选几个（1 = 单选，>1 = 多选） */
-  max?: number;
-  /** 至少要选几个（用于表单校验） */
-  min?: number;
   placeholder?: string;
   disabled?: boolean;
-  /** 变更回调（单选传字符串，多选传数组） */
-  onChange?(value: string | string[]): void;
+  /**
+   * ⭐ 变更回调，回调**单个值**。
+   *
+   * ⚠️ 本组件**目前只支持单选** —— 内部状态是标量，不是数组。
+   * 早先的类型里声明过 `max` / `min` 与数组形态的回调，
+   * 但实现从未支持，属**声明了却没有**。已移除，避免使用者误以为可用。
+   * 需要多选时请用 combobox。
+   */
+  onChange?(value: string | null): void;
   /** 打开/关闭 */
   onOpen?(open: boolean): void;
 }
@@ -110,10 +113,21 @@ export interface Combobox extends ComponentInstance {
 /* ============================================================================
  * date-range —— 日期区间
  * ========================================================================== */
+/** 内置预设区间名（由组件按当前日期推算） */
+export type PresetName =
+  | 'today' | 'week' | 'month' | 'lastMonth'
+  | 'thisQ' | 'lastQ' | 'thisYear' | 'lastYear';
+
 export interface DateRangeOptions {
   label: string;
-  /** 预设（点击即填） */
-  presets?: Array<{ label: string; from: string; to: string }>;
+  /**
+   * 预设区间。
+   *
+   * ⚠️ 实现读取的是**预设名**（如 `thisQ` / `lastM`），
+   * 由组件自己算日期；不是传日期区间。早先的类型写成
+   * `Array<{label, from, to}>`，与实现不符，已改为实际形态。
+   */
+  presets?: PresetName[];
   /** 是否允许手动输入 */
   editable?: boolean;
   disabled?: boolean;
