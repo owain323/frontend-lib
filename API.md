@@ -59,16 +59,33 @@ window.Overlay.dialog({ title: '确认', actions: [...] });
 
 | 属性 | 状态 | 含义 |
 |---|---|---|
-| `data-state` | ✅ | 组件状态（`open` / `closed` / `checked` / `active` …）。**样式与测试都读它** |
-| `data-open` | 🟡 | 展开状态 |
+| `data-state` | ✅ | **状态表达的唯一公开方式**。取值见下表。样式与测试都读它 |
+| `data-state` 的取值 | ✅ | `open` / `closed` / `active` / `inactive` / `checked` / `unchecked` / `disabled` / `loading` / `selected` |
 | `data-value` | 🟡 | 当前值 |
-| `data-place` | 🟡 | 浮层位置（`top` / `bottom` / `start` / `end`）|
+| `data-place` | 🟡 | 浮层位置 |
+| `is-open` / `is-active` / `is-disabled` / `is-leaving` / `is-locked` | ⛔ | **内部实现**，请改用 `data-state`。随时可能变 |
+| `data-open` | 🟡 | 展开状态（旧写法，新代码用 `data-state`）|
 | `data-validate` | 🟡 | 表单校验相关标记 |
 
 ⛔ **内部实现（别依赖）**：
 - 以 `_` 或 `js-` 开头的类名与属性
+- `is-*` 状态类名（请用 `data-state`）
 - 未列出的 `data-*`
 - DOM 层级与子元素顺序（除非本文件明确写了）
+
+### 状态表达为什么要统一
+
+同一件事**只该有一种表达方式**。如果 `open` 同时用
+`data-open` / `.is-open` / `[aria-expanded]` 三处表示，
+改一处就会漏另一处 —— 第三方扩展成本极高。
+
+| 谁读 | 读什么 |
+|---|---|
+| CSS | `[data-state="open"]` |
+| 行为脚本 | 读写 `data-state` |
+| 自动化检查 | 断言 `data-state` |
+
+`aria-*` 是**语义**，与样式状态正交，两者都要保留。
 
 ---
 
@@ -80,7 +97,7 @@ window.Overlay.dialog({ title: '确认', actions: [...] });
 | `.badge` `.card` `.list` `.input` | 🟡 | 基础类名 |
 | `<块名>__<元素>`（如 `.btn__label`）| ✅ | BEM 元素 |
 | `<块名>--<变体>`（如 `.btn--primary`）| ✅ | BEM 变体 |
-| `<块名>--<状态>`（如 `.is-disabled`）| 🟡 | 状态类 |
+| `<块名>--<状态>`（如 `.is-disabled`）| ⛔ | 状态类名属**内部**。新代码请写 `[data-state="disabled"]` |
 
 ### ⚠️ 命名空间冲突
 
