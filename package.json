@@ -43,15 +43,16 @@
     "gate:fast": "MODE=fast bash 05-audit/check-all.sh",
     "gate:timing": "TIMING=/tmp/gate-timing.txt bash 05-audit/check-all.sh",
     "size:record": "python3 05-audit/size-baseline.py --record",
-    "prefix": "python3 05-audit/prefix-build.py"
+    "prefix": "python3 05-audit/prefix-build.py",
+    "test:types": "python3 05-audit/tsc-gate.py"
   },
-  "dependencies": {},
   "devDependencies": {
     "axe-core": "^4.10.0",
     "pixelmatch": "^5.3.0",
     "playwright": "^1.49.1",
     "pngjs": "^7.0.0",
-    "puppeteer-core": "^23.11.1"
+    "puppeteer-core": "^23.11.1",
+    "typescript": "^5.9.3"
   },
   "engines": {
     "node": ">=18"

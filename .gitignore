@@ -30,6 +30,12 @@ NOTES*.md
 prefixed/
 *.zip
 
+# --- 依赖 ---
+# ⚠️ 2026-10-06 补：装 typescript 时发现的缺口 ——
+#   之前没这条规则，意味着任何一次 npm install 都会让
+#   node_modules/ 变成待提交文件。首次 clone 后跑 npm ci 就会踩到。
+node_modules/
+
 # --- 视觉回归的中间产物 ---
 # 基线要进库（它是判据），current / diff 是每次跑出来的中间图，不进。
 10-review/shots/_current/

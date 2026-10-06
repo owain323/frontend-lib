@@ -266,11 +266,21 @@
     /* 背景 inert：把背后页面整个变不可交互 —— 比 focus trap 更彻底。
        支持就用（现代浏览器都有），不支持就靠上面的 focus trap 兜底。
 
-       ⭐ 必须**按层记账**，不能简单地"开时全锁、关时全解"。
-          嵌套场景下：关掉内层时如果无脑解锁，
-          会把外层打开时锁住的背景**一起解锁** ——
-          于是外层还开着，背景却能点了（用户会以为应用坏了）。
-          ⇒ 每个 backdrop 只解**自己**锁的节点。 */
+       🔴🔴 必须按「归属权」记账，不能只记「当前是不是 inert」
+       ---------------------------------------------------------------------------
+       两种记法的差别，在嵌套场景下是致命的：
+
+         错：看到已inert 就记账，关时一律解锁
+             A 开 → 背景 locked（记进 A）
+             B 开 → 背景已 inert（记进 B，但**B 并没有锁它**）
+             B 关 → 解锁背景 ⇒ **A 还开着，背景却能点了**
+             用户看到的是「弹窗明明还在，页面却能点了」——像应用坏了。
+
+         对：记账时同时记「这是不是我改的」
+             只有自己真正设过 true 的节点，关闭时才恢复 false。
+             B 看到的那个已 inert 节点是A 的 ⇒ B 不碰它。
+       ⇒ 这是「引用」与「所有权」的区别，和引用计数失效是同一类 bug。
+    */
     if ('inert' in HTMLElement.prototype) {
       var nodes = Array.prototype.slice.call(
         document.body.querySelectorAll('body > *')
@@ -278,9 +288,11 @@
       nodes.forEach(function (n) {
         /* 任何已有的 backdrop（外层）都跳过 —— 它们自己管自己的 */
         if (n.classList.contains('dialog-backdrop')) return;
-        if (n.inert) { inerted.push(n); return; }   /* 已锁的不重复记账 */
-        n.inert = true;
-        inerted.push(n);
+        /* ⭐ 关键：先判断归属权，再决定要不要记账。
+           已被别人锁住的节点，我只登记不解锁（changedByMe=false）。 */
+        var changedByMe = !n.inert;
+        inerted.push({ node: n, changedByMe: changedByMe });
+        if (changedByMe) n.inert = true;
       });
     }
 
@@ -288,8 +300,11 @@
       if (closed) return;
       closed = true;
       if (backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
-      /* 只解自己锁的；外层锁住的一律不动（见上面说明） */
-      inerted.forEach(function (n) { n.inert = false; });
+      /* ⭐ 只恢复**自己设过**的；别人锁住的一律不动。
+           否则内层关闭会误解锁外层还需要的隔离。 */
+      inerted.forEach(function (x) {
+        if (x.changedByMe) x.node.inert = false;
+      });
       unlockScroll();
       /* 🔴 焦点必须回到触发它的那个元素。
          不还的话，键盘用户要重新 Tab 一遍才能回到原处。 */
