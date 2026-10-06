@@ -37,7 +37,7 @@
 | 按钮 | `02-primitives/button/button.css` | 350 | — | 几乎总要 |
 | 标签/徽章 | `02-primitives/badge/badge.css` | 146 | — | 有状态标记就要（"已披露""停牌"） |
 | 分隔线 | `02-primitives/separator/separator.css` | 73 | — | 要分开内容块就要 |
-| 开关 | `02-primitives/switch/switch.css` | 363 | — | 有"立即生效的设置"就要 |
+| 开关 | `02-primitives/switch/switch.css` | 370 | — | 有"立即生效的设置"就要 |
 | 输入框 | `02-primitives/input/input.css` | 237 | — | 有表单就要 |
 | 单选/复选/下拉 | `02-primitives/choice/choice.css` | 395 | — | 有选择就要 |
 | 卡片 | `02-primitives/card/card.css` | 246 | — | 有分组内容就要 |

@@ -221,8 +221,15 @@
   width:  var(--sw-thumb);
   height: var(--sw-thumb);
   border-radius: 50%;
-  background: #FFFFFF;
+  /*🔴 改：原来写死 #FFFFFF。
+     真正的问题是：换主题色时它不会跟着调，且它是本组件
+     唯一不经过令牌的颜色。
+     --surface 两套模式都有定义（浅色 #fff / 暗色 #1C2024），
+     滑块作为「浮在轨道上的圆盘」用它是语义正确的。 */
+  background: var(--surface);
   border: 0;
+  /* 阴影里的 rgba 是**阴影本身**的物理属性（不是主题色），
+     它在浅色与暗色下都该是黑色 —— 换令牌反而会变灰。 */
   box-shadow: 0 1px 2px rgba(0, 0, 0, .28);
   transition: transform var(--dur-fast) var(--ease-out),
               box-shadow var(--dur-fast) var(--ease-out);
