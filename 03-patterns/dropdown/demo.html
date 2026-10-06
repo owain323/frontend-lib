@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>dropdown · 下拉菜单 · frontend-lib</title>
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/focus-ring.css">
+<link rel="stylesheet" href="../../02-primitives/button/button.css">
+<link rel="stylesheet" href="dropdown.css">
+<style>
+  body { margin: 0; padding: var(--sp-7) var(--sp-5); background: var(--paper); }
+  .wrap { max-width: 44rem; margin: 0 auto; }
+  h1 { font-size: var(--fs-2xl); margin: 0 0 var(--sp-2); }
+  h2 { font-size: var(--fs-lg); margin: var(--sp-7) 0 var(--sp-3); }
+  .note {
+    padding: var(--sp-3) var(--sp-4); margin: 0 0 var(--sp-4);
+    background: var(--surface-sunken); border-radius: var(--r-sm);
+    font-size: var(--fs-sm); color: var(--text-secondary); line-height: 1.6;
+  }
+  .pad { padding: var(--sp-4) 0 var(--sp-9); }
+  .log {
+    margin-top: var(--sp-4); padding: var(--sp-3);
+    background: var(--surface-sunken); border-radius: var(--r-sm);
+    font-family: var(--font-mono, monospace); font-size: var(--fs-xs);
+    color: var(--text-secondary); min-height: 2.6em;
+  }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+<h1>dropdown · 下拉菜单</h1>
+<p class="note">
+  依据 <strong>APG Menu Button</strong>：<code>↑↓</code> 移动 ·
+  <code>Esc</code> 关闭并<strong>把焦点还给按钮</strong> ·
+  <code>Tab</code> 关闭 · <code>Enter</code>/<code>Space</code> 激活 ·
+  <code>Home</code>/<code>End</code> 跳首末。
+  <br>⚠️ 菜单项 <code>tabindex="-1"</code>：<strong>不参与 Tab 序列</strong>，
+  因为 Tab 的语义是「关闭菜单」。
+</p>
+
+<h2>1 · 基本用法（试试键盘）</h2>
+<div class="pad">
+  <div class="dd" id="d1">
+    <button class="dd__btn" data-dd-btn>操作 <span class="dd__caret"></span></button>
+    <ul class="dd__menu" data-dd-menu hidden>
+      <li data-value="edit">编辑</li>
+      <li data-value="copy">复制</li>
+      <li data-value="paste">粘贴</li>
+      <li data-dd-sep></li>
+      <li data-value="del" aria-disabled="true">删除（不可用）</li>
+    </ul>
+  </div>
+  <div class="log" id="log">（选中项会显示在这里）</div>
+</div>
+
+<h2>2 · 带勾选（选中性不只靠颜色）</h2>
+<div class="pad">
+  <div class="dd" id="d2">
+    <button class="dd__btn" data-dd-btn>排序方式 <span class="dd__caret"></span></button>
+    <ul class="dd__menu" data-dd-menu hidden>
+      <li data-value="date"><span class="dd__check" data-check>✓</span>按日期</li>
+      <li data-value="name"><span class="dd__check" data-check></span>按名称</li>
+      <li data-value="size"><span class="dd__check" data-check></span>按大小</li>
+    </ul>
+  </div>
+</div>
+
+<h2>3 · 靠右对齐（窄屏不出屏）</h2>
+<div class="pad">
+  <div class="dd dd--end" id="d3">
+    <button class="dd__btn" data-dd-btn>账号 <span class="dd__caret"></span></button>
+    <ul class="dd__menu" data-dd-menu hidden>
+      <li data-value="profile">个人资料</li>
+      <li data-value="billing">账单</li>
+      <li data-value="signout">退出登录</li>
+    </ul>
+  </div>
+</div>
+
+</main>
+
+<script src="dropdown.js"></script>
+<script>
+(function () {
+  var log = document.getElementById('log');
+  function onSelect(v) { log.textContent = '选中：' + v; }
+
+  Dropdown.create(document.getElementById('d1'), { onSelect: onSelect, label: '操作' });
+  Dropdown.create(document.getElementById('d2'), { onSelect: onSelect, label: '排序方式' });
+  Dropdown.create(document.getElementById('d3'), { onSelect: onSelect, label: '账号' });
+
+  /* 选中性：点中某项后把 ✓ 挪过去（不是只改颜色）*/
+  document.getElementById('d2').__dd = true;
+  var d2 = document.getElementById('d2');
+  d2.addEventListener('click', function (e) {
+    var li = e.target.closest('li[data-value]');
+    if (!li) return;
+    d2.querySelectorAll('[data-check]').forEach(function (s) { s.textContent = ''; });
+    var c = li.querySelector('[data-check]');
+    if (c) c.textContent = '✓';
+  });
+})();
+</script>
+</body>
+</html>

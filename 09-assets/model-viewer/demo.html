@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:,">
+<title>3D 模型查看器 · frontend-lib</title>
+
+<!-- 🔴 注意：这里**没有** <script src="three.min.js">
+     3D 引擎是**点击后才加载**的（见 model-viewer.js 的 loadScript）。
+     写在 HTML 里 = 592KB 在首屏白给，正好违背 Owner 要的「一定要快」。 -->
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="model-viewer.css">
+
+<style>
+  body {
+    min-height: 100vh; margin: 0;
+    padding: calc(env(safe-area-inset-top) + var(--sp-6))
+             max(env(safe-area-inset-right), var(--sp-4))
+             calc(env(safe-area-inset-bottom) + var(--sp-6))
+             max(env(safe-area-inset-left), var(--sp-4));
+    background: var(--paper); color: var(--text-primary);
+  }
+  .wrap { max-width: 680px; margin: 0 auto; }
+  h1 { font-size: var(--fs-2xl); line-height: var(--lh-tight); margin: 0 0 var(--sp-2); }
+  .lede { color: var(--text-secondary); margin: 0 0 var(--sp-5); }
+  h2 { font-size: var(--fs-lg); margin: var(--sp-7) 0 var(--sp-2);
+       padding-top: var(--sp-4); border-top: 1px solid var(--border-decor); }
+  .note { font-size: var(--fs-sm); color: var(--text-secondary);
+          margin: 0 0 var(--sp-3); max-width: 64ch; }
+  .note code { font-family: var(--mono); font-size: .92em;
+               background: var(--surface-sunken); padding: 1px 4px; border-radius: 3px; }
+  ul { margin: 0 0 var(--sp-3); padding-left: 20px; color: var(--text-secondary);
+       font-size: var(--fs-sm); line-height: 1.8; }
+  table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); margin: 0 0 var(--sp-4); }
+  th, td { text-align: left; padding: var(--sp-2) var(--sp-3);
+           border-bottom: 1px solid var(--border-decor); }
+  th { font-size: var(--fs-xs); color: var(--text-secondary); font-weight: 500; }
+  td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .ok { color: var(--success); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>3D 模型查看器</h1>
+  <p class="lede">
+    惰性加载：<strong>首屏 0 字节 3D 引擎</strong>，点了才下载。
+    这是 Owner 定的三条硬要求之一（「体积和加载一定要快」）。
+  </p>
+
+  <h2>试试看：小狐狸</h2>
+  <p class="note">
+    <strong>先别急着点按钮</strong> —— 打开开发者工具的 Network 面板，
+    首屏<strong>不会有 three.js</strong>。点下去才出现
+    <code>three.min.js</code> <code>GLTFLoader.js</code> <code>OrbitControls.js</code>。
+  </p>
+
+  <div class="mv" data-mv="models/fox.glb"
+       data-mv-height="320"
+       data-mv-three="vendor/three.min.js"
+       data-mv-gltf="vendor/GLTFLoader.js"
+       data-mv-orbit="vendor/OrbitControls.js"></div>
+
+  <h2>为什么是这样设计的</h2>
+  <table>
+    <tr><th>要求</th><th>做法</th></tr>
+    <tr><td>首屏要快</td>
+        <td>3D 引擎<strong>点击后</strong>才 <code>&lt;script&gt;</code> 注入，
+            首屏 <strong>0 KB</strong>；模型走 <code>XHR</code> 以便显示<strong>真实进度</strong></td></tr>
+    <tr><td>绝不能白屏</td>
+        <td>WebGL 不支持 / 库没来 / 模型 404 / 解析失败
+            —— 四种失败<strong>全部</strong>给中文提示 + <strong>重试按钮</strong></td></tr>
+    <tr><td>视觉统一</td>
+        <td>颜色、圆角、间距<strong>全部</strong>走 <code>var(--*)</code>，换主题跟着变</td></tr>
+    <tr><td>iOS 手感</td>
+        <td><code>touch-action: none</code> 让拖动不触发页面滚动；
+            关掉 tap highlight；页面切后台<strong>停止渲染</strong>省电</td></tr>
+  </table>
+
+  <h2>边界（本库不做什么）</h2>
+  <ul>
+    <li><strong>不把 three.js 打包成本库的依赖</strong> ——
+        592KB 违背「零依赖」；而且素材里那两个 loader 是 <strong>ES6</strong>，
+        与「JS 一律 ES5」冲突（精简档 的 WebView 会直接语法错误）。</li>
+    <li><strong>精简档（某项目）不做 3D</strong> —— WebGL 在老 WebView 上大概率不可用。
+        本组件会检测并给出明确提示，<strong>不会白屏</strong>。</li>
+    <li><strong>不自己手搓 glTF 解析器</strong> —— 用成熟的 GLTFLoader。</li>
+  </ul>
+
+  <h2>体积现状</h2>
+  <table>
+    <tr><th>文件</th><th class="num">体积</th><th>何时加载</th></tr>
+    <tr><td><code>model-viewer.js</code>（本库）</td><td class="num">~9 KB</td><td><span class="ok">首屏</span></td></tr>
+    <tr><td><code>models/fox.glb</code></td><td class="num">159 KB</td><td>点击后（可 XHR 显示进度）</td></tr>
+    <tr><td><code>vendor/three.min.js</code></td><td class="num">589 KB</td><td>点击后</td></tr>
+    <tr><td><code>vendor/GLTFLoader.js</code></td><td class="num">94 KB</td><td>点击后</td></tr>
+    <tr><td><code>vendor/OrbitControls.js</code></td><td class="num">26 KB</td><td>点击后</td></tr>
+  </table>
+  <p class="note">
+    ⭐ <strong>首屏只付出约 9 KB</strong>；点一次才付 868 KB。
+    素材库里还有 20 个模型（最大 21MB），<strong>本库只放最小的 1–2 个</strong>。
+  </p>
+
+</div>
+
+<script src="model-viewer.js"></script>
+</body>
+</html>

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>tabs · 标签页</title>
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../02-primitives/button/button.css">
+<link rel="stylesheet" href="../../03-patterns/tabs/tabs.css">
+<style>
+  .wrap { max-width: 820px; margin: 0 auto; padding: var(--sp-6) var(--sp-4); }
+  h1 { font-size: var(--fs-2xl); line-height: var(--lh-tight); margin: 0 0 var(--sp-2); }
+  .lede { color: var(--text-secondary); margin: 0 0 var(--sp-6); max-width: 60ch; }
+  h2 { font-size: var(--fs-lg); margin: var(--sp-8) 0 var(--sp-2);
+       padding-top: var(--sp-5); border-top: 1px solid var(--border-decor); }
+  .small { font-size: var(--fs-xs); color: var(--text-secondary); }
+  .box { background: var(--surface); border: 1px solid var(--border-decor);
+         border-radius: var(--r-md); padding: var(--sp-5); }
+  .box.bad { background: var(--surface-sunken); }
+  code { font-family: var(--mono); font-size: 0.9em;
+         background: var(--surface-sunken); padding: 1px 4px; border-radius: 3px; }
+  .log { font-family: var(--mono); font-size: var(--fs-xs);
+         color: var(--text-secondary); min-height: 1.5em; }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <h1>tabs · 标签页</h1>
+  <p class="lede">
+    标签页用于在同一位置切换<strong>同层级的几块内容</strong>。
+    键盘行为完全按 APG Tabs Pattern：方向键切换、Home/End 跳首尾。
+  </p>
+
+  <h2>基本用法（自动激活）</h2>
+  <div class="tabs" data-tabs>
+    <div class="tabs__list" role="tablist" aria-orientation="horizontal" aria-label="设置分组">
+      <button class="tabs__tab" role="tab" id="t1" aria-controls="p1"
+              aria-selected="true">基本信息</button>
+      <button class="tabs__tab" role="tab" id="t2" aria-controls="p2"
+              aria-selected="false">高级设置</button>
+      <button class="tabs__tab" role="tab" id="t3" aria-controls="p3"
+              aria-selected="false">日志</button>
+    </div>
+    <div class="tabs__panel" role="tabpanel" id="p1" aria-labelledby="t1">
+      <p>公司名称、代码、行业分类。</p>
+      <!-- 🔴 面板里必须有**可聚焦元素**，否则按 Tab 会直接跳过整个面板
+           —— APG 要求「在 tab 上按 Tab ⇒ 焦点进入面板内容」。
+           全是静态文字的面板天然没有停靠点，这是规范与现实的真实张力。 -->
+      <p><button class="btn btn--md btn--secondary">面板里的按钮（可 Tab 到）</button></p>
+    </div>
+    <div class="tabs__panel" role="tabpanel" id="p2" aria-labelledby="t2" hidden>
+      <p>数据源、口径、复核规则。</p>
+    </div>
+    <div class="tabs__panel" role="tabpanel" id="p3" aria-labelledby="t3" hidden>
+      <p>抓取记录与错误。</p>
+    </div>
+  </div>
+  <p class="log" id="log1">切到哪个：<b id="logv1">基本信息</b></p>
+
+  <h2>禁用某个 tab</h2>
+  <div class="tabs" data-tabs>
+    <div class="tabs__list" role="tablist" aria-orientation="horizontal" aria-label="带禁用">
+      <button class="tabs__tab" role="tab" id="d1" aria-controls="dp1"
+              aria-selected="true">可用</button>
+      <button class="tabs__tab" role="tab" id="d2" aria-controls="dp2"
+              aria-selected="false" aria-disabled="true">未开通</button>
+      <button class="tabs__tab" role="tab" id="d3" aria-controls="dp3"
+              aria-selected="false">可用</button>
+    </div>
+    <div class="tabs__panel" role="tabpanel" id="dp1" aria-labelledby="d1">
+      <p>方向键会<strong>跳过</strong>禁用的 tab。</p>
+    </div>
+    <div class="tabs__panel" role="tabpanel" id="dp2" aria-labelledby="d2" hidden>
+      <p>你看不到这一页。</p>
+    </div>
+    <div class="tabs__panel" role="tabpanel" id="dp3" aria-labelledby="d3">
+      <p>按两次 ArrowRight 能到这里（跳过了未开通）。</p>
+    </div>
+  </div>
+
+  <h2>手动激活（面板内容重时用）</h2>
+  <div class="tabs tabs--manual" data-tabs>
+    <div class="tabs__list" role="tablist" aria-orientation="horizontal" aria-label="手动激活">
+      <button class="tabs__tab" role="tab" id="m1" aria-controls="mp1"
+              aria-selected="true">第一段</button>
+      <button class="tabs__tab" role="tab" id="m2" aria-controls="mp2"
+              aria-selected="false">第二段</button>
+    </div>
+    <div class="tabs__panel" role="tabpanel" id="mp1" aria-labelledby="m1">
+      <p>方向键<strong>只移动焦点</strong>，需按 Enter 才切 —— 读屏不会不停播报。</p>
+    </div>
+    <div class="tabs__panel" role="tabpanel" id="mp2" aria-labelledby="m2" hidden>
+      <p>按了 Enter 才到这里。</p>
+    </div>
+  </div>
+
+  <h2>键盘契约（APG / Radix）</h2>
+  <div class="box">
+    <p>
+      <strong>Tab</strong> 进入组时落在<strong>当前选中</strong>的 tab；再按 Tab 进面板<br>
+      <strong>← →</strong> 上一个 / 下一个 tab（并激活）<br>
+      <strong>Home / End</strong> 第一个 / 最后一个 tab
+    </p>
+    <p class="small">
+      <strong>roving tabindex</strong>：一组 tab 里只有一个是 <code>tabindex="0"</code>，
+      其余全是 <code>-1</code>。否则 Tab 键会<strong>逐个穿过所有 tab</strong>
+      （一排 5 个要按 5 次）。
+      更关键的是——<strong>那个 "0" 必须跟着选中项走</strong>，
+      只在初始化时设一次是最常见的 bug。
+    </p>
+  </div>
+
+  <h2>反例</h2>
+  <div class="box bad">
+    <h3>反例：用 div 当 tab</h3>
+    <p class="small">
+      <code>&lt;div role="tab"&gt;</code> 键盘上根本<strong>Tab 不到</strong>
+      （除非手写 <code>tabindex</code>），也不会响应 Enter/Space。
+      APG 明确要求 tab 是 <code>&lt;button role="tab"&gt;</code> ——
+      用原生 button，键盘行为免费且必然正确。
+    </p>
+  </div>
+  <div class="box bad">
+    <h3>反例：每个 tab 都写 tabindex="0"</h3>
+    <p class="small">
+      看起来"都能 Tab 到"，但一排 5 个 tab 就要按 <strong>5 次 Tab</strong>
+      才能进内容区。Tab 键应该是<strong>进出</strong>控件的，
+      组内移动是方向键的活。
+    </p>
+  </div>
+</main>
+<script src="tabs.js"></script>
+<script>
+  // 仅为 demo：显示切换到哪个（组件本身零依赖）
+  (function () {
+    var list = document.querySelectorAll('.tabs__list');
+    if (!list.length) return;
+    var first = document.querySelector('.tabs');
+    var v = document.getElementById('logv1');
+    first.addEventListener('click', function (e) {
+      var t = e.target.closest ? e.target.closest('[role="tab"]') : null;
+      if (t && v) v.textContent = t.textContent;
+    });
+  })();
+</script>
+</body>
+</html>

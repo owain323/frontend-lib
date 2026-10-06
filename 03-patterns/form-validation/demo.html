@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>表单校验 · 时机 / 汇总 / 焦点</title>
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../02-primitives/input/input.css">
+<link rel="stylesheet" href="form-validation.css">
+<style>
+  body { margin: 0; padding: var(--sp-7) var(--sp-5); background: var(--paper);
+         color: var(--text-primary); font: var(--fs-base)/var(--lh-base) system-ui, sans-serif; }
+  .wrap { max-width: 860px; margin: 0 auto; }
+  h1 { font-size: var(--fs-2xl); line-height: var(--lh-tight); margin: 0 0 var(--sp-2); }
+  .lede { color: var(--text-secondary); margin: 0 0 var(--sp-7); }
+  h2 { font-size: var(--fs-lg); margin: var(--sp-8) 0 var(--sp-4);
+       padding-bottom: var(--sp-2); border-bottom: 1px solid var(--border-decor); }
+  p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6; }
+  code { font-family: var(--mono);   /* 2026-10-03：原为写死的 ui-monospace，统一走令牌 */ font-size: var(--fs-xs);
+         background: var(--surface-sunken); padding: 1px 5px; border-radius: 4px; }
+  .grid2 { display: grid; gap: var(--sp-4); grid-template-columns: 1.55fr 1fr; }
+  @media (max-width: 700px) { .grid2 { grid-template-columns: 1fr; } }
+  .box { background: var(--surface); border: 1px solid var(--border-decor);
+         border-radius: var(--r-md); padding: var(--sp-5); }
+  .box h3 { margin: 0 0 var(--sp-2); font-size: var(--fs-sm); font-weight: 500; }
+  .bad { background: var(--surface-sunken); }
+  .good { background: var(--surface-sunken); }
+  .bad h3 { color: var(--danger); } .good h3 { color: var(--success); }
+  .btn { display:inline-flex; align-items:center; justify-content:center; height:44px;
+         padding:0 var(--sp-5); border:1px solid transparent; border-radius:var(--r-sm);
+         font-size:var(--fs-sm); font-weight:500; cursor:pointer; font-family:inherit;
+         transition: background-color 120ms, border-color 120ms; }
+  .btn--primary { background: var(--accent); color: var(--text-on-accent); }
+  .btn--primary:hover { background: var(--accent-hover); }
+  .btn--secondary { background: var(--surface); color: var(--text-primary);
+                    border-color: var(--border-control); }
+  .btn--secondary:hover { background: var(--surface-sunken); }
+  /* 反例：oninput 立即报错 */
+  .naive-error { display: block; color: var(--danger); font-size: var(--fs-xs);
+                 margin-top: var(--sp-1); min-height: 1.4em; }
+</style>
+<!-- 🔴 2026-10-06 补（ H2a 顺带修出）：此页面用了 .btn--primary 却**没引 button.css**
+     ⇒ 按钮拿不到 `color: var(--text-on-accent)`（暗色下应是**深色字**）
+     ⇒ 实测暗色下继承成白字 on 浅蓝底 = 2.45:1（需 4.5）
+     由 05-audit/css-imports.py 报出（它抓到过这个真问题） -->
+<link rel="stylesheet" href="../../02-primitives/button/button.css">
+</head>
+<body>
+<main class="wrap">">
+
+  <h1>表单校验</h1>
+  <p class="lede">
+    核心不是"标红"，而是<strong>什么时候报、报给谁看、焦点去哪</strong>。
+    这三件事决定了用户觉得表单"聪明"还是"烦人"。
+  </p>
+
+  <h2>一、校验时机：别在 oninput 报错</h2>
+  <p class="small">
+    下面两个输入框规则完全一样，<strong>只有校验时机不同</strong>。都试着打几个字看差别。
+  </p>
+
+  <div class="grid2" style="margin-top:var(--sp-4)">
+    <div class="box bad">
+      <h3>反例：oninput 立即报错</h3>
+      <div class="field">
+        <label class="field__label" for="naive">金额</label>
+        <input class="field__input" id="naive" placeholder="0.00">
+      </div>
+      <span class="naive-error" id="naive-err">最多两位小数</span>
+      <p class="small" style="margin-top:var(--sp-2)">
+        刚敲下 <code>1</code> 就开始红了 —— 但 <code>1</code> 可能是合法的中间状态。
+        用户打到一半满屏红字，不敢继续打，甚至放弃填表。
+        <strong>这是纯噪音。</strong>
+      </p>
+    </div>
+
+    <div class="box good">
+      <h3>正例：blur 才首次校验</h3>
+      <div class="field" id="good-field">
+        <label class="field__label" for="good">金额</label>
+        <input class="field__input" id="good" placeholder="0.00"
+               aria-describedby="good-err">
+        <span class="field__error" id="good-err" role="alert">最多两位小数，例如 12.34</span>
+      </div>
+      <p class="small" style="margin-top:var(--sp-2)">
+        打字时安安静静。<strong>失焦那一刻</strong>才校验；
+        之后你回来修改才会实时提示（因为你已经知道它的规则了）。
+        这时才叫"帮助"而不是"指责"。
+      </p>
+    </div>
+  </div>
+
+  <div class="note">
+    三层时机：<code>onblur</code> 首次校验 → 之后才实时（字段"脏"过）→ <code>onsubmit</code> 全量校验并弹汇总。<br>
+    🔴 <strong>刻意没用 <code>:has()</code></strong>：它是 CSS Level 4，某项目 上 WebView 版本不确定，
+    而且把逻辑硬塞进样式层不可测。控制权交给 JS 加 <code>.is-dirty</code> 类。
+  </div>
+
+  <h2>二、完整表单：提交后出错误汇总</h2>
+  <p class="small">什么都不填，直接点提交。焦点会移到汇总上，汇总里每条可点击跳转。</p>
+
+  <form class="form" id="f" novalidate>
+    <div id="summary-slot"></div>
+
+    <div class="form__row">
+      <div class="field" data-name="公司名称" data-validate="required">
+        <label class="field__label" for="c">公司名称 <span class="field__req" aria-hidden="true">*</span></label>
+        <input class="field__input" id="c" aria-describedby="c-err">
+        <span class="field__error" id="c-err" role="alert"></span>
+      </div>
+
+      <div class="field" data-name="金额" data-validate="money">
+        <label class="field__label" for="a">金额 <span class="field__req" aria-hidden="true">*</span></label>
+        <input class="field__input" id="a" aria-describedby="a-err">
+        <span class="field__error" id="a-err" role="alert"></span>
+      </div>
+
+      <div class="field" data-name="备注" data-validate="optional">
+        <label class="field__label" for="n">备注</label>
+        <input class="field__input" id="n" placeholder="选填">
+        <span class="field__error" id="n-err" role="alert"></span>
+      </div>
+    </div>
+
+    <div class="form__actions">
+      <button class="btn btn--primary" type="submit">提交</button>
+      <button class="btn btn--secondary" type="reset">重置</button>
+      <span class="small" id="status"></span>
+    </div>
+  </form>
+
+  <h2>三、错误文案：给建议，不给判断</h2>
+  <div class="grid2">
+    <div class="box bad">
+      <h3>反例</h3>
+      <p style="font-size:var(--fs-sm); color:var(--danger); margin:0 0 var(--sp-2)">格式错误</p>
+      <p style="font-size:var(--fs-sm); margin:0 0 var(--sp-2)">非法输入</p>
+      <p style="font-size:var(--fs-sm); margin:0">值不合法</p>
+      <p class="small" style="margin-top:var(--sp-3)">
+        WCAG 3.3.3 要求给修正建议。这三句用户读完还是不知道该改成什么。
+      </p>
+    </div>
+    <div class="box good">
+      <h3>正例</h3>
+      <p style="font-size:var(--fs-sm); color:var(--success); margin:0 0 var(--sp-2)">
+        金额最多两位小数，例如 12.34</p>
+      <p style="font-size:var(--fs-sm); color:var(--success); margin:0 0 var(--sp-2)">
+        请填写公司名称，2 到 40 个字</p>
+      <p style="font-size:var(--fs-sm); color:var(--success); margin:0">
+        这个日期在未来，请检查</p>
+      <p class="small" style="margin-top:var(--sp-3)">
+        每条都<strong>具体、可执行</strong>，还带一个正例。
+      </p>
+    </div>
+  </div>
+
+  <h2>四、无障碍要点</h2>
+  <div class="note">
+    <div><strong>错误汇总</strong>：<code>role="alert"</code> + 提交后焦点移到它 ——
+      否则屏幕阅读器用户不知道页面出现了新东西</div>
+    <div><strong>汇总里的条目</strong>用 <code>&lt;a href="#字段id"&gt;</code>，
+      天然支持键盘和"复制链接"，不要用 <code>div onclick</code></div>
+    <div><strong>错误文案</strong>用 <code>role="alert"</code>，
+      动态出现时会被读出来（<code>aria-describedby</code> 负责聚焦时能听到）</div>
+    <div><strong>提交成功后焦点必须移走</strong> ——
+      留在提交按钮上，用户按 Enter 会重复提交</div>
+  </div>
+
+</div>
+
+<script>
+// ---------- 反例：oninput 立即报错 ----------
+var naive = document.getElementById('naive');
+naive.addEventListener('input', function () {
+  document.getElementById('naive-err').textContent =
+    this.value === '' ? '' : '最多两位小数';
+});
+
+// ---------- 正例：blur 首次校验，之后实时 ----------
+var RULES = {
+  required: {
+    test: function (v) { return v.trim().length > 0; },
+    msg: '请填写公司名称，2 到 40 个字'
+  },
+  money: {
+    test: function (v) { return /^\d+(\.\d{1,2})?$/.test(v.trim()); },
+    msg: '金额最多两位小数，例如 12.34'
+  },
+  optional: { test: function () { return true; }, msg: '' }
+};
+
+function checkField(field) {
+  var input = field.querySelector('.field__input');
+  var err = field.querySelector('.field__error');
+  var rule = RULES[field.dataset.validate];
+  var v = input.value;
+
+  if (rule.test(v)) {
+    field.classList.remove('is-dirty');
+    input.removeAttribute('aria-invalid');
+    err.textContent = '';
+    return true;
+  }
+  field.classList.add('is-dirty');
+  input.setAttribute('aria-invalid', 'true');
+  err.textContent = rule.msg;
+  return false;
+}
+
+var form = document.getElementById('f');
+var fields = Array.prototype.slice.call(form.querySelectorAll('.field'));
+
+fields.forEach(function (field) {
+  var input = field.querySelector('.field__input');
+  input.addEventListener('blur', function () { checkField(field); });
+  // 只有"脏"过的字段才实时校验 —— 未 blur 过的不打扰
+  input.addEventListener('input', function () {
+    if (field.classList.contains('is-dirty')) checkField(field);
+  });
+});
+
+form.addEventListener('submit', function (e) {
+  e.preventDefault();
+  var bad = fields.filter(function (f) { return !checkField(f); });
+
+  if (bad.length) {
+    form.classList.add('form--has-summary');
+    document.getElementById('summary-slot').innerHTML =
+      '<div class="form__summary" role="alert" tabindex="-1" id="sum">' +
+      '<span class="form__summary-title">有 ' + bad.length + ' 处需要修正：</span>' +
+      /* 🔴 2026-10-03 改成**一行**：Owner 说"错误多的时候提示太大，
+         应该收窄放一行"。原来的竖排三行（标题 / <ul> / 每项一行）会占掉半个屏幕，
+         而它承载的信息只有"有几处错"+"错在哪" —— 一行足够。
+         链接仍可点击跳转（键盘可达性不变）。 */
+      bad.map(function (f) {
+        return '<a class="form__summary-link" href="#' +
+          f.querySelector('.field__input').id + '">' +
+          f.dataset.name + '</a>';
+      }).join('') +
+      '</div>';
+    document.getElementById('sum').focus();   // 焦点必须移过来
+    document.getElementById('status').textContent = '';
+    return;
+  }
+
+  /* 🔴 2026-10-03 补：提交**成功**时也必须清掉各字段的 is-dirty。
+     原来只有"重置"按钮清 —— 于是提交成功后，字段仍带着 is-dirty，
+     空的 .field__error 继续 display:flex。
+     以前 .field__error 没内容时看不出问题（空元素不显示任何东西），
+     加上错误图标后**空元素露出了一个圆点**，这个 bug 才显形。
+     这是"视觉改动揭露旧 bug"的典型案例。 */
+  form.classList.remove('form--has-summary');
+  fields.forEach(function (f) {
+    f.classList.remove('is-dirty');
+    f.querySelector('.field__input').removeAttribute('aria-invalid');
+    f.querySelector('.field__error').textContent = '';
+  });
+  document.getElementById('summary-slot').innerHTML =
+    '<div class="form__notice" role="alert" tabindex="-1" id="ok">已提交。焦点已移到这条提示上 —— 留在提交按钮上的话，按 Enter 会重复提交。</main>';
+  document.getElementById('ok').focus();
+  document.getElementById('status').textContent = '提交成功';
+});
+
+form.addEventListener('reset', function () {
+  form.classList.remove('form--has-summary');
+  document.getElementById('summary-slot').innerHTML = '';
+  fields.forEach(function (f) {
+    f.classList.remove('is-dirty');
+    f.querySelector('.field__input').removeAttribute('aria-invalid');
+    f.querySelector('.field__error').textContent = '';
+  });
+  document.getElementById('status').textContent = '';
+});
+
+// 汇总链接跳转后自动聚焦对应输入框（浏览器只滚动，不会聚焦）
+document.addEventListener('click', function (e) {
+  var a = e.target.closest('.form__summary-link');
+  if (!a) return;
+  e.preventDefault();
+  var t = document.querySelector(a.getAttribute('href'));
+  if (t) { t.focus(); t.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+});
+</script>
+</body>
+</html>

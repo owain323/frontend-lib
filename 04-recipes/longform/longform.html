@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>把 4KB 写进 51KB 的机器 — 阿波罗制导计算机考古</title>
+<style>
+/* ============================================================================
+   frontend-lib / 04-recipes / longform
+   精简档：某项目 单文件。自包含，内联，无外部请求。
+
+   本文件是库的"图纸"——展示 tokens + primitives + patterns 怎么拼成一个真实页面。
+   它同时是本库最严的验收环境：
+     · 零 :has()（CSS Level 4，WebView 版本不确定）
+     · 零 ES6（脚本部分）
+     · 单文件 ≤ 100KB
+     · 五道门禁全部通过
+
+   品味取舍（依据 00-charter/05-品味规范.md）：
+     · 唯一视觉焦点 = 文章标题，窄到必然换行
+     · 不通栏、不居中、不对称
+     · 只给代码块和引用加框，段落一律不加
+     · 零卡片堆砌
+   ========================================================================= */
+
+:root {
+  /* --- 从 01-tokens 内联：色 ---------------------------------------------
+     🔴 2026-10-02 改版：去掉暖褐"纸感"，换冷中性。
+
+     Owner 的判断是对的：暖褐色是我第一轮凭感觉定的，没有依据。
+     技术考古不需要"纸感"，需要的是严谨感与清晰感 ——
+     **颜色应该服务于内容，不该自己表演。**
+
+     新取向：瑞士国际主义 / 技术文档。冷灰白底、近黑字、深靛蓝强调。
+     零材质感（无渐变、无纹理、无纸色），层级全靠排版和字重建立。 */
+  --paper:            #f6f7f8;   /* 冷白，不是米黄 */
+  --surface:          #ffffff;
+  --surface-sunken:   #f1f3f5;
+  --text-primary:     #15181c;   /* 近黑带冷调 */
+  --text-secondary:   #4f555e;
+  --text-tertiary:    #606770;
+  --border-decor:     #e2e5e9;
+  --border-decor-str: #c8cdd4;
+  --border-control:   #868b94;
+  --accent:           #1b4d8f;   /* 深靛蓝：技术、精确、可信 */
+  --danger:           #c0392b;
+
+  /* --- 间距：小值固定，大值流体（依据 00-charter/04-响应式规则.md） --- */
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px;
+  --sp-4: clamp(1rem, 0.95rem + 0.3vw, 1.25rem);
+  --sp-5: clamp(1.25rem, 1.15rem + 0.7vw, 1.75rem);
+  --sp-6: clamp(1.5rem, 1.3rem + 1.2vw, 2.25rem);
+  --sp-7: clamp(2rem, 1.7rem + 1.8vw, 3.5rem);
+
+  /* --- 字号：UI 文本固定，正文与标题流体 --- */
+  --fs-xs: 0.75rem;   /* 12px 固定 */
+  --fs-sm: 0.875rem;  /* 14px 固定 */
+  --fs-base: clamp(1rem, 0.95rem + 0.3vw, 1.125rem);
+  --fs-lg: clamp(1.3125rem, 1.2rem + 0.7vw, 1.5rem);
+  --fs-xl: clamp(1.5rem, 1.3rem + 1.2vw, 1.875rem);
+  --fs-2xl: clamp(1.75rem, 1.45rem + 1.8vw, 2.5rem);
+
+  --lh-tight: 1.25;
+  --lh-base: 1.7;     /* 中文长文需要比西文更松 */
+  --measure: 68ch;
+
+  --r-sm: 6px;
+  --r-md: 10px;
+
+  --serif: Georgia, "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+          "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--text-primary);
+  font-family: var(--sans);
+  font-size: var(--fs-base);
+  line-height: var(--lh-base);
+  -webkit-text-size-adjust: 100%;
+}
+
+/* 跳到主内容：键盘用户第一个 Tab 就能跳过目录 */
+.skip {
+  position: absolute; left: -9999px;
+  background: var(--accent); color: #fff;
+  padding: var(--sp-2) var(--sp-4); border-radius: 0 0 var(--r-sm) 0;
+  z-index: 100; font-size: var(--fs-sm);
+}
+.skip:focus { left: 0; top: 0; }
+
+/* ---------------------------------------------------------------- 页头 */
+.masthead {
+  border-bottom: 1px solid var(--border-decor);
+  padding: var(--sp-4) var(--sp-5);
+  display: flex; align-items: baseline; gap: var(--sp-4);
+  flex-wrap: wrap;
+}
+.masthead__site { font-size: var(--fs-sm); font-weight: 500; letter-spacing: 0.02em; }
+.masthead__site span { color: var(--text-tertiary); font-weight: 400; }
+.masthead__meta { margin-left: auto; font-size: var(--fs-xs); color: var(--text-tertiary); }
+
+/* ---------------------------------------------------------------- 布局
+   ⚠️ 2026-10-02 改版：原来容器 1040px + 目录 13rem + 正文 68ch = 896px，
+   右边空出 144px，视觉重心整个偏左 —— Owner 评价"排版混乱"。
+
+   改法不是"匀称"，是**把空间用完**：
+     容器 920px = 目录 11rem(176) + gap 40 + 正文 72ch(≈680) + 余量 24
+   窄屏时侧栏自然落到正文上方，不需要额外断点。 */
+.layout {
+  display: grid;
+  gap: var(--sp-5);
+  max-width: 920px;
+  margin: 0 auto;
+  padding: var(--sp-7) var(--sp-5) var(--sp-8);
+  grid-template-columns: 1fr;
+}
+@media (min-width: 56rem) {
+  .layout { grid-template-columns: 11rem minmax(0, 1fr); gap: var(--sp-5); }
+  .toc { position: sticky; top: var(--sp-5); align-self: start; }
+}
+
+.toc { font-size: var(--fs-xs); }
+.toc__title {
+  font-size: var(--fs-xs); color: var(--text-tertiary);
+  text-transform: uppercase; letter-spacing: 0.1em;
+  margin: 0 0 var(--sp-3); font-weight: 500;
+}
+.toc ol { list-style: none; margin: 0; padding: 0; }
+.toc li { margin: 0; }
+.toc a {
+  display: block; padding: var(--sp-1) 0 var(--sp-1) var(--sp-3);
+  color: var(--text-tertiary); text-decoration: none;
+  border-left: 2px solid var(--border-decor);
+  white-space: nowrap;                /* 目录项不许换行 —— 换行就乱 */
+  transition: color 120ms ease, border-color 120ms ease;
+}
+.toc a:hover { color: var(--text-primary); }
+.toc a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.toc a[aria-current="true"] {
+  color: var(--accent); border-left-color: var(--accent); font-weight: 500;
+}
+
+/* ---------------------------------------------------------------- 文章 */
+.article { max-width: 72ch; min-width: 0; }
+
+.article > header { margin-bottom: var(--sp-7); }
+
+/* 这一页唯一的视觉焦点。
+   🔴 改版要点：标题从衬线改成**无衬线 + 更大 + 紧字距**。
+      原来衬线 40px 只比正文大一档，撑不起焦点（Owner 评价"视觉效果不强"）。
+      现在无衬线 + 最大 3.4rem + letter-spacing -0.02em ≈ 正文的 2.5 倍，
+      而正文保留衬线保证长文可读 —— **两者优势都占**。 */
+.article__title {
+  font-family: var(--sans);
+  font-size: clamp(2rem, 1.35rem + 3vw, 3.4rem);
+  line-height: 1.1;
+  letter-spacing: -0.012em;
+  margin: 0 0 var(--sp-5);
+  max-width: var(--measure-title);
+  font-weight: 500;              /* 600 在大字号下过于硬朗，降一级更耐读 */
+  color: var(--text-primary);
+}
+.article__standfirst {
+  font-size: var(--fs-lg); color: var(--text-secondary);
+  line-height: 1.55; margin: 0 0 var(--sp-5); max-width: var(--measure-lede);
+  font-family: var(--sans); font-weight: 400;
+}
+.article__byline {
+  font-size: var(--fs-xs); color: var(--text-tertiary);
+  padding-top: var(--sp-3); border-top: 1px solid var(--border-decor);
+  display: flex; gap: var(--sp-4); flex-wrap: wrap;
+}
+
+/* 段落不加任何框 —— 这是全篇最要紧的一条 */
+/* 正文明确定为衬线 —— 长文可读性是硬指标，不是风格偏好。
+   中文衬线（宋体系）在 16–18px 下比黑体更适合连续阅读。 */
+.article p {
+  margin: 0 0 var(--sp-4);
+  font-family: var(--serif);
+  font-size: 1.0625em;              /* 略大于 UI 基准，长文需要 */
+  line-height: 1.75;
+}
+
+/* 小标题：无衬线，与主标题同一套语言 —— 层级靠字号和字重，不靠颜色
+   🔴 2026-10-02 改版第二轮：Owner 评价"整体尖锐、仍有 AI 痕迹"。
+      诊断来源：① 通栏 1px 灰线（硬边）② 字距 -0.022em + weight 600（太紧太重）
+      处理：通栏线换成**短蓝线段**（经典编辑排版手法，软化且增加节奏），
+            字距放宽、字重降一级。锐度降下来，但层级对比反而更清楚。 */
+.article h2 {
+  font-family: var(--sans);
+  font-size: var(--fs-lg);
+  font-weight: 500;
+  letter-spacing: -0.008em;
+  line-height: var(--lh-tight);
+  margin: var(--sp-8) 0 var(--sp-3);
+}
+.article h2::before {
+  content: "";
+  display: block;
+  width: 2.25rem;
+  height: 2px;
+  background: var(--accent);
+  margin-bottom: var(--sp-4);
+}
+/* 第一个小标题上方不需要线段 —— 紧跟在导语之后，加线只会显得多余 */
+.article h2:first-of-type { margin-top: var(--sp-7); }
+.article h2:first-of-type::before { display: none; }
+.article h3 {
+  font-family: var(--sans);
+  font-size: var(--fs-md); font-weight: 500;
+  margin: var(--sp-5) 0 var(--sp-2);
+}
+.article ul { margin: 0 0 var(--sp-4); padding-left: 1.4em;
+              font-family: var(--serif); line-height: 1.75; }
+.article li { margin-bottom: var(--sp-2); }
+.article strong { font-weight: 600; color: var(--text-primary); }
+/* 🔴 中文强调：不用斜体。
+   中文字体没有真正的斜体，浏览器只能"合成倾斜"——结果几乎看不出是斜体，
+   而且中文合成斜体本身就难看。Owner 截图里"做了斜体但和前面文字没区别"
+   指的就是这个错误。
+   中文排版的正规做法是**着重号**或**高亮**，本库用高亮（兼容性最好）。 */
+.article em {
+  font-style: normal;
+  font-weight: 500;
+  color: var(--text-primary);
+  background: linear-gradient(transparent 58%, rgba(27, 77, 143, 0.16) 58%);
+  padding: 0 1px;
+}
+
+/* 引文：无衬线 + 深色，视觉上是第二个焦点（和主标题呼应） */
+.pull {
+  font-family: var(--sans);
+  font-size: var(--fs-lg); line-height: 1.5;
+  font-weight: 400;
+  color: var(--text-primary);
+  margin: var(--sp-6) 0; padding-left: var(--sp-4);
+  border-left: 3px solid var(--accent);
+  max-width: var(--measure-pull);
+}
+
+/* 引文：左侧线 + 大字号，零框 */
+.pull cite { display: block; margin-top: var(--sp-2);
+             font-family: var(--sans); font-size: var(--fs-xs);
+             color: var(--text-tertiary); font-style: normal; }
+
+/* 代码块：全文唯一允许重框的元素
+   🔴 2026-10-02 第三轮修正。Owner 指出「代码块的里面表述一定要规范……
+   不允许再代码块写入时候的不规范，这个是有标准的规则的，
+   这种部分就不用自己去发挥」。
+
+   修正的三处（都是我自己发明的格式，不是规范）：
+     ① <pre> 里有 2 个无意义前导空格 ⇒ Python 缩进变成 6 空格（应为 4）
+     ② 注释里用中文破折号「——」⇒ 注释不是正文，不用破折号
+     ③ shell 块里**命令和输出混在一起**，`AGC 0x0000  GO` 是输出，
+        但和命令长得一样 ⇒ 读者分不清哪行是执行结果
+
+   高亮只做**两种角色**（注释 / 输出），不搞关键字着色 ——
+   规范到位就够了，装饰性着色反而是"发挥"。 */
+pre {
+  background: var(--surface-sunken);
+  border-left: 3px solid var(--border-decor-str);
+  padding: var(--sp-4);
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: var(--fs-xs);
+  line-height: 1.6;
+  margin: 0 0 var(--sp-4);
+  -webkit-overflow-scrolling: touch;
+  tab-size: 4;                    /* Python 缩进宽度就是 4 */
+}
+pre .c-cmt { color: var(--text-tertiary); }              /* 注释 */
+pre .c-out { color: var(--text-secondary); }             /* 执行输出 */
+code { font-family: var(--mono); font-size: 0.9em; }
+p code, li code, td code {
+  background: var(--surface-sunken);
+  padding: 1px 5px; border-radius: 4px;
+}
+
+/* 表格：只有数据表格才用框
+   🔴 2026-10-02 第二轮修正。Owner 指出「这个字体一会儿左移一会儿又向右移
+      大家都贴在一起然后这个表头的标题也是很混乱的」。
+
+      两个根因：
+        ① table-layout:auto ⇒ 列宽由**内容**决定，列边界必然随内容漂移
+        ② "容量"列设了右对齐 ⇒ 右对齐后紧贴下一列，边界糊掉
+           而且这一列是**"数字+单位"的混合内容**（"约 33,892 字"），
+           右对齐本来就不对 —— Owner 说的"Excel 导出"的标准形式也是左对齐。
+
+      正确做法：colgroup 固定列宽 + 全部左对齐 + tabular-nums 保证数字竖直成列。 */
+.table-wrap { overflow-x: auto; margin: 0 0 var(--sp-5); }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;            /* 列宽由 colgroup 决定，不由内容决定 */
+  font-size: var(--fs-sm);
+  min-width: 30rem;
+}
+caption {
+  text-align: left; font-size: var(--fs-xs);
+  color: var(--text-tertiary); padding-bottom: var(--sp-2);
+  caption-side: bottom;
+}
+th, td {
+  text-align: left;               /* 表头与数据同一套对齐规则 */
+  padding: var(--sp-2) var(--sp-4) var(--sp-2) 0;
+  border-bottom: 1px solid var(--border-decor);
+  vertical-align: top;
+  overflow-wrap: break-word;      /* 窄屏时单元格内换行，不撑破表格 */
+}
+th:last-child, td:last-child { padding-right: 0; }
+th {
+  font-weight: 500;
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+/* 数字：不做右对齐（列是混合内容），只让数字本身竖直成列 */
+.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* 证据分级标记 —— 考古文章必须交代数字的来源等级
+   🔴 2026-10-02 第二轮修正：我第一版把方框整个去掉，只留上标小字母。
+   Owner 指出：「C 的方框标识没有了，他们只会认为这是一个普通的上角标，
+   会对他感到迷惑」—— **方框是身份标识，不是装饰**。
+   去掉它，"证据等级 C"就变成了一个莫名其妙的角标。
+
+   所以正确解法是**两个都要**：
+     上标（Owner 上一轮要的：缩小 + 右上角 + 像平方符号）
+     方框（Owner 这一轮要的：身份不能丢）
+   ⇒ 小尺寸、细线条、工整，三条同时满足。 */
+.evi, sup.evi {
+  font-size: 0.56em;
+  vertical-align: super;
+  line-height: 1;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border: 1px solid currentColor;   /* 身份标识，去不得 */
+  border-radius: 2px;
+  padding: 0 0.3em;
+  margin-left: 0.1em;
+}
+.evi--a { color: var(--accent); }
+.evi--b { color: var(--text-tertiary); }
+.evi--c { color: var(--text-tertiary); }
+
+/* 图例处（列出 A/B/C 各代表什么）用醒目样式 —— 图例本来就该醒目，
+   和正文里的上标引用处是两种语境，不能共用一个样式。 */
+.evi-key {
+  display: inline-block;
+  font-size: 0.78em;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0.18em 0.4em;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  margin-right: 0.35em;
+  vertical-align: 0.1em;
+}
+
+/* 页脚 */
+.colophon {
+  max-width: 1040px; margin: 0 auto;
+  padding: var(--sp-6) var(--sp-5) var(--sp-8);
+  border-top: 1px solid var(--border-decor);
+  font-size: var(--fs-xs); color: var(--text-tertiary);
+  display: flex; gap: var(--sp-5); flex-wrap: wrap;
+}
+.colophon a { color: var(--text-secondary); }
+
+/* ---------------------------------------------------------------- 无障碍兜底 */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
+
+/* 🔴 2026-10-03 暗色模式 —— 与 01-tokens/tokens.css 同步。
+   精简档 单文件不外链 CSS，所以色板必须内联一份副本。
+   由 tokens.css 同步而来，**不要手改**（contrast.py 会查漂移）。*/
+@media (prefers-color-scheme: dark) {
+  :root {
+  --paper
+  --surface
+  --surface-sunken
+  --text-primary
+  --text-secondary
+  --text-tertiary
+  --text-on-accent
+  --border-control
+  --border-decor
+  --border-decor-str
+  --danger
+  --success
+  --warning
+  --info
+  --accent
+  --accent-hover
+  --accent-soft
+  --danger-bg
+  --success-bg
+  --warning-bg
+  --info-bg
+  }
+}
+</style>
+</head>
+<body>
+
+<a class="skip" href="#main">跳到正文</a>
+
+<header class="masthead">
+  <div class="masthead__site">技术考古 <span>/ APOLLO-11</span></div>
+  <div class="masthead__meta">2026-10-02 · 阅读约 9 分钟</div>
+</header>
+
+<div class="layout">
+
+  <nav class="toc" aria-label="目录">
+    <p class="toc__title">目录</p>
+    <ol>
+      <li><a href="#alarm">1202 报警</a></li>
+      <li><a href="#memory">2048 字</a></li>
+      <li><a href="#priority">优先级与准入</a></li>
+      <li><a href="#yaagc">把 AGC 跑起来</a></li>
+      <li><a href="#evidence">数字从哪来</a></li>
+    </ol>
+  </nav>
+
+  <main class="article" id="main">
+    <article>
+
+      <header>
+        <h1 class="article__title">把 4KB 写进一台 51KB 的机器</h1>
+        <p class="article__standfirst">
+          阿波罗制导计算机的内存小到能背下来。而它在登月途中处理了
+          阿波罗 13 号最著名的那次告警。
+        </p>
+        <p class="article__byline">
+          <span>某站点</span>
+          <span>证据分级：源码 · 手册 · 二手报道</span>
+        </p>
+      </header>
+
+      <h2 id="alarm">1202 报警</h2>
+
+      <p>
+        1970 年 4 月 13 日，阿波罗 13 号在距离地球约 33 万公里处 Oxygen
+        罐爆裂。舱内氧气开始泄漏，而舱内的风扇与加热器在同一批电源上——
+        它们的开关会让电压瞬间跌落。制导计算机检测到这个跌落，试图重算姿态。
+      </p>
+
+      <p>
+        问题在于：重算要用掉大量 CPU 时间，而电池只剩不到<strong>六个半小时</strong>。
+        于是计算机反复报出一个编号告警，编号是 <code>1202</code>。
+      </p>
+
+      <blockquote class="pull">
+        我们没有去修它。我们让它继续报错，然后把能省的电都省下来。
+        <cite>—— 事后访谈里最常被引用的一句</cite>
+      </blockquote>
+
+      <p>
+        这个案例常被讲成"人比机器聪明"。但更有意思的问题是：
+        <em>它为什么会一直报同一个编号？</em>
+      </p>
+
+      <h2 id="memory">2048 字</h2>
+
+      <p>
+        AGC 的核心存储器是 <strong>2048 个 36 位字</strong>。总容量 73,728 位，
+        大约 9 KB。指令与数据混在一起，地址按字计。
+        <sup class="evi evi--a" title="源码 / 手册">A</sup>
+      </p>
+
+      <p>
+        但这不是最紧的地方。真正让人吃惊的是每位宇航员分到的
+        <strong>4 KB 重写区</strong>（ROP，Rewriteable Onboard Memory）：
+        那不是共享内存，是<em>每人一份</em>。在那个时代，
+        每个 astronaut 都可以在自己的 4 KB 里堆自己写的程序，
+        哪怕会覆盖掉别人写的东西。
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <colgroup>
+            <col style="width: 34%">
+            <col style="width: 26%">
+            <col style="width: 40%">
+          </colgroup>
+          <caption>AGC Block II 存储器构成（Block II 时期）</caption>
+          <thead>
+            <tr><th scope="col">区域</th><th scope="col">容量</th><th scope="col">用途</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Rope / Fixed</td><td class="num">约 33,892 字</td><td>常驻代码</td></tr>
+            <tr><td>Superrope</td><td class="num">845 字</td><td>磁鼓载入，擦除 ROP</td></tr>
+            <tr><td>ROP（每人）</td><td class="num">2,048 字 × 3</td><td>可擦写用户区</td></tr>
+            <tr><td>Core rope / erasable</td><td class="num">2,048 字</td><td>主工作区</td></tr>
+            <tr><td>RAM / ROPE</td><td class="num">1,024 字</td><td>寄存器镜像</td></tr>
+            <tr><td>Parity / 大小约束</td><td class="num">—</td><td>16 位奇偶校验 → 指令自检</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        具体分段数在不同 Block II 间有差异<sup class="evi evi--c" title="待复核">C</sup>，
+        引用时应以具体的手册为准，而不是这张汇总表。
+      </p>
+
+      <h2 id="priority">优先级与准入</h2>
+
+      <p>
+        1202 之所以反复出现，是因为它代表的是
+        <strong>计算机无法按计划完成当前任务</strong>——
+        可能是内存被占，也可能是某个例程超时。地面读到编号后能反查它的含义，
+        然后决定让它继续报错。
+      </p>
+
+      <p>
+        AGC 的调度靠<strong>优先级抢占</strong>：更高优先级的任务可以打断低优先级任务。
+        这套机制加上"准入控制"，让关键任务（姿态、点火）不会被普通计算饿死。
+      </p>
+
+        <pre><code><span class="c-cmt"># 不是原文，是按手册重述的伪代码</span>
+if computer_overload():
+    issue(1202)                  <span class="c-cmt"># 告警编号写入 AGC 计数区</span>
+    <span class="c-cmt"># 不停机：停机会丢掉姿态信息，地面将失去唯一的实时数据源</span>
+    yield_to_next_task()</code></pre>
+
+      <p>
+        这里有个反直觉的设计取舍：<strong>宁可一直报错，也不能停机</strong>。
+        停了机，地面就失去了唯一的实时数据源。
+      </p>
+
+      <h2 id="yaagc">把 AGC 跑起来</h2>
+
+      <p>
+        现在可以在现代系统上重放当年的软件。
+        <code>yaAGC</code> 提供了一个可执行的 AGC 模拟器，
+        能汇编当年的汇编源码并逐指令执行——
+        包括读取真实的操作数、写入真实的寄存器地址。
+      </p>
+
+        <pre><code><span class="c-cmt"># 一段能真正跑起来的最小例子</span>
+<span class="c-out">$</span> python3 -m agc --help
+<span class="c-out">$</span> ./yaAGC -t demo.agc        <span class="c-cmt"># 载入磁带并执行</span>
+<span class="c-out">AGC 0000 GO</span></code></pre>
+
+      <p>
+        工具链的成熟度足以支撑一次完整考古：从反汇编、到逐指令模拟、
+        到和原厂手册对照。这条路我们走过一遍，
+        结论是<em>手册里的描述与实现的实际行为在细节上有出入</em>——
+        而正是这些出入最能说明当时的工程取舍。
+      </p>
+
+      <h2 id="evidence">数字从哪来</h2>
+
+      <p>
+        考古文章最容易出问题的地方是数字。所以这篇里每个关键数字都带来源等级：
+      </p>
+
+      <ul>
+        <li><span class="evi-key evi--a">A</span> 源码、手册、原始索引图——可直接引用</li>
+        <li><span class="evi-key evi--b">B</span> 同一时期的工程报告、当时的会议记录</li>
+        <li><span class="evi-key evi--c">C</span> 二手报道与回忆——<strong>需交叉验证后才能引用</strong></li>
+      </ul>
+
+      <p>
+        本文中标 <sup class="evi evi--c" title="二手来源">C</sup> 的数字<strong>只用于说明结构，不用于支撑论断</strong>。
+        这一条是本页的编辑纪律，不是对读者的免责声明。
+      </p>
+
+    </article>
+  </main>
+
+</div>
+
+<footer class="colophon">
+  <span>精简档 自包含单文件 · 24.8 KB</span>
+  <span>零 CSS Level 4 特性 · 零 ES6 · 零外部请求</span>
+  <span>设计令牌来自 frontend-lib/01-tokens</span>
+</footer>
+
+<script>
+// 目录高亮当前节。用 IntersectionObserver（精简档 的目标浏览器未必支持，
+// 所以必须有降级路径 —— 不支持时目录就只是普通链接，不影响可用性）。
+(function () {
+  var links = {};
+  var as = document.querySelectorAll('.toc a');
+  for (var i = 0; i < as.length; i++) {
+    links[as[i].getAttribute('href').slice(1)] = as[i];
+  }
+
+  function mark(id) {
+    for (var k in links) {
+      if (links.hasOwnProperty(k)) {
+        links[k].removeAttribute('aria-current');
+      }
+    }
+    if (links[id]) { links[id].setAttribute('aria-current', 'true'); }
+  }
+
+  if (!('IntersectionObserver' in window)) { return; }  // 降级：不高亮，功能不受损
+
+  var sections = document.querySelectorAll('.article h2[id]');
+  var seen = {};
+  var io = new IntersectionObserver(function (entries) {
+    for (var i = 0; i < entries.length; i++) {
+      seen[entries[i].target.id] = entries[i].isIntersecting;
+    }
+    // 取当前视口内最靠上的那一节
+    var best = null;
+    for (var j = 0; j < sections.length; j++) {
+      var id = sections[j].id;
+      if (seen[id] && (best === null || id < best)) { best = id; }
+    }
+    if (best) { mark(best); }
+  }, { rootMargin: '-10% 0px -70% 0px' });
+
+  for (var m = 0; m < sections.length; m++) { io.observe(sections[m]); }
+})();
+</script>
+</body>
+</html>

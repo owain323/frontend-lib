@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>列表 · 增删的平滑过渡</title>
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../02-primitives/button/button.css">
+<link rel="stylesheet" href="../../03-patterns/states/states.css">
+<link rel="stylesheet" href="list.css">
+<style>
+  body { margin: 0; background: var(--paper); color: var(--text-primary);
+         font: var(--fs-base)/var(--lh-base) system-ui, sans-serif; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: var(--sp-7) var(--sp-5) var(--sp-8); }
+
+  h1 { font-size: var(--fs-2xl); line-height: 1.15; letter-spacing: -0.02em;
+       font-weight: 500; margin: 0 0 var(--sp-3); max-width: var(--measure-title); }
+  .standfirst { font-size: var(--fs-md); color: var(--text-secondary);
+                max-width: var(--measure-lede); line-height: 1.55; margin: 0 0 var(--sp-6); }
+  h2 { font-size: var(--fs-base); font-weight: 500; margin: var(--sp-7) 0 var(--sp-3);
+       color: var(--text-secondary); }
+  p { max-width: var(--measure-prose); margin: 0 0 var(--sp-3); }
+  p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.65; }
+  code { font-family: var(--mono);   /* 2026-10-03：原为写死的 ui-monospace，统一走令牌 */ font-size: 0.88em;
+         background: var(--surface-sunken); border: 1px solid var(--border-decor);
+         border-radius: 3px; padding: 0.05em 0.3em; }
+
+  .bar { display: flex; gap: var(--sp-2); flex-wrap: wrap; margin-bottom: var(--sp-4); }
+</style>
+</head>
+<body>
+<main class="wrap">">
+
+  <h1>删掉一行，其余行不该瞬移</h1>
+  <p class="standfirst">
+    列表增删最容易做砸的地方不是动画本身，是<strong>动画缺失</strong>——
+    项目瞬间跳位，用户还没看清删了哪条，下一秒已经找不到刚才在看的内容。
+  </p>
+
+  <div class="bar">
+    <button class="btn btn--sm btn--primary" id="add">添加一条</button>
+    <button class="btn btn--sm btn--secondary" id="sort">按记录数排序</button>
+    <button class="btn btn--sm btn--secondary" id="reverse">按名称倒序</button>
+    <button class="btn btn--sm btn--ghost" id="clear">清空</button>
+  </div>
+
+  <ul class="list" id="list" role="list"></ul>
+
+  <!-- 空状态：删光后显示，容器位置不变所以不跳动 -->
+  <div id="empty" hidden>
+    <div class="state state--empty">
+      <div class="state__icon" aria-hidden="true">□</div>
+      <h3 class="state__title">工作区里没有实体了</h3>
+      <p class="state__desc">导入一份 CSV，或者从沪深 300 全池里选一个起始集合。</p>
+      <div class="state__action">
+        <button class="btn btn--sm btn--primary" id="reload">导入 CSV</button>
+      </div>
+    </div>
+  </div>
+
+  <h2>请试这四件事</h2>
+
+  <p>
+    <strong>1. 删中间任意一条。</strong>上下两行会<strong>平滑滑过去</strong>，
+    不是瞬间跳位。盯着两行之间的缝隙看。
+  </p>
+  <p>
+    <strong>2. 点"按记录数排序"。</strong>整列重排，每一行各自从旧位置滑到新位置——
+    这也是 FLIP，只是位移不为零。
+  </p>
+  <p>
+    <strong>3. 鼠标横着扫过列表。</strong>行<strong>不会抖</strong>。
+    做法是左侧线用 <code>transparent</code> 预留 2px，hover 时只改颜色；
+    如果 hover 才加 border，内容会横移 1–2px，一眼能看出"在抖"。
+  </p>
+  <p>
+    <strong>4. 键盘 Tab 进列表。</strong>整行会亮起左边线——但 <strong>Tab 不会为每一行多停一次</strong>，
+    只在行内按钮上停。这是 <code>:focus-within</code> 的用途。
+  </p>
+
+  <h2>为什么不用 auto-animate</h2>
+  <div class="note">
+    评估过 auto-animate（8 KB min+gzip，精简档 装得下），但列表真正需要的
+    只有"增删时其余项平滑移动"这一件事——<strong>为此引入 8 KB 第三方，
+    要承担协议尽调与供应链风险，不划算</strong>。<br><br>
+    <code>flip.js</code> 用 <strong>FLIP</strong>（First-Last-Invert-Play）四步做这件事，
+    约 40 行，<strong>零依赖</strong>。顺带保证了 <code>prefers-reduced-motion</code>
+    下是<strong>完全跳过</strong>而不是"缩短"——位置直接到最终态。
+  </div>
+
+  <h2>涨跌色说明</h2>
+  <p class="small">
+    本库用<strong>红涨绿跌</strong>，与中国 A 股用户习惯一致。
+    这一点与欧美惯例相反，是刻意的——做反了会被当成数据出错。
+  </p>
+
+</main>
+
+<script src="flip.js"></script>
+<script>
+// 真实数据（某项目 企业分析工作区，WS_95 导入公司）——不是 User 123
+var SEED = [
+  { name: '中国平安',  rec: 26831, sector: '金融',     chg:  2.41 },
+  { name: '宁德时代',  rec: 19204, sector: '工业',     chg: -0.87 },
+  { name: '招商银行',  rec: 31556, sector: '金融',     chg:  1.13 },
+  { name: '比亚迪',    rec: 28912, sector: '工业',     chg:  3.69 },
+  { name: '长江电力',  rec: 17443, sector: '公用事业', chg: -1.24 },
+  { name: '中芯国际',  rec: 15827, sector: '半导体',   chg:  5.02 },
+  { name: '恒瑞医药',  rec: 16205, sector: '医药',     chg: -0.45 },
+  { name: '五粮液',    rec: 14188, sector: '消费',     chg:  1.87 }
+];
+
+var EXTRA = [
+  { name: '美的集团',  rec: 24310, sector: '家电',     chg:  0.64 },
+  { name: '兴业银行',  rec: 27905, sector: '金融',     chg: -0.31 },
+  { name: '海康威视',  rec: 18734, sector: '电子',     chg:  2.11 }
+];
+
+var list = document.getElementById('list');
+var emptyBox = document.getElementById('empty');
+var data = SEED.slice();
+var seq = 100;
+
+function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+
+/* 千分位。🔴 不用 toLocaleString —— 老 WebView 上行为不一致，
+   有些会返回带窄不换行空格（U+202F）的字符串，反而更糟。 */
+function num(n) {
+  return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+/* closest 的兼容回退。老 WebView（尤其 IE 系）没有 Element.closest。 */
+function closestOf(node, sel) {
+  if (node && node.closest) { return node.closest(sel); }
+  while (node && node !== document.body) {
+    if (node.getAttribute && node.getAttribute('data-del') !== null) { return node; }
+    node = node.parentNode;
+  }
+  return null;
+}
+
+function rowHtml(d) {
+  var id = d.id;
+  var dir = d.chg >= 0 ? 'up' : 'down';
+  var sign = d.chg >= 0 ? '+' : '';
+  /* 🔴 data-flip-id 是 FLIP 识别"同一个项"的唯一依据，缺了它动画整个失效。
+     <li> + .list__item 也必须有：容器是 <ul>，子元素必须是 <li>。 */
+  return '<li class="list__item" data-flip-id="' + id + '">' +
+    '<span class="list__main">' +
+      '<span class="list__title" title="' + esc(d.name) + '">' + esc(d.name) + '</span>' +
+      '<span class="list__meta">' + num(d.rec) +
+        ' 条记录 · ' + esc(d.sector) + '</span></span>' +
+    '<span class="list__value num list__value--' + dir + '">' +
+      sign + d.chg.toFixed(2) + '%</span>' +
+    '<span class="list__actions">' +
+      '<button class="btn btn--sm btn--ghost" data-del="' + id + '">移除</button>' +
+    '</span></li>';
+}
+
+function paint() {
+  // 一次性重建（真实项目里会做增量 diff；这里保持可读）
+  var html = '';
+  for (var i = 0; i < data.length; i++) { html += rowHtml(data[i]); }
+  list.innerHTML = html;
+  emptyBox.hidden = data.length > 0;
+}
+
+function repaint(mutate) {
+  FLIP.flip(list, function () {
+    mutate();
+    var html = '';
+    for (var i = 0; i < data.length; i++) { html += rowHtml(data[i]); }
+    list.innerHTML = html;
+    emptyBox.hidden = data.length > 0;
+  });
+}
+
+// 初始化：给每条一个稳定 id（FLIP 靠它识别"同一个项"）
+for (var i = 0; i < data.length; i++) { data[i].id = 'r' + (++seq); }
+
+// 事件委托：一次绑定，处理所有行
+list.addEventListener('click', function (e) {
+  var btn = closestOf(e.target, '[data-del]');
+  if (!btn || !btn.getAttribute) return;
+  var id = btn.getAttribute('data-del');
+  var victim = null;
+  for (var i = 0; i < data.length; i++) { if (data[i].id === id) victim = data[i]; }
+  if (!victim) return;
+
+  var node = list.querySelector('[data-flip-id="' + id + '"]');
+  var keep = victim;
+
+  // 先让被删的行淡出并留在原位，等它退场完毕再触发 FLIP 重排
+  FLIP.remove(list, node, function () {
+    repaint(function () {
+      for (var k = 0; k < data.length; k++) {
+        if (data[k].id === keep.id) { data.splice(k, 1); break; }
+      }
+    });
+  });
+});
+
+document.getElementById('add').onclick = function () {
+  var d = EXTRA.shift() || { name: '新增实体 ' + (seq), rec: 10000 + seq, sector: '未分类', chg: 0 };
+  d.id = 'r' + (++seq);
+  repaint(function () { data.unshift(d); });
+};
+
+document.getElementById('sort').onclick = function () {
+  repaint(function () {
+    data.sort(function (a, b) { return b.rec - a.rec; });
+  });
+};
+
+document.getElementById('reverse').onclick = function () {
+  repaint(function () {
+    data.sort(function (a, b) { return a.name.localeCompare(b.name, 'zh-Hans-CN'); });
+  });
+};
+
+document.getElementById('clear').onclick = function () {
+  repaint(function () { data = []; });
+};
+
+document.getElementById('reload').onclick = function () {
+  data = SEED.slice();
+  for (var i = 0; i < data.length; i++) { data[i].id = 'r' + (++seq); }
+  paint();
+};
+
+paint();
+</script>
+</body>
+</html>

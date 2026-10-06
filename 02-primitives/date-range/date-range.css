@@ -1,0 +1,193 @@
+/* ============================================================================
+   date-range.css — 日期区间（E3 /
+   ============================================================================
+   财务/成本场景刚需（"看上季度" "对比去年同期"）。
+
+   ⭐ 三件容易做错的事：
+     ① **必须有「清除」**：日期填错了要能一键清空
+        （没有清除按钮 = 用户只能一个个退格删日期）
+     ② **min/max 约束**：开始晚于结束、或超出范围时要**明确报错**
+     ③ **键盘可达**：三个快捷按钮（上季度/上月/今年）必须能 Tab 到
+   ============================================================================ */
+
+.drange {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--sp-3);
+}
+
+.drange__field { flex: 1 1 10rem; min-width: 0; }
+
+.drange__label {
+  display: block;
+  margin-bottom: var(--sp-1);
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+}
+
+.drange__input {
+  display: block;
+  width: 100%;
+  min-height: 44px;                    /* 🔴 命中区达标 */
+  padding: 0 var(--sp-3);
+  background: var(--surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-control);
+  border-radius: var(--r-sm);
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  color-scheme: light dark;             /* ⭐ 让原生日期选择器跟随主题 */
+}
+
+.drange__input:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* ⭐ 错误态：边框 + 图标（**不能只改颜色**）*/
+.drange__input[aria-invalid="true"] {
+  border-color: var(--danger);
+  border-width: 2px;
+  background: var(--surface-sunken);
+}
+
+.drange__input[aria-invalid="true"]::after { content: " ⚠"; }
+
+.drange__sep {
+  flex: 0 0 auto;
+  padding-bottom: var(--sp-3);
+  color: var(--text-tertiary);
+  font-size: var(--fs-sm);
+}
+
+/* ---------- 快捷按钮 ---------- */
+.drange__presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+}
+
+.drange__preset {
+  min-height: 32px;                     /* 密集数据表惯例（非 44）*/
+  padding: 0 var(--sp-3);
+  background: var(--surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-control);
+  border-radius: var(--r-pill);
+  font: inherit;
+  font-size: var(--fs-xs);
+  cursor: pointer;
+}
+
+.drange__preset:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .drange__preset:hover { background: var(--surface-sunken); }
+}
+
+.drange__preset[aria-pressed="true"] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* ---------- 错误提示 ---------- */
+.drange__error {
+  flex: 1 1 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--surface-sunken);
+  border-inset-inline-start: 3px solid var(--danger);
+  border-radius: var(--r-sm);
+  color: var(--danger);
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+}
+
+.drange__error[hidden] { display: none; }
+
+/* ---------- 摘要 ---------- */
+.drange__summary {
+  flex: 1 1 100%;
+  margin-top: var(--sp-2);
+  color: var(--text-secondary);
+  font-size: var(--fs-xs);
+}
+
+.drange__summary b {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+/* ---------- 清除按钮：44px 命中区 ---------- */
+.drange__clear {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 var(--sp-4);
+  background: var(--surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-control);
+  border-radius: var(--r-sm);
+  font: inherit;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+
+.drange__clear:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .drange__clear:hover { background: var(--surface-sunken); color: var(--text-primary); }
+}
+
+.drange__clear[disabled] {
+  background: var(--surface-sunken);
+  color: var(--text-tertiary);
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drange * { transition: none; }
+}
+
+/* ---------- 禁用态（states 门禁要求：HIGH 级形态不能缺）---------- */
+.drange__input:disabled {
+  background: var(--surface-sunken);
+  border-color: var(--border-decor);
+  color: var(--text-tertiary);
+  cursor: not-allowed;
+  /* ⛔ 不写 opacity —— 那会把文字对比度一起拉低 */
+}
+
+.drange__input:disabled:focus-visible {
+  outline: none;          /* 禁用态不该有焦点环 */
+}
+
+.drange--disabled .drange__preset,
+.drange--disabled .drange__clear {
+  background: var(--surface-sunken);
+  color: var(--text-tertiary);
+  border-color: var(--border-decor);
+  cursor: not-allowed;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .drange--disabled .drange__preset:hover,
+  .drange--disabled .drange__clear:hover {
+    background: var(--surface-sunken);
+    color: var(--text-tertiary);
+  }
+}

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>button · 七态矩阵</title>
+<!-- 直接引库内文件，不复制副本 —— token 一改这里同步生效。
+     要单文件部署到 某项目 时，把这两个 CSS 的内容粘进 <style> 即可。 -->
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="button.css">
+<style>
+  body { margin: 0; padding: var(--sp-7) var(--sp-5); background: var(--paper);
+         color: var(--text-primary); font: var(--fs-base)/var(--lh-base) system-ui, sans-serif; }
+  .wrap { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: var(--fs-2xl); line-height: var(--lh-tight); margin: 0 0 var(--sp-2); }
+  .lede { color: var(--text-secondary); margin: 0 0 var(--sp-7); }
+  h2 { font-size: var(--fs-lg); margin: var(--sp-8) 0 var(--sp-4);
+       padding-bottom: var(--sp-2); border-bottom: 1px solid var(--border-decor); }
+  .grid { display: grid; gap: var(--sp-3); grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+  .cell { background: var(--surface); border: 1px solid var(--border-decor);
+          border-radius: var(--r-md); padding: var(--sp-5); }
+  .cell h3 { margin: 0 0 var(--sp-1); font-size: var(--fs-sm); font-weight: 500; }
+  .cell p  { margin: 0 0 var(--sp-4); font-size: var(--fs-xs);
+             color: var(--text-tertiary); line-height: 1.55; }
+  .row { display: flex; gap: var(--sp-3); flex-wrap: wrap; align-items: center; }
+  code { font-family: var(--mono);   /* 2026-10-03：原为写死的 ui-monospace，统一走令牌 */ font-size: var(--fs-xs);
+         background: var(--surface-sunken); padding: 1px 5px; border-radius: 4px; }
+  .cmp { display: grid; gap: var(--sp-4); grid-template-columns: 1.55fr 1fr; }
+  @media (max-width: 640px) { .cmp { grid-template-columns: 1fr; } }
+  .cmp > div { padding: var(--sp-4); border-radius: var(--r-md); border: 1px solid var(--border-decor); }
+  .box { background: var(--surface); border: 1px solid var(--border-decor);
+         border-radius: var(--r-md); padding: var(--sp-5); }
+  .bad { background: var(--surface-sunken); }
+  .good { background: var(--surface-sunken); }
+  .cmp h3 { margin: 0 0 var(--sp-3); font-size: var(--fs-sm); font-weight: 500; }
+  .bad h3 { color: var(--danger); }
+  .good h3 { color: var(--success); }
+  /* 反例演示用 */
+  .btn--naive { height: 44px; padding: 0 var(--sp-5); border: none; border-radius: var(--r-sm);
+                background: var(--accent); color: #fff; cursor: pointer; font-size: var(--fs-sm);
+                transition: all 200ms; }
+  .btn--naive:hover { filter: brightness(1.08); transform: scale(1.05); }
+  .btn--naive:disabled { opacity: 0.5; }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <h1>button · 七态矩阵</h1>
+  <p class="lede">
+    按钮取七态，不是九态。另外两态（empty / error）属于容器，按钮没有"空"的概念。
+  </p>
+
+  <div class="note">
+    实测动机：某项目 的按钮只有 default + hover 两态，<code>:disabled</code> 0 处。
+    用户不会抱怨"你缺 disabled 态"，只会觉得"这个按钮点了没反应，是不是坏了"。
+  </div>
+
+  <h2>七态</h2>
+  <div class="grid">
+
+    <div class="cell">
+      <h3>1. default</h3>
+      <p>静止。accent 底 + 白字，实测 5.87 AA。</p>
+      <button class="btn btn--md btn--primary">提交</button>
+    </div>
+
+    <div class="cell">
+      <h3>2. hover</h3>
+      <p>明确的 <code>--accent-hover</code> 色值（白字 7.73 AAA），不是 brightness 计算。</p>
+      <button class="btn btn--md btn--primary">鼠标移上来</button>
+    </div>
+
+    <div class="cell">
+      <h3>3. active</h3>
+      <p>下沉 1px。<strong>只用 1px</strong>——用 4px/6px 会有果冻感，那是廉价感的主要来源。</p>
+      <button class="btn btn--md btn--primary">按住不放</button>
+    </div>
+
+    <div class="cell">
+      <h3>4. focus-visible</h3>
+      <p>键盘 Tab 到这里才出现。<code>:focus</code> 会让鼠标点击也冒框，所以用 <code>-visible</code>。</p>
+      <button class="btn btn--md btn--primary">Tab 键切过来</button>
+    </div>
+
+    <div class="cell">
+      <h3>5. disabled</h3>
+      <p>明确色值，<strong>不用 opacity</strong>——opacity 让对比度变成不可控的随机数。hover 无任何变化。</p>
+      <button class="btn btn--md btn--primary" disabled>已禁用</button>
+    </div>
+
+    <div class="cell">
+      <h3>6. loading</h3>
+      <p>宽度不变（label 与 spinner 同一 grid 单元，容器宽 = max(两者)）。<code>pointer-events:none</code> 防重复提交。</p>
+      <button class="btn btn--md btn--primary" aria-busy="true">
+        <span class="btn__label">提交</span><span class="btn__spinner"></span>
+      </button>
+    </div>
+
+    <div class="cell">
+      <h3>7. success</h3>
+      <p>仅用于不可逆动作（提交、支付）。普通操作加这个是噪音。</p>
+      <button class="btn btn--md btn--primary is-success">
+        <span class="btn__label">已提交</span><span class="btn__spinner"></span>
+      </button>
+    </div>
+
+    <div class="cell">
+      <h3>交互演示</h3>
+      <p>点一下：default → loading（1.4s）→ success（1.2s）→ 复位。注意宽度全程不变。</p>
+      <button class="btn btn--md btn--primary" id="demo">
+        <span class="btn__label">点我走一遍</span><span class="btn__spinner"></span>
+      </button>
+    </div>
+
+  </div>
+
+  <h2>变体</h2>
+  <div class="row">
+    <button class="btn btn--md btn--primary">primary</button>
+    <button class="btn btn--md btn--secondary">secondary</button>
+    <button class="btn btn--md btn--ghost">ghost</button>
+    <button class="btn btn--md btn--danger">danger</button>
+  </div>
+  <p style="font-size:var(--fs-xs); color:var(--text-tertiary); margin-top:var(--sp-3)">
+    一个视图里只能有一个 primary。danger 不应该做得和 primary 一样显眼。
+  </p>
+
+  <h2>尺寸</h2>
+  <div class="row">
+    <button class="btn btn--sm btn--primary">sm 32</button>
+    <button class="btn btn--md btn--primary">md 44</button>
+    <button class="btn btn--lg btn--primary">lg 52</button>
+  </div>
+  <p style="font-size:var(--fs-xs); color:var(--text-tertiary); margin-top:var(--sp-3)">
+    md = 44px 是 WCAG 2.5.5 增强级的触摸目标尺寸，来自手指物理尺寸，不是审美。
+    sm 只在表格行内等鼠标场景用。
+  </p>
+
+  <h2>对比：常见的错写法 vs 本库写法</h2>
+  <div class="cmp">
+    <div class="box bad">
+      <h3>常见写法（某项目 现状）</h3>
+      <div class="row">
+        <button class="btn--naive">hover 看我</button>
+        <button class="btn--naive" disabled>disabled 看我</button>
+      </div>
+      <p style="font-size:var(--fs-xs); margin:var(--sp-3) 0 0; color:var(--text-secondary)">
+        <code>filter: brightness(1.08)</code> —— hover 色是算出来的，无法验证对比度，不同底色表现不一致。<br>
+        <code>transform: scale(1.05)</code> —— 按钮"长大"，廉价感。<br>
+        <code>opacity: 0.5</code> —— 对比度变成随机数。<br>
+        <code>transition: all</code> —— 所有属性一起动画，性能和观感失控。
+      </p>
+    </div>
+    <div class="good">
+      <h3>本库写法</h3>
+      <div class="row">
+        <button class="btn btn--md btn--primary">hover 看我</button>
+        <button class="btn btn--md btn--primary" disabled>disabled 看我</button>
+      </div>
+      <p style="font-size:var(--fs-xs); margin:var(--sp-3) 0 0; color:var(--text-secondary)">
+        明确的 <code>--accent-hover</code> 色值，实测 7.73 AAA。<br>
+        active 只下沉 1px。<br>
+        disabled 用明确的低对比色组，仍可读。<br>
+        逐属性写 transition，只动颜色和 transform。
+      </p>
+    </div>
+  </div>
+
+  <h2>一个容易被跳过的判断：disabled 还是 aria-disabled</h2>
+  <div class="grid">
+    <div class="cell">
+      <h3>disabled 属性</h3>
+      <p>从 Tab 顺序移除，键盘用户永远找不到它。适合<strong>永久</strong>不可用（权限不足）。</p>
+      <button class="btn btn--md btn--secondary" disabled>功能未开放</button>
+    </div>
+    <div class="cell">
+      <h3>aria-disabled="true"</h3>
+      <p>保留可聚焦，屏幕阅读器读"不可用"。表单提交按钮<strong>应该用这个</strong>——用户 Tab 到它才知道"还差点什么"。</p>
+      <button class="btn btn--md btn--secondary" aria-disabled="true">请先填写金额</button>
+    </div>
+  </div>
+
+  <h2>spinner 与 prefers-reduced-motion</h2>
+  <div class="note">
+    系统开启"减少动效"后，全局兜底会把动画压到 0.01ms——spinner 就停了，用户会以为页面卡死。<br><br>
+    WCAG 的 reduced-motion 针对的是<strong>大幅位移</strong>（前庭功能障碍），
+    小幅原地旋转不属于此类。本库的做法是<strong>放慢到 1.2s 但保留，不停</strong>。<br><br>
+    这是"照抄规范"和"理解规范"的区别。
+  </div>
+
+<script>
+  var b = document.getElementById('demo');
+  b.addEventListener('click', function () {
+    if (b.getAttribute('aria-busy') === 'true') return;
+    b.setAttribute('aria-busy', 'true');
+    setTimeout(function () {
+      b.removeAttribute('aria-busy');
+      b.classList.add('is-success');
+      b.querySelector('.btn__label').textContent = '已提交';
+      setTimeout(function () {
+        b.classList.remove('is-success');
+        b.querySelector('.btn__label').textContent = '点我走一遍';
+      }, 1200);
+    }, 1400);
+  });
+</script></main>
+</body>
+</html>

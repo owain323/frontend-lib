@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>combobox · 组合框 · frontend-lib</title>
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/focus-ring.css">
+<link rel="stylesheet" href="combobox.css">
+<style>
+  body { margin: 0; padding: var(--sp-7) var(--sp-5); background: var(--paper); }
+  .wrap { max-width: 44rem; margin: 0 auto; }
+  h1 { font-size: var(--fs-2xl); margin: 0 0 var(--sp-2); }
+  h2 { font-size: var(--fs-lg); margin: var(--sp-7) 0 var(--sp-3); }
+  .note {
+    padding: var(--sp-3) var(--sp-4); margin: 0 0 var(--sp-4);
+    background: var(--surface-sunken); border-radius: var(--r-sm);
+    font-size: var(--fs-sm); color: var(--text-secondary); line-height: 1.6;
+  }
+  .pad { padding: var(--sp-3) 0 var(--sp-6); }
+  label.f { display: block; margin-bottom: var(--sp-1); font-size: var(--fs-sm); }
+  .log {
+    margin-top: var(--sp-3); padding: var(--sp-3);
+    background: var(--surface-sunken); border-radius: var(--r-sm);
+    font-family: var(--mono); font-size: var(--fs-xs);
+    color: var(--text-secondary); min-height: 2.8em;
+  }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+<h1>combobox · 组合框 / 标签输入</h1>
+<p class="note">
+  依据 <strong>APG Combobox with List Autocomplete</strong>。三条最容易漏：
+  <br>① <strong>焦点始终在 input 上</strong>（靠 <code>aria-activedescendant</code> 告知读屏）
+  —— ⚠️ 与树（roving tabindex）<strong>正好相反</strong>，用错会出现"点选项后输入框失焦"
+  <br>② <code>Backspace</code> 在空输入时删最后一个标签
+  <br>③ <code>Enter</code> 加当前高亮项
+  <br>另：命中片段会<strong>高亮</strong>，让你知道为什么这条匹配
+</p>
+
+<h2>1 · 板块多选（最多 3 个）</h2>
+<div class="pad">
+  <label class="f" for="cb1">关注板块</label>
+  <div class="combo" id="c1">
+    <div class="combo__field">
+      <div class="combo__tags" data-combo-tags></div>
+      <!-- 🔴 input 必须在 .combo__field **内部**（:focus-within 才生效）；
+           放在外面会变成兄弟节点 ⇒ 焦点环永远不出现。 -->
+      <!-- 🔴 补 id：label for="cb1" 之前指向一个**不存在的元素**
+           ⇒ 点标签聚焦不到输入框，读屏也关联不上（WCAG 1.3.1 / 4.1.2） -->
+      <input class="combo__input" data-combo-input type="text" id="cb1"
+             placeholder="输入后回车添加，或用逗号分隔" autocomplete="off">
+    </div>
+    <ul class="combo__list" data-combo-list hidden></ul>
+    <input type="hidden" name="sectors">
+  </div>
+  <div class="log" id="log">（已选标签会显示在这里，也会写进 hidden input）</div>
+</div>
+
+<h2>2 · 单个（可清除）</h2>
+<div class="pad">
+  <label class="f" for="cb2">对标公司</label>
+  <div class="combo" id="c2">
+    <div class="combo__field">
+      <div class="combo__tags" data-combo-tags></div>
+      <input class="combo__input" data-combo-input type="text"
+             placeholder="输入公司名" autocomplete="off" id="cb2">
+    </div>
+    <ul class="combo__list" data-combo-list hidden></ul>
+  </div>
+</div>
+
+</main>
+
+<script src="combobox.js"></script>
+<script>
+(function () {
+  var log = document.getElementById('log');
+  var SECTORS = [
+    { value: 'semi',  label: '半导体' },
+    { value: 'ai',    label: '人工智能' },
+    { value: 'newenergy', label: '新能源' },
+    { value: 'pharma', label: '医药生物' },
+    { value: 'consume', label: '消费' },
+    { value: 'finance', label: '金融' },
+    { value: 'ai2',   label: 'AI 智能驾驶' },
+  ];
+  var FIRMS = [
+    { value: '600519', label: '贵州茅台' },
+    { value: '300750', label: '宁德时代' },
+    { value: '002594', label: '比亚迪' },
+    { value: '601318', label: '招商银行' },
+    { value: '000333', label: '美的集团' },
+  ];
+
+  /* 🔴 挂到 window：给契约脚本当探针用
+     （否则契约没法直接调 add/remove 验证"不重复添加"这类逻辑） */
+  window.__cb1 = Combobox.create(document.getElementById('c1'), {
+    label: '关注板块', options: SECTORS, max: 3,
+    onChange: function (t) {
+      var hidden = document.querySelector('#c1 input[type=hidden]');
+      log.textContent = '已选 ' + t.length + ' 个：' + t.join(', ') +
+                        '   hidden=' + (hidden ? hidden.value : '(无)');
+    },
+  });
+
+  Combobox.create(document.getElementById('c2'), {
+    label: '对标公司', options: FIRMS, max: 1,
+  });
+})();
+</script>
+</body>
+</html>

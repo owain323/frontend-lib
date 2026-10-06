@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>容器四态 · 真实场景</title>
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../02-primitives/button/button.css">
+<link rel="stylesheet" href="states.css">
+<style>
+  body { margin: 0; background: var(--paper); color: var(--text-primary);
+         font: var(--fs-base)/var(--lh-base) system-ui, sans-serif; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: var(--sp-7) var(--sp-5) var(--sp-8); }
+
+  /* 这一屏唯一的视觉焦点：标题。窄到必然换行 —— 标题才有存在感 */
+  h1 { font-size: var(--fs-2xl); line-height: var(--lh-tight);
+       letter-spacing: -0.02em; margin: 0 0 var(--sp-3);
+       max-width: var(--measure-title); }
+  .standfirst { font-size: var(--fs-md); color: var(--text-secondary);
+                max-width: var(--measure-lede); margin: 0 0 var(--sp-6); line-height: 1.6; }
+
+  h2 { font-size: var(--fs-lg); margin: var(--sp-8) 0 var(--sp-3); max-width: var(--measure-title); }
+  h3 { font-size: var(--fs-md); margin: var(--sp-6) 0 var(--sp-2); }
+  p  { max-width: var(--measure-prose); margin: 0 0 var(--sp-3); }
+  p.lead { color: var(--text-secondary); }
+
+  code { font-family: var(--mono);   /* 2026-10-03：原为写死的 ui-monospace，统一走令牌 */ font-size: 0.9em;
+         background: var(--surface-sunken); padding: 1px 5px; border-radius: 4px; }
+  .rule { border: 0; border-top: 1px solid var(--border-decor); margin: var(--sp-7) 0; }
+
+  /* 状态切换器：四个按钮会读成"四张卡的导航"，分段控件读成"一个东西的四个状态" */
+  .seg { display: inline-flex; border: 1px solid var(--border-control);
+         border-radius: var(--r-sm); overflow: hidden; margin-bottom: var(--sp-4); }
+  .seg button { appearance: none; border: 0; background: var(--surface);
+                padding: 9px 16px; font: inherit; font-size: var(--fs-xs);
+                color: var(--text-secondary); cursor: pointer;
+                border-right: 1px solid var(--border-decor); }
+  .seg button:last-child { border-right: 0; }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: var(--text-on-accent); }
+  .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+  /* 舞台：整页唯一有边框的东西，因为它是演示主体 */
+  #stage { border: 1px solid var(--border-decor-str); border-radius: var(--r-md);
+           background: var(--surface); overflow: hidden; }
+  .stage-bar { display: flex; align-items: baseline; gap: var(--sp-3);
+               padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--border-decor);
+               background: var(--surface-sunken); }
+  .stage-bar strong { font-size: var(--fs-sm); }
+  .stage-bar span { font-size: var(--fs-xs); color: var(--text-tertiary); }
+  .stage-body { padding: var(--sp-2) 0; min-height: 288px; }
+
+  /* 真实数据行 */
+  .row { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); }
+  .row + .row { border-top: 1px solid var(--border-decor); }
+  .row:hover { background: var(--surface-sunken); }
+  .row__t { flex: 1; min-width: 0; }
+  .row__name { font-size: var(--fs-sm); }
+  .row__meta { font-size: var(--fs-xs); color: var(--text-tertiary); }
+  .tag { font-size: var(--fs-xs); padding: 2px 8px; border-radius: var(--r-pill);
+         border: 1px solid var(--border-decor); color: var(--text-secondary); white-space: nowrap; }
+  .tag--up   { color: var(--danger);  border-color: var(--danger); }
+  .tag--down { color: var(--success); border-color: var(--success); }
+
+  .aside { background: var(--warning-bg); 
+           padding: var(--sp-3) var(--sp-4); font-size: var(--fs-sm);
+           max-width: var(--measure-prose); margin: var(--sp-4) 0; line-height: 1.65; }
+  .cmp2 { display: grid; gap: var(--sp-5); grid-template-columns: 1.55fr 1fr; align-items: start; }
+  @media (max-width: 620px) { .cmp2 { grid-template-columns: 1fr; } }
+  .lbl { font-size: var(--fs-xs); color: var(--text-tertiary);
+         margin-bottom: var(--sp-2); display: block; }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <h1>加载中和没有数据，是两件事</h1>
+  <p class="standfirst">
+    视觉上它们都是"一片空白"，但含义完全相反。前者是"在动"，后者是"没东西"。
+    混成一个，用户会以为系统坏了 —— 而他可能只是等了三秒。
+  </p>
+
+  <div class="seg" role="group" aria-label="切换状态">
+    <button type="button" data-s="content" aria-pressed="true">有数据</button>
+    <button type="button" data-s="loading" aria-pressed="false">加载中</button>
+    <button type="button" data-s="empty"   aria-pressed="false">空</button>
+    <button type="button" data-s="error"   aria-pressed="false">出错</button>
+  </div>
+
+  <div id="stage">
+    <div class="stage-bar">
+      <strong>企业分析工作区</strong>
+      <span id="stage-meta">331 实体 · 861k 条财务记录</span>
+    </div>
+    <div class="stage-body" id="stage-body" aria-live="polite"></div>
+  </div>
+
+  <p class="aside">
+    切换时注意两件事：<strong>只有数据行在动，页头和工具条不动</strong>（布局稳定）；
+    <strong>从"出错"点回"有数据"</strong>，内容出现的位置正好是它原来的位置。
+  </p>
+
+  <hr class="rule">
+
+  <h2>每态都必须给出口</h2>
+  <p class="lead">
+    只描述现状不给动作，等于把用户卡死在那儿。这是四态里最容易漏的一条。
+  </p>
+  <p>
+    <strong>空</strong> —— 必须说明<em>为什么</em>是空的，并给下一步。
+    "还没有导入任何公司" 比 "暂无数据" 有用得多：前者告诉用户他在哪、缺什么。
+  </p>
+  <p>
+    <strong>出错</strong> —— 必须能恢复。只写"出错了"是死路，而且刷新往往解决不了问题
+    （参数错了、文件格式不对）。要告诉用户<em>哪里错了、怎么改</em>。
+  </p>
+  <p>
+    <strong>成功</strong> —— 是过渡态不是停留态。普通操作的成功反馈用按钮的
+    <code>.is-success</code>（1.2 秒自动消失），别做成一个整页。
+  </p>
+
+  <hr class="rule">
+
+  <h2>骨架屏还是 spinner：看结构是否已知</h2>
+  <div class="cmp2">
+    <div>
+      <span class="lbl">结构已知 · 骨架屏</span>
+      <div style="border:1px solid var(--border-decor); border-radius:var(--r-sm); padding:var(--sp-4)"
+           role="status" aria-live="polite" aria-label="正在加载内容">
+        <div class="skeleton skeleton--title" aria-hidden="true"></div>
+        <div class="skeleton skeleton--text" aria-hidden="true"></div>
+        <div class="skeleton skeleton--text" aria-hidden="true"></div>
+        <div class="skeleton skeleton--text" aria-hidden="true"></div>
+        <div class="skeleton skeleton--block" style="margin-top:var(--sp-3)" aria-hidden="true"></div>
+      </div>
+      <p style="font-size:var(--fs-xs); color:var(--text-tertiary); margin-top:var(--sp-2)">
+        知道会来"标题 + 三行 + 一张图"，就照这个结构画占位。
+        价值不在好看，在于<strong>内容到位时不跳动</strong>。
+      </p>
+    </div>
+    <div>
+      <span class="lbl">结构未知 · spinner</span>
+      <div style="border:1px solid var(--border-decor); border-radius:var(--r-sm);
+                  min-height:170px; display:grid; place-items:center">
+        <div class="spinner"></div>
+      </div>
+      <p style="font-size:var(--fs-xs); color:var(--text-tertiary); margin-top:var(--sp-2)">
+        🔴 别在结构未知时用骨架屏。画出来的结构跟实际不一致，
+        内容到位时布局会剧烈跳动 —— <strong>那是在撒谎</strong>。
+      </p>
+    </div>
+  </div>
+
+  <hr class="rule">
+
+  <h2>300ms：不显示比闪一下好</h2>
+  <p>
+    请求在 300ms 内返回时<strong>不要显示加载态</strong>。骨架屏闪一下比不显示更糟 ——
+    那是一次无意义的闪烁，反而让人觉得卡。正确做法是延迟 300ms 再显示（约 10 行 JS）。
+  </p>
+
+  <hr class="rule">
+
+  <h2>reduced-motion 下，两个动画处理相反</h2>
+  <p>
+    同样是"加载中的动画"，一个保留一个去掉。<strong>判断依据是去掉后是否损失信息</strong>：
+  </p>
+  <p>
+    <strong>spinner 保留但放慢</strong> —— 它停了用户会以为页面卡死。
+    reduced-motion 针对的是大幅位移（前庭功能障碍），小幅度原地旋转不属于此类。
+  </p>
+  <p>
+    <strong>骨架屏扫光停止</strong> —— 静态占位块仍然传达"这里有内容正在来"，
+    不损失信息；而扫光恰好是横向位移，正是要减少的那类。
+  </p>
+
+<script>
+// 真实数据 —— 不是 User 123，不是 Lorem ipsum
+// 这是模板生成器做不出来的部分：本库所有 demo 都用真实项目的真数据
+var DATA = [
+  { name: '中国平安', meta: '26,831 条记录 · 金融',  chg: '+2.41%', dir: 'up' },
+  { name: '宁德时代', meta: '19,204 条记录 · 工业',  chg: '-0.87%', dir: 'down' },
+  { name: '招商银行', meta: '31,556 条记录 · 金融',  chg: '+1.13%', dir: 'up' },
+  { name: '比亚迪',   meta: '28,912 条记录 · 工业',  chg: '+3.69%', dir: 'up' },
+  { name: '长江电力', meta: '17,443 条记录 · 公用事业', chg: '-1.24%', dir: 'down' }
+];
+
+var body = document.getElementById('stage-body');
+var meta = document.getElementById('stage-meta');
+
+function rows() {
+  return DATA.map(function (d) {
+    return '<div class="row"><div class="row__t">' +
+      '<div class="row__name">' + d.name + '</div>' +
+      '<div class="row__meta">' + d.meta + '</div></div>' +
+      '<span class="tag ' + (d.dir === 'up' ? 'tag--up' : 'tag--down') + '">' +
+      d.chg + '</span></div>';
+  }).join('');
+}
+
+var VIEWS = {
+  content: function () {
+    meta.textContent = '331 实体 · 861k 条财务记录';
+    return rows();
+  },
+  loading: function () {
+    meta.textContent = '正在读取…';
+    return '<div class="state state--loading" aria-busy="true" style="min-height:288px">' +
+           '<div class="spinner"></div>' +
+           '<p class="state__desc">正在读取 861k 条记录…</p></div>';
+  },
+  empty: function () {
+    meta.textContent = '0 条记录';
+    return '<div class="state state--empty" style="min-height:288px">' +
+      '<div class="state__icon" aria-hidden="true">□</div>' +
+      '<p class="state__title">这个时间范围下还没有记录</p>' +
+      '<p class="state__desc">WS_95 的公司从 2024 年才开始有数据。' +
+      '把范围放宽到 2023 年试试，或者改看沪深 300 全池。</p>' +
+      '<div class="state__action">' +
+      '<button class="btn btn--sm btn--primary" type="button">放宽到 2023</button>' +
+      '<button class="btn btn--sm btn--secondary" type="button">改看全池</button>' +
+      '</div></div>';
+  },
+  error: function () {
+    meta.textContent = '读取失败';
+    return '<div class="state state--error" role="alert" style="min-height:288px">' +
+      '<div class="state__icon" aria-hidden="true">!</div>' +
+      '<p class="state__title">没能连上数据库</p>' +
+      '<p class="state__desc">连接在读取第 <span class="num">12,480</span> 条时超时。' +
+      '刚才的筛选条件还在，重试即可，不用重新设一遍。</p>' +
+      '<div class="state__action">' +
+      '<button class="btn btn--sm btn--primary" type="button">重试</button>' +
+      '<button class="btn btn--sm btn--secondary" type="button">复制诊断信息</button>' +
+      '</div></div>';
+  }
+};
+
+function show(k) { body.innerHTML = VIEWS[k](); }
+
+Array.prototype.forEach.call(document.querySelectorAll('.seg button'), function (b) {
+  b.addEventListener('click', function () {
+    Array.prototype.forEach.call(document.querySelectorAll('.seg button'), function (x) {
+      x.setAttribute('aria-pressed', 'false');
+    });
+    b.setAttribute('aria-pressed', 'true');
+    show(b.dataset.s);
+  });
+});
+
+show('content');
+</script></main>
+</body>
+</html>

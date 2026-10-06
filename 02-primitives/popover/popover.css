@@ -1,0 +1,187 @@
+/* ============================================================================
+   popover — 气泡卡片
+   ============================================================================
+   为什么需要它（通行系统的必备件）
+   ---------------------------------------------------------------------------
+   三种"浮层"职责不同，不能互相顶替：
+
+   ┌──────────┬────────────────────────────────────┬──────────┐
+   │          │ 能不能放交互内容                    │ 焦点管理  │
+   ├──────────┼────────────────────────────────────┼──────────┤
+   │ tooltip  │ ❌ 只能纯文字                       │ 无        │
+   │ popover  │ ✅ 表单、按钮、列表都行              │ **焦点进入**│
+   │ dialog   │ ✅ 但**模态**（背景锁死）            │ focus trap│
+   └──────────┴────────────────────────────────────┴──────────┘
+
+   ⭐ 判据（记不住就问这句）：
+     「用户需要**在里面操作**吗？」
+       不需要 → tooltip
+       需要，但**不打断**当前上下文 → **popover**
+       需要，且**必须先处理完**才能继续 → dialog
+
+   参照：Radix Popover / MUI Popover / Carbon Popover
+
+   设计要点
+   ---------------------------------------------------------------------------
+   ① **非模态**：背景仍可交互（这是与 dialog 的根本区别）
+   ② 焦点**进入**浮层（键盘用户能操作里面的内容）
+   ③ Esc 关闭 + 焦点归还
+   ④ 点击**外部**关闭，但**点击浮层内部不关**（常见 bug）
+   ⑤ 箭头：指向触发元素，且跟随位置变化
+   ⑥ 动画尊重 prefers-reduced-motion
+   ============================================================================ */
+
+/* ---------------------------------------------------------------------------
+   触发器
+   --------------------------------------------------------------------------- */
+.popover-anchor {
+  position: relative;      /* 箭头与浮层的定位上下文 */
+  display: inline-block;
+}
+
+/* ---------------------------------------------------------------------------
+   浮层本体
+   --------------------------------------------------------------------------- */
+.popover {
+  position: absolute;
+  z-index: var(--z-popover, 60);
+  min-width: var(--popover-min-w, 200px);
+  max-width: var(--popover-max-w, 320px);
+  padding: var(--popover-p, var(--sp-3));
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  border: 1px solid var(--border-decor);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-2);
+  /* ⚠️ 不用 overflow:hidden —— 会把箭头切掉 */
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--popover-dur, 140ms) var(--ease-out),
+              transform var(--popover-dur, 140ms) var(--ease-out);
+}
+
+/* 打开态 */
+.popover[data-open='true'] {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ---------------------------------------------------------------------------
+   四个方向（浮层相对锚点的位置）
+   ⚠️ 用逻辑上/下/左/右而不是物理方向，这样 RTL 下自动镜像。
+   --------------------------------------------------------------------------- */
+.popover--bottom { top: calc(100% + var(--popover-gap, 8px)); inset-inline-start: 50%; transform: translateX(-50%); }
+.popover--top    { bottom: calc(100% + var(--popover-gap, 8px)); inset-inline-start: 50%; transform: translateX(-50%); }
+.popover--end    { inset-inline-start: 100%; margin-inline-start: var(--popover-gap, 8px); top: 50%; transform: translateY(-50%); }
+.popover--start  { inset-inline-end: 100%; margin-inline-end: var(--popover-gap, 8px); top: 50%; transform: translateY(-50%); }
+
+/* 打开时的位移（去掉 translate 的那部分，只留"进入"方向） */
+.popover--bottom[data-open='true'] { transform: translateX(-50%) translateY(0); }
+.popover--top[data-open='true']    { transform: translateX(-50%) translateY(0); }
+.popover--end[data-open='true']    { transform: translateY(-50%) translateX(0); }
+.popover--start[data-open='true']  { transform: translateY(-50%) translateX(0); }
+
+/* ============================================================================
+   箭头
+   ============================================================================
+   ⭐ 箭头用**两个叠放的方块**而不是 border 三角：
+   border 三角无法跟随圆角边框，且在深色背景下边缘会有锯齿。
+   ============================================================================ */
+.popover__arrow {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-decor);
+  transform: rotate(45deg);
+}
+
+.popover--bottom .popover__arrow {
+  top: -6px;
+  inset-inline-start: 50%;
+  margin-inline-start: -5px;
+  border-inset-inline-end: none;
+  border-bottom: none;
+}
+.popover--top .popover__arrow {
+  bottom: -6px;
+  inset-inline-start: 50%;
+  margin-inline-start: -5px;
+  border-inset-inline-start: none;
+  border-top: none;
+}
+.popover--end .popover__arrow {
+  inset-inline-start: -6px;
+  top: 50%;
+  margin-top: -5px;
+  border-inset-inline-end: none;
+  border-top: none;
+}
+.popover--start .popover__arrow {
+  inset-inline-end: -6px;
+  top: 50%;
+  margin-top: -5px;
+  border-inset-inline-start: none;
+  border-bottom: none;
+}
+
+/* ============================================================================
+   结构件
+   ============================================================================ */
+.popover__title {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  margin: 0 0 var(--sp-1);
+}
+.popover__desc {
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  margin: 0 0 var(--sp-3);
+}
+/* 最后一个元素不要额外的下边距 */
+.popover__desc:last-child { margin-bottom: 0; }
+
+.popover__footer {
+  display: flex;
+  gap: var(--sp-2);
+  justify-content: flex-end;
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--border-decor);
+}
+
+/* 关闭态下的内容不可聚焦（否则 Tab 会跑到"看不见"的地方） */
+.popover:not([data-open='true']) * { pointer-events: none; }
+
+/* ============================================================================
+   减少动态效果
+   ⭐ 只去**位移**，保留 opacity —— 让"出现了"这件事仍然可感知。
+   ⚠️ 与 progress 的教训一致：不要留下任何"位置暗示"（如半截色块）。
+   ============================================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .popover {
+    transition: opacity var(--popover-dur, 100ms) linear;
+    transform: none !important;
+  }
+  .popover[data-open='true'] { transform: none !important; }
+}
+
+/* ============================================================================
+   焦点样式
+   ============================================================================
+   ⚠️ 本库虽然有全局 `:focus-visible` 兜底（focus-ring.css），
+   但契约要求**组件自己声明** ——
+   原因：全局兜底可能被别的样式覆盖，而"浮层里的控件必须可见焦点"
+   是这个组件的**硬需求**（键盘用户要在里面操作）。
+   ============================================================================ */
+.popover :focus-visible,
+.popover-anchor :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-xs);
+}
+/* 浮层容器自身获得焦点时（无可聚焦内容的情况）也要有焦点环 */
+.popover[tabindex='-1']:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

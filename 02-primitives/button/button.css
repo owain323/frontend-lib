@@ -1,0 +1,350 @@
+/* ============================================================================
+   frontend-lib / 02-primitives / button / button.css
+   按钮 · 状态矩阵完整实现
+
+   依赖：01-tokens/tokens.css（必须先加载）
+   版本：A ✅ / B ✅ / C ✅  —— 纯 CSS，无 JS 依赖，可整段复制
+
+   🔴 关于"九态"的正确理解：不是每个组件都要九个态。
+      按钮取前六态 + success；容器/列表取后四态。混着套会做出多余的东西。
+
+      ┌ 交互元素（按钮、链接、开关）
+      │   default → hover → active → focus-visible → disabled → loading → success
+      └ 容器（列表、卡片区、表单体）
+          content → empty → loading → error → success
+
+      按钮没有 empty / error 态 —— "按钮是空的"没有意义。
+      容器没有 hover / active 态 —— 容器不响应按压。
+   ========================================================================= */
+
+/* ---------------------------------------------------------------- 基础
+   🔴 2026-10-02 改用 **grid 叠放**（原 inline-flex + absolute 定位）：
+
+   Owner 报"按着不动，加载内容就叠上来了"。根因是：
+   inline-flex 容器里，文字**没有溢出保护**，
+   而 spinner 是 position:absolute 居中 —— 文字一长就溢出按钮边界，
+   与 spinner **物理重叠**，两个词叠在一起。
+
+   改法：把 label 与 spinner 放进**同一个 grid 单元**（grid-area: stack）。
+   这样：
+     · 物理上不可能重叠（同一格）
+     · 容器宽度 = max(两者) ⇒ 切换时宽度**自动不变**，不需要手算
+     · 不再依赖 absolute 定位 ⇒ 不会和 :active 的 transform 打架
+*/
+.btn {
+  /* 全部使用 token。出现任何硬编码的 px 色值都是分层崩了。 */
+  display: inline-grid;
+  grid-template-areas: "stack";
+  place-items: center;
+
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+
+  /* 🔴 2026-10-02 补回：改 grid 那一版把 height / padding 弄丢了，
+     而 .btn--sm/md/lg 才有它们 —— 于是「不写 size 类」的地方（弹窗按钮、
+     JS 生成的按钮）就只剩内容高度 + 零 padding，**文字直接顶着边框**。
+     Owner 报"框又小、文字顶着方框"，根因就在这里。
+
+     默认尺寸必须是**可用的**（44px 触摸目标），不该要求每个调用方都记得加 size 类。 */
+  min-height: 44px;
+  padding: 0 var(--sp-5);
+
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  user-select: none;
+  text-decoration: none;
+
+  /* 🔴 兜底：即使内容异常长也不许溢出边界 */
+  overflow: hidden;
+  max-width: 100%;
+
+  /* 动效只用 token 里的那一组 —— 一源原则 */
+  transition: background-color var(--dur-fast) var(--ease-out),
+              border-color     var(--dur-fast) var(--ease-out),
+              color            var(--dur-fast) var(--ease-out),
+              transform        var(--dur-fast) var(--ease-out);
+}
+
+/* ---------------------------------------------------------------- 尺寸
+   三档。md 是 44px —— 不是随便定的：
+   WCAG 2.5.5 增强级要求触摸目标 >= 44x44，这是手指的物理尺寸，不是审美。
+   sm 只用在表格行内等密集处（那里用户用鼠标，不是手指）。
+   ---------------------------------------------------------------- */
+/* 🔴 每个变体都要同时写 min-height，且选择器用 **.btn.btn--xx 双类**
+     （特异度 0,2,0 > .btn 的 0,1,0 ⇒ 不依赖源码顺序，改文件也不会失效）
+     —— 原来的 .btn 上的 min-height:44px
+   在层叠里永远赢过 height，只写 height 的变体会被压回 44px，"小按钮"就没了。 */
+/* ============================================================================
+   🔴 2026-10-04 **修正变体高度被压平**（clicktest 门禁实测：sm/md/lg 全是 44px）
+
+   真因（做了 5 组浏览器实验才定位，不是猜的）：
+     `.btn` 基类是 `display: inline-grid` + `grid-template-areas: "stack"`
+     ⇒ 网格行是 **auto**（由内容撑开）
+     ⇒ 变体里同时写 `min-height: 32px` **和** `height: 32px` 时，
+        **`height` 反而成了下限**，把 32px 顶不上去；
+     ⇒ 实测：单独把 `min-height` 压到 32px ⇒ 高度**立刻变成 32px** ✅
+        （加 `grid-template-rows: 32px` 也是 32，效果相同）
+
+   ⚠️ 教训（grid 容器特有）：
+      **grid/flex 容器上不要同时写 `height` 与 `min-height`** ——
+      `height` 会变成硬下限，变体就再也压不下去。
+      只写 `min-height`（下限可被内容顶大）才是变体该用的。
+
+   ⇒ 修法：变体**只保留 `min-height`**，删掉 `height`。
+   ============================================================================ */
+.btn.btn--sm {
+  /* 🔴 2026-10-05 修正（button 契约抓到：命中区 60×32，违反 WCAG 2.5.5 AAA）
+
+     ⚠️ 上一轮我写的注释是**错的**：「命中区由基类的 min-height 44px 兜底」
+     —— 事实是 `.btn.btn--sm` 的**特异性 (0,2,0) 高于**基类 `.btn` (0,1,0)，
+     所以 `min-height: 32px` **把基类的 44px 盖掉了** ⇒ 命中区真的只有 32px。
+
+     ⭐ 正确做法（业界标准）：**视觉 32px，命中区 44px**，两者分开。
+       用 `::after` 伪元素在垂直方向各扩 6px（不占布局、不影响相邻元素）：
+
+           视觉高度 = min-height 32px   （看起来就是个小按钮）
+           命中区域 = 32 + 6 + 6 = 44px  （手指落点够大）
+
+       ⚠️ 为什么不用 `padding` 撑：会让按钮**真的变高**，
+          视觉上就不是"小按钮"了，与设计意图相反。
+       ⚠️ 为什么 `position: relative` 是必需的：
+          伪元素要相对按钮定位，按钮本身必须是定位上下文。 */
+  position: relative;
+  min-height: var(--sz-touch-sm, 32px);
+  padding: 0 var(--sp-3);
+  font-size: var(--fs-xs);
+}
+
+/* sm 变体的命中区扩展：垂直方向补足到 44px（WCAG 2.5.5 Level AAA） */
+.btn.btn--sm::after {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  inset-inline-end: 0;
+  top: 50%;
+  height: var(--sz-touch, 44px);
+  transform: translateY(-50%);
+  /* 伪元素不接收事件之外的任何样式；这里只是扩大命中区域 */
+}
+.btn.btn--md { min-height: 44px; padding: 0 var(--sp-5); }
+.btn.btn--lg { min-height: 52px; padding: 0 var(--sp-6); font-size: var(--fs-base); }
+
+/* ---------------------------------------------------------------- 变体 */
+
+/* primary：一个视图里只能有一个。有两个就等于没有重点。 */
+.btn--primary {
+  background: var(--accent);
+  color: var(--text-on-accent);   /* 白字压 accent = 5.87 AA（已实测） */
+}
+@media (hover: hover) and (pointer: fine) {
+.btn--primary:hover {
+  background: var(--accent-hover);   /* 白字压 hover = 7.73 AAA */
+}
+}
+/* secondary：次要动作。用边框区分，不是靠"更浅的底"。 */
+.btn--secondary {
+  background: var(--surface);
+  color: var(--text-primary);
+  border-color: var(--border-control);   /* 3.56 达标（UI 边界需 >= 3.0） */
+}
+@media (hover: hover) and (pointer: fine) {
+.btn--secondary:hover {
+  background: var(--surface-sunken);
+  border-color: var(--text-tertiary);
+}
+}
+/* ghost：最低优先级。没有边框也没有底 —— 靠文字色和间距存在。
+   用在"取消""暂不"这类用户不该被引导去点的动作。 */
+.btn--ghost {
+  background: transparent;
+  color: var(--text-secondary);
+}
+@media (hover: hover) and (pointer: fine) {
+.btn--ghost:hover {
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+}
+}
+/* danger：破坏性动作。红底，且**永远不要**做成 primary 的大小。 */
+.btn--danger {
+  background: var(--danger);
+  /* 🔴 2026-10-03：写死白字。暗色下 --danger 变亮（#e07a6e），
+     白字压在上面会看不清。改用 --text-on-accent（暗色下是深字）。 */
+  color: var(--text-on-accent);
+}
+@media (hover: hover) and (pointer: fine) {
+.btn--danger:hover {
+  /* 加深而不是变亮 —— 危险动作 hover 变亮会显得"更安全"，是反的。
+     🔴 2026-10-03：深色模式下方向相反 —— 深底上"加深"等于消失，
+     所以暗色必须**变亮**（下方 @media dark 里覆盖）。 */
+  background: var(--danger-hover);
+}
+}
+/* ---------------------------------------------------------------- 状态 2：active（按下）
+   下沉 1px。幅度必须是 --lift-sm（1px），
+   用 4px、6px 会显得像在玩玩具 —— 这种"果冻感"是廉价感的主要来源。
+   ---------------------------------------------------------------- */
+.btn:active {
+  transform: translateY(var(--lift-sm));
+}
+
+/* ---------------------------------------------------------------- 状态 4：focus-visible
+   🔴 用 :focus-visible 而不是 :focus。
+   :focus 会让鼠标点击也冒出框，难看；:focus-visible 只在键盘导航时出现。
+
+   tokens.css 里已给全局兜底，这里显式写一遍是因为按钮是最该被看见焦点的元素。
+   ---------------------------------------------------------------- */
+.btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------- 状态 5：disabled
+   🔴 不要用 opacity。
+   opacity: 0.5 会让对比度变成不可控的随机数（取决于底下是什么）。
+   正确做法是明确指定一组"不可点"的色值。
+
+   对比度说明：WCAG 1.4.3 对 inactive 组件是豁免的，
+   所以这里的低对比度合规 —— 但文字仍要能读，因为用户需要知道"这里写的是什么"。
+   ---------------------------------------------------------------- */
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  background: var(--surface-sunken);
+  color: var(--text-tertiary);        /* 5.16 AA，仍可读 */
+  border-color: var(--border-decor);
+  cursor: not-allowed;
+}
+@media (hover: hover) and (pointer: fine) {
+.btn:disabled:hover,
+.btn[aria-disabled="true"]:hover {
+  background: var(--surface-sunken);   /* 关键：hover 不能有变化，否则看着像能点 */
+  transform: none;
+}
+}
+.btn:disabled:active,
+.btn[aria-disabled="true"]:active {
+  transform: none;                     /* 按下去也不许动 */
+}
+
+/* ---------------------------------------------------------------- 状态 6：loading
+   🔴 核心品味点：loading 时按钮宽度**不能变**。
+   常见做法是替换文字为 spinner，结果按钮缩窄 → 整行布局跳动 → 很难看。
+
+   解法：**label 与 spinner 放在同一个 grid 单元**（grid-area: stack）。
+   容器宽度 = max(两者) ⇒ 切换时宽度自动不变，且物理上不可能重叠。
+
+   ⚠️ 早期版本用的是「文字 visibility:hidden + spinner 绝对定位居中」，
+   **错在**：文字没有溢出保护，文案一长就溢出按钮边界，与 spinner 物理重叠
+   （Owner 报"按着不动，加载内容就叠上来了"）。absolute 还会和 :active
+   的 transform 打架。已改为 grid 叠放，见文件头。
+   ---------------------------------------------------------------- */
+.btn[aria-busy="true"] {
+  cursor: progress;
+  pointer-events: none;   /* 防重复提交 —— 这是 loading 态存在的真正理由 */
+}
+
+/* 🔴 label 与 spinner 都在 grid-area: stack ⇒ 同一格，物理上不可能重叠。
+
+   ⚠️ 这里**不能**写 `max-width: 100%`：
+   容器是 inline-grid（宽度由内容决定），label 又是 grid 单元
+   （宽度由容器决定）—— `max-width:100%` 构成**循环依赖**，
+   浏览器会把它解析成一个很小的值，于是**文字被压扁、按钮变窄**
+   （Owner 报"弹窗里按钮文字太大框太小"，就是它造成的）。
+
+   `min-width: 0` 才是 grid/flex item 该用的：允许收缩，但不给错误的约束。 */
+.btn__label {
+  grid-area: stack;
+  min-width: 0;
+}
+
+/* loading 时用 opacity 而不是 visibility：
+   opacity 可过渡（能做出淡入淡出），visibility 瞬间切换会显得"跳"。 */
+.btn[aria-busy="true"] .btn__label { opacity: 0; }
+
+.btn__spinner {
+  grid-area: stack;
+  opacity: 0;
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: btn-spin 700ms linear infinite;
+}
+
+.btn[aria-busy="true"] .btn__spinner { opacity: 1; }
+
+@keyframes btn-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* 🔴 spinner 必须豁免 prefers-reduced-motion
+   tokens.css 的全局兜底会把动画压到 0.01ms —— 对位移类动效是对的，
+   但 spinner 停掉会让用户以为页面卡死。
+
+   WCAG 的立场：reduced-motion 针对的是**大幅位移**（前庭功能障碍），
+   spinner 是小幅原地旋转，不属于此类，应当保留。
+   这是"照抄规范"和"理解规范"的区别。 */
+@media (prefers-reduced-motion: reduce) {
+  .btn__spinner {
+    animation-duration: 1.2s !important;   /* 放慢但保留，不停 */
+  }
+}
+
+/* ---------------------------------------------------------------- 状态 7：success
+   短暂反馈（约 1.2s），需要 JS 加类再移除。
+   只在"动作不可逆且需要确认"时用（提交、支付）。
+   普通操作加 success 是噪音。
+   ---------------------------------------------------------------- */
+.btn.is-success {
+  background: var(--success);
+  /* 🔴 2026-10-03：暗色下底色变亮，写死的白字会看不清。 */
+  color: var(--text-on-accent);
+}
+.btn.is-success .btn__label { opacity: 1; }
+.btn.is-success .btn__spinner { opacity: 0; }
+
+/* ---------------------------------------------------------------- 图标按钮
+   正方形。必须带 aria-label，因为里面没有文字。
+   ---------------------------------------------------------------- */
+.btn--icon {
+  width: 44px;
+  padding: 0;
+}
+.btn--icon.btn--sm { width: 32px; }
+.btn--icon.btn--lg { width: 52px; }
+
+/* ---------------------------------------------------------------- 块级
+   移动端常用。注意：block 按钮在桌面端慎用 ——
+   全宽按钮会让页面的视觉动线变成一条竖线。
+   ---------------------------------------------------------------- */
+.btn--block {
+  display: flex;
+  width: 100%;
+}
+
+/* ============================================================================
+   废弃 / 反模式 —— 这些写法在本库内一律退回
+   =========================================================================
+   1. filter: brightness(1.08) 当 hover
+      实测来源：某项目 的 .send-btn 就是这么写的。
+      问题：hover 色变成不可控的计算结果，无法验证对比度，
+      且在不同底色上表现不一致。改用明确的 --accent-hover。
+
+   2. transition: all
+      会把 box-shadow、width 等一起动画化，性能和观感都失控。
+      逐个属性写，像上面基础段那样。
+
+   3. :disabled 用 opacity
+      对比度变成随机数。见上。
+
+   4. loading 时替换文字导致宽度变化
+      布局跳动。见上。
+
+   5. hover 用 transform: scale(1.05)
+      按钮"长大"是廉价感来源之一。要反馈就用 active 的下沉 1px。
+   ========================================================================= */

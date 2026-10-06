@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>组合测试 · frontend-lib</title>
+
+<!-- 🔴 2026-10-05 新建：组合契约（composition-check.js）的测试宿主。
+
+     ⭐ 为什么必须有这个页面：
+     现有 30+ 个契约**全是单组件**的 —— 每个组件在自己的 demo 里都正确。
+     但真把它们**放在一起**就会出新问题：
+       · select 放进 drawer ⇒ z-index 打架 / Esc 事件冲突
+       · combobox 放进 form-validation ⇒ 焦点互抢（校验提示抢焦点）
+       · tree 里放 badge ⇒ 层级缩进被撑破
+     ⇒ 这些只有**真嵌套**才测得到。
+
+     依赖全部用相对路径引真实组件，不复制粘贴代码 ——
+     否则测的是"副本"，真实组件改了这里测不出来。 -->
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/focus-ring.css">
+<link rel="stylesheet" href="../../02-primitives/button/button.css">
+<link rel="stylesheet" href="../../02-primitives/badge/badge.css">
+<link rel="stylesheet" href="../../02-primitives/choice/choice.css">
+<link rel="stylesheet" href="../../02-primitives/select/select.css">
+<link rel="stylesheet" href="../../02-primitives/input/input.css">
+<link rel="stylesheet" href="../../02-primitives/combobox/combobox.css">
+<link rel="stylesheet" href="../../02-primitives/date-range/date-range.css">
+<link rel="stylesheet" href="../../04-recipes/table/table.css">
+<link rel="stylesheet" href="../../03-patterns/overlay/overlay.css">
+<link rel="stylesheet" href="../../03-patterns/drawer/drawer.css">
+<link rel="stylesheet" href="../../03-patterns/form-validation/form-validation.css">
+<link rel="stylesheet" href="../../03-patterns/tree/tree.css">
+<link rel="stylesheet" href="../../03-patterns/dropdown/dropdown.css">
+<style>
+  body { margin: 0; padding: var(--sp-6) var(--sp-5); background: var(--paper); }
+  .wrap { max-width: 46rem; margin: 0 auto; }
+  h1 { font-size: var(--fs-xl); margin: 0 0 var(--sp-2); }
+  h2 { font-size: var(--fs-lg); margin: var(--sp-6) 0 var(--sp-3); }
+  .note {
+    padding: var(--sp-3) var(--sp-4); margin: 0 0 var(--sp-4);
+    background: var(--surface-sunken); border-radius: var(--r-sm);
+    font-size: var(--fs-sm); color: var(--text-secondary); line-height: 1.6;
+  }
+  .pad { padding: var(--sp-3) 0 var(--sp-6); }
+  .log {
+    margin-top: var(--sp-3); padding: var(--sp-3);
+    background: var(--surface-sunken); border-radius: var(--r-sm);
+    font-family: var(--mono); font-size: var(--fs-xs);
+    color: var(--text-secondary); min-height: 3em;
+  }
+  /* 让下拉/弹层有足够内容可滚，测 z-index 时更真实 */
+  .tall { min-height: 22rem; }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+<h1>组合测试（组合契约的宿主）</h1>
+<p class="note">
+  这个页面存在的唯一理由：<strong>让组件互相嵌套</strong>。
+  <br>单组件的 demo 里每个都对，放在一起才会暴露
+  <strong>z-index 打架 · 焦点互抢 · Esc 冲突</strong>。
+  <br>所有依赖都引<strong>真实组件</strong>（不复制代码）⇒ 组件改了这里立刻测得到。
+</p>
+
+<h2>1 · form-validation 里放 combobox（焦点互抢）</h2>
+<div class="pad">
+  <div class="field" data-combo-field>
+    <label class="field__label" for="k1">关注板块 <span class="field__req">＊</span></label>
+    <div class="combo" id="k1c">
+      <div class="combo__field">
+        <div class="combo__tags" data-combo-tags></div>
+        <input class="combo__input" data-combo-input type="text" id="k1"
+               placeholder="输入板块名" autocomplete="off">
+      </div>
+      <ul class="combo__list" data-combo-list hidden></ul>
+    </div>
+    <p class="field__hint">至少选 1 个</p>
+  </div>
+  <div class="log" id="log1">（校验 + 焦点互抢会显示在这里）</div>
+</div>
+
+<h2>2 · tree 里放 badge（层级缩进）</h2>
+<div class="pad">
+  <div id="t1" style="border:1px solid var(--border-decor); border-radius:var(--r-md); padding:var(--sp-2)"></div>
+</div>
+
+<h2>3 · dropdown 里放 badge（同上）</h2>
+<div class="pad">
+  <div class="dd" id="d1">
+    <button class="dd__btn" data-dd-btn>带徽标的菜单 <span class="dd__caret"></span></button>
+    <ul class="dd__menu" data-dd-menu hidden>
+      <li data-value="a">概览 <span class="badge badge--info">12</span></li>
+      <li data-value="b">明细 <span class="badge badge--warning">3</span></li>
+      <li data-value="c">归档 <span class="badge badge--neutral">∞</span></li>
+    </ul>
+  </div>
+  <div class="log" id="log2">（选中项会显示在这里）</div>
+</div>
+
+<h2>4 · 🔴 select × drawer（z-index 打架 + Esc 冲突）</h2>
+<p class="note">
+  这是<strong>最容易出问题的一处</strong>：
+  <br>· drawer 打开后，里面的 select 再打开下拉 ⇒ 谁盖住谁？
+  <br>· 两层都监听 <code>Esc</code> ⇒ 按一次关哪层？
+  <br>· drawer 关闭后，焦点该回哪？（select 开着时不能直接归位）
+</p>
+<div class="pad">
+  <button class="btn btn--primary" id="openDrawer">打开抽屉（含 select）</button>
+  <div class="log" id="log3">（抽屉内的操作会显示在这里）</div>
+</div>
+
+<h2>5 · 表格里放 badge + 按钮（密集布局）</h2>
+<div class="pad">
+  <div class="table">
+    <table>
+      <thead><tr>
+        <th scope="col">项</th><th scope="col">状态</th><th scope="col">操作</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td>数据同步</td>
+          <td><span class="badge badge--success">正常</span></td>
+          <td><button class="btn btn--sm">重试</button></td>
+        </tr>
+        <tr>
+          <td>成本核算</td>
+          <td><span class="badge badge--danger">失败</span></td>
+          <td><button class="btn btn--sm">查看</button></td>
+        </tr>
+        <tr>
+          <td>成本核算</td>
+          <td><span class="badge badge--warning">待复核</span></td>
+          <td><button class="btn btn--sm">查看</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</main>
+
+<script src="../../02-primitives/select/select.js"></script>
+<script src="../../02-primitives/combobox/combobox.js"></script>
+<script src="../../02-primitives/date-range/date-range.js"></script>
+<script src="../../03-patterns/overlay/overlay.js"></script>
+<script src="../../03-patterns/drawer/drawer.js"></script>
+<script src="../../03-patterns/tree/tree.js"></script>
+<script src="../../03-patterns/dropdown/dropdown.js"></script>
+<script>
+(function () {
+  /* 探针：给契约脚本用（契约不能只靠"看着对"）*/
+  window.__probe = {
+    selectInDrawer: null,   /* Drawer.open 返回的实例 */
+    cb: null,
+    tree: null,
+    dd: null,
+  };
+
+  /* 1 · combobox 嵌在 form-validation 里 */
+  var log1 = document.getElementById('log1');
+  window.__probe.cb = Combobox.create(document.getElementById('k1c'), {
+    label: '关注板块',
+    options: [
+      { value: 'semi', label: '半导体' },
+      { value: 'ai', label: '人工智能' },
+      { value: 'newenergy', label: '新能源' },
+    ],
+    max: 3,
+    onChange: function (t) {
+      /* 🔴 模拟真实校验：没选就报 aria-invalid + 错误文案 */
+      var field = document.querySelector('[data-combo-field]');
+      var bad = t.length === 0;
+      field.setAttribute('data-invalid', bad ? 'true' : 'false');
+      var input = document.getElementById('k1');
+      input.setAttribute('aria-invalid', bad ? 'true' : 'false');
+      var err = document.getElementById('k1err');
+      if (!err) {
+        err = document.createElement('p');
+        err.id = 'k1err';
+        err.className = 'field__error';
+        err.setAttribute('role', 'alert');
+        field.appendChild(err);
+      }
+      err.textContent = bad ? '请至少选择 1 个板块。' : '';
+      err.hidden = !bad;
+      if (bad) input.setAttribute('aria-describedby', 'k1err');
+      else input.removeAttribute('aria-describedby');
+      log1.textContent = '已选 ' + t.length + ' 个 · 校验=' + (bad ? '失败' : '通过');
+    },
+  });
+
+  /* 2 · tree 里放 badge */
+  document.getElementById('t1').innerHTML =
+    '<ul role="group">' +
+      '<li class="tree__item"><div class="tree__node">' +
+        '<span class="tree__label">成本中心</span>' +
+        '<span class="badge badge--info">12</span></div>' +
+        '<ul role="group">' +
+          '<li class="tree__item"><div class="tree__node">' +
+            '<span class="tree__label">生产</span>' +
+            '<span class="badge badge--warning">3</span></div></li>' +
+          '<li class="tree__item"><div class="tree__node">' +
+            '<span class="tree__label">研发</span>' +
+            '<span class="badge badge--neutral">9</span></div></li>' +
+        '</ul>' +
+      '</li>' +
+    '</ul>';
+  window.__probe.tree = Tree.create(document.getElementById('t1'), { label: '成本中心' });
+
+  /* 3 · dropdown 里放 badge */
+  var log2 = document.getElementById('log2');
+  window.__probe.dd = Dropdown.create(document.getElementById('d1'), {
+    label: '视图',
+    onSelect: function (v) { log2.textContent = '选中：' + v; },
+  });
+
+  /* 4 · select 放进 drawer（z-index + Esc 冲突的地带）*/
+  var log3 = document.getElementById('log3');
+  document.getElementById('openDrawer').addEventListener('click', function () {
+    var host = document.createElement('div');
+    host.innerHTML =
+      '<div class="select" id="dSel">' +
+        '<button class="select__btn" data-select-btn type="button">' +
+          '<span class="select__value">请选择</span>' +
+          '<span class="select__caret"></span></button>' +
+        '<ul class="select__list" data-select-list hidden>' +
+          '<li class="select__opt" data-value="a" role="option">' +
+            '<span class="select__check"></span><span class="select__opt-text">按月</span></li>' +
+          '<li class="select__opt" data-value="q" role="option">' +
+            '<span class="select__check"></span><span class="select__opt-text">按季度</span></li>' +
+          '<li class="select__opt" data-value="y" role="option">' +
+            '<span class="select__check"></span><span class="select__opt-text">按年</span></li>' +
+        '</ul></div>';
+    var dr = Drawer.open({
+      place: 'right',
+      title: '口径设置',
+      content: host,
+      actions: [{ label: '完成', variant: 'primary' }],
+      onClose: function () {
+        log3.textContent = '抽屉已关闭 · 焦点在「' +
+          ((document.activeElement || {}).textContent || '').trim().slice(0, 10) + '」';
+      },
+    });
+    window.__probe.selectInDrawer = dr;
+    /* 🔴 在抽屉里初始化 select（关键：组件必须能在弹层里正常工作）*/
+    window.__probe.sel = Select.create(host.querySelector('#dSel'), {
+      label: '统计口径',
+      onChange: function (v) { log3.textContent = '口径=' + v; },
+    });
+  });
+})();
+</script>
+</body>
+</html>

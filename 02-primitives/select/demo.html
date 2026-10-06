@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>select · 下拉选择 · frontend-lib</title>
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/focus-ring.css">
+<link rel="stylesheet" href="select.css">
+<style>
+  body { margin: 0; padding: var(--sp-7) var(--sp-5); background: var(--paper); }
+  .wrap { max-width: 44rem; margin: 0 auto; }
+  h1 { font-size: var(--fs-2xl); margin: 0 0 var(--sp-2); }
+  h2 { font-size: var(--fs-lg); margin: var(--sp-7) 0 var(--sp-3); }
+  .note {
+    padding: var(--sp-3) var(--sp-4); margin: 0 0 var(--sp-4);
+    background: var(--surface-sunken); border-radius: var(--r-sm);
+    font-size: var(--fs-sm); color: var(--text-secondary); line-height: 1.6;
+  }
+  .pad { padding: var(--sp-3) 0 var(--sp-8); }
+  .log {
+    margin-top: var(--sp-3); padding: var(--sp-3);
+    background: var(--surface-sunken); border-radius: var(--r-sm);
+    font-family: var(--mono); font-size: var(--fs-xs);
+    color: var(--text-secondary); min-height: 3em;
+  }
+  label.f { display: block; margin-bottom: var(--sp-1); font-size: var(--fs-sm); }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+<h1>select · 下拉选择</h1>
+<p class="note">
+  依据 <strong>APG Select-Only Combobox</strong>。四条最容易漏的：
+  <br>① 打开后焦点落在<strong>选中项</strong>（不是第一项）
+  <br>② <code>↑↓</code> 循环 · <code>Home</code>/<code>End</code> 首末 ·
+  <code>Enter</code> 选中并关闭
+  <br>③ <code>Esc</code> 关闭且焦点<strong>还给按钮</strong>
+  <br>④ <strong>类型搜索</strong>：连续打字跳到匹配项
+  <br>⚠️ <code>hidden input</code> 承接表单值（自建组件最容易漏的）
+</p>
+
+<h2>1 · 基本（默认选中第二项）</h2>
+<div class="pad">
+  <label class="f" for="b1">投资主体</label>
+  <div class="select" id="s1">
+    <button class="select__btn" data-select-btn type="button" id="b1">
+      <span class="select__value">请选择</span>
+      <span class="select__caret"></span>
+    </button>
+    <ul class="select__list" data-select-list hidden>
+      <li class="select__opt" data-value="hk" role="option">
+        <span class="select__check"></span><span class="select__opt-text">港股通</span></li>
+      <li class="select__opt" data-value="a" role="option">
+        <span class="select__check"></span><span class="select__opt-text">A 股主板</span></li>
+      <li class="select__opt" data-value="star" role="option">
+        <span class="select__check"></span><span class="select__opt-text">科创板</span></li>
+      <li class="select__opt" data-value="gem" role="option">
+        <span class="select__check"></span><span class="select__opt-text">创业板</span></li>
+      <li class="select__opt" data-value="bond" role="option" aria-disabled="true">
+        <span class="select__check"></span><span class="select__opt-text">债券（暂不支持）</span></li>
+      <li class="select__opt" data-value="fund" role="option">
+        <span class="select__check"></span><span class="select__opt-text">Fund 基金</span></li>
+    </ul>
+    <input type="hidden" name="market">
+  </div>
+  <div class="log" id="log">（选中的值会显示在这里，也会写进 hidden input）</div>
+</div>
+
+<h2>2 · 多选</h2>
+<div class="pad">
+  <div class="select select--block" id="s2">
+    <button class="select__btn" data-select-btn type="button">
+      <span class="select__value">请选择板块</span>
+      <span class="select__caret"></span>
+    </button>
+    <ul class="select__list" data-select-list hidden>
+      <li class="select__opt" data-value="a" role="option">
+        <span class="select__check"></span><span class="select__opt-text">消费</span></li>
+      <li class="select__opt" data-value="b" role="option">
+        <span class="select__check"></span><span class="select__opt-text">半导体</span></li>
+      <li class="select__opt" data-value="c" role="option">
+        <span class="select__check"></span><span class="select__opt-text">医药</span></li>
+    </ul>
+  </div>
+</div>
+
+<h2>3 · 禁用 + 靠右对齐</h2>
+<div class="pad">
+  <div class="select select--end" id="s3">
+    <button class="select__btn" data-select-btn type="button" disabled>
+      <span class="select__value">暂不可用</span>
+      <span class="select__caret"></span>
+    </button>
+    <ul class="select__list" data-select-list hidden>
+      <li class="select__opt" data-value="x" role="option">
+        <span class="select__check"></span><span class="select__opt-text">选项 X</span></li>
+    </ul>
+  </div>
+</div>
+
+</main>
+
+<script src="select.js"></script>
+<script>
+(function () {
+  var log = document.getElementById('log');
+  var s1 = Select.create(document.getElementById('s1'), {
+    label: '投资市场',
+    value: 'a',                       /* 默认选中 A 股主板 */
+    placeholder: '请选择市场',
+    onChange: function (v, text) {
+      var hidden = document.querySelector('#s1 input[type=hidden]');
+      log.textContent = 'value=' + v + '  文字=「' + text + '」  hidden=' +
+                        (hidden ? hidden.value : '(无)') + '  [aria-current 项带 ✓]';
+    },
+  });
+
+  Select.create(document.getElementById('s2'), {
+    label: '板块', multiple: true, placeholder: '请选择板块',
+  });
+  Select.create(document.getElementById('s3'), { label: '不可用' });
+})();
+</script>
+</body>
+</html>

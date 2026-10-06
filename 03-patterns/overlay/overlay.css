@@ -1,0 +1,309 @@
+/* ============================================================================
+   frontend-lib / 03-patterns / overlay / overlay.css
+   反馈层：toast（通知）与 dialog（模态）
+
+   依赖：01-tokens/tokens.css  +  02-primitives/button/button.css
+   版本：A ✅ / B ✅ / C ✅
+
+   🔴 本文件的核心是一条判断，不是样式：
+
+      toast 和 dialog 是两种东西，用错比做丑严重得多。
+
+      ┌ toast（通知）
+      │   发生了什么、你不需要做任何事
+      │   不抢焦点、自动消失、role="status"
+      │   错用：把"确认删除"做成 toast
+      │
+      └ dialog（模态）
+          必须你处理完才能继续
+          困住焦点、Esc 可关、role="dialog" + aria-modal
+          错用：把"已保存"做成 dialog
+
+      判据只有一条：**用户不做任何操作，任务能不能继续？**
+      能 → toast；不能 → dialog。
+   ========================================================================= */
+
+/* ============================================================================
+   Toast
+   ========================================================================= */
+
+.toast-region {
+  position: fixed;
+  inset-inline-end: var(--sp-5);
+  bottom: var(--sp-5);
+  z-index: var(--z-toast);
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  max-width: min(380px, calc(100vw - var(--sp-5) * 2));
+  pointer-events: none;      /* 区域本身不吃点击，只有 toast 吃 */
+}
+
+.toast {
+  pointer-events: auto;      /* 🔴 撤销区域上的 none，否则按钮点不动 */
+
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+
+  background: var(--surface);
+  border: 1px solid var(--border-decor);
+  border-radius: var(--r-sm);
+  box-shadow: var(--shadow-2);
+
+  /* 🔴 2026-10-03 去掉 `border-left: 3px solid`。
+     Owner 评价左侧竖条"很蠢"——它是纯装饰：3px 竖条在浅底上形成一条硬边，
+     视觉噪声大于信息量。已从全库去掉，**这里漏了**（典型的"只改一半"）。
+
+     WCAG 1.4.1（不能只靠颜色）**不依赖竖条**：图标 + 文字本身就够了
+     —— 那两条是可读的形状与文字，而左侧条既不是文字也不是形状，
+     只是把颜色重复了一遍。 */
+  font-size: var(--fs-sm);
+  line-height: var(--lh-base);
+  color: var(--text-primary);
+
+  animation: toast-in var(--dur-base) var(--ease-out);
+}
+
+.toast--success { background: var(--success-bg); }
+.toast--error   { background: var(--danger-bg); }
+.toast--warning { background: var(--warning-bg); }
+
+.toast__body { flex: 1; min-width: 0; }
+
+.toast__title {
+  font-weight: 500;
+  margin: 0 0 2px;
+}
+
+.toast__desc {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+}
+
+.toast__close {
+  flex: none;
+  /* 🔴 2026-10-04：28 → 44（WCAG 2.5.5，Owner iOS 实机报后统一）
+     🔴 注意用 min-width 而**不是** width：
+        固定 `width: 28px` 会**赢过** min-width（同名属性里
+        min-width 只在 width:auto 时才生效）⇒ 改完必须确认实测值。 */
+  min-width: 44px;
+  min-height: 44px;;
+  margin: -4px -4px 0 0;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+.toast__close:hover { background: var(--surface-sunken); color: var(--text-primary); }
+}
+.toast__close:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* 关闭动画：往右淡出，和进场方向一致 */
+.toast.is-leaving {
+  animation: toast-out var(--dur-fast) var(--ease-in-out) forwards;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(var(--lift-lg)); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes toast-out {
+  to { opacity: 0; transform: translateX(var(--lift-lg)); }
+}
+
+/* 进度条：让用户知道"它自己会消失"以及还剩多久。
+   只在有明确时长的 toast 上用。 */
+.toast__timer {
+  position: absolute;
+  inset-inline-start: 0; bottom: 0;
+  height: 2px;
+  background: currentColor;
+  opacity: 0.25;
+  border-radius: 0 0 0 var(--r-sm);
+  animation: toast-timer linear forwards;
+}
+@keyframes toast-timer { from { width: 100%; } to { width: 0%; } }
+
+/* ============================================================================
+   Dialog（模态）
+   ========================================================================= */
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: grid;
+  place-items: center;
+  padding: var(--sp-5);
+
+  /* 🔴 2026-10-03 同 nav：写死的深色遮罩在暗色下会"消失"。改用令牌。 */
+  background: var(--scrim);
+  /* 🔴 不做模糊：backdrop-filter 在旧 WebView 上要么无效要么掉帧 */
+  animation: backdrop-in var(--dur-base) var(--ease-out);
+}
+
+.dialog {
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+  max-height: calc(100vh - var(--sp-7));
+  overflow-y: auto;
+
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-2);
+  padding: var(--sp-6);
+
+  animation: dialog-in var(--dur-base) var(--ease-out);
+}
+
+/* 🔴 scale 只到 0.98，位移只有 8px。
+   大幅缩放 + 弹跳 = 廉价感。模态是"出现"，不是"跳出来"。 */
+@keyframes dialog-in {
+  from { opacity: 0; transform: translateY(var(--lift-lg)) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+
+.dialog__title {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-lg);
+  font-weight: 500;
+  line-height: var(--lh-tight);
+  color: var(--text-primary);
+}
+
+.dialog__desc {
+  margin: 0 0 var(--sp-5);
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  line-height: var(--lh-base);
+}
+
+/* 动作区：按钮**右对齐且相邻**。
+   🔴 2026-10-02 去掉 space-between + margin-right:auto。
+      原来让破坏性按钮靠左、取消靠右，中间空一大片 ——
+      Owner 评价「删除和取消放到中间来」，看着别扭。
+      常规做法（Linear / Vercel / GitHub 都这样）：两个按钮挨着，一起靠右。
+      次要的在左（取消），主要的在右（删除）。 */
+.dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+
+/* ---------------------------------------------------------------------------
+   滚动锁定
+   ---------------------------------------------------------------------------
+   🔴 打开模态必须锁背景滚动，否则鼠标滚轮在弹层边缘会连带滚动背后页面。
+
+   🔴🔴 Owner 报"弹窗打开时整页明显向右移动" —— 这是锁滚动最典型的症状：
+   滚动条消失 ⇒ 可视区变宽 ⇒ 居中内容整体右移。
+
+   **根治办法是 `scrollbar-gutter: stable`，不是 JS 补偿。**
+   它让浏览器**始终为滚动条预留位置**，滚动条消失时内容区宽度不变
+   ⇒ 根本不会移动，也就不需要任何 JS。
+
+   为什么之前的 JS 补偿不可靠（实测就是没生效）：
+     demo 的 body 已有 `padding: var(--sp-7) var(--sp-5)`（左右各 20px），
+     而 JS 只改 `paddingRight`。补偿量与已有 padding 的叠加关系
+     在不同浏览器 / 不同 body 设定下并不一致 —— 这不是能靠 JS 稳妥解决的。
+
+   降级路径（给不支持 scrollbar-gutter 的老浏览器）：
+     ① 下面这条 overflow: hidden 锁住滚动
+     ② JS 量出滚动条宽度补上（overlay.js 的 lockScroll）
+
+   ⚠️ 锁 `body` 就够了，**不要同时锁 `html`** ——
+      两者都锁会让某些浏览器出现双层滚动容器。
+   ------------------------------------------------------------------------ */
+html { scrollbar-gutter: stable; }
+
+body.is-locked { overflow: hidden; }
+
+/* 极窄屏：dialog 贴底（移动端习惯，比居中更符合直觉） */
+@media (max-width: 480px) {
+  .dialog-backdrop { place-items: end center; padding: 0; }
+  .dialog {
+    /* 🔴 2026-10-04 修一个 iPhone 实测到的 bug：
+       这里原本是 `max-width: none`（意图是"窄屏下撑满"），
+       但**没有上界** —— 一旦内容里有最小宽度的东西
+       （<table> / <pre> / 长 code / flex 不换行的行），
+       弹窗会**撑破视口**：iPhone 15 Pro 实测宽 444 > 视口 393，
+       **左边缘跑到 -26px**（左侧被切掉一块，且左边距也没了）。
+
+       ⇒ 改成 `width: 100vw` + 两侧留边：
+         ① 上界由视口决定（不可能超出屏幕）
+         ② 仍然"贴底弹出"（place-items: end center 没变）
+         ③ 安全区照旧加在 padding-bottom
+       ⇒ 内容再宽也只能在自己内部滚动，不会把壳撑破。 */
+    width: 100vw;
+    max-width: 100vw;
+    box-sizing: border-box;
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    padding-bottom: calc(var(--sp-6) + env(safe-area-inset-bottom, 0px));
+  }
+  .dialog__actions .btn { flex: 1; }   /* 移动端按钮并排等宽更好点 */
+}
+
+/* ============================================================================
+   reduced-motion
+   =========================================================================
+   进场是 opacity + 8px 位移，属于小幅位移 —— 可以保留但去掉位移。
+   🔴 单纯 opacity 淡入是最稳的：既不违反 reduced-motion，也保留"出现了"的反馈。
+   ========================================================================= */
+@media (prefers-reduced-motion: reduce) {
+  .toast,
+  .toast.is-leaving,
+  .dialog,
+  .dialog-backdrop { animation: none; }
+  .toast__timer { animation: none; width: 100%; }   /* 进度条停住，不假装还在倒计时 */
+}
+
+/* ============================================================================
+   反模式
+   =========================================================================
+   1. toast 抢焦点
+      通知不该打断当前操作。role="status" 会自动播报，不需要 focus。
+
+   2. 用 toast 做需要确认的操作
+      "确认删除"做成 toast = 用户可能根本没看见就把文件删了。
+      判据：不做任何操作能不能继续？能 → toast。
+
+   3. dialog 不困住焦点
+      Tab 会跑到背后页面的按钮上，屏幕阅读器读到的是"你在模态框里，
+      但按钮在背景上"，完全混乱。
+
+   4. dialog 关闭后焦点不回去
+      焦点掉到 <body>，键盘用户要重新 Tab 一遍才能回到原处。
+      必须回到**触发它的那个元素**。
+
+   5. 锁滚动不补偿滚动条宽度
+      弹层出现时页面横向"闪一下"。这多半就是"闪"的来源。
+
+   6. 错误 toast 3 秒就消失
+      用户还没读完就没了。错误要么不自动消失，要么给足时间 + 可手动关。
+
+   7. dialog 做大幅缩放/回弹
+      廉价感。scale 最多 0.98，位移最多 8px。
+
+   8. 不用 <dialog> 元素
+      本库用 div + role="dialog" + aria-modal，是为了让动画和样式可控。
+      若不需要自定义动画，原生 <dialog> 的 focus trap 和 Esc 是免费的 —— 能用就用。
+
+   9. backdrop 加 backdrop-filter: blur
+      旧 WebView 上要么无效要么掉帧，精简档 尤其要避开。
+   ========================================================================= */

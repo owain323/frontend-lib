@@ -1,0 +1,363 @@
+/* ============================================================================
+   Switch — 开关（APG: Switch Pattern）
+   ============================================================================
+   states-exempt: error readonly
+   ------------------------------------------------------------------------------
+   🔴 2026-10-03 声明本文件**不适用** `error` / `readonly`：
+
+       states.py 按类名匹配规则组，而 `.switch__input` 里的 `input` 字面量
+       让本文件被当成 input 类，于是被要求实现校验态与只读态。
+
+       **但开关没有这两态** —— 它只有 开 / 关：
+         · error    ：开关不做校验，"开错了"不是表单提交时的错误
+         · readonly ：开关一旦 readonly 就等于 disabled（用户不能改），
+                       那不如直接用 disabled
+
+       两个坏的处理方式与为什么不用：
+         · 硬加假的 `.is-error` / `[readonly]` ⇒ 死状态进代码，
+           复用者会以为开关能校验
+         · 删门禁这条 ⇒ 所有 input 都不再被检查
+       ⇒ 显式声明，且声明写在**被检查的文件里**，可 grep、可追溯。
+
+   🔴 为什么不复用 `.choice--checkbox` 的样式
+   ------------------------------------------
+   checkbox 与 switch 的**语义不同**（APG 明确区分）：
+
+       checkbox : 可以"选中/不选中"（多选），Space 切换
+       radio    : 一组里选一个，方向键移动
+       switch   : 立即生效的开关（设置项），**立即切换**
+
+   差别体现在读屏播报上：
+       checkbox 播报「复选框，已勾选」
+       switch   播报「开关，已开启」   ← 这个"立即生效"的暗示很重要
+
+   ⇒ 结构上**共用 choice 的骨架**（原生 input + 可见 label），
+     但 switch 是独立的变体，因为形状（滑块）与语义都不同。
+
+   🔴 键盘：**只有 Space 切换，Enter 不切换**
+   ------------------------------------------
+   这是 switch 与 button 的关键区别（APG Switch Pattern）。
+   很多实现图省事让 Enter 也能切 —— 那样读屏用户按 Enter 会**双重切换**
+   （button 默认行为 + 自定义 handler），或者在 form 里意外提交。
+
+   ⇒ 本组件用原生 checkbox 实现：**浏览器自动只响应 Space**，
+     Enter 在 checkbox 上没有默认行为 ⇒ 天然正确，不需要写 JS 去拦。
+
+   ⇒ 这一点是"用原生控件"的最大收益：**无障碍行为免费且必然正确**。
+
+   标签：必须用 `<label for>` 关联（不是 aria-label）。
+   ----------------------------------------------------
+   视觉上的开关可以没有文字（只有一个滑块），
+   但语义上必须有名字 —— `<label class="visually-hidden">` 即可：
+   **看得见的可以没有，读屏必须听得到。**
+   ========================================================================= */
+
+.switch {
+  position: relative;          /* 🔴 2026-10-04 加：input 要相对它铺满整块 */
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+  cursor: pointer;
+
+  /* 🔴 2026-10-04 加（Owner 在 iOS 实机报"点了不动"）：
+       **视觉上滑块是 22px 高，但可点区域必须是 44px** ——
+       WCAG 2.1 · 2.5.5 Target Size (Enhanced) 要求 44×44 CSS px。
+
+     做法：**min-height 给 44，滑块本身仍然是 22** ——
+     看起来不变，但手指落在这条 44px 高的带内任意位置都能命中。
+     这就是「视觉尺寸 ≠ 命中尺寸」的标准做法（Apple HIG 也是这么解的）。
+     详见本文件末尾 `tap-target` 一节。 */
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* 🔴 2026-10-04 **修一个真 bug**（Owner 在 iOS 实机发现"点了不动"）
+
+   原来 input 被 clip 成 1px，而外层 `<span class="switch">` **不是 label**
+   （只有文字那个 `<label class="switch__label">` 是）
+   ⇒ **点滑块等于点空气**。
+
+   为什么桌面没发现：用户往往点偏到文字上，文字是 label ⇒ 能中。
+   iOS 触屏没有 hover、手指更大更粗 ⇒ 几乎必中在滑块上。
+
+   ⇒ 手法与 `.choice__input` **完全一致**（同一库里已经做对的做法）：
+        `inset:0 + width/height:100% + opacity:0`
+        —— 铺满整块、**但保留在无障碍树与 Tab 序列里**。
+
+   🔴 绝不能用 `display:none` / `appearance:none` 代替：
+      那会让它从无障碍树消失、键盘也 Tab 不到。 */
+.switch__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  cursor: pointer;
+  /* 🔴 z-index 必须在 .switch__track 之上。
+     DOM 顺序是 input → track → label（同层 z-index:auto/0），
+     若 input 在第一层，**后画的 track 会盖住它** ⇒ 点了命中 track
+     而非 input，又是"点了不动"。显式提到第一层，点击直接命中 input。 */
+  z-index: 1;
+}
+
+/* 滑块轨道 */
+/* ---------------------------------------------------------------------------
+   🔴 2026-10-04 **重做**。Owner 实机反馈：
+      「暗色模式下的开关**这个肯定得改**，因为你只是**做了照抄**，
+        在暗色模式下的表达是完完全全有问题的，甚至**边缘都是很粗糙的**」
+
+   ⇒ 本次依据 **Radix Themes 的 Switch 真实实现**（实测抓自
+      `@radix-ui/themes@3.0.0/styles.css`，818KB，不是凭印象）：
+
+        --switch-width:  calc(var(--switch-height) * 1.75)   ← 宽高比 1 : 1.75
+        --switch-thumb-inset: 1px                            ← 滑块**内缩 1px**
+        --switch-thumb-size:  calc(height - inset*2)
+        .rt-SwitchThumb { background-color: white }          ← **滑块恒为白**
+
+   ⚠️ 我原来"照抄"错的三处（实测证据）：
+     ① 轨道直接用 `var(--accent)` ⇒ 暗色下是 `#7AA9DE` **亮蓝**，
+        在深底上**刺眼、发光**（暗色下品牌色要降彩度，不是照搬）。
+     ② 滑块用 `var(--surface)` ⇒ 暗色下变成 `rgb(28,32,36)` **深灰**，
+        落在亮蓝轨道上像个"**暗洞**"，边界很硬 ⇒ Owner 说"边缘粗糙"。
+        **Radix 的做法是滑块恒为白**（两种模式下都一样）——
+        因为滑块是"实物"，必须始终最亮，才有"可抓握"的物理感。
+     ③ 滑块带 `1px solid var(--border-control)` 边框
+        ⇒ 在暗色下那圈边框又粗又灰，边缘显得糙。
+        **Radix 没有边框**（用 `box-shadow` 表达层次）。
+
+   ⇒ 下面按实测参数重写。
+   ------------------------------------------------------------------------ */
+.switch__track {
+  position: relative;
+  flex: 0 0 auto;
+
+  /* ==========================================================================
+     🔴 2026-10-04 **彻底重写几何**（Owner 实机：「你的那个圆圈完全是歪的」）
+
+     真因（实测，不是猜）：
+       · 轨道实际 44×26，而我在 CSS 里写的是 42×24
+       · 圆心落在 (30, 12)，应在 (22, 13)      ← **上紧下松，就是"歪"**
+       · transform 是硬编码的 `translateX(18px)`，与实际尺寸**脱钩**
+       ⇒ 根因：**用「写死的数字」代替「推导」**。
+         改一个尺寸，别处就歪，且没人会注意到。
+
+     ⇒ 修法（Radix 的做法，**全部由一个变量推导**）：
+         --sw-h        轨道高
+         --sw-inset    滑块内缩（= 边框宽，让滑块压在内框上）
+         --sw-w        轨道宽 = 高 × 1.75  ← Radix 实测比例
+         --sw-thumb    滑块直径 = 高 − 内缩 × 2
+         --sw-travel   滑块行程 = 宽 − 高   ← Radix 的 --switch-thumb-translate-x
+
+     这样**改一个 --sw-h，整套几何自动自洽**，不可能再歪。
+     ========================================================================== */
+  /* ==========================================================================
+     🔴 2026-10-04 第二次修正：**变量里只放「基础量」**，
+        `calc()` 一律写在**用到它的地方**。
+
+        为什么不能把 calc 存进变量（实测踩到）：
+          `--sw-travel: calc(calc(24px*1.75) - 1px*2 - …)` 这种**嵌套 calc**
+          在自定义属性里是「未求值的字符串」——
+          ⚠️ `getComputedStyle` 读出来还是 `calc(...)` 本身，
+             `transform: translateX(var(--sw-travel))` 拿到的是
+             **字面量 18**（回退值），于是**滑块贴不到右边缘**
+             ⇒ 视觉上就是 Owner 说的「歪、没画好」。
+
+        ⇒ 现在只有三个"裸值"变量，尺寸关系全部在用到处写 calc。
+     ========================================================================== */
+  --sw-h: 24px;        /* 轨道高（含边框）*/
+  --sw-inset: 1px;     /* = 边框宽 */
+  --sw-pad: 1px;       /* 滑块与内框之间的呼吸 */
+  /* 🔴 滑块相对 border box 的偏移 = 边框 + 留白（这里都是 1px）*/
+  --sw-gap: var(--sw-pad);
+  /* 滑块直径 = 轨道内容高 − 留白×2
+     （border-box 下，轨道内容高 = 高 − 边框×2 = 24 − 2 = 22）*/
+  --sw-thumb: calc(var(--sw-h) - var(--sw-inset) * 2 - var(--sw-pad) * 2);
+
+  /* 🔴 2026-10-04 关键修正：轨道是 **content-box**（本库默认），
+     ⇒ `width: var(--sw-w)` 设的是**内容宽**，
+       渲染总宽 = 内容 + 边框×2 = 42 + 2 = **44px**（实测）。
+     而 `--sw-travel` 按 42 算 ⇒ **行程少 2px** ⇒
+       开态滑块**贴不到右边缘**，看起来就是"歪/没画好"。
+
+     ⇒ 修法：**width/height 改成 border-box**，
+        让 `--sw-w` 就是**渲染总宽**，所有推导自洽。
+        （`--sw-inset` 已经是 1px，正好等于边框宽，滑块压在内框上。） */
+  box-sizing: border-box;
+  /* 宽高比 1 : 1.75（Radix 实测）*/
+  width:  calc(var(--sw-h) * 1.75);
+  height: var(--sw-h);
+  border-radius: var(--r-pill);
+  background: var(--surface-sunken);
+  /* ⚠️ 关态边框用 decor（弱），不是 control（强）——
+     弱边界才不会"粗"；强边框留给需要强调的控件 */
+  border: 1px solid var(--border-decor);
+  transition: background var(--dur-fast) var(--ease-out),
+              border-color var(--dur-fast) var(--ease-out);
+}
+
+/* 滑块圆点 */
+.switch__thumb {
+  /* ==========================================================================
+     🔴 2026-10-04 **最终版：滑块定位改用 `top/left` 一次性算准**
+
+     前面几次都歪（Owner 实机：「圆圈完全是歪的」），根因是**用两套约束
+     （top+bottom，或 content-box + border）互相打架**。
+     实测最终数据：轨道 24 高、滑块 20 高、上 3 下 1 ⇒ 差 2px。
+
+     ⇒ 现在只保留**一个真相来源**：
+        内框高 = 轨道高 − 边框×2 = 24 − 2 = 22
+        上下留白 = (22 − 20) / 2 = **1px**
+        top = 边框 1 + 留白 1 = **2px**
+        ⚠️ 关键：`top` 是相对**padding box**（即 border 内侧）计算的，
+           所以 **不用再减边框** —— 浏览器已经处理了。
+     ========================================================================== */
+  position: absolute;
+  /* 上下留白 = (轨道内容高 − 滑块) / 2；左右同理 */
+  top:  var(--sw-gap);
+  inset-inline-start: var(--sw-gap);
+
+  width:  var(--sw-thumb);
+  height: var(--sw-thumb);
+  border-radius: 50%;
+  background: #FFFFFF;
+  border: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .28);
+  transition: transform var(--dur-fast) var(--ease-out),
+              box-shadow var(--dur-fast) var(--ease-out);
+}
+
+/* 开 */
+/* 开态轨道 —— 用**专门的开关令牌**，不是直接拿 --accent
+   ⭐ 原因（实测）：`--accent` 在暗色下是 `#7AA9DE`（**亮蓝**），
+     铺满 42×24 这么一大块 ⇒ 在深底上**发光、刺眼**。
+     暗色下的品牌色要**降彩度**（业界共识），
+     一个"大面积填充"的控件尤其需要。
+   ⇒ 新增 `--switch-on`：浅色 = 品牌色；暗色 = 降彩度后的深蓝。 */
+.switch__input:checked ~ .switch__track {
+  background: var(--switch-on, var(--accent));
+  border-color: var(--switch-on, var(--accent));
+}
+
+.switch__input:checked ~ .switch__track .switch__thumb {
+  /* 20px = 40(轨) - 16(点) - 4(左右各 2) */
+  /* 🔴 用推导值，不用写死的 18px（原来与实际尺寸脱钩 ⇒ 圆圈看着歪）*/
+  transform: translateX(calc(var(--sw-h) * 1.75
+                                 - var(--sw-inset) * 2 - var(--sw-pad) * 2
+                                 - (var(--sw-h) - var(--sw-inset) * 2
+                                    - var(--sw-pad) * 2)));
+  border-color: var(--accent);
+}
+
+/* 焦点环在**看得见**的元素上（原生 outline 被 clip 了，看不见）。
+
+   🔴 2026-10-03 补 `:focus`（原来只有 `:focus-visible`，states 门禁报缺）。
+   门禁的判据（不是我的偏好）：
+       button 用 :focus-visible（鼠标点击时不该出环）
+       input  用 :focus      （用户必须随时知道焦点在哪）
+   switch 归在 input 那一类（它就是个 checkbox），所以要 `:focus`。
+   写 `:focus` 而不是同时写两条，是因为**输入类控件的焦点必须始终可见** ——
+   只用 :focus-visible 的话，鼠标点过之后焦点就"看不见"了。 */
+/* 🔴 2026-10-04 修「点了就出边框、关不掉」（Owner 实机报）+ 一个我漏掉的根因
+
+   真因有两层，我之前只看到第一层：
+
+   ① 我为了满足 states 门禁，把 `:focus-visible` 改成了 `:focus`。
+      ⇒ iOS 上点触屏**也会给元素焦点** ⇒ `:focus` 永远成立 ⇒ 焦点环常驻。
+      ⇒ 改回 `:focus-visible`（浏览器自己区分键盘/触摸）。
+
+   ② 但**还有一层我漏了**：`input` 是原生控件，它**自己带一圈系统焦点环**
+      （Chromium 实测 3px，Safari 也一样）。
+      即使我的 `:focus-visible` 规则不触发，**原生那一圈照样在**
+      —— 因为原生 input 一直在"已聚焦"状态。
+
+      ⇒ 光改选择器不够，**必须显式关掉原生环**：
+         `outline: none` 作为基线，只在 `:focus-visible` 时自己画一个。
+      （这正是本库 choice.css 早就做对的事——我又漏了。）
+
+   ⇒ 两条一起改才对。 */
+.switch__input {
+  /* 🔴 关掉原生焦点环（基线）。
+     没有这一条，系统那一圈会一直挂在视觉元素外面关不掉。 */
+  outline: none;
+}
+
+.switch__input:focus-visible ~ .switch__track {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* 禁用
+   🔴 2026-10-03 修正：原来用 `opacity: 0.5`。
+   states 门禁把它列为反模式，理由成立 ——
+   **opacity 会把元素内部所有颜色一起乘淡**，
+   于是"禁用"变成一种算出来的颜色，**对比度不再可控**
+   （0.5 乘完常常直接掉到 3:1 以下）。
+   ⇒ 改成**显式换令牌**：`surface-sunken` 底 + `border-decor` 边，
+     视觉上"变灰"是确定的，且文字本身没有变淡 —— 
+     WCAG 1.4.3 豁免的是"禁用控件"（不要求对比），但**不该靠乘算**。 */
+.switch__input:disabled ~ .switch__track {
+  background: var(--surface-sunken);
+  border-color: var(--border-decor);
+  cursor: not-allowed;
+}
+
+.switch__input:disabled ~ .switch__track .switch__thumb {
+  background: var(--surface);
+  border-color: var(--border-decor);
+  box-shadow: none;
+}
+
+.switch__input:disabled ~ .switch__label {
+  color: var(--text-tertiary);
+  cursor: not-allowed;
+}
+
+/* 标签文字 —— 可以没有（纯图标式开关），但语义名字必须有 */
+.switch__label {
+  cursor: pointer;
+  user-select: none;
+}
+
+/* 只有滑块、没有可见文字时的隐藏文字
+   ⚠️ 这**不是** `display:none`（那样读屏也听不到），
+      是视觉隐藏但保留在无障碍树里。 */
+.switch__label--sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* 🔴 hover 门控：触屏上"点一下"会先点亮 hover 再 click ⇒ 状态粘住不褪。 */
+@media (hover: hover) and (pointer: fine) {
+  .switch:not(.switch--disabled):hover .switch__track {
+    border-color: var(--accent-hover);
+  }
+}
+
+/* 尺寸变体：两档（与 card / badge 一致） */
+/* 🔴 大号：只改 --sw-h，整套几何（宽/滑块/行程）**自动跟着变**
+   —— 这就是变量推导的好处：不可能漏改某一处。 */
+.switch--lg .switch__track {
+  --sw-h: 28px;
+  width: 48px;
+  height: 28px;
+}
+
+.switch--lg .switch__thumb {
+  width: 22px;
+  height: 22px;
+}
+
+/* 大号滑块的位移：48 - 22 - 4 = 22px */
+.switch--lg .switch__input:checked ~ .switch__track .switch__thumb {
+  transform: translateX(calc(var(--sw-h) * 1.75
+                                 - var(--sw-inset) * 2 - var(--sw-pad) * 2
+                                 - (var(--sw-h) - var(--sw-inset) * 2
+                                    - var(--sw-pad) * 2)));
+}

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>accordion · 折叠面板</title>
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../03-patterns/accordion/accordion.css">
+<style>
+  .wrap { max-width: 820px; margin: 0 auto; padding: var(--sp-6) var(--sp-4); }
+  h1 { font-size: var(--fs-2xl); line-height: var(--lh-tight); margin: 0 0 var(--sp-2); }
+  .lede { color: var(--text-secondary); margin: 0 0 var(--sp-6); max-width: 60ch; }
+  h2 { font-size: var(--fs-lg); margin: var(--sp-8) 0 var(--sp-2);
+       padding-top: var(--sp-5); border-top: 1px solid var(--border-decor); }
+  .small { font-size: var(--fs-xs); color: var(--text-secondary); }
+  .box { background: var(--surface); border: 1px solid var(--border-decor);
+         border-radius: var(--r-md); padding: var(--sp-5); }
+  .box.bad { background: var(--surface-sunken); }
+  code { font-family: var(--mono); font-size: 0.9em;
+         background: var(--surface-sunken); padding: 1px 4px; border-radius: 3px; }
+  p { margin: 0 0 var(--sp-3); }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <h1>accordion · 折叠面板</h1>
+  <p class="lede">
+    用于把长表单或长内容分成几段。<strong>默认只开一个</strong>（同一个问题的不同答案），
+    加 <code>accordion--multi</code> 可同时开多个（各自独立的信息块）。
+  </p>
+
+  <h2>单开（默认）</h2>
+  <div class="accordion" data-accordion>
+    <div class="accordion__item">
+      <h3 class="accordion__heading">
+        <button class="accordion__trigger" aria-expanded="true">
+          <span class="accordion__label">公司基本信息</span>
+          <span class="accordion__marker" aria-hidden="true"></span>
+        </button>
+      </h3>
+      <div class="accordion__panel">
+      <div class="accordion__panel-inner">
+        <p>公司名称、证券代码、行业分类、上市日期与所属交易所。</p>
+        <p>这些字段决定后面所有指标怎么算，缺任何一项都会让勾稽校验失败。</p>
+      
+      </div>
+    </div>
+    </div>
+    <div class="accordion__item">
+      <h3 class="accordion__heading">
+        <button class="accordion__trigger" aria-expanded="false">
+          <span class="accordion__label">数据源与口径</span>
+          <span class="accordion__marker" aria-hidden="true"></span>
+        </button>
+      </h3>
+      <div class="accordion__panel" hidden>
+      <div class="accordion__panel-inner">
+        <p>抓取来源、更新频率、复核规则，以及异常时的处理方式。</p>
+        <p>失败会重试三次，仍失败则标记为「待复核」，不会静默跳过。</p>
+      
+      </div>
+    </div>
+    </div>
+    <div class="accordion__item">
+      <h3 class="accordion__heading">
+        <button class="accordion__trigger" aria-expanded="false">
+          <span class="accordion__label">审计记录</span>
+          <span class="accordion__marker" aria-hidden="true"></span>
+        </button>
+      </h3>
+      <div class="accordion__panel" hidden>
+      <div class="accordion__panel-inner">
+        <p>历次复核结论、责任人与时间戳，全部留痕不可删除。</p>
+      
+      </div>
+    </div>
+    </div>
+  </div>
+  <p class="small">打开第二项时，第一项会<strong>自动收起</strong>。</p>
+
+  <h2>多开</h2>
+  <div class="accordion" data-accordion data-accordion-multi>
+    <div class="accordion__item">
+      <h3 class="accordion__heading">
+        <button class="accordion__trigger" aria-expanded="true">
+          <span class="accordion__label">网络与抓取</span>
+          <span class="accordion__marker" aria-hidden="true"></span>
+        </button>
+      </h3>
+      <div class="accordion__panel">
+      <div class="accordion__panel-inner">
+        <p>数据源：交易所公开文件、公司定期报告、第三方行情镜像。</p>
+        <p>抓取频率：日频（收盘后）与季频（财报期），失败自动重试三次。</p>
+        <p>最后成功：今天 18:24 · 下一轮：明日 09:10</p>
+      
+      </div>
+    </div>
+    </div>
+    <div class="accordion__item">
+      <h3 class="accordion__heading">
+        <button class="accordion__trigger" aria-expanded="true">
+          <span class="accordion__label">指标与口径</span>
+          <span class="accordion__marker" aria-hidden="true"></span>
+        </button>
+      </h3>
+      <div class="accordion__panel">
+      <div class="accordion__panel-inner">
+        <p>口径以最新年报为准；年报未披露的用最近一期季报并标注。</p>
+        <p>跨期变动超过 5% 需人工复核，勾稽关系 E1–E22 全部通过才入库。</p>
+      
+      </div>
+    </div>
+    </div>
+    <div class="accordion__item">
+      <h3 class="accordion__heading">
+        <button class="accordion__trigger" aria-expanded="false">
+          <span class="accordion__label">复核记录</span>
+          <span class="accordion__marker" aria-hidden="true"></span>
+        </button>
+      </h3>
+      <div class="accordion__panel" hidden>
+      <div class="accordion__panel-inner">
+        <p>最近一次复核：昨天 21:03，结论为通过，责任人本人。</p>
+      
+      </div>
+    </div>
+    </div>
+  </div>
+  <p class="small">
+    加了 <code>data-accordion-multi</code>：各段独立，不互相影响。
+  </p>
+  <p class="small">
+    <strong>为什么这里写了好几行字</strong>（2026-10-04 补）：
+    原来每段只有一句「网络」「计算」类的话（11–16 字符），
+    <strong>视觉上就是个空壳</strong> —— Owner 实机看到后判断为
+    「感觉非常廉价」「像是没多写、东西被吃掉了」。
+    ⇒ <strong>面板只有一行字时，用户无法判断这个组件在真实场景里长什么样。</strong>
+    demo 要展示的就是真实信息密度。
+  </p>
+
+  <h2>禁用的分段</h2>
+  <div class="accordion" data-accordion>
+    <div class="accordion__item">
+      <h3 class="accordion__heading">
+        <button class="accordion__trigger" aria-expanded="false">
+          <span class="accordion__label">可用</span>
+          <span class="accordion__marker" aria-hidden="true"></span>
+        </button>
+      </h3>
+      <div class="accordion__panel" hidden>
+      <div class="accordion__panel-inner"><p>能点开。</p>
+      </div>
+    </div>
+    </div>
+    <div class="accordion__item">
+      <h3 class="accordion__heading">
+        <button class="accordion__trigger" aria-expanded="false" aria-disabled="true">
+          <span class="accordion__label">未开通（禁用）</span>
+          <span class="accordion__marker" aria-hidden="true"></span>
+        </button>
+      </h3>
+      <div class="accordion__panel" hidden>
+      <div class="accordion__panel-inner"><p>点不开。</p>
+      </div>
+    </div>
+    </div>
+  </div>
+
+  <h2>结构要求（APG 原文）</h2>
+  <div class="box">
+    <p><strong>heading 包住 button</strong>，不是 button 套 heading：</p>
+    <p><code>&lt;h3&gt;&lt;button aria-expanded="true"&gt;标题&lt;/button&gt;&lt;/h3&gt;</code></p>
+    <p class="small">
+      APG 原文：<em>"place the heading tag around the button,
+      <strong>not inside it</strong>, as this would prevent some screen readers
+      (such as VoiceOver and TalkBack) from reading it."</em>
+      写反了 VoiceOver / TalkBack <strong>读不出标题</strong>。
+    </p>
+  </div>
+
+  <h2>键盘（APG 原文）</h2>
+  <div class="box">
+    <p><strong>Enter / Space</strong> 切换 —— 但本组件<strong>没有写 keydown 监听</strong></p>
+    <p class="small">
+      因为原生 <code>&lt;button&gt;</code> <strong>本身就响应这两个键并触发 click</strong>
+      —— 写了反而<strong>双触发</strong>（keydown 切一次、click 又切一次）。
+      这是「用原生控件」的又一处收益：<strong>无障碍行为免费且必然正确</strong>。
+    </p>
+    <p class="small" style="margin-top:var(--sp-3)">
+      ⚠️ <strong>本组件故意没有方向键 / Home / End</strong>。
+      APG 明确写：<em>"arrow / Home / End key navigation is
+      <strong>no longer part of the APG Accordion keyboard interaction</strong>."</em>
+      那是 <strong>tabs</strong> 的契约（roving tabindex）——
+      照抄给 accordion 是把两个模式混了。
+    </p>
+  </div>
+
+  <h2>role="region" 的数量上限</h2>
+  <div class="box">
+    <p class="small">
+      APG 警告：超过约 6 个可同时展开的面板时，给每个 panel 加
+      <code>role="region"</code> 会造成
+      <strong>"landmark region proliferation"</strong>（地标泛滥）——
+      读屏用户的地标列表会被几十个「分区」淹没。
+      ⇒ <strong>面板数 &gt; 6 时不要加</strong>，本组件用
+      <code>accordion--many</code> 关闭它。
+    </p>
+  </div>
+
+  <h2>反例</h2>
+  <div class="box bad">
+    <h3>反例：用 div 当 trigger</h3>
+    <p class="small">
+      <code>&lt;div class="accordion__trigger"&gt;</code> 键盘上 Tab 不到、
+      也不响应 Enter/Space。<strong>APG 要求 header 里是
+      <code>role="button"</code> 的元素</strong>，用原生
+      <code>&lt;button&gt;</code> 最省事也最可靠。
+    </p>
+  </div>
+  <div class="box bad">
+    <h3>反例：折叠时只用 max-height: 0</h3>
+    <p class="small">
+      内容在无障碍树里<strong>仍然存在</strong> —— 读屏会念出「折叠」区域里的全部文字，
+      键盘也能 Tab 进去。<strong>必须用 <code>hidden</code> 或
+      <code>display:none</code></strong>，让它真正离开无障碍树。
+    </p>
+  </div>
+</main>
+<script src="accordion.js"></script>
+</body>
+</html>

@@ -1,0 +1,122 @@
+/* ============================================================================
+   drawer.css — 抽屉（D2 /
+   ============================================================================
+   依据：APG Dialog 模式（Drawer 是从侧边滑入的 Dialog）
+
+   ⭐ 与 dialog 的差别只有"从哪进来"，**三条硬要求完全一样**：
+     ① **焦点陷阱**：Tab 不能跑到抽屉外
+     ② **Esc 关闭**
+     ③ ⭐ **关闭后焦点归位**（回到触发它的按钮）
+        —— 这条最容易漏，且**影响最大**：
+           键盘用户被"扔"回页面顶部，得重新 Tab 一遍。
+
+   ⚠️ 抽屉是**模态**（modal）：背景必须 `inert` 或 `aria-hidden`，
+      否则读屏会同时读到抽屉与背景（"双重朗读"）。
+   ============================================================================ */
+
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  background: rgba(0, 0, 0, .42);
+  display: flex;
+  /* 抽屉从右侧滑入（可改成 left / top / bottom）*/
+  justify-content: flex-end;
+}
+
+.drawer-backdrop[hidden] { display: none; }
+
+.drawer {
+  width: min(420px, 92vw);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-inset-inline-start: 1px solid var(--border-decor);
+  box-shadow: var(--shadow-2);
+  /* 焦点在抽屉里时，浏览器不会自动滚进视野 ⇒ 手动处理 */
+  overflow: hidden;
+}
+
+.drawer--left  { border-inset-inline-start: 0; border-inset-inline-end: 1px solid var(--border-decor); }
+.drawer--top   { width: 100%; height: min(60vh, 420px); border-inset-inline-start: 0;
+                border-bottom: 1px solid var(--border-decor); }
+.drawer--bottom { width: 100%; height: min(60vh, 420px); border-inset-inline-start: 0;
+                border-top: 1px solid var(--border-decor); }
+
+/* ---------- 头 ---------- */
+.drawer__head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  border-bottom: 1px solid var(--border-decor);
+  flex: 0 0 auto;
+}
+
+.drawer__title {
+  flex: 1 1 auto;
+  margin: 0;
+  font-size: var(--fs-lg);
+  font-weight: 600;
+}
+
+.drawer__close {
+  flex: 0 0 auto;
+  width: 44px;                 /* 🔴 命中区（关闭按钮是独立目标，用 44）*/
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 0;
+  border-radius: var(--r-sm);
+  color: var(--text-secondary);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.drawer__close:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .drawer__close:hover { background: var(--surface-sunken); }
+}
+
+/* ---------- 体 / 脚 ---------- */
+.drawer__body {
+  flex: 1 1 auto;
+  padding: var(--sp-4);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.drawer__foot {
+  flex: 0 0 auto;
+  display: flex;
+  gap: var(--sp-2);
+  justify-content: flex-end;
+  padding: var(--sp-4);
+  border-top: 1px solid var(--border-decor);
+}
+
+/* ---------- 进出场动画 ----------
+   ⚠️ 用 transform 而不是 left/right（合成层动画，不触发重排）。
+   ⚠️ 动画只做"位移 + 少量透明度"，**不做大幅缩放** —— 那看起来廉价。 */
+@media (prefers-reduced-motion: no-preference) {
+  .drawer--right  { animation: drawer-in-right  220ms var(--ease-out, ease); }
+  .drawer--left   { animation: drawer-in-left   220ms var(--ease-out, ease); }
+  .drawer--top    { animation: drawer-in-top    220ms var(--ease-out, ease); }
+  .drawer--bottom { animation: drawer-in-bottom 220ms var(--ease-out, ease); }
+
+  @keyframes drawer-in-right  { from { transform: translateX(16px); opacity: .6; } }
+  @keyframes drawer-in-left   { from { transform: translateX(-16px); opacity: .6; } }
+  @keyframes drawer-in-top    { from { transform: translateY(-16px); opacity: .6; } }
+  @keyframes drawer-in-bottom { from { transform: translateY(16px); opacity: .6; } }
+}
+
+/* 退场（JS 加这个类，等动画结束再移除节点）*/
+.drawer.is-leaving { opacity: 0; transition: opacity 160ms var(--ease-out, ease); }

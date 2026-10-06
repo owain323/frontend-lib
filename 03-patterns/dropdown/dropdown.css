@@ -1,0 +1,135 @@
+/* ============================================================================
+   dropdown.css — 下拉菜单（B3 /
+   ============================================================================
+   依据：APG（ARIA Authoring Practices）Menu Button 模式
+
+   ⭐ 四条键盘契约（APG 明确要求，缺一条就不算合规）：
+     ① **↑↓** 在项之间移动
+     ② **Esc** 关闭并把焦点**还给按钮**
+     ③ **Tab** 关闭菜单（焦点移到下一个元素）
+     ④ **Enter / Space** 激活当前项
+
+   ⚠️ 另有两条容易漏的：
+     · 关闭后**焦点必须归位**（不归位 ⇒ 键盘用户迷路）
+     · 菜单项的**命中区 ≥ 44px**（密集列表也要够大）
+   ============================================================================ */
+
+.dd {
+  position: relative;
+  display: inline-block;
+}
+
+/* ---------- 触发按钮 ---------- */
+.dd__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 44px;                  /* WCAG 2.5.5 AAA */
+  padding: 0 var(--sp-4);
+  background: var(--surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-control);
+  border-radius: var(--r-sm);
+  font: inherit;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+
+.dd__btn:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.dd__caret {
+  width: 0;
+  height: 0;
+  border: 4px solid transparent;
+  border-top-color: currentColor;
+  /* 展开时翻转（形状线索，不只靠阴影）*/
+  transition: transform 140ms var(--ease-out, ease);
+}
+
+.dd__btn[aria-expanded="true"] .dd__caret {
+  transform: rotate(180deg);
+}
+
+/* ---------- 菜单 ---------- */
+.dd__menu {
+  position: absolute;
+  top: calc(100% + var(--sp-1));
+  inset-inline-start: 0;
+  z-index: var(--z-raised);
+  min-width: 180px;
+  margin: 0;
+  padding: var(--sp-1);
+  list-style: none;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-decor);
+  border-radius: var(--r-sm);
+  box-shadow: var(--shadow-2, 0 6px 18px rgba(0, 0, 0, .14));
+}
+
+/* 🔴 关闭态用 hidden 属性 ⇒ 移出无障碍树 + 不可聚焦 */
+.dd__menu[hidden] { display: none; }
+
+.dd__item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  /* 🔴 2026-10-05 修：原来写 `min-height: 44px`，但 <li> 是 `display:list-item`
+     ⇒ 在 flex 容器里**未被拉伸**，实测只有 24px。
+     ⇒ 改用 `height` 明确给足（或保持 flex 但显式 height）。
+     ⚠️ 这类问题在桌面小屏看不出来，只有量了才发现。 */
+  height: 44px;                       /* 明确高度，不用 min-height */
+  box-sizing: border-box;
+  padding: 0 var(--sp-3);
+  border-radius: var(--r-xs, 3px);
+  color: var(--text-primary);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  user-select: none;
+}
+
+/* ⭐ 焦点与悬停**用同一个视觉**（键盘与鼠标看到的是同一个高亮）*/
+.dd__item:focus,
+.dd__item.is-active {
+  outline: none;                     /* 自己画，不用默认 outline */
+  background: var(--accent-soft);
+  color: var(--text-primary);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .dd__item:hover { background: var(--surface-sunken); }
+}
+
+.dd__item[aria-disabled="true"] {
+  color: var(--text-tertiary);
+  cursor: not-allowed;
+  background: var(--surface-sunken);  /* 不用 opacity（对比度不可控）*/
+}
+
+.dd__sep {
+  height: 1px;
+  margin: var(--sp-1) 0;
+  background: var(--border-decor);
+  /* 纯装饰：读屏不需要知道有分隔线 */
+  list-style: none;
+}
+
+.dd__sep[role="separator"] { display: block; }
+
+/* ---------- 菜单项里的勾（选中性，不只靠颜色）---------- */
+.dd__check {
+  width: 1em;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dd__caret { transition: none; }
+}
+
+/* ---------- 窄屏：菜单贴右，避免出屏 ---------- */
+@media (max-width: 30rem) {
+  .dd--end .dd__menu { inset-inline-start: auto; inset-inline-end: 0; }
+}

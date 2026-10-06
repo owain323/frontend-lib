@@ -1,0 +1,73 @@
+/* ============================================================================
+   Separator — 分隔线
+   ============================================================================
+   🔴 两种分隔线，必须分清（APG: Separator Pattern）
+   ------------------------------------------------
+       装饰性（.separator）      纯视觉，把内容分成块
+                               → <hr> 或 <div role="separator">
+                               → 读屏**不需要**播报
+
+       语义性（.separator--label） 分开了**不同的东西**
+                               （章节与章节、标题与标题）
+                               → role="separator" + 内部文字
+                               → 读屏**应该**播报"分隔符"
+
+   为什么会混：两者视觉上都是一条线，但**对辅助技术的意义完全不同** ——
+   装饰性的播报是噪音，语义性的不播报则丢信息。
+
+   为什么用两档颜色（实测，不是拍脑袋）
+   --------------------------------
+   本库实测（vs --surface，WCAG 1.4.11 非文字对比要 ≥ 3:1）：
+
+       --border-decor       浅 1.26 · 暗 1.23   < 3
+       --border-decor-str   浅 1.60 · 暗 1.61   < 3
+       --border-control     浅 3.42 · 暗 4.34   ✅ ≥ 3
+
+   ⇒ **装饰性**用 `--border-decor`：它只分开内容块，
+     不承担"这是两个不同的东西"的语义，1.4.11 不适用。
+   ⇒ **语义性**用 `--border-control`：它是**唯一的视觉线索**，
+     读屏用户看不到 ⇒ 必须在视觉上也足够明显，否则等于没分。
+
+   这就是"不要一档打天下"的实测依据 ——
+   两档的差距是 1.26 vs 3.42，差 2.7 倍。
+   ========================================================================= */
+
+.separator {
+  border: 0;
+  border-top: 1px solid var(--border-decor);
+  margin: var(--sp-6) 0;
+  height: 0;                /* hr 默认有高度，显式归零 */
+}
+
+.separator--tight {
+  margin: var(--sp-4) 0;
+}
+
+/* 语义性：带文字的分隔（"基本信息" / "高级设置"） */
+.separator--label {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  border: 0;
+  margin: var(--sp-6) 0 var(--sp-3);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* 🔴 用 border 而不是 box-shadow —— 分隔线是 1px 的线，
+   用 box-shadow 在某些浏览器上会渲染成 2px（亚像素取整）。 */
+.separator--label::before,
+.separator--label::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid var(--border-control);   /* 语义型用可达标的档 */
+}
+
+.separator--label::after {
+  display: none;            /* 默认只在文字前画线；要两侧就用 .--both */
+}
+
+.separator--label.separator--both::after {
+  display: block;
+}

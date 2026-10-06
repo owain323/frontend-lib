@@ -1,0 +1,270 @@
+/**
+ * combobox.js — 组合框 / 标签输入（E2 /
+ *
+ * 依据：APG Combobox with List Autocomplete
+ * ============================================================================
+ * ⭐ 三条最容易漏的：
+ *
+ * ① **焦点管理**：焦点**始终在 input 上**（不是选项上），
+ *    靠 aria-activedescendant 告知读屏"当前在第几项"。
+ *    ⇒ 这与「roving tabindex」（树）的做法**正好相反**。
+ *    ⇒ 用错会出现"点选项后输入框失焦，打字没反应"。
+ *
+ * ② **Backspace 删标签**：光标在空输入框时按 Backspace ⇒ 删最后一个标签。
+ *    ⇒ 这是标签输入的事实标准交互，缺了很别扭。
+ *
+ * ③ **Enter 加标签**：输入框有文字时按 Enter ⇒ 把当前高亮项加为标签并清空输入。
+ *
+ * 无依赖 · ES5
+ */
+(function (global) {
+  'use strict';
+
+  var uid = 0;
+
+  function create(root, opt) {
+    opt = opt || {};
+    var input = root.querySelector('[data-combo-input]');
+    var list = root.querySelector('[data-combo-list]');
+    var tagBox = root.querySelector('[data-combo-tags]');
+    if (!input || !list) throw new Error('Combobox: 缺少 [data-combo-input] 或 [data-combo-list]');
+    if (!list.id) list.id = 'combo-list-' + (++uid);
+
+    var ALL = opt.options || [];              /* [{value, label}] */
+    var tags = [];                            /* 已选 */
+    var activeIdx = -1;
+    var shown = [];                           /* 当前过滤后的选项 */
+
+    list.setAttribute('role', 'listbox');
+    list.setAttribute('aria-label', opt.label || '建议');
+    input.setAttribute('role', 'combobox');
+    input.setAttribute('aria-autocomplete', 'list');
+    input.setAttribute('aria-expanded', 'false');
+    input.setAttribute('aria-controls', list.id);
+    if (!input.id) input.id = 'combo-input-' + uid;
+    if (!input.getAttribute('aria-label') && !root.querySelector('label[for="' + input.id + '"]')) {
+      input.setAttribute('aria-label', opt.label || '输入');
+    }
+
+    /* ---------- 过滤（含高亮命中片段）---------- */
+    function esc(s) {
+      return String(s).replace(/[&<>"]/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+      });
+    }
+    function filter(q) {
+      q = (q || '').trim().toLowerCase();
+      if (!q) return ALL.slice();
+      return ALL.filter(function (o) {
+        return (o.label || '').toLowerCase().indexOf(q) >= 0 ||
+               (o.value || '').toLowerCase().indexOf(q) >= 0;
+      });
+    }
+    function paintList() {
+      var q = input.value.trim();
+      shown = filter(q).slice(0, 50);
+      if (!shown.length) {
+        list.innerHTML = '<li class="combo__empty" role="presentation">' +
+          (q ? '没有匹配「' + esc(q) + '」的选项' : '暂无可选') + '</li>';
+        return;
+      }
+      var ql = q.toLowerCase();
+      list.innerHTML = shown.map(function (o, i) {
+        var picked = tags.indexOf(o.value) >= 0;
+        var label = esc(o.label);
+        /* ⭐ 高亮命中片段：让用户知道**为什么**这条匹配 */
+        if (ql) {
+          var raw = o.label, k = raw.toLowerCase().indexOf(ql);
+          if (k >= 0) {
+            label = esc(raw.slice(0, k)) + '<mark>' + esc(raw.slice(k, k + q.length)) +
+                    '</mark>' + esc(raw.slice(k + q.length));
+          }
+        }
+        return '<li class="combo__opt" role="option" id="' + list.id + '-o' + i + '"' +
+               ' data-value="' + esc(o.value) + '"' +
+               ' aria-selected="' + (picked ? 'true' : 'false') + '">' +
+               '<span class="combo__opt-text">' + label + '</span></li>';
+      }).join('');
+      activeIdx = -1;
+    }
+
+    /* ---------- 标签 ---------- */
+    function paintTags() {
+      if (!tagBox) return;
+      tagBox.innerHTML = tags.map(function (v) {
+        var o = ALL.filter(function (x) { return x.value === v; })[0] || { label: v };
+        /* ⭐ 删除按钮有 aria-label（否则读屏只念"×"）*/
+        return '<span class="combo__tag">' +
+               '<span class="combo__tag-text">' + esc(o.label) + '</span>' +
+               '<button class="combo__tag-del" type="button" data-del="' + esc(v) + '"' +
+               ' aria-label="移除 ' + esc(o.label) + '">×</button></span>';
+      }).join('');
+      var hidden = root.querySelector('input[type="hidden"]');
+      if (hidden) hidden.value = tags.join(',');
+      if (opt.onChange) opt.onChange(tags.slice());
+    }
+    function addTag(v) {
+      if (v == null || v === '') return false;
+      if (tags.indexOf(v) >= 0) return false;      /* 不重复 */
+      tags.push(v);
+      paintTags();
+      return true;
+    }
+    function removeTag(v) {
+      var i = tags.indexOf(v);
+      if (i < 0) return false;
+      tags.splice(i, 1);
+      paintTags();
+      return true;
+    }
+
+    /* ---------- 游标 ---------- */
+    function opts() {
+      return [].slice.call(list.querySelectorAll('[role="option"]'));
+    }
+    function setActive(i, dir) {
+      var os = opts();
+      if (!os.length) { activeIdx = -1; input.removeAttribute('aria-activedescendant'); return; }
+      dir = dir || 1;
+      var n = os.length;
+      var idx = ((i % n) + n) % n;
+      for (var k = 0; k < n; k++) {
+        if (os[idx].getAttribute('aria-disabled') !== 'true') break;
+        idx = ((idx + dir) % n + n) % n;
+      }
+      activeIdx = idx;
+      os.forEach(function (o) { o.classList.remove('is-active'); });
+      os[idx].classList.add('is-active');
+      /* ⭐ 焦点留在 input 上，靠 aria-activedescendant 告知读屏 */
+      input.setAttribute('aria-activedescendant', os[idx].id);
+      if (os[idx].scrollIntoView) os[idx].scrollIntoView({ block: 'nearest' });
+    }
+    function open() {
+      paintList();
+      list.hidden = false;
+      input.setAttribute('aria-expanded', 'true');
+    }
+    function close() {
+      list.hidden = true;
+      input.setAttribute('aria-expanded', 'false');
+      activeIdx = -1;
+      input.removeAttribute('aria-activedescendant');
+    }
+    function commitActive() {
+      if (activeIdx < 0) return false;
+      var o = opts()[activeIdx];
+      if (!o) return false;
+      var v = o.getAttribute('data-value');
+      var ok = addTag(v);
+      input.value = '';
+      paintList();
+      /* 标签满时保持列表开着（还能继续加），否则关掉 */
+      if (opt.max && tags.length >= opt.max) close();
+      return ok;
+    }
+
+    /* ---------- 键盘（焦点常驻 input）---------- */
+    input.addEventListener('keydown', function (e) {
+      var k = e.key;
+
+      /* ↑↓ 在建议间移动 */
+      if (k === 'ArrowDown' || k === 'ArrowUp') {
+        e.preventDefault();
+        if (list.hidden) { open(); return; }
+        var dir = k === 'ArrowDown' ? 1 : -1;
+        var base = activeIdx >= 0 ? activeIdx : (dir > 0 ? -1 : opts().length);
+        setActive(base + dir, dir);
+        return;
+      }
+      /* Enter：加当前高亮项；没有高亮则加"输入的文字" */
+      if (k === 'Enter') {
+        if (list.hidden) return;
+        e.preventDefault();
+        if (activeIdx >= 0) { commitActive(); return; }
+        /* 没有高亮 ⇒ 精确匹配一个 */
+        var q = input.value.trim();
+        var hit = shown.filter(function (o) {
+          return (o.label || '').toLowerCase() === q.toLowerCase() ||
+                 (o.value || '').toLowerCase() === q.toLowerCase();
+        })[0];
+        if (hit) { addTag(hit.value); input.value = ''; paintList(); }
+        return;
+      }
+      /* Esc：先关列表；列表已关则清空输入 */
+      if (k === 'Escape' || k === 'Esc') {
+        if (!list.hidden) { e.preventDefault(); e.stopPropagation(); close(); return; }
+        if (input.value) { e.preventDefault(); input.value = ''; paintList(); }
+        return;
+      }
+      /* ② Backspace：空输入时删最后一个标签 */
+      if (k === 'Backspace' && !input.value && tags.length) {
+        e.preventDefault();
+        removeTag(tags[tags.length - 1]);
+        return;
+      }
+      /* 逗号/顿号也算"确认"（中文用户习惯）*/
+      if ((k === ',' || k === '，') && input.value.trim()) {
+        e.preventDefault();
+        var q2 = input.value.trim();
+        var h2 = shown.filter(function (o) {
+          return (o.label || '').indexOf(q2) >= 0 || (o.value || '').indexOf(q2) >= 0;
+        })[0];
+        if (h2) { addTag(h2.value); input.value = ''; paintList(); }
+        return;
+      }
+      if (k === 'Home' && !list.hidden) { e.preventDefault(); setActive(0, 1); return; }
+      if (k === 'End' && !list.hidden) { e.preventDefault(); setActive(opts().length - 1, -1); return; }
+    });
+
+    /* ---------- 输入即过滤 ---------- */
+    input.addEventListener('input', function () {
+      open();
+    });
+    input.addEventListener('focus', function () { open(); });
+    input.addEventListener('click', function () { open(); });
+
+    /* ---------- 标签删除 ---------- */
+    if (tagBox) {
+      tagBox.addEventListener('click', function (e) {
+        var b = e.target.closest ? e.target.closest('[data-del]') : null;
+        if (!b) return;
+        removeTag(b.getAttribute('data-del'));
+        input.focus();                      /* 删除后焦点回输入框 */
+      });
+    }
+
+    /* ---------- 点选项 ---------- */
+    list.addEventListener('click', function (e) {
+      var o = e.target.closest ? e.target.closest('[role="option"]') : null;
+      if (!o) return;
+      addTag(o.getAttribute('data-value'));
+      input.value = '';
+      paintList();
+      input.focus();
+    });
+    document.addEventListener('click', function (e) {
+      if (!root.contains(e.target)) close();
+    });
+
+    /* 🔴 禁用态同步：CSS 不用 :has()（ES6+ 兼容问题，见 combobox.css 注释）
+       ⇒ 由这里根据 input.disabled 给容器加 class。 */
+    function syncDisabled() {
+      var field = root.querySelector('.combo__field') ||
+                  input.parentElement;
+      if (!field) return;
+      if (input.disabled) field.classList.add('is-disabled');
+      else field.classList.remove('is-disabled');
+    }
+    input.addEventListener('change', syncDisabled);
+    syncDisabled();
+
+    paintTags();
+    return {
+      get tags() { return tags.slice(); },
+      add: addTag, remove: removeTag,
+      setOptions: function (o) { ALL = o || []; paintList(); },
+    };
+  }
+
+  global.Combobox = { create: create };
+})(window);

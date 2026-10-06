@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>滚动条 ·· frontend-lib</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="typography.css">
+<link rel="stylesheet" href="scrollbar.css">
+<style>
+  body {
+    min-height: 100vh; margin: 0;
+    padding: calc(env(safe-area-inset-top) + var(--sp-6))
+             max(env(safe-area-inset-right), var(--sp-4))
+             calc(env(safe-area-inset-bottom) + var(--sp-6))
+             max(env(safe-area-inset-left), var(--sp-4));
+    background: var(--paper); color: var(--text-primary);
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  h1 { font-size: var(--fs-2xl); line-height: var(--lh-tight); margin: 0 0 var(--sp-2); }
+  h2 { font-size: var(--fs-lg); margin: var(--sp-7) 0 var(--sp-3);
+       padding-top: var(--sp-4); border-top: 1px solid var(--border-decor); }
+  h3 { font-size: var(--fs-base); margin: var(--sp-4) 0 var(--sp-2); }
+  .lede { color: var(--text-secondary); margin: 0 0 var(--sp-4); }
+  .note { font-size: var(--fs-sm); color: var(--text-secondary);
+          margin: 0 0 var(--sp-3); max-width: 68ch; line-height: 1.75; }
+  code { font-family: var(--mono); font-size: .92em;
+         background: var(--surface-sunken); padding: 1px 5px; border-radius: 3px; }
+  table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); margin: 0 0 var(--sp-4); }
+  th, td { text-align: left; padding: var(--sp-2) var(--sp-3);
+           border-bottom: 1px solid var(--border-decor); }
+  th { font-size: var(--fs-xs); color: var(--text-secondary); font-weight: 500; }
+  td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .ok { color: var(--success); } .no { color: var(--danger); }
+
+  /* 演示面板：给滚动区一个固定高度 */
+  .panel {
+    height: 220px;                       /* 关键：不设高就看不出滚动条 */
+    border: 1px solid var(--border-decor);
+    border-radius: var(--r-md);
+    background: var(--surface);
+  }
+  .row { display: flex; align-items: center; gap: var(--sp-3);
+         padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--border-decor);
+         font-size: var(--fs-sm); }
+  .row:last-child { border-bottom: 0; }
+  .row .n { font-family: var(--mono); color: var(--text-tertiary); width: 3em; }
+  .btn {
+    min-height: 44px; padding: var(--sp-2) var(--sp-4); font: inherit;
+    font-size: var(--fs-sm); color: var(--text-on-accent);
+    background: var(--accent); border: 0; border-radius: var(--r-sm);
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
+  }
+  .btn--ghost { background: var(--surface); color: var(--text-primary);
+                border: 1px solid var(--border-control); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>滚动条</h1>
+  <p class="lede">
+     <code></code>。计划见 <code>00-charter/12-基础设施实施计划.md</code>。
+  </p>
+
+  <h2>1 · 基本用法</h2>
+  <p class="note">
+    页面级滚动条<b>自动生效</b>（<code>scrollbar.css</code> 已经作用于 <code>html</code>）。
+    局部滚动容器挂工具类 <code>.scroll-y</code>（纵向）/ <code>.scroll-x</code>（横向）/
+    <code>.scroll-thin</code>（次要场景，更细）。
+  </p>
+
+  <div class="panel scroll-y">
+    <div class="row"><span class="n">01</span>拖动这个面板右侧的滑块</div>
+    <div class="row"><span class="n">02</span>thumb 是<b>冷灰色胶囊</b></div>
+    <div class="row"><span class="n">03</span>track 是<b>透明</b>的</div>
+    <div class="row"><span class="n">04</span>hover 会变深一档</div>
+    <div class="row"><span class="n">05</span>没有默认的箭头按钮</div>
+    <div class="row"><span class="n">06</span>·</div>
+    <div class="row"><span class="n">07</span>·</div>
+    <div class="row"><span class="n">08</span>·</div>
+    <div class="row"><span class="n">09</span>·</div>
+    <div class="row"><span class="n">10</span>·</div>
+    <div class="row"><span class="n">11</span>·</div>
+    <div class="row"><span class="n">12</span>·</div>
+    <div class="row"><span class="n">13</span>到底了</div>
+  </div>
+
+  <h2>2 · 关键：<code>scrollbar-gutter: stable</code></h2>
+  <p class="note">
+    <b>这是 某项目 / 某项目 踩过的坑</b>：内容动态增加时，滚动条出现 ⇒
+    容器宽度被挤窄 ⇒ 整行内容<b>横向跳一下</b>。
+    <code>scrollbar-gutter: stable</code> 会<b>预先占位</b>，从根上避免。
+    <br><b>怎么验证</b>：看下面两列的<b>右边缘是否对齐</b>。
+    点「加 5 条」后，右列不该移动。
+  </p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-3)">
+    <div>
+      <h3 style="margin-top:0">有 gutter（正确）</h3>
+      <div class="panel scroll-y" id="p1" style="height:140px">
+        <div class="row"><span class="n">1</span>甲</div>
+        <div class="row"><span class="n">2</span>乙</div>
+      </div>
+      <p class="note" style="font-size:var(--fs-xs)">
+        右边缘：<span id="e1">—</span>
+      </p>
+    </div>
+    <div>
+      <h3 style="margin-top:0">无 gutter（会跳）</h3>
+      <div class="panel" id="p2" style="height:140px;overflow-y:auto">
+        <div class="row"><span class="n">1</span>甲</div>
+        <div class="row"><span class="n">2</span>乙</div>
+      </div>
+      <p class="note" style="font-size:var(--fs-xs)">
+        右边缘：<span id="e2">—</span>
+      </p>
+    </div>
+  </div>
+
+  <p class="note">
+    <button class="btn" id="add" type="button">加 5 条</button>
+    <button class="btn btn--ghost" id="reset" type="button" style="margin-left:var(--sp-2)">重置</button>
+  </p>
+
+  <h2>3 · 为什么两套 API 都要写</h2>
+  <table>
+    <tr><th>API</th><th>支持</th><th>能给圆角 / hover</th></tr>
+    <tr><td><code>scrollbar-width</code><br><code>scrollbar-color</code></td>
+        <td>Firefox 64+ · Chrome 121+ · Safari 18.2+</td>
+        <td class="no">❌ 不能</td></tr>
+    <tr><td><code>::-webkit-scrollbar</code> 族</td>
+        <td>Chromium · WebKit（<b>Firefox 完全不支持</b>）</td>
+        <td class="ok">✅ 唯一方式</td></tr>
+  </table>
+  <p class="note">
+    ⇒ <b>标准属性打底、厂商伪元素增强</b>。只写一套 ⇒ 跨浏览器不一致。
+  </p>
+
+  <h2>4 · 颜色是脚本算的，不是挑的</h2>
+  <table>
+    <tr><th>令牌</th><th class="num">浅色</th><th class="num">暗色</th><th>WCAG 1.4.11</th></tr>
+    <tr><td><code>--scrollbar-thumb</code></td>
+        <td class="num">#7A808A</td><td class="num">#6E747E</td>
+        <td class="ok">3.71:1 ~ 3.98:1 ✅</td></tr>
+    <tr><td><code>--scrollbar-thumb-hov</code></td>
+        <td class="num">#6E747E</td><td class="num">#7D828A</td>
+        <td class="ok">4.24:1 ~ 4.71:1 ✅</td></tr>
+  </table>
+  <p class="note">
+    🔴 第一版我随手挑了 <code>#B4BAC4</code>，门禁一算只有 <b>1.82:1</b> ⇒ 直接不合格。
+    后来<b>用脚本反解</b>出满足 3:1 的值，同时保持<b>冷灰（蓝调）</b>
+    —— 本库的"高级感"来自冷灰，不能为了达标变成中性灰。
+  </p>
+
+  <h2>5 · 移动端为什么不做定制</h2>
+  <p class="note">
+    iOS Safari <b>忽略</b> <code>::-webkit-scrollbar</code> 的外观声明，
+    且滚动条只在滑动时短暂出现 ⇒ 写了也是白写。
+    移动端真正需要的是<b>惯性滚动</b>（<code>-webkit-overflow-scrolling: touch</code>，已给）。
+    <br>⇒ <b>克制</b>本身也是通行标准的一部分。
+  </p>
+
+</div>
+
+<script>
+// 演示 gutter：记录两列的右边缘，加内容后看是否移动
+function edge() {
+  var a = document.getElementById('p1').getBoundingClientRect().right;
+  var b = document.getElementById('p2').getBoundingClientRect().right;
+  return { a: Math.round(a), b: Math.round(b) };
+}
+var base = edge();
+document.getElementById('e1').textContent = base.a + 'px';
+document.getElementById('e2').textContent = base.b + 'px';
+
+var n = 2;
+document.getElementById('add').addEventListener('click', function () {
+  ['p1', 'p2'].forEach(function (id) {
+    var p = document.getElementById(id);
+    for (var i = 0; i < 5; i++) {
+      n++;
+      var d = document.createElement('div');
+      d.className = 'row';
+      d.innerHTML = '<span class="n">' + (n < 10 ? '0' + n : n) + '</span>第 ' + n + ' 条';
+      p.appendChild(d);
+    }
+  });
+  var now = edge();
+  document.getElementById('e1').textContent = now.a + 'px' +
+    (now.a === base.a ? '（没动 ✅）' : '（移动了 ' + (now.a - base.a) + 'px ❌）');
+  document.getElementById('e2').textContent = now.b + 'px' +
+    (now.b === base.b ? '（没动 ✅）' : '（移动了 ' + (now.b - base.b) + 'px ❌）');
+});
+
+document.getElementById('reset').addEventListener('click', function () { location.reload(); });
+</script>
+</body>
+</html>

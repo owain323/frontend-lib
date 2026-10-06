@@ -1,0 +1,113 @@
+/* ============================================================================
+   tree.css — 树形视图（D1 /
+   ============================================================================
+   依据：APG（ARIA Authoring Practices）Tree View 模式
+
+   ⭐ 树是**键盘契约最严**的组件（APG 列了 12 条）：
+     ↑ ↓  移动焦点        ← →  收起/展开（并移动焦点）
+     Home End  跳首/末
+     `*`       展开当前层全部同级
+     Enter     激活 / Space 选中
+     a-z 首字母跳转
+     焦点**始终只有一个**，且用 **roving tabindex**（整棵树只占一个 Tab 位）
+
+   ⚠️ roving tabindex 的意义：
+     若每个节点都 tabindex=0，Tab 30 次才能穿过一棵树。
+     正确做法：只有"当前节点" tabindex=0，其余 -1。
+   ============================================================================ */
+
+.tree {
+  font-size: var(--fs-sm);
+  color: var(--text-primary);
+  /* 容器不抢焦点（焦点在节点上） */
+  outline: none;
+}
+
+.tree ul {
+  margin: 0;
+  padding: 0;
+  /* 缩进用 padding，不用 margin（嵌套层级才看得出层次）*/
+  list-style: none;
+}
+
+.tree__item { position: relative; }
+
+/* ---------- 节点 ---------- */
+.tree__node {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  /* 🔴 命中区：树节点密集，但 WCAG 2.5.8 AA 只要 24px
+     （这里给 32px，介于"手指好点"与"树不被撑太散"之间）*/
+  min-height: 32px;
+  padding: 0 var(--sp-2);
+  border-radius: var(--r-xs);
+  cursor: pointer;
+  user-select: none;
+}
+
+.tree__node:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: calc(-1 * var(--focus-ring-width));
+}
+
+/* 焦点态与悬停态视觉一致（键盘/鼠标看到同一个高亮）*/
+@media (hover: hover) and (pointer: fine) {
+  .tree__node:hover { background: var(--surface-sunken); }
+}
+
+.tree__node[aria-selected="true"] {
+  background: var(--accent-soft);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* ---------- 展开箭头 ----------
+   ⭐ 展开/收起**必须有三态形状线索**，不能只靠旋转一个箭头：
+     · 收起：▶（右三角）
+     · 展开：▼（下三角）
+     · 叶子：·（点，表示"这里没有子节点"） */
+.tree__marker {
+  flex: 0 0 auto;
+  width: 1em;
+  font-size: .8em;
+  color: var(--text-tertiary);
+  text-align: center;
+}
+
+.tree__item[aria-expanded="true"] > .tree__node .tree__marker::before {
+  content: "\25BC";                  /* ▼ */
+}
+
+.tree__item[aria-expanded="false"] > .tree__node .tree__marker::before {
+  content: "\25B6";                  /* ▶ */
+}
+
+.tree__item:not([aria-expanded]) > .tree__node .tree__marker::before {
+  content: "\00B7";                  /* · 叶子节点 */
+}
+
+/* ---------- 层级缩进（用左边框引导线）---------- */
+.tree ul ul {
+  padding-inline-start: var(--sp-5);
+  border-inset-inline-start: 1px solid var(--border-decor);
+  margin-inline-start: var(--sp-4);          /* 缩进线的位置 */
+}
+
+/* ---------- 标签 ---------- */
+.tree__label { flex: 1 1 auto; }
+
+.tree__count {
+  flex: 0 0 auto;
+  padding: 0 var(--sp-1);
+  font-size: var(--fs-xs);
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-tertiary);
+  background: var(--surface-sunken);
+  border-radius: var(--r-pill);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tree__marker { transition: none; }
+}

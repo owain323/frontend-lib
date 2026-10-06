@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>图表规范 · frontend-lib</title>
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../09-assets/sparkline/sparkline.css">
+<style>
+  body { min-height:100vh; margin:0;
+    padding: calc(env(safe-area-inset-top) + var(--sp-6)) max(env(safe-area-inset-right), var(--sp-4))
+             calc(env(safe-area-inset-bottom) + var(--sp-6)) max(env(safe-area-inset-left), var(--sp-4));
+    background: var(--paper); color: var(--text-primary); }
+  .wrap { max-width: 860px; margin: 0 auto; }
+  h1 { font-size: var(--fs-2xl); line-height: var(--lh-tight); margin:0 0 var(--sp-2); }
+  h2 { font-size: var(--fs-lg); margin: var(--sp-7) 0 var(--sp-2);
+       padding-top: var(--sp-4); border-top: 1px solid var(--border-decor); }
+  h3 { font-size: var(--fs-base); margin: var(--sp-5) 0 var(--sp-2); color: var(--text-primary); }
+  .lede { color: var(--text-secondary); margin: 0 0 var(--sp-5); max-width: 62ch; }
+  .note { font-size: var(--fs-xs); color: var(--text-secondary); margin: 0 0 var(--sp-3); }
+  .box { background: var(--surface); border: 1px solid var(--border-decor);
+         border-radius: var(--r-md); padding: var(--sp-4); margin: 0 0 var(--sp-4); }
+  .box.bad { background: var(--surface-sunken); }
+  .ok  { color: var(--success); }
+  .no  { color: var(--danger); }
+  code { font-family: var(--mono); font-size: .92em;
+         background: var(--surface-sunken); padding: 1px 4px; border-radius: 3px; }
+  table { width:100%; border-collapse: collapse; font-size: var(--fs-sm); margin: 0 0 var(--sp-3); }
+  th, td { text-align: left; padding: var(--sp-2) var(--sp-3);
+           border-bottom: 1px solid var(--border-decor); }
+  th { font-size: var(--fs-xs); color: var(--text-secondary); font-weight: 500; }
+  td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .up { color: var(--danger); } .down { color: var(--success); }  /* A股：涨红跌绿 */
+  /* 图表位：ECharts 未引入时显示这里 */
+  .chart { width: 100%; height: 260px; display: flex; align-items: center;
+           justify-content: center; flex-direction: column; gap: var(--sp-2);
+           color: var(--text-tertiary); font-size: var(--fs-sm);
+           background: var(--surface-sunken); border-radius: var(--r-sm); }
+  .chart canvas { max-width: 100%; }
+  .flex { display: flex; gap: var(--sp-4); flex-wrap: wrap; }
+  .flex > * { flex: 1 1 260px; min-width: 0; }
+  .swatch { display:inline-block; width:10px; height:10px; border-radius:2px;
+            vertical-align:middle; margin-right:4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>图表规范</h1>
+  <p class="lede">
+    <strong>下次画图照这里做就行</strong>，不用再反复微调。
+    全部规则来自 <code>00-charter/10-图表边界.md</code>，
+    并且<strong>大部分已经变成 <code>echarts-adapter.js</code> 里的默认值</strong> ——
+    你不写，它就帮你合规。
+  </p>
+
+  <h2>0 · 边界：什么该用本库，什么该用 ECharts</h2>
+  <table>
+    <tr><th>场景</th><th>用什么</th><th>谁维护</th></tr>
+    <tr><td>列表右侧的<strong>迷你趋势</strong>（看走势）</td>
+        <td class="ok">本库 <code>sparkline</code>（1.5KB，零依赖）</td><td>我们</td></tr>
+    <tr><td>表格里的迷你条 / 状态点</td><td class="ok">本库</td><td>我们</td></tr>
+    <tr><td><strong>多系列</strong>折线 / 柱 / 饼 / 桑基 / 热力 / 仪表盘</td>
+        <td class="no">ECharts 或 Recharts</td><td><strong>他们</strong></td></tr>
+  </table>
+  <p class="note">
+    <strong>判据一句话</strong>：「<strong>看走势</strong>」用本库；「<strong>看数据、用它做判断</strong>」用 ECharts。
+  </p>
+  <p class="note">
+    ⚠️ 精简档（某项目）<strong>不要引 ECharts</strong>（约 1MB gzip）——那边继续用 sparkline。
+  </p>
+
+  <h2>1 · 本库负责的：迷你趋势（sparkline）</h2>
+  <div class="box">
+    <div class="row" style="display:flex;align-items:center;gap:var(--sp-4);padding:4px 0">
+      <span style="width:60px;font-size:var(--fs-sm)">600519</span>
+      <span style="width:84px;text-align:right;font-family:var(--mono);font-size:var(--fs-sm)">1,684.20</span>
+      <span class="up" style="width:56px;font-size:var(--fs-xs)">+2.31%</span>
+      <span class="sparkline" data-spark="1602,1618,1609,1631,1625,1648,1662,1655,1684"
+            data-spark-height="34" data-spark-last="yes"
+            style="flex:1 1 auto;min-width:60px"></span>
+    </div>
+    <div class="row" style="display:flex;align-items:center;gap:var(--sp-4);padding:4px 0">
+      <span style="width:60px;font-size:var(--fs-sm)">000001</span>
+      <span style="width:84px;text-align:right;font-family:var(--mono);font-size:var(--fs-sm)">11.87</span>
+      <span class="down" style="width:56px;font-size:var(--fs-xs)">−0.84%</span>
+      <span class="sparkline" data-spark="12.05,12.11,12.02,11.96,11.99,11.92,11.88,11.91,11.87"
+            data-spark-height="34" data-spark-last="yes"
+            style="flex:1 1 auto;min-width:60px"></span>
+    </div>
+  </div>
+  <p class="note">
+    🔴 <strong>旁边必须有数字</strong>——sparkline 本身<strong>没有可读的信息</strong>
+    （读屏读不出路径）。这是它最容易出的错。
+  </p>
+
+  <h2>2 · ECharts 负责的：数据分析图表</h2>
+  <p class="note">
+    本页<strong>没有引 ECharts</strong>（本库零依赖）。下面是<strong>规范示例</strong> ——
+    数字用本库的格式规则画出来，图表位留给 ECharts。
+    <br>想在浏览器里看真图，主项目里引一行
+    <code>&lt;script src="echarts.min.js"&gt;</code> 即可，适配层会自动接管主题。
+  </p>
+
+  <div class="flex">
+    <div class="box">
+      <h3 style="margin-top:0">✅ 规范：柱状图（分类轴从 0）</h3>
+      <table>
+        <tr><th>季度</th><th class="num">营收(亿)</th><th class="num">同比</th></tr>
+        <tr><td>Q1</td><td class="num">128.4</td><td class="num up">+12.4%</td></tr>
+        <tr><td>Q2</td><td class="num">136.1</td><td class="num up">+8.1%</td></tr>
+        <tr><td>Q3</td><td class="num">141.7</td><td class="num down">−2.3%</td></tr>
+        <tr><td>Q4</td><td class="num">155.2</td><td class="num up">+9.5%</td></tr>
+      </table>
+      <p class="note">
+        <strong>柱状图的 y 轴必须从 0 开始</strong> —— 截断基线会夸大差异，
+        这是最容易骗人的一种图。<code>adapter.defaults()</code> 已自动加 <code>min:0</code>。
+      </p>
+    </div>
+
+    <div class="box">
+      <h3 style="margin-top:0">✅ 规范：多系列（≤ 5 条）</h3>
+      <table>
+        <tr><th>年份</th>
+            <th class="num"><span class="swatch" style="background:var(--accent)"></span>A 股</th>
+            <th class="num"><span class="swatch" style="background:var(--danger)"></span>B 股</th>
+            <th class="num"><span class="swatch" style="background:var(--success)"></span>C 股</th></tr>
+        <tr><td>2022</td><td class="num">1,284</td><td class="num">862</td><td class="num">517</td></tr>
+        <tr><td>2023</td><td class="num">1,506</td><td class="num">747</td><td class="num">603</td></tr>
+        <tr><td>2024</td><td class="num">1,706</td><td class="num">863</td><td class="num">714</td></tr>
+      </table>
+      <p class="note">
+        <strong>系列上限 5</strong>。超过时 <code>adapter</code> 会
+        <span class="no">在控制台警告</span>——
+        因为颜色循环会让第 6 条和第 1 条同色，用户分不清谁是谁。
+        「颜色不够用」是<strong>该换图表</strong>的信号。
+      </p>
+    </div>
+  </div>
+
+  <div class="chart" id="chart-demo">
+    <div>ECharts 图表位</div>
+    <div style="font-size:var(--fs-xs)">主项目引 echarts.min.js 后，这里会自动出图并套用本库主题</div>
+  </div>
+
+  <h2>3 · 数字格式（已经在用）</h2>
+  <table>
+    <tr><th>类型</th><th>规则</th><th>例子</th></tr>
+    <tr><td>千分位</td><td>每三位加逗号</td><td class="num">1,234,567</td></tr>
+    <tr><td>百分比</td><td>固定 1–2 位小数</td><td class="num">42.6%</td></tr>
+    <tr><td>大额</td><td>走「万 / 亿」，不写成 100,000,000</td><td class="num">1.28 亿</td></tr>
+    <tr><td>缺失值</td><td><strong>留空，不写 0</strong></td><td class="num">—</td></tr>
+  </table>
+  <p class="note">
+    🔴 <strong>缺失 ≠ 0</strong>：这是本库的
+    <code>MISSING != ZERO</code> 契约，图表里同样适用
+    —— 缺失点应该<strong>断开</strong>，不能画成 0。
+  </p>
+
+  <h2>4 · 明确禁止（这些是"看起来专业但会骗人"的）</h2>
+  <div class="box bad">
+    <table>
+      <tr><th>不要做</th><th>为什么</th></tr>
+      <tr><td class="no">3D 图表</td><td>透视扭曲会<b>误导读数</b>（Tufte 的核心结论）</td></tr>
+      <tr><td class="no">双 Y 轴</td><td>两轴的交叉点可以被随意搬动 ⇒ <b>视觉在说谎</b></td></tr>
+      <tr><td class="no">大面积渐变填充</td><td>只在面积图用，透明度 ≤ 0.15</td></tr>
+      <tr><td class="no">只用颜色区分系列</td><td>色盲用户看不出 ⇒ 加虚线或标记点</td></tr>
+      <tr><td class="no">平滑曲线（smooth）</td><td>会造出<b>数据里没有的中间值</b>，adapter 已默认关掉</td></tr>
+    </table>
+  </div>
+
+  <h2>5 · 无障碍</h2>
+  <div class="box">
+    <ul style="margin:0;padding-left:20px">
+      <li>图表旁<strong>必须有等价的数字或表格</strong>（本页每个图都配了表）</li>
+      <li>数据图表的 <code>&lt;svg&gt;</code> 加 <code>role="img"</code> + <code>aria-label</code></li>
+      <li>⚠️ <strong>装饰性 sparkline 反而不要</strong> 加 <code>role="img"</code>
+          ——它没有可读等价物，加了会误导</li>
+      <li>不能只用颜色区分系列</li>
+    </ul>
+  </div>
+
+  <h2>6 · 怎么用（下次直接照抄）</h2>
+  <div class="box">
+<pre style="margin:0;font-family:var(--mono);font-size:var(--fs-xs);overflow-x:auto"><code>&lt;script src="echarts.min.js"&gt;&lt;/script&gt;              &lt;!-- 主项目引 --&gt;
+&lt;script src="09-assets/echarts-adapter/echarts-adapter.js"&gt;&lt;/script&gt;
+
+var c = ChartAdapter.create(document.getElementById('chart'), {
+  xAxis: { type: 'category', data: ['Q1','Q2','Q3','Q4'] },
+  yAxis: { type: 'value' },
+  series: [{ type: 'bar', data: [128.4, 136.1, 141.7, 155.2] }]
+});
+// ↑ 就这样。主题、y 轴从 0、字号、网格边距都已经合规了。</code></pre>
+  </div>
+  <p class="note">
+    换主题时调 <code>ChartAdapter.refresh(c)</code>，图表会跟着变
+    （配合 <code>01-tokens/theme-toggle.js</code>）。
+  </p>
+</div>
+<script src="../../09-assets/sparkline/sparkline.js"></script>
+<script src="../../09-assets/echarts-adapter/echarts-adapter.js"></script>
+</body>
+</html>

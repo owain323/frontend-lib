@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>Toast vs Dialog · 反馈层</title>
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../02-primitives/button/button.css">
+<link rel="stylesheet" href="overlay.css">
+<style>
+  body { margin: 0; padding: var(--sp-7) var(--sp-5); background: var(--paper);
+         color: var(--text-primary); font: var(--fs-base)/var(--lh-base) system-ui, sans-serif; }
+  .wrap { max-width: 820px; margin: 0 auto; }
+
+  /* 对比演示卡：底色用中性，语义色只留在标题文字上 */
+  .bad { background: var(--surface-sunken); }
+  .good { background: var(--surface-sunken); }
+  .bad h3 { color: var(--danger); }
+  .good h3 { color: var(--success); }
+
+  h1 { font-size: var(--fs-2xl); line-height: var(--lh-tight); margin: 0 0 var(--sp-2); }
+  .lede { color: var(--text-secondary); margin: 0 0 var(--sp-6); }
+  h2 { font-size: var(--fs-lg); margin: var(--sp-7) 0 var(--sp-4);
+       padding-bottom: var(--sp-2); border-bottom: 1px solid var(--border-decor); }
+  p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6; }
+  code { font-family: var(--mono);   /* 2026-10-03：原为写死的 ui-monospace，统一走令牌 */ font-size: var(--fs-xs);
+         background: var(--surface-sunken); padding: 1px 5px; border-radius: 4px; }
+  .box { background: var(--surface); border: 1px solid var(--border-decor);
+         border-radius: var(--r-md); padding: var(--sp-5); }
+  .row { display: flex; gap: var(--sp-3); flex-wrap: wrap; }
+  #tracker { position: sticky; top: var(--sp-3); z-index: var(--z-sticky);   /* 🔴*/ background: var(--surface);
+             border: 1px solid var(--accent); border-radius: var(--r-md);
+             padding: var(--sp-3) var(--sp-4); font-family: var(--mono);   /* 2026-10-03：原为写死的 ui-monospace，统一走令牌 */
+             font-size: var(--fs-xs); line-height: 1.8; box-shadow: var(--shadow-2); }
+  #tracker b { color: var(--accent); }
+  .log { color: var(--text-tertiary); }
+  /* 🔴 原来这里是 `1fr 1fr`（两列等宽）—— 那是"AI 味"清单的第一条：
+        等宽并排的卡片没有主次，看起来像模板填空。
+
+        改成不等宽：左边（本库做法）是**焦点**，占更宽；
+        右边（常见/错用）是**配角**，占窄且视觉降级。
+        不对称本身产生节奏，均一不产生。 */
+  .two { display: grid; gap: var(--sp-5); grid-template-columns: 1.55fr 1fr; }
+  @media (max-width: 44rem) { .two { grid-template-columns: 1fr; } }
+
+  /* 配角一列降级：去掉填充色，只留左边线 —— 视觉重量明显低于焦点 */
+  .two > .aside-col {
+    border-left: 2px solid var(--border-decor-str);
+    padding-left: var(--sp-4);
+    background: none;
+  }
+  @media (max-width: 700px) { .two { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <h1>Toast vs Dialog</h1>
+  <p class="lede">
+    这一块的核心是一条判断，不是样式。判据只有一条：
+    <strong>用户不做任何操作，任务能不能继续？</strong>能 → toast；不能 → dialog。
+  </p>
+
+  <div id="tracker">
+    <div>焦点所在：<b id="t-where">（页面）</b></div>
+    <div class="log" id="t-log">打开一个 dialog，然后按 Tab 循环 —— 焦点不会跑到背后页面去。</div>
+  </div>
+
+  <h2>Toast — 通知一下，你不需要做任何事</h2>
+  <div class="box">
+    <div class="row">
+      <button class="btn btn--md btn--secondary" id="b1">普通提示</button>
+      <button class="btn btn--md btn--secondary" id="b2">成功</button>
+      <button class="btn btn--md btn--secondary" id="b3">错误（不自动消失）</button>
+      <button class="btn btn--md btn--secondary" id="b4">连发 4 个（看堆叠）</button>
+    </div>
+    <p class="small" style="margin-top:var(--sp-4)">
+      <strong>Toast 绝不抢焦点。</strong>按上面按钮时，看顶部面板的"焦点所在"——
+      它一直停在触发按钮上。<code>role="status"</code> 会让屏幕阅读器自动播报，不需要 focus。
+    </p>
+  </div>
+
+  <h2>Dialog — 必须处理完才能继续</h2>
+  <div class="box">
+    <div class="row">
+      <button class="btn btn--md btn--primary" id="d1">普通确认</button>
+      <button class="btn btn--md btn--danger" id="d2">删除这份报告（危险）</button>
+    </div>
+    <p class="small" style="margin-top:var(--sp-4)">
+      打开后请做三件事：<br>
+      1. <strong>连按 Tab</strong> —— 焦点在两个按钮之间循环，<strong>不会跑到背后页面</strong>（focus trap）<br>
+      2. <strong>按 Esc</strong> —— 关闭<br>
+      3. 看顶部面板 —— 关闭后焦点<strong>回到了刚才那个按钮</strong>上
+    </p>
+  </div>
+
+  <h2>危险操作的两个特殊处理</h2>
+  <div class="two">
+    <div class="box good">
+      <h3 style="margin:0 0 var(--sp-3); font-size:var(--fs-sm); font-weight:500">本库做法</h3>
+      <p class="small" style="margin:0">
+        <strong>初始焦点给"取消"按钮</strong>（<code>initialFocus:'cancel'</code>）。
+        用户条件反射按 Enter 时不会把文件删掉。<br><br>
+        <strong>点遮罩不关闭</strong>。误点遮罩的代价太大。
+      </p>
+    </div>
+    <div class="box bad">
+      <h3 style="margin:0 0 var(--sp-3); font-size:var(--fs-sm); font-weight:500">常见做法</h3>
+      <p class="small" style="margin:0">
+        焦点默认落在"删除"上，用户看清标题之前就按了 Enter。<br><br>
+        点遮罩就关闭，手滑一下文件没了。
+      </p>
+    </div>
+  </div>
+
+  <h2>滚动锁定：容易漏的那个细节</h2>
+  <div class="note">
+    打开 dialog 时页面内容会<strong>横向跳一下</strong> —— 因为滚动条被锁掉了，右边突然多出宽度。<br><br>
+    修法：锁之前把滚动条宽度量出来，给 <code>body</code> 加等宽的 <code>padding-right</code>。
+    弹层"闪"一下的感觉大半来自这里。<br><br>
+    <strong>怎么验证：</strong>本页右边有滚动条。点"普通确认"，注意页面内容有没有横移。
+  </div>
+
+  <h2>用错比做丑严重得多</h2>
+  <div class="two">
+    <div class="box bad aside-col">
+      <h3 style="margin:0 0 var(--sp-3); font-size:var(--fs-sm); font-weight:500; color:var(--danger)">
+        ❌ 错用</h3>
+      <p class="small" style="margin:0 0 var(--sp-2)">
+        <strong>把"确认删除"做成 toast</strong><br>
+        用户可能根本没看见就把文件删了，而且没法撤销。
+      </p>
+      <p class="small" style="margin:0">
+        <strong>把"已保存"做成 dialog</strong><br>
+        打断用户没在做别的事，白白多一次点击。
+      </p>
+    </div>
+    <div class="box good">
+      <h3 style="margin:0 0 var(--sp-3); font-size:var(--fs-sm); font-weight:500; color:var(--success)">
+        ✅ 判据
+      </h3>
+      <p class="small" style="margin:0 0 var(--sp-2)">
+        <strong>不做任何操作能继续吗？</strong><br>
+        能 → toast（4 秒后自己走）<br>
+        不能 → dialog（困住焦点等你处理）
+      </p>
+      <p class="small" style="margin:0">
+        <strong>错误 toast 默认不自动消失</strong><br>
+        3 秒后悄悄消失 = 用户还没读完就等于没说。
+      </p>
+    </div>
+  </div>
+
+  <h2>进场动效的克制</h2>
+  <div class="box">
+    <p class="small" style="margin:0 0 var(--sp-3)">
+      <code>scale</code> 只到 <strong>0.98</strong>，位移只有 <strong>8px</strong>。
+      大幅缩放 + 回弹是廉价感的来源 —— 模态是"出现"，不是"跳出来"。<br><br>
+      遮罩刻意<strong>不用 <code>backdrop-filter: blur</code></strong>：旧 WebView 上要么无效要么掉帧，
+      精简档 尤其要避开。<br><br>
+      开了系统"减少动效"的话，<code>toast__timer</code> 进度条会<strong>停住</strong>——
+      不假装还在倒计时。
+    </p>
+    <div class="row">
+      <button class="btn btn--md btn--secondary" id="d3">看进场</button>
+      <span class="small" style="align-self:center">连点它，看是否重叠错位</span>
+    </div>
+  </div>
+
+<script src="overlay.js"></script>
+<script>
+// ---------- 焦点追踪（证明 focus trap 真的在起作用） ----------
+var where = document.getElementById('t-where');
+var log = document.getElementById('t-log');
+
+function describe() {
+  var el = document.activeElement;
+  if (!el || el === document.body) return '（body）';
+  var t = el.tagName.toLowerCase();
+  var txt = (el.textContent || '').trim().slice(0, 12);
+  var inDlg = el.closest('.dialog') ? ' [在 dialog 内]' : ' [在背景页]';
+  return t + (txt ? ' “' + txt + '”' : '') + inDlg;
+}
+document.addEventListener('focusin', function () {
+  where.textContent = describe();
+});
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Tab' || e.key === 'Escape') {
+    log.textContent = '按了 ' + (e.key === 'Tab' ? 'Tab' : 'Esc') + ' → 焦点现在在 ' + describe();
+  }
+});
+
+// ---------- Toast ----------
+document.getElementById('b1').onclick = function () {
+  Overlay.toast({ title: '正在同步', desc: '可以和别的操作同时进行' });
+};
+document.getElementById('b2').onclick = function () {
+  Overlay.toast({ title: '已保存', variant: 'success' });
+};
+document.getElementById('b3').onclick = function () {
+  Overlay.toast({
+    title: '导入失败',
+    desc: '第 3 行有 17 列，表头只有 16 列。修正后重试 —— 这条不会自己消失。',
+    variant: 'error'
+  });
+};
+document.getElementById('b4').onclick = function () {
+  Overlay.toast({ title: '1 已加入队列' });
+  Overlay.toast({ title: '2 已加入队列', variant: 'success' });
+  Overlay.toast({ title: '3 需要复核', variant: 'warning' });
+  Overlay.toast({ title: '4 失败：字段缺失', variant: 'error' });
+};
+
+// ---------- Dialog ----------
+document.getElementById('d1').onclick = function () {
+  Overlay.dialog({
+    title: '把这份报告标记为已审？',
+    desc: '标记之后仍然可以撤销，但会记录操作人和时间。',
+    actions: [
+      { label: '取消', variant: 'primary' },
+      { label: '确认标记' }
+    ]
+  });
+};
+
+document.getElementById('d2').onclick = function () {
+  Overlay.dialog({
+    danger: true,
+    title: '删除这份报告？',
+    desc: '它已经在 3 个工作流里被引用。删除后那些工作流会标记为缺少输入。此操作无法撤销。',
+    // 🔴 初始焦点给"取消"：用户看清标题之前就按 Enter 不会出事
+    initialFocus: 'cancel',
+    // 🔴 点遮罩不关闭
+    closeOnBackdrop: false,
+    actions: [
+      { label: '删除', variant: 'danger' },
+      { label: '取消' }
+    ]
+  });
+};
+
+document.getElementById('d3').onclick = function () {
+  Overlay.dialog({
+    title: '进场动效',
+    desc: 'scale 只到 0.98，位移只有 8px。大幅缩放 + 回弹是廉价感的来源。',
+    actions: [{ label: '知道了', variant: 'primary' }]
+  });
+};
+
+log.textContent = '打开一个 dialog，然后连按 Tab —— 焦点会在两个按钮间循环，不会跑到背后页面。';
+</script></main>
+</body>
+</html>

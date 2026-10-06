@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AGC 的内存 · 内容渲染示例</title>
+<style>
+/* ---- 由 md-render.py 内联自 frontend-lib/01-tokens/tokens.css ---- */
+/* ============================================================================
+   frontend-lib / 01-tokens / tokens.css
+   纸感中性基底 · 第一版
+
+   铁律：这里的每一个颜色都必须带着 05-audit/contrast.py 的实测数字进来。
+        凭感觉填的色一律不许入库 —— 第一版就抓出 5 项不达标（见文件末尾"废弃记录"）。
+
+   使用方式：
+     1) 现代构建：直接 @import 或复制进你的样式入口
+     2) 单文件版：只复制 [核心] 段，其余删掉，可内联进 <style>
+
+   改色流程：改值 -> 跑 python 05-audit/contrast.py -> 把新数字写回注释 -> 才允许提交
+   ========================================================================= */
+
+:root {
+  /* ---------------------------------------------------------------- 基底
+     paper  = 页面底（冷灰白）。🔴 不能更浅：与 --surface 的对比度要 >= 1.06:1，
+             否则页面看着就是纯白，"表面浮在底上"的分层完全消失。
+     surface= 卡片/面板底，比纸底亮一档，靠明度差而非描边来分层
+     ---------------------------------------------------------------- */
+  --paper:            #f6f7f8;
+  --surface:          #ffffff;
+  --surface-sunken:   #f1f3f5;   /* 内凹区：代码块、表格头、禁用底 */
+
+  /* ---------------------------------------------------------------- 文字
+     三档够用了。超过三档说明信息层级没想清楚，不是 token 不够。
+     全部数字由 05-audit/contrast.py 从本文件实测得出，不是手写的。
+     改任何颜色后必须重跑该脚本 —— 手写注释必然漂移（已发生过）。
+     ---------------------------------------------------------------- */
+  --text-primary:     #15181c; /* 16.60 / 17.81 AAA */
+  --text-secondary:   #4f555e; /* 7.01 AAA */
+  --text-tertiary:    #606770; /* 4.51 AA */
+  --text-on-accent:   #ffffff;   /* 压在下方任意 accent 上均 >= 5.2 AA */
+
+  /* ---------------------------------------------------------------- 边框
+     🔴 本库最容易被做错的一处，两类不许合并：
+
+     control = 控件边界（输入框、按钮的轮廓）。WCAG 1.4.11 要求 >= 3.0，
+               因为它是"识别出这是个控件"的唯一线索。必须达标。
+     decor   = 纯装饰分隔（卡片内线、表格行线）。WCAG 不强制。
+               对它强求 3.0 会把界面做得很重很难看 —— 那是误读规范。
+     ---------------------------------------------------------------- */
+  --border-control:   #868b94; /* 3.19 / 3.42 AA Large */
+  --border-decor:     #e2e5e9; /* 1.18 纯装饰，WCAG 不强制 */
+  --border-decor-str: #c8cdd4; /* 1.49 装饰，需要更强分隔时用 */
+
+  /* ---------------------------------------------------------------- 语义色
+     全部实测 >= 5.6 AA（vs 纸底）。可当文字用，也可当底色用。
+     ---------------------------------------------------------------- */
+  --danger:           #c0392b; /* 5.07 AA */
+  --success:          #2f6b3a;   /*  6.12 */
+  --warning:          #8a5a00;   /*  5.68 */
+  --info:             #1d5f8a;   /*  6.58 */
+
+  /* 语义色的浅底（用于提示条背景，不放正文） */
+  --danger-bg:        #fdeeec;
+  --success-bg:       #eaf2e6;
+  --warning-bg:       #fbf1dd;
+  --info-bg:          #e8f1f8;
+
+  /* ---------------------------------------------------------------- 强调色
+     🔴 一源原则：一个项目只选一个 accent，不要混用。
+     accent 决定"可点击"的语义，混用等于取消了这层语义。
+     三选一，把另外两个删掉，别全留着。
+     ---------------------------------------------------------------- */
+  --accent:           #1b4d8f; /* 7.82 AAA */
+  --accent-hover:     #163a6d;   /* 白字压上去 7.73 AAA（hover 态最容易漏测） */
+  --accent-soft:      #e6eef7;   /* focus ring / 浅底，不要拿它放正文 */
+  /* --accent:        #0f7a6c;   薄荷绿 5.00  —— 活泼/工具类 */
+  /* --accent-hover:  #0c6459;   白字 7.04 AAA */
+  /* --accent-soft:   #dff1ec; */
+  /* --accent:        #185fa5;   蓝     6.25  —— 严肃/数据类 */
+
+  /* ================================================================ [核心]
+     间距：8px 网格为基准，大值流体。
+     想要的值不在表里 => 说明布局没规划，改设计，不要加 token。
+
+     🔴 哪些该流体：--sp-4 往上（区块间距，随屏幕变大而变大，观感自然）
+        哪些不该：--sp-1..3（元素内部间距，流体化会让控件尺寸忽大忽小）
+     ---------------------------------------------------------------- */
+  --sp-1:  4px;
+  --sp-2:  8px;
+  --sp-3:  12px;
+  --sp-4:  clamp(1rem,     0.95rem + 0.3vw,  1.25rem);    /* 16 → 20px */
+  --sp-5:  clamp(1.25rem,  1.15rem + 0.7vw,  1.75rem);    /* 20 → 28px */
+  --sp-6:  clamp(1.5rem,   1.3rem  + 1.2vw,  2.25rem);    /* 24 → 36px */
+  --sp-7:  clamp(2rem,     1.7rem  + 1.8vw,  3.5rem);     /* 32 → 56px */
+  --sp-8:  clamp(2.5rem,   2.1rem  + 2.4vw,  4.5rem);     /* 40 → 72px */
+
+  /* ================================================================ [核心]
+     断点令牌
+     ----------------------------------------------------------------
+     🔴 CSS 变量**不能**用在 media query 条件里。
+        所以下面四个只是"文档与计算的单一出处"，写 media query 时仍要写字面值：
+
+          @media (min-width: 48rem) { ... }   /* 不是 var(--bp-md) */
+
+        留它们的理由：算流体值、给脚本查、以及让"我们有几个断点"这件事有唯一答案。
+        ⚠️ 断点用的是 rem 不是 px —— 用户调大字号时断点跟着变，这才是对的。
+     ---------------------------------------------------------------- */
+  --bp-sm: 30rem;   /* 480px  大手机 / 小平板 */
+  --bp-md: 48rem;   /* 768px  平板 */
+  --bp-lg: 64rem;   /* 1024px 小笔记本 */
+  --bp-xl: 80rem;   /* 1280px 桌面 */
+
+  /* ================================================================ [核心]
+     字号阶梯
+     ----------------------------------------------------------------
+     🔴 2026-10-02 修正：上下限从 px 改成 rem。
+        px 上下限不尊重"用户把浏览器默认字号调大"的设置 ——
+        那样 clamp 的下限会锁死，用户放到 200% 也涨不上去。
+        rem 基准跟着用户设置走，这是无障碍底线。
+
+     🔴 哪些该流体、哪些不该（这条更容易做错）：
+
+        该流体：正文、小标题、大标题、间距
+           —— 它们随屏幕变大而变大，观感自然
+
+        **不该流体**：UI 文本（--fs-xs / --fs-sm）、小间距（--sp-1..3）
+           —— 它们是控件尺寸的一部分。流体会让按钮和输入框在不同屏幕下
+              大小不一，布局抖动。搜索到的原话：
+              "UI typography benefits from minimal scaling.
+               Too much fluidity breaks layout."
+
+     公式：clamp(MIN-REM, REM基准 + VW系数, MAX-REM)
+       VW 系数怎么来：先定 min/max 视口（375px / 1280px），
+       系数 ≈ (max-rem - min-rem) × 100 / (1280 - 375) ≈ 差值 × 0.1105
+
+     ✅ WCAG 1.4.4 判据：只要 MAX ≤ 2.5 × MIN，就一定通过 resize-text 检查。
+        本阶梯最大比值 2.5rem/1.75rem = 1.43，安全。
+     ---------------------------------------------------------------- */
+  --fs-xs:   0.75rem;                      /* 12px 固定：辅助文字不流体 */
+  --fs-sm:   0.875rem;                     /* 14px 固定：UI 文本不流体 */
+  --fs-base: clamp(1rem,       0.95rem + 0.3vw,  1.125rem);   /* 16 → 18px */
+  --fs-md:   clamp(1.125rem,   1.05rem + 0.5vw,  1.3125rem);  /* 18 → 21px */
+  --fs-lg:   clamp(1.3125rem,  1.2rem  + 0.7vw,  1.5rem);     /* 21 → 24px */
+  --fs-xl:   clamp(1.5rem,     1.3rem  + 1.2vw,  1.875rem);   /* 24 → 30px */
+  --fs-2xl:  clamp(1.75rem,    1.45rem + 1.8vw,  2.5rem);     /* 28 → 40px */
+
+  /* 行高：正文 1.7 是中文长文的舒适值（西文常用 1.5，中文需要更松） */
+  --lh-tight:  1.25;   /* 标题 */
+  --lh-base:   1.7;    /* 正文 */
+  --lh-loose:  1.85;   /* 长段落、低龄/无障碍场景 */
+
+  /* 行长：65ch 左右是阅读上限。超过就要分栏或收窄容器。 */
+  --measure:   68ch;
+
+  /* ---------------------------------------------------------------- 圆角
+     一套就够。圆角混搭（卡片 20px、按钮 4px）是典型的没想清楚。
+     ---------------------------------------------------------------- */
+  --r-sm:    6px;
+  --r-md:   10px;
+  --r-lg:   14px;
+  --r-pill: 999px;
+
+  /* ---------------------------------------------------------------- 阴影
+     两级。第三级阴影出现的时候，通常说明层级设计出了问题。
+     y 轴偏移小、模糊大 —— 模拟纸面浮起，不是悬浮在太空。
+     ---------------------------------------------------------------- */
+  --shadow-1: 0 1px 2px rgba(31, 29, 25, 0.05), 0 1px 3px rgba(31, 29, 25, 0.06);
+  --shadow-2: 0 2px 4px rgba(31, 29, 25, 0.05), 0 6px 16px rgba(31, 29, 25, 0.08);
+
+  /* ---------------------------------------------------------------- 动效
+     🔴 一源原则：全项目只用这一组时长和缓动。
+     六个地方来的六个效果 => 六个不同的缓动曲线 => 看起来像没设计过。
+     ---------------------------------------------------------------- */
+  --dur-fast:  120ms;   /* 颜色、透明度 */
+  --dur-base:  180ms;   /* 位移、展开 */
+  --dur-slow:  280ms;   /* 大块入场、遮罩 */
+
+  --ease-out:    cubic-bezier(0.23, 1, 0.32, 1);      /* UI 默认：入场、展开 */
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);    /* 屏上位移、折叠 */
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);     /* 抽屉式滑入（iOS 观感）*/
+
+  /* 🔴 2026-10-02 修正：上一版这三个曲线是**我自编**的
+     （0.22,1,0.36,1 / 0.65,0,0.35,1），现已换成业界通用值 ——
+     与 Tailwind v4 默认、Emil Kowalski 技能库一致。
+     **曲线不该自己编**：自编的曲线没有经过大量实现验证，
+     阻尼比、重心位置都是猜的，跨浏览器表现不一致。
+      跨浏览器表现不一致。 */
+  /* 位移距离：动效的"幅度"也要统一，不然同样 180ms 也会感觉乱 */
+  --lift-sm: 1px;
+  --lift-md: 2px;
+  --lift-lg: 8px;
+
+  /* ---------------------------------------------------------------- z-index
+     乱写 z-index（999、9999）是前端最常见的失控点。
+     只用这六个值。需要更高的 => 说明层级模型有问题。
+     ---------------------------------------------------------------- */
+  --z-base:    0;
+  --z-sticky: 10;
+  --z-header: 20;
+  --z-overlay: 30;
+  --z-modal:  40;
+  --z-toast:  50;
+}
+
+/* ============================================================================
+   无障碍兜底 —— 这一段必须随 token 一起走，不许删
+   ========================================================================= */
+
+/* 尊重系统的"减少动效"设置。评委、无障碍用户、晕动症人群会开这个。
+   不写这段，前面所有动效在那些机器上就是灾难。 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* 键盘焦点环。用 :focus-visible 而不是 :focus ——
+   前者只在键盘导航时显示，鼠标点击不会冒出难看的框。
+   🔴 只写 outline: none 而不给替代焦点指示，是无障碍事故。 */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+/* ============================================================================
+   废弃记录 —— 保留在这里是为了不再犯同样的错
+   =========================================================================
+   2026-10-01 第一版自检抓出 5 项不达标，全部是"凭感觉填的"：
+
+   text-tertiary   #8a8478  vs 纸底 = 3.56  → 正文需 4.5，不达标
+                            vs 白面 = 3.72  → 同样不达标
+                   改 #6f6a5e（5.16 / 5.39）
+                   教训：辅助文字色最容易填浅，因为它"看起来就该浅"。
+
+   border          #cfc9bb  vs 纸底 = 1.58  → UI 边界需 3.0，不达标
+                   改 #8a8478（3.56）
+                   但：装饰分隔线不需要 3.0，硬套会让界面变重
+                   → 因此把边框拆成 control / decor 两类，这是第一版最大的收获。
+   ========================================================================= */
+
+/* ---- 由 md-render.py 内联自 frontend-lib/03-patterns/content/content.css ---- */
+/* ============================================================================
+   frontend-lib / 03-patterns / content / content.css
+   内容渲染样式 —— 接管 CommonMark / GFM 的标准输出
+
+   依赖：01-tokens/tokens.css
+   版本：A ✅ / B ✅ / C ✅
+
+   🔴 本文件最重要的设计决定：**不发明任何类名**。
+
+      结构由渲染器（CommonMark / GFM 规范）决定，
+      样式由本文件按**元素选择器**接管。
+      所以从任何 CommonMark 兼容渲染器拿到的 HTML，
+      **不需要任何后处理**就能正确显示。
+
+      只有一个自定义类名：`.prose` —— 用于限定作用域。
+      它不改变任何语义，只是"这块是正文"的标记。
+
+   依据：00-charter/06-内容渲染规范.md
+   ========================================================================= */
+
+.prose {
+  /* 正文行长：中文长文 68ch 是硬约束（超过就跳行） */
+  max-width: var(--measure-prose);
+  color: var(--text-primary);
+}
+
+/* ---------------------------------------------------------------- 元素间距
+   用兄弟选择器统一控制，不给每个元素写 margin。
+   这是"接管"的正确姿势 —— 渲染器不排版，排版归我们。 */
+.prose > * + * { margin-top: var(--sp-4); }
+
+/* ---------------------------------------------------------------- 标题
+   结构必须是 <h1>-<h6>，不能是 <div class="heading">。
+   层级不跳级由 a11y.py 门禁检查。 */
+.prose > h1,
+.prose > h2,
+.prose > h3,
+.prose > h4,
+.prose > h5,
+.prose > h6 {
+  font-family: var(--sans);
+  font-weight: 500;
+  line-height: var(--lh-tight);
+  letter-spacing: -0.008em;
+  margin: var(--sp-7) 0 0;
+}
+.prose > h1 { font-size: var(--fs-2xl); margin-top: 0; }
+.prose > h2 {
+  font-size: var(--fs-lg);
+  padding-top: var(--sp-5);
+  border-top: 2px solid var(--accent);
+  /* 短线段 + 通栏细线：既有分隔又不像卡片那样"框住" */
+  max-width: 92%;
+}
+.prose > h3 { font-size: var(--fs-md); }
+.prose > h4, .prose > h5, .prose > h6 {
+  font-size: var(--fs-base);
+  color: var(--text-secondary);
+}
+
+/* ---------------------------------------------------------------- 段落与行内 */
+.prose > p { margin: 0; line-height: 1.75; }
+
+/* 行内代码：衬线底 + 细边
+   ⚠️ 中文正文里的 `code` 通常是函数名/参数名，用等宽更清楚。 */
+.prose > code,
+.prose > li > code,
+.prose > td > code,
+.prose > th > code {
+  font-family: var(--mono);
+  font-size: 0.88em;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-decor);
+  border-radius: 3px;
+  padding: 0.05em 0.3em;
+}
+
+/* 🔴 代码块内的 <code> 必须排除行内样式。
+   CommonMark 两种代码块都输出 <pre><code>，不排除的话
+   代码块里的每行都会带上行内代码的边框和底色。 */
+.prose > pre > code,
+.prose > pre {
+  font-family: inherit;
+  font-size: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+/* ---------------------------------------------------------------- 列表
+   CommonMark 的嵌套列表是 <li> 内直接嵌 <ul>，靠缩进表达层级。 */
+.prose > ul,
+.prose > ol { padding-left: 1.5em; margin: 0; }
+.prose > ul { list-style: disc; }
+.prose > ol { list-style: decimal; }
+.prose li + li { margin-top: var(--sp-2); }
+.prose li > ul,
+.prose li > ol { margin-top: var(--sp-2); }
+.prose li > ul { list-style: circle; }   /* 二级用空心圆，三级会自动变方块 */
+
+/* ---------------------------------------------------------------- 引用
+   CommonMark 输出 <blockquote><p>…</p></blockquote> */
+.prose > blockquote {
+  margin: var(--sp-5) 0;
+  padding: 0 0 0 var(--sp-4);
+  border-left: 3px solid var(--accent);
+}
+.prose > blockquote > p {
+  color: var(--text-secondary);
+  font-size: var(--fs-md);
+  line-height: 1.6;
+}
+/* 引用里再套引用 */
+.prose > blockquote > blockquote { margin: var(--sp-3) 0; }
+
+/* ---------------------------------------------------------------- 代码块
+   两种都输出 <pre><code>；围栏的带 class="language-xxx"，缩进的不带。
+   🔴 不给缩进代码块硬加 class —— 规范说它没有。 */
+.prose > pre {
+  margin: 0;
+  padding: var(--sp-4);
+  background: var(--surface-sunken);
+  border-left: 3px solid var(--border-decor-str);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: var(--fs-xs);
+  line-height: 1.6;
+  tab-size: 4;
+  -webkit-overflow-scrolling: touch;
+}
+/* 缩进代码块没有左边框语言标记，给个更淡的，暗示"这是次要代码" */
+.prose > pre:not([class]) { border-left-color: var(--border-decor); }
+
+/* ---------------------------------------------------------------- 表格（GFM）
+   🔴 必须是 <table>，不能用 div 模拟 —— div 会让屏幕阅读器读不出行列关系。 */
+.prose > table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;          /* ⚠️ 有 <colgroup> 时改用 fixed */
+  font-size: var(--fs-sm);
+}
+.prose > table th,
+.prose > table td {
+  text-align: left;
+  padding: var(--sp-2) var(--sp-4) var(--sp-2) 0;
+  border-bottom: 1px solid var(--border-decor);
+  vertical-align: top;
+}
+.prose > table th {
+  font-weight: 500;
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+}
+.prose > table tbody tr:last-child td { border-bottom: 1px solid var(--border-decor-str); }
+
+/* ---------------------------------------------------------------- 其他元素 */
+.prose > hr {
+  margin: var(--sp-7) 0;
+  border: 0;
+  border-top: 1px solid var(--border-decor);
+  height: 0;                /* 🔴 hr 默认有 inset 边框，必须清掉 */
+}
+
+.prose > img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  /* 🔴 每个 img 必须有显式宽高（CLS）——
+     这条由 viewport.py 门禁检查，本 CSS 不兜底 */
+  border-radius: var(--r-sm);
+}
+.prose > a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+}
+.prose > a:hover { color: var(--text-primary); }
+.prose > a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* 外链可访问性：新窗口打开必须告知 */
+.prose > a[target="_blank"]::after {
+  content: " ↗";
+  font-size: 0.8em;
+  vertical-align: 0.1em;
+}
+
+/* GFM 删除线
+   🔴 实测：markdown-it 输出 `<s>`，GitHub/GFM 规范规定 `<del>`。
+      两者都是合法 HTML（`<s>`=不再准确，`<del>`=已删除）但语义不同。
+      ⇒ 样式必须同时支持，否则换渲染器就掉样式。
+      查证日期 2026-10-02，渲染器 markdown-it-py（commonmark preset + strikethrough）。 */
+.prose > del,
+.prose > s,
+.prose > li > del,
+.prose > li > s { color: var(--text-tertiary); }
+
+/* GFM 任务列表
+   CommonMark 核心不产出这个，GFM 扩展才有：
+   <li class="task-list-item"><input type="checkbox" disabled> … */
+.prose .task-list-item { list-style: none; margin-left: -1.5em; }
+.prose .task-list-item input[type="checkbox"] {
+  margin-right: var(--sp-2);
+  vertical-align: middle;
+}
+.prose .task-list-item input[disabled] {
+  /* disabled 的复选框不可改，但必须仍能看出状态 —— 不用 opacity */
+  accent-color: var(--accent);
+}
+
+/* ---------------------------------------------------------------- 无障碍兜底 */
+.prose :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ============================================================================
+   反模式
+   =========================================================================
+   1. 给每个元素加类（.prose h2、.prose p2 …）
+      渲染器输出没有这些类，样式接不上。**按元素选择器接管**。
+
+   2. <div class="code-block"> 装代码
+      渲染器不认。用 <pre><code class="language-x">。
+
+   3. <div class="table"> 模拟表格
+      🔴 最严重：辅助技术会当普通 div 念，屏幕阅读器用户拿不到行列关系。
+
+   4. <div class="heading"> 代替标题
+      文档大纲全废，屏幕阅读器的"跳到标题"功能失效。
+
+   5. 缩进代码块硬加 class="language-"
+      CommonMark 规定它没有 class。
+
+   6. <b> / <i> 代替 <strong> / <em>
+      <b> 只是"视觉加粗"，无语义。
+
+   7. hr 不清 height 和 border-top
+      默认 hr 有 inset 边框，会出现双线。
+
+   8. 依赖行内 <code> 样式而不排除代码块内的
+      代码块每行都会带上边框和底色。
+   ========================================================================= */
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--text-primary);
+  font-family: var(--sans);
+  font-size: var(--fs-base);
+  line-height: var(--lh-base);
+  -webkit-text-size-adjust: 100%;
+}
+.wrap { max-width: 72ch; margin: 0 auto; padding: var(--sp-7) var(--sp-5) var(--sp-8); }
+
+/* 🔴 2026-10-03 暗色模式 —— 与 01-tokens/tokens.css 同步。
+   精简档 单文件不外链 CSS，所以色板必须内联一份副本。
+   由 tokens.css 同步而来，**不要手改**（contrast.py 会查漂移）。*/
+@media (prefers-color-scheme: dark) {
+  :root {
+  --paper
+  --surface
+  --surface-sunken
+  --text-primary
+  --text-secondary
+  --text-tertiary
+  --text-on-accent
+  --border-control
+  --border-decor
+  --border-decor-str
+  --danger
+  --success
+  --warning
+  --info
+  --accent
+  --accent-hover
+  --accent-soft
+  --danger-bg
+  --success-bg
+  --warning-bg
+  --info-bg
+  }
+}
+
+  /* 🔴 2026-10-06 补（ H2a 的暗色门禁抓出来的）：
+     本页**没有给 <a> 设 color** ⇒ 浏览器默认链接蓝 rgb(0,0,238)
+     ⇒ 暗色底上只有 1.91:1，几乎看不见 ⇒ 走令牌，暗色自动跟随。 */
+  a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+  a:visited { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="prose">
+<h1>AGC 的内存</h1>
+<p>阿波罗制导计算机的核心存储器是 <strong>2048 个 36 位字</strong>，总容量 73,728 位，大约 9 KB。
+指令与数据混在一起，地址按字计。</p>
+<h2>存储器构成</h2>
+<p>不同 Block II 的分段数有差异，引用时应以具体的手册为准。</p>
+<table>
+<thead>
+<tr>
+<th>区域</th>
+<th>容量</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Rope / Fixed</td>
+<td>33,892 字</td>
+<td>常驻代码</td>
+</tr>
+<tr>
+<td>Superrope</td>
+<td>845 字</td>
+<td>磁鼓载入，擦除 ROP</td>
+</tr>
+<tr>
+<td>ROP（每人）</td>
+<td>2,048 字 × 3</td>
+<td>可擦写用户区</td>
+</tr>
+<tr>
+<td>Core rope / erasable</td>
+<td>2,048 字</td>
+<td>主工作区</td>
+</tr>
+</tbody>
+</table>
+<p>上表数字汇总自各手册，<strong>不是单一来源的权威值</strong>。</p>
+<h2>调度</h2>
+<p>AGC 的调度靠优先级抢占。更高优先级的任务可以打断低优先级任务，
+这让关键任务（姿态、点火）不会被普通计算饿死。</p>
+<ol>
+<li>检测到电流跌落</li>
+<li>尝试重算姿态</li>
+<li>若超时，抛出 <code>1202</code></li>
+<li>地面判断后决定继续</li>
+</ol>
+<blockquote>
+<p>我们没有去修它。我们让它继续报错，然后把能省的电都省下来。</p>
+</blockquote>
+<h2>复现</h2>
+<p>工具链的成熟度足以支撑一次完整考古：</p>
+<pre><code class="language-python"># 不是原文，是按手册重述的伪代码
+if computer_overload():
+    issue(1202)                  # 告警编号写入 AGC 计数区
+    # 不停机：停机会丢掉姿态信息，地面将失去唯一的实时数据源
+    yield_to_next_task()
+</code></pre>
+<p>命令行的用法见 <a href="https://spec.commonmark.org/">CommonMark 规范</a>（新窗口打开）。</p>
+<hr />
+<p>早期的 <code>agc-emulator</code> 写法已经 <s>废弃</s>，改用 yaAGC。</p>
+<p><img src="agc-memory.svg" alt="AGC 内存板示意"
+     width="600" height="120"
+     loading="lazy" decoding="async"></p>
+
+</div>
+</div>
+</body>
+</html>

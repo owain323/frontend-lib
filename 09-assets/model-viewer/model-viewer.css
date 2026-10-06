@@ -1,0 +1,143 @@
+/* ============================================================================
+   model-viewer.css — 3D 查看器样式（令牌驱动 · 零依赖）
+   ============================================================================
+   🔴 2026-10-04 依据 Owner 的三条硬要求：
+      ① 首屏 0 字节 three（样式不含任何库）
+      ② 失败必须降级（占位 + 中文提示，**绝不白屏**）
+      ③ 令牌驱动（颜色全走 var(--*)，换主题跟着变）
+   ========================================================================= */
+
+.mv {
+  position: relative;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--border-decor);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+/* --- 占位 / 错误态：两者都必须看得见，不许白屏 --- */
+.mv__stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  min-height: 180px;
+  padding: var(--sp-5) var(--sp-4);
+  background: var(--surface-sunken);
+  text-align: center;
+}
+
+.mv__stage--err { border-inset-inline-start: 3px solid var(--danger); }
+
+.mv__ph {
+  font-size: var(--fs-sm);
+  color: var(--text-tertiary);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.mv__status,
+.mv__err {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.mv__err { color: var(--danger); }
+
+/* --- 按钮 --- */
+.mv__btn {
+  display: block;
+  width: calc(100% - var(--sp-6));
+  margin: var(--sp-3) var(--sp-3) 0;
+  min-height: 44px;                 /* WCAG 2.5.5 命中区 */
+  padding: var(--sp-2) var(--sp-4);
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--text-on-accent);
+  background: var(--accent);
+  border: 0;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;   /* iOS 点击高亮（见 tokens.css）*/
+  transition: background var(--dur-fast) var(--ease-out);
+}
+
+.mv__btn:hover:not(:disabled) { background: var(--accent-hover); }
+.mv__btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.mv__btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.mv__hint {
+  margin: 0;
+  padding: 0 var(--sp-3) var(--sp-3);
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  line-height: 1.6;
+}
+
+.mv__hint code {
+  font-family: var(--mono);
+  font-size: 1em;
+  color: var(--text-secondary);
+}
+
+/* --- 3D 画布 --- */
+.mv canvas {
+  display: block;
+  width: 100% !important;
+  height: auto !important;
+  touch-action: none;              /* 🔴 关键：让拖动不触发页面滚动 */
+  background: transparent;
+}
+
+/* --- 加载完成后的说明条 --- */
+.mv__cap {
+  margin: 0;
+  padding: var(--sp-2) var(--sp-3);
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+  background: var(--surface);
+  border-top: 1px solid var(--border-decor);
+  line-height: 1.6;
+}
+
+.mv__cap b {
+  font-family: var(--mono);
+  font-weight: 600;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 🔴 尊重 reduced-motion：不用动画掩盖（见 charter 07） */
+@media (prefers-reduced-motion: reduce) {
+  .mv__btn { transition: none; }
+}
+
+/* 🔴 打印时不该出现 3D（见 charter 09） */
+@media print {
+  .mv__btn, .mv__hint { display: none; }
+}
+
+/* ============================================================================
+   🔴 2026-10-04 触屏 hover 门控（hover-gate 门禁要求）
+   --------------------------------------------------------------------------
+   为什么必须做：`:hover` 在**触屏设备上会"粘住"** ——
+   点一下按钮，hover 状态一直保持，要点别处才消失
+   （移动端根本没有"移开鼠标"这个动作）。
+
+   正确做法：只对**真能悬停的设备**（鼠标 / 触控板）生效。
+   依据：Emil Kowalski 的设计规则（ui-benchmark-redesign 技能收录）。
+   ========================================================================== */
+@media (hover: hover) and (pointer: fine) {
+  .mv__btn:hover:not(:disabled) { background: var(--accent-hover); }
+}

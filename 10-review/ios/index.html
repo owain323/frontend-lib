@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<!-- 🔴 viewport-fit=cover + env(safe-area-inset-*)：
+     iPhone 刘海/灵动岛区域。没有它内容会被刘海压住。
+     桌面 Chrome 里这两条无效，所以本地预览不会误判。 -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>iOS 验证 · frontend-lib</title>
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../02-primitives/button/button.css">
+<link rel="stylesheet" href="../../02-primitives/badge/badge.css">
+<link rel="stylesheet" href="../../02-primitives/input/input.css">
+<link rel="stylesheet" href="../../02-primitives/choice/choice.css">
+<link rel="stylesheet" href="../../02-primitives/switch/switch.css">
+<link rel="stylesheet" href="../../02-primitives/card/card.css">
+<link rel="stylesheet" href="../../02-primitives/separator/separator.css">
+<link rel="stylesheet" href="../../03-patterns/tabs/tabs.css">
+<link rel="stylesheet" href="../../03-patterns/accordion/accordion.css">
+<link rel="stylesheet" href="../../03-patterns/overlay/overlay.css">
+<link rel="stylesheet" href="../../03-patterns/states/states.css">
+<link rel="stylesheet" href="../../09-assets/sparkline/sparkline.css">
+<style>
+  body {
+    /* 🔴 不写 100vh：iOS Safari 收起地址栏时 100vh 不会变，
+       导致底部留白。用 min-height:100dvh（动态视口）才跟手。 */
+    min-height: 100vh;
+    min-height: 100dvh;
+    margin: 0;
+    /* 刘海安全区 */
+    padding: calc(env(safe-area-inset-top) + var(--sp-4))
+             max(env(safe-area-inset-right), var(--sp-4))
+             calc(env(safe-area-inset-bottom) + var(--sp-6))
+             max(env(safe-area-inset-left), var(--sp-4));
+    background: var(--paper);
+    color: var(--text-primary);
+  }
+  .wrap { max-width: 680px; margin: 0 auto; }
+  h1 { font-size: var(--fs-2xl); line-height: var(--lh-tight); margin: 0 0 var(--sp-2); }
+  h2 { font-size: var(--fs-lg); margin: var(--sp-7) 0 var(--sp-2);
+       padding-top: var(--sp-4); border-top: 1px solid var(--border-decor); }
+  .note { font-size: var(--fs-xs); color: var(--text-secondary);
+          margin: 0 0 var(--sp-4); max-width: 56ch; }
+  .row { display: flex; gap: var(--sp-3); flex-wrap: wrap;
+         align-items: center; padding: var(--sp-3) 0; }
+  .spark { flex: 1 1 160px; min-width: 120px; }
+  .cap { font-size: var(--fs-xs); color: var(--text-tertiary); }
+  /* 🔴 粘顶条：Safari 对 position:sticky 的处理与 Chrome 有差异
+     （尤其父容器有 overflow 时会失效）。这是必测项。 */
+  /* 🔴 2026-10-04 加：明暗切换按钮。
+     Owner 实机提的：「暗色的模式，这个是需要你这边提供开关」。
+     本库的令牌只靠 @media(prefers-color-scheme) 生效
+     ⇒ 原来**只能改系统设置**才看得到暗色。 */
+  /* 🔴 2026-10-04 重做这个按钮（Owner 实机指出两个问题）
+
+     问题 ① 「底色是透明颜色的，透明颜色非常非常容易出现错误」
+     实测确认：`background = rgba(0,0,0,0)` —— **完全透明**！
+     原因：我写的是 `background: var(--surface-raised)`，
+     而 **`--surface-raised` 在 tokens.css 的浅色段里没有定义**
+     （只定义在暗色段）⇒ 变量不存在 ⇒ 整个声明失效 ⇒ 透明。
+
+     ⇒ 修：**用已定义的令牌**，并加 `background-color` 明确兜底。
+        悬浮按钮压在页面上，**必须**有实体底色 + 边框 + 阴影。
+
+     问题 ② 「明暗 跟随」这三个字**别人不一定能看得懂**
+     ⇒ 改用**图标 + 明确文案**，且 `aria-label` 说人话。
+  */
+  .theme-fab {
+    position: fixed;
+    right: max(env(safe-area-inset-right), var(--sp-4));
+    bottom: calc(env(safe-area-inset-bottom) + var(--sp-4));
+    z-index: var(--z-fab);   /* 🔴：改用层级令牌 */
+    min-height: 44px;                 /* WCAG 2.5.5 */
+    min-width: 44px;
+    padding: var(--sp-2) var(--sp-3);
+    display: inline-flex; align-items: center; gap: var(--sp-2);
+
+    /* 🔴 关键：用**一定存在**的令牌，并显式写 background-color。
+       变量缺失时不会"静默变透明" —— 这是 Owner 说的"透明色容易出错"。 */
+    background-color: #FFFFFF;
+    background-image: linear-gradient(180deg, rgba(255,255,255,.92),
+                                            rgba(244,245,247,.92));
+    -webkit-backdrop-filter: saturate(180%) blur(12px);
+    backdrop-filter: saturate(180%) blur(12px);
+    color: #15181C;
+    border: 1px solid #868B94;
+    border-radius: var(--r-pill);
+    box-shadow: 0 2px 10px rgba(0,0,0,.18);
+    cursor: pointer;
+    font-size: var(--fs-sm);
+    line-height: 1;
+  }
+  /* 🔴 暗色下用实体深色（不是透明）：#121212 系的中性深灰 */
+  :root[data-theme-current="dark"] .theme-fab,
+  html[data-theme-current="dark"] .theme-fab {
+    background-color: #242424;
+    background-image: linear-gradient(180deg, rgba(48,48,48,.94),
+                                            rgba(30,30,30,.94));
+    color: #E8E6E3;
+    border-color: #5A5A5A;
+    box-shadow: 0 2px 12px rgba(0,0,0,.5);
+  }
+  .theme-fab:active { transform: scale(0.97); }
+  .theme-fab:focus-visible {
+    outline: 2px solid #1B4D8F; outline-offset: 2px;
+  }
+  /* 图标：跟着当前状态变（太阳=在亮色下点→切暗）*/
+  .theme-fab__ico { font-size: 15px; line-height: 1; }
+  .theme-fab__txt {
+    font-family: var(--sans);
+    font-weight: 500;
+  }
+
+  .sticky-probe {
+    position: sticky; top: 0; z-index: var(--z-header, 100);
+    margin: 0 calc(-1 * var(--sp-4)) var(--sp-3);
+    padding: var(--sp-2) var(--sp-4);
+    background: var(--surface-sunken);
+    border-bottom: 1px solid var(--border-control);
+    font-size: var(--fs-xs);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>iOS Safari 验证页</h1>
+  <p class="note">
+    在 <strong>iPhone 的 Safari</strong> 里打开这一页。
+    下面每一节都写了「<strong>该看到什么</strong>」——
+    看到不一样就是有问题，指一下位置给我。
+    <strong>请顺手截几张图</strong>（尤其第 1、2、6 节）。
+  </p>
+
+  <!-- 🔴 2026-10-04 文案改清楚（Owner：「别人不一定能看得懂」）
+       原来只有「明暗 跟随」三个字 ⇒ 不知道按下会发生什么。
+       现在：**图标说明当前状态 + 文案说明按下后的动作**，读屏也有完整说明。 -->
+  <button class="theme-fab" id="theme-fab"
+          aria-live="polite"
+          title="切换深色 / 浅色外观">
+    <span class="theme-fab__ico" id="theme-ico" aria-hidden="true">◐</span>
+    <span class="theme-fab__txt" id="theme-val">跟随系统</span>
+  </button>
+
+  <div class="sticky-probe">
+    ↓ 往下滚，看这条<strong>是否粘在顶部</strong>（Safari 最容易在这出问题）
+  </div>
+
+  <h2>1 · 按钮与焦点环（<strong>最重要</strong>）</h2>
+  <p class="note">
+    点一个按钮 → 环<strong>应该出现</strong>（触屏没有键盘焦点，但 iOS 会给按钮焦点）。
+    如果一点就没环，是 <code>:focus-visible</code> 的问题。
+  </p>
+  <div class="row">
+    <button class="btn btn--primary">主要</button>
+    <button class="btn btn--secondary">次要</button>
+    <button class="btn btn--ghost">幽灵</button>
+    <button class="btn btn--primary" disabled>禁用</button>
+  </div>
+
+  <h2>2 · 输入框与键盘</h2>
+  <p class="note">
+    点输入框 → 键盘应该弹起，<strong>框仍然可见</strong>（不被键盘顶出屏幕）。
+    字号 16px 以上，iOS 不会自动放大页面。
+  </p>
+  <div class="row">
+    <div class="field" style="flex:1">
+      <label class="field__label" for="ios-input">代码</label>
+      <input class="field__input" id="ios-input" placeholder="600519" inputmode="numeric">
+    </div>
+  </div>
+
+  <h2>3 · 开关（原生 checkbox）</h2>
+  <p class="note">点一下应该切换。<strong>iOS 上原生 checkbox 的表现</strong>是最容易有差异的地方。</p>
+  <div class="row">
+    <span class="switch">
+      <input class="switch__input" type="checkbox" role="switch" id="ios-sw" checked>
+      <span class="switch__track"><span class="switch__thumb"></span></span>
+      <label class="switch__label" for="ios-sw">开启动价推送</label>
+    </span>
+  </div>
+
+  <h2>4 · 单选与复选（<strong>这两个不是一回事</strong>）</h2>
+  <p class="note">
+    🔴 2026-10-04 Owner 指出并纠正的：<strong>我原来只演示了 radio，
+    导致"点一下没反应"看起来像 bug。</strong>
+    <br>真相：<strong>radio 选中后本来就无法取消</strong>（HTML 原生行为），这是**正确的**。
+    <br>⇒ 下面把两种场景都摆出来，点一下就知道区别。
+  </p>
+
+  <h3 style="font-size:var(--fs-base);margin:var(--sp-5) 0 var(--sp-2);color:var(--text-secondary)">
+    A · 单选（radio）—— 多选一，选中后<strong>不能取消</strong>
+  </h3>
+  <p class="small">
+    典型场景：披露状态的三个互斥选项。<br>
+    <strong>点了任何一个之后，再点它自己不会取消</strong> —— 这是对的，因为
+    这一组必须有一个选中。
+  </p>
+  <label class="choice choice--radio">
+    <input class="choice__input" type="radio" name="ios-r" id="ios-r1" checked>
+    <span class="choice__label"><span class="choice__mark"></span><span>已披露</span></span>
+  </label>
+  <label class="choice choice--radio">
+    <input class="choice__input" type="radio" name="ios-r" id="ios-r2">
+    <span class="choice__label"><span class="choice__mark"></span><span>待披露</span></span>
+  </label>
+  <label class="choice choice--radio">
+    <input class="choice__input" type="radio" name="ios-r" id="ios-r3">
+    <span class="choice__label"><span class="choice__mark"></span><span>已预披露</span></span>
+  </label>
+
+  <h3 style="font-size:var(--fs-base);margin:var(--sp-5) 0 var(--sp-2);color:var(--text-secondary)">
+    B · 复选（checkbox）—— <strong>可以独立点开、也可以取消</strong> ⟵ Owner 要的就是这个
+  </h3>
+  <p class="small">
+    典型场景：<strong>「我已阅读该协议」</strong> —— 勾上、再点一下就取消。
+    <br>这是<strong>单个独立开关</strong>，不是"多选一"，所以要用
+    <code>checkbox</code>，<strong>不要用只有一个选项的 radio</strong>。
+  </p>
+  <label class="choice choice--checkbox">
+    <input class="choice__input" type="checkbox" id="ios-c1" checked>
+    <span class="choice__label"><span class="choice__mark"></span><span>我已阅读并同意该协议</span></span>
+  </label>
+  <label class="choice choice--checkbox">
+    <input class="choice__input" type="checkbox" id="ios-c2">
+    <span class="choice__label"><span class="choice__mark"></span><span>剔除 ST / *ST</span></span>
+  </label>
+  <p class="small" style="margin-top:var(--sp-3)">
+    <strong>试试</strong>：点「我已阅读」取消它（应该能取消），
+    再点「待披露」换到第二个 radio（第一个应该自动灭掉）。
+  </p>
+  <label class="choice choice--checkbox">
+    <input class="choice__input" type="checkbox" id="ios-c1" checked>
+    <span class="choice__label"><span class="choice__mark"></span><span>剔除 ST</span></span>
+  </label>
+
+  <h2>5 · 标签页</h2>
+  <p class="note">点下面那排标签 → 面板应该切换，选中项有<strong>蓝色下划线</strong>。</p>
+  <div class="tabs" data-tabs>
+    <div class="tabs__list" role="tablist" aria-orientation="horizontal" aria-label="iOS 验证">
+      <button class="tabs__tab" role="tab" id="ios-t1" aria-controls="ios-p1" aria-selected="true">基本信息</button>
+      <button class="tabs__tab" role="tab" id="ios-t2" aria-controls="ios-p2" aria-selected="false">高级</button>
+    </div>
+    <div class="tabs__panel" role="tabpanel" id="ios-p1" aria-labelledby="ios-t1">
+      <p>公司名称、代码、行业。</p>
+    </div>
+    <div class="tabs__panel" role="tabpanel" id="ios-p2" aria-labelledby="ios-t2" hidden>
+      <p>数据源、口径、复核规则。</p>
+    </div>
+  </div>
+
+  <h2>6 · 折叠面板</h2>
+  <p class="note">
+    点标题 → 下面<strong>应该平滑展开</strong>（不是"啪"一下出现），
+    右侧三角<strong>应该转向</strong>。
+    <br>🔴 2026-10-04 重写：依据 <strong>Radix Collapsible 的一手实现</strong>
+    —— 用 <code>grid-template-rows: 0fr → 1fr</code> 做高度动画，
+    <strong>不需要猜内容有多高</strong>。
+  </p>
+
+  <h3 style="font-size:var(--fs-base);margin:var(--sp-5) 0 var(--sp-2);color:var(--text-secondary)">
+    A · 单列（常规用法）
+  </h3>
+  <div class="accordion" data-accordion>
+    <div class="accordion__item">
+      <h3 class="accordion__heading">
+        <button class="accordion__trigger" aria-expanded="true">
+          <span class="accordion__label">公司基本信息</span>
+          <span class="accordion__marker" aria-hidden="true"></span>
+        </button>
+      </h3>
+      <div class="accordion__panel">
+        <div class="accordion__panel-inner">
+          <p>公司名称、证券代码、行业分类、上市日期与所属交易所。</p>
+          <p>这些字段决定后面所有指标怎么算，缺任何一项都会让勾稽校验失败。</p>
+        </div>
+      </div>
+    </div>
+    <div class="accordion__item">
+      <h3 class="accordion__heading">
+        <button class="accordion__trigger" aria-expanded="false">
+          <span class="accordion__label">数据源与口径
+            <span class="accordion__hint">抓取频率与异常处理</span>
+          </span>
+          <span class="accordion__marker" aria-hidden="true"></span>
+        </button>
+      </h3>
+      <div class="accordion__panel" hidden>
+        <div class="accordion__panel-inner">
+          <p>抓取来源：交易所公开文件、公司定期报告、第三方行情镜像。</p>
+          <p>失败会重试三次，仍失败则标记为「待复核」，不会静默跳过。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="font-size:var(--fs-base);margin:var(--sp-5) 0 var(--sp-2);color:var(--text-secondary)">
+    B · <strong>多列数据</strong> ⟵ Owner 提的「一个标题内部多列」
+  </h3>
+  <p class="small">
+    这才是「一个标题内部多列」的真实场景：<strong>一行一个公司</strong>，
+    点标题展开，下面是<strong>这一行的多列指标</strong>。
+    <br>🔴 2026-10-04 我第一次做成了<strong>四个卡片</strong>（3+1 断行、看不出在表达什么）
+    —— <strong>已废弃</strong>。改用<strong>真表格</strong>：列天然对齐，
+    窄屏可横向滚动、表头固定在左侧。
+  </p>
+  <div class="accordion" data-accordion>
+    <div class="accordion__item">
+      <h3 class="accordion__heading">
+        <button class="accordion__trigger" aria-expanded="true">
+          <span class="accordion__label">600519 · 贵州茅台
+            <span class="accordion__hint">2024 年报 · 单位：万元</span>
+          </span>
+          <span class="accordion__marker" aria-hidden="true"></span>
+        </button>
+      </h3>
+      <div class="accordion__panel">
+        <div class="accordion__panel-inner">
+          <table class="acc-table">
+            <caption>贵州茅台 2024 年主要财务指标</caption>
+            <thead>
+              <tr>
+                <th scope="col">指标</th>
+                <th scope="col" class="num">2024</th>
+                <th scope="col" class="num">2023</th>
+                <th scope="col" class="num">同比</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">营业收入</th><td class="num">1,705,999</td><td class="num">1,505,600</td><td class="num up">+13.3%</td></tr>
+              <tr><th scope="row">净利润</th><td class="num">862,857</td><td class="num">747,340</td><td class="num up">+15.5%</td></tr>
+              <tr><th scope="row">毛利率</th><td class="num">91.9%</td><td class="num">91.5%</td><td class="num up">+0.4pp</td></tr>
+              <tr><th scope="row">经营性现金流</th><td class="num">−31,900</td><td class="num">64,820</td><td class="num down">−149.2%</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="accordion__item">
+      <h3 class="accordion__heading">
+        <button class="accordion__trigger" aria-expanded="false">
+          <span class="accordion__label">000001 · 平安银行
+            <span class="accordion__hint">2024 年报 · 单位：万元</span>
+          </span>
+          <span class="accordion__marker" aria-hidden="true"></span>
+        </button>
+      </h3>
+      <div class="accordion__panel" hidden>
+        <div class="accordion__panel-inner">
+          <table class="acc-table">
+            <caption>平安银行 2024 年主要财务指标</caption>
+            <thead>
+              <tr>
+                <th scope="col">指标</th>
+                <th scope="col" class="num">2024</th>
+                <th scope="col" class="num">2023</th>
+                <th scope="col" class="num">同比</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">营业收入</th><td class="num">1,468,995</td><td class="num">1,648,993</td><td class="num down">−10.9%</td></tr>
+              <tr><th scope="row">净利润</th><td class="num">44,508</td><td class="num">46,404</td><td class="num down">−4.1%</td></tr>
+              <tr><th scope="row">净息差</th><td class="num">1.87%</td><td class="num">2.38%</td><td class="num down">−0.51pp</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="small">
+    <strong>试试</strong>：① 展开/收起「平安银行」——
+    内容应该<strong>平滑收上去</strong>；② 表格在窄屏可以<strong>左右滑动</strong>，
+    而<strong>首列（指标名）固定不动</strong>。
+  </p>
+
+  <h2>7 · 弹窗（tap 目标与滚动）</h2>
+  <p class="note">点按钮 → 弹窗应该出现，<strong>内容很长时可以上下滚</strong>，
+  背景应该盖住整屏（不是只盖住一部分）。</p>
+  <div class="row">
+    <button class="btn btn--primary" id="ios-modal">打开弹窗</button>
+  </div>
+
+  <h2>8 · 趋势图（动画与令牌取色）</h2>
+  <p class="note">
+    这一条<strong>动图才有意义</strong>：线应该「从左往右画出来」。
+    <br>⚠️ <strong>iOS 默认「减少动态效果」是开的</strong>（系统设置 → 辅助功能 → 动态效果）——
+    如果你那边是开着的，线会<strong>直接出现不动画</strong>，这是<strong>正确的</strong>。
+  </p>
+  <div class="row">
+    <span class="sparkline" data-spark="12,18,15,24,22,31,28"
+          data-spark-height="44" data-spark-last="yes"></span>
+  </div>
+
+  <h2>9 · 徽章与分隔线</h2>
+  <p class="note">徽章是<strong>淡底深字</strong>，不是饱和底白字（对比度不够）。</p>
+  <div class="row">
+    <span class="badge badge--success">已披露</span>
+    <span class="badge badge--danger">已停牌</span>
+    <span class="badge badge--warning">审计中</span>
+    <span class="badge badge--info">待复核</span>
+  </div>
+  <hr class="separator">
+  <p class="cap">分隔线下面是 caption 文字。</p>
+
+  <h2>10 · 暗色模式</h2>
+  <p class="note">
+    两种方式都能看：① 点<strong>右下角那个按钮</strong>（最快）
+    ② 把手机系统调成深色（本库的令牌默认跟随系统）。
+    ——
+    背景应该变深，文字变浅，<strong>徽章/按钮仍然清晰</strong>。
+    <br>这是最值得截第二张图的地方。
+  </p>
+  <div class="card">
+    <div class="card__body">
+      <p>卡片在暗色下应该仍然是<strong>比页面深一档</strong>的表面（能看出边界）。</p>
+      <p class="cap">如果卡片和背景融成一片，就是分层的对比度不够。</p>
+    </div>
+  </div>
+
+  <h2>你只需要告诉我三件事</h2>
+  <p class="note">
+    ① 上面哪几节<strong>和图上写的不一样</strong>（说编号就行）<br>
+    ② 粘顶条（最上面那条灰条）<strong>滚下去有没有跟着粘住</strong><br>
+    ③ 键盘弹起时<strong>输入框有没有被挡住</strong>
+  </p>
+  <p class="cap">
+    截图最好：第 1 节（按钮）、第 2 节（键盘弹起时）、第 10 节（暗色）。
+  </p>
+</div>
+<script src="../../01-tokens/theme-toggle.js"></script>
+<script src="../../09-assets/sparkline/sparkline.js"></script>
+<script src="../../03-patterns/tabs/tabs.js"></script>
+<script src="../../03-patterns/accordion/accordion.js"></script>
+<script src="../../03-patterns/overlay/overlay.js"></script>
+<script>
+  // 明暗切换（Owner 实机要求：页面上要有开关）
+  (function () {
+    var fab = document.getElementById('theme-fab');
+    var val = document.getElementById('theme-val');
+    if (!fab || !window.Theme) return;
+    /* 🔴 2026-10-04 文案改清楚：
+       原来显示「当前状态」（跟随/亮/暗）⇒ 三个字太抽象。
+       现在显示**用户能懂的话**：
+         跟随系统 → 「跟随系统（浅色）」
+         浅色     → 「切到深色」
+         深色     → 「切到浅色」
+       ⚠️ 显示的是**按下后会发生什么**，这是按钮文案的标准做法。 */
+    var LABEL = {
+      auto:  '跟随系统', light: '切到深色', dark: '切到浅色',
+    };
+    var ICON = { auto: '◐', light: '☾', dark: '☀' };
+    var ARIA = {
+      auto:  '当前跟随系统外观，点按后切换到深色',
+      light: '当前浅色外观，点按后切换到深色',
+      dark:  '当前深色外观，点按后切换到浅色',
+    };
+    var ico = document.getElementById('theme-ico');
+    var btn = document.getElementById('theme-fab');
+    function sync() {
+      var m = Theme.get();
+      val.textContent = LABEL[m] || LABEL.auto;
+      if (ico) ico.textContent = ICON[m] || ICON.auto;
+      if (btn) btn.setAttribute('aria-label', ARIA[m] || ARIA.auto);
+    }
+    sync();
+    // 🔴 2026-10-04 Owner 指出「明暗 跟随」语义不清。
+    //    除了改文案，还要保证**点完立刻变** —— 原来只在初始化时 sync()，
+    //    文案永远停在「跟随系统」，点三次都不变（实测发现的）。
+    fab.addEventListener('click', function () { Theme.cycle(); sync(); });
+    // 主题被别处改动（系统切换、localStorage）时也同步
+    window.addEventListener('storage', function () { sync(); });
+    if (window.matchMedia) {
+      var mq = window.matchMedia('(prefers-color-scheme: dark)');
+      var onCh = function () { if (Theme.get() === 'auto') sync(); };
+      if (mq.addEventListener) mq.addEventListener('change', onCh);
+      else if (mq.addListener) mq.addListener(onCh);
+    }
+  })();
+
+  // 弹窗（复用本库的 Overlay）
+  // 🔴 2026-10-04 修正：这里第一版写的是 `Overlay.modal({body})` ——
+  //    **那是我编的 API**。真实接口是 `Overlay.dialog({ title, desc, actions })`。
+  //    ⇒ 教训：写示例前先 grep 真实导出，别凭印象写。
+  (function () {
+    var btn = document.getElementById('ios-modal');
+    if (!btn || !window.Overlay || !Overlay.dialog) return;
+    btn.addEventListener('click', function () {
+      Overlay.dialog({
+        title: '验证弹窗',
+        desc: '这是一段比较长的内容，用来验证弹窗里能不能上下滚动。' +
+              'iOS Safari 上弹窗内的滚动最容易出问题——' +
+              '如果滚不动、或者背景没被盖住，请告诉我。',
+        actions: [{ label: '好', primary: true }]
+      });
+    });
+  })();
+</script>
+</body>
+</html>

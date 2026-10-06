@@ -1,0 +1,125 @@
+/* ============================================================================
+   bar.css — 柱状图样式（charter 13 图表规范）
+   ============================================================================
+   ⭐ 铁律一的关键就写在下面这两行，**不能删**：
+
+       .bar  { overflow: hidden; }
+       .bar__svg { overflow: hidden; }
+
+   为什么两道都要：
+     · `.bar__svg` 裁掉**超出 viewBox** 的部分（这才是根因）
+       —— SVG 的 `overflow` 默认值是 `visible`，**不是 hidden**，
+          与 HTML 的直觉相反（`canvas` 才是默认 hidden）。
+          一根高度算出 400px、viewBox 只有 200px 的柱子会**照原样画到外面**。
+     · `.bar` 裁掉溢出**父容器**的部分（防穿透到别的卡片）
+
+   ⚠️ 只裁剪是**止损**不是**解决**：被裁的那根会显得像"到顶了"，
+      所以 JS 侧必须同时给出 `data-clipped` 标记 + `.bar__note` 说明。
+   ============================================================================ */
+
+.bar {
+  position: relative;
+  overflow: hidden;            /* 🔴 铁律一：第二道 */
+  background: var(--surface, #fff);
+  border: 1px solid var(--border-decor);
+  border-radius: var(--r-md, 8px);
+  padding: var(--sp-3);
+}
+
+.bar__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: hidden;            /* 🔴 铁律一：真正的根因在这 */
+}
+
+/* ---------- 网格与刻度 ---------- */
+.bar__grid {
+  stroke: var(--border-decor);
+  stroke-width: 1;
+  /* 虚线比实线轻：网格是背景，不该跟数据抢注意力 */
+  stroke-dasharray: 2 3;
+}
+
+.bar__ytick,
+.bar__xlabel {
+  fill: var(--text-tertiary);
+  font-size: 10px;
+  font-family: var(--mono);
+  /* 数字要对齐 ⇒ 等宽 */
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 柱子 ---------- */
+.bar__bar {
+  fill: var(--accent);
+  /* 悬停变深（只对真能悬停的设备生效，见下方 @media） */
+  transition: fill 120ms var(--ease-out, ease);
+}
+
+.bar__bar--stack-1 { fill: var(--text-tertiary); }
+.bar__bar--stack-2 { fill: var(--accent); opacity: 0.55; }
+
+/* 🔴 被截断的那一根：加一道顶线，明确"这是被裁的" */
+.bar__bar[data-clipped="1"] {
+  fill: var(--danger, #c0392b);
+  stroke: var(--danger, #c0392b);
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+}
+
+/* ---------- 阈值线 ---------- */
+.bar__threshold {
+  stroke: var(--text-tertiary);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+}
+
+/* ---------- 🔴 铁律二：标注样式 ---------- */
+.bar__label {
+  fill: var(--text-secondary);
+  font-size: 10px;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  /* ⭐ 描边画在字**下面**（不糊住笔画）——
+     有了它，标注落在深色柱子上也看得清。
+     这是 charter 13 铁律二的三条硬性要求之一。 */
+  paint-order: stroke fill;
+  stroke: var(--surface, #fff);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  /* 标注本身不接收指针事件，否则会挡住柱子 */
+  pointer-events: none;
+}
+
+.bar__label--max   { fill: var(--text-primary); font-weight: 700; }
+.bar__label--clip  { fill: var(--danger, #c0392b); font-weight: 700; }
+
+/* ---------- 越界说明 ---------- */
+.bar__note {
+  margin: var(--sp-2) 0 0;
+  font-size: var(--fs-xs, 12px);
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+/* ---------- 悬停反馈：只对真能悬停的设备生效 ----------
+   🔴 2026-10-04 补（hover-gate 门禁要求）：
+   `:hover` 在**触屏设备上会"粘住"** ——
+   点一下按钮，hover 状态一直保持，要点别处才消失
+   （移动端根本没有"移开鼠标"这个动作）。
+   ⇒ 只对**真能悬停的设备**（鼠标 / 触控板）生效。 */
+@media (hover: hover) and (pointer: fine) {
+  .bar__bar:hover { fill: var(--accent-strong, var(--accent)); }
+}
+
+/* ---------- 暗色下容器要跟着换 ---------- */
+@media (prefers-color-scheme: dark) {
+  .bar {
+    background: var(--surface, #1a1c1e);
+    border-color: var(--border-decor);
+  }
+  .bar__label {
+    stroke: var(--surface, #1a1c1e);
+  }
+}
