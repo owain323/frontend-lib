@@ -14,19 +14,19 @@ PORT="${PORT:-8000}"
 cd "$(dirname "$0")/.." || exit 2
 
 PY="python"
-# ⭐ 优先用环境变量；否则在常见位置里探测。
-#    ⚠️ 之前写成 ${NODE_DIR:-node}（相对路径）⇒ 依赖找不到，
-#    44 道门禁一起挂 —— 且失败信息是 Cannot find module，看不出根因。
+# ⭐ 优先用环境变量；否则在常见位置里探测（只用相对位置，不写死绝路径）。
 if [ -z "${NODE_DIR:-}" ]; then
-  for _c in "$HOME/.workbuddy/binaries/node/versions/22.17.0"            "$HOME/.workbuddy/binaries/node/versions/22.22.2"            "/c/Users/czj17751/.workbuddy/binaries/node/versions/22.17.0"; do
-    [ -x "$_c/node" ] && NODE_DIR="$_c" && break
+  for _c in "$HOME/.local/share/frontend-lib-tools/node"            "$PWD/.toolchain/node"; do
+    if [ -x "$_c/node" ]; then NODE_DIR="$_c"; break; fi
   done
 fi
 [ -z "${NODE_DIR:-}" ] && NODE_DIR=node
 [ -x "$NODE_DIR/node" ] && export PATH="$NODE_DIR:$PATH"
+
+# 行为脚本的依赖解析路径
 if [ -z "${NODE_MODULES:-}" ]; then
-  for _c in "$HOME/.workbuddy/binaries/node/workspace/node_modules"            "/c/Users/czj17751/.workbuddy/binaries/node/workspace/node_modules"            "$PWD/node_modules"; do
-    [ -d "$_c" ] && NODE_MODULES="$_c" && break
+  for _c in "$PWD/node_modules"            "$HOME/node_modules"; do
+    if [ -d "$_c" ]; then NODE_MODULES="$_c"; break; fi
   done
 fi
 [ -z "${NODE_MODULES:-}" ] && NODE_MODULES=node_modules
