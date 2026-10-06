@@ -52,9 +52,23 @@
         return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
       });
     }
+    /**
+     * 候选项过滤。
+     *
+     * 若调用方提供了 `filter`，就用它（自定义匹配逻辑：拼音、模糊、分组…）。
+     * 否则退回默认的标签/值子串匹配。
+     *
+     * ⚠️ 自定义函数必须**同步返回布尔值**。它会被逐项调用，
+     *    所以不要在里面做异步过滤。
+     */
     function filter(q) {
       q = (q || '').trim().toLowerCase();
       if (!q) return ALL.slice();
+      if (typeof opt.filter === 'function') {
+        return ALL.filter(function (o) {
+          return !!opt.filter(q, o);
+        });
+      }
       return ALL.filter(function (o) {
         return (o.label || '').toLowerCase().indexOf(q) >= 0 ||
                (o.value || '').toLowerCase().indexOf(q) >= 0;
