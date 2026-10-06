@@ -20,6 +20,39 @@
  */
 (function (global) {
   'use strict';
+  /* ---- 旧环境兼容：Element.closest 在老 WebView 上不存在 ----
+     直接调用会在真机上抛 `is not a function`（本地完全正常，
+     只在老环境炸 —— 属静默失效）。这里做模块内兜底，
+     不污染全局，也不需要使用者额外引入 polyfill。 */
+  function closest(el, sel) {
+    if (!el) return null;
+    if (el.closest) return el.closest(sel);
+    while (el && el.nodeType === 1) {
+      if (elMatches(el, sel)) return el;
+      el = el.parentElement;
+    }
+    return null;
+  }
+  function elMatches(el, sel) {
+    var m = sel.match(/^([a-zA-Z][\w-]*)/);
+    if (m && el.tagName.toLowerCase() !== m[1].toLowerCase()) return false;
+    var cls = sel.match(/\.([\w-]+)/g);
+    if (cls) {
+      for (var i = 0; i < cls.length; i++) {
+        var c = cls[i].slice(1);
+        if ((' ' + (el.className || '') + ' ').indexOf(' ' + c + ' ') < 0) return false;
+      }
+    }
+    var id = sel.match(/#([\w-]+)/);
+    if (id && el.id !== id[1]) return false;
+    var at = sel.match(/\[([\w-]+)(?:=["']?([^\]"']*)["']?)?\]/);
+    if (at) {
+      var v = el.getAttribute(at[1]);
+      if (v === null) return false;
+      if (at[2] !== undefined && v !== at[2]) return false;
+    }
+    return true;
+  }
 
   var uid = 0;
 
@@ -90,7 +123,7 @@
        ⚠️ 症状：鼠标点击正常，键盘 ↑↓ "没反应" —— 两者矛盾正是线索。
        ⇒ 正解：监听 focusin，实时把 cur 对齐到当前聚焦的节点。 */
     root.addEventListener('focusin', function (e) {
-      var node = e.target.closest ? e.target.closest('.tree__node') : null;
+      var node = e.target.closest ? closest(e.target, '.tree__node') : null;
       if (!node) return;
       var list = visible();
       for (var i = 0; i < list.length; i++) {
@@ -183,7 +216,7 @@
 
     /* ---------- 点击 ---------- */
     root.addEventListener('click', function (e) {
-      var node = e.target.closest ? e.target.closest('.tree__node') : null;
+      var node = e.target.closest ? closest(e.target, '.tree__node') : null;
       if (!node || !root.contains(node)) return;
       var list = visible();
       for (var i = 0; i < list.length; i++) {
@@ -192,7 +225,7 @@
       var it = current();
       if (it) {
         /* 点箭头只展开/收起，点文字则选中 */
-        if (e.target.closest && e.target.closest('.tree__marker') && it.ul) {
+        if (e.target.closest && closest(e.target, '.tree__marker') && it.ul) {
           setExpanded(it, it.li.getAttribute('aria-expanded') !== 'true');
         } else {
           select(it);

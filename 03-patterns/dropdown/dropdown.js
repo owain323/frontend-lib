@@ -14,6 +14,39 @@
  */
 (function (global) {
   'use strict';
+  /* ---- 旧环境兼容：Element.closest 在老 WebView 上不存在 ----
+     直接调用会在真机上抛 `is not a function`（本地完全正常，
+     只在老环境炸 —— 属静默失效）。这里做模块内兜底，
+     不污染全局，也不需要使用者额外引入 polyfill。 */
+  function closest(el, sel) {
+    if (!el) return null;
+    if (el.closest) return el.closest(sel);
+    while (el && el.nodeType === 1) {
+      if (elMatches(el, sel)) return el;
+      el = el.parentElement;
+    }
+    return null;
+  }
+  function elMatches(el, sel) {
+    var m = sel.match(/^([a-zA-Z][\w-]*)/);
+    if (m && el.tagName.toLowerCase() !== m[1].toLowerCase()) return false;
+    var cls = sel.match(/\.([\w-]+)/g);
+    if (cls) {
+      for (var i = 0; i < cls.length; i++) {
+        var c = cls[i].slice(1);
+        if ((' ' + (el.className || '') + ' ').indexOf(' ' + c + ' ') < 0) return false;
+      }
+    }
+    var id = sel.match(/#([\w-]+)/);
+    if (id && el.id !== id[1]) return false;
+    var at = sel.match(/\[([\w-]+)(?:=["']?([^\]"']*)["']?)?\]/);
+    if (at) {
+      var v = el.getAttribute(at[1]);
+      if (v === null) return false;
+      if (at[2] !== undefined && v !== at[2]) return false;
+    }
+    return true;
+  }
 
   var FOCUSABLE = 'li[role="menuitem"]:not([aria-disabled="true"])';
 
@@ -104,7 +137,7 @@
 
     /* ---------- 菜单项 ---------- */
     menu.addEventListener('click', function (e) {
-      var li = e.target.closest ? e.target.closest('[role="menuitem"]') : null;
+      var li = e.target.closest ? closest(e.target, '[role="menuitem"]') : null;
       if (!li) return;
       e.stopPropagation();
       if (li.getAttribute('aria-disabled') === 'true') return;
@@ -132,8 +165,8 @@
            它永远不等于 menu ⇒ 这个 if **永远为真** ⇒ 每次都提前 return
          ⇒ **整个键盘导航（↑↓ Esc Home End）全部失效**，而且不报任何错。
          ⚠️ 这类 bug 最危险：功能看起来"有实现"，实际一行都没跑到。
-         ⇒ 正解：`e.target.closest('[data-dd-menu]')`（**加括号调用**）。 */
-      if (e.target.closest('[data-dd-menu]') !== menu) return;
+         ⇒ 正解：`closest(e.target, '[data-dd-menu]')`（**加括号调用**）。 */
+      if (closest(e.target, '[data-dd-menu]') !== menu) return;
 
       /* ① ↑↓ 移动（循环）*/
       if (k === 'ArrowDown') { e.preventDefault(); focusAt(active + 1); return; }

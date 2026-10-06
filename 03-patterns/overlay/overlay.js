@@ -27,7 +27,13 @@
   ].join(',');
 
   var lockCount = 0;          /* 防止多个弹层重复加 padding */
-  var lastFocused = null;
+  /* 每个打开中的弹层各自记住「打开前焦点在哪」。
+     * ⭐ 必须是**栈**而不是单个变量 ——
+     *   弹层 A 打开弹层 B 时，B 会覆盖掉 A 记录的触发元素，
+     *   于是 B 关闭后焦点还给了 B 的触发器（可能就在 A 里面），
+     *   再关 A 时已经不知道该还给谁了。
+     */
+  var focusStack = [];
   var savedPaddingRight = '';
 
   /* ---------------------------------------------------------------- 工具 */
@@ -156,7 +162,8 @@
   function dialog(opts) {
     opts = opts || {};
 
-    lastFocused = document.activeElement;
+    var myTrigger = document.activeElement;
+    focusStack.push(myTrigger);
 
     var backdrop = document.createElement('div');
     backdrop.className = 'dialog-backdrop';
@@ -212,6 +219,11 @@
     box.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') {
         e.preventDefault();
+        /* 🔴 必须 stopPropagation：弹层可嵌套。
+         * 不拦住的话，内层的 Esc 会**冒泡到外层**，
+         * 一次按键把两层全关掉 —— 键盘用户会以为应用崩了。
+         * （本库在 popover 上踩过同一个坑，这里一并修好。） */
+        e.stopPropagation();
         close();
         return;
       }
@@ -252,16 +264,23 @@
     var inerted = [];
 
     /* 背景 inert：把背后页面整个变不可交互 —— 比 focus trap 更彻底。
-       支持就用（现代浏览器都有），不支持就靠上面的 focus trap 兜底。 */
+       支持就用（现代浏览器都有），不支持就靠上面的 focus trap 兜底。
+
+       ⭐ 必须**按层记账**，不能简单地"开时全锁、关时全解"。
+          嵌套场景下：关掉内层时如果无脑解锁，
+          会把外层打开时锁住的背景**一起解锁** ——
+          于是外层还开着，背景却能点了（用户会以为应用坏了）。
+          ⇒ 每个 backdrop 只解**自己**锁的节点。 */
     if ('inert' in HTMLElement.prototype) {
       var nodes = Array.prototype.slice.call(
         document.body.querySelectorAll('body > *')
       );
       nodes.forEach(function (n) {
-        if (!n.classList.contains('dialog-backdrop')) {
-          n.inert = true;
-          inerted.push(n);
-        }
+        /* 任何已有的 backdrop（外层）都跳过 —— 它们自己管自己的 */
+        if (n.classList.contains('dialog-backdrop')) return;
+        if (n.inert) { inerted.push(n); return; }   /* 已锁的不重复记账 */
+        n.inert = true;
+        inerted.push(n);
       });
     }
 
@@ -269,12 +288,14 @@
       if (closed) return;
       closed = true;
       if (backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
+      /* 只解自己锁的；外层锁住的一律不动（见上面说明） */
       inerted.forEach(function (n) { n.inert = false; });
       unlockScroll();
       /* 🔴 焦点必须回到触发它的那个元素。
          不还的话，键盘用户要重新 Tab 一遍才能回到原处。 */
-      if (lastFocused && document.contains(lastFocused)) {
-        lastFocused.focus();
+      var trigger = focusStack.pop();
+      if (trigger && document.contains(trigger)) {
+        trigger.focus();
       } else {
         document.body.focus();
       }

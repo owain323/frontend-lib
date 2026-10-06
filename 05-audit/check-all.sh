@@ -17,9 +17,14 @@ fi
 [ -x "$NODE_DIR/node" ] && export PATH="$NODE_DIR:$PATH"
 
 # 行为脚本的依赖解析路径
+# 优先用环境变量（运行者指定），否则向上探测。
 if [ -z "${NODE_MODULES:-}" ]; then
-  for _c in "$PWD/node_modules"            "$HOME/node_modules"; do
-    if [ -d "$_c" ]; then NODE_MODULES="$_c"; break; fi
+  _d="$PWD"
+  for _up in 1 2 3 4 5; do
+    for _c in "$_d/node_modules"              "$HOME/.workbuddy/binaries/node/workspace/node_modules"; do
+      if [ -d "$_c" ]; then NODE_MODULES="$_c"; break 2; fi
+    done
+    _d=$(dirname "$_d")
   done
 fi
 [ -z "${NODE_MODULES:-}" ] && NODE_MODULES=node_modules
@@ -222,6 +227,7 @@ run "proper-noun" $PY 05-audit/proper-noun-scan.py
 run "hype"        $PY 05-audit/hype-scan.py
 run "api-snap"        $PY 05-audit/api-snapshot.py
 run "api-doc"      $PY 05-audit/api-doc-gate.py
+run "legacy-api"  $PY 05-audit/legacy-api-gate.py
 run "release"     $PY 05-audit/release-gate.py
 run "gate-self"   $PY 05-audit/gate-selfcheck.py
 exit $fail
