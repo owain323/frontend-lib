@@ -21,6 +21,13 @@ import re
 import subprocess
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# ★ 浏览器/运行时自带的全局——不是本库的公开 API
+_BUILTIN_GLOBALS = {
+    'requestAnimationFrame', 'cancelAnimationFrame', 'setTimeout',
+    'clearTimeout', 'setInterval', 'clearInterval', 'console', 'Promise',
+    'fetch', 'alert', 'confirm', 'prompt', 'Event', 'CustomEvent',
+}
 API_DOC = os.path.join(ROOT, 'API.md')
 
 
@@ -55,8 +62,14 @@ def implemented():
         #    global.X = { ... }   （IIFE 内部）
         #    window.X = X         （挂到 window 上的对象）
         for m in re.findall(r'global\.(\w+)\s*=', s):
+            if m in _BUILTIN_GLOBALS:
+                continue
             found.add(m)
         for m in re.findall(r'window\.(\w+)\s*=\s*\w+\s*;', s):
+            # ★ 排除浏览器内置 API —— 它们不是“公开 API”，
+            #    它们是环境提供的，构成一定要排除。
+            if m in _BUILTIN_GLOBALS:
+                continue
             found.add(m)
     return found
 
