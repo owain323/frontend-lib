@@ -20,34 +20,66 @@
 
 ## 全局对象
 
-所有行为脚本挂在 `window` 上，遵循 `<组件名>.create(root, options)`。
+行为脚本挂在 `window` 上。**它们不是同一种东西** —— 有四种接入形态，
+各有各的调用方式。下表由`05-audit/global-api-probe.js`在真实浏览器里
+探测生成，门禁 `api-doc` 会核对本文与实现是否一致。
+
+### 四种接入形态
+
+| 形态 | 调用方式 | 适合 |
+|---|---|---|
+| **create** | `X.create(root, options)` → 返回实例 | 需要拿到实例做后续控制 |
+| **attach** | `X.attach(root, options)` → 返回实例 |同上，但语义上「挂到已有 DOM」 |
+| **construct** | `new X(root, options)` | 老式类；**没有静态成员** |
+| **direct** | 直接调用 `X.xxx(root, options)` | 一次性动作，无需持有实例 |
+
+⚠️ 早期版本的本文档写「所有脚本遵循 `.create()`」——
+实际 18 个全局里只有 5 个是create。**按 create 写其余的会直接报错。**
+
+### 全部全局对象
+
+| 全局名 | 状态 | 形态 | 成员 |
+|---|---|---|---|
+| `Select` | ✅ | create | `create` |
+| `Combobox` | ✅ | create | `create` |
+| `DateRange` | ✅ | create | `create` + 纯函数 `iso` `addDays` `addMonths` `quarterOf` `quarterRange` |
+| `Tree` | ✅ | create | `create` |
+| `Dropdown` | ✅ | create | `create` |
+| `Pagination` | ✅ | create | `create` `update` `pagesOf` |
+| `Accordion` | ✅ | **construct** | 实例方法在原型上：`toggle` `set` `bind` `init` … |
+| `Tabs` | ✅ | **construct** | 实例方法在原型上：`select` `focusables` `rove` `step` `edge` |
+| `Tooltip` | ✅ | attach | `attach` |
+| `Popover` | ✅ | attach | `attach` `closeAll` `current` |
+| `Overlay` | ✅ | direct | `dialog` `toast` |
+| `Drawer` | ✅ | direct | `open` |
+| `Toc` | ✅ | direct | `init` |
+| `Chart` | ✅ | direct | `draw` `update` `emit` `observe` |
+| `Bar` | ✅ | direct | `draw` |
+| `FLIP` | ✅ | direct | `flip` `remove`（过渡工具） |
+| `ChartAdapter` | ✅ | create | `create` `refresh` `palette` `theme` `cssVar` `defaults` `seriesColors` |
+| `ModelViewer` | ✅ | direct | `update` `refresh` |
+| `Theme` | ✅ | direct | `get` `isDark` `set` `toggle` `cycle`（在 `01-tokens/theme-toggle.js`）|
 
 ```js
-window.Select.create(rootElement, { label: '城市' });
+// create 形态
+const select = window.Select.create(root, { label: '城市', options: [...] });
+select.value = 'shanghai';
+
+// construct 形态（注意是 new）
+const acc = new window.Accordion(root, { duration: 240 });
+acc.toggle(acc.itemOf(root.querySelector('.accordion__trigger')));
+
+// direct 形态
 window.Overlay.dialog({ title: '确认', actions: [...] });
 ```
 
-| 全局名 | 状态 | 方法 |
-|---|---|---|
-| `Select` | ✅ | `create` |
-| `Combobox` | ✅ | `create` |
-| `DateRange` | ✅ | `create` + 命名空间纯函数 |
-| `Overlay` | ✅ | `dialog` / `toast` |
-| `Tabs` | ✅ | `create` |
-| `Accordion` | ✅ | `attach` |
-| `Tree` | ✅ | `create` |
-| `Drawer` | ✅ | `create` |
-| `Dropdown` | ✅ | `create` |
-| `Popover` | ✅ | `attach` |
-| `Tooltip` | ✅ | `attach` |
-| `Toc` | ✅ | `create` |
-| `Bar` | ✅ | `create`（图表） |
-| `FLIP` | ✅ | 过渡工具函数 |
-| `Chart` | ✅ | `create`（图表）|
-| `ChartAdapter` | ✅ | 图表适配层 |
-| `ModelViewer` | ✅ | `create`（3D 模型）|
-| `Pagination` | ✅ | `create` |
-| `Theme` | ✅ | 主题读取与应用 |
+### 关于主题
+
+主题优先走**纯 CSS**：`data-theme` 属性 + `prefers-color-scheme`，
+不需要任何 JS。若需要程序化控制，`01-tokens/theme-toggle.js` 提供
+`window.Theme`（`get` / `isDark` / `set` / `toggle` / `cycle`）。
+**该脚本需单独引入**，token 层本身不依赖它。
+
 
 每个 `create` 返回一个实例对象，**方法签名见 `types/index.d.ts`**（类型与实现由 CI 保证一致）。
 

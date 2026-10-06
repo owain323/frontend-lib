@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 r"""
-api-contract-gate.py — 运行时 ↔ 类型 双向契约门禁（工单 W3）
+api-contract-gate.py — 运行时 ↔ 类型 双向契约门禁（任务 W3）
 
 ===========================================================================
 🔴 它替换掉了什么，为什么必须换
@@ -210,7 +210,7 @@ def norm_ts(kind):
 
 
 def main():
-    print('  === 运行时 ↔ 类型 双向契约（工单 W3）===')
+    print('  === 运行时 ↔ 类型 双向契约（任务 W3）===')
     print('')
 
     rt = probe_runtime()

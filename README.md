@@ -112,7 +112,7 @@ npm run gate           # 全量检查（含浏览器）
 改代码时跑 `gate:fast` 即可；**提交前**再跑一次 `gate`。
 
 类型声明在 `types/index.d.ts`。改动它之前先看
-[docs/ROADMAP.md](docs/ROADMAP.md) 里的「契约类工单」——
+[docs/ROADMAP.md](docs/ROADMAP.md) 里的「契约类事项」——
 那几项没做完之前，本库还不适合作为长期依赖引入。
 
 ## 许可
