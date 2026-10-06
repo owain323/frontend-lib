@@ -144,7 +144,7 @@ def main():
     p = os.path.join(ROOT, 'CHANGELOG.md')
     if os.path.isfile(p):
         raw = io.open(p, encoding='utf-8').read()
-        # 日期形如 2026-10-06；没写日期就留空
+        # 日期形如 YYYY-MM-DD；没写日期就留空
         for m in re.finditer(
                 r'^##\s+(\d+\.\d+\.\d+)\s*—[ \t]*(.*)$', raw, re.M):
             ver = m.group(1)

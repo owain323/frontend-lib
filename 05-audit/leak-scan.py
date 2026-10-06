@@ -143,13 +143,25 @@ AUDIT_PREFIX = '05-audit/'
 
 # ⭐ 门禁自身**必须豁免**：它们为了检测这些词，词表里就得含它们。
 #    这是「工具属性」，不是「内容泄漏」—— 外人看到的是一条扫描规则。
-SELF = {'leak-scan.py', 'leak-clean.py', 'leak-fix-paths.py', 'terms.py',
-        'outsider-audit.py', 'publish-guard.py', 'api-snapshot.py',
-        'gate-selfcheck.py', 'release-gate.py', 'hype-scan.py',
-        'proper-noun-scan.py', '_common.py', 'repo-hygiene.py',
-        # ★ fixture 脚本**必须**含注入样本（否则没法自测）
-        'gate-selfcheck-fixtures.py',
-        '迁移脚本'}
+# ⭐ 门禁自身**必须豁免**：它们为了检测这些词，词表里就得含它们。
+#    这是「工具属性」，不是「内容泄漏」—— 外人看到的是一条扫描规则。
+#
+# 🔴🔴 2026-10-06 改成**按目录豁免**，不再逐个文件名列举。
+#    为什么改：逐个列举必然会漏。
+#    新加了 api-form-gate.py / doc-facts-gate.py / _probe.py 之后，
+#    它们先因为含词表里的词被判红，接着 fixture 的「正常样本」用例
+#    全部连锁失败 —— 一道门禁的措辞能拖垮另一道门禁的判据。
+#    ⇒ 只要在 05-audit/ 下，就是门禁工具，按工具对待。
+#    （对外的价值：门禁脚本本身是可读的自证材料，不该被自己的规则扫）
+SELF_DIR_PREFIX = '05-audit/'
+
+# 仍需单独豁免的（不在 05-audit/ 下的）
+SELF_FILES = {'迁移脚本'}
+
+
+def is_self_tool(rel):
+    """门禁工具自身（要含禁词才能检测它们）。"""
+    return rel.startswith(SELF_DIR_PREFIX) or rel.split('/')[-1] in SELF_FILES
 
 # ⭐ 补 `.ts` —— 判别力验证抓到**门禁自己漏了类型定义文件**：
 #   往 types/index.d.ts 注入内部代号，leak-scan 报"无敏感信息"。
@@ -172,7 +184,7 @@ def main():
 
     hits = {}
     for rel in files:
-        if rel.split('/')[-1] in SELF or not rel.endswith(EXTS):
+        if is_self_tool(rel) or not rel.endswith(EXTS):
             continue
         try:
             t = io.open(os.path.join(ROOT, rel), encoding='utf-8',

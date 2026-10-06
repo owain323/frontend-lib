@@ -46,7 +46,7 @@ CASES = [
      '\n.probe { color: #ff0000; }\n', '正常 CSS（应**不**被抓）'),
     ('leak-scan.py', 'README.md',
      '\n一段正常的中文说明文字。\n', '正常中文（应**不**被抓）'),
-    # ---- 公开可用性四判据（2026-10-06补）----
+    # ---- 公开可用性四判据（补）----
     # 每条都配一个「正常样本」做反向控制，防止判据收得过窄变成永久假红。
     ('leak-scan.py', '02-primitives/badge/badge.css',
      '\n/* %s 报"点了不动" */\n' % terms.COLLAB_TRACE[0],

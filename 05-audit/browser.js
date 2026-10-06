@@ -47,6 +47,57 @@ const puppeteer = require('puppeteer-core');
  * ⚠️ 这里用 `require('path')` 拼、不写死任何人的用户名或盘符。
  */
 const fsx = require('fs');
+const path = require('path');
+
+/**
+ * 🔴 找不到浏览器时的**明确报错** —— 不要静默退化成"假通过"。
+ *
+ * CI 上的实际教训：
+ *   GitHub runner 上没有系统 Chrome，`npx playwright install` 装的是
+ *   ~/.cache/ms-playwright/chromium-<版本>/chrome-linux/chrome——
+ *   不在常见路径表里 ⇒ 以前 CI 只能跑纯静态门禁，
+ *   契约类门禁在 CI 上**根本没被执行过**。
+ *   ⇒ 补上 Playwright 的路径（见下面 findPlaywrightChrome）。
+ *
+ * ⚠️ 下面的 glob 里含通配符，**写成字符串拼接**：
+ *   直接把「星号 +斜杠」写进注释，会提前闭合块注释，
+ *   把后面的代码全变成注释 ⇒ SyntaxError。实测踩过。
+ */
+const PW_VER = 'chromium-' + '*';
+const PLAYWRIGHT_GLOBS = [
+  // Linux（CI）
+  path.join(process.env.HOME || '/root', '.cache/ms-playwright',
+    PW_VER, 'chrome-linux/chrome'),
+  // Linux（新版命名）
+  path.join(process.env.HOME || '/root', '.cache/ms-playwright',
+    'chromium_headless_shell-' + '*', 'chrome-linux/headless_shell'),
+  // macOS
+  path.join(process.env.HOME || '', 'Library/Caches/ms-playwright',
+    PW_VER, 'chrome-mac/Chromium.app/Contents/MacOS/Chromium'),
+];
+
+/** 在 PLAYWRIGHT_GLOBS 里找真实存在的那个（'*' 需要展开） */
+function findPlaywrightChrome() {
+  const dir = require('os').homedir();
+  const roots = [
+    path.join(dir, '.cache/ms-playwright'),
+    path.join(dir, 'Library/Caches/ms-playwright'),
+  ];
+  for (const root of roots) {
+    let entries;
+    try { entries = fsx.readdirSync(root); } catch (e) { continue; }
+    for (const name of entries) {
+      if (!/^chromium/.test(name)) continue;
+      for (const rel of ['chrome-linux/chrome', 'chrome-mac/Chromium.app/Contents/MacOS/Chromium',
+        'chrome-linux/headless_shell', 'chrome-win/chrome.exe']) {
+        const p = path.join(root, name, ...rel.split('/'));
+        try { if (fsx.existsSync(p)) return p; } catch (e) { /* 继续找 */ }
+      }
+    }
+  }
+  return null;
+}
+
 const CANDIDATES = [
   process.env.CHROME_PATH,
   process.env.CHROME_BIN,
@@ -56,21 +107,38 @@ const CANDIDATES = [
   '/usr/bin/google-chrome',
   '/usr/bin/chromium',
   '/usr/bin/chromium-browser',
+  // CI 上 Playwright 装的 Chromium（含版本号目录）
+  PLAYWRIGHT_GLOBS.map((g) => g)[0],
 ];
 const CHROME = CANDIDATES.find((p) => {
   if (!p) return false;
   try { return fsx.existsSync(p); } catch (e) { return false; }
-});
+}) || findPlaywrightChrome();
 
 /** 关掉缓存的 launch —— 所有测试脚本必须用它，别自己调 puppeteer.launch */
 async function launch(opts) {
+  // 🔴 找不到浏览器时**明确失败**，绝不静默退化成"没跑=通过"。
+  //   静默退化是门禁假绿的经典形态：CI 上没装浏览器 ⇒ 契约一条没跑 ⇒ 全绿。
+  if (!CHROME) {
+    throw new Error(
+      '找不到 Chrome/Chromium 可执行文件。\n' +
+      '  已尝试：\n' +
+      CANDIDATES.filter(Boolean).map((p) => '    ' + p).join('\n') + '\n' +
+      '  以及 Playwright 缓存目录：' + PLAYWRIGHT_GLOBS.join('\n    ') + '\n' +
+      '  ⇒ 装一个：npx playwright install --with-deps chromium\n' +
+      '  或设CHROME_PATH 指向已有的可执行文件。');
+  }
   // 🔴 三层防缓存，缺一不可：
   //   ① 启动参数禁掉 disk / application / http cache
   //   ② 每次用**随机临时 profile** ⇒ 不碰 正在使用的 Chrome，
   //      也不复用上一次的缓存
   //   ③ wrap() 把 newPage 包一层，自动 setCacheEnabled(false)
   const os = require('os');
-  const profile = os.tmpdir() + '\\fe-cache-' + process.pid + '-' + Date.now();
+  // ⚠️ 必须用 path.join —— 之前写死 '\\' 分隔符，
+  //    在 Linux/macOS 上会造出一个**名字里带反斜杠**的目录，
+  //    临时 profile 散落在文件系统里。CI 上必踩。
+  const profile = path.join(os.tmpdir(),
+    'fe-cache-' + process.pid + '-' + Date.now());
   const browser = await puppeteer.launch({
     executablePath: CHROME,
     headless: 'new',
