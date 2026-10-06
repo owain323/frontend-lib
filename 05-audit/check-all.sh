@@ -115,6 +115,7 @@ echo ""
 echo "=== 浏览器门禁 ==="
 run "accent-gate" $PY 05-audit/accent-gate.py
 run "perf-gate"   node 05-audit/perf-gate.js
+run "size-budget" $PY 05-audit/size-baseline.py
 run "switch"     node 05-audit/switch-contract.js
 run "tabs"       node 05-audit/tabs-contract.js
 run "accordion"  node 05-audit/accordion-contract.js
