@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>分页 ·· frontend-lib</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/focus-ring.css">
+<link rel="stylesheet" href="../../01-tokens/scrollbar.css">
+<link rel="stylesheet" href="pagination.css">
+<style>
+  body {
+    min-height: 100vh; margin: 0;
+    padding: calc(env(safe-area-inset-top) + var(--sp-6))
+             max(env(safe-area-inset-right), var(--sp-4))
+             calc(env(safe-area-inset-bottom) + var(--sp-6))
+             max(env(safe-area-inset-left), var(--sp-4));
+    background: var(--paper); color: var(--text-primary);
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  h1 { font-size: var(--fs-2xl); line-height: var(--lh-tight); margin: 0 0 var(--sp-2); }
+  h2 { font-size: var(--fs-lg); margin: var(--sp-7) 0 var(--sp-3);
+       padding-top: var(--sp-4); border-top: 1px solid var(--border-decor); }
+  .lede { color: var(--text-secondary); margin: 0 0 var(--sp-4); }
+  .note { font-size: var(--fs-sm); color: var(--text-secondary);
+          margin: 0 0 var(--sp-3); max-width: 68ch; line-height: 1.75; }
+  code { font-family: var(--mono); font-size: .92em;
+         background: var(--surface-sunken); padding: 1px 5px; border-radius: 3px; }
+  table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); margin: 0 0 var(--sp-4); }
+  th, td { text-align: left; padding: var(--sp-2) var(--sp-3);
+           border-bottom: 1px solid var(--border-decor); }
+  th { font-size: var(--fs-xs); color: var(--text-secondary); font-weight: 500; }
+  .ok { color: var(--success); } .no { color: var(--danger); }
+
+  .demo-box { background: var(--surface); border: 1px solid var(--border-decor);
+              border-radius: var(--r-md); padding: var(--sp-4); }
+  .rows { margin: 0 0 var(--sp-4); }
+  .row { display: flex; justify-content: space-between; gap: var(--sp-3);
+         padding: var(--sp-2) 0; border-bottom: 1px solid var(--border-decor);
+         font-size: var(--fs-sm); }
+  .row:last-child { border-bottom: 0; }
+  .row .n { font-family: var(--mono); color: var(--text-tertiary); }
+  .row .v { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .live-echo { margin: var(--sp-3) 0 0; font-size: var(--fs-xs); color: var(--text-tertiary); }
+  .live-echo b { color: var(--text-secondary); font-family: var(--mono); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>分页</h1>
+  <p class="lede">
+     <code></code>。依据 <strong>W3C APG</strong> +
+    <strong>USWDS</strong> + <strong>MDN</strong> + Component Gallery + Mironsoft（5 个来源口径一致）。
+  </p>
+
+  <h2>1 · 基本用法</h2>
+  <p class="note">
+    共 <b>248 条</b>，每页 <b>20 条</b> ⇒ <b>13 页</b>。
+    <br><b>键盘试试</b>：Tab 聚焦到分页后，<code>←</code> <code>→</code> 翻页，
+    <code>Home</code> <code>End</code> 跳首末。
+  </p>
+
+  <div class="demo-box">
+    <div class="rows" id="rows" tabindex="-1" role="region" aria-label="当前页数据"></div>
+
+    <nav class="pagination" aria-label="搜索结果分页"
+         aria-controls="rows"
+         data-pagination data-total="248" data-page-size="20" data-page="1"
+         data-pg-scroll-target="rows">
+      <ul class="pagination__list" data-pg-list></ul>
+      <p class="pagination__status" data-pg-status></p>
+      <!-- 🔴 live 区必须常驻 DOM，只改 textContent（依据 USWDS / Mironsoft）-->
+      <p class="pagination__live" data-pg-live aria-live="polite"></p>
+    </nav>
+
+    <p class="live-echo">
+      🔴 读屏播报区（<code>aria-live</code>）的内容：
+      <b id="echo">（翻页后会更新）</b>
+    </p>
+  </div>
+
+  <h2>2 · 结构：六条硬要求</h2>
+  <table>
+    <tr><th>要求</th><th>为什么</th></tr>
+    <tr><td>包在 <code>&lt;nav aria-label&gt;</code> 里</td>
+        <td>页面常有多个 nav（主导航/面包屑/分页），
+            没有 <code>aria-label</code> 读屏器分不清</td></tr>
+    <tr><td>用 <code>&lt;ul&gt;+&lt;li&gt;</code>，不用松散的 <code>&lt;a&gt;</code></td>
+        <td>列表能传达"共几项""当前在第几项"</td></tr>
+    <tr><td>当前页 <code>aria-current="page"</code></td>
+        <td><span class="no">⛔ 不用 <code>aria-selected</code></span>
+            —— 那是给 tab/option/row 用的</td></tr>
+    <tr><td>页码 <code>aria-label="第 4 页"</code></td>
+        <td>孤零零的数字脱离上下文没有意义</td></tr>
+    <tr><td>首/末页用 <code>disabled</code></td>
+        <td><span class="no">看着能点却不工作是最糟的</span></td></tr>
+    <tr><td>翻页有 <code>aria-live="polite"</code></td>
+        <td>只改文字变化的话，视觉变化对读屏器是<b>静默</b>的</td></tr>
+  </table>
+  <p class="note">
+    ⛔ <b>常见错误</b>：把 <code>role="navigation"</code> 直接放在 <code>&lt;ul&gt;</code> 上
+    —— 那会<b>覆盖 ul 的列表语义</b>（Component Gallery 明确点出）。
+  </p>
+
+  <h2>3 · 当前页仍然是按钮（不是纯文字）</h2>
+  <p class="note">
+    USWDS 的说明听起来反直觉：<b>当前页也要是链接/按钮</b>，
+    只是用 <code>aria-current</code> 标记 + 视觉高亮。
+    <br>理由：读屏器无论用户是<b>浏览</b>还是<b>Tab 焦点</b>，都能播报当前页。
+  </p>
+
+  <h2>4 · 槽位固定 7 个（USWDS 的规定）</h2>
+  <p class="note">
+    永远显示：首页 · 当前页 · 最后一页 · 当前页两侧各一页。
+    有遗漏就显示省略号，<b>且总数固定</b> —— 翻页时按钮位置不跳。
+    <br>试试拖到第 5 页、第 11 页看槽位怎么变。
+  </p>
+
+  <h2>5 · 命中区</h2>
+  <p class="note">
+    每个按钮 <b>44×44px</b>，走 <code>--sz-touch</code> 令牌
+    （<b>WCAG 2.5.5 Level AAA</b> 的要求；AA 级的 2.5.8 只要 24px，本库按 AAA 做）。
+    <br>⚠️ 槽位间距只用 <code>2px</code> —— USWDS 明确说
+    <b>过大的水平间距会让视力/行动受限的用户"扫不到"而跳过元素</b>。
+  </p>
+
+  <h2>6 · 窄屏</h2>
+  <p class="note">
+    页码窗口会换行，状态文本另起一行
+    ⇒ <b>不产生横向溢出</b>。
+  </p>
+
+</div>
+
+<script src="pagination.js"></script>
+<script>
+// 演示数据（假的，只是为了看翻页效果）
+var ALL = [];
+for (var i = 1; i <= 248; i++) {
+  ALL.push({ id: i, name: '记录 ' + i, amount: (i * 37 % 900 + 60) });
+}
+
+var node = document.querySelector('[data-pagination]');
+var pg = Pagination.create(node);
+var echo = document.getElementById('echo');
+
+function load(page) {
+  var start = (page - 1) * 20;
+  var slice = ALL.slice(start, start + 20);
+  var box = document.getElementById('rows');
+  box.innerHTML = '';
+  for (var i = 0; i < Math.min(8, slice.length); i++) {
+    var r = slice[i];
+    var d = document.createElement('div');
+    d.className = 'row';
+    d.innerHTML = '<span class="n">#' + r.id + '</span><span>' + r.name +
+                  '</span><span class="v">' + r.amount.toFixed(2) + '</span>';
+    box.appendChild(d);
+  }
+  // 模拟读屏播报（真实场景由 aria-live 自动播）
+  echo.textContent = document.querySelector('[data-pg-live]').textContent;
+}
+
+/* 🔴 翻页后把焦点放到**数据区**（不是分页按钮）——
+   键盘用户的自然下一步是"继续看数据/再翻页"，
+   焦点留在分页按钮上会让他们以为"没换页"。 */
+pg.onChange = function (page) {
+  load(page);
+  var box = document.getElementById('rows');
+  if (box && document.activeElement && document.activeElement !== document.body) {
+    box.focus();
+  }
+};
+load(pg.page);
+</script>
+</body>
+</html>

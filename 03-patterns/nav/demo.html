@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>导航 · 页头 / 目录 / 移动端抽屉</title>
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../02-primitives/button/button.css">
+<link rel="stylesheet" href="nav.css">
+<style>
+  body { margin: 0; background: var(--paper); color: var(--text-primary);
+         font: var(--fs-base)/var(--lh-base) system-ui, sans-serif; }
+  .skip { position: absolute; top: 0; left: 0; z-index: var(--z-raised);   /* 🔴*/
+          background: var(--accent); color: var(--text-on-accent); padding: var(--sp-2) var(--sp-4);
+          font-size: var(--fs-sm); text-decoration: none;
+          transform: translateY(-120%); }
+  .skip:focus { transform: translateY(0); }
+
+  .shell { display: grid; gap: var(--sp-6); max-width: 1040px; margin: 0 auto;
+           padding: var(--sp-6) var(--sp-5) var(--sp-8); grid-template-columns: 1fr; }
+  @media (min-width: 60rem) { .shell { grid-template-columns: 12rem minmax(0,1fr); } }
+
+  main { max-width: var(--measure-prose); min-width: 0; }
+  h1 { font-family: var(--sans); font-size: var(--fs-2xl); font-weight: 500;
+       letter-spacing: -0.02em; line-height: 1.15; margin: 0 0 var(--sp-3);
+       max-width: var(--measure-title); }
+  .lead { font-size: var(--fs-md); color: var(--text-secondary);
+          max-width: var(--measure-lede); line-height: 1.55; margin: 0 0 var(--sp-6); }
+  h2 { font-family: var(--sans); font-size: var(--fs-lg); font-weight: 500;
+       margin: var(--sp-7) 0 var(--sp-3); padding-top: var(--sp-4);
+       border-top: 2px solid var(--accent); max-width: 92%; }
+  p { max-width: var(--measure-prose); margin: 0 0 var(--sp-4); }
+  p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.7; }
+  code { font-family: var(--mono); font-size: 0.88em; background: var(--surface-sunken);
+         border: 1px solid var(--border-decor); border-radius: 3px; padding: 0.05em 0.3em; }
+
+  .aside { background: var(--warning-bg); 
+           padding: var(--sp-3) var(--sp-4); border-radius: var(--r-sm);
+           font-size: var(--fs-sm); max-width: var(--measure-prose); margin: 0 0 var(--sp-5);
+           line-height: 1.65; }
+  .spacer { height: 55vh; }          /* 让目录高亮有滚动空间 */
+
+</style>
+</head>
+<body>
+
+<a class="skip" href="#main">跳到主内容</a>
+
+<header class="nav">
+  <div class="nav__inner">
+    <a class="nav__brand" href="#">技术考古 <span>/ AGC</span></a>
+    <button class="nav__toggle" id="nav-toggle" aria-expanded="false"
+            aria-controls="nav-list" aria-label="打开菜单"><i></i></button>
+    <ul class="nav__list" id="nav-list">
+      <li><a class="nav__link" href="#main" aria-current="page">制导计算机</a></li>
+      <li><a class="nav__link" href="#mem">存储器</a></li>
+      <li><a class="nav__link" href="#sched">调度</a></li>
+      <li><a class="nav__link" href="#sim">复现</a></li>
+    </ul>
+  </div>
+  <div class="nav__scrim" id="nav-scrim"></div>
+</header>
+
+<div class="shell">
+
+  <nav class="toc" aria-label="本页目录">
+    <p class="toc__title">本页</p>
+    <ul class="toc__list" id="toc-list">
+      <li><a class="toc__link" href="#top">本页</a></li>
+      <li><a class="toc__link" href="#mem">存储器构成</a></li>
+      <li><a class="toc__link" href="#sched">优先级与准入</a></li>
+      <li><a class="toc__link" href="#sim">把它跑起来</a></li>
+    </ul>
+  </nav>
+
+  <main id="main">
+    <h1 id="top">导航的三件事</h1>
+    <p class="lead">
+      页头告诉你<b>在哪</b>，目录告诉你<b>读到哪</b>，抽屉在窄屏上替你省掉横向空间。
+      三件事看起来简单，做错都会让用户"点了个寂寞"。
+    </p>
+
+    <div class="aside">
+      <b>请这样试：</b>① 把窗口拖窄到 768px 以下 → 出现汉堡按钮，点它开合抽屉，
+      试 <code>Esc</code>、点遮罩、点链接后关闭；② 滚动正文，看左侧目录是否跟着高亮；
+      ③ 点页头的"存储器"，看它是否标记为当前页。
+    </div>
+
+    <h2 id="mem">存储器构成</h2>
+    <p>
+      AGC 的核心存储器是 2048 个 36 位字，总容量 73,728 位。指令与数据混在一起，
+      地址按字计。真正让人吃惊的是每位宇航员分到的 4 KB 重写区——那不是共享内存，
+      是<strong>每人一份</strong>。
+    </p>
+    <p>
+      换句话说：三个人可以各自在自己的 4 KB 里堆程序，哪怕会覆盖掉别人写的东西。
+      在那个年代这已经算是很大的宽容。
+    </p>
+    <div class="spacer"></div>
+
+    <h2 id="sched">优先级与准入</h2>
+    <p>
+      AGC 的调度靠优先级抢占：更高优先级的任务可以打断低优先级的任务。
+      这套机制加上准入控制，让关键任务（姿态、点火）不会被普通计算饿死。
+    </p>
+    <p>
+      阿波罗 13 号在 33 万公里外反复报出的告警，就是这套机制在工作——
+      它宁可一直报错，也不肯停机，因为停了机地面就失去了唯一的实时数据源。
+    </p>
+    <div class="spacer"></div>
+
+    <h2 id="sim">把它跑起来</h2>
+    <p>
+      工具链的成熟度足以支撑一次完整考古：从反汇编、到逐指令模拟、到和原厂手册对照。
+      这条路走过一遍之后的结论是——手册里的描述与实现的实际行为在细节上有出入，
+      而正是这些出入最能说明当时的工程取舍。
+    </p>
+    <p class="small">
+      目录高亮<strong>统一用 <code>scroll</code> 监听 + <code>requestAnimationFrame</code> 节流</strong>，
+      <strong>不依赖 <code>IntersectionObserver</code></strong>。
+      早期版本用的是它 + <code>rootMargin</code>，结果滚到两节之间时观察区里
+      一个 section 都没有，高亮卡住不动 —— 现在改成纯计算，任何滚动位置都有答案。
+    </p>
+  </main>
+
+</div>
+
+<script src="toc.js"></script>
+<script>
+/* ---------------------------------------------------------------- 目录高亮 */
+Toc.init({ links: '#toc-list .toc__link', sections: 'main h2[id], main h1[id]' });
+
+/* ---------------------------------------------------------------- 抽屉
+   🔴 每一条都对应 00-charter/08-状态切换规范.md 里的判据。 */
+(function () {
+  var toggle = document.getElementById('nav-toggle');
+  var list = document.getElementById('nav-list');
+  var scrim = document.getElementById('nav-scrim');
+  var lastFocused = null;
+
+  function setBackgroundInert(on) {
+    /* 抽屉打开时，背景必须不可交互。
+       🔴 这是"视觉上是覆盖层，逻辑上也要是模态"的一致性要求。 */
+    var nodes = document.body.children;
+    for (var i = 0; i < nodes.length; i++) {
+      var n = nodes[i];
+      if (n === list || n === scrim || n === toggle) { continue; }
+      if (n.setAttribute) {
+        n.setAttribute('aria-hidden', on ? 'true' : 'false');
+      }
+    }
+  }
+
+  function isOpen() { return toggle.getAttribute('aria-expanded') === 'true'; }
+
+  function open() {
+    lastFocused = document.activeElement;
+    list.classList.add('is-open');
+    scrim.classList.add('is-open');
+    toggle.setAttribute('aria-expanded', 'true');
+    toggle.setAttribute('aria-label', '关闭菜单');
+    document.body.style.overflow = 'hidden';   /* 锁背景滚动 */
+    setBackgroundInert(true);
+    /* 焦点移进抽屉的第一项 —— 键盘用户不能留在抽屉外面 */
+    var first = list.querySelector('a');
+    if (first) { first.focus(); }
+  }
+
+  function close() {
+    if (!isOpen()) { return; }
+    list.classList.remove('is-open');
+    scrim.classList.remove('is-open');
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.setAttribute('aria-label', '打开菜单');
+    document.body.style.overflow = '';
+    setBackgroundInert(false);
+    /* 🔴 焦点必须回到汉堡按钮 —— 丢了焦点键盘用户就不知道自己在哪了 */
+    if (lastFocused && lastFocused.focus) { lastFocused.focus(); }
+    else { toggle.focus(); }
+  }
+
+  toggle.addEventListener('click', function () { isOpen() ? close() : open(); });
+  scrim.addEventListener('click', close);
+
+  /* 点抽屉里的链接：先记住目标，关闭后浏览器才跳 —— 否则焦点被 close() 抢走 */
+  list.addEventListener('click', function (e) {
+    if (e.target.tagName === 'A') { setTimeout(close, 0); }
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' || e.keyCode === 27) { close(); }
+  });
+
+  /* 窗口变宽时自动关掉抽屉 —— 否则它会留在打开状态，
+     而桌面布局下 nav__list 是横排的，用户会看到一个"开着但不对"的菜单。 */
+  window.addEventListener('resize', function () {
+    if (window.innerWidth > 768) { close(); }
+  });
+})();
+</script>
+</body>
+</html>

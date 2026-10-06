@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>date-range · 日期区间 · frontend-lib</title>
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/focus-ring.css">
+<link rel="stylesheet" href="date-range.css">
+<style>
+  body { margin: 0; padding: var(--sp-7) var(--sp-5); background: var(--paper); }
+  .wrap { max-width: 44rem; margin: 0 auto; }
+  h1 { font-size: var(--fs-2xl); margin: 0 0 var(--sp-2); }
+  h2 { font-size: var(--fs-lg); margin: var(--sp-7) 0 var(--sp-3); }
+  .note {
+    padding: var(--sp-3) var(--sp-4); margin: 0 0 var(--sp-4);
+    background: var(--surface-sunken); border-radius: var(--r-sm);
+    font-size: var(--fs-sm); color: var(--text-secondary); line-height: 1.6;
+  }
+  .pad { padding: var(--sp-3) 0 var(--sp-6); }
+  .log {
+    margin-top: var(--sp-3); padding: var(--sp-3);
+    background: var(--surface-sunken); border-radius: var(--r-sm);
+    font-family: var(--mono); font-size: var(--fs-xs);
+    color: var(--text-secondary); min-height: 2.8em;
+  }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+<h1>date-range · 日期区间</h1>
+<p class="note">
+  财务/成本刚需。三件最容易漏：
+  <br>① <strong>必须有「清除」</strong>（填错了要能一键清空，而不是逐个退格）
+  <br>② <strong>约束校验</strong>：开始晚于结束、超出范围 ⇒ <strong>明确报错</strong>（不静默）
+  <br>③ 每个 input 有 <code>&lt;label&gt;</code>；错误用 <code>role="alert"</code> 播报
+  <br>⚠️ <strong>基于原生 <code>&lt;input type="date"&gt;</code></strong>：
+  原生自带触屏日历、本地化、键盘输入、无障碍语义 ——
+  自建日历要重做这一切，且移动端更差。
+</p>
+
+<h2>1 · 常用（无边界）</h2>
+<div class="pad">
+  <div class="drange" id="d1">
+    <div class="drange__field">
+      <label class="drange__label" for="f1">开始</label>
+      <input class="drange__input" type="date" id="f1" data-dr-from>
+    </div>
+    <span class="drange__sep" aria-hidden="true">→</span>
+    <div class="drange__field">
+      <label class="drange__label" for="t1">结束</label>
+      <input class="drange__input" type="date" id="t1" data-dr-to>
+    </div>
+    <button class="drange__clear" type="button" data-dr-clear>清除</button>
+    <div class="drange__error" data-dr-error role="alert" hidden></div>
+    <div class="drange__summary" data-dr-summary aria-live="polite"></div>
+    <div class="drange__presets" data-dr-presets></div>
+  </div>
+  <div class="log" id="log">（onChange 会显示在这里）</div>
+</div>
+
+<h2>2 · 限定范围（2020–2026）</h2>
+<div class="pad">
+  <div class="drange" id="d2">
+    <div class="drange__field">
+      <label class="drange__label" for="f2">开始</label>
+      <input class="drange__input" type="date" id="f2" data-dr-from>
+    </div>
+    <span class="drange__sep" aria-hidden="true">→</span>
+    <div class="drange__field">
+      <label class="drange__label" for="t2">结束</label>
+      <input class="drange__input" type="date" id="t2" data-dr-to>
+    </div>
+    <button class="drange__clear" type="button" data-dr-clear>清除</button>
+    <div class="drange__error" data-dr-error role="alert" hidden></div>
+    <div class="drange__summary" data-dr-summary aria-live="polite"></div>
+    <div class="drange__presets" data-dr-presets></div>
+  </div>
+  <div class="log" id="log2">（试着填一个 2019 年或 2027 年 ⇒ 会报错）</div>
+</div>
+
+</main>
+
+<script src="date-range.js"></script>
+<script>
+(function () {
+  var log = document.getElementById('log');
+  var r1 = DateRange.create(document.getElementById('d1'), {
+    onChange: function (v, ok) {
+      log.textContent = 'from=' + (v.from || '(空)') + '  to=' + (v.to || '(空)') +
+                        '  valid=' + ok;
+    },
+  });
+  /* 探针：给契约脚本用 */
+  window.__dr1 = r1;
+
+  var log2 = document.getElementById('log2');
+  DateRange.create(document.getElementById('d2'), {
+    min: '2020-01-01', max: '2026-12-31',
+    presets: ['thisQ', 'lastQ', 'lastM', 'yoy'],
+    onChange: function (v, ok) {
+      log2.textContent = 'from=' + (v.from || '(空)') + '  to=' + (v.to || '(空)') +
+                         '  valid=' + ok + '（范围 2020-01-01 ~ 2026-12-31）';
+    },
+  });
+})();
+</script>
+</body>
+</html>

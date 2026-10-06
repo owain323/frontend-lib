@@ -1,0 +1,246 @@
+/* ============================================================================
+   frontend-lib / 02-primitives / card / card.css
+   卡片
+
+   依赖：01-tokens/tokens.css
+   版本：A ✅ / B ✅ / C ✅
+
+   🔴 本组件的核心判据：hover 时不能有布局跳动。
+      达成方式：hover 只改 transform 和 box-shadow，
+      **绝不改 border-width / margin / padding / height**。
+      改任何影响盒模型的属性都会引起回流，相邻元素会跟着抖一下 ——
+      这个抖动很轻，轻到说不清哪里不对，但整页会显得廉价。
+
+      card 是容器，承载的内容态（empty/loading/error/success）在 03-patterns。
+   ========================================================================= */
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+
+  background: var(--surface);
+  /* 🔴 边框恒为 1px。hover 时想"加粗"边框？用 box-shadow 模拟，不要改 border-width。 */
+  border: 1px solid var(--border-decor);
+  border-radius: var(--r-md);
+
+  /* 只需动画 transform 和 box-shadow —— 这两个不触发回流 */
+  transition: transform var(--dur-base) var(--ease-out),
+              box-shadow  var(--dur-base) var(--ease-out);
+}
+
+/* ---------------------------------------------------------------- 结构 */
+.card__media {
+  /* 用 aspect-ratio 而不是 padding-top hack —— 后者要多一层包装 div */
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: calc(var(--r-md) - 1px) calc(var(--r-md) - 1px) 0 0;
+  background: var(--surface-sunken);
+}
+.card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+/* 没有 media 时，body 要补上顶部圆角 */
+.card__media + .card__body { border-radius: 0; }
+
+.card__body {
+  padding: var(--sp-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.card__title {
+  margin: 0;
+  font-size: var(--fs-md);
+  font-weight: 500;
+  line-height: var(--lh-tight);
+  color: var(--text-primary);
+}
+
+/* 副标题/摘要。行数限制用 -webkit-line-clamp，
+   别用 JS 截字符串 —— 截出来会留下半个词或半个字。 */
+.card__desc {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  line-height: var(--lh-base);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card__footer {
+  padding: var(--sp-3) var(--sp-5);
+  border-top: 1px solid var(--border-decor);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+}
+
+/* ---------------------------------------------------------------- 变体 */
+
+/* 无边框：靠背景色和纸底的明度差分层，界面更轻。
+   一排卡片时用它，比全都有边框干净。 */
+.card--flat {
+  border-color: transparent;
+  background: var(--surface);
+}
+
+/* 浮起：默认就有阴影。用在浮层、弹窗类场景。
+   🔴 常规列表里不要用 —— 满屏阴影会互相打架。 */
+.card--elevated {
+  border-color: transparent;
+  box-shadow: var(--shadow-1);
+}
+
+/* ---------------------------------------------------------------- 可交互卡片
+   🔴 hover 抬起的正确写法：
+      transform 抬 2px（--lift-md），阴影从 1 级升到 2 级。
+      两个属性都不触发回流，所以旁边的卡片不会抖。
+
+   为什么是 2px 不是 8px：卡片是"被拿起"不是"被弹起"。
+   8px 会有游戏感，长文/数据类界面不能要那种感觉。
+   ---------------------------------------------------------------- */
+.card--interactive {
+  cursor: pointer;
+}
+@media (hover: hover) and (pointer: fine) {
+.card--interactive:hover {
+  transform: translateY(calc(-1 * var(--lift-md)));
+  box-shadow: var(--shadow-2);
+}
+}
+/* 按下时落回原位 —— 和 button 的 active 是同一套语言 */
+.card--interactive:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-1);
+}
+
+/* ---------------------------------------------------------------- 整卡可点
+   🔴 正确做法：卡片里放一个真实的 <a> 或 <button>，
+      用它的 ::after 铺满整张卡。
+
+   错误做法：给 <div> 加 onclick。
+      那样键盘 Tab 不到、屏幕阅读器不认、不能中键新开、不能复制链接。
+
+   焦点样式用 :focus-within —— 内部的链接获得焦点时，整卡显示 ring。
+   ---------------------------------------------------------------- */
+.card--linked { position: relative; }
+
+.card__link {
+  /* 让链接文字本身还是普通样式，只把它当作"热区提供者" */
+  color: inherit;
+  text-decoration: none;
+}
+.card__link::after {
+  content: "";
+  position: absolute;
+  inset: 0;                 /* 铺满整张卡 */
+  border-radius: var(--r-md);
+  z-index: var(--z-base);
+}
+/* 卡片里如果有其他**可点元素**（按钮、链接、标签），要盖在热区之上。
+
+   🔴 2026-10-04 **修正一个真 bug**（契约实测抓到：卡片内采样 5 点，0 点命中链接）：
+   原来写的是 `.card__body > *:not(.card__link)`
+   ⇒ **把标题、段落、说明文字全都抬到热区之上**
+   ⇒ 结果**点卡片正文不跳转**，"整卡可点"名存实亡。
+   （实测：卡片中心点命中的是 `P.card__desc`，不是那条链接。）
+
+   ⚠️ 这类 bug 在视觉上**完全看不出来** —— 卡片照常显示、
+      标题里那条链接也照常能点，只有"点卡片空白/正文"才发现失效。
+
+   ⇒ 现在只抬**真正可交互**的元素，纯内容不抬。
+   ⚠️ 顺带修掉硬编码的 `z-index: 1` → 走 `--z-raised` 令牌。 */
+.card__body :is(button, a, input, select, textarea, [role="button"],
+                [role="checkbox"], [role="switch"], [tabindex]):not(.card__link) {
+  position: relative;
+  z-index: var(--z-raised);
+}
+
+.card--linked:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+/* 别给链接本身再画一次 ring，会变成两个框 */
+.card__link:focus-visible { outline: none; }
+
+/* ---------------------------------------------------------------- 选中态
+   多选场景（如筛选后的项目列表）。
+   🔴 用 inset box-shadow 加"内描边"，而不是 border-width 变化 —— 同样的理由：不跳动。
+   ---------------------------------------------------------------- */
+.card--selected {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+/* ---------------------------------------------------------------- 尺寸
+   两档够了。出现第三档说明信息密度没规划好。
+   ---------------------------------------------------------------- */
+.card--compact .card__body { padding: var(--sp-4); gap: var(--sp-1); }
+.card--compact .card__title { font-size: var(--fs-base); }
+
+/* ---------------------------------------------------------------- 横向卡片
+   窄屏回退为纵向。
+   ---------------------------------------------------------------- */
+.card--row {
+  flex-direction: row;
+  align-items: stretch;
+}
+.card--row .card__media {
+  flex: none;
+  width: 160px;
+  aspect-ratio: auto;
+  border-radius: calc(var(--r-md) - 1px) 0 0 calc(var(--r-md) - 1px);
+}
+@media (max-width: 560px) {
+  .card--row { flex-direction: column; }
+  .card--row .card__media {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: calc(var(--r-md) - 1px) calc(var(--r-md) - 1px) 0 0;
+  }
+}
+
+/* ---------------------------------------------------------------- 无障碍兜底
+   card 的 hover 位移属于"小幅位移"，reduced-motion 下应当去掉抬起，
+   只保留阴影变化 —— 阴影不属于前庭敏感类动效。
+   ---------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+@media (hover: hover) and (pointer: fine) {
+  .card--interactive:hover,
+  .card--interactive:active {
+    transform: none;
+  }
+}
+}
+
+/* ============================================================================
+   反模式 —— 库内一律退回
+   =========================================================================
+   1. hover 时改 border-width（如 1px -> 2px）
+      内容整体位移 1px，相邻卡片跟着抖。这是卡片最经典的 bug。
+      要"加粗"边框用 box-shadow: inset 0 0 0 2px。
+
+   2. hover 时改 margin / padding / height
+      同上，且会引起整页重排。
+
+   3. 整卡套 <div onclick>
+      键盘不可达、屏幕阅读器不认、不能新标签打开。用 .card__link::after。
+
+   4. 一排卡片全用 --elevated
+      阴影会互相打架，整页发灰。列表用 --flat，浮层才用 --elevated。
+
+   5. hover 抬起 8px 以上
+      游戏感。卡片是"被拿起"不是"被弹起"。
+
+   6. 用 JS 截断描述文字
+      会留下半个词或半个字。用 -webkit-line-clamp。
+   ========================================================================= */

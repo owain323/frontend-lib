@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>进度条 · progress</title>
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="progress.css">
+<style>
+  body { padding: var(--sp-5) var(--sp-4) 64px; }
+  h1 { font-size: var(--fs-xl); margin: 0 0 var(--sp-2); }
+  h2 { font-size: var(--fs-lg); margin: var(--sp-7) 0 var(--sp-3); }
+  .lede { color: var(--text-secondary); margin: 0 0 var(--sp-5); }
+  .demo {
+    background: var(--surface);
+    border: 1px solid var(--border-decor);
+    border-radius: var(--r-md);
+    padding: var(--sp-4);
+    margin-bottom: var(--sp-4);
+  }
+  .row { display: flex; align-items: center; gap: var(--sp-3); }
+  .row + .row { margin-top: var(--sp-3); }
+  .pct { font-size: var(--fs-sm); color: var(--text-secondary);
+         font-variant-numeric: tabular-nums; min-width: 3.2em; text-align: right; }
+  .note { font-size: var(--fs-sm); color: var(--text-secondary); margin-top: var(--sp-2); }
+  .bad-demo { background: var(--danger-bg); border-color: var(--danger); }
+  .bad { color: var(--danger); }
+  code { background: var(--surface-sunken); padding: 1px 4px; border-radius: var(--r-xs); }
+</style>
+</head>
+<body>
+
+<h1>进度条 · progress</h1>
+<p class="lede">进度<strong>已知</strong>时用它；进度<strong>不知道</strong>时用 <code>skeleton</code>。混用是常见错误。</p>
+
+<h2>1 · 线形（最常用）</h2>
+<div class="demo">
+  <div class="row">
+    <span class="progress" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" aria-label="上传进度" data-progress="60">
+      <span class="progress__bar"></span>
+    </span>
+    <span class="pct" aria-hidden="true">60%</span>
+  </div>
+  <p class="note">用 <code>--progress</code> 驱动宽度；<code>role="progressbar"</code> + <code>aria-valuenow</code> 是<b>必须</b>的（读屏要能念出进度）。</p>
+</div>
+
+<h2>2 · 语义色</h2>
+<div class="demo">
+  <div class="row">
+    <span class="progress progress--success" role="progressbar" aria-valuenow="100" aria-label="已完成" data-progress="100"><span class="progress__bar"></span></span>
+    <span class="pct" aria-hidden="true">完成</span>
+  </div>
+  <div class="row">
+    <span class="progress progress--warning" role="progressbar" aria-valuenow="85" aria-label="即将超时" data-progress="85"><span class="progress__bar"></span></span>
+    <span class="pct" aria-hidden="true">85%</span>
+  </div>
+  <div class="row">
+    <span class="progress progress--danger" role="progressbar" aria-valuenow="40" aria-label="失败" data-progress="40"><span class="progress__bar"></span></span>
+    <span class="pct" aria-hidden="true">40%</span>
+  </div>
+</div>
+
+<h2>3 · 尺寸</h2>
+<div class="demo">
+  <span class="progress progress--sm" role="progressbar" aria-valuenow="40" aria-label="小" data-progress="40"><span class="progress__bar"></span></span>
+  <div style="height:var(--sp-2)"></div>
+  <span class="progress" role="progressbar" aria-valuenow="40" aria-label="中" data-progress="40"><span class="progress__bar"></span></span>
+  <div style="height:var(--sp-2)"></div>
+  <span class="progress progress--lg" role="progressbar" aria-valuenow="40" aria-label="大" data-progress="40"><span class="progress__bar"></span></span>
+</div>
+
+<h2>4 · 环形</h2>
+<div class="demo">
+  <div class="row" style="gap:var(--sp-5)">
+    <span class="progress-ring" data-progress="72" role="progressbar" aria-valuenow="72" aria-label="环形进度">
+      <span class="progress-ring__label" aria-hidden="true">72%</span>
+    </span>
+    <span class="progress-ring progress-ring--success" data-progress="100" role="progressbar" aria-valuenow="100" aria-label="已完成">
+      <span class="progress-ring__label" aria-hidden="true">✓</span>
+    </span>
+    <span class="progress-ring progress-ring--danger" data-progress="35" role="progressbar" aria-valuenow="35" aria-label="失败">
+      <span class="progress-ring__label" aria-hidden="true">35%</span>
+    </span>
+  </div>
+  <p class="note">纯 CSS <code>conic-gradient</code>，零 SVG、零依赖。数字用 <code>tabular-nums</code>，变化时不会左右跳。</p>
+</div>
+
+<h2>5 · 不确定进度</h2>
+<div class="demo">
+  <span class="progress progress--indeterminate" role="progressbar" aria-label="正在处理（进度未知）" aria-busy="true">
+    <span class="progress__bar"></span>
+  </span>
+  <p class="note">
+    <b>不确定时不要显示百分比</b> —— 那是撒谎。
+    读屏只会听到「正在处理，进度未知」，这才是事实。
+  </p>
+</div>
+
+<h2>6 · 步骤分段</h2>
+<div class="demo">
+  <div class="progress-steps" role="progressbar" aria-valuenow="3" aria-valuemin="1" aria-valuemax="5" aria-label="第 3 步，共 5 步">
+    <span class="progress-steps__seg progress-steps__seg--done"></span>
+    <span class="progress-steps__seg progress-steps__seg--done"></span>
+    <span class="progress-steps__seg progress-steps__seg--current"></span>
+    <span class="progress-steps__seg"></span>
+    <span class="progress-steps__seg"></span>
+  </div>
+  <p class="note">流程类进度（"第 3 步 / 共 5 步"）比百分比更贴切。</p>
+</div>
+
+<h2>7 · 减少动态效果时</h2>
+<div class="demo">
+  <span class="progress progress--indeterminate" role="progressbar" aria-label="正在处理" aria-busy="true">
+    <span class="progress__bar"></span>
+  </span>
+  <p class="note">开启「减少动态效果」后扫光动画停掉，但条子<b>仍然可见</b> —— 用户依然知道系统在忙。</p>
+</div>
+
+<h2>反例 · 不该这样用</h2>
+<div class="demo bad-demo">
+  <span class="progress" role="progressbar" aria-valuenow="0" aria-label="反例" data-progress="0">
+    <span class="progress__bar"></span>
+  </span>
+  <p class="note bad">
+    <b>不要用进度条表示「不知道要多久」。</b><br>
+    停在 0% 或乱跳的百分比，比 <code>skeleton</code> 更让人困惑 ——
+    用户会盯着它算还剩多久。<br>
+    <b>也不知道进度时</b>，用 <code>skeleton</code>（形状提示"这里会有内容"）
+    或不确定进度条（明说"不知道"）。
+  </p>
+</div>
+
+
+<script>
+/* 🔴 2026-10-06  I5：进度值用 **JS 写入**而不是行内 style
+ * ---------------------------------------------------------------
+ * ① 为什么不用行内 data-progress="60"：
+ *    真实场景里进度是**动态**的，行内 style 每次要重新渲染 DOM。
+ *    用 setProperty 只改一个自定义属性，成本最低。
+ * ② 门禁 deps.py 认 setProperty ⇒ 不会误报"未定义令牌"
+ *    （--progress 是**每个实例自己的值**，不是全局设计令牌）。
+ */
+document.querySelectorAll('.progress, .progress-ring, .progress-steps').forEach((el) => {
+  const m = el.getAttribute('data-progress');
+  if (m) {
+    el.style.setProperty('--progress', m + '%');     // 线形用（要带 %）
+    el.style.setProperty('--progress-num', m);      // 环形用（不能带 %）
+  }
+});
+</script>
+</body>
+</html>

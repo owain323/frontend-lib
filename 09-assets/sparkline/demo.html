@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sparkline · 迷你趋势图</title>
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../02-primitives/button/button.css">
+<link rel="stylesheet" href="../../09-assets/sparkline/sparkline.css">
+<style>
+  .wrap { max-width: 820px; margin: 0 auto; padding: var(--sp-6) var(--sp-4); }
+  h1 { font-size: var(--fs-2xl); line-height: var(--lh-tight); margin: 0 0 var(--sp-2); }
+  .lede { color: var(--text-secondary); margin: 0 0 var(--sp-6); max-width: 60ch; }
+  h2 { font-size: var(--fs-lg); margin: var(--sp-8) 0 var(--sp-2);
+       padding-top: var(--sp-5); border-top: 1px solid var(--border-decor); }
+  .small { font-size: var(--fs-xs); color: var(--text-secondary); }
+  .box { background: var(--surface); border: 1px solid var(--border-decor);
+         border-radius: var(--r-md); padding: var(--sp-5); }
+  .box.bad { background: var(--surface-sunken); }
+  code { font-family: var(--mono); font-size: 0.9em;
+         background: var(--surface-sunken); padding: 1px 4px; border-radius: 3px; }
+  .row { display: flex; align-items: center; gap: var(--sp-4);
+         padding: var(--sp-3) 0; }
+  .name { width: 82px; flex: 0 0 auto; font-size: var(--fs-sm); }
+  .val  { width: 96px; flex: 0 0 auto; font-family: var(--mono);
+          font-size: var(--fs-sm); text-align: right; }
+  .chg  { width: 68px; flex: 0 0 auto; font-size: var(--fs-xs); }
+  .up   { color: var(--danger); }   /* A 股习惯：涨红 */
+  .down { color: var(--success); }
+  /* 🔴 2026-10-04 修：原来这里 flex:1 1 auto 加在 .sparkline 上，
+     而组件的 .sparkline 自带 width:100% ⇒ **宽度算两遍**，
+     在 flex 行里被压成 **5px 宽**（实测）⇒ 趋势图变成一条竖线、
+     与旁边的文字糊在一起。
+     ⇒ 解法：flex 作用在**包装层**，组件本身只管自己的宽度。
+
+     🔴 2026-10-04 修 iOS 实机报的「趋势图出边框」（实测溢出 76px）：
+       `.row` 是 `flex-wrap: nowrap`，前三列固定宽（82+96+68=246px）
+       已吃掉 300px 里的大部分，而我给 `.spark-wrap` 设了
+       **`min-width: 80px` 阻止它收缩** ⇒ flex 放不下 ⇒ **必然溢出**。
+       ⚠️ 我一度判断成「inline 元素 flex 无效」—— **那是错的**（实测 display:block）。
+       ⇒ ① `min-width: 0` + `flex: 1 1 0`（**允许被压到任意窄**，flex 收缩的必要条件）
+
+     ⚠️ 试过 `flex-wrap: wrap`（让极窄屏换行）—— **不行**：
+       换行后 spark-wrap 独占整行 300px，但里面的 `.sparkline` 仍被
+       压成 5px 竖线（截图实测）。**换行不解决宽度计算问题，只会让布局更乱**。
+
+     ⚠️ 试过只给 spark-wrap 收缩 —— **也不行**，实测压成 **5px**：
+       三个固定列（`flex: 0 0 auto`）已经吃掉 246px + gap，
+       393px 屏里**真的没有空间**给第四列了
+       （320px 时连 0px 都没有）。
+
+     ⇒ **真正的解法：数字列必须允许收缩**。
+       它们的 `flex: 0 0 auto` 是错的 —— 数字宽度虽固定，
+       但**优先牺牲它、保证走势图可见**才是对的优先级
+       （走势图是这一行的信息主体，数字可以截断）。
+
+     ⚠️ 这是**布局优先级**问题，不是 flex 语法问题。
+     */
+  .row { flex-wrap: nowrap; }
+  .name, .val, .chg { flex: 0 1 auto; min-width: 0; }  /* 🔴 允许收缩 */
+  .val { flex-shrink: 2; }                            /* 🔴 数字先让位 */
+  .spark-wrap { flex: 1 1 0; min-width: 0; }          /* 走势图至少 40px */
+  .spark-wrap { min-width: 40px; }                    /* 🔴 但别小于 40 */
+</style>
+</head>
+<body>
+<main class="wrap">
+  <h1>sparkline · 迷你趋势图</h1>
+  <p class="lede">
+    在一行里显示"最近走势"。它是<strong>辅助</strong>不是图表 ——
+    读屏读不出路径，所以<strong>旁边必须有数字</strong>。
+  </p>
+
+  <h2>真实语境（数字 + 涨跌 + 走势）</h2>
+  <div class="box">
+    <div class="row">
+      <span class="name">600519</span>
+      <span class="val">1,684.20</span>
+      <span class="chg up">+2.31%</span>
+      <span class="spark-wrap"><span class="sparkline" data-spark="1602,1618,1609,1631,1625,1648,1662,1655,1684"></span></span>
+    </div>
+    <div class="row">
+      <span class="name">000001</span>
+      <span class="val">11.87</span>
+      <span class="chg down">−0.84%</span>
+      <span class="spark-wrap"><span class="sparkline" data-spark="12.05,12.11,12.02,11.96,11.99,11.92,11.88,11.91,11.87"></span></span>
+    </div>
+    <div class="row">
+      <span class="name">688981</span>
+      <span class="val">86.40</span>
+      <span class="chg up">+5.12%</span>
+      <span class="spark-wrap"><span class="sparkline" data-spark="82.1,82.8,83.4,83.1,84.2,84.9,85.3,85.0,86.4"></span></span>
+    </div>
+  </div>
+  <p class="small">
+    每行都有<strong>名字 + 当前值 + 涨跌</strong>，走势图是第四层信息。
+    这就是为什么<strong>不能只有 sparkline</strong>。
+  </p>
+
+  <h2>三种形态</h2>
+  <div class="box">
+    <p class="small">折线（默认）</p>
+    <span class="sparkline" data-spark="12,18,15,24,22,31,28" data-spark-height="48"
+          data-spark-last="yes"></span>
+
+    <p class="small" style="margin-top:var(--sp-5)">面积（fill=yes）</p>
+    <span class="sparkline" data-spark-type="area" data-spark="12,18,15,24,22,31,28"
+          data-spark-height="48" data-spark-last="yes"></span>
+
+    <p class="small" style="margin-top:var(--sp-5)">柱状</p>
+    <span class="sparkline" data-spark-type="bar" data-spark="12,18,15,24,22,31,28"
+          data-spark-height="48"></span>
+  </div>
+
+  <h2>换主题会自动跟着变</h2>
+  <div class="box">
+    <p class="small">
+      颜色默认是 <code>var(--accent)</code>，<strong>不是写死的蓝</strong> ——
+      切到暗色它会跟着变。
+    </p>
+    <span class="sparkline" data-spark="12,18,15,24,22,31,28" data-spark-height="52"
+          data-spark-color="var(--danger)"></span>
+    <p class="small" style="margin-top:var(--sp-3)">
+      上面这条是 <code>var(--danger)</code>（本库的涨红）。
+    </p>
+  </div>
+
+  <h2>点击更新数据</h2>
+  <div class="box">
+    <span class="sparkline" id="upd" data-spark="12,18,15,24,22,31,28"
+          data-spark-height="56" data-spark-last="yes"></span>
+    <p style="margin-top:var(--sp-4)">
+      <button class="btn btn--md btn--secondary" id="btn">换一组数据</button>
+    </p>
+    <p class="small">
+      更新只需改 <code>data-spark</code> 再调 <code>Chart.emit(el)</code>。
+    </p>
+  </div>
+
+  <h2>🔴 无障碍：它没有可读的文本等价物</h2>
+  <div class="box bad">
+    <p>
+      纯 SVG 路径对读屏<strong>没有意义</strong> ——
+      读屏只会说"图像"，不会说"最近上涨 2.3%"。
+    </p>
+    <p class="small">
+      ⇒ 所以本组件<strong>刻意不加 <code>role="img"</code></strong>
+      （那会让人以为它有可读的替代文本，而它没有）。
+      ⇒ <strong>要给出可读的值</strong>：在旁边放数字，
+      或用上面那种「名字 + 当前值 + 涨跌」的组合。
+      ⇒ 什么时候<strong>必须</strong>配文字：数值重要时
+      （例如"营收 128 万，同比 +3.2%"）。纯装饰的小图可以不配。
+    </p>
+  </div>
+
+  <h2>反例</h2>
+  <div class="box bad">
+    <h3>反例：只放 sparkline，没有数字</h3>
+    <p class="small">
+      视觉上"很有信息"，但读屏用户<strong>什么都不知道</strong> ——
+      这是把视觉当成了唯一通道。
+    </p>
+    <span class="sparkline" data-spark="12,18,15,24,22,31,28" data-spark-height="40"></span>
+  </div>
+  <div class="box bad">
+    <h3>反例：动画不管 reduced-motion</h3>
+    <p class="small">
+      前庭功能障碍者会因动画眩晕（WCAG 2.3.3）。
+      本组件在 <code>@media (prefers-reduced-motion: reduce)</code> 下
+      <strong>完全关掉动画</strong>，且打印时也不动。
+    </p>
+  </div>
+</main>
+<script src="sparkline.js"></script>
+<script>
+  // 仅为 demo：换数据
+  (function () {
+    var el = document.getElementById('upd');
+    var sets = [
+      '12,18,15,24,22,31,28',
+      '4,9,6,14,11,22,19,30',
+      '28,24,25,18,20,12,14,6',
+      '10,10,10,10,10,10,10'   // 全平 —— 看几何怎么处理除零
+    ];
+    var i = 0;
+    document.getElementById('btn').addEventListener('click', function () {
+      i = (i + 1) % sets.length;
+      el.setAttribute('data-spark', sets[i]);
+      window.Chart.emit(el);
+    });
+  })();
+</script>
+</body>
+</html>

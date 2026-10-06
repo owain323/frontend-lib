@@ -1,0 +1,395 @@
+/* ============================================================================
+   frontend-lib / 02-primitives / choice / choice.css
+   原生选择控件族：checkbox / radio / select
+
+   依赖：01-tokens/tokens.css
+   版本：A ✅ / B ✅ / C ✅
+
+   🔴 这一组是全库里最容易做坏的一组。为什么：
+      浏览器给这些控件的键盘行为是**无障碍的地基**——
+        checkbox : Space 切换
+        radio    : 方向键在组内移动（且自动选中）
+        全部     : Tab 进入、Shift+Tab 退出
+      一旦用 display:none 或 appearance 改坏，这些行为会静默消失，
+      而且测试时用鼠标完全测不出来 —— 只有键盘用户会知道。
+
+      本文件的三条铁律：
+        1. 绝不 display:none / visibility:hidden 隐藏原生控件
+        2. 不改原生控件的结构和 DOM 位置，只改外观
+        3. 焦点环必须画在**看得见的元素**上（input 被透明覆盖了，
+           它自己的 outline 你根本看不见）
+   ========================================================================= */
+
+/* ============================================================================
+   通用容器 —— checkbox / radio 共用
+   ========================================================================= */
+/* ============================================================================
+   结构（🔴 2026-10-02 改版，见下方说明）
+   ----------------------------------------------------------------------------
+   旧结构：input 是 label 的后代
+       <label class="choice">
+         <input class="choice__input">   ← 铺满整个 label
+         <span class="choice__mark"></span>
+         <span>文字</span>
+       </label>
+
+   新结构：input 与 label 平级，用 for 关联
+       <div class="choice">
+         <input class="choice__input" id="c1">   ← 铺满整个 .choice
+         <label class="choice__label" for="c1">
+           <span class="choice__mark"></span>
+           <span>文字</span>
+         </label>
+       </div>
+
+   为什么改（Owner 报"点方框没有任何反应"）：
+     input 铺满 label 且**是 label 的后代**时，点击行为存在双触发风险 ——
+     规范虽规定"点击目标是交互性后代时 label 不作为"，但这依赖实现，
+     一旦 label 上的点击冒泡被处理成"也转发一次"，状态就会被翻转两次
+     ⇒ **看起来完全没反应**（Owner 观察到的正是这个）。
+
+     把 input 挪到 label **外面**，双触发在结构上就不可能发生。
+     代价只是多一个包裹元素，以及 label 内部要自己排版。
+   ========================================================================= */
+
+.choice {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 44px;               /* 触摸目标 44px：视觉方框只有 20px */
+  cursor: pointer;
+  user-select: none;
+}
+
+.choice__label {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  cursor: pointer;
+  min-height: 44px;               /* 文字本身也可点 */
+  flex: 1; min-width: 0;
+}
+
+.choice--radio .choice__label { border-radius: var(--r-sm); }
+
+/* ---------------------------------------------------------------- 原生 input
+   🔴 核心手法：input 保持 opacity:0 但**保留在 tab 顺序里**，
+      绝对定位铺满整个 label，于是：
+        - 点击整个标签都能切换（不必精确点中方框）
+        - Space / 方向键行为 100% 原生
+        - 焦点环由我们画在 .choice__mark 上
+
+   为什么不用 appearance:none 直接美化 input：
+      那样方框和文字没法并排（input 只有一个盒子）。
+   为什么不用 display:none：
+      那会把它从 tab 顺序移除，键盘用户彻底到不了这里。
+   ---------------------------------------------------------------- */
+.choice__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+  /* 🔴 z-index 必须在 mark 之上。DOM 顺序是 input → mark，
+     两者同属 z-index:auto/0 那一层时 **后画的 mark 会盖住 input**，
+     点击命中 mark 再冒泡到 label，行为链变长、容易出意外。
+     显式抬高一层，点击就直接命中 input，没有中间环节。 */
+  z-index: 1;
+}
+
+/* ---------------------------------------------------------------- 可见标记 */
+.choice__mark {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border-control);   /* 3.56 达标（UI 边界需 >= 3.0） */
+  transition: background-color var(--dur-fast) var(--ease-out),
+              border-color     var(--dur-fast) var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+.choice:hover .choice__mark { border-color: var(--text-tertiary); }
+}
+/* 🔴 焦点环画在 mark 上，不是 input 上。
+   input 是 opacity:0 的，它自己的 outline 你永远看不见。
+
+   ⚠️ 选择器为什么是 `~` 而不是 `+`：
+   2026-10-02 改了结构 —— input 与 label 平级（for 关联），
+   于是 input 的**下一个兄弟是 label**，mark 藏在 label 里。
+   `+`（相邻兄弟）会失效，焦点环就画不出来了。
+   `~`（后续任意兄弟）+ 后代选择器才成立。 */
+.choice__input:focus-visible ~ .choice__label .choice__mark {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------- 勾（对勾） */
+.choice__mark::after {
+  content: "";
+  position: absolute;
+  width: 5px;
+  height: 9px;
+  /* 🔴 2026-10-03：原为写死的 #ffffff。实测暗色下 accent 变亮（#7aa9de），
+     白勾压在上面只有 2.45:1，低于 WCAG 1.4.11 的 3:1 ⇒ 改用令牌。
+     浅色下 = #ffffff（8.38:1），暗色下 = #0d1114（7.73:1）。 */
+  border: solid var(--text-on-accent);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) scale(0);
+  transform-origin: center;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+/* 🔴🔴 2026-10-03 修一个致命 bug：勾选时**没有背景色**，
+   而勾号是 `border: 2px solid #fff`（白）⇒ **白勾画在白底上，对比度 1.0，完全看不见**。
+   Owner 报"全部都不可以"，真实截图确认：勾选后是空心白框，勾号一点都看不到。
+
+   注释里那句「压在 accent 上 = 5.87 AA」说明**原设计就该有 accent 底**，
+   但这条规则从来没写出来。radio 有（下面），checkbox 漏了。
+
+   勾号是白色的 ⇒ **勾选时底色必须是深的**，这是硬约束，不是偏好。 */
+.choice__input:checked ~ .choice__label .choice__mark {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.choice__input:checked ~ .choice__label .choice__mark::after {
+  transform: rotate(45deg) scale(1);
+}
+
+/* ---------------------------------------------------------------- disabled */
+.choice__input:disabled { cursor: not-allowed; }
+
+.choice__input:disabled ~ .choice__label .choice__mark,
+.choice__input:disabled ~ .choice__label {
+  /* 和 input 一样：不用 opacity，用明确的低对比色组 */
+  background: var(--surface-sunken);
+  border-color: var(--border-decor);
+}
+.choice__input:disabled ~ .choice__label { color: var(--text-tertiary); cursor: not-allowed; }
+
+/* 🔴 disabled 之后 hover 不能有任何变化，否则看着像还能点。
+   不用 `:has()`（精简档 已定为禁用，见 form-validation 里的理由）——
+   第一版就是写了 `:has()`，属于自己违反自己刚定的纪律。 */
+
+/* ---------------------------------------------------------------- 文本 */
+.choice__label {
+  font-size: var(--fs-sm);
+  line-height: var(--lh-base);
+  color: var(--text-primary);
+}
+/* ---------------------------------------------------------------- 说明文字 */
+.choice__hint {
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  line-height: 1.5;
+}
+
+/* ============================================================================
+   checkbox
+   ========================================================================= */
+.choice--checkbox .choice__mark { border-radius: 5px; }
+
+/* indeterminate（第三态）—— "全选"那个既没全选也没全不选的状态。
+   🔴 不做这个态，"全选"复选框就没法正确表达中间状态。 */
+.choice--checkbox .choice__input:indeterminate ~ .choice__label .choice__mark {
+  /* 🔴 2026-10-03 由「深蓝满色块」改为「白底 + accent 描边 + accent 横线」。
+     Owner 评价满色块"感觉比较差" —— 确实，半选塞一整块深色视觉太重。
+     描边式同样能表达"部分选中"，且更轻。 */
+  background: var(--surface);
+  border-color: var(--accent);
+}
+.choice--checkbox .choice__input:indeterminate ~ .choice__label .choice__mark::after {
+  /* 换成横线。🔴 颜色必须是 **accent** 不是白色 ——
+     底现在是白色（描边式），白线画在白底上同样看不见。 */
+  width: 10px;
+  height: 2px;
+  border: none;
+  background: var(--accent);
+  border-radius: 1px;
+  transform: none;
+}
+
+/* ============================================================================
+   radio
+   ========================================================================= */
+.choice--radio .choice__mark {
+  border-radius: var(--r-pill);
+}
+/* radio 的"选中"是圆点，不是对勾 */
+.choice--radio .choice__mark::after {
+  width: 8px;
+  height: 8px;
+  border: none;
+  /* 🔴 同上：radio 圆心也不能写死白。 */
+  background: var(--text-on-accent);
+  border-radius: var(--r-pill);
+  transform: scale(0);
+}
+.choice--radio .choice__input:checked ~ .choice__label .choice__mark {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.choice--radio .choice__input:checked ~ .choice__label .choice__mark::after {
+  transform: scale(1);
+}
+
+/* ============================================================================
+   radio 组 —— 必须用 fieldset + legend
+   =========================================================================
+   🔴 这是原生语义，屏幕阅读器会播报"第几组，共几项，当前选中了第几项"。
+   用 <div> + <span> 模拟就全丢了。
+   radio 之间的互斥、单选、方向键导航全部依赖同一个 name 属性。
+   ------------------------------------------------------------------------ */
+.choice__group {
+  border: none;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.choice__legend {
+  padding: 0;
+  margin-bottom: var(--sp-2);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.choice__options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+/* ============================================================================
+   select
+   =========================================================================
+   🔴 选原生 select 就好，不要换成自定义下拉。
+
+   原生控件在移动端是最好的：系统会弹出带 wheel 的原生选择器、
+   语言切换跟随系统、无障碍由系统保证。换成 <div> 模拟要重新实现
+   上面全部功能，且必然漏一部分。
+
+   能做的只有外观，且必须保留 appearance 的替换能力
+   —— 只改外观，不改行为。
+   ------------------------------------------------------------------------ */
+.select {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 100%;
+}
+
+.select__control {
+  width: 100%;
+  height: 44px;
+  padding: 0 40px 0 var(--sp-3);
+
+  font-family: inherit;
+  /* 🔴 16px 硬下限：iOS Safari 小于此字号会自动放大整个页面 */
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  background: var(--surface);
+
+  border: 1px solid var(--border-control);
+  border-radius: var(--r-sm);
+
+  /* 去掉原生外观，但**键盘和移动端行为全部保留** */
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-out),
+              box-shadow   var(--dur-fast) var(--ease-out);
+}
+
+/* Chrome 内部的下拉箭头要单独去掉 */
+.select__control::-ms-expand { display: none; }
+.select__control::-webkit-calendar-picker-indicator { opacity: 0; }
+
+@media (hover: hover) and (pointer: fine) {
+.select__control:hover:not(:disabled) { border-color: var(--text-tertiary); }
+}
+/* select 用 :focus 不用 :focus-visible —— 和 input 一样，
+   用户必须随时知道当前选的是哪个。 */
+.select__control:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.select__control:disabled {
+  background: var(--surface-sunken);
+  color: var(--text-tertiary);
+  border-color: var(--border-decor);
+  cursor: not-allowed;
+}
+
+/* 箭头：纯装饰，pointer-events:none 让点击穿透到 select */
+.select__arrow {
+  position: absolute;
+  inset-inline-end: var(--sp-3);
+  pointer-events: none;      /* 🔴 不写这句，箭头会吃掉点击 */
+  color: var(--text-tertiary);
+  display: grid;
+  place-items: center;
+}
+
+/* 多选/长内容时给 min-height，不用固定 height */
+.select__control--auto { height: auto; min-height: 44px; padding-block: var(--sp-2); }
+
+/* ============================================================================
+   reduced-motion
+   =========================================================================
+   勾的弹出属于"小幅缩放 + 旋转"，不涉及位移。
+   🔴 但 200ms 以上的缩放动画在 reduced-motion 下应当去掉，只保留颜色变化 ——
+   颜色变化仍然传达了"勾上了"。
+   ========================================================================= */
+@media (prefers-reduced-motion: reduce) {
+  .choice__mark::after {
+    transition: none;
+  }
+}
+
+/* ============================================================================
+   反模式
+   =========================================================================
+   1. display:none / visibility:hidden 隐藏原生 input
+      从 tab 顺序移除。键盘用户彻底到不了这里。这一组最致命的错误。
+
+   2. 自己用 <div> 做 checkbox
+      Space 键、Tab 顺序、表单提交、屏幕阅读器全部要重写，且必然漏。
+
+   3. 焦点环画在 input 上
+      input 是 opacity:0 的，outline 你根本看不见。必须画在 .choice__mark 上。
+
+   4. 用 opacity 做 disabled
+      对比度变成不可控的随机数。跟 input 一样用明确的低对比色组。
+
+   5. radio 组用 <div> + <span> 模拟
+      丢掉 fieldset/legend 的原生语义：屏幕阅读器不再播报
+      "第几组、共几项、当前选中第几项"。
+
+   6. 箭头不写 pointer-events:none
+      吃掉点击，用户点箭头没反应。
+
+   7. 换掉原生 select 做自定义下拉
+      移动端体验、无障碍全部要重做。原生是最好的。
+
+   8. checkbox 不做 indeterminate 态
+      "全选"复选框无法表达中间状态。
+
+   9. 用 transition: all
+
+   10. 🔴 用 `:has()`（比如 `.choice:has(input:disabled)`）
+       库内另一处（form-validation）已定为精简档 禁用 `:has()` ——
+       它是 CSS Level 4，某项目 上 WebView 版本不确定。
+       写这一行时已经违反了自己刚定的纪律，已改用相邻兄弟选择器提优先级。
+   ========================================================================= */

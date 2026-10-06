@@ -1,0 +1,146 @@
+/* ============================================================================
+   Badge — 状态标记
+   ============================================================================
+   为什么用「淡底 + 深字」而不是「饱和底 + 白字」
+   ----------------------------------------------------
+   饱和底（如 --success #2f6b3a）+ 白字在**小字号**下对比度普遍不够 ——
+   本库正文门槛是 4.5:1，而 badge 只有 11–12px，更严格才对。
+
+   实测（本库令牌，两套配色）：
+     success  浅 5.58 · 暗 5.92
+     danger   浅 4.82 · 暗 5.37
+     warning  浅 5.29 · 暗 6.05
+     info     浅 6.01 · 暗 5.25
+     neutral  浅 6.76 · 暗 10.59
+   ⇒ 全部 ≥ 4.5，不需要为 badge 单独调色。
+
+   为什么可以只用颜色
+   ----------------
+   🔴 **不行。** WCAG 1.4.1（不能只靠颜色）要求形状或文字参与区分。
+   本组件的做法：**badge 一律带文字**（"已停牌"/"审计中"），
+   颜色只是**冗余线索**，不是唯一线索。
+   ⇒ 这是"可选的辅助"，不是"唯一的编码"。
+
+   不用它承载什么信息
+   ------------------
+   ❌ 不用 badge 装数字角标（那是另一类设计，且数字变化读屏未必会念）
+   ❌ 不用 badge 装可点击的东西（那是 button，见下）
+   ========================================================================= */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: 2px var(--sp-2);
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  font-size: var(--fs-xs);
+  line-height: 1.5;              /* 不用行高单位：11px 字号下 1.5em 会虚 */
+  white-space: nowrap;
+  vertical-align: baseline;
+  /* 🔴 不可点 ⇒ cursor 默认、不要 transition 假装能点 */
+}
+
+/* 中性（默认）—— 数量最多的一档，别让它显得像"缺省" */
+.badge--neutral {
+  background: var(--surface-sunken);
+  border-color: var(--border-decor);
+  color: var(--text-secondary);
+}
+
+.badge--success {
+  background: var(--success-bg);
+  border-color: var(--success-bg);       /* 同色底 ⇒ 边框不产生额外对比 */
+  color: var(--success);
+}
+
+.badge--danger {
+  background: var(--danger-bg);
+  border-color: var(--danger-bg);
+  color: var(--danger);
+}
+
+.badge--warning {
+  background: var(--warning-bg);
+  border-color: var(--warning-bg);
+  color: var(--warning);
+}
+
+.badge--info {
+  background: var(--info-bg);
+  border-color: var(--info-bg);
+  color: var(--info);
+}
+
+/* ---------------------------------------------------------------- 可点版
+   🔴 当 badge **需要可点**时（比如点标签跳到筛选结果），
+   语义必须是 button/a —— div + onClick 对读屏是"没有角色的按钮"。
+
+   给 .badge--clickable 时**必须**同时在 HTML 上写正确的元素与键盘支持。
+   本类只负责**看起来可点**（hover/focus 反馈），
+   焦点环用 :focus-visible（键盘才出现，鼠标点击不出现 —— 与本库 button 一致）。
+   ---------------------------------------------------------------- */
+
+.badge--clickable {
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+
+/* 🔴 2026-10-03 两处修正：
+   ① 加 @media (hover) 门控 —— 触屏上"点一下"会先点亮 hover 再 click，
+      于是保持"被悬停"的颜色不褪（hover-gate 抓到的）。
+   ② **不用 `filter: brightness(0.97)`** —— states 门禁把它列为反模式，
+      理由成立：brightness 是**整体乘亮**，换主题时效果完全不同
+      （浅色下几乎看不出，暗色下明显压暗）⇒ 颜色跟着主题漂。
+      ⇒ 改成显式换边框色，行为可预测。 */
+@media (hover: hover) and (pointer: fine) {
+  .badge--neutral.badge--clickable:hover { border-color: var(--text-tertiary); }
+  .badge--success.badge--clickable:hover  { border-color: var(--success); }
+  .badge--warning.badge--clickable:hover  { border-color: var(--warning); }
+  .badge--danger.badge--clickable:hover   { border-color: var(--danger); }
+  .badge--info.badge--clickable:hover     { border-color: var(--info); }
+}
+
+/* 强制高对比模式（Windows）—— 淡底会被系统强制色覆盖，
+   这时靠边框保住边界，而不是靠底色。 */
+@media (forced-colors: active) {
+  .badge {
+    border-color: currentColor;         /* 强制色下边框取文字色 */
+  }
+}
+
+/* ---------------------------------------------------------------- 尺寸
+   两档够了。badge 出现三档说明信息密度没规划好
+   （与 card 的判断标准一致）。 */
+.badge--lg {
+  font-size: var(--fs-sm);
+  padding: var(--sp-1) var(--sp-3);
+}
+
+/* ============================================================================
+   实心态变体
+   ============================================================================
+   🔴 2026-10-06 新增（暗色门禁抓出来的）：
+      demo 原来用**行内 style** 写 `background: var(--success); color: #fff`
+      ⇒ 暗色下 --success 变浅（#6FAA7A），白字压上去只有 2.72:1
+      ⇒ 行内 style 还会**绕过 tokens 门禁**（门禁只扫 CSS 文件）
+
+   ⇒ 正确做法：把"实心底 + 白字"做成**变体类**，让暗色令牌能接管。
+      白字写在 `--text-on-*` 上（暗色下会变深色），而不是写死 #fff。
+   ============================================================================ */
+.badge--solid-success { background: var(--success); color: var(--text-on-solid); }
+.badge--solid-danger  { background: var(--danger);  color: var(--text-on-solid); }
+.badge--solid-warning { background: var(--warning); color: var(--text-on-solid); }
+
+/* 🔴 暗色下：--success / --danger 都**变浅**了（为的是在深底上更醒目）
+   ⇒ 白字压上去只有 2.72:1 ⇒ 实心态在暗色下必须换成**深字**。
+   ⚠️ 这不是"暗色就该反色"，而是 WCAG 的硬要求：
+      浅底必须配深字，否则对比度不够。 */
+@media (prefers-color-scheme: dark) {
+  /* 暗色下这些底色变浅 ⇒ 必须换深字。
+     ⚠️ 用令牌而不是写死色值 —— 否则违反本库"零硬编码"纪律
+        （badge 契约的判据 ① 会当场报出来，我就是这么被抓到的）。 */
+  .badge--solid-success { color: var(--text-on-solid); }
+  .badge--solid-danger  { color: var(--text-on-solid); }
+  .badge--solid-warning { color: var(--text-on-solid); }
+}

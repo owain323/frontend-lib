@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>骨架屏 · skeleton</title>
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../button/button.css">
+<link rel="stylesheet" href="skeleton.css">
+<style>
+  body { padding: var(--sp-5) var(--sp-4) 64px; }
+  h1 { font-size: var(--fs-xl); margin: 0 0 var(--sp-2); }
+  h2 { font-size: var(--fs-lg); margin: var(--sp-7) 0 var(--sp-3); }
+  .lede { color: var(--text-secondary); margin: 0 0 var(--sp-5); }
+  .demo {
+    background: var(--surface);
+    border: 1px solid var(--border-decor);
+    border-radius: var(--r-md);
+    padding: var(--sp-4);
+    margin-bottom: var(--sp-4);
+  }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
+  /* 反例演示：故意用深色底 + 白字，说明"骨架屏不该这样用" */
+  .bad-demo { background: var(--danger-bg); border-color: var(--danger); }
+  .note { font-size: var(--fs-sm); color: var(--text-secondary); margin-top: var(--sp-2); }
+  .bad { color: var(--danger); }
+</style>
+</head>
+<body>
+
+<h1>骨架屏 · skeleton</h1>
+<p class="lede">加载态是移动端最高频的状态。形状不统一的加载态会让页面看起来"没做完"。</p>
+
+<h2>1 · 文本骨架（多行）</h2>
+<div class="demo" aria-busy="true">
+  <span class="skeleton skeleton--text" aria-hidden="true" style="width:92%"></span>
+  <span class="skeleton skeleton--text" style="width:78%" aria-hidden="true"></span>
+  <span class="skeleton skeleton--text" style="width:56%" aria-hidden="true"></span>
+  <p class="note">最后一行不带下边距（用 <code>:last-child</code>），列表尾部不会多一块空白。</p>
+</div>
+
+<h2>2 · 块状骨架（图片/卡片占位）</h2>
+<div class="demo" aria-busy="true">
+  <div class="row2">
+    <div>
+      <div class="skeleton skeleton--block" style="height:96px" aria-hidden="true"></div>
+      <span class="skeleton skeleton--text" style="width:70%; margin-top:var(--sp-3)" aria-hidden="true"></span>
+      <span class="skeleton skeleton--text" style="width:45%" aria-hidden="true"></span>
+    </div>
+    <div>
+      <div class="skeleton skeleton--block" style="height:96px" aria-hidden="true"></div>
+      <span class="skeleton skeleton--text" style="width:62%; margin-top:var(--sp-3)" aria-hidden="true"></span>
+      <span class="skeleton skeleton--text" style="width:52%" aria-hidden="true"></span>
+    </div>
+  </div>
+</div>
+
+<h2>3 · 列表骨架（最常用形态）</h2>
+<div class="demo" aria-busy="true">
+  <div class="skeleton-list">
+    <div class="skeleton-list__row">
+      <span class="skeleton skeleton--circle" aria-hidden="true"></span>
+      <div style="flex:1">
+        <span class="skeleton skeleton--text" style="width:40%" aria-hidden="true"></span>
+        <span class="skeleton skeleton--text" style="width:88%" aria-hidden="true"></span>
+      </div>
+    </div>
+    <div class="skeleton-list__row">
+      <span class="skeleton skeleton--circle" style="--skeleton-size:32px" aria-hidden="true"></span>
+      <div style="flex:1">
+        <span class="skeleton skeleton--text" style="width:34%" aria-hidden="true"></span>
+        <span class="skeleton skeleton--text" style="width:72%" aria-hidden="true"></span>
+      </div>
+    </div>
+    <div class="skeleton-list__row">
+      <span class="skeleton skeleton--circle" style="--skeleton-size:32px" aria-hidden="true"></span>
+      <div style="flex:1">
+        <span class="skeleton skeleton--text" style="width:44%" aria-hidden="true"></span>
+        <span class="skeleton skeleton--text" style="width:80%" aria-hidden="true"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2>4 · 减少动态效果时</h2>
+<div class="demo" aria-busy="true">
+  <span class="skeleton skeleton--text" aria-hidden="true" style="width:70%"></span>
+  <span class="skeleton skeleton--text" style="width:52%" aria-hidden="true"></span>
+  <p class="note">
+    系统开启「减少动态效果」后，微光动画会停掉，
+    但<b>骨架屏本身仍然显示</b> —— 用户依然知道正在加载。
+  </p>
+</div>
+
+<h2>反例 · 不该这样用</h2>
+<div class="demo bad-demo">
+  <span class="skeleton skeleton--text" aria-hidden="true" style="width:70%"></span>
+  <p class="note bad">
+    <b>别把骨架屏当"灰条"用在一段很短的文字上</b>（&lt; 12px）。
+    短文字用骨架屏会读成"渲染坏了"，而且屏幕阅读器会念出一堆空白。
+    短文案直接给 spinner 或干脆不给反馈。
+  </p>
+</div>
+
+</body>
+</html>

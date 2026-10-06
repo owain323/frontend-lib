@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>content · 正文渲染 · frontend-lib</title>
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="content.css">
+<style>
+  body { margin: 0; padding: var(--sp-7) var(--sp-5); background: var(--paper); }
+  .demo-note {
+    max-width: 42rem; margin: 0 auto var(--sp-6);
+    padding: var(--sp-3) var(--sp-4);
+    background: var(--surface-sunken);
+    border-radius: var(--r-sm);
+    font-size: var(--fs-sm); color: var(--text-secondary);
+  }
+</style>
+</head>
+<body>
+
+<p class="demo-note">
+  <strong>content</strong> 接管 Markdown 渲染出来的元素：<b>结构用标准</b>（CommonMark/GFF 决定），
+  <b>样式用令牌</b>（颜色/字号/间距全部来自 tokens.css）。
+  所以它按<strong>元素选择器</strong>工作，不给每个元素加类。
+</p>
+
+<!-- 🔴 2026-10-05 新建：此前本组件只有 content.css + README.md，**没有 demo.html**，
+     ⇒ 契约脚本拿不到页面、量不到任何东西（等于契约在空跑）。
+     这份 demo 同时作为「标题层级不跳级」的活样本。 -->
+<main class="prose">
+  <h1>季度经营分析</h1>
+  <p class="lede">
+    本节演示正文容器接管 <code>&lt;h1&gt;</code>～<code>&lt;h3&gt;</code>、
+    段落、列表、表格、引用、代码块的样子。层级刻意按 h1→h2→h3 顺序排，
+    供 <code>content-check.js</code> 检查「不跳级」。
+  </p>
+
+  <h2>1 · 关键指标</h2>
+  <p>下面是三个核心指标。<strong>加粗</strong>与<em>斜体</em>都走令牌，不写死样式。</p>
+  <ul>
+    <li>营业收入：同比 +12.4%</li>
+    <li>毛利率：<code>62.1%</code>（用等宽字体，数字对齐）</li>
+    <li>经营现金流：转正</li>
+  </ul>
+
+  <h3>1.1 · 分季度明细</h3>
+  <table>
+    <caption>2025–2026 分季度经营数据（单位：万元）</caption>
+    <thead>
+      <tr><th scope="col">季度</th><th scope="col">收入</th><th scope="col">毛利率</th></tr>
+    </thead>
+    <tbody>
+      <tr><th scope="row">2025 Q3</th><td>4,120</td><td>60.8%</td></tr>
+      <tr><th scope="row">2025 Q4</th><td>4,586</td><td>61.5%</td></tr>
+      <tr><th scope="row">2026 Q1</th><td>4,903</td><td>62.1%</td></tr>
+    </tbody>
+  </table>
+
+  <h2>2 · 风险提示</h2>
+  <blockquote>
+    <p>应收账款周转天数环比恶化 6 天，需在下季度收紧信用政策。</p>
+  </blockquote>
+  <ol>
+    <li>对账期 &gt; 60 天的新客户改为预付</li>
+    <li>逾期 &gt; 30 天暂停发货</li>
+  </ol>
+
+  <h2>3 · 术语</h2>
+  <dl>
+    <dt>EBITDA</dt>
+    <dd>息税折旧摊销前利润</dd>
+    <dt>CAC</dt>
+    <dd>客户获取成本</dd>
+  </dl>
+
+  <h2>4 · 代码与链接</h2>
+  <pre><code>const f = (x) =&gt; x * 2;   // 纯 ES5 时代写法</code></pre>
+  <p>详细口径见 <a href="#main">内部数据字典</a>。</p>
+</main>
+
+</body>
+</html>

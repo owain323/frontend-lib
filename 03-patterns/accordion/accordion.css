@@ -1,0 +1,443 @@
+/* ============================================================================
+   Accordion — 折叠面板（APG: Accordion Pattern）
+   ============================================================================
+   🔴 2026-10-04 **重写**。Owner 实机指出的问题（截图为准）：
+
+       ① 「内容部分非常靠上方」—— 内容紧贴标题下的分隔线，
+          而且**整块内容是突然出现的**（没有展开的过程）
+          ⇒ 看起来像"贴上去的一小块"，廉价。
+
+       ② 「表达方式不对」—— 展开后内容与标题**没有视觉从属关系**。
+
+       ③ 「一个标题内部多列的折叠会有问题」—— 这是**真实场景**
+          （如"财务数据"下展开营收 / 净利 / 毛利率三列）
+
+   ⇒ 本次重写依据 **Radix Accordion / Collapsible 的一手实现**
+     （实测抓自 jsdelivr：accordion.tsx 569 行 + collapsible 的 CSS 变量机制），
+     不是我自己的设计。
+
+   ============================================================================
+   ⭐ 核心机制：高度动画靠「JS 量尺寸 → CSS 变量 → CSS 过渡」
+   ============================================================================
+   Radix 的做法（collapsible.tsx 实测原文）：
+
+       style={{ '--radix-collapsible-content-height': height }}   ← JS 量一次
+       hidden={!isOpen}                                          ← 收起才移出无障碍树
+       {isOpen && children}
+/* --------------------------------------------------------------------------
+   🔴 2026-10-04 补：声明 --acc-h / --acc-locked-h（组件级变量）
+
+    是**运行时**高度：accordion.js 在展开前量出 inner 的高度，
+   用  写进来，
+   收起结束后  清掉。
+
+   ⚠️ 为什么在这里声明（而不是 tokens.css）：
+      它**只对本组件有意义**，别的组件不会用 ⇒ 不该进全局令牌表。
+   ⚠️ 之前它**只被引用、没有任何地方定义** ⇒ CSS 变量不存在时
+      **不报错**， 声明**静默失效**（deps 门禁报出来的就是这个）。
+   -------------------------------------------------------------------------- */
+:root {
+  --acc-h: 0px;          /* 0 = 收起；JS 展开时覆盖成实际像素值 */
+  --acc-locked-h: auto;  /* 保留：给锁高实验用，当前 JS 不设 */
+}
+                                      ← 动画期间仍在树里
+
+   ⇒ **JS 只做一件事：量一次高度写进 CSS 变量**，动画交给 CSS。
+
+   🔴 关键细节（Radix 源码注释原话）：
+       "when closing we delay `present` to retrieve dimensions before closing"
+       ⇒ **关闭时必须先量到尺寸再收起**，否则量到 0，动画就没了。
+       本组件用「保留一帧再收」复刻这一点（见 accordion.js）。
+
+   ============================================================================
+   ⭐ 为什么用 grid-template-rows 而不是 max-height
+   ============================================================================
+   `max-height: 1000px` 那种写法的毛病：**你必须猜内容有多高**。
+   内容超过就"被截断"，不到就"收起后还留一截空白"。
+
+   `grid-template-rows: 0fr → 1fr` 不需要知道高度 ——
+   `1fr` 就是"内容有多高就多高"，`0fr` 就是"完全收起"。
+
+   ⚠️ `fr` 动画需要配合 `overflow: hidden`，否则内容会溢出来。
+   ========================================================================= */
+
+.accordion {
+  --acc-dur: var(--dur-base, 240ms);
+  --acc-ease: var(--ease-out, cubic-bezier(0.2, 0, 0, 1));
+
+  border: 1px solid var(--border-decor);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  /* 🔴 这里**不能**用 overflow:hidden —— 会裁掉 focus ring。
+     每一项自己裁（见 .accordion__item）。 */
+  overflow: visible;
+}
+
+.accordion--flush {
+  border: 0;
+  background: transparent;
+}
+
+/* ---------------------------------------------------------
+   一项 —— 高度动画的容器
+   --------------------------------------------------------- */
+.accordion__item {
+  border-bottom: 1px solid var(--border-decor);
+  /* 🔴 关键：给高度动画一个裁切边界。
+     没有它，0fr 时内容会溢到下一项上。 */
+  overflow: hidden;
+}
+
+.accordion__item:last-child {
+  border-bottom: 0;
+}
+
+/* ---------------------------------------------------------
+   Header（heading）—— APG 要求 button 在 heading 里面
+   --------------------------------------------------------- */
+.accordion__heading {
+  margin: 0;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+/* ---------------------------------------------------------
+   Trigger（原生 button）
+   --------------------------------------------------------- */
+.accordion__trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  min-height: 44px;                 /* WCAG 2.5.5 命中区 */
+  padding: var(--sp-3) var(--sp-4);
+  font: inherit;
+  font-size: var(--fs-base);
+  font-weight: 500;
+  text-align: start;
+  color: var(--text-primary);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+
+.accordion__trigger:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;             /* 往内，避免被 overflow 裁掉 */
+  border-radius: var(--r-sm);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .accordion__trigger:not([aria-disabled="true"]):hover {
+    background: var(--surface-sunken);
+  }
+}
+
+.accordion__trigger[aria-disabled="true"] {
+  color: var(--text-tertiary);
+  cursor: not-allowed;
+}
+
+/* 🔴 展开态：标题有底色，让"这一段是开着的"一眼可见 */
+.accordion__trigger[aria-expanded="true"] {
+  background: var(--surface-sunken);
+}
+
+.accordion__label {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* 🔴 可选的副标题：标题下方一行小字 */
+.accordion__hint {
+  display: block;
+  font-size: var(--fs-xs);
+  font-weight: 400;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* ---------------------------------------------------------
+   展开指示 —— CSS 画的，不引图标资产
+   --------------------------------------------------------- */
+.accordion__marker {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-inset-inline-end: 2px solid var(--text-tertiary);
+  border-bottom: 2px solid var(--text-tertiary);
+  transform: rotate(45deg) translate(-1px, -1px);
+  transition: transform var(--acc-dur) var(--acc-ease);
+}
+
+.accordion__trigger[aria-expanded="true"] .accordion__marker {
+  transform: rotate(-135deg) translate(-2px, -2px);
+}
+
+@media (forced-colors: active) {
+  .accordion__marker { border-color: currentColor; }
+}
+
+/* ============================================================================
+   ⭐ Content —— 高度动画的核心
+   ============================================================================
+   `grid-template-rows: 0fr → 1fr`：
+     · 0fr = 完全收起（配合 item 的 overflow:hidden，内容被裁掉）
+     · 1fr = 内容有多高就多高（**不需要猜高度**，比 max-height 强在这）
+   ========================================================================= */
+.accordion__panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--acc-dur) var(--acc-ease);
+}
+
+.accordion__panel[data-state="open"] {
+  grid-template-rows: 1fr;
+}
+
+/* 🔴 退场动画的起点（JS 量的，抄 Radix 的 --radix-collapsible-content-height）
+   用途：0fr 过渡在某些浏览器里会"跳"，先给一个确定的 px 起点更稳。
+   ⚠️ 只有 JS 在**关闭那一刻**写了这个变量，其他时候不该有。 */
+.accordion__panel[style*="--acc-h"] {
+  transition: grid-template-rows var(--acc-dur) var(--acc-ease),
+              max-height var(--acc-dur) var(--acc-ease);
+  /* 🔴 --acc-h 由 accordion.js 在展开前动态测量写入
+       （panel.style.setProperty('--acc-h', h + 'px')），
+       收起结束后 removeProperty 清掉。
+       ⚠️ 第二个参数是 **fallback**：JS 没设时用 0px（收起态），
+          这样这条声明**永远有效**，不会静默失效。 */
+    max-height: var(--acc-h, 0px);
+}
+
+.accordion__panel[style*="--acc-h"][data-state="closed"] {
+  max-height: 0;
+}
+
+/* 🔴 被 0fr/1fr 控制高度的就是它。
+   ⚠️ min-height:0 是 grid item 的必要条件（否则内容撑破 0fr）。 */
+/* 🔴 2026-10-04 补（accordion 契约抓到「收起的面板没有真正 display:none」）
+
+   真因：`.accordion__panel { display: grid }` **覆盖了 `hidden` 属性的
+   `display: none`** —— `hidden` 在 HTML 规范里只是 `display: none` 的
+   **UA 样式**，任何作者声明的 `display` 都能盖掉它。
+
+   实测：JS 已正确设了 `hidden=""`，但 getComputedStyle().display 仍是 `grid`。
+
+   ⚠️ 这类 bug 很隐蔽：`hidden` 属性**看起来**设了，
+      读屏软件也真的读不到内容（因为 hidden 已在无障碍树里生效），
+      但"CSS 层面的 display"没生效这件事没人会发现。
+
+   ⇒ 修法：显式声明 hidden 时用 `display: none !important`。 */
+.accordion__panel[hidden] {
+  display: none !important;
+}
+
+
+.accordion__panel-inner {
+  min-height: 0;
+  overflow: hidden;
+  padding: 0 var(--sp-4);
+}
+
+/* ⭐ 内边距放在**内层**，不放外层 ——
+   放外层的话，收起时上下 padding 仍然存在（0fr 只算内容高），
+   收起后会留下一截空白。 */
+.accordion__trigger[aria-expanded="true"] + .accordion__panel .accordion__panel-inner {
+  padding-top: var(--sp-1);
+  padding-bottom: var(--sp-4);
+}
+
+/* ============================================================================
+   🔴 2026-10-04 修「收起后点另一项，第一次没反应」（Owner 实机报）
+   ============================================================================
+   ⭐ 真因（**实测量化到的**，不是猜的）：
+
+     收起动画期间，**下方所有项跟着上移**。
+     实测：第 2 项的 trigger 在动画里 **top 从 489 → 358（上移 131px）**。
+     手指瞄准的是落下那一瞬间的位置，等浏览器派发 touch 时元素已移开
+     ⇒ **点在空处，什么也没发生** —— 用户以为要点两次。
+
+   ⚠️ 我试过但**无效**的两个办法（别再走回头路）：
+     ① `pointer-events: none` 让事件穿透
+        —— 事件穿过去了，但**目标位置本身是错的**（点在半空中，穿透给谁？）
+        ⇒ 实测：去掉它与留着它，结果完全一样。
+     ② 动画期间锁住点击 + 结束后补偿
+        —— 补偿逻辑实测没生效，第一次点击被彻底丢弃，**比原 bug 更糟**。
+
+   ⇒ 真正的解法：**收起动画期间锁住整个列表高度**，不产生位移。
+     trigger 根本不动 ⇒ 手指瞄准的位置永远是对的。
+     代价：收起过程中下方留白（视觉像"内容收进去了，位置先留着"），
+     240ms 后空白消失 —— 这个代价比"要点两次"小得多。
+   ========================================================================= */
+  /* 🔴 2026-10-04 删除这条死规则（deps 门禁报「引用了未定义令牌 --acc-locked-h」）
+     JS 侧注释已写明「曾加过锁高，实测**无效**，已撤销」—— 锁的是**列表**高度，
+     而第 1 项是在列表**内部**收缩的，第 2 项照样上移 ⇒ 固有代价，无法避免。
+     ⇒ CSS 侧忘了删；--acc-locked-h 从未被 JS 设置过
+     ⇒ `height: var(--acc-locked-h)` **静默失效**（CSS 变量不存在不报错）。
+     ⚠️ 顺带：`is-animating` 全库没有任何 JS 会加 ⇒ 整条规则是死的。 */
+
+/* 收起中的 panel 不吃指针（顺带的正确性保证，不是主要手段） */
+.accordion__panel[data-state="closed"] {
+  pointer-events: none;
+}
+
+/* 展开中要正常接收（面板里的链接、按钮要能点） */
+.accordion__panel[data-state="open"] {
+  pointer-events: auto;
+}
+
+/* 收起完成、已 hidden 的那一帧：键盘焦点也不该落在里面 */
+.accordion__panel[hidden] {
+  visibility: hidden;
+}
+
+/* ============================================================================
+   ⭐ 多列内容（Owner 明确提的需求：「一个标题内部多列」）
+   ============================================================================
+   为什么单独一套：多列内容（财务三列、指标卡）**行高与单列表不同**，
+   而且**窄屏必须能塌成一列**，否则手机上会挤成一团。
+
+   用法：给 `.accordion__panel-inner` 加 `cols-auto` / `cols-2` / `cols-3`
+   ========================================================================= */
+
+/* auto：按内容宽度自动分列，够宽就并排，窄了自动换行（最省心） */
+.accordion__panel-inner.cols-auto {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--sp-3);
+}
+
+/* 固定两列 / 三列 —— ≥720px 时分列，窄屏塌成一列 */
+.accordion__panel-inner.cols-2,
+.accordion__panel-inner.cols-3 {
+  display: grid;
+  gap: var(--sp-3);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 720px) {
+  .accordion__panel-inner.cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .accordion__panel-inner.cols-3 { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* ============================================================================
+   🔴 2026-10-04 **删掉我原来发明的 `.acc-cell`**
+   ============================================================================
+   Owner 实机反馈：「这个多列内容我没看懂你想表达什么，我感觉你做错了」。
+
+   我原来做的是**四个卡片**（营业收入/净利润/毛利率/现金流），
+   在窄屏排成 **3 + 1** —— 最后那个孤零零换行，视觉上"缺了一块"。
+
+   ⭐ 更根本的问题：**我根本没搞懂 Owner 要什么。**
+   他说的是「**一个标题内部多列的折叠**」——
+   而我做的"四个卡片"是**并列的四项**，不是**一行的多列**。
+
+   真正需要这个的是**数据表**：一行一个公司，点标题展开，
+   下面是这一行的**多列明细**（各项指标）。
+
+   ⇒ 正确做法用 **`<table>` + `<td colspan>`**：
+     HTML spec 明确 `colspan` 就是为"跨列"设计的
+     （实测 HTML spec 抓到 colspan 定义），
+     且表格有**列对齐**（数字右对齐、标题左对齐天然成立）——
+     卡片网格做不到这一点。
+
+   ⇒ 真正的组件能力应该是：
+     `.accordion__table`  —— 面板内嵌表格（多列数据的正确形态）
+   ========================================================================= */
+
+/* ============================================================================
+   面板内嵌表格 —— 「一个标题内部多列」的正确形态
+   ============================================================================
+   用法（面板内）：
+     <table class="acc-table">
+       <thead><tr><th>指标</th><th>本期</th><th>同比</th></tr></thead>
+       <tbody><tr><td>营业收入</td><td>128,430</td><td class="up">+12.4%</td></tr></tbody>
+     </table>
+
+   为什么用 table 而不是 div 网格：
+     ① **列对齐**是表格的天然能力（数字右对齐），div 网格要手写一堆规则
+     ② `<th scope>` 让读屏知道每个数字属于哪一列
+     ③ 窄屏时表格可以**横向滚动**（下面有处理），卡片只能换行
+   ========================================================================= */
+.acc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+  /* 🔴 窄屏：表格**横向滚动**而不是挤压换行
+     （表格一旦换行，列头与数据就对不上了） */
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (min-width: 600px) {
+  .acc-table { display: table; }
+}
+
+/* 🔴 <caption> 必须**视觉隐藏但保留在无障碍树** ——
+   读屏用户需要知道这张表是什么，视觉上不需要看到。
+   （不能用我之前写的 .visually-hidden —— 那个类本库里不存在，
+     只有 switch 的 .switch__label--sr。） */
+.acc-table caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.acc-table th,
+.acc-table td {
+  padding: var(--sp-2) var(--sp-3);
+  text-align: start;
+  border-bottom: 1px solid var(--border-decor);
+  white-space: nowrap;        /* 数字不折行 */
+}
+
+.acc-table th {
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  color: var(--text-secondary);
+  /* 🔴 表头在横向滚动时**固定在左侧**——
+     否则滑到右边就不知道这一列是什么了 */
+  position: sticky;
+  inset-inline-start: 0;
+  background: var(--surface);
+  z-index: 1;
+}
+
+.acc-table td {
+  color: var(--text-primary);
+}
+
+.acc-table .num {
+  text-align: end;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;   /* 数字等宽对齐 */
+}
+
+.acc-table .up   { color: var(--danger); }    /* A 股：涨红 */
+.acc-table .down { color: var(--success); }  /* 跌绿 */
+
+.acc-table tbody tr:last-child td { border-bottom: 0; }
+
+@media (hover: hover) and (pointer: fine) {
+  .acc-table tbody tr:hover td { background: var(--surface-sunken); }
+}
+
+/* ---------------------------------------------------------
+   reduced-motion —— 前庭功能障碍者会因动画眩晕（WCAG 2.3.3）
+   --------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .accordion__panel,
+  .accordion__marker,
+  .accordion__trigger {
+    transition: none;
+  }
+}

@@ -1,0 +1,151 @@
+/* ============================================================================
+   select.css — 自建下拉选择（E1 /
+   ============================================================================
+   依据：APG（ARIA Authoring Practices）Select-Only Combobox 模式
+
+   ⭐ 为什么必须自建，而不是直接用原生 <select>：
+     原生 `<select>` 在 Windows 上**无法定制样式**（下拉列表由系统绘制），
+     圆角/字体/阴影全部无效 ⇒ 跨平台观感不一致。
+     ⛔ 但**表单提交、移动端体验**仍应优先用原生 ——
+        本组件专用于「需要自定义外观的场景」，并保留 hidden input 承接表单值。
+
+   ── APG Select 的键盘契约（三条最容易漏）──
+     ① 打开后焦点**落在选中项**（不是第一项，也不是按钮）
+     ② ↑↓ 循环 · Home/End 跳首末 · **Enter/Space 选中并关闭**
+     ③ **Esc 关闭并把焦点还给按钮** · Alt+↓ 直接打开
+
+   ⚠️ 还有一条**类型搜索**：连续打字跳到匹配项（原生 select 有，必须做）。
+   ============================================================================ */
+
+.select {
+  position: relative;
+  display: inline-block;
+  min-width: 12rem;
+}
+
+.select--block { display: block; min-width: 0; }
+.select--block .select__btn { width: 100%; }
+
+/* ---------- 按钮（视觉上就是 select）---------- */
+.select__btn {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  width: 100%;
+  min-height: 44px;                  /* 🔴 命中区（AAA）*/
+  padding: 0 var(--sp-3);
+  background: var(--surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-control);
+  border-radius: var(--r-sm);
+  font: inherit;
+  font-size: var(--fs-sm);
+  text-align: start;
+  cursor: pointer;
+}
+
+.select__btn:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.select__btn[aria-expanded="true"] { border-color: var(--accent); }
+
+/* 禁用态 */
+.select__btn[disabled] {
+  background: var(--surface-sunken);
+  color: var(--text-tertiary);
+  cursor: not-allowed;
+}
+
+.select__value {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 占位态：还没选值时颜色更淡，且**文字要说清要选什么** */
+.select__value--placeholder { color: var(--text-tertiary); }
+
+.select__caret {
+  flex: 0 0 auto;
+  width: 0;
+  height: 0;
+  border: 4px solid transparent;
+  border-top-color: currentColor;
+  margin-top: 3px;
+  transition: transform 140ms var(--ease-out, ease);
+}
+
+.select__btn[aria-expanded="true"] .select__caret {
+  transform: rotate(180deg);
+  margin-top: -3px;
+}
+
+/* ---------- 列表 ---------- */
+.select__list {
+  position: absolute;
+  top: calc(100% + var(--sp-1));
+  inset-inline-start: 0;
+  inset-inline-end: 0;
+  z-index: var(--z-raised);
+  max-height: 15rem;
+  overflow-y: auto;
+  margin: 0;
+  padding: var(--sp-1);
+  list-style: none;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-decor);
+  border-radius: var(--r-sm);
+  box-shadow: var(--shadow-2);
+}
+
+.select__list[hidden] { display: none; }
+
+.select__opt {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 44px;                  /* 🔴 命中区（AAA，与 dropdown 同）*/
+  padding: 0 var(--sp-3);
+  border-radius: var(--r-xs);
+  color: var(--text-primary);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+
+/* ⭐ 焦点与"当前选中"是两件事，用**两个**视觉区分：
+   · .is-active  = 键盘游标在该项（高亮）
+   · [aria-selected=true] = 已被选中的值（勾 + 粗体） */
+.select__opt.is-active { background: var(--accent-soft); }
+.select__opt[aria-selected="true"] { font-weight: 600; }
+
+@media (hover: hover) and (pointer: fine) {
+  .select__opt:hover { background: var(--surface-sunken); }
+}
+
+.select__opt[aria-disabled="true"] {
+  color: var(--text-tertiary);
+  background: var(--surface-sunken);
+  cursor: not-allowed;
+}
+
+/* 勾：选中的标志（**形状线索**，不只靠颜色）*/
+.select__check {
+  flex: 0 0 auto;
+  width: 1em;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.select__opt-text { flex: 1 1 auto; }
+
+/* 窄屏：贴右对齐，避免出屏 */
+@media (max-width: 30rem) {
+  .select--end .select__list { inset-inline-start: auto; inset-inline-end: 0; min-width: 12rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .select__caret { transition: none; }
+}

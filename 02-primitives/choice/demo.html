@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>checkbox / radio / select · 键盘行为验证</title>
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../02-primitives/input/input.css">
+<link rel="stylesheet" href="choice.css">
+<style>
+  body { margin: 0; padding: var(--sp-7) var(--sp-5); background: var(--paper);
+         color: var(--text-primary); font: var(--fs-base)/var(--lh-base) system-ui, sans-serif; }
+  .wrap { max-width: 800px; margin: 0 auto; }
+
+  /* 对比演示卡：底色用中性，语义色只留在标题文字上 */
+  .bad { background: var(--surface-sunken); }
+  .good { background: var(--surface-sunken); }
+  .bad h3 { color: var(--danger); }
+  .good h3 { color: var(--success); }
+
+  h1 { font-size: var(--fs-2xl); line-height: var(--lh-tight); margin: 0 0 var(--sp-2); }
+  .lede { color: var(--text-secondary); margin: 0 0 var(--sp-7); }
+  h2 { font-size: var(--fs-lg); margin: var(--sp-8) 0 var(--sp-4);
+       padding-bottom: var(--sp-2); border-bottom: 1px solid var(--border-decor); }
+  p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6; }
+  code { font-family: var(--mono);   /* 2026-10-03：原为写死的 ui-monospace，统一走令牌 */ font-size: var(--fs-xs);
+         background: var(--surface-sunken); padding: 1px 5px; border-radius: 4px; }
+  .box { background: var(--surface); border: 1px solid var(--border-decor);
+         border-radius: var(--r-md); padding: var(--sp-5); }
+  .kbd { display:inline-block; padding: 2px 7px; border: 1px solid var(--border-control);
+         border-bottom-width: 2px; border-radius: 5px; background: var(--surface);
+         font-family: var(--mono);   /* 2026-10-03：原为写死的 ui-monospace，统一走令牌 */ font-size: 11px; color: var(--text-primary); }
+  /* 实时状态面板 */
+  #scope { position: sticky; top: var(--sp-3); z-index: var(--z-sticky);   /* 🔴*/
+           background: var(--surface); border: 1px solid var(--accent);
+           border-radius: var(--r-md); padding: var(--sp-4) var(--sp-5);
+           font-family: var(--mono);   /* 2026-10-03：原为写死的 ui-monospace，统一走令牌 */ font-size: var(--fs-xs);
+           line-height: 1.9; box-shadow: var(--shadow-2); }
+  #scope b { color: var(--accent); }
+  .log { color: var(--text-tertiary); }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <h1>checkbox / radio / select</h1>
+  <p class="lede">
+    全库里最容易做坏的一组。浏览器的键盘行为是<strong>无障碍的地基</strong>——
+    改坏了用鼠标完全测不出来，只有键盘用户会知道。
+  </p>
+
+  <div class="note">
+    <strong>怎么验：</strong>先把鼠标移开，用 <span class="kbd">Tab</span> 走进下面每一个控件，
+    用 <span class="kbd">Space</span> 切换勾选，用 <span class="kbd">↑</span><span class="kbd">↓</span> 切换 radio。
+    顶上那个面板会实时显示每一次键盘事件和焦点状态——那不是模拟的，是原生行为。
+  </div>
+
+  <div id="scope">
+    <div>焦点元素：<b id="s-focus">（还没聚焦任何控件）</b></div>
+    <div>选中状态：<b id="s-checked">—</b></div>
+    <div class="log" id="s-log">按 Tab 开始。事件会显示在这里。</div>
+  </div>
+
+  <h2>checkbox</h2>
+  <div class="box">
+    <div class="choice choice--checkbox">
+      <input class="choice__input" type="checkbox" id="c1">
+      <label class="choice__label" for="c1">
+        <span class="choice__mark"></span>
+        <span>导入时跳过表头行</span>
+      </label>
+    </div>
+    <p class="small" style="margin-top:var(--sp-3)">
+      整个 label 都能点（input 透明铺满了它），但视觉方框只有 20px——<strong>触摸目标是 44px</strong>。
+    </p>
+  </div>
+
+  <h2>indeterminate（第三态）</h2>
+  <div class="box">
+    <div class="choice choice--checkbox">
+      <input class="choice__input" type="checkbox" id="c2">
+      <label class="choice__label" for="c2">
+        <span class="choice__mark"></span>
+        <span>全选（下面 3 项）</span>
+      </label>
+    </div>
+    <div style="margin-left:var(--sp-5)">
+      <div class="choice choice--checkbox">
+      <input class="choice__input" type="checkbox" checked id="ch-1">
+      <label class="choice__label" for="ch-1">
+        <span class="choice__mark"></span>
+        <span>收入</span>
+      </label>
+    </div>
+      <div class="choice choice--checkbox">
+      <input class="choice__input" type="checkbox" id="ch-2">
+      <label class="choice__label" for="ch-2">
+        <span class="choice__mark"></span>
+        <span>成本</span>
+      </label>
+    </div>
+      <div class="choice choice--checkbox">
+      <input class="choice__input" type="checkbox" checked id="ch-3">
+      <label class="choice__label" for="ch-3">
+        <span class="choice__mark"></span>
+        <span>费用</span>
+      </label>
+    </div>
+    </div>
+    <p class="small" style="margin-top:var(--sp-3)">
+      "全选"框初始是<strong>半选</strong>（横线），因为下面只选了 2 个。
+      不做这个态，"全选"复选框就无法正确表达中间状态。
+    </p>
+  </div>
+
+  <h2>radio 组（fieldset + legend）</h2>
+  <div class="box">
+    <fieldset class="choice__group">
+      <legend class="choice__legend">时间范围</legend>
+      <div class="choice__options">
+        <div class="choice choice--radio">
+      <input class="choice__input" type="radio" name="range" value="30" checked id="ch-4">
+      <label class="choice__label" for="ch-4">
+        <span class="choice__mark"></span>
+        <span>最近 30 天</span>
+      </label>
+    </div>
+        <div class="choice choice--radio">
+      <input class="choice__input" type="radio" name="range" value="90" id="ch-5">
+      <label class="choice__label" for="ch-5">
+        <span class="choice__mark"></span>
+        <span>最近 90 天</span>
+      </label>
+    </div>
+        <div class="choice choice--radio">
+      <input class="choice__input" type="radio" name="range" value="365" id="ch-6">
+      <label class="choice__label" for="ch-6">
+        <span class="choice__mark"></span>
+        <span>最近一年</span>
+      </label>
+    </div>
+      </div>
+    </fieldset>
+    <p class="small" style="margin-top:var(--sp-3)">
+      用 <span class="kbd">↑</span><span class="kbd">↓</span> 在组内移动，
+      <strong>移动即选中</strong>——这是原生 radio 行为，<code>&lt;div&gt;</code> 模拟不出来。<br>
+      <code>fieldset</code> + <code>legend</code> 让屏幕阅读器播报"第几组、共几项、当前选中第几项"。
+      换成 <code>&lt;div&gt;</code>+<code>&lt;span&gt;</code> 这些信息全丢。
+    </p>
+  </div>
+
+  <h2>select</h2>
+  <div class="box">
+    <!-- 🔴 label 是必须的：没有它，屏幕阅读器只会读出"组合框"。
+         a11y.py 上线当天就抓到了这处缺失。 -->
+    <div class="field">
+      <label class="field__label" for="s1">时间范围</label>
+      <div class="select">
+        <select class="select__control" id="s1" aria-describedby="s1-hint">
+          <option>最近 30 天</option>
+          <option>最近 90 天</option>
+          <option>最近一年</option>
+          <option>自定义区间…</option>
+        </select>
+        <span class="select__arrow" aria-hidden="true">
+          <svg width="12" height="8" viewBox="0 0 12 8" fill="none" stroke="currentColor"
+               stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 1.5 6 6.5 11 1.5"/>
+          </svg>
+        </span>
+      </div>
+      <span class="field__hint" id="s1-hint">上下键选择，Enter 确认，Esc 关闭</span>
+    </div>
+    <p class="small" style="margin-top:var(--sp-3)">
+      <strong>用原生 select，不做自定义下拉。</strong>
+      移动端会弹出系统带 wheel 的原生选择器、语言跟随系统、无障碍由系统保证。
+      换成 <code>&lt;div&gt;</code> 模拟，这些全部要重写且必然漏一部分。<br>
+      这里只改了外观（<code>appearance:none</code> + 自绘箭头），
+      <span class="kbd">↑</span><span class="kbd">↓</span> 选择、<span class="kbd">Enter</span> 确认、Esc 关闭全部保留。
+      箭头写了 <code>pointer-events:none</code>，否则它会吃掉点击。
+    </p>
+  </div>
+
+  <h2>disabled</h2>
+  <div class="box">
+    <div class="choice choice--checkbox">
+      <input class="choice__input" type="checkbox" disabled id="ch-7">
+      <label class="choice__label" for="ch-7">
+        <span class="choice__mark"></span>
+        <span>导出 PDF（需要专业版）</span>
+      </label>
+    </div>
+    <p class="small" style="margin-top:var(--sp-3)">
+      不用 <code>opacity</code>，用明确的低对比色组（对比度会变成不可控的随机数）。
+      <strong>disabled 之后 hover 不能有任何变化</strong>，否则看着像还能点。
+    </p>
+  </div>
+
+  <h2>反例：用 display:none 隐藏原生控件</h2>
+  <div class="box bad">
+    <div class="choice choice--checkbox">
+      <input class="choice__input" type="checkbox" style="display:none" id="bad1">
+      <label class="choice__label" for="bad1">
+        <span class="choice__mark"></span>
+        <span>我看起来正常，但 Tab 到不了这里</span>
+      </label>
+    </div>
+    <p class="small" style="margin-top:var(--sp-3)">
+      <strong>用 Tab 试试——焦点会直接跳过它。</strong>
+      <code>display:none</code> 把它从 tab 顺序里移除了，键盘用户彻底到不了这里。
+      鼠标点击还正常，所以这种 bug 用鼠标测不出来。<br><br>
+      本库的 input 用的是 <code>opacity:0</code> + 绝对定位：<strong>看不见，但仍在 tab 顺序里</strong>。
+    </p>
+  </div>
+
+  <h2>焦点环必须画在看得见的地方</h2>
+  <div class="box good">
+    <p class="small" style="margin:0 0 var(--sp-3)">
+      input 是 <code>opacity:0</code> 的，所以它自己的 <code>outline</code> 你<strong>根本看不见</strong>。
+      焦点环必须画在紧邻的可见标记上：<br>
+      <code>.choice__input:focus-visible + .choice__mark</code><br><br>
+      门禁也是这么查的——它<strong>只认 <code>:focus-visible +</code> 这种相邻写法</strong>，
+      单纯写 <code>:focus-visible {}</code> 判为不通过。
+    </p>
+    <div class="choice choice--checkbox">
+      <input class="choice__input" type="checkbox" id="ch-8">
+      <label class="choice__label" for="ch-8">
+        <span class="choice__mark"></span>
+        <span>Tab 过来看焦点环</span>
+      </label>
+    </div>
+  </div>
+
+<script>
+// ---------- 实时显示原生键盘行为（不是模拟，是观测） ----------
+var fEl = document.getElementById('s-focus');
+var cEl = document.getElementById('s-checked');
+var lEl = document.getElementById('s-log');
+
+function desc(el) {
+  if (!el) return '（无）';
+  var t = el.tagName.toLowerCase();
+  var extra = '';
+  if (el.type === 'checkbox') extra = ' [checkbox' + (el.checked ? ' 已勾选' : '') + (el.indeterminate ? ' 半选' : '') + ']';
+  if (el.type === 'radio') extra = ' [radio ' + el.name + '=' + el.value + (el.checked ? ' 已选中' : '') + ']';
+  if (t === 'select-one') extra = ' [select]';
+  var lb = el.closest('label');
+  var lbtxt = lb ? lb.querySelector('.choice__label') : null;
+  return t + extra + '  “' + (lbtxt ? lbtxt.textContent.trim() : (el.options ? el.options[el.selectedIndex].text : el.id)) + '”';
+}
+
+document.addEventListener('focusin', function (e) {
+  fEl.textContent = desc(e.target);
+  cEl.textContent = (e.target.checked !== undefined) ? String(e.target.checked) : '（不适用）';
+});
+
+var n = 0;
+document.addEventListener('keydown', function (e) {
+  if (['Tab', ' ', 'ArrowUp', 'ArrowDown', 'Enter', 'Escape'].indexOf(e.key) === -1) return;
+  n++;
+  lEl.textContent = '#' + n + '  按下 ' + JSON.stringify(e.key === ' ' ? 'Space' : e.key) +
+    '  → 焦点仍在 ' + desc(document.activeElement);
+});
+
+document.addEventListener('change', function (e) {
+  lEl.textContent = '#' + (++n) + '  ' + desc(e.target) + ' 状态变为 ' +
+    (e.target.checked !== undefined ? (e.target.checked ? '已勾选' : '未勾选') : e.target.value);
+});
+
+// ---------- indeterminate 演示 ----------
+var all = document.getElementById('c2');
+var kids = Array.prototype.slice.call(all.closest('.box').querySelectorAll('input[type=checkbox]'))
+  .filter(function (i) { return i !== all; });
+function sync() {
+  var on = kids.filter(function (k) { return k.checked; }).length;
+  all.checked = on === kids.length;
+  all.indeterminate = on > 0 && on < kids.length;
+}
+kids.forEach(function (k) { k.addEventListener('change', sync); });
+all.addEventListener('change', function () {
+  kids.forEach(function (k) { k.checked = all.checked; });
+  sync();
+});
+sync();
+</script></main>
+</body>
+</html>

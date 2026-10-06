@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>bar · 柱状图 · frontend-lib</title>
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="bar.css">
+<style>
+  body { margin: 0; padding: var(--sp-7) var(--sp-5); background: var(--paper); }
+  .wrap { max-width: 46rem; margin: 0 auto; }
+  h1 { font-size: var(--fs-2xl); margin: 0 0 var(--sp-3); }
+  h2 { font-size: var(--fs-lg); margin: var(--sp-7) 0 var(--sp-3); }
+  .note {
+    padding: var(--sp-3) var(--sp-4); margin: 0 0 var(--sp-5);
+    background: var(--surface-sunken); border-radius: var(--r-sm);
+    font-size: var(--fs-sm); color: var(--text-secondary); line-height: 1.6;
+  }
+  .note code { font-family: var(--font-mono, monospace); }
+  #err {
+    margin: var(--sp-3) 0 0; padding: var(--sp-3);
+    background: var(--surface-sunken); border-radius: var(--r-sm);
+    font-size: var(--fs-sm); color: var(--danger);
+    white-space: pre-wrap;
+  }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+<h1>bar · 柱状图</h1>
+
+<p class="note">
+  按 <strong>charter 13 图表规范</strong>四条铁律实现。
+  <br>① 超量程被容器裁剪（<code>.bar</code> + <code>.bar__svg</code> 两道
+     <code>overflow:hidden</code>，缺一不可）
+  <br>② 标注只标关键点（<strong>永远 ≤ 4 个</strong>）且画在柱顶外侧
+  <br>③ <code>max</code> <strong>必填</strong>，不替调用方决定量程
+  <br>④ 判据可证伪（<code>chart-check.js</code> 覆盖本组件）
+</p>
+
+<h2>1 · 正常量程（两系列堆叠）</h2>
+<div class="bar" id="b1"></div>
+
+<h2>2 · 🔴 超量程：09-01 那根超出上限</h2>
+<p class="note">
+  这一张<b>故意</b>把 09-01 设成 0.42，而上限是 0.35 ⇒ 它会被裁到顶，
+  并标 <code>data-clipped</code> + 给出脚注。
+  <br>⚠️ 若没有那两道 <code>overflow:hidden</code>，这根柱子会
+  <b>穿透到页面其他内容上</b>（这是实机遇到过的真实问题）。
+</p>
+<div class="bar" id="b2"></div>
+
+<h2>3 · 阈值线 + 标注只标关键点</h2>
+<div class="bar" id="b3"></div>
+
+<h2>4 · 🔴 量程必填：不给 max 会直接报错</h2>
+<p class="note">
+  charter 13 铁律三：<b>量程不得自动适配</b>。
+  <br>一个 400 的异常值 + 30 个 0.35 的常态值，若 Y 轴自适应到 400
+  ⇒ 所有常态值被压成<b>一条贴底的直线</b>
+  ⇒ 读者会得出「这些天完全没有变化」的<b>错误结论</b>。
+  <br>⇒ 宁可报错，也不悄悄替调用方做决定。
+</p>
+<button class="btn" id="try">不给 max，看会发生什么</button>
+<div id="err"></div>
+
+</main>
+
+<script src="bar.js"></script>
+<script>
+(function () {
+  var LBL = ['09-01','09-02','09-03','09-04','09-05','09-06','09-07',
+             '09-08','09-09','09-10','09-11','09-12'];
+
+  /* 1 · 正常：两系列堆叠 */
+  Bar.draw({
+    host: document.getElementById('b1'),
+    max: 30,
+    height: 190,
+    labels: LBL,
+    series: [
+      { name: '夜间', values: [3, 6, 4, 5, 2, 6, 5, 7, 6, 8, 7, 9] },
+      { name: '日间', values: [5, 4, 6, 5, 7, 6, 8, 7, 9, 8, 10, 9] },
+    ],
+    ariaLabel: '每日两系列堆叠柱状图',
+  });
+
+  /* 2 · 🔴 超量程：09-01 = 0.42 超出上限 0.35 */
+  Bar.draw({
+    host: document.getElementById('b2'),
+    max: 0.35,                       /* 🔴 必填 */
+    height: 190,
+    labels: LBL,
+    series: [{
+      name: '空闲水平',
+      values: [0.42, 0.24, 0.25, 0.25, 0.24, 0.25, 0.26, 0.25,
+               0.26, 0.27, 0.26, 0.27],
+    }],
+    note: '09-01 为 0.42，超出量程上限 0.35，已按上限截断显示。',
+    ariaLabel: '每日空闲水平，第 1 天超出量程',
+  });
+
+  /* 3 · 阈值线 */
+  Bar.draw({
+    host: document.getElementById('b3'),
+    max: 25,
+    height: 190,
+    labels: LBL,
+    threshold: 1,
+    series: [{ name: '早于 09:00 的件数', values: [5, 0, 1, 0, 2, 0, 1, 0, 9, 6, 5, 7] }],
+    ariaLabel: '每日 09:00 前的事项数，含阈值线 1',
+  });
+
+  /* 4 · 演示"量程必填" */
+  document.getElementById('try').addEventListener('click', function () {
+    var box = document.getElementById('err');
+    try {
+      Bar.draw({
+        host: document.getElementById('b3'),
+        series: [{ values: [1, 2, 3] }],
+        /* 故意不给 max */
+      });
+      box.textContent = '🔴 不该走到这里';
+    } catch (e) {
+      box.textContent = '✓ 已按规范拒绝：' + e.message;
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,96 @@
+/* ============================================================================
+   skeleton — 骨架屏
+   ============================================================================
+   为什么需要它（通行系统的必备件）
+   ---------------------------------------------------------------------------
+   加载态是移动端**最高频**的状态。没有骨架屏的页面，每个业务方都会自己造一个，
+   于是：形状不统一、闪烁频率不一致、暗色下颜色不对。
+   ⭐ 参照：Ant Design Skeleton / MUI Skeleton / Vercel 的 streaming skeleton。
+
+   设计要点
+   ---------------------------------------------------------------------------
+   ① **不用 JS**：纯 CSS，`--skeleton-*` 令牌可调
+   ② **动画尊重 prefers-reduced-motion**（本库铁律，也是 WCAG 2.3.3）
+   ③ 暗色下用**令牌**而非硬编码（暗色令牌已就绪）
+   ④ 提供 3 种形状：text（多行文本）/ block（矩形块）/ circle（头像圆）
+   ============================================================================ */
+
+.skeleton {
+  display: block;
+  background: var(--skeleton-bg);
+  border-radius: var(--r-sm);
+  /* ⭐ 尺寸用令牌，方便统一调整密度 */
+  height: var(--skeleton-h, 1em);
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 形状变体 */
+.skeleton--text {
+  height: auto;
+  /* 用 padding-bottom 撑出多行文本的高度（不写死行高） */
+  padding-bottom: 0.55em;
+  margin-bottom: var(--sp-2);
+  border-radius: var(--r-xs);
+}
+.skeleton--block {
+  border-radius: var(--r-md);
+}
+.skeleton--circle {
+  border-radius: 50%;
+  width: var(--skeleton-size, 40px);
+  height: var(--skeleton-size, 40px);
+  flex: none;
+}
+
+/* 最后一行不加下边距（避免列表尾部多一块空白） */
+.skeleton--text:last-child {
+  margin-bottom: 0;
+}
+
+/* ---------------------------------------------------------------------------
+   加载中的微光动画
+   ---------------------------------------------------------------------------
+   ⚠️ 用 transform 不用 background-position —— 前者可用 transform 合成，
+      在低端机上开销明显更小。
+   ⭐ 但必须整体尊重「减少动态效果」偏好（WCAG 2.3.3）。
+   --------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      var(--skeleton-shimmer) 50%,
+      transparent 100%
+    );
+    animation: skeleton-sweep var(--skeleton-duration, 1.4s) ease-in-out infinite;
+  }
+}
+
+@keyframes skeleton-sweep {
+  100% { transform: translateX(100%); }
+}
+
+/* ⚠️ 减少动态效果：动画停掉，但骨架屏**依然存在**（用户仍知道在加载） */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after { animation: none; opacity: 0; }
+}
+
+/* ---------------------------------------------------------------------------
+   组合件：列表骨架（最常用的形态）
+   --------------------------------------------------------------------------- */
+.skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+.skeleton-list__row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}

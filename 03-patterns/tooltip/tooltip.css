@@ -1,0 +1,94 @@
+/* ============================================================================
+   tooltip.css — 文字提示（B3 /
+   ============================================================================
+   ⭐ 一条铁律：**tooltip 不承载必要信息**。
+
+     触屏设备**没有 hover** ⇒ tooltip 在手机上等于不存在。
+     ⇒ 凡是"用户必须知道"的内容，绝不能只放在 tooltip 里。
+     ⇒ 判据：tooltip 里的文字必须与触发元素的可见文字/aria-label **不重复**，
+        否则说明它承载了本该可见的信息。
+
+   另外：
+     · **键盘必须可达**（focus 时也要能出）
+     · `Esc` 必须能关（WCAG 1.4.13 Content on Hover or Focus）
+   ============================================================================ */
+
+.tooltip {
+  position: absolute;
+  z-index: var(--z-raised);
+  max-width: 260px;
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--text-primary);       /* 深色气泡（浅色主题下） */
+  color: var(--paper);
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+  border-radius: var(--r-sm);
+  /* 不写死色值：跟随主题的 --text-primary / --paper 自动反色 */
+  box-shadow: var(--shadow-2, 0 4px 12px rgba(0, 0, 0, .18));
+  /* 文字不被选中（否则会误选） */
+  user-select: none;
+  /* 淡入用透明度，不用 display（display 会让读屏读不到）*/
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 120ms var(--ease-out, ease);
+  pointer-events: none;                  /* 不挡住下面的元素 */
+}
+
+.tooltip.is-open {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ---------- 箭头（小三角，用 CSS 画，不引图片）---------- */
+.tooltip::after {
+  content: "";
+  position: absolute;
+  border: 5px solid transparent;
+}
+
+/* 四个方位：只写常用的两个（上/下），左右留给 JS 换 class */
+.tooltip--top::after {
+  top: 100%; inset-inline-start: 50%;
+  margin-inline-start: -5px;
+  border-top-color: var(--text-primary);
+}
+.tooltip--bottom::after {
+  bottom: 100%; inset-inline-start: 50%;
+  margin-inline-start: -5px;
+  border-bottom-color: var(--text-primary);
+}
+.tooltip--inset-inline-start::after {
+  inset-inline-start: 100%; top: 50%;
+  margin-top: -5px;
+  border-left-color: var(--text-primary);
+}
+.tooltip--inset-inline-end::after {
+  inset-inline-end: 100%; top: 50%;
+  margin-top: -5px;
+  border-right-color: var(--text-primary);
+}
+
+/* ---------- 暗色下气泡反过来（深底浅字）---------- */
+@media (prefers-color-scheme: dark) {
+  .tooltip {
+    background: var(--surface-raised);
+    color: var(--text-primary);
+    border: 1px solid var(--border-decor);
+  }
+  .tooltip--top::after    { border-top-color: var(--surface-raised); }
+  .tooltip--bottom::after { border-bottom-color: var(--surface-raised); }
+  .tooltip--inset-inline-start::after   { border-left-color: var(--surface-raised); }
+  .tooltip--inset-inline-end::after  { border-right-color: var(--surface-raised); }
+}
+
+/* ---------- 减弱动效：不要淡入动画 ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .tooltip { transition: none; }
+}
+
+/* ---------- 悬停显示：只对真能悬停的设备 ----------
+   🔴 触屏上 hover 会"粘住" ⇒ 触屏靠 JS 的 click/focus 触发。 */
+@media (hover: hover) and (pointer: fine) {
+  [data-tooltip]:hover + .tooltip,
+  [data-tooltip]:focus-visible + .tooltip { opacity: 1; visibility: visible; }
+}

@@ -1,0 +1,192 @@
+/* ============================================================================
+   pagination.css — 分页
+   ----------------------------------------------------------------------------
+   🔴 2026-10-04 建立。计划见 00-charter/12-基础设施实施计划.md
+   ============================================================================
+   ⭐ 依据（5 个来源口径一致：W3C APG / MDN / USWDS / Component Gallery / Mironsoft）
+   ----------------------------------------------------------------------------
+   结构（**这几条是硬要求，不是"最佳实践"**）：
+
+   1. **必须包在 `<nav>` 里**，且 `aria-label` **唯一**
+      （一个页面常常有多个 nav —— 主导航、面包屑、分页 ——
+        没有 aria-label，读屏用户分不清哪个是哪个）
+      ⚠️ **不要**把 `role="navigation"` 直接放在 `<ul>` 上
+      —— 那会**覆盖 ul 的列表语义**（Component Gallery 明确点出这是常见错误）
+
+   2. 用 **`<ul>` + `<li>`**，不要用松散的 `<a>`
+      （列表能传达"共几项"和"当前在第几项"）
+
+   3. 当前页用 **`aria-current="page"`**
+      （⚠️ **不要**用 `aria-selected` —— 那是给 tab/option/row 用的）
+
+   4. 每个页码的 `aria-label` 要**说人话**："第 4 页"而不是"4"
+      （脱离上下文时，孤零零的数字没有意义）
+
+   5. 上一页/下一页要有**明确的 aria-label**（"上一页"，不是只有箭头图标）
+      首/末页时用 **`disabled`** 标记（不是"留在 DOM 里但不工作"）
+
+   6. ⭐ **客户端翻页必须有 `aria-live="polite"`**
+      且**元素要常驻 DOM**，只改 `textContent`
+      （插入新元素的话很多读屏器**播报不出来**）
+      ⚠️ 这是 USWDS 与 Mironsoft 都强调的一条
+
+   7. 避免过大的水平间距
+      （视力/行动受限的用户可能因为"扫不到"而跳过元素）
+   ========================================================================== */
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;              /* 窄屏换行，而不是横向溢出 */
+}
+
+.pagination__list {
+  display: flex;
+  align-items: center;
+  gap: 2px;                     /* 🔴 刻意小 —— 依据第 7 条 */
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pagination__item { margin: 0; }
+
+.pagination__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--sz-touch);   /* WCAG 2.5.5 命中区 */
+  min-height: var(--sz-touch);
+  padding: 0 var(--sp-2);
+  font-size: var(--fs-sm);
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;   /* 数字等宽，小数点才能对齐 */
+  color: var(--text-primary);
+  text-decoration: none;
+  /* 🔴 2026-10-04 Owner 指出「不高级」。真因（实测）：
+     普通页 `background: transparent` + `border: transparent`
+     ⇒ 整排只剩**裸文字**，没有"按钮"的实体感。
+     通行做法（USWDS / GitHub / Stripe 一致）：
+       **普通页就给轻边框 + 极淡底**，当前页才实心。
+     ⇒ 三层视觉层级由此建立：禁用 < 普通 < 当前。 */
+  background: var(--surface);
+  border: 1px solid var(--border-decor);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;   /* iOS 点击高亮（见 tokens.css）*/
+  transition: background var(--dur-fast) var(--ease-out),
+              border-color var(--dur-fast) var(--ease-out);
+}
+
+.pagination__link:hover:not([aria-disabled="true"]):not([disabled]) {
+  background: var(--surface-sunken);
+}
+
+.pagination__link:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* --- 禁用（首/末页） --- */
+.pagination__link[aria-disabled="true"],
+.pagination__link:disabled {
+  /* 🔴 禁用态用"退到背景里"而不是纯透明 —— 半透明会让人以为还能点 */
+  color: var(--text-tertiary);
+  background: var(--surface-sunken);
+  border-color: transparent;
+  cursor: not-allowed;
+}
+
+/* --- 当前页 ---
+   🔴 2026-10-04 **放在「禁用」规则之后**（实测修 bug）：
+   原来当前页同时带 `aria-current="page"` 与 `aria-disabled="true"`，
+   而禁用规则排在其后 ⇒ **把底色覆盖成透明**，
+   实测 `background = rgba(0,0,0,0)` ⇒ 当前页根本没有底色。
+   ⚠️ 这与"引用未定义变量"是同一类陷阱：**静默失效，不报错**。
+   ⇒ 现在顺序保证当前页的底色一定生效。 */
+/* 🔴 特异度说明：当前页同时带 aria-current 与 aria-disabled，
+   与禁用规则的选择器**特异性完全相同**（都是 0,2,0）
+   ⇒ 后写的赢 ⇒ 必须用 `:not()` 排除，才不会互相覆盖。 */
+.pagination__link[aria-current="page"]:not([disabled]) {
+  /* 🔴 依据 USWDS：当前页**仍然是按钮**（不是纯文字）——
+     读屏器无论用户是"浏览"还是"Tab 焦点"都能播报当前页。 */
+  color: var(--text-on-accent);
+  background: var(--accent);
+  border-color: var(--accent);
+  font-weight: 600;
+  box-shadow: var(--lift-sm);          /* 轻微浮起 ⇒ "被选中"的实体感 */
+  cursor: default;
+  opacity: 1;                            /* 🔴 必须显式覆盖禁用态的 opacity:.5 */
+  z-index: var(--z-raised);
+}
+
+/* --- 省略号（overflow indicator） --- */
+.pagination__ellipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--sz-touch);
+  min-height: var(--sz-touch);
+  color: var(--text-tertiary);
+  font-size: var(--fs-sm);
+  user-select: none;
+}
+
+/* --- 状态文本（"共 12 页"之类） --- */
+.pagination__status {
+  margin-inline-start: auto;
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.pagination__status:empty { display: none; }
+
+/* --- 读屏专用：🔴 必须用 clip 技巧，不能用 display:none --- */
+.pagination__sr {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* 🔴 客户端翻页的播报区 —— 依据第 6 条
+   ⚠️ 必须**常驻 DOM**，只更新 textContent。
+      用 JS 新插入这个元素，很多读屏器**不会播报**。 */
+.pagination__live {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --- 窄屏：状态文本换行 --- */
+@media (max-width: 480px) {
+  .pagination__status { margin-inline-start: 0; width: 100%; }
+}
+
+/* 🔴 尊重 reduced-motion（见 charter 07） */
+@media (prefers-reduced-motion: reduce) {
+  .pagination__link { transition: none; }
+}
+
+/* ============================================================================
+   🔴 2026-10-04 触屏 hover 门控（hover-gate 门禁要求）
+   --------------------------------------------------------------------------
+   为什么必须做：`:hover` 在**触屏设备上会"粘住"** ——
+   点一下按钮，hover 状态一直保持，要点别处才消失
+   （移动端根本没有"移开鼠标"这个动作）。
+
+   正确做法：只对**真能悬停的设备**（鼠标 / 触控板）生效。
+   依据：Emil Kowalski 的设计规则（ui-benchmark-redesign 技能收录）。
+   ========================================================================== */
+@media (hover: hover) and (pointer: fine) {
+  .pagination__link:hover:not([aria-disabled="true"]):not([disabled]) { background: var(--surface-sunken); }
+}

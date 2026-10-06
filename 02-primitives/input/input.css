@@ -1,0 +1,237 @@
+/* ============================================================================
+   frontend-lib / 02-primitives / input / input.css
+   输入框 · 状态矩阵 + 无障碍
+
+   依赖：01-tokens/tokens.css
+   版本：A ✅ / B ✅ / C ✅
+
+   🔴 与 button 最大的一处不同，别照抄：
+      button 用 :focus-visible  —— 鼠标点击时不该冒出难看的框
+      input  用 :focus        —— 用户必须随时知道"我现在在哪个框里"，
+                                 不管是鼠标点进去的还是 Tab 过去的。
+      这一条搞反，表单会非常难用。
+   ========================================================================= */
+
+/* ---------------------------------------------------------------- 容器 */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+/* ---------------------------------------------------------------- label
+   🔴 label 不是装饰。没有 label 的输入框，屏幕阅读器读出来只是一句"编辑框"。
+   三种合法写法：
+     <label for="x"> + <input id="x">           ← 推荐
+     <label>包住 input</label>                   ← 也行
+     <input aria-label="x">                      ← 仅在确实不能有可见 label 时
+   placeholder 不算 label —— 它一输入就消失，且对比度通常不达标。
+   ---------------------------------------------------------------- */
+.field__label {
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: var(--lh-tight);
+}
+
+/* 必填标记。不要只靠星号颜色 —— 带上 required 属性让机器也能读。 */
+.field__req {
+  color: var(--danger);   /* 6.26 AA */
+  margin-inline-start: 2px;
+}
+
+/* ---------------------------------------------------------------- 输入框本体 */
+.field__input {
+  width: 100%;
+  box-sizing: border-box;
+
+  height: 44px;             /* 同 button，触摸目标 */
+  padding: 0 var(--sp-3);
+
+  font-family: inherit;
+  /* 🔴 16px 是硬下限，不是审美。
+     iOS Safari 在 font-size < 16px 的输入框获得焦点时会**自动放大整个页面**，
+     用户会以为页面坏了。这是移动端最常见的表单 bug。 */
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text-primary);
+
+  background: var(--surface);
+  border: 1px solid var(--border-control);   /* 3.56 达标（UI 边界需 >= 3.0） */
+  border-radius: var(--r-sm);
+
+  transition: border-color var(--dur-fast) var(--ease-out),
+              box-shadow   var(--dur-fast) var(--ease-out),
+              background-color var(--dur-fast) var(--ease-out);
+}
+
+.field__input::placeholder {
+  color: var(--text-tertiary);   /* 5.16 AA —— 占位符也要能读 */
+  opacity: 1;                    /* Firefox 默认给占位符加 opacity，会破坏对比度 */
+}
+
+/* 多行 */
+.field__input--textarea {
+  height: auto;
+  min-height: 88px;
+  padding: var(--sp-3);
+  resize: vertical;
+  line-height: var(--lh-base);
+}
+
+/* 紧凑（表格行内等鼠标场景） */
+.field__input--sm { height: 36px; font-size: 16px; 
+  /* 🔴 2026-10-04：输入框 的命中区给到 44px（WCAG 2.5.5）。
+     视觉高度不变，只是**手指落在这条带内任意位置都能命中**。 */
+  min-height: 44px;}
+
+/* ---------------------------------------------------------------- 状态：hover */
+@media (hover: hover) and (pointer: fine) {
+.field__input:hover:not(:disabled):not([readonly]) {
+  border-color: var(--text-tertiary);
+}
+}
+/* ---------------------------------------------------------------- 状态：focus
+   用 :focus 不用 :focus-visible（理由见文件头）。
+   视觉 = 边框变色 + 外圈 ring。两层是为了在深色/浅色背景下都看得清。
+   ---------------------------------------------------------------- */
+.field__input:focus {
+  outline: none;                        /* 去掉默认，用下面的自绘替代 */
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* ---------------------------------------------------------------- 状态：disabled
+   不可聚焦、值不提交、光标 not-allowed。
+   ---------------------------------------------------------------- */
+.field__input:disabled {
+  background: var(--surface-sunken);
+  color: var(--text-tertiary);
+  border-color: var(--border-decor);
+  cursor: not-allowed;
+}
+
+/* ---------------------------------------------------------------- 状态：readonly
+   🔴 和 disabled 是两回事，别混用：
+     disabled : 不可聚焦、不可复制、**值不提交**
+     readonly : 可聚焦、可选中复制、**值会提交**
+   场景：展示计算结果、展示从别处带过来的值 —— 用 readonly，让用户能复制。
+   视觉上要能区分：readonly 保持可读（正常文字色），只把底色调暗一点。
+   ---------------------------------------------------------------- */
+.field__input[readonly] {
+  background: var(--surface-sunken);
+  color: var(--text-primary);   /* 保持正常对比度，用户要读它 */
+  border-color: var(--border-decor);
+  cursor: default;
+}
+.field__input[readonly]:focus {
+  border-color: var(--text-tertiary);
+  box-shadow: 0 0 0 3px var(--surface-sunken);
+}
+
+/* ---------------------------------------------------------------- 状态：error
+   🔴 WCAG 1.4.1：不能**只靠颜色**传达信息。
+   红边框 + 错误文字 + 图标，三者至少要有两个。
+   只把边框变红 = 色盲用户完全看不出哪里错了。
+   ---------------------------------------------------------------- */
+.field__input[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+.field__input[aria-invalid="true"]:focus {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px var(--danger-bg);
+}
+
+/* 错误图标：给色盲用户的第二条线索 */
+.field__input[aria-invalid="true"] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23b3261e' stroke-width='2.5' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 8v5M12 16.5v.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--sp-3) center;
+  padding-inline-end: 40px;   /* 给图标留位，否则文字会压在图标上 */
+}
+
+/* ---------------------------------------------------------------- 辅助说明
+   放在输入框下方，比 placeholder 好 —— 它不会消失。
+   用 aria-describedby 关联到 input。
+   ---------------------------------------------------------------- */
+.field__hint {
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);   /* 5.16 AA */
+  line-height: 1.5;
+}
+
+/* ---------------------------------------------------------------- 错误提示
+   必须满足两件事：
+     1) 有 role="alert" 或 aria-live —— 动态出现时屏幕阅读器会读出来
+     2) 通过 aria-describedby 关联 —— 用户聚焦输入框时能听到"哪里错了"
+   只变红不写文字，等于对屏幕阅读器用户静默失败。
+   ---------------------------------------------------------------- */
+.field__error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-1);
+  font-size: var(--fs-xs);
+  color: var(--danger);   /* 6.26 AA */
+  line-height: 1.5;
+}
+.field__error::before {
+  content: "";
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin-top: 3px;
+  background: currentColor;
+  /* 叹号圆标 —— 给色盲用户的第二条线索 */
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 8v5M12 16.5v.5'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 8v5M12 16.5v.5'/%3E%3C/svg%3E") center/contain no-repeat;
+}
+
+/* ---------------------------------------------------------------- 成功态
+   只在"校验有明确通过语义"时用（如"该用户名可用"）。
+   普通输入框加成功态是噪音。
+
+   ⚠️ **本库没有 JS 自动加 .is-valid** —— `aria-invalid="false"` 由浏览器/你自己维护，
+      `.is-valid` 也要自己加。这条规则是给复用者的钩子，不是现成功能。
+   ---------------------------------------------------------------- */
+.field__input[aria-invalid="false"].is-valid {
+  border-color: var(--success);
+}
+
+/* ---------------------------------------------------------------- 布局变体
+   横向排列（label 在左）。窄屏自动回退为纵向。
+   ---------------------------------------------------------------- */
+.field--row {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.field--row .field__label {
+  flex: none;
+  min-width: 88px;
+}
+@media (max-width: 480px) {
+  .field--row { flex-direction: column; align-items: stretch; }
+  .field--row .field__label { min-width: 0; }
+}
+
+/* ============================================================================
+   反模式 —— 库内一律退回
+   =========================================================================
+   1. 用 placeholder 当 label
+      一输入就消失，对比度通常不达标，屏幕阅读器支持不一致。
+
+   2. 只把边框变红表示错误
+      WCAG 1.4.1 禁止只靠颜色传达信息。必须有文字 + 图标。
+
+   3. input 用 :focus-visible
+      鼠标点进去时没有视觉反馈，用户不知道光标在哪。input 用 :focus。
+
+   4. font-size < 16px
+      iOS Safari 会自动放大整个页面。
+
+   5. readonly 做成 disabled 的样子
+      用户会以为值不提交，且不能复制。
+
+   6. 错误提示没有 aria-live / 没有 aria-describedby
+      屏幕阅读器用户完全不知道错了。
+   ========================================================================= */

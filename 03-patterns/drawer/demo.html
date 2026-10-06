@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>drawer · 抽屉 · frontend-lib</title>
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/focus-ring.css">
+<link rel="stylesheet" href="../../02-primitives/button/button.css">
+<link rel="stylesheet" href="drawer.css">
+<style>
+  body { margin: 0; padding: var(--sp-7) var(--sp-5); background: var(--paper); }
+  .wrap { max-width: 44rem; margin: 0 auto; }
+  h1 { font-size: var(--fs-2xl); margin: 0 0 var(--sp-2); }
+  h2 { font-size: var(--fs-lg); margin: var(--sp-7) 0 var(--sp-3); }
+  .note {
+    padding: var(--sp-3) var(--sp-4); margin: 0 0 var(--sp-4);
+    background: var(--surface-sunken); border-radius: var(--r-sm);
+    font-size: var(--fs-sm); color: var(--text-secondary); line-height: 1.6;
+  }
+  .row { display: flex; gap: var(--sp-3); flex-wrap: wrap; }
+  .log {
+    margin-top: var(--sp-4); padding: var(--sp-3);
+    background: var(--surface-sunken); border-radius: var(--r-sm);
+    font-family: var(--mono); font-size: var(--fs-xs);
+    color: var(--text-secondary); min-height: 3.4em;
+  }
+  ul.demo-list { padding-left: var(--sp-5); color: var(--text-secondary); }
+  ul.demo-list li { margin: var(--sp-1) 0; }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+<h1>drawer · 抽屉</h1>
+<p class="note">
+  依据 <strong>APG Dialog</strong>。与对话框的差别只是「从哪进来」，
+  三条硬要求完全一样：<strong>焦点陷阱</strong>（Tab 不跑出抽屉）·
+  <code>Esc</code> 关闭 · <strong>关闭后焦点归位</strong>（回到触发按钮）。
+  <br>⚠️ 抽屉是<strong>模态</strong>：背景设 <code>inert</code>，
+  否则读屏会同时读到抽屉与背景（"双重朗读"）。
+</p>
+
+<h2>1 · 四个方向</h2>
+<div class="row">
+  <button class="btn" data-place="right">右侧</button>
+  <button class="btn" data-place="left">左侧</button>
+  <button class="btn" data-place="top">顶部</button>
+  <button class="btn" data-place="bottom">底部</button>
+</div>
+<div class="log" id="log">（关闭后会显示焦点是否归位）</div>
+
+<h2>2 · 初始焦点可指定</h2>
+<div class="row">
+  <button class="btn btn--primary" id="b2">打开（焦点落在第二个按钮）</button>
+</div>
+
+</main>
+
+<script src="drawer.js"></script>
+<script>
+(function () {
+  var log = document.getElementById('log');
+
+  var BODY = '<ul class="demo-list">' +
+    '<li>可以在这里放任意内容</li>' +
+    '<li>背景已被设成 inert（读屏不会重复读）</li>' +
+    '<li>连按 Tab 试试：焦点在抽屉里循环</li>' +
+    '<li>按 Esc 关闭，焦点会回到刚才那个按钮</li>' +
+    '</ul>';
+
+  document.querySelectorAll('[data-place]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var place = b.getAttribute('data-place');
+      var dr = Drawer.open({
+        place: place,
+        title: '从' + place + '进来的抽屉',
+        content: BODY,
+        actions: [
+          { label: '取消' },
+          { label: '确定', variant: 'primary' },
+        ],
+        onClose: function () {
+          log.textContent = '已关闭 · 焦点现在在「' +
+            (document.activeElement ? document.activeElement.textContent.trim().slice(0, 12) : '?') +
+            '」' + (document.activeElement === b ? ' ✅ 已归位' : ' 🔴 没归位');
+        },
+      });
+    });
+  });
+
+  document.getElementById('b2').addEventListener('click', function () {
+    Drawer.open({
+      place: 'right',
+      title: '初始焦点在「取消」',
+      content: BODY,
+      initialFocus: '.drawer__foot .btn:not(.btn--primary)',
+      actions: [
+        { label: '取消' },
+        { label: '确定', variant: 'primary' },
+      ],
+    });
+  });
+})();
+</script>
+</body>
+</html>

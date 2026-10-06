@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>气泡卡片 · popover</title>
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../button/button.css">
+<link rel="stylesheet" href="popover.css">
+<style>
+  body { padding: var(--sp-5) var(--sp-4) 96px; }
+  h1 { font-size: var(--fs-xl); margin: 0 0 var(--sp-2); }
+  h2 { font-size: var(--fs-lg); margin: var(--sp-7) 0 var(--sp-3); }
+  .lede { color: var(--text-secondary); margin: 0 0 var(--sp-5); }
+  .demo {
+    background: var(--surface);
+    border: 1px solid var(--border-decor);
+    border-radius: var(--r-md);
+    padding: var(--sp-4);
+    margin-bottom: var(--sp-4);
+  }
+  .row { display: flex; gap: var(--sp-3); flex-wrap: wrap; }
+  .note { font-size: var(--fs-sm); color: var(--text-secondary); margin-top: var(--sp-3); }
+  .bad-demo { background: var(--danger-bg); border-color: var(--danger); }
+  .bad { color: var(--danger); }
+  code { background: var(--surface-sunken); padding: 1px 4px; border-radius: var(--r-xs); }
+  table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+  td, th { text-align: left; padding: var(--sp-2); border-bottom: 1px solid var(--border-decor); }
+  th { font-weight: 600; }
+</style>
+</head>
+<body>
+
+<h1>气泡卡片 · popover</h1>
+<p class="lede">用户需要<strong>在里面操作</strong>，但不该被强制中断时用。</p>
+
+<h2>1 · 四个方向</h2>
+<div class="demo">
+  <div class="row">
+    <button class="btn btn--md btn--secondary" id="p1">下方</button>
+    <button class="btn btn--md btn--secondary" id="p2">上方</button>
+    <button class="btn btn--md btn--secondary" id="p3">右侧</button>
+    <button class="btn btn--md btn--secondary" id="p4">左侧</button>
+  </div>
+  <p class="note">方向用<b>逻辑方向</b>写的（<code>end</code>/<code>start</code>），所以在 RTL 下会自动镜像。</p>
+</div>
+
+<h2>2 · 可以放交互内容（这是与 tooltip 的分界）</h2>
+<div class="demo">
+  <button class="btn btn--md btn--primary" id="p5">筛选条件</button>
+  <p class="note">点开后焦点<b>直接进入</b>浮层，可以立刻操作 —— 键盘用户不用先 Tab 一路走过来。</p>
+</div>
+
+<h2>3 · 带表单的浮层</h2>
+<div class="demo">
+  <button class="btn btn--md btn--secondary" id="p6">快速改备注</button>
+</div>
+
+<h2>怎么选？</h2>
+<div class="demo">
+  <table>
+    <tr><th>组件</th><th>能放交互内容</th><th>背景是否锁死</th><th>用在哪</th></tr>
+    <tr><td><code>tooltip</code></td><td>❌ 只能纯文字</td><td>—</td><td>补充说明、术语解释</td></tr>
+    <tr><td><b><code>popover</code></b></td><td>✅</td><td><b>不锁</b></td><td>筛选、快捷设置、补充表单</td></tr>
+    <tr><td><code>dialog</code></td><td>✅</td><td><b>锁死</b></td><td>危险确认、必须处理完的事</td></tr>
+  </table>
+  <p class="note">记不住就问一句：<b>「用户需要在里面操作吗？」</b>不需要 → tooltip；需要但不打断 → popover；必须先处理完 → dialog。</p>
+</div>
+
+<h2>反例 · 不该这样用</h2>
+<div class="demo bad-demo">
+  <button class="btn btn--md btn--danger" id="bad1">删除这份报告</button>
+  <p class="note bad">
+    <b>危险操作用 popover 是错的。</b><br>
+    二次确认必须用 <code>dialog</code>（模态 + focus trap）——
+    用了 popover，背景仍可点，用户很容易"顺手点掉别的东西"。<br>
+    <b>另外：</b>popover 里只放一行说明文字也不对 —— 那是 tooltip 的活。
+  </p>
+</div>
+
+<script src="popover.js"></script>
+<script>
+/* 演示用内容。真实项目里这些 HTML 应该在服务端或模板里生成。 */
+function demo(btnId, place, html, label) {
+  var el = document.getElementById(btnId);
+  if (!el) return;
+  window.Popover.attach(el, { place: place || 'bottom', html: html, label: label || '示例' });
+}
+
+demo('p1', 'bottom',
+  '<p class="popover__title">出现在下方</p>' +
+  '<p class="popover__desc">最常用。空间不够时应该往上翻。</p>', '方向示例');
+
+demo('p2', 'top',
+  '<p class="popover__title">出现在上方</p>' +
+  '<p class="popover__desc">靠近屏幕底部时用这个方向。</p>', '方向示例');
+
+demo('p3', 'end',
+  '<p class="popover__title">出现在右侧</p>' +
+  '<p class="popover__desc">横向空间富裕时用。</p>', '方向示例');
+
+demo('p4', 'start',
+  '<p class="popover__title">出现在左侧</p>' +
+  '<p class="popover__desc">横向空间富裕时用。</p>', '方向示例');
+
+demo('p5', 'bottom',
+  '<p class="popover__title">筛选条件</p>' +
+  '<p class="popover__desc">下面这些控件在浮层里直接操作。</p>' +
+  '<div class="row" style="gap:var(--sp-2)">' +
+  '<button class="btn btn--sm btn--secondary">近 7 天</button>' +
+  '<button class="btn btn--sm btn--secondary">近 30 天</button>' +
+  '</div>' +
+  '<div class="popover__footer">' +
+  '<button class="btn btn--sm btn--ghost">取消</button>' +
+  '<button class="btn btn--sm btn--primary">应用</button>' +
+  '</div>', '筛选条件');
+
+demo('p6', 'bottom',
+  '<p class="popover__title">改备注</p>' +
+  '<p class="popover__desc">焦点打开时已经在输入框里。</p>' +
+  '<input class="input" type="text" placeholder="写点什么…" ' +
+  'style="width:100%;height:36px;padding:0 var(--sp-2);' +
+  'border:1px solid var(--border-decor);border-radius:var(--r-sm);' +
+  'background:var(--surface);color:var(--text-primary)">' +
+  '<div class="popover__footer">' +
+  '<button class="btn btn--sm btn--ghost">取消</button>' +
+  '<button class="btn btn--sm btn--primary">保存</button>' +
+  '</div>', '快速改备注');
+
+/* 反例：故意用 popover 做危险确认（不要在真实项目里这么写） */
+demo('bad1', 'bottom',
+  '<p class="popover__title">确定删除？</p>' +
+  '<p class="popover__desc">这个操作不可撤销。</p>' +
+  '<div class="popover__footer">' +
+  '<button class="btn btn--sm btn--ghost">取消</button>' +
+  '<button class="btn btn--sm btn--danger">删除</button>' +
+  '</div>', '反面示例');
+</script>
+</body>
+</html>

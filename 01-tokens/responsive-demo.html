@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>响应式 · 流体与断点</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="typography.css">
+<link rel="stylesheet" href="../02-primitives/button/button.css">
+<link rel="stylesheet" href="../02-primitives/input/input.css">
+<link rel="stylesheet" href="../02-primitives/card/card.css">
+<style>
+  body { margin: 0; background: var(--paper); color: var(--text-primary);
+         font: var(--fs-base)/var(--lh-base) system-ui, sans-serif; }
+  .wrap { max-width: var(--measure); margin: 0 auto; padding: var(--sp-5); }
+  h1 { font-size: var(--fs-2xl); line-height: var(--lh-tight); margin: 0 0 var(--sp-3); }
+  h2 { font-size: var(--fs-lg); margin: var(--sp-7) 0 var(--sp-3); }
+  p  { margin: 0 0 var(--sp-4); }
+  code { font-family: var(--mono);   /* 2026-10-03：原写死 ui-monospace，统一走令牌 */ font-size: 0.9em;
+         background: var(--surface-sunken); padding: 1px 5px; border-radius: 4px; }
+
+  /* 实时读数条 */
+  #meter { position: sticky; top: 0; z-index: var(--z-header);
+           background: var(--surface); border-bottom: 1px solid var(--border-decor);
+           padding: var(--sp-3) var(--sp-5); display: flex; gap: var(--sp-5);
+           flex-wrap: wrap; font-family: var(--mono);   /* 2026-10-03：原写死 ui-monospace，统一走令牌 */ font-size: 12px; }
+  #meter b { color: var(--accent); }
+  .ruler { height: 14px; background: repeating-linear-gradient(90deg,
+           var(--text-tertiary) 0 1px, transparent 1px 8px); opacity: .45; }
+
+  /* 断点演示：容器随宽度自动改变列数 —— 这才是断点该干的活 */
+  .auto-grid { display: grid; gap: var(--sp-4);
+               grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); }
+  .note { background: var(--warning-bg); 
+          padding: var(--sp-3) var(--sp-4); border-radius: var(--r-sm);
+          font-size: var(--fs-sm); line-height: 1.65; margin: 0 0 var(--sp-4); }
+  .fixed-demo { display: flex; gap: var(--sp-3); align-items: center; flex-wrap: wrap;
+                padding: var(--sp-4); background: var(--surface);
+                border: 1px solid var(--border-decor); border-radius: var(--r-md); }
+  .swatch { height: var(--sp-4); background: var(--accent); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div id="meter">
+  <span>视口 <b id="m-w">—</b></span>
+  <span>断点 <b id="m-bp">—</b></span>
+  <span>正文 <b id="m-base">—</b></span>
+  <span>h2 <b id="m-lg">—</b></span>
+  <span>区块间距 <b id="m-sp">—</b></span>
+  <span>按钮高 <b id="m-btn">—</b>（固定）</span>
+</div>
+
+<div class="wrap">
+
+  <h1>响应式：流体管尺寸，断点管结构</h1>
+
+  <div class="note">
+    <strong>把浏览器窗口拖窄看左边那根读数条。</strong>
+    注意最后一项：<strong>按钮高度不变</strong> —— UI 尺寸不参与流体，
+    变了会让控件在不同屏幕下大小不一、布局抖动。
+  </div>
+
+  <h2>一、该流体的：字号与间距</h2>
+  <p>
+    这段正文的字号、上下间距、容器内边距都在随视口连续变化，
+    <strong>中间没有任何断点跳变</strong>。这就是 <code>clamp()</code> 的意义 ——
+    尺寸问题用流体一次解决，不需要在每个断点里重复写一遍。
+  </p>
+  <p>
+    第二段用来说明另一件事：<code>clamp()</code> 的上下限用的是 <strong>rem</strong> 不是 px。
+    所以当你把浏览器默认字号调大（或页面缩放到 200%）时，
+    文字会跟着一起变大 —— 如果用 px 锁死上下限，用户放到 200% 也涨不上去，
+    这在 WCAG 1.4.4 里是不通过的。
+  </p>
+
+  <h2>二、不该流体的：控件尺寸</h2>
+  <div class="fixed-demo">
+    <button class="btn btn--md btn--primary">按钮</button>
+    <div class="field" style="width:180px">
+      <label class="field__label" for="fixed-1" style="font-size:var(--fs-xs)">输入框</label>
+      <input class="field__input" id="fixed-1" placeholder="拖窄看看">
+    </div>
+    <span style="font-size:var(--fs-xs); color:var(--text-tertiary)">
+      拖窄窗口——它们<strong>不会</strong>跟着变小
+    </span>
+  </div>
+  <p style="margin-top:var(--sp-4)">
+    判据很简单：<strong>这个值变了会不会导致"控件大小跟着变"？会 → 不要流体。</strong>
+    `--fs-xs` / `--fs-sm`（UI 文本）和 `--sp-1`~`--sp-3`（小间距）都属这一类。
+  </p>
+
+  <h2>三、该用断点的：布局结构</h2>
+  <p>
+    下面三张卡片的列数随宽度改变。注意这里用的是
+    <code>repeat(auto-fit, minmax(...))</code> —— 它<strong>不需要任何断点</strong>，
+    浏览器按容器实际能放几张卡就放几张。
+  </p>
+  <div class="auto-grid">
+    <div class="card card--flat"><div class="card__body">
+      <h3 class="card__title">单列</h3>
+      <p class="card__desc">窄屏时一张卡占满整行。</p></div></div>
+    <div class="card card--flat"><div class="card__body">
+      <h3 class="card__title">自动两列</h3>
+      <p class="card__desc">宽一点就自动放两张。</p></div></div>
+    <div class="card card--flat"><div class="card__body">
+      <h3 class="card__title">自动三列</h3>
+      <p class="card__desc">再宽一点放三张。<strong>中间没有断点跳变。</strong></p></div></div>
+  </div>
+
+  <h2>四、流体间距的直观效果</h2>
+  <p>下面这几条是 <code>--sp-4</code>（会流体）到 <code>--sp-8</code>：</p>
+  <div style="display:flex; flex-direction:column; gap:var(--sp-2)">
+    <div class="swatch" style="width:var(--sp-4)"></div>
+    <div class="swatch" style="width:var(--sp-5)"></div>
+    <div class="swatch" style="width:var(--sp-6)"></div>
+    <div class="swatch" style="width:var(--sp-7)"></div>
+    <div class="swatch" style="width:var(--sp-8)"></div>
+  </div>
+  <p style="margin-top:var(--sp-4)">
+    而 <code>--sp-1</code>~<code>--sp-3</code>（4/8/12px）<strong>是固定的</strong> ——
+    它们是元素内部的间距，参与缩放会让控件尺寸忽大忽小。
+  </p>
+
+  <h2>五、断点在这里</h2>
+  <p>
+    断点只留给"必须换结构"的地方。本页的断点只有一个用途：
+    读数条在窄屏换行。
+  </p>
+  <p style="font-size:var(--fs-xs); color:var(--text-secondary)">
+    断点定义在 <code>tokens.css</code>：<code>30rem / 48rem / 64rem / 80rem</code>
+    （480 / 768 / 1024 / 1280px）。
+    <strong>用 rem 不用 px</strong> —— 用户调大字号时断点跟着变，这才是对的。<br><br>
+    🔴 但 <code>clamp()</code> 和 CSS 变量<strong>都不能</strong>写进 media query 条件，
+    所以 <code>@media (min-width: 48rem)</code> 里的数值仍然是字面值 ——
+    令牌只是"文档与计算的单一出处"。
+  </p>
+
+</div>
+
+<script>
+var probe = {
+  w: document.getElementById('m-w'),
+  bp: document.getElementById('m-bp'),
+  base: document.getElementById('m-base'),
+  lg: document.getElementById('m-lg'),
+  sp: document.getElementById('m-sp'),
+  btn: document.getElementById('m-btn')
+};
+var sample = document.createElement('div');
+sample.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none';
+document.body.appendChild(sample);
+
+function px(el, prop) { return Math.round(parseFloat(getComputedStyle(el)[prop])); }
+
+function read() {
+  probe.w.textContent = window.innerWidth + 'px';
+  probe.bp.textContent =
+    window.innerWidth >= 1280 ? 'xl (80rem)' :
+    window.innerWidth >= 1024 ? 'lg (64rem)' :
+    window.innerWidth >= 768  ? 'md (48rem)' :
+    window.innerWidth >= 480  ? 'sm (30rem)' : '—';
+
+  var r = document.querySelector('.wrap');
+  sample.style.fontSize = 'var(--fs-base)';
+  probe.base.textContent = px(r, 'fontSize') + 'px';
+
+  var h2 = document.querySelectorAll('h2')[0];
+  probe.lg.textContent = px(h2, 'fontSize') + 'px';
+
+  var sp = document.querySelector('.swatch');
+  probe.sp.textContent = px(sp, 'width') + 'px';
+
+  var btn = document.querySelector('.btn');
+  probe.btn.textContent = px(btn, 'height') + 'px';
+}
+
+window.addEventListener('resize', read);
+read();
+</script>
+</body>
+</html>

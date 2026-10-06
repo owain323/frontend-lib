@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>input · 五态矩阵</title>
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="input.css">
+<!-- 下面第 5 格的 disabled 演示用到了 button 的类，必须显式引进来。
+     🔴 这个漏了 refs.py 当场抓出来：按钮会变成浏览器默认样式，页面不报错、只是静默失效。 -->
+<link rel="stylesheet" href="../button/button.css">
+<style>
+  body { margin: 0; padding: var(--sp-7) var(--sp-5); background: var(--paper);
+         color: var(--text-primary); font: var(--fs-base)/var(--lh-base) system-ui, sans-serif; }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  h1 { font-size: var(--fs-2xl); line-height: var(--lh-tight); margin: 0 0 var(--sp-2); }
+  .lede { color: var(--text-secondary); margin: 0 0 var(--sp-7); }
+  h2 { font-size: var(--fs-lg); margin: var(--sp-8) 0 var(--sp-4);
+       padding-bottom: var(--sp-2); border-bottom: 1px solid var(--border-decor); }
+  .grid { display: grid; gap: var(--sp-4); grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+  .cell { background: var(--surface); border: 1px solid var(--border-decor);
+          border-radius: var(--r-md); padding: var(--sp-5); }
+  .cell h3 { margin: 0 0 var(--sp-1); font-size: var(--fs-sm); font-weight: 500; }
+  .cell p { margin: 0 0 var(--sp-3); font-size: var(--fs-xs);
+            color: var(--text-tertiary); line-height: 1.55; }
+  code { font-family: var(--mono);   /* 2026-10-03：原为写死的 ui-monospace，统一走令牌 */ font-size: var(--fs-xs);
+         background: var(--surface-sunken); padding: 1px 5px; border-radius: 4px; }
+  .cmp { display: grid; gap: var(--sp-4); grid-template-columns: 1.55fr 1fr; }
+  @media (max-width: 620px) { .cmp { grid-template-columns: 1fr; } }
+  .cmp > div { padding: var(--sp-4); border-radius: var(--r-md); border: 1px solid var(--border-decor); }
+  .box { background: var(--surface); border: 1px solid var(--border-decor);
+         border-radius: var(--r-md); padding: var(--sp-5); }
+  .bad { background: var(--surface-sunken); } .good { background: var(--surface-sunken); }
+  .cmp h3 { margin: 0 0 var(--sp-3); font-size: var(--fs-sm); font-weight: 500; }
+  .bad h3 { color: var(--danger); } .good h3 { color: var(--success); }
+  .cmp p { font-size: var(--fs-xs); margin: var(--sp-3) 0 0; line-height: 1.6; }
+  /* 反例演示 */
+  .bad-input { width: 100%; box-sizing: border-box; height: 44px; padding: 0 var(--sp-3);
+               font-size: 14px; border: 1px solid #ccc; border-radius: var(--r-sm); }
+  .bad-input.err { border-color: red; }
+  .bad-err { color: red; font-size: 13px; }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <h1>input · 五态矩阵</h1>
+  <p class="lede">
+    输入框取五态，不是七态——<strong>input 没有 active 态</strong>，输入框不响应按压。
+  </p>
+
+  <div class="note">
+    <strong>与 button 最关键的一处不同：</strong>
+    button 用 <code>:focus-visible</code>（鼠标点击不冒框），
+    input 用 <code>:focus</code>（用户必须随时知道光标在哪）。
+    搞反了表单会非常难用。自己 Tab 一遍下面的输入框就能体会。
+  </div>
+
+  <h2>五态</h2>
+  <div class="grid">
+
+    <div class="cell">
+      <h3>1. hover</h3>
+      <p>边框加深。鼠标移上来。</p>
+      <div class="field">
+        <label class="field__label" for="d1">默认</label>
+        <input class="field__input" id="d1" placeholder="移上来">
+      </div>
+    </div>
+
+    <div class="cell">
+      <h3>2. focus</h3>
+      <p>边框变 accent + 外圈 ring。点进去或用 Tab 切过来。</p>
+      <div class="field">
+        <label class="field__label" for="d2">聚焦</label>
+        <input class="field__input" id="d2" placeholder="点我">
+      </div>
+    </div>
+
+    <div class="cell">
+      <h3>3. disabled</h3>
+      <p>不可聚焦、<strong>值不提交</strong>。试着 Tab 过去——跳过的。</p>
+      <div class="field">
+        <label class="field__label" for="d3">禁用</label>
+        <input class="field__input" id="d3" value="不可编辑" disabled>
+      </div>
+    </div>
+
+    <div class="cell">
+      <h3>4. readonly</h3>
+      <p>可聚焦、<strong>可以选中复制</strong>、值会提交。Tab 能到，试试复制这段字。</p>
+      <div class="field">
+        <label class="field__label" for="d4">只读</label>
+        <input class="field__input" id="d4" value="可以复制我" readonly>
+      </div>
+    </div>
+
+    <div class="cell">
+      <h3>5. error</h3>
+      <p>红边框 + 叹号图标 + 错误文字，<strong>三条线索</strong>。不只靠颜色。</p>
+      <div class="field">
+        <label class="field__label" for="d5">金额</label>
+        <input class="field__input" id="d5" value="abc" aria-invalid="true"
+               aria-describedby="d5-err" inputmode="decimal" name="amount-d5" autocomplete="off"/>
+        <span class="field__error" id="d5-err" role="alert">请输入有效金额</span>
+      </div>
+    </div>
+
+    <div class="cell">
+      <h3>带说明</h3>
+      <p><code>aria-describedby</code> 把说明挂到输入框，聚焦时屏幕阅读器会一起读出来。</p>
+      <div class="field">
+        <label class="field__label" for="d6">金额 <span class="field__req" aria-hidden="true">*</span></label>
+        <input class="field__input" id="d6" placeholder="0.00" aria-describedby="d6-hint" inputmode="decimal" name="amount-d6" autocomplete="off"/>
+        <span class="field__hint" id="d6-hint">最多两位小数</span>
+      </div>
+    </div>
+
+  </div>
+
+  <h2>对比：常见写法 vs 本库写法</h2>
+  <div class="cmp">
+    <div class="box bad">
+      <h3>常见写法</h3>
+      <input class="bad-input err" value="abc" aria-hidden="true" tabindex="-1">
+      <!-- 🔴 2026-10-03 加 aria-hidden。
+           这一段是**反例示范**（"常见写法：纯红 + 只有颜色"），
+           旁边的输入框已经有 aria-hidden + tabindex="-1"，
+           但这段红字漏了 ⇒ 读屏会**把一个错误的示范念出来**。
+           反例对人要可见（不能 display:none），
+           但对辅助技术应当隐藏 —— aria-hidden 正合适。 -->
+      <p class="bad-err" aria-hidden="true">格式错误</p>
+      <p>
+        <code>placeholder 当 label</code> —— 一输入就消失<br>
+        <code>只把边框变红</code> —— WCAG 1.4.1 禁止只靠颜色传达信息<br>
+        <code>font-size: 14px</code> —— iOS Safari 会自动放大整个页面<br>
+        错误文字没有 <code>aria-describedby</code> —— 屏幕阅读器读不到
+      </p>
+    </div>
+    <div class="good">
+      <h3>本库写法</h3>
+      <div class="field">
+        <label class="field__label" for="g1">金额</label>
+        <input class="field__input" id="g1" value="abc" aria-invalid="true" aria-describedby="g1-err" inputmode="decimal" name="amount-g1" autocomplete="off"/>
+        <span class="field__error" id="g1-err" role="alert">请输入有效金额</span>
+      </div>
+      <p>
+        有可见 label，不会消失<br>
+        红边框 + 图标 + 文字，三条线索<br>
+        <code>font-size: 16px</code> —— iOS 不缩放<br>
+        <code>role="alert"</code> + <code>aria-describedby</code> —— 会被读出来
+      </p>
+    </div>
+  </div>
+
+  <h2>交互演示：校验</h2>
+  <p class="small" style="max-width: var(--measure-prose); margin:0 0 var(--sp-4)">
+    这里是<strong>分层校验</strong>：逐个输入试，每种错误会得到<strong>各自对应的</strong>提示。
+    <span style="color:var(--danger)">1111aaa</span> → 「只能输入数字」·
+    <span style="font-family:var(--mono)">12.345</span> → 「最多两位小数」·
+    <span style="font-family:var(--mono)">1.2.3</span> → 「只能有一个小数点」。
+    <br>🔴 原来的实现只有一条正则 + 一句固定提示，于是不管输入什么都说「最多两位小数」——
+    提示与实际错误对不上，用户根本不知道该改什么。
+  </p>
+  <div class="cell">
+    <div class="field">
+      <label class="field__label" for="amt">金额 <span class="field__req" aria-hidden="true">*</span></label>
+      <input class="field__input" id="amt" placeholder="0.00" aria-describedby="amt-hint" inputmode="decimal" name="amount-demo" autocomplete="off"/>
+      <span class="field__hint" id="amt-hint">最多两位小数，留空点校验试试</span>
+    </div>
+    <div style="margin-top:var(--sp-4); display:flex; gap:var(--sp-3); align-items:center">
+      <button class="btn btn--sm btn--primary" id="go" style="height:44px;padding:0 var(--sp-5);
+        background:var(--accent);color:var(--text-on-accent);border:none;border-radius:var(--r-sm);cursor:pointer;
+        font-size:var(--fs-sm)">校验</button>
+      <span id="out" style="font-size:var(--fs-xs); color:var(--text-tertiary)"></span>
+    </div>
+  </div>
+
+  <h2>iOS 那条 16px 不是审美</h2>
+  <div class="note">
+    iOS Safari 在输入框 <code>font-size &lt; 16px</code> 时，用户一聚焦就<strong>自动放大整个页面</strong>，
+    而且不会自动缩回去。用户会以为页面坏了。<br><br>
+    这是移动端最常见的表单 bug，也是本库把 input 字号钉死在 16px 的唯一原因。
+    紧凑场景用 <code>--sm</code>（36px 高）但字号仍然是 16px。
+  </div>
+
+<script>
+  var inp = document.getElementById('amt');
+  var out = document.getElementById('out');
+  /* ------------------------------------------------------------------
+     金额校验：**分层判断，每层给对应的提示**
+
+     🔴 2026-10-02 修正。原实现只有一条正则 + 一条固定提示：
+
+         var ok = /^\d+(\.\d{1,2})?$/.test(v);
+         e.textContent = v === '' ? '金额不能为空' : '最多两位小数，例如 12.34';
+
+         于是 `1111aaa`、`abc`、任何不匹配的值 **全都得到同一句
+         "最多两位小数"** —— Owner 输入英文却被告诫小数位，
+         提示与实际错误对不上，用户根本不知道该改什么。
+
+     正确的顺序很重要：**先排除更根本的错误**。
+     含字母时先说"只能输入数字"，而不是先说小数位 ——
+     因为用户要先解决"有字母"这个障碍，才谈得上小数位。
+     ------------------------------------------------------------------ */
+  function validateAmount(v) {
+    if (v === '') { return '金额不能为空'; }
+    /* 第 1 层：有非数字字符（字母 / 中文 / 符号）—— 最先查这个 */
+    if (/[^\d.]/.test(v)) {
+      var bad = v.match(/[^\d.]/);
+      return '只能输入数字，' + JSON.stringify(bad[0]).replace(/"/g, '') + ' 不是有效字符';
+    }
+    /* 第 2 层：小数点超过一个 */
+    if ((v.match(/\./g) || []).length > 1) { return '只能有一个小数点'; }
+    /* 第 3 层：小数位超过两位 */
+    if (/^\d*\.\d{3,}$/.test(v)) { return '最多两位小数，例如 12.34'; }
+    /* 第 4 层：兜底（"." 或 "12." 之类的半截输入） */
+    if (!/^\d+(\.\d{1,2})?$/.test(v)) { return '格式不对，示例：12.34'; }
+    return null;   /* null = 通过 */
+  }
+
+  document.getElementById('go').addEventListener('click', function () {
+    var v = inp.value.trim();
+    var err = validateAmount(v);
+    var old = document.getElementById('amt-err');
+    if (old) old.remove();
+    if (!err) {
+      inp.setAttribute('aria-invalid', 'false');
+      inp.setAttribute('aria-describedby', 'amt-hint');
+      out.textContent = '通过';
+      out.style.color = 'var(--success)';
+    } else {
+      inp.setAttribute('aria-invalid', 'true');
+      var e = document.createElement('span');
+      e.className = 'field__error';
+      e.id = 'amt-err';
+      e.setAttribute('role', 'alert');
+      e.textContent = err;              /* 🔴 用具体的那一条，不是固定文案 */
+      inp.parentNode.insertBefore(e, inp.nextSibling);
+      inp.setAttribute('aria-describedby', 'amt-hint amt-err');
+      out.textContent = '已标红，且错误文字可被屏幕阅读器读出';
+      out.style.color = 'var(--danger)';
+    }
+  });
+</script></main>
+</body>
+</html>

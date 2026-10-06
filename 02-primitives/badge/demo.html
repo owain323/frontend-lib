@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>badge · 状态标记</title>
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../02-primitives/button/button.css">
+<link rel="stylesheet" href="../../02-primitives/badge/badge.css">
+<style>
+  .wrap { max-width: 820px; margin: 0 auto; padding: var(--sp-6) var(--sp-4); }
+  h1 { font-size: var(--fs-2xl); line-height: var(--lh-tight); margin: 0 0 var(--sp-2); }
+  .lede { color: var(--text-secondary); margin: 0 0 var(--sp-6); max-width: 60ch; }
+  h2 { font-size: var(--fs-lg); margin: var(--sp-8) 0 var(--sp-2);
+       padding-top: var(--sp-5); border-top: 1px solid var(--border-decor); }
+  .small { font-size: var(--fs-xs); color: var(--text-secondary); }
+  .row { display: flex; gap: var(--sp-2); flex-wrap: wrap; align-items: center;
+         padding: var(--sp-4) 0; }
+  .box { background: var(--surface); border: 1px solid var(--border-decor);
+         border-radius: var(--r-md); padding: var(--sp-5); }
+  .box.bad { background: var(--surface-sunken); }
+  code { font-family: var(--mono); font-size: 0.9em;
+         background: var(--surface-sunken); padding: 1px 4px; border-radius: 3px; }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <h1>badge · 状态标记</h1>
+  <p class="lede">
+    badge 承载<strong>一个短状态词</strong>（"已停牌""审计中"）。
+    它<strong>不可点</strong> —— 要能点请用 <code>&lt;button class="badge badge--clickable"&gt;</code>
+    或 <code>&lt;a&gt;</code>，语义由元素本身承担。
+  </p>
+
+  <h2>五个变体</h2>
+  <div class="row">
+    <span class="badge badge--neutral">草稿</span>
+    <span class="badge badge--success">已披露</span>
+    <span class="badge badge--warning">审计中</span>
+    <span class="badge badge--danger">已停牌</span>
+    <span class="badge badge--info">待复核</span>
+  </div>
+  <p class="small">
+    为什么是「淡底 + 深字」而不是「饱和底 + 白字」？因为 badge 只有 11–12px，
+    小字号在饱和底上对比度普遍不够。本库五组实测 4.82–6.76（浅色）· 5.25–10.59（暗色），
+    全部 ≥ 4.5，<strong>不需要为 badge 单独调一套色</strong>。
+  </p>
+
+  <h2>用在真实语境里</h2>
+  <div class="row">
+    <span class="small">600519</span>
+    <span class="badge badge--success">已披露</span>
+    <span class="small">000001</span>
+    <span class="badge badge--danger">已停牌</span>
+    <span class="small">688981</span>
+    <span class="badge badge--warning">审计中</span>
+  </div>
+  <p class="small">
+    每一枚都<strong>自带文字</strong>（WCAG 1.4.1：不能只靠颜色区分）——
+    去掉颜色也能读懂，颜色只是冗余线索。
+  </p>
+
+  <h2>两档尺寸</h2>
+  <div class="row">
+    <span class="badge badge--neutral">默认 11px</span>
+    <span class="badge badge--neutral badge--lg">较大 13px</span>
+  </div>
+  <p class="small">
+    只有两档。出现第三档说明信息密度没规划好
+    （与 <code>card</code> 的判断标准一致）。
+  </p>
+
+  <h2>反例</h2>
+  <div class="box bad">
+    <h3>反例：饱和底 + 白字</h3>
+    <div class="row">
+      <span class="badge badge--solid-success">已披露</span>
+      <span class="badge badge--solid-danger">已停牌</span>
+      <span class="badge badge--solid-warning">>审计中</span>
+    </div>
+    <p class="small">
+      看起来"更醒目"，但白字在小字号饱和底上<strong>对比度普遍不足</strong>。
+      实测（<code>contrast.py</code>）：暗色下白字在 <code>--success</code> 上只有
+      <strong>2.72:1</strong>，远低于 4.5；浅色下是 6.39 达标 ——
+      也就是说<strong>这套写法在暗色下会直接失效</strong>，而看浅色时完全发现不了。
+      并且全页面只有这三个色块时，视觉噪声远大于信息量。
+    </p>
+  </div>
+
+  <div class="box bad">
+    <h3>反例：用 badge 装可点的东西</h3>
+    <p class="small">
+      <code>&lt;div class="badge badge--info" onclick="..."&gt;待复核&lt;/div&gt;</code>
+      —— div 加 onclick 对读屏是<strong>「没有角色的按钮」</strong>：
+      读不出来它是能点的，键盘也 Tab 不到。
+      要能点就用 <code>&lt;button&gt;</code> 或 <code>&lt;a&gt;</code>，样式照抄 <code>.badge</code>。
+    </p>
+  </div>
+
+  <h2>强制高对比模式</h2>
+  <p class="small">
+    Windows 的高对比模式会覆盖底色。本组件在
+    <code>@media (forced-colors: active)</code> 下把边框换成
+    <code>currentColor</code> —— <strong>靠边框保住边界，不靠底色</strong>。
+    这一段无法在本机验证（需要系统级开关）。
+  </p>
+</main>
+</body>
+</html>

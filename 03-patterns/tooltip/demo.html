@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>tooltip · 文字提示 · frontend-lib</title>
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/focus-ring.css">
+<link rel="stylesheet" href="../../02-primitives/button/button.css">
+<link rel="stylesheet" href="tooltip.css">
+<style>
+  body { margin: 0; padding: var(--sp-7) var(--sp-5); background: var(--paper); }
+  .wrap { max-width: 42rem; margin: 0 auto; }
+  h1 { font-size: var(--fs-2xl); margin: 0 0 var(--sp-2); }
+  h2 { font-size: var(--fs-lg); margin: var(--sp-7) 0 var(--sp-3); }
+  .note {
+    padding: var(--sp-3) var(--sp-4); margin: 0 0 var(--sp-4);
+    background: var(--surface-sunken); border-radius: var(--r-sm);
+    font-size: var(--fs-sm); color: var(--text-secondary); line-height: 1.6;
+  }
+  .row { display: flex; gap: var(--sp-4); flex-wrap: wrap; align-items: center; }
+  .pad { padding: var(--sp-9) 0; }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+<h1>tooltip · 文字提示</h1>
+<p class="note">
+  ⛔ <strong>tooltip 不承载必要信息</strong> —— 触屏没有 hover，
+  只放在 tooltip 里的内容等于不存在。
+  <br>✅ 键盘 focus 也会出 · <code>Esc</code> 能关 · 用
+  <code>aria-describedby</code> 关联（不是 aria-label：那个是「名字」）。
+</p>
+
+<h2>1 · 键盘可达（Tab 聚焦即出）</h2>
+<div class="row pad">
+  <button class="btn" id="b1">悬停/聚焦我</button>
+  <span class="btn btn--ghost" id="b2" tabindex="0">可聚焦的说明文字</span>
+</div>
+
+<h2>2 · 四个方位</h2>
+<div class="row pad">
+  <button class="btn" id="p-top">上方</button>
+  <button class="btn" id="p-bottom">下方</button>
+  <button class="btn" id="p-left">左侧</button>
+  <button class="btn" id="p-right">右侧</button>
+</div>
+
+<h2>3 · 🔴 错误示范：把必要信息只放在 tooltip 里</h2>
+<p class="note">
+  下面这个按钮的 tooltip 文字是「删除」，与按钮可见文字完全相同
+  ⇒ 说明它<strong>没有提供额外信息</strong>，只是重复 ⇒ 应该删掉 tooltip，
+  或改成真正的补充说明。
+  <br>契约里有一条判据专门抓这个（<code>tooltip 不承载必要信息</code>）。
+</p>
+<div class="row pad">
+  <button class="btn" id="bad" data-bad-example="1">删除</button>
+</div>
+
+<h2>4 · 正确示范：补充说明</h2>
+<div class="row pad">
+  <button class="btn" id="good">导出 CSV</button>
+</div>
+
+</main>
+
+<script src="tooltip.js"></script>
+<script>
+(function () {
+  Tooltip.attach(document.getElementById('b1'), '这是补充说明：点击后会进入批量模式');
+  Tooltip.attach(document.getElementById('b2'), '聚焦也会出现，不必依赖鼠标');
+  Tooltip.attach(document.getElementById('p-top'), '出现在上方', 'top');
+  Tooltip.attach(document.getElementById('p-bottom'), '出现在下方', 'bottom');
+  Tooltip.attach(document.getElementById('p-left'), '出现在左侧', 'left');
+  Tooltip.attach(document.getElementById('p-right'), '出现在右侧', 'right');
+  /* 🔴 反例：tooltip 文字 = 按钮可见文字 ⇒ 没有额外信息 */
+  Tooltip.attach(document.getElementById('bad'), '删除');
+  /* ✅ 正例：提供了额外信息 */
+  Tooltip.attach(document.getElementById('good'), '导出当前筛选结果，含表头；UTF-8 编码');
+})();
+</script>
+</body>
+</html>

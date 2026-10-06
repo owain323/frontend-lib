@@ -1,0 +1,258 @@
+/* ============================================================================
+   frontend-lib / 03-patterns / states / states.css
+   容器四态：empty / loading / error / success
+
+   依赖：01-tokens/tokens.css
+   版本：A ✅ / B ✅ / C ✅
+
+   🔴 为什么四态必须分开做：
+      加载中和"没有数据"在视觉上都是"一片空白"，但含义完全相反 ——
+      前者是"在动"，后者是"没东西"。混成一个，用户会以为系统坏了。
+      这是 demo 和线上页面最容易露怯的一处。
+
+      四态的共同要求：每一态都必须告诉用户**下一步能做什么**。
+      只描述现状不给出口，等于把用户卡死。
+   ========================================================================= */
+
+/* ---------------------------------------------------------------- 基类 */
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  padding: var(--sp-8) var(--sp-5);
+  text-align: center;
+  min-height: 200px;
+}
+
+.state__icon {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  margin-bottom: var(--sp-2);
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-pill);
+  background: var(--surface-sunken);
+  color: var(--text-tertiary);
+}
+
+.state__title {
+  margin: 0;
+  font-size: var(--fs-md);
+  font-weight: 500;
+  line-height: var(--lh-tight);
+  color: var(--text-primary);
+}
+
+.state__desc {
+  margin: 0;
+  max-width: 42ch;          /* 说明文字要限制行长，否则在大屏上会拉成一条 */
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  line-height: var(--lh-base);
+}
+
+/* 🔴 动作区不是可选装饰，是四态存在的理由。
+   empty 没有动作 = 用户不知道怎么开始
+   error 没有动作 = 死路，只能刷新页面 */
+.state__action {
+  margin-top: var(--sp-3);
+  display: flex;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ============================================================================
+   1. empty —— 没有数据
+   =========================================================================
+   必须三件事：说明为什么是空的 / 消除用户的自责 / 给出下一步
+   ------------------------------------------------------------------------ */
+.state--empty .state__icon {
+  background: var(--surface-sunken);
+  color: var(--text-tertiary);
+}
+
+/* empty 的说明要写"为什么空"，不是只写"没有数据"。
+   "还没有导入任何公司" 比 "暂无数据" 有用得多。 */
+
+/* ============================================================================
+   2. loading —— 加载中
+   =========================================================================
+   两种形态，按结构是否已知选：
+
+   skeleton（骨架屏）：结构已知 —— 知道会有标题+两行文字+一张图
+   spinner        ：结构未知 —— 不知道会来什么
+
+   🔴 别在结构未知时用骨架屏，那是在撒谎：画出来的结构跟实际不一致，
+      内容到位时布局会剧烈跳动。
+   ------------------------------------------------------------------------ */
+.state--loading {
+  /* 没有图标和标题的复杂布局，只放一个指示 */
+  gap: var(--sp-3);
+}
+
+/* spinner */
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2.5px solid var(--border-control);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spinner-rotate 700ms linear infinite;
+}
+@keyframes spinner-rotate { to { transform: rotate(360deg); } }
+
+/* ---------------------------------------------------------------- 骨架屏
+   骨架屏的价值不在"好看"，在于**内容到位时不跳动**。
+   所以骨架的形状必须尽量贴合真实内容的结构和尺寸。
+   ---------------------------------------------------------------- */
+.skeleton {
+  /* 装饰性色，不参与对比度检查（它不承载文字）。
+     🔴 2026-10-03 改为令牌：原值 #ece8de/#f5f2ea 是**硬编码的浅米色**，
+     暗色模式下会是两块刺眼的白块 —— 与 --text-on-accent 同类问题：
+     **写死颜色 = 主题切换时必然失效。** */
+  --sk-base: var(--surface-sunken);
+  --sk-hi:   var(--border-decor);
+
+  background: var(--sk-base);
+  border-radius: var(--r-sm);
+  position: relative;
+  overflow: hidden;
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg,
+              transparent 0%, var(--sk-hi) 50%, transparent 100%);
+  transform: translateX(-100%);
+  animation: skeleton-sweep 1.4s ease-in-out infinite;
+}
+@keyframes skeleton-sweep {
+  to { transform: translateX(100%); }
+}
+
+.skeleton--text   { height: 1em; margin-block: 0.35em; border-radius: 4px; }
+.skeleton--title  { height: 1.4em; width: 60%; }
+.skeleton--avatar { width: 40px; height: 40px; border-radius: var(--r-pill); }
+.skeleton--block  { height: 120px; }
+/* 最后一行短一点，看起来更像真实段落 */
+.skeleton--text:last-child { width: 70%; }
+
+/* 骨架屏的"闪屏"问题：请求在 300ms 内返回时，骨架屏闪一下反而更糟。
+   正确做法是延迟 300ms 再显示 loading 态。
+
+   ⚠️ **这里只提供 CSS 能力，本库没有 JS 实现它。**
+      使用者需要自己写：`setTimeout(function(){ el.classList.add('is-shown') }, 300)`
+      —— 定时器到点才显示，没到就保持隐藏（骨架屏"至少闪一下"被消掉）。
+
+   🔴 2026-10-03 修正注释：原文写「由 JS 在超时后加 .is-shown」，
+      **读起来像本库已经实现了** —— 但全库没有任何 JS 加过这个类。
+      这类"看起来实现了其实没有"最危险：会让人以为少写 JS 也能用。
+      demo 也没有演示这一态。 */
+.state--delayed { visibility: hidden; }
+.state--delayed.is-shown { visibility: visible; }
+
+/* ============================================================================
+   3. error —— 出错
+   =========================================================================
+   🔴 error 态必须可恢复。只写"出错了"是死路，用户只能刷新页面，
+      而刷新往往解决不了问题（比如参数错了）。
+
+   三件事：说清出了什么事 / 说清是不是用户的错 / 给重试或返回的出口
+   ------------------------------------------------------------------------ */
+.state--error .state__icon {
+  background: var(--danger-bg);
+  color: var(--danger);   /* 6.26 AA */
+}
+.state--error .state__title { color: var(--danger); }
+
+/* 技术细节（错误码、堆栈）单独折叠，别混进主文案。
+   用户要看的是"我该怎么办"，不是"NullPointerException"。 */
+.state__detail {
+  margin-top: var(--sp-3);
+  font-family: var(--mono);   /* 2026-10-03：原为写死的 ui-monospace，统一走令牌 */
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  background: var(--surface-sunken);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-sm);
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+/* ============================================================================
+   4. success —— 成功
+   =========================================================================
+   🔴 success 是**过渡态**，不是停留态。
+   容器级 success 只在"这一步彻底结束"时出现（提交完成、支付完成），
+   并且必须给出口：下一步去哪。
+
+   普通操作的成功反馈用 button 的 .is-success（1.2s 自动消失），
+   不要用容器级 success —— 那会把一个瞬间反馈做成一个页面。
+   ------------------------------------------------------------------------ */
+/* 🔴 2026-10-03 删除 .state--success
+   理由：**它自己的注释就写着"不要用容器级 success"**，
+   却把样式留在文件里 —— 这是最坏的一种：
+   注释说别用，CSS 却摆在那里，读者只会看到"有这个能力"。
+   瞬时反馈用 button 的 .is-success（1.2s 自动消失）。
+   ⇒ 要"落盘即用"的成功态，就该有一个真会被用到的类，
+   而不是一个明确标注"别用"的。 */
+
+/* ============================================================================
+   无障碍
+   =========================================================================
+   1) loading 容器要标 aria-busy="true"
+   2) error / success 动态出现时用 role="alert" 或 aria-live="polite"，
+      否则屏幕阅读器用户完全不知道状态变了
+   3) 骨架屏是纯装饰，标 aria-hidden="true" —— 不然会被读成一堆无意义的色块
+   ------------------------------------------------------------------------ */
+
+/* ============================================================================
+   reduced-motion 的两种不同处理 —— 这里的区别很重要
+   =========================================================================
+   spinner : **保留但放慢**。它停了用户会以为页面卡死。
+             reduced-motion 针对的是大幅位移（前庭功能障碍），原地旋转不属于此类。
+
+   skeleton: **可以停**。静态的占位块仍然传达"这里有内容正在来"，
+             去掉扫光不损失信息，而扫光恰好是横向位移 —— 正是要减少的那类。
+
+   同样是"加载中的动画"，一个保留一个去掉，判断依据是**去掉后是否损失信息**。
+   ========================================================================= */
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 1.2s !important;   /* 放慢，保留 */
+  }
+  .skeleton::after {
+    animation: none;                        /* 停止扫光，保留静态占位 */
+    transform: none;
+  }
+}
+
+/* ============================================================================
+   反模式
+   =========================================================================
+   1. empty 和 loading 用同一个样式
+      用户分不清是"在加载"还是"真没有"。
+
+   2. empty 态不放动作按钮
+      "暂无数据" 四个字把用户卡死在那儿。
+
+   3. error 态没有重试出口
+      只能刷新页面，而刷新常常解决不了问题。
+
+   4. 结构未知时用骨架屏
+      画出来的结构跟实际不一致，内容到位时布局剧烈跳动。
+
+   5. 请求 <300ms 也显示骨架屏
+      闪一下，比不显示更糟。要延迟显示。
+
+   6. 把普通操作的成功做成整页 success
+      成功是过渡态。用 button 的 .is-success。
+
+   7. 骨架屏不标 aria-hidden
+      屏幕阅读器会把它读成一堆无意义内容。
+   ========================================================================= */

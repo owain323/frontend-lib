@@ -1,0 +1,162 @@
+/* ============================================================================
+   frontend-lib / 03-patterns / list / list.css
+   列表：行布局 + 增删动画的样式支撑
+
+   依赖：01-tokens/tokens.css  +  02-primitives/button/button.css
+   版本：A ✅ / B ✅ / C ✅
+
+   配套：flip.js（增删动画，零依赖）
+   规范：00-charter/05-品味规范.md（不堆卡片、每屏一个焦点、用真实数据）
+   ========================================================================= */
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--border-decor);
+}
+
+.list__item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4) var(--sp-3) calc(var(--sp-4) - 2px);
+
+  /* 🔴 hover 不跳动的关键：左侧线用 transparent **预留位**，
+     hover 时只改颜色。
+     如果用 border-left: 2px solid transparent 然后改成 3px，或者
+     hover 时才加 border —— 内容会横移 1~2px，这就是"列表在抖"。 */
+  border-inset-inline-start: 2px solid transparent;
+  border-bottom: 1px solid var(--border-decor);
+
+  transition: background-color var(--dur-fast) var(--ease-out),
+              border-left-color var(--dur-fast) var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+.list__item:hover {
+  background: var(--surface-sunken);
+  border-left-color: var(--border-decor-str);
+}
+}
+/* 🔴 行内操作可聚焦时，整行给反馈。
+   只在 :focus-within（焦点进入行内）时给，不给整行加 tabindex ——
+   那样 Tab 会为每一行多停一次，键盘用户要按几十次才能穿过列表。 */
+.list__item:focus-within {
+  background: var(--surface-sunken);
+  border-left-color: var(--accent);
+}
+
+/* 键盘 Tab 时行内按钮的焦点环（不加会看不见） */
+.list__actions .btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* ---------------------------------------------------------------- 主信息 */
+.list__main { flex: 1; min-width: 0; }   /* min-width:0 防长内容撑破 */
+
+.list__title {
+  display: block;
+  font-size: var(--fs-sm);
+  color: var(--text-primary);
+  /* 长公司名截断而不是换行 —— 换行会让行高跳变，破坏列表节奏 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.list__meta {
+  display: block;
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------- 数值列
+   🔴 涨跌色遵循中文用户习惯：**红涨绿跌**，与欧美相反。
+      这里不做"国际统一"，因为使用者是中国 A 股用户。 */
+.list__value {
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+.list__value--up   { color: var(--danger); }    /* 涨 = 红 */
+.list__value--down { color: var(--success); }  /* 跌 = 绿 */
+
+/* ---------------------------------------------------------------- 行内操作
+   默认隐藏：键盘用 focus-within 显示，鼠标用 hover 显示。
+   🔴 但**不要用 display:none** —— 那会让操作从 tab 顺序消失。
+      正确做法是保持可聚焦（opacity / visibility 都要配合）。 */
+.list__actions {
+  display: flex;
+  gap: var(--sp-2);
+  flex: none;
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+.list__item:hover .list__actions,
+.list__item:focus-within .list__actions { opacity: 1; }
+}
+/* ============================================================================
+   窄屏：次信息换行，数值列右对齐
+   ========================================================================= */
+@media (max-width: 34rem) {
+  .list__item {
+    flex-wrap: wrap;
+    row-gap: var(--sp-1);
+  }
+  .list__actions { width: 100%; opacity: 1; }   /* 触屏没有 hover，必须常显 */
+}
+
+/* ============================================================================
+   排序时的一行提示（可选）
+   ========================================================================= */
+.list__note {
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  padding: var(--sp-2) var(--sp-4);
+}
+
+/* ============================================================================
+   reduced-motion
+   =========================================================================
+   位移/颜色过渡全部关闭。
+   🔴 FLIP 的进出场动画在 JS 里已整体跳过（prefers-reduced-motion 判定），
+      这里关掉的是 hover 等常规微交互 —— 两者是不同层次，别漏。
+   ========================================================================= */
+@media (prefers-reduced-motion: reduce) {
+  .list__item,
+  .list__actions { transition: none; }
+}
+
+/* ============================================================================
+   反模式
+   =========================================================================
+   1. hover 时加 border / 改 padding
+      内容会横移 1~2px，列表"在抖"。正确做法：border 用 transparent 预留位，
+      hover 只改颜色。
+
+   2. 整行加 tabindex="0"
+      Tab 会为每一行多停一次。键盘用户穿过 20 行要按 20 次 Tab。
+      行内操作本身可聚焦就够了，用 :focus-within 给整行反馈。
+
+   3. 行内操作用 display:none / visibility:hidden
+      从 tab 顺序消失，键盘用户永远到不了"删除"按钮。
+      用 opacity + hover/focus-within 控制可见性。
+
+   4. 长文本直接换行
+      行高跳变，列表节奏被打乱。用 ellipsis 截断，完整内容走 title 属性。
+
+   5. 涨跌色按欧美习惯（绿涨红跌）
+      🔴 中国的 A 股用户习惯是**红涨绿跌**。做反了会被当成出错。
+
+   6. 窄屏仍然隐藏行内操作
+      触屏没有 hover，操作会彻底消失。窄屏必须常显。
+
+   7. 引入 auto-animate 这类库只为了做"增删时其余项平滑移动"
+      8 KB 换 40 行能做的事，还要承担协议尽调与供应链风险。见 flip.js 头部。
+   ========================================================================= */

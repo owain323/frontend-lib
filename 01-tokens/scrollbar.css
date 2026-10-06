@@ -1,0 +1,174 @@
+/* ============================================================================
+   scrollbar.css — 滚动条（全局基础设施 ·
+   ----------------------------------------------------------------------------
+   🔴 2026-10-04 建立。计划见 00-charter/12-基础设施实施计划.md
+   ============================================================================
+   ⭐ 依据（5 个权威来源口径一致）
+   ----------------------------------------------------------------------------
+   · **CSS Scrollbars Level 1（W3C，2018）**
+       scrollbar-width / scrollbar-color / scrollbar-gutter
+       兼容性：Chrome 121+ · Firefox 64+ · Safari 18.2+（2024-12 转正）
+   · **`::-webkit-scrollbar` 伪元素族**（Chromium / WebKit 专属）
+       **唯一能给 thumb 加圆角与 hover 的方式**
+       ⚠️ Firefox **完全不支持** ⇒ 两套必须都写
+   · **WCAG 1.4.11 非文本对比**：thumb 对 track **≥ 3:1**
+   · **WCAG 2.5.5 目标大小**：滚动条拇指可拖动区不宜过小
+
+   ⚠️ **移动端为什么不写 iOS 专用样式**
+   iOS Safari 会**忽略**自定义滚动条样式，且滚动条只在滑动时短暂出现
+   ⇒ 写了也是白写，还会多几百字节。
+   ⇒ **在移动端克制**，把功夫花在桌面与平板上。
+
+   ⚠️ **为什么不全局 `*` 强制**
+   代码块、横向卡片、下拉内部都有自己的滚动语境，
+   全局一刀切会把它们也改掉 ⇒ 反而更乱。
+   ⇒ 做法：**令牌 + 工具类**，由使用者显式挂。
+   ========================================================================== */
+
+/* ============================================================================
+   一、标准属性（打底）
+   Firefox 与新版 Chrome / Safari 都认这三行。
+   ⚠️ 放在最前面 —— 后面被厂商伪元素**增强**（Chromium 里伪元素优先级更高）。
+   ========================================================================== */
+
+/* 页面的纵向滚动条 */
+html {
+  scrollbar-width: thin;                 /* auto | thin | none */
+  scrollbar-color: var(--scrollbar-thumb) transparent;  /* thumb  track */
+}
+
+/* 🔴 工具类：需要稳定滚动容器的区域挂这个
+   —— `gutter: stable` **预先占位**，滚动条出现时内容不会横向跳。
+   ⚠️ 这正是动态列表（某项目 / 某项目 踩过的坑）最需要的一条。 */
+.scroll-y {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;     /* iOS 惯性滚动（旧版 WebView 需要）*/
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+  scrollbar-gutter: stable;              /* 🔴 防横向跳变 */
+}
+
+.scroll-x {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+  scrollbar-gutter: stable;
+}
+
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+/* ============================================================================
+   二、厂商伪元素（增强：圆角 + hover）
+   Chromium / WebKit 专属。Firefox 会整段忽略 —— 这正是我们要标准打底的原因。
+   ========================================================================== */
+
+html::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+
+html::-webkit-scrollbar-track {
+  /* 🔴 track 透明：轨道代表"没有内容的区域"，画出来等于视觉噪声 */
+  background: transparent;
+}
+
+/* 🔴 关键技巧：用 `border` 而不是 `margin` 给 thumb 让出内边距
+   —— border 的颜色与 track 相同 ⇒ 视觉上就是"缩进"，而实际可拖动区没变小。 */
+html::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border: 3px solid transparent;         /* = size − 滑块厚度 */
+  background-clip: content-box;          /* ← 关键：让 border 真正"陷进去" */
+  border-radius: var(--scrollbar-radius);
+}
+
+html::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hov);
+  background-clip: content-box;
+}
+
+/* 去掉默认箭头按钮（现代设计都不要）*/
+html::-webkit-scrollbar-button {
+  display: none;
+}
+
+/* 角落：两轴交汇处。透明才不出现一小块方形色块 */
+html::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.scroll-y::-webkit-scrollbar,
+.scroll-x::-webkit-scrollbar,
+.scroll-thin::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+
+.scroll-y::-webkit-scrollbar-track,
+.scroll-x::-webkit-scrollbar-track,
+.scroll-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scroll-y::-webkit-scrollbar-thumb,
+.scroll-x::-webkit-scrollbar-thumb,
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border: 3px solid transparent;
+  background-clip: content-box;
+  border-radius: var(--scrollbar-radius);
+}
+
+.scroll-y::-webkit-scrollbar-thumb:hover,
+.scroll-x::-webkit-scrollbar-thumb:hover,
+.scroll-thin::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hov);
+  background-clip: content-box;
+}
+
+.scroll-y::-webkit-scrollbar-button,
+.scroll-x::-webkit-scrollbar-button,
+.scroll-thin::-webkit-scrollbar-button {
+  display: none;
+}
+
+.scroll-y::-webkit-scrollbar-corner,
+.scroll-x::-webkit-scrollbar-corner,
+.scroll-thin::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* --- 次要场景：代码块等用更细的 --- */
+.scroll-thin::-webkit-scrollbar { width: var(--scrollbar-size-thin); }
+.scroll-thin::-webkit-scrollbar-thumb { border-width: 2px solid transparent; }
+
+/* ============================================================================
+   三、移动端：只保留惯性滚动，不做外观定制
+   ----------------------------------------------------------------------------
+   ⚠️ iOS 会忽略 ::-webkit-scrollbar 的全部外观声明。
+   ⚠️ 真正需要的是**惯性滚动**（已在上面的 .scroll-y 里给了）。
+   ⚠️ 这里**刻意不写媒体查询** —— iOS 会忽略外观声明，
+      写了既是白写，也让人以为"漏做了"。真正需要的惯性滚动已在上面给了。
+   ========================================================================== */
+
+/* ============================================================================
+   🔴 2026-10-04 触屏 hover 门控（hover-gate 门禁要求）
+   --------------------------------------------------------------------------
+   为什么必须做：`:hover` 在**触屏设备上会"粘住"** ——
+   点一下按钮，hover 状态一直保持，要点别处才消失
+   （移动端根本没有"移开鼠标"这个动作）。
+
+   正确做法：只对**真能悬停的设备**（鼠标 / 触控板）生效。
+   依据：Emil Kowalski 的设计规则（ui-benchmark-redesign 技能收录）。
+   ========================================================================== */
+@media (hover: hover) and (pointer: fine) {
+  html::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hov);
+  background-clip: content-box; }
+
+  .scroll-y::-webkit-scrollbar-thumb:hover,
+.scroll-x::-webkit-scrollbar-thumb:hover,
+.scroll-thin::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hov);
+  background-clip: content-box; }
+}

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>switch · 开关</title>
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../02-primitives/switch/switch.css">
+<style>
+  .wrap { max-width: 820px; margin: 0 auto; padding: var(--sp-6) var(--sp-4); }
+  h1 { font-size: var(--fs-2xl); line-height: var(--lh-tight); margin: 0 0 var(--sp-2); }
+  .lede { color: var(--text-secondary); margin: 0 0 var(--sp-6); max-width: 60ch; }
+  h2 { font-size: var(--fs-lg); margin: var(--sp-8) 0 var(--sp-2);
+       padding-top: var(--sp-5); border-top: 1px solid var(--border-decor); }
+  .small { font-size: var(--fs-xs); color: var(--text-secondary); }
+  .row { display: flex; gap: var(--sp-5); flex-wrap: wrap; padding: var(--sp-4) 0;
+         align-items: center; }
+  .box { background: var(--surface); border: 1px solid var(--border-decor);
+         border-radius: var(--r-md); padding: var(--sp-5); }
+  .box.bad { background: var(--surface-sunken); }
+  code { font-family: var(--mono); font-size: 0.9em;
+         background: var(--surface-sunken); padding: 1px 4px; border-radius: 3px; }
+  .state { font-family: var(--mono); font-size: var(--fs-xs);
+           color: var(--text-secondary); }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <h1>switch · 开关</h1>
+  <p class="lede">
+    开关用于<strong>立即生效的设置项</strong>（"开/关通知"）。
+    它与 checkbox 的差别不是形状，是<strong>语义</strong> ——
+    读屏会播报「开关，已开启」而不是「复选框，已勾选」。
+  </p>
+
+  <h2>基本用法</h2>
+  <div class="row">
+    <span class="switch">
+      <input class="switch__input" type="checkbox" role="switch" id="s1">
+      <span class="switch__track"><span class="switch__thumb"></span></span>
+      <label class="switch__label" for="s1">开启动价推送</label>
+    </span>
+    <span class="state" id="st1">当前：<b>开</b></span>
+  </div>
+
+  <h2>只有滑块（文字视觉隐藏，语义保留）</h2>
+  <div class="row">
+    <span class="switch">
+      <input class="switch__input" type="checkbox" role="switch" id="s2" checked>
+      <span class="switch__track"><span class="switch__thumb"></span></span>
+      <label class="switch__label switch__label--sr" for="s2">暗色模式</label>
+    </span>
+    <span class="small">看起来只有一个滑块，但读屏仍会念「暗色模式，开关，已开启」</span>
+  </div>
+
+  <h2>两档尺寸</h2>
+  <div class="row">
+    <span class="switch">
+      <input class="switch__input" type="checkbox" role="switch" id="s3">
+      <span class="switch__track"><span class="switch__thumb"></span></span>
+      <label class="switch__label" for="s3">默认 22px</label>
+    </span>
+    <span class="switch switch--lg">
+      <input class="switch__input" type="checkbox" role="switch" id="s4" checked>
+      <span class="switch__track"><span class="switch__thumb"></span></span>
+      <label class="switch__label" for="s4">较大 28px</label>
+    </span>
+  </div>
+
+  <h2>禁用态</h2>
+  <div class="row">
+    <span class="switch">
+      <input class="switch__input" type="checkbox" role="switch" id="s5" disabled>
+      <span class="switch__track"><span class="switch__thumb"></span></span>
+      <label class="switch__label" for="s5">不可用（未开通）</label>
+    </span>
+  </div>
+
+  <h2>键盘行为（APG Switch Pattern）</h2>
+  <div class="box">
+    <p>
+      <strong>Space 切换 —— 这是唯一能切换的键。</strong><br>
+      <strong>Enter 不切换</strong>（button 默认行为会切，但 switch 不是 button）。
+    </p>
+    <p class="small">
+      本组件用<strong>原生 checkbox</strong> 实现，所以浏览器天然只响应 Space ——
+      <strong>不需要写 JS 去拦 Enter</strong>，也就不会有"忘拦"的风险。
+      这是"用原生控件"最大的收益：<strong>无障碍行为免费且必然正确</strong>。
+    </p>
+  </div>
+
+  <h2>反例</h2>
+  <div class="box bad">
+    <h3>反例：用 div + role="switch"，自己管所有状态</h3>
+    <p class="small">
+      常见写法是 <code>&lt;div role="switch" tabindex="0" onclick="..."&gt;</code>，
+      然后手写 <code>aria-checked</code> 切换。这需要自己处理：
+      Space 键、焦点样式、状态播报。<strong>三件事漏一件就坏</strong>，
+      而且测试工具（axe）只看得见 DOM，看不见你的 JS 有没有绑对。
+    </p>
+  </div>
+
+  <div class="box bad">
+    <h3>反例：给 label 加 display:none</h3>
+    <p class="small">
+      为了"只留滑块"而把 <code>&lt;label&gt;</code> 隐藏掉，
+      开关就<strong>失去了可点击的文字区域</strong>，也失去了语义名字 ——
+      读屏只会念「开关」，不知道它是干什么的。
+      正确做法是 <code>.switch__label--sr</code>：视觉隐藏，语义保留。
+    </p>
+  </div>
+</main>
+<script>
+  // 仅为 demo：显示当前状态（组件本身零 JS）
+  ['s1'].forEach(function (id) {
+    var el = document.getElementById(id);
+    var out = document.getElementById('st1');
+    function sync() { out.innerHTML = '当前：<b>' + (el.checked ? '开' : '关') + '</b>'; }
+    el.addEventListener('change', sync);
+  });
+</script>
+</body>
+</html>

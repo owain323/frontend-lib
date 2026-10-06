@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>table · 数据表格 · frontend-lib</title>
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../02-primitives/button/button.css">
+<link rel="stylesheet" href="../../01-tokens/focus-ring.css">
+<link rel="stylesheet" href="table.css">
+<style>
+  body { margin: 0; padding: var(--sp-7) var(--sp-5); background: var(--paper); }
+  .wrap { max-width: 52rem; margin: 0 auto; }
+  h1 { font-size: var(--fs-2xl); margin: 0 0 var(--sp-2); }
+  h2 { font-size: var(--fs-lg); margin: var(--sp-7) 0 var(--sp-3); }
+  .note {
+    padding: var(--sp-3) var(--sp-4); margin: 0 0 var(--sp-4);
+    background: var(--surface-sunken); border-radius: var(--r-sm);
+    font-size: var(--fs-sm); color: var(--text-secondary); line-height: 1.6;
+  }
+  .toolbar { display: flex; gap: var(--sp-2); margin: 0 0 var(--sp-3); flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+<h1>table · 数据表格</h1>
+<p class="note">
+  三条硬要求：<strong>粘性表头</strong>（横向滚动也知道列名）·
+  <strong>数字列右对齐 + 等宽数字</strong>（能竖着比大小）·
+  <strong>空 / 加载 / 出错三态齐全</strong>。
+</p>
+
+<h2>1 · 常规（排序 + 粘性表头 + 数字列）</h2>
+<div class="toolbar">
+  <button class="btn btn--sm" data-state="ready">常规</button>
+  <button class="btn btn--sm" data-state="loading">加载态</button>
+  <button class="btn btn--sm" data-state="empty">空态</button>
+  <button class="btn btn--sm" data-state="error">出错态</button>
+  <button class="btn btn--sm btn--primary" id="sortBtn">按营收排序</button>
+</div>
+<div id="host"></div>
+
+<h2>2 · 窄屏（横向滚动，表头仍固定）</h2>
+<div class="table" id="wide"></div>
+
+</main>
+
+<script>
+(function () {
+  var COLS = [
+    { key: 'name',  label: '公司',   type: 'text' },
+    { key: 'rev',   label: '营收',   type: 'num'  },
+    { key: 'cost',  label: '成本',   type: 'num'  },
+    { key: 'margin',label: '毛利率', type: 'num'  },
+    { key: 'yoy',   label: '同比',   type: 'num'  },
+    { key: 'src',   label: '数据源', type: 'text' },
+  ];
+
+  var DATA = [
+    { name: '贵州茅台', rev: 150560, cost:  21980, margin: 0.854, yoy: 0.163, src: '年报' },
+    { name: '宁德时代', rev: 400900, cost: 305400, margin: 0.238, yoy: 0.104, src: '年报' },
+    { name: '比亚迪',   rev: 602315, cost: 481852, margin: 0.200, yoy: 0.243, src: '年报' },
+    { name: '招商银行', rev: 339123, cost:  96320, margin: 0.716, yoy: 0.008, src: '季报' },
+    { name: '美的集团', rev: 373700, cost: 289000, margin: 0.227, yoy: 0.093, src: '年报' },
+    { name: '五粮液',   rev:  83272, cost:  18620, margin: 0.776, yoy: 0.129, src: '年报' },
+  ];
+
+  var host = document.getElementById('host');
+  var sortKey = null, sortDir = 1;
+
+  function fmt(v, t) {
+    if (t === 'num') {
+      if (Math.abs(v) < 1) return (v * 100).toFixed(1) + '%';
+      return v.toLocaleString('zh-CN');
+    }
+    return v;
+  }
+
+  function cls(v, t) {
+    if (t !== 'num') return '';
+    if (v > 0) return 'num num--pos';
+    if (v < 0) return 'num num--neg';
+    return 'num';
+  }
+
+  function render(state) {
+    if (state === 'loading') {
+      host.innerHTML = '<div class="table"><div class="table__loading" role="status" ' +
+        'aria-live="polite" aria-label="正在加载数据">' +
+        '<div class="table__bar"></div><div class="table__bar"></div>' +
+        '<div class="table__bar"></div></div></div>';
+      return;
+    }
+    if (state === 'empty') {
+      host.innerHTML = '<div class="table"><div class="table__empty">' +
+        '<p>当前筛选条件下没有数据。</p>' +
+        '<button class="btn btn--sm">清除筛选条件</button></div></div>';
+      return;
+    }
+    if (state === 'error') {
+      host.innerHTML = '<div class="table"><div class="table__error" role="alert">' +
+        '<p>数据加载失败：接口返回 503。</p>' +
+        '<button class="btn btn--sm">重试</button></div></div>';
+      return;
+    }
+
+    var rows = DATA.slice();
+    if (sortKey) {
+      rows.sort(function (a, b) { return (a[sortKey] - b[sortKey]) * sortDir; });
+    }
+
+    var h = '<div class="table"><table><caption class="table__cap" ' +
+      'style="caption-side:top;text-align:left;padding:var(--sp-2) var(--sp-3);' +
+      'font-size:var(--fs-xs);color:var(--text-tertiary)">A 股样例数据 · 单位：万元</caption>' +
+      '<thead><tr>';
+    COLS.forEach(function (c) {
+      var ariaSort = '';
+      if (sortKey === c.key) {
+        ariaSort = ' aria-sort="' + (sortDir === 1 ? 'ascending' : 'descending') + '"';
+      }
+      h += '<th scope="col"' + ariaSort + '>' +
+           '<button class="table__sort" data-key="' + c.key + '">' + c.label + '</button></th>';
+    });
+    h += '</tr></thead><tbody>';
+
+    rows.forEach(function (r) {
+      h += '<tr>';
+      COLS.forEach(function (c) {
+        if (c.type === 'num') {
+          h += '<td class="' + cls(r[c.key], 'num') + '">' + fmt(r[c.key], 'num') + '</td>';
+        } else {
+          h += '<td>' + r[c.key] + '</td>';
+        }
+      });
+      h += '</tr>';
+    });
+    h += '</tbody></table></div>';
+    host.innerHTML = h;
+
+    host.querySelectorAll('.table__sort').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var k = b.getAttribute('data-key');
+        if (sortKey === k) { sortDir = -sortDir; }
+        else { sortKey = k; sortDir = 1; }
+        render('ready');
+      });
+    });
+  }
+
+  document.querySelectorAll('[data-state]').forEach(function (b) {
+    b.addEventListener('click', function () { render(b.getAttribute('data-state')); });
+  });
+  document.getElementById('sortBtn').addEventListener('click', function () {
+    sortKey = 'rev'; sortDir = -sortDir; render('ready');
+  });
+
+  render('ready');
+
+  /* 第二张：列更多，演示横向滚动 + 表头仍固定 */
+  var many = ['公司','代码','营收','成本','毛利率','同比','环比','ROE','负债率','数据源'];
+  var w = '<div class="table table--compact"><table><thead><tr>';
+  many.forEach(function (m) {
+    w += '<th scope="col">' + m + '</th>';
+  });
+  w += '</tr></thead><tbody>';
+  DATA.forEach(function (r) {
+    w += '<tr><td>' + r.name + '</td><td>' + r.name.slice(0,2) + '</td>' +
+         '<td class="num">' + r.rev.toLocaleString('zh-CN') + '</td>' +
+         '<td class="num">' + r.cost.toLocaleString('zh-CN') + '</td>' +
+         '<td class="num">' + (r.margin*100).toFixed(1) + '%</td>' +
+         '<td class="num num--pos">' + (r.yoy*100).toFixed(1) + '%</td>' +
+         '<td class="num num--neg">-1.2%</td>' +
+         '<td class="num">31.4%</td>' +
+         '<td class="num">19.8%</td>' +
+         '<td>' + r.src + '</td></tr>';
+  });
+  w += '</tbody></table></div>';
+  document.getElementById('wide').innerHTML = w;
+})();
+</script>
+</body>
+</html>

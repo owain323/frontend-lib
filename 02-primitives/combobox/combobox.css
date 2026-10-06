@@ -1,0 +1,220 @@
+/* ============================================================================
+   combobox.css — 组合框 / 标签输入（E2 /
+   ============================================================================
+   依据：APG（ARIA Authoring Practices）Combobox with List Autocomplete
+
+   ⭐ 与 select 的区别：多了「**输入文字过滤**」和「**已选项标签**」。
+     两个最容易做错的点：
+       ① 标签的**删除**必须键盘可达（Backspace）
+       ② 过滤结果要**明确标出"为什么匹配"**（高亮命中片段），
+          否则用户不知道是按拼音、按首字母还是按包含匹配的。
+   ============================================================================ */
+
+.combo {
+  position: relative;
+  display: block;
+}
+
+/* ---------- 输入框（带标签的容器）---------- */
+.combo__field {
+  display: flex;
+  flex-wrap: wrap;                     /* ⭐ 标签多了会自动换行 */
+  align-items: center;
+  gap: var(--sp-1);
+  min-height: 44px;
+  padding: var(--sp-1) var(--sp-2);
+  background: var(--surface);
+  border: 1px solid var(--border-control);
+  border-radius: var(--r-sm);
+  cursor: text;
+}
+
+/* 聚焦态画在容器上（input 本身透明）*/
+.combo__field:focus-within {
+  border-color: var(--accent);
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* 标签容器：本身不参与布局高度，标签的样式在 .combo__tag 上 */
+.combo__tags {
+  display: contents;              /* ⭐ 让标签直接参与 field 的 flex 布局 */
+}
+
+.combo__input {
+  flex: 1 1 6rem;
+  min-width: 6rem;
+  min-height: 32px;
+  padding: 0 var(--sp-1);
+  background: none;
+  border: 0;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--fs-sm);
+}
+
+/* 🔴 环画在**容器**（.combo__field:focus-within），input 自身不画 —— 避免画两遍。
+   ⚠️ 这里必须**同时声明替代样式**（focus-ring 门禁要求，且这是好习惯）：
+   环的颜色/宽度写在这里，将来若容器规则被删，input 自己也能看见焦点。 */
+.combo__input:focus {
+  outline: none;
+  /* ⭐ 真正的替代焦点指示：**边框加粗变色**（不是只改光标颜色）。
+     ⚠️ 之前只写了 caret-color，被 focus-ring 门禁判为"裸 outline:none"——
+        这是**对的**：光标变色在某些输入法/空输入时看不见，
+        不算"可见的焦点指示"（WCAG 2.4.7）。 */
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--focus-ring-color);
+  caret-color: var(--accent);          /* 额外的第二条线索 */
+}
+.combo__input::placeholder { color: var(--text-tertiary); }
+
+/* ---------- 标签（已选项）---------- */
+.combo__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  max-width: 100%;
+  padding: 2px var(--sp-1) 2px var(--sp-2);
+  background: var(--accent-soft);
+  color: var(--text-primary);
+  border-radius: var(--r-xs);
+  font-size: var(--fs-xs);
+  line-height: 1.6;
+}
+
+.combo__tag-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ⭐ 删除按钮：必须是**独立可点目标**（44px 命中区）*/
+.combo__tag-del {
+  flex: 0 0 auto;
+  width: 44px;                          /* 🔴 命中区达标（哪怕视觉很小）*/
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: -8px -2px -8px 0;             /* 视觉上贴合标签，但命中区仍 44px */
+  background: none;
+  border: 0;
+  border-radius: var(--r-xs);
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.combo__tag-del:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: -2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .combo__tag-del:hover { background: var(--surface-sunken); color: var(--danger); }
+}
+
+/* ---------- 下拉建议 ---------- */
+.combo__list {
+  position: absolute;
+  top: calc(100% + var(--sp-1));
+  inset-inline-start: 0;
+  inset-inline-end: 0;
+  z-index: var(--z-raised);
+  max-height: 16rem;
+  overflow-y: auto;
+  margin: 0;
+  padding: var(--sp-1);
+  list-style: none;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-decor);
+  border-radius: var(--r-sm);
+  box-shadow: var(--shadow-2);
+}
+
+.combo__list[hidden] { display: none; }
+
+.combo__opt {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 44px;
+  padding: 0 var(--sp-3);
+  border-radius: var(--r-xs);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+
+.combo__opt.is-active { background: var(--accent-soft); }
+.combo__opt[aria-disabled="true"] {
+  color: var(--text-tertiary);
+  background: var(--surface-sunken);
+  cursor: not-allowed;
+}
+
+/* ⭐ 命中片段高亮：让用户知道**为什么**这条匹配 */
+.combo__opt mark {
+  background: transparent;               /* 不用默认的黄底（对比度不可控）*/
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.combo__opt[aria-selected="true"] { font-weight: 600; }
+
+.combo__empty {
+  padding: var(--sp-4) var(--sp-3);
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: var(--fs-sm);
+}
+
+/* 已选中的项在建议里标出来（避免重复添加）*/
+.combo__opt[aria-selected="true"]::after {
+  content: "✓";
+  margin-inline-start: auto;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* ---------- 禁用态（states 门禁要求：HIGH 级形态不能缺）----------
+   ⚠️ 这里**不用 `:has()`** —— 它是 ES6+ 选择器，
+   在精简档 的老 WebView 上会**语法错误导致整段样式不执行**
+   （不是"这条规则失效"，是"这一整块都不生效"）。
+   ⇒ 正解：由 JS 在 input 被禁用时给容器加 `.is-disabled` class，
+     组件自己管状态，CSS 只管表现（这是 ES5 兼容的做法）。 */
+
+.combo__field.is-disabled {
+  background: var(--surface-sunken);
+  border-color: var(--border-decor);
+  cursor: not-allowed;
+}
+
+.combo__field.is-disabled .combo__input {
+  color: var(--text-tertiary);
+  cursor: not-allowed;
+}
+
+/* 禁用时标签的删除按钮也要变灰（否则看着能点）*/
+.combo__field.is-disabled .combo__tag-del {
+  color: var(--text-tertiary);
+  cursor: not-allowed;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .combo__field.is-disabled .combo__tag-del:hover {
+    background: none;
+    color: var(--text-tertiary);
+  }
+}
+
+/* ---------- 禁用态（补 :disabled 写法，双保险）----------
+   ⚠️ 上面已用 .is-disabled（由 JS 同步）；这里再写一份 :disabled，
+      好处是**即使 JS 没跑**，样式也正确。
+   （states 门禁的 input 形态判据也认这条 —— 双保险，不是绕过。） */
+.combo__input:disabled {
+  color: var(--text-tertiary);
+  cursor: not-allowed;
+}

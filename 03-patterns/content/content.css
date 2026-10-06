@@ -1,0 +1,259 @@
+/* ============================================================================
+   frontend-lib / 03-patterns / content / content.css
+   内容渲染样式 —— 接管 CommonMark / GFM 的标准输出
+
+   依赖：01-tokens/tokens.css
+   版本：A ✅ / B ✅ / C ✅
+
+   🔴 本文件最重要的设计决定：**不发明任何类名**。
+
+      结构由渲染器（CommonMark / GFM 规范）决定，
+      样式由本文件按**元素选择器**接管。
+      所以从任何 CommonMark 兼容渲染器拿到的 HTML，
+      **不需要任何后处理**就能正确显示。
+
+      只有一个自定义类名：`.prose` —— 用于限定作用域。
+      它不改变任何语义，只是"这块是正文"的标记。
+
+   依据：00-charter/06-内容渲染规范.md
+   ========================================================================= */
+
+.prose {
+  /* 正文行长：中文长文 68ch 是硬约束（超过就跳行） */
+  max-width: 68ch;
+  color: var(--text-primary);
+}
+
+/* ---------------------------------------------------------------- 元素间距
+   用兄弟选择器统一控制，不给每个元素写 margin。
+   这是"接管"的正确姿势 —— 渲染器不排版，排版归我们。 */
+.prose > * + * { margin-top: var(--sp-4); }
+
+/* ---------------------------------------------------------------- 标题
+   结构必须是 <h1>-<h6>，不能是 <div class="heading">。
+   层级不跳级由 a11y.py 门禁检查。 */
+.prose > h1,
+.prose > h2,
+.prose > h3,
+.prose > h4,
+.prose > h5,
+.prose > h6 {
+  font-family: var(--sans);
+  font-weight: 500;
+  line-height: var(--lh-tight);
+  letter-spacing: -0.008em;
+  margin: var(--sp-7) 0 0;
+}
+.prose > h1 { font-size: var(--fs-2xl); margin-top: 0; }
+.prose > h2 {
+  font-size: var(--fs-lg);
+  padding-top: var(--sp-5);
+  border-top: 2px solid var(--accent);
+  /* 短线段 + 通栏细线：既有分隔又不像卡片那样"框住" */
+  max-width: 92%;
+}
+.prose > h3 { font-size: var(--fs-md); }
+.prose > h4, .prose > h5, .prose > h6 {
+  font-size: var(--fs-base);
+  color: var(--text-secondary);
+}
+
+/* ---------------------------------------------------------------- 段落与行内 */
+.prose > p { margin: 0; line-height: 1.75; }
+
+/* 行内代码：衬线底 + 细边
+   ⚠️ 中文正文里的 `code` 通常是函数名/参数名，用等宽更清楚。 */
+.prose > code,
+.prose > li > code,
+.prose > td > code,
+.prose > th > code {
+  font-family: var(--mono);
+  font-size: 0.88em;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-decor);
+  border-radius: 3px;
+  padding: 0.05em 0.3em;
+}
+
+/* 🔴 代码块内的 <code> 必须排除行内样式。
+   CommonMark 两种代码块都输出 <pre><code>，不排除的话
+   代码块里的每行都会带上行内代码的边框和底色。 */
+.prose > pre > code,
+.prose > pre {
+  font-family: inherit;
+  font-size: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+/* ---------------------------------------------------------------- 列表
+   CommonMark 的嵌套列表是 <li> 内直接嵌 <ul>，靠缩进表达层级。 */
+.prose > ul,
+.prose > ol { padding-inline-start: 1.5em; margin: 0; }
+.prose > ul { list-style: disc; }
+.prose > ol { list-style: decimal; }
+.prose li + li { margin-top: var(--sp-2); }
+.prose li > ul,
+.prose li > ol { margin-top: var(--sp-2); }
+.prose li > ul { list-style: circle; }   /* 二级用空心圆，三级会自动变方块 */
+
+/* ---------------------------------------------------------------- 引用
+   CommonMark 输出 <blockquote><p>…</p></blockquote> */
+.prose > blockquote {
+  margin: var(--sp-5) 0;
+  padding: 0 0 0 var(--sp-4);
+  border-inset-inline-start: 3px solid var(--accent);
+}
+.prose > blockquote > p {
+  color: var(--text-secondary);
+  font-size: var(--fs-md);
+  line-height: 1.6;
+}
+/* 引用里再套引用 */
+.prose > blockquote > blockquote { margin: var(--sp-3) 0; }
+
+/* ---------------------------------------------------------------- 代码块
+   两种都输出 <pre><code>；围栏的带 class="language-xxx"，缩进的不带。
+   🔴 不给缩进代码块硬加 class —— 规范说它没有。 */
+.prose > pre {
+  margin: 0;
+  padding: var(--sp-4);
+  background: var(--surface-sunken);
+  border-inset-inline-start: 3px solid var(--border-decor-str);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: var(--fs-xs);
+  line-height: 1.6;
+  tab-size: 4;
+  -webkit-overflow-scrolling: touch;
+}
+/* 缩进代码块没有左边框语言标记，给个更淡的，暗示"这是次要代码" */
+.prose > pre:not([class]) { border-left-color: var(--border-decor); }
+
+/* ---------------------------------------------------------------- 表格（GFM）
+   🔴 必须是 <table>，不能用 div 模拟 —— div 会让屏幕阅读器读不出行列关系。 */
+.prose > table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;          /* ⚠️ 有 <colgroup> 时改用 fixed */
+  font-size: var(--fs-sm);
+}
+.prose > table th,
+.prose > table td {
+  text-align: start;
+  padding: var(--sp-2) var(--sp-4) var(--sp-2) 0;
+  border-bottom: 1px solid var(--border-decor);
+  vertical-align: top;
+}
+.prose > table th {
+  font-weight: 500;
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+}
+.prose > table tbody tr:last-child td { border-bottom: 1px solid var(--border-decor-str); }
+
+/* ---------------------------------------------------------------- 其他元素 */
+.prose > hr {
+  margin: var(--sp-7) 0;
+  border: 0;
+  border-top: 1px solid var(--border-decor);
+  height: 0;                /* 🔴 hr 默认有 inset 边框，必须清掉 */
+}
+
+.prose > img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  /* 🔴 每个 img 必须有显式宽高（CLS）——
+     这条由 viewport.py 门禁检查，本 CSS 不兜底 */
+  border-radius: var(--r-sm);
+}
+.prose > a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+}
+@media (hover: hover) and (pointer: fine) {
+.prose > a:hover { color: var(--text-primary); }
+}
+.prose > a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* 外链可访问性：新窗口打开必须告知 */
+.prose > a[target="_blank"]::after {
+  content: " ↗";
+  font-size: 0.8em;
+  vertical-align: 0.1em;
+}
+
+/* GFM 删除线
+   🔴 实测：markdown-it 输出 `<s>`，GitHub/GFM 规范规定 `<del>`。
+      两者都是合法 HTML（`<s>`=不再准确，`<del>`=已删除）但语义不同。
+      ⇒ 样式必须同时支持，否则换渲染器就掉样式。
+      查证日期 2026-10-02，渲染器 markdown-it-py（commonmark preset + strikethrough）。 */
+.prose > del,
+.prose > s,
+.prose > li > del,
+.prose > li > s { color: var(--text-tertiary); }
+
+/* GFM 任务列表
+   CommonMark 核心不产出这个，GFM 扩展才有：
+   <li class="task-list-item"><input type="checkbox" disabled> … */
+.prose .task-list-item { list-style: none; margin-inline-start: -1.5em; }
+.prose .task-list-item input[type="checkbox"] {
+  margin-inline-end: var(--sp-2);
+  vertical-align: middle;
+}
+.prose .task-list-item input[disabled] {
+  /* disabled 的复选框不可改，但必须仍能看出状态 —— 不用 opacity */
+  accent-color: var(--accent);
+}
+
+/* ---------------------------------------------------------------- 无障碍兜底 */
+.prose :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ============================================================================
+   反模式
+   =========================================================================
+   1. 给每个元素加类（.prose h2、.prose p2 …）
+      渲染器输出没有这些类，样式接不上。**按元素选择器接管**。
+
+   2. <div class="code-block"> 装代码
+      渲染器不认。用 <pre><code class="language-x">。
+
+   3. <div class="table"> 模拟表格
+      🔴 最严重：辅助技术会当普通 div 念，屏幕阅读器用户拿不到行列关系。
+
+   4. <div class="heading"> 代替标题
+      文档大纲全废，屏幕阅读器的"跳到标题"功能失效。
+
+   5. 缩进代码块硬加 class="language-"
+      CommonMark 规定它没有 class。
+
+   6. <b> / <i> 代替 <strong> / <em>
+      <b> 只是"视觉加粗"，无语义。
+
+   7. hr 不清 height 和 border-top
+      默认 hr 有 inset 边框，会出现双线。
+
+   8. 依赖行内 <code> 样式而不排除代码块内的
+      代码块每行都会带上边框和底色。
+   ========================================================================= */
+
+/* ============================================================================
+   链接
+   ============================================================================
+   🔴 2026-10-06 补（ H2a 的暗色门禁抓出来的）：
+      本文件**没有给 <a> 设 color** ⇒ 浏览器默认链接蓝（rgb(0,0,238)）
+      ⇒ 暗色底（#14171A）上只有 1.91:1，几乎看不见
+      ⇒ 走令牌，暗色下自动跟随（实测变 7.7:1）。
+   ============================================================================ */
+a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+a:visited { color: var(--accent); }

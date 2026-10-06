@@ -1,0 +1,157 @@
+/* ============================================================================
+   Tabs — 标签页（APG: Tabs Pattern）
+   ============================================================================
+   🔴 键盘契约（照抄 Radix / APG，不是我的设计）
+   ------------------------------------------------
+       Tab          焦点进入 tab 组时，落在**当前选中**的 tab 上；
+                    在 tab 上再按 Tab ⇒ 走到**面板内容**
+       ArrowRight   下一个 tab（并激活）
+       ArrowLeft    上一个 tab（并激活）
+       ArrowDown    下一个 tab（纵向时）
+       ArrowUp      上一个 tab（纵向时）
+       Home         第一个 tab（并激活）
+       End          最后一个 tab（并激活）
+
+   🔴 roving tabindex：一组 tab 里**只有一个**是 `tabindex="0`，
+      其余是 `tabindex="-1"`。
+   为什么要这样：否则 Tab 键会**逐个穿过所有 tab**（一排 5 个 tab 要按 5 次 Tab）。
+   roving 让整组只占**一个 Tab 停靠点**，组内用方向键移动 ——
+   这是 APG 的要求，也是"键盘用户效率"的关键。
+
+   🔴 激活方式有两种（Radix 叫 activationMode）
+   ------------------------------------------------
+       automatic（默认）  方向键移动即切换面板
+       manual            方向键只移动焦点，需按 Enter/Space 才切
+
+   本组件**默认 automatic**（多数场景够用），
+   加 `.tabs--manual` 变成手动 —— 面板内容重时用（避免读屏不停播报）。
+   ========================================================================= */
+
+.tabs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+/* 手动激活模式
+   🔴 2026-10-03 补上真实差异（不是补一条空规则凑数）。
+   `.tabs--manual` 是**行为开关**（tabs.js 读它决定方向键要不要切面板）——
+   之前它只存在于 JS 与文档里、CSS 一个字都没有 ⇒ `refs` 门禁报「class 未定义」。
+
+   为什么给它视觉差异：
+     自动模式下，方向键移动 = 面板**立刻**切换，用户需要一眼看出现在是哪个；
+     手动模式下，面板要按 Enter 才切，**选中项与"当前显示"可能不一致** ——
+     这时反而**不该**太强调，否则会误导"面板已经切了"。
+
+   ⇒ 手动模式：选中项**不加深色、不加粗**，只保留底部强调线。
+      这是诚实：还没生效的事，不该看起来已经生效。 */
+.tabs--manual .tabs__tab[aria-selected="true"] {
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tabs--manual .tabs__tab[aria-selected="true"]:hover {
+    color: var(--text-primary);
+  }
+}
+
+/* ---- tab 组（那一排） */
+.tabs__list {
+  display: flex;
+  gap: var(--sp-1);
+  border-bottom: 1px solid var(--border-decor);
+  position: relative;
+}
+
+/* 纵向变体 */
+.tabs--vertical {
+  flex-direction: row;
+  gap: var(--sp-4);
+}
+
+.tabs--vertical .tabs__list {
+  flex-direction: column;
+  border-bottom: 0;
+  border-inset-inline-end: 1px solid var(--border-decor);
+}
+
+/* ---- 单个 tab */
+.tabs__tab {
+  appearance: none;
+  background: none;
+  border: 0;
+  /* 负 margin 让 tab 的下边框与 tablist 的重叠，选中时"接管"那条线 */
+  margin-bottom: -1px;
+  padding: var(--sp-3) var(--sp-4);
+  font: inherit;
+  font-size: var(--fs-base);
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color var(--dur-fast) var(--ease-out),
+              border-color var(--dur-fast) var(--ease-out);
+  white-space: nowrap;
+}
+
+.tabs--vertical .tabs__tab {
+  margin-bottom: 0;
+  margin-inline-end: -1px;
+  border-bottom: 0;
+  border-inset-inline-end: 2px solid transparent;
+  text-align: start;
+}
+
+/* 选中态 */
+.tabs__tab[aria-selected="true"] {
+  color: var(--text-primary);
+  font-weight: 600;
+  border-bottom-color: var(--accent);
+}
+
+.tabs--vertical .tabs__tab[aria-selected="true"] {
+  border-right-color: var(--accent);
+}
+
+/* 🔴 hover 门控：触屏上"点一下"会先点亮 hover 再 click ⇒ 粘住不褪 */
+@media (hover: hover) and (pointer: fine) {
+  .tabs__tab:not([aria-disabled="true"]):hover {
+    color: var(--text-primary);
+    background: var(--surface-sunken);
+  }
+}
+
+.tabs__tab[aria-disabled="true"] {
+  color: var(--text-tertiary);
+  cursor: not-allowed;
+}
+
+/* 🔴 焦点环：tab 是 button，用 :focus-visible（鼠标点击不该出环） */
+.tabs__tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;      /* 往内，避免被 tablist 裁掉 */
+  border-radius: var(--r-sm) var(--r-sm) 0 0;
+}
+
+/* ---- 面板 */
+.tabs__panel {
+  padding: var(--sp-4) 0;
+}
+
+.tabs__panel[hidden] {
+  display: none;              /* 🔴 必须是 display:none
+                                  hidden 属性在某些 CSS 重置下会被覆盖 */
+}
+
+/* 动画（可选）：只做淡入，不做高度动画 ——
+   高度动画需要 JS 测量，且在 reduced-motion 下要能被关掉 */
+@media (prefers-reduced-motion: no-preference) {
+  .tabs__panel--enter {
+    animation: tabs-fade var(--dur-base) var(--ease-out);
+  }
+}
+
+@keyframes tabs-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}

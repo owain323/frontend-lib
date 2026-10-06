@@ -1,0 +1,170 @@
+/* ============================================================================
+   table.css — 数据表格（B1 /
+   ============================================================================
+   ⭐ 某项目 最需要的组件：几百行财务数据，没它就没法看。
+
+   三条硬要求（缺一就不算"能上线"）：
+     ① **粘性表头**：横向滚动时必须知道"这一列是什么"
+     ② **数字列右对齐 + tabular-nums**：不对齐的数字没法竖着比大小
+     ③ **空 / 加载 / 出错三态齐全**：只画表格的组件，一半场景没法用
+
+   ⚠️ 不做虚拟滚动（那是独立）——
+     本组件的定位是「结构正确 + 状态齐全 + 粘性可用」，
+     行数上限交给调用方判断（> 200 行请配合分页或虚拟滚动）。
+   ============================================================================ */
+
+.table {
+  position: relative;
+  overflow: auto;                    /* 横向滚动容器 */
+  max-height: var(--table-max-h, 70vh);
+  background: var(--surface);
+  border: 1px solid var(--border-decor);
+  border-radius: var(--r-md);
+  /* ⚠️ 圆角 + overflow:auto 会让 sticky 表头的角上露白
+     ⇒ 表头自带背景色，不透明，问题自然消失 */
+}
+
+.table table {
+  width: 100%;
+  border-collapse: separate;         /* 🔴 sticky 需要 separate（不是 collapse）*/
+  border-spacing: 0;
+  font-size: var(--fs-sm);
+}
+
+/* ---------- ① 粘性表头 ---------- */
+.table thead th {
+  /* 🔴 position:sticky 必须配 border-collapse:separate，否则浏览器里不生效 */
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);          /* 走令牌，不写死 */
+  background: var(--surface-raised);
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-align: start;
+  white-space: nowrap;
+  padding: var(--sp-2) var(--sp-3);
+  border-bottom: 1px solid var(--border-decor);
+}
+
+/* 排序按钮：表头可点排序时用它 */
+.table__sort {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  min-height: 32px;                  /* 表头内可点区（不是 44，见 README 说明）*/
+  padding: 0 var(--sp-1);
+  margin: 0 calc(-1 * var(--sp-1));
+  background: none;
+  border: 0;
+  border-radius: var(--r-xs, 3px);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* 🔴 2026-10-05 修正：原来 fallback 写死了 `#1b4d8f`（被 contract-kit 抓到）
+   ⇒ 换主题时这个环不会跟着变。
+   ⇒ 焦点环令牌定义在 01-tokens/focus-ring.css：
+        --focus-ring-width / --focus-ring-offset / --focus-ring-color(=var(--accent))
+   ⇒ 直接用令牌，**不给 fallback**（缺令牌时要能立刻发现，而不是悄悄变蓝）。 */
+.table__sort:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* 排序指示符：三态必须**同时**用形状 + 颜色表达（WCAG 1.4.1）*/
+.table__sort::after {
+  content: "↕";                      /* 未排序：上下双向箭头 */
+  opacity: .45;
+  font-size: .9em;
+}
+
+.table__sort[aria-sort="ascending"]::after  { content: "↑"; opacity: 1; }
+.table__sort[aria-sort="descending"]::after { content: "↓"; opacity: 1; }
+
+/* ---------- 行 ---------- */
+.table tbody td,
+.table tbody th {
+  padding: var(--sp-2) var(--sp-3);
+  text-align: start;
+  border-bottom: 1px solid var(--border-decor);
+  vertical-align: top;
+}
+
+.table tbody tr:last-child td { border-bottom: 0; }
+
+/* 行高亮：只对真能悬停的设备（触屏上 hover 会"粘住"）*/
+@media (hover: hover) and (pointer: fine) {
+  .table tbody tr:hover { background: var(--surface-sunken); }
+}
+
+/* ---------- ② 数字列：右对齐 + 等宽数字 ---------- */
+.table .num {
+  text-align: end;
+  /* ⭐ tabular-nums：让每个数字占同样宽 ⇒ 可以竖着比大小
+     这是「财务表格」和「装饰表格」的分界线 */
+  font-variant-numeric: tabular-nums;
+  font-family: var(--mono);
+  white-space: nowrap;
+}
+
+/* 正负号用颜色 + 符号双线索（不能只靠红绿）*/
+.table .num--pos { color: var(--success); }
+.table .num--neg { color: var(--danger); }
+.table .num--pos::before { content: "+"; }   /* ⭐ 符号是第二线索 */
+.table .num--neg::before { content: "−"; }   /* ⭐ 用真正的减号，不是连字符 */
+
+/* ---------- ③ 三态 ---------- */
+.table__empty,
+.table__error,
+.table__loading {
+  padding: var(--sp-7) var(--sp-4);
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: var(--fs-sm);
+}
+
+.table__empty { background: var(--surface-sunken); }
+.table__error  { background: var(--surface-sunken); color: var(--danger); }
+.table__loading { color: var(--text-tertiary); }
+
+/* 加载态：骨架条（配 aria-busy，容器有语义）*/
+.table__bar {
+  height: 8px;
+  margin: var(--sp-2) auto;
+  max-width: 220px;
+  background: var(--surface-sunken);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .table__bar::after {
+    content: "";
+    display: block;
+    height: 100%;
+    width: 40%;
+    background: var(--accent-soft);
+    border-radius: 999px;
+    animation: table-shimmer 1.2s var(--ease-in-out, ease-in-out) infinite;
+  }
+  @keyframes table-shimmer {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(250%); }
+  }
+}
+
+/* 空态里的行动入口 */
+.table__empty .btn,
+.table__error .btn { margin-top: var(--sp-3); }
+
+/* ---------- 窄屏：表格横向滚动，不挤压列 ---------- */
+.table--compact { font-size: var(--fs-xs); }
+.table--compact thead th,
+.table--compact tbody td { padding: var(--sp-1) var(--sp-2); }
+
+/* ---------- 打印：去掉粘性（打印时不需要）---------- */
+@media print {
+  .table { max-height: none; overflow: visible; }
+  .table thead th { position: static; }
+}
