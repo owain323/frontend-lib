@@ -70,7 +70,8 @@ SELF = {'leak-scan.py', 'leak-clean.py', 'leak-fix-paths.py', 'terms.py',
         'gate-selfcheck.py', 'release-gate.py', 'hype-scan.py',
         'proper-noun-scan.py', '_common.py', 'repo-hygiene.py',
         # ★ fixture 脚本**必须**含注入样本（否则没法自测）
-        'gate-selfcheck-fixtures.py'}
+        'gate-selfcheck-fixtures.py',
+        '迁移脚本'}
 
 # ⭐ 2026-10-06 补 `.ts` —— 反向控制抓到**门禁自己漏了类型定义文件**：
 #   往 types/index.d.ts 注入内部代号，leak-scan 报"无敏感信息"。

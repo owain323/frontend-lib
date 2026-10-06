@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-migrate-to-data-state.py — 把 `is-*` 状态类迁移到 `data-state`（工单 K8）
+migrate-to-data-state.py — 把 `is-*` 状态类迁移到 `data-state`（迁移脚本）
 
 ===========================================================================
 为什么迁移
