@@ -32,13 +32,25 @@ import 'frontend-lib/typography.css';
 import 'frontend-lib/primitives/button/button.css';
 ```
 
-**2 · 需要交互组件时**，用 `<script>` 引入行为脚本
-
-```html
-<script src="node_modules/frontend-lib/patterns/overlay/overlay.js"></script>
-```
+**2 · 需要交互组件时**，引入行为脚本
 
 行为脚本是 IIFE，挂到 `window` 上（如 `window.Overlay`）。
+
+用打包器：
+
+```js
+import 'frontend-lib/patterns/overlay/overlay.js';
+```
+
+用 `<script>` 标签（**注意路径是包内的真实目录**）：
+
+```html
+<!-- npm 不会把 patterns/ 建成目录，必须按 03-patterns/ 写 -->
+<script src="node_modules/frontend-lib/03-patterns/overlay/overlay.js"></script>
+```
+
+包内的目录结构与仓库一致：`01-tokens` `02-primitives` `03-patterns`
+`04-recipes` `09-assets`。上例等价于 `import 'frontend-lib/patterns/overlay/overlay.js'`。
 
 **3 · 直接复制**（不想装依赖）
 

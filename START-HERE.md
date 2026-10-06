@@ -46,7 +46,7 @@
 | 表单校验 | `03-patterns/form-validation/form-validation.css` | 258 | — | 提交前要校验就要 |
 | 列表增删 | `03-patterns/list/list.css` | 162 | 可选 201 (`flip.js`，FLIP 增删动画，纯增强) | 列表会动态增删就要 |
 | 导航/抽屉 | `03-patterns/nav/nav.css` | 297 | 可选 111 (`toc.js`，自动生成目录，纯增强) | 内容长要目录就要 |
-| 弹窗/toast | `03-patterns/overlay/overlay.css` | 309 | **必需 309** (`overlay.js`) | 需要弹层就要 |
+| 弹窗/toast | `03-patterns/overlay/overlay.css` | 309 | **必需 324** (`overlay.js`) | 需要弹层就要 |
 | 状态（空/错/加载） | `03-patterns/states/states.css` | 258 | — | **凡是会异步取数就要** |
 | 长文排版 | `03-patterns/content/content.css` | 259 | — | 写文档/长文就要 |
 
