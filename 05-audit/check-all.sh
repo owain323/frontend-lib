@@ -230,4 +230,5 @@ run "api-doc"      $PY 05-audit/api-doc-gate.py
 run "legacy-api"  $PY 05-audit/legacy-api-gate.py
 run "release"     $PY 05-audit/release-gate.py
 run "gate-self"   $PY 05-audit/gate-selfcheck.py
+run "gate-fixture" $PY 05-audit/gate-selfcheck-fixtures.py
 exit $fail

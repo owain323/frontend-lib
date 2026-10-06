@@ -70,7 +70,11 @@ SELF = {'leak-scan.py', 'leak-clean.py', 'leak-fix-paths.py', 'terms.py',
         'gate-selfcheck.py', 'release-gate.py', 'hype-scan.py',
         'proper-noun-scan.py', '_common.py', 'repo-hygiene.py'}
 
-EXTS = ('.js', '.py', '.html', '.css', '.md', '.json',
+# ⭐ 2026-10-06 补 `.ts` —— 反向控制抓到**门禁自己漏了类型定义文件**：
+#   往 types/index.d.ts 注入内部代号，leak-scan 报"无敏感信息"。
+#   根因：EXTS 列表里没有 .ts ⇒ .d.ts / .ts 从来没被扫过。
+#   ⭐ 这就是「Test the Tests」的价值：门禁也需要被反向控制。
+EXTS = ('.js', '.ts', '.tsx', '.py', '.html', '.css', '.md', '.json',
         '.sh', '.mjs', '.yml', '.yaml', '.txt', '.tpl')
 
 
