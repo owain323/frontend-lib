@@ -68,11 +68,11 @@ def main():
     if not files:
         print('  [FAIL] 一个 CSS 都没找到')
         return 1
-    # 🔴 2026-10-06 修正判据：**算「剥掉注释后」的体积**。
+    # 🔴 修正判据：**算「剥掉注释后」的体积**。
     #    原因：本库的说明注释很长（这是刻意投入），
     #    但**浏览器不解析注释** ⇒ 用文件原始体积判会严重高估。
     #    实测：tokens.css 原始 34.5 KB，剥注释后只剩约 9 KB。
-    #    ⇒ 该判的��"实际生效的 CSS"，它才对应真实的首屏阻塞时间。
+    #    ⇒ 该判的是"实际生效的 CSS"，它才对应真实的首屏阻塞时间。
     def eff_size(f):
         s = strip_comments(io.open(f, encoding='utf-8').read())
         return len(s.encode('utf-8'))

@@ -62,7 +62,7 @@
   cursor: pointer;
 }
 
-/* 🔴 2026-10-05 修正：原来 fallback 写死了 `#1b4d8f`（被 contract-kit 抓到）
+/* 🔴 修正：原来 fallback 写死了 `#1b4d8f`（被 contract-kit 抓到）
    ⇒ 换主题时这个环不会跟着变。
    ⇒ 焦点环令牌定义在 01-tokens/focus-ring.css：
         --focus-ring-width / --focus-ring-offset / --focus-ring-color(=var(--accent))

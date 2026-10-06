@@ -129,7 +129,7 @@
     }
 
     /**
-     * 🔴 2026-10-05 修一个**索引错位导致 ↑↓ 卡死**的 bug。
+     * 🔴 修一个**索引错位导致 ↑↓ 卡死**的 bug。
      *
      * 原来：`setActive(i)` 里的 i 被调用方按 **enabled() 过滤后数组**的索引传，
      *      而函数内部又当成 **options 原数组**的索引用
@@ -175,7 +175,7 @@
     function open() {
       list.hidden = false;
       btn.setAttribute('aria-expanded', 'true');
-      /* 🔴 2026-10-05 修：必须**先把焦点放到按钮上**。
+      /* 🔴 修：必须**先把焦点放到按钮上**。
          本组件用 aria-activedescendant 模式（焦点常驻按钮，靠它告知读屏
          "当前在第几项"）⇒ 焦点必须始终在按钮，事件也必须由按钮处理。
          原来只设了 aria-activedescendant 就 open()
@@ -248,7 +248,7 @@
       if (k === 'Home')      { e.preventDefault(); setActive(0, 1); return; }
       if (k === 'End')       { e.preventDefault(); setActive(options.length - 1, -1); return; }
       /* ③ Esc 关闭 + 焦点还按钮
-         🔴 2026-10-05 加 stopPropagation（**组合契约**抓到的真问题）：
+         🔴 加 stopPropagation（**组合契约**抓到的真问题）：
          本组件常被放进 drawer / dialog 里。
          原来只 preventDefault ⇒ 事件**继续冒泡**到外层弹层
          ⇒ **按一次 Esc 把内外两层一起关掉**。

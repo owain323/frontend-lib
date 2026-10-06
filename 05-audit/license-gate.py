@@ -3,7 +3,7 @@
 r"""
 license-gate.py — 版权与外部来源检查
 
-Owner 提醒（2026-10-03）：
+背景：
 > 「注意一下版权的纠纷和风险」
 
 🔴 **这类问题门禁查不全**，本脚本只覆盖能机械判定的三类，
@@ -78,8 +78,8 @@ def scan(root=None):
 
 
 def main():
-    # 🔴 2026-10-03 修：原来 ROOT 是模块级常量且 glob 写死 '0*'，
-    #    传别的目录做反向控制时**一个文件都扫不到** ⇒ 门禁永远"全绿"。
+    # 🔴 修：原来 ROOT 是模块级常量且 glob 写死 '0*'，
+    #    传别的目录做判别力验证时**一个文件都扫不到** ⇒ 门禁永远"全绿"。
     #    这和 measure-gate 那次是同一个病根。
     root = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 else ROOT
     issues = scan(root)

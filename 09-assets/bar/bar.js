@@ -1,7 +1,7 @@
 /**
  * bar.js — 柱状图（charter 13 图表规范 · 四条铁律全部落地）
  * ============================================================================
- * 设计依据：charter 13（00-charter/13-图表规范.md）
+ * 设计依据：见 API.md「资产类组件」一节
  *   铁律一 · 超量程必须被**容器裁剪**      → CSS 侧 overflow:hidden（本文件不参与）
  *   铁律二 · **标注不得覆盖数据**（≤4 个） → markLabel() 只标关键点
  *   铁律三 · **量程必须显式声明**          → max 是必填参数，无默认值
@@ -123,7 +123,7 @@
         v = +series[s].values[i] || 0;
         h = (v / max) * plotH;
         /* 🔴 铁律一：**超量程必须被裁掉**，不能画到坐标系统外。
-           画到 viewBox 之外 ⇒ 会穿透到页面其他内容上（Owner 实机遇到过）。 */
+           画到 viewBox 之外 ⇒ 会穿透到页面其他内容上（真机遇到过）。 */
         if (h > plotH) { h = plotH; if (clipped.indexOf(i) < 0) clipped.push(i); }
         x = padL + groupW * i + (groupW - barW) / 2;
         yy = padT + plotH - (base[i] + h);

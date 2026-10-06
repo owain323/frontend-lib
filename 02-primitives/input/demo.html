@@ -25,7 +25,7 @@
   .cell h3 { margin: 0 0 var(--sp-1); font-size: var(--fs-sm); font-weight: 500; }
   .cell p { margin: 0 0 var(--sp-3); font-size: var(--fs-xs);
             color: var(--text-tertiary); line-height: 1.55; }
-  code { font-family: var(--mono);   /* 2026-10-03：原为写死的 ui-monospace，统一走令牌 */ font-size: var(--fs-xs);
+  code { font-family: var(--mono);   /* 原为写死的 ui-monospace，统一走令牌 */ font-size: var(--fs-xs);
          background: var(--surface-sunken); padding: 1px 5px; border-radius: 4px; }
   .cmp { display: grid; gap: var(--sp-4); grid-template-columns: 1.55fr 1fr; }
   @media (max-width: 620px) { .cmp { grid-template-columns: 1fr; } }
@@ -125,7 +125,7 @@
     <div class="box bad">
       <h3>常见写法</h3>
       <input class="bad-input err" value="abc" aria-hidden="true" tabindex="-1">
-      <!-- 🔴 2026-10-03 加 aria-hidden。
+      <!-- 🔴 加 aria-hidden。
            这一段是**反例示范**（"常见写法：纯红 + 只有颜色"），
            旁边的输入框已经有 aria-hidden + tabindex="-1"，
            但这段红字漏了 ⇒ 读屏会**把一个错误的示范念出来**。
@@ -192,13 +192,13 @@
   /* ------------------------------------------------------------------
      金额校验：**分层判断，每层给对应的提示**
 
-     🔴 2026-10-02 修正。原实现只有一条正则 + 一条固定提示：
+     🔴 修正。原实现只有一条正则 + 一条固定提示：
 
          var ok = /^\d+(\.\d{1,2})?$/.test(v);
          e.textContent = v === '' ? '金额不能为空' : '最多两位小数，例如 12.34';
 
          于是 `1111aaa`、`abc`、任何不匹配的值 **全都得到同一句
-         "最多两位小数"** —— Owner 输入英文却被告诫小数位，
+         "最多两位小数"** —— 输入英文却被告诫小数位，
          提示与实际错误对不上，用户根本不知道该改什么。
 
      正确的顺序很重要：**先排除更根本的错误**。

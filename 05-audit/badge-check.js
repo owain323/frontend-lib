@@ -20,7 +20,7 @@ const REPO = path.resolve(__dirname, '..');
     // 🔴 徽标不是可点元素 ⇒ 不查命中区（否则会报一堆"44px 不足"）
     interactive: '.badge--none, .badge[role="button"], .badge[tabindex], .badge--clickable',
 
-    // 🔴 2026-10-05 **显式豁免**焦点环：badge 是**纯展示**组件。
+    // 🔴 **显式豁免**焦点环：badge 是**纯展示**组件。
     //   ⚠️ 不是"删掉那条判据"—— 删掉后人会以为漏写了，又补回来。
     //   而是在框架里显式豁免，并让报告里仍然出现这一行（带豁免理由）。
     skipFocusRing: true,

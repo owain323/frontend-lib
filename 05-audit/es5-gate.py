@@ -3,7 +3,7 @@
 r"""
 es5-gate.py — 库代码的语法必须是 ES5
 
-背景（2026-10-03）
+背景
 ------------------
 精简档 是 **某项目 上的 WebView，版本不确定**。
 所以 `01-tokens` / `02-primitives` / `03-patterns` 里的**库代码**必须只用 ES5 ——
@@ -33,7 +33,7 @@ ES6+ 在老 WebView 上是**语法错误**（整段脚本不执行，而不是�
 ———
 🔴 附：为什么本库**不能**对 `border-left: 2px+` 做一刀切
 ------------------------------------------------
-Owner 评价提示框的左侧竖条"很蠢"，已从全库去掉。
+提示框的左侧竖条被评价为"很蠢"，已从全库去掉。
 但扫全库时会发现还剩 5 处 —— **它们必须留着**，逐条判定如下：
 
 | 位置 | 选择器 | 为什么留 |
@@ -51,7 +51,7 @@ import re
 import glob
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-# 🔴 2026-10-04 补上 09-assets：原来只有 01/02/03，
+# 🔴 补上 09-assets：原来只有 01/02/03，
 #    导致 sparkline.js / echarts-adapter.js **从来没被 ES5 门禁检查过**
 #    （实测：「ES5 合规：0 个库文件」——因为它们的目录不在范围里）。
 #    ⚠️ 本库的硬约束是「JS 一律 ES5」，**素材层同样是库的一部分**。
@@ -90,7 +90,7 @@ def strip_comments_css(src):
 
 
 def main():
-    # 🔴 2026-10-04 **修一个一直在骗人的假绿**
+    # 🔴 **修一个一直在骗人的假绿**
     #
     # 原来：`root = sys.argv[1]`
     #   而门禁入口统一是 `es5-gate.py --dir .`
@@ -113,7 +113,7 @@ def main():
     for base in LIB_DIRS:
         for f in glob.glob(os.path.join(root, base, '**', '*.js'),
                            recursive=True):
-            # 🔴 2026-10-04 豁免 `vendor/`：**第三方库，不是本库代码**
+            # 🔴 豁免 `vendor/`：**第三方库，不是本库代码**
             #    （three.min.js / GLTFLoader.js / OrbitControls.js 是 ES6，
             #      它们**点击后才加载**，且精简档 根本不用 3D —— 见
             #      09-assets/model-viewer/README.md 的「边界」一节）
@@ -145,7 +145,7 @@ def main():
         print('%d 处 ES6+ —— 精简档 的老 WebView 上会**语法错误**（脚本整段不执行）。' % len(issues))
         print('  改法：换回 ES5 写法（var + function + 字符串拼接）。')
         return 1
-    # 🔴 2026-10-04 **空跑即失败**
+    # 🔴 **空跑即失败**
     #   0 个文件 = 一定是路径传错了（root 解析失败）。
     #   没有这一步，这个门禁可以在"什么都没扫"的情况下一直报通过
     #   ——**它已经这样骗了我们很久**。

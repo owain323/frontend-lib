@@ -114,7 +114,7 @@ def main():
         used = page_classes(html)
         need = set()
         for c in used:
-            # 🔴 2026-10-06 两次收紧判据（都是因为误报）：
+            # 🔴 两次收紧判据（都是因为误报）：
             #   ① 只在 class **唯一归属**某个 CSS 时才报
             #      （`btn` 被多个 CSS 定义 ⇒ 报出来必是误报）
             #   ② **且**该 class 带组件前缀
@@ -146,7 +146,7 @@ def main():
     print('  扫了 %d 个 demo 页面，%d 个可能有缺失引用' % (len(pages), bad))
     if bad:
         print('')
-        print('  ⚠️ **本门禁只报告，不 fail**（2026-10-06 决定，理由如下）：')
+        print('  ⚠️ **本门禁只报告，不 fail**：')
         print('')
         print('  它抓到过一个**真问题**（值了）：')
         print('    form-validation 页用了 .btn--primary 却没引 button.css')

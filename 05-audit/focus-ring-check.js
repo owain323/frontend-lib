@@ -80,7 +80,7 @@ function toHex(c) {
        kb.outlineWidth + ' ' + kb.outlineStyle + '）');
 
   // ③ 鼠标点击 ⇒ :focus-visible 不触发
-  /* 🔴 2026-10-04 修判据（实测踩到）：
+  /* 🔴 修判据（实测踩到）：
      原来用 `p.click('.btn')` 模拟"鼠标点击" ⇒
      Puppeteer 的 click 会让元素**以键盘方式激活** ⇒
      浏览器认为这是键盘操作 ⇒ `:focus-visible` **正确地**为 true
@@ -166,7 +166,7 @@ function toHex(c) {
         const sel = m[1], body = m[2];
         if (!/outline\s*:\s*(none|0)\s*(;|$)/.test(body)) continue;
         totalOutlineNone++;
-        /* 🔴 2026-10-05 判据放宽：替代样式**不只有 box-shadow**。
+        /* 🔴 判据放宽：替代样式**不只有 box-shadow**。
            WCAG 2.4.7 只要求「聚焦时有可见变化」，下列都合法：
              · box-shadow（换色/加环）
              · background / background-color（换底色）← **原判据漏了**

@@ -2,7 +2,7 @@
  * model-viewer.js — 惰性加载的 3D 模型查看器（零依赖 · ES5）
  *
  * ============================================================================
- * ⭐ 设计依据：Owner 2026-10-04 的原话
+ * ⭐ 设计依据：项目需求
  * ============================================================================
  *   「就放一到两个素材上去就可以了」
  *   「体积和加载的问题，**一定要快**」
@@ -104,7 +104,7 @@
     n.classList.add('mv');
 
     // 🔴 无论如何都先画"占位 + 说明"，
-    //    绝不留白屏（Owner 的硬要求）。
+    //    绝不留白屏（硬要求）。
     this.ui = el('div', 'mv__ui');
     this.ui.appendChild(this.makeIdle());
     n.appendChild(this.ui);
@@ -169,7 +169,7 @@
     this.status('正在准备 3D 引擎…');
     this.boot(null, t0, 0);
 
-    /* 🔴🔴 2026-10-04 **超时兜底**（实测：服务器上会卡死在 loading）
+    /* 🔴🔴 **超时兜底**（实测：服务器上会卡死在 loading）
        现象：模型 404 时，服务器返回 `404 + Content-Type 为空`，
              three 的 FileLoader **既不触发 onError 也不触发 onLoad**
              ⇒ 界面永远停在「正在准备…」⇒ **看起来像白屏**。
@@ -235,7 +235,7 @@
     scene.add(rim);
 
     // 控制器
-    /* 🔴 2026-10-04 实测纠正：three 官方 `examples/js` 里的控制器
+    /* 🔴 实测纠正：three 官方 `examples/js` 里的控制器
        是挂在 **THREE 上**的（`THREE.OrbitControls`），**不是全局**。
        我原来写 `window.OrbitControls` ⇒ undefined ⇒ 拖不动。
        两个来源都试一遍，兼容不同发行版。 */
@@ -257,7 +257,7 @@
       this.fail('GLTFLoader 没有正确加载（THREE.GLTFLoader 未定义）。请检查 data-mv-gltf 的路径。');
       return;
     }
-    /* 🔴 2026-10-04 **关键修复**（本地能跑、服务器 https 下报
+    /* 🔴 **关键修复**（本地能跑、服务器 https 下报
        「模型解析失败：Failed to fetch」——实测定位）：
 
        原来用 `loader.parse(arrayBuffer, '')`：
@@ -271,9 +271,9 @@
        ⚠️ 这是"本地过、线上挂"的典型：**本地 http 掩盖了协议差异**。 */
     var loader = new GLCtor();
 
-    /* 🔴🔴 2026-10-04 **改用「一次 GET，校验 + 复用同一份 buffer」**
+    /* 🔴🔴 **改用「一次 GET，校验 + 复用同一份 buffer」**
 
-       ❌ 我先试了 HEAD 预检 + three.load()，**结果请求了两次 fox.glb**
+       ❌ 先试了 HEAD 预检 + three.load()，**结果请求了两次 fox.glb**
           （HEAD 一次 + GET 一次）⇒ 实测服务器对同一资源第二次拿不到
           ⇒ 界面卡在 loading。
        ⇒ 教训：**预检请求不能"只用一次"**。
@@ -365,7 +365,7 @@
     // onError
     function (err) {
       var msg = (err && err.message) ? err.message : (err || '未知错误');
-      /* 🔴 2026-10-04 **实测定位的"本地过、线上挂"**：
+      /* 🔴 **实测定位的"本地过、线上挂"**：
          服务器的 CSP 是
              img-src     'self' data: https:     ← 没有 blob:
              connect-src 'self' https:           ← 没有 blob:

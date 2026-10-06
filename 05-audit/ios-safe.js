@@ -1,5 +1,5 @@
 // puppeteer-core 改由 browser.js 统一持有
-  // 🔴 2026-10-04 统一走 browser.js：那里会 setCacheEnabled(false)。
+  // 🔴 统一走 browser.js：那里会 setCacheEnabled(false)。
   //    没有它，页面里跑的是**缓存的旧代码**，测试会假通过
   //    （磁盘上明明改对了，浏览器里还是旧的）。
   const { launch } = require('./browser');
@@ -9,7 +9,7 @@
  *
  * 为什么需要
  * ----------
- * 2026-10-04 在 iPhone 尺寸下**实测抓到一个真 bug**：
+ * 在 iPhone 尺寸下**实测抓到一个真 bug**：
  *   `@media (max-width: 480px)` 里的 `.dialog { max-width: none }`
  *   没有宽度上界 ⇒ 弹窗被内容（有 min-width 的 <table>/<pre>）撑到
  *   **444px > 视口 393px**，左边缘 -26px（左侧被切掉）。
@@ -109,7 +109,7 @@ const IPHONE = { width: 393, height: 852, deviceScaleFactor: 3, isMobile: true, 
     let o1 = r.over;
     let o2 = r.docW2 > r.vw + 1;
     if (o1 || o2) bad++;
-    // 🔴 2026-10-04 补：静态扫**碰不到弹窗** ——
+    // 🔴 补：静态扫**碰不到弹窗** ——
     //    overlay demo 要手动点按钮才开弹窗，弹层不在初始 DOM 里。
     //    而"窄屏弹窗撑破"恰恰是**静态扫最该抓、又一定抓不到**的那类
     //    （它只在 <480px 触发、且要有长内容才撑破）。

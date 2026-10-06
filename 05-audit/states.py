@@ -54,7 +54,7 @@ PROFILES = [
         ],
     },
     {
-        # 🔴 2026-10-05 新增：combobox（标签输入）
+        # 🔴 新增：combobox（标签输入）
         # ⚠️ 它必须在 select **之前** —— 否则会被 select 的正则抢走，
         #    而它没有 :disabled（用 .is-disabled，见 combobox.css 的 ES5 兼容说明）。
         'name': 'combobox',
@@ -75,7 +75,7 @@ PROFILES = [
         # select 在 input 之前 —— 因为 input 的正则里含 select。
         # 否则 <select> 会被当成文本框去查 error/readonly，纯误报。
         'name': 'select',
-        # 🔴 2026-10-05 修正：`combobox` 会被这条正则误匹配
+        # 🔴 修正：`combobox` 会被这条正则误匹配
         #   （它用的是 .is-disabled 而非 :disabled，见 combobox.css 的 ES5 说明）
         # ⇒ 加负向前瞻排除掉 combobox，并把它单独注册（放在本条之前）。
         'match': r'(?<![a-z0-9])select(?![a-z0-9])(?!.*combobox)',
@@ -83,7 +83,7 @@ PROFILES = [
             ('disabled', [r':disabled'],
              'HIGH', '以为坏了'),
             # select 用 :focus 不用 :focus-visible：用户必须随时知道当前选的是哪个
-            # 🔴 2026-10-04 判据微调：`:focus-visible` 也算数（**有据**，不是放水）
+            # 🔴 判据微调：`:focus-visible` 也算数（**有据**，不是放水）
             #   switch.css 里记着实测结论：**iOS Safari 点触屏也会给元素焦点**
             #   ⇒ 若强制 `:focus`，焦点环会**常驻不灭**（比看不见更糟）。
             #   `:focus-visible` 由浏览器自己区分键盘/触摸，是正确选择。
@@ -116,7 +116,7 @@ PROFILES = [
         'states': [
             ('disabled', [r':disabled'],
              'HIGH', '以为坏了'),
-            # 🔴 2026-10-04 微调：`:focus-visible` 也算数（**有据**，不是放水）
+            # 🔴 微调：`:focus-visible` 也算数（**有据**，不是放水）
             #   switch.css 记着实测结论：**iOS Safari 点触屏也会给元素焦点**
             #   ⇒ 若强制裸 `:focus`，焦点环会**常驻不灭**（比看不见更糟）。
             #   `:focus-visible` 由浏览器自己区分键盘/触摸 ⇒ 是正确选择。
@@ -173,7 +173,7 @@ def profile_for(base: str, names=None):
     """
     判定一个类属于哪种形态。
 
-    🔴 2026-10-02 修正一个误报：`.nav` 里含 `.nav__link` / `.nav__toggle`，
+    🔴 修正一个误报：`.nav` 里含 `.nav__link` / `.nav__toggle`，
        旧逻辑把**根类和子元素名拼在一起**匹配，于是 `.nav` 因为子元素里有个
        "link" 被判成 button 形态，接着被要求提供 disabled / active ——
        可页头容器根本不是按钮。

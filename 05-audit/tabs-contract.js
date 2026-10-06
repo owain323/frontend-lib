@@ -2,7 +2,7 @@ const path = require('path');
 // ⭐ 库根用 __dirname 推导，不写死绝对路径（否则会泄漏本地目录结构）
 const REPO = path.resolve(__dirname, '..');
 // puppeteer-core 改由 browser.js 统一持有
-  // 🔴 2026-10-04 统一走 browser.js：那里会 setCacheEnabled(false)。
+  // 🔴 统一走 browser.js：那里会 setCacheEnabled(false)。
   //    没有它，页面里跑的是**缓存的旧代码**，测试会假通过
   //    （磁盘上明明改对了，浏览器里还是旧的）。
   const { launch } = require('./browser');
@@ -72,7 +72,7 @@ const AXE = require.resolve('axe-core');
   // ── 初始：aria-selected="true" 的那个是 tabindex=0
   let s = await sel('t1');
   add('初始 tabindex=0 落在选中的 tab 上', s.tabindex === '0');
-  // 🔴 2026-10-03 修正判据：页面刚加载时**焦点应该在 body**，
+  // 🔴 修正判据：页面刚加载时**焦点应该在 body**，
   //    不该在 tab 上 —— 我原来写"初始 tab 有焦点"是**判据错了**
   //    （Tab 键的作用正是"把焦点带进 tab 组"）。
   //    真正要测的是"按 Tab 之后焦点落在选中的 tab 上"，那在后面。
@@ -146,7 +146,7 @@ const AXE = require.resolve('axe-core');
   //     实测发现「面板里全是静态文字时，Tab 会直接跳过整个面板」——
   //     规范要求「在 tab 上按 Tab ⇒ 焦点进入面板」，两者有真实张力。
   //     ⇒ demo 的面板里放了可聚焦元素，这里验证它真的能进。
-  // 🔴 2026-10-03 修正：起点必须是**真实的可聚焦元素**。
+  // 🔴 修正：起点必须是**真实的可聚焦元素**。
   //    `document.body.focus()` 在 Chrome 里 body 不可聚焦，
   //    activeElement 仍是 body ⇒ 第一次 Tab 从文档第一个可聚焦元素开始，
   //    落在"跳到主内容"链接上而不是 t1 —— **我的起点选错了**。

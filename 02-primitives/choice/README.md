@@ -97,7 +97,7 @@ select 用 `:focus` 不用 `:focus-visible`——和 input 一样，用户必须
 
 ---
 
-## 🔴 结构选型：两种写法都安全（2026-10-02 实测推翻了我自己的担心）
+## 🔴 结构选型：两种写法都安全
 
 我曾把结构从「input 在 label 内」改成「input 与 label 平级 + for」，
 理由是怕**双触发**（input 铺满 label ⇒ 点击既命中 input 又冒泡到 label ⇒ 翻转两次）。
@@ -133,7 +133,7 @@ node 05-audit/clicktest.js choice     # 真实鼠标点击，11 项
 ## 门禁
 
 ```bash
-python 05-audit/states.py --dir ${REPO}
+python3 05-audit/states.py 01-tokens 02-primitives 03-patterns 04-recipes
 ```
 
 choice 形态查三项，全是 HIGH：

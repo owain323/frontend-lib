@@ -83,7 +83,7 @@
     return { y: date.getFullYear(), q: q };
   }
   function quarterRange(y, q) {
-    /* 🔴 2026-10-06 加防呆（ H5 的单测逼出来的）：
+    /* 🔴 加防呆（ H5 的单测逼出来的）：
        `q` 是 **0-based**（0=Q1），这是内部约定，但很容易被当成 1-based 用。
        原来传 1 会**静默返回 Q2**（不报错）—— 正是本库最厌恶的那类失效。
        ⇒ 越界直接抛错，让误用在第一次就暴露。 */
@@ -264,7 +264,7 @@
 
   global.DateRange = {
     create: create,
-    /* 🔴 2026-10-06 补上 quarterOf（ H5 的单测抓出来的）：
+    /* 🔴 补上 quarterOf（ H5 的单测抓出来的）：
        它一直是**内部函数但没导出** ⇒ 使用者拿到 quarterRange 也无法
        从任意日期反推季度号。纯函数，导出无害且有用。 */
     iso: iso, addDays: addDays, addMonths: addMonths,

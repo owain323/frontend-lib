@@ -41,7 +41,7 @@ const REPO = path.resolve(__dirname, '..');
         return r;
       },
       /* 三态（默认/悬停/按下）都要有定义，不能只有一个状态
-         🔴 判据第三次修正（2026-10-04）：
+         🔴 判据第三次修正：
             ① 读 `document.styleSheets` ⇒ **跨源 0 条**（假失败）
             ② 改读 `<style>` 文本 ⇒ 本页 CSS 全在**外部 <link>** ⇒ 仍是假失败
          ⇒ 最终：**Node 侧直接读源文件**（contract-kit 的坑 ① ② 正解） */

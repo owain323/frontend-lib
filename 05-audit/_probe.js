@@ -13,7 +13,7 @@ setTimeout(function () {
  try {
   var body = document.body;
 
-  /* ---- 🔴 命中检测：Owner 报"方框点不了、圆点能点"。
+  /* ---- 🔴 命中检测：实测反馈"方框点不了、圆点能点"。
          我的自检一直用 cb.click()（程序化点击，**直接派发事件、不做命中测试**）
          ⇒ 它永远通过，但鼠标点不到。必须用 elementFromPoint 问浏览器
          "这个坐标上究竟是谁"。 */
@@ -41,7 +41,7 @@ setTimeout(function () {
      返回 null ⇒ 必然误报。真实点击请用 `node 05-audit/clicktest.js choice`，
      它会先把元素滚进视口再点（puppeteer 的真实鼠标事件）。 */
 
-  /* ---- checkbox：属性变 **且视觉跟着变**（Owner 报过"显示已勾选但框是空的"）
+  /* ---- checkbox：属性变 **且视觉跟着变**（实测到"显示已勾选但框是空的"）
          🔴 只查 checked 属性是不够的：属性变了而 CSS 选择器没命中，
             框看着还是空的 —— 这正是我漏掉的那类 bug。 */
   var cb = document.querySelector('#c1');
@@ -57,7 +57,7 @@ setTimeout(function () {
       /* 🔴 断言必须匹配**真实设计意图**，不能按"我以为的"写：
          本库的 checkbox 勾选时**背景不变**，只显示勾号（::after）——
          这是刻意的（保留边框的清晰度）。radio 才是背景变实心。
-         我上一版断言"背景应变化"，那是错的，会逼着人把设计改坏。 */
+         断言写成"背景应变化"是错的，会逼着人把设计改坏。 */
       var af = window.getComputedStyle(mk, '::after');
       say('checkbox 勾号（::after）在勾选后可见',
           af.content !== 'none' && af.opacity !== '0',
@@ -67,7 +67,7 @@ setTimeout(function () {
     cb.click();
   }
 
-  /* ---- indeterminate：部分勾选时全选框应为第三态（Owner 报过只能弹全选）---- */
+  /* ---- indeterminate：部分勾选时全选框应为第三态（实测到只能弹全选）---- */
   var all = document.querySelector('#c2');
   if (all) {
     var box = all.closest('.choice');
@@ -128,7 +128,7 @@ setTimeout(function () {
     }
   }
 
-  /* ---- 按钮：默认尺寸必须 >= 32px，且不写 size 类也要有 padding（Owner 报过框小）---- */
+  /* ---- 按钮：默认尺寸必须 >= 32px，且不写 size 类也要有 padding（实测到框小）---- */
   var btn = document.querySelector('.btn');
   if (btn) {
     say('默认按钮高度 >= 32px', h(btn) >= 32, h(btn) + 'px 高 / ' + w(btn) + 'px 宽');
@@ -140,7 +140,7 @@ setTimeout(function () {
         '左 ' + Math.round(pl) + 'px / 右 ' + Math.round(pr) + 'px');
   }
 
-  /* ---- 列表：增删是否生效（Owner 报过动画不动）---- */
+  /* ---- 列表：增删是否生效（实测到动画不动）---- */
   var add = document.getElementById('add');
   var list = document.getElementById('list');
   if (add && list) {
@@ -160,7 +160,7 @@ setTimeout(function () {
     }
   }
 
-  /* ---- 弹窗：能否打开、Esc 能否关（Owner 报过整页右移）---- */
+  /* ---- 弹窗：能否打开、Esc 能否关（实测到整页右移）---- */
   var opener = document.getElementById('d1');
   if (opener && window.Overlay) {
     var sx = document.body.getBoundingClientRect().left;
@@ -196,7 +196,7 @@ setTimeout(function () {
     }, 150);
   }
 
-  /* ---- 导航：目录高亮是否随滚动更新（Owner 报过"不跟随"）---- */
+  /* ---- 导航：目录高亮是否随滚动更新（实测到"不跟随"）---- */
   var tocLinks = document.querySelectorAll('.toc__link');
   var secs = document.querySelectorAll('main h2[id]');
   if (tocLinks.length >= 2 && secs.length >= 2) {

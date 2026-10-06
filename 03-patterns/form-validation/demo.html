@@ -18,7 +18,7 @@
   h2 { font-size: var(--fs-lg); margin: var(--sp-8) 0 var(--sp-4);
        padding-bottom: var(--sp-2); border-bottom: 1px solid var(--border-decor); }
   p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6; }
-  code { font-family: var(--mono);   /* 2026-10-03：原为写死的 ui-monospace，统一走令牌 */ font-size: var(--fs-xs);
+  code { font-family: var(--mono);   /* 原为写死的 ui-monospace，统一走令牌 */ font-size: var(--fs-xs);
          background: var(--surface-sunken); padding: 1px 5px; border-radius: 4px; }
   .grid2 { display: grid; gap: var(--sp-4); grid-template-columns: 1.55fr 1fr; }
   @media (max-width: 700px) { .grid2 { grid-template-columns: 1fr; } }
@@ -41,7 +41,7 @@
   .naive-error { display: block; color: var(--danger); font-size: var(--fs-xs);
                  margin-top: var(--sp-1); min-height: 1.4em; }
 </style>
-<!-- 🔴 2026-10-06 补（ H2a 顺带修出）：此页面用了 .btn--primary 却**没引 button.css**
+<!-- 🔴 补（ H2a 顺带修出）：此页面用了 .btn--primary 却**没引 button.css**
      ⇒ 按钮拿不到 `color: var(--text-on-accent)`（暗色下应是**深色字**）
      ⇒ 实测暗色下继承成白字 on 浅蓝底 = 2.45:1（需 4.5）
      由 05-audit/css-imports.py 报出（它抓到过这个真问题） -->
@@ -230,7 +230,7 @@ form.addEventListener('submit', function (e) {
     document.getElementById('summary-slot').innerHTML =
       '<div class="form__summary" role="alert" tabindex="-1" id="sum">' +
       '<span class="form__summary-title">有 ' + bad.length + ' 处需要修正：</span>' +
-      /* 🔴 2026-10-03 改成**一行**：Owner 说"错误多的时候提示太大，
+      /* 🔴 改成**一行**：反馈"错误多的时候提示太大，
          应该收窄放一行"。原来的竖排三行（标题 / <ul> / 每项一行）会占掉半个屏幕，
          而它承载的信息只有"有几处错"+"错在哪" —— 一行足够。
          链接仍可点击跳转（键盘可达性不变）。 */
@@ -245,7 +245,7 @@ form.addEventListener('submit', function (e) {
     return;
   }
 
-  /* 🔴 2026-10-03 补：提交**成功**时也必须清掉各字段的 is-dirty。
+  /* 🔴 补：提交**成功**时也必须清掉各字段的 is-dirty。
      原来只有"重置"按钮清 —— 于是提交成功后，字段仍带着 is-dirty，
      空的 .field__error 继续 display:flex。
      以前 .field__error 没内容时看不出问题（空元素不显示任何东西），

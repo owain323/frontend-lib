@@ -2,7 +2,7 @@ const path = require('path');
 // ⭐ 库根用 __dirname 推导，不写死绝对路径（否则会泄漏本地目录结构）
 const REPO = path.resolve(__dirname, '..');
 // puppeteer-core 改由 browser.js 统一持有
-  // 🔴 2026-10-04 统一走 browser.js：那里会 setCacheEnabled(false)。
+  // 🔴 统一走 browser.js：那里会 setCacheEnabled(false)。
   //    没有它，页面里跑的是**缓存的旧代码**，测试会假通过
   //    （磁盘上明明改对了，浏览器里还是旧的）。
   const { launch } = require('./browser');
@@ -78,7 +78,7 @@ const AXE = require.resolve('axe-core');
   add('🔴 Enter 切换到第二项', f[1] === 'true');
   add('🔴 单开模式：原来的第一项自动收起', f[0] === 'false');
     add('单开模式：始终只有一项展开', f.filter(x => x === 'true').length === 1);
-    /* 🔴 2026-10-04 修判据的**时序 bug**：
+    /* 🔴 修判据的**时序 bug**：
        收起是**动画**（grid-template-rows 过渡 ~240ms，JS 侧另有 400ms 兜底），
        面板的 `hidden` 是在**过渡结束后**才加的（见 accordion.js 的 settle()）。
        ⇒ 原契约 `press('Enter')` 之后**立刻**查 hidden ⇒ 必然失败，
@@ -118,7 +118,7 @@ const AXE = require.resolve('axe-core');
   add('点击切换', f[2] === 'true');
 
   // ── 多开：--multi 模式下不互相关闭
-  /* 🔴 2026-10-04 修判据 bug：
+  /* 🔴 修判据 bug：
      原代码依次点 `ts[0]` 与 `ts[1]`，但多开实例里**第 1 项初始就是展开的**
      ⇒ 那次 click 是「**收起**」而不是「打开」
      ⇒ 后面判「两项同时展开」必然失败。

@@ -178,7 +178,7 @@ export interface DateRangeStatics {
   addMonths(isoStr: string, n: number): string;
   /** 日期 → 季度。⚠️ 返回对象，`q` 是 **0-based**（0=Q1） */
   quarterOf(date: Date): { y: number; q: number };
-  /** 季度 → 起止日。🔴 `q` **必须 0-3**，否则抛错（2026-10-06 加的防呆） */
+  /** 季度 → 起止日。🔴 `q` **必须 0-3**，否则抛错 */
   quarterRange(y: number, q: number): { from: string; to: string };
   create(root: HTMLElement, opt: DateRangeOptions): DateRange;
 }

@@ -3,7 +3,7 @@
 r"""
 dead-class-gate.py — 找出"CSS 定义了但从没人用"的类
 
-背景（2026-10-03）
+背景
 --------------------
 这个库出现过三次**同一种静默失效**，都是"看起来有、实际没有"：
 
@@ -67,7 +67,7 @@ def collect_used(root):
     tmpl_prefixes = set()
     pats = glob.glob(os.path.join(root, '0*', '**', '*.js'), recursive=True) + \
           glob.glob(os.path.join(root, '0*', '**', '*.html'), recursive=True)
-    # 🔴 2026-10-03 排除**门禁脚本自己**（05-audit/）。
+    # 🔴 排除**门禁脚本自己**（05-audit/）。
     #    clicktest.js:458 里有 `s.cls.includes('state--' + key)` ——
     #    那是**检查**代码，不是"生成类名"，却被我的前缀正则当成了模板拼接，
     #    于是 `.state--delayed` 被误标成"浏览器实测在用"（实际没人用）。
@@ -84,7 +84,7 @@ def collect_used(root):
             used.update(m.group(1).split())
         for m in re.finditer(r"\+\s*['\"]([\w -]+)['\"]", s):
             used.update(m.group(1).split())
-        # 🔴 2026-10-03 补一类假警：**模板拼接的类名**。
+        # 🔴 补一类假警：**模板拼接的类名**。
         #    真实例子（overlay.js:97）：
         #        el.className = 'toast' + (opts.variant ? ' toast--' + opts.variant : '');
         #    三个变体 toast--success / --error / --warning 全部由此产生，

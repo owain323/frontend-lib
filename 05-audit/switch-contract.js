@@ -2,7 +2,7 @@ const path = require('path');
 // ⭐ 库根用 __dirname 推导，不写死绝对路径（否则会泄漏本地目录结构）
 const REPO = path.resolve(__dirname, '..');
 // puppeteer-core 改由 browser.js 统一持有
-  // 🔴 2026-10-04 统一走 browser.js：那里会 setCacheEnabled(false)。
+  // 🔴 统一走 browser.js：那里会 setCacheEnabled(false)。
   //    没有它，页面里跑的是**缓存的旧代码**，测试会假通过
   //    （磁盘上明明改对了，浏览器里还是旧的）。
   const { launch } = require('./browser');
@@ -11,7 +11,7 @@ const AXE = require.resolve('axe-core');
 /**
  * switch 的行为契约（APG Switch Pattern）
  *
- * 🔴 2026-10-03 修正过一次：第一版用 `dispatchEvent(keydown)` 测键盘，
+ * 🔴 修正过一次：第一版用 `dispatchEvent(keydown)` 测键盘，
  *    **那不是真实按键** —— 浏览器不会执行默认行为，
  *    所以"Enter 不切换"这条测出来是**假通过**。
  *    现在改用 `page.keyboard.press()`（真实按键），

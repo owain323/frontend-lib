@@ -3,7 +3,7 @@
 r"""
 switch.py — 状态切换门禁
 
-把 00-charter/08-状态切换规范.md 里**可机械判定**的三条变成检查。
+把状态切换里**可机械判定**的三条变成检查。
 每一条都对应一个真实犯过的错：
 
   1. 叠放风险   HIGH   absolute 居中 + 同选择器有流内内容 ⇒ 文字会溢出并重叠
@@ -118,7 +118,7 @@ def main():
 
     print()
     if total_high:
-        print('HIGH 级 %d 项 —— 不许提交（见 00-charter/08-状态切换规范.md）' % total_high)
+        print('HIGH 级 %d 项 —— 不许提交（判据见 API.md 的「状态表达」）' % total_high)
         return 1
     print('无 HIGH 级问题。')
     return 0

@@ -3,11 +3,11 @@
 r"""
 shot-path.py — 截图必须落在**库内**，不许落 Temp
 
-背景（2026-10-04，Owner 报的）
+背景
 --------------------------------
-Owner 点开我给的截图**打不开**，还伴随网络报错。
+点击开我给的截图**打不开**，还伴随网络报错。
 
-真因：**我把截图写到了 `/tmp/fe-shots/`**。
+真因：**把截图写到了 `/tmp/fe-shots/`**。
 两个问题：
   ① `AppData/Local/Temp` 是**系统清理区** ⇒ 随时会消失
   ② 路径在库外 ⇒ IDE 的文件解析/预览可能拿不到
@@ -27,8 +27,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 def _is_temp_path(s):
     """这个路径是不是落在系统临时区。
 
-    🔴 2026-10-04 第一版写成一条正则 `AppData[/\\]Local[/\\]Temp`，
-       **反向控制没抓到** —— 反斜杠在字符类里被当成转义，
+    🔴 第一版写成一条正则 `AppData[/\\]Local[/\\]Temp`，
+       **判别力验证没抓到** —— 反斜杠在字符类里被当成转义，
        实际路径匹配不上。
     ⇒ 改成**先把反斜杠统一成斜杠，再做子串判断**，不靠正则。
     """
@@ -54,7 +54,7 @@ def main():
         except OSError:
             pass
     if bad:
-        print('  [FAIL] 有 %d 处把截图写到临时目录（Owner 点开会打不开）：' % len(bad))
+        print('  [FAIL] 有 %d 处把截图写到临时目录（点击开会打不开）：' % len(bad))
         for f, i, t in bad:
             print('     · %s L%d  %s' % (f, i, t))
         print('')

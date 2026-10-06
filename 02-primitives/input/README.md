@@ -108,7 +108,7 @@ python 05-audit/states.py 02-primitives/input/input.css
 > ⚠️ **demo 里没有演示这一档** —— 它是留给复用者的钩子，
 > 不是"看起来有其实没有"。要用就自己加类。
 
-## 🔴 移动端必填：inputmode 与 autocomplete（2026-10-04 补）
+## 🔴 移动端必填：inputmode 与 autocomplete
 
 这两个属性**不影响桌面**，但**决定手机上用户体验**：
 

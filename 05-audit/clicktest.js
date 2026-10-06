@@ -60,7 +60,7 @@ const CASES = {
         /* 视觉层证据。🔴 这里必须查**渲染后的颜色对比**：
            勾号是 `border: 2px solid #fff`（白）画的，如果框底也是白，
            属性全对、checked 也变了，但**勾号完全看不见** ——
-           本库真实发生过（Owner 报"全部都不可以"）。
+           本库真实发生过（实测反馈"全部都不可以"）。
            `content !== 'none'` 这类检查**抓不到它**，
            因为 content 一直存在，只是颜色撞了。 */
         const vis = await p.evaluate((idx) => {
@@ -145,7 +145,7 @@ const CASES = {
      -------------------------------------------------------------- */
   button: {
     url: BASE + '/02-primitives/button/demo.html',
-    desc: '按钮：loading 态宽度不变 + spinner 可见（Owner 报过"框小、文字顶边框"）',
+    desc: '按钮：loading 态宽度不变 + spinner 可见（实测到"框小、文字顶边框"）',
     run: async (p) => {
       const out = [];
       // 默认按钮尺寸（不写 size 类也必须可用）
@@ -202,7 +202,7 @@ const CASES = {
 
   list: {
     url: BASE + '/03-patterns/list/demo.html',
-    desc: '列表：增删生效 + 删空后空状态出现（Owner 报过"动画完全不动"）',
+    desc: '列表：增删生效 + 删空后空状态出现（实测到"动画完全不动"）',
     run: async (p) => {
       const out = [];
       const n = () => p.evaluate(() => document.getElementById('list').children.length);
@@ -260,7 +260,7 @@ const CASES = {
 
   overlay: {
     url: BASE + '/03-patterns/overlay/demo.html',
-    desc: '弹窗：打开/关闭/焦点/无横向位移（Owner 报过"整页往右移"）',
+    desc: '弹窗：打开/关闭/焦点/无横向位移（实测到"整页往右移"）',
     run: async (p) => {
       const out = [];
       const x0 = await p.evaluate(() => document.body.getBoundingClientRect().left);
@@ -309,7 +309,7 @@ const CASES = {
   },
 
   /* ==================================================================
-     以下为 2026-10-03 路线图阶段 B1 补齐的 4 个组件。
+     以下为 路线图阶段 B1 补齐的 4 个组件。
      全部**从真实 DOM 探测后**才写断言，不猜类名/ID。
      ================================================================== */
 
@@ -587,8 +587,8 @@ const CASES = {
       }));
       out.push({ ok: s2.notice, label: '全部填对后提交成功',
                  note: s2.notice ? '出现成功提示' : '没有', detail: '' });
-      /* 🔴 回归：Owner 报过的"空红点一直存在" */
-      out.push({ ok: s2.leftShown === 0, label: '提交成功后零残留错误（Owner 报过的空红点）',
+      /* 🔴 回归：实测到的"空红点一直存在" */
+      out.push({ ok: s2.leftShown === 0, label: '提交成功后零残留错误（实测到的空红点）',
                  note: s2.leftShown === 0 ? '干净' : s2.leftShown + ' 个残留',
                  detail: '.field__error:empty 兜底是否生效' });
       return out;

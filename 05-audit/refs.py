@@ -45,7 +45,7 @@ IGNORE_PREFIX = ('is-', 'has-', 'sr-', 'u-', 'js-')
 # 不是真引用。扫之前先剥掉，否则示例里的 id 会被当成"引用了不存在的元素"。
 RE_CODE = re.compile(r'<code[^>]*>.*?</code>', re.I | re.S)
 
-# 🔴 2026-10-02 修正：<style> 和 <script> 块里的文本也必须剥掉。
+# 🔴 修正：<style> 和 <script> 块里的文本也必须剥掉。
 #    实测踩到的坑：content.css 的**反模式注释**里写了
 #    `<div class="code-block">`、`class="heading"` 这些反面示例，
 #    refs.py 把它们当成了页面真实使用的 class ⇒ 报"未定义"。
@@ -121,7 +121,7 @@ def check(path):
     missing_id = sorted(i for i in js_ids if i not in ids)
 
     # 目录项指向的 id 必须存在 —— 否则那一项永远不会被高亮。
-    # 🔴 2026-10-02 新增。Owner 报"导航不跟随"，追下来发现目录第一项指向
+    # 实测报"导航不跟随"，追下来发现目录第一项指向
     #    的 id 根本不存在（第一项永远不会高亮）。这类错完全可静态查出来，
     #    不该靠真机发现。
     toc_missing = sorted(set(

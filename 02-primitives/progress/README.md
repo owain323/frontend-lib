@@ -79,4 +79,4 @@ role="progressbar" aria-busy="true" aria-label="正在处理"
 ## 相关
 
 - 未知进度 ⇒ [`skeleton`](../skeleton/)
-- 短反馈（"已保存"）⇒ `toast`（**待补，见 08-plan/I-.md**）
+- 短反馈（"已保存"）⇒ `toast`（**尚未提供**）

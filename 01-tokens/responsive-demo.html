@@ -16,14 +16,14 @@
   h1 { font-size: var(--fs-2xl); line-height: var(--lh-tight); margin: 0 0 var(--sp-3); }
   h2 { font-size: var(--fs-lg); margin: var(--sp-7) 0 var(--sp-3); }
   p  { margin: 0 0 var(--sp-4); }
-  code { font-family: var(--mono);   /* 2026-10-03：原写死 ui-monospace，统一走令牌 */ font-size: 0.9em;
+  code { font-family: var(--mono);   /* 原写死 ui-monospace，统一走令牌 */ font-size: 0.9em;
          background: var(--surface-sunken); padding: 1px 5px; border-radius: 4px; }
 
   /* 实时读数条 */
   #meter { position: sticky; top: 0; z-index: var(--z-header);
            background: var(--surface); border-bottom: 1px solid var(--border-decor);
            padding: var(--sp-3) var(--sp-5); display: flex; gap: var(--sp-5);
-           flex-wrap: wrap; font-family: var(--mono);   /* 2026-10-03：原写死 ui-monospace，统一走令牌 */ font-size: 12px; }
+           flex-wrap: wrap; font-family: var(--mono);   /* 原写死 ui-monospace，统一走令牌 */ font-size: 12px; }
   #meter b { color: var(--accent); }
   .ruler { height: 14px; background: repeating-linear-gradient(90deg,
            var(--text-tertiary) 0 1px, transparent 1px 8px); opacity: .45; }

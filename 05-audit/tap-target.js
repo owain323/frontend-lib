@@ -1,5 +1,5 @@
 // puppeteer-core 改由 browser.js 统一持有
-  // 🔴 2026-10-04 统一走 browser.js：那里会 setCacheEnabled(false)。
+  // 🔴 统一走 browser.js：那里会 setCacheEnabled(false)。
   //    没有它，页面里跑的是**缓存的旧代码**，测试会假通过
   //    （磁盘上明明改对了，浏览器里还是旧的）。
   const { launch } = require('./browser');
@@ -7,9 +7,9 @@
 /**
  * tap-target.js — 触控命中区检查（WCAG 2.1 · 2.5.5）
  *
- * 🔴 为什么有这道门禁（Owner 在 iOS 实机报出来的）
+ * 🔴 为什么有这道门禁（iOS 真机实测反馈出来的）
  * ------------------------------------------------
- * Owner 的原话：「Switch 开关…我们点不了。点了之后动不了。」
+ * 原始反馈：「Switch 开关…我们点不了。点了之后动不了。」
  *
  * 我第一反应是"Safari 的问题"——**错的**。查清后是两个**通用**缺陷：
  *   ① `.switch__input` 被 `clip` 成 **1px**，而外层 `<span>` **不是 label**

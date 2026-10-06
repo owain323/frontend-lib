@@ -70,7 +70,7 @@ Chart.update(container); // 重画某区域内全部
 
 **当前体量**：`sparkline.js` 约 8 KB · `sparkline.css` 约 2 KB · 零依赖。
 
-## 🔴 2026-10-04 修两个把线画坏的 bug（Owner 实机截图指出）
+## 🔴 修两个把线画坏的 bug（真机实测截图指出）
 
 ### ① `preserveAspectRatio="none"` ⇒ 横向拉伸
 
@@ -148,6 +148,6 @@ JS 里写的 `fill="none"` **被完全无视**。
 
 另：`aria-hidden` 9/9 · `role=img` 0 个 · axe 0 违规 / 19 通过。
 
-**两个反向控制**：
+**两个判别力验证**：
 ① 复现"类名不一致"那个真 bug ⇒ 8 项 FAIL
 ② 注入"空值丢弃"老写法 ⇒ 3 项 FAIL

@@ -3,7 +3,7 @@
 r"""
 states_exempt.py — 「本文件不适用哪些状态」的声明机制
 
-为什么需要（2026-10-03）
+为什么需要
 ----------------------
 `states.py` 按**类名**匹配规则组。`.switch__input` 里 `input` 这个字面量
 让 switch 匹配到 input 规则，于是被要求实现 `error` / `readonly`。

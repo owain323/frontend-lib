@@ -58,7 +58,7 @@ WHITELIST = {
     'CimInstance', 'ChartsPage', 'DateRange', 'CommonMark', 'DejaVu',
     'BlinkMacSystemFont', 'ChartAdapter', 'LinearProgress',
     'CircularProgress', 'DamagedHelmet',
-    # 键名 / 事件名 / 字体 / 语言 API / 异常类（2026-10-06 批量核定）
+    # 键名 / 事件名 / 字体 / 语言 API / 异常类
     'AppData', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowUp',
     'MarkdownIt', 'ModelViewer', 'NullPointerException', 'OrbitControls',
     'OrbitCtor', 'PingFang', 'ProgressBar', 'RegExp', 'SaveButton',

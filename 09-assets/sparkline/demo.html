@@ -28,13 +28,13 @@
   .chg  { width: 68px; flex: 0 0 auto; font-size: var(--fs-xs); }
   .up   { color: var(--danger); }   /* A 股习惯：涨红 */
   .down { color: var(--success); }
-  /* 🔴 2026-10-04 修：原来这里 flex:1 1 auto 加在 .sparkline 上，
+  /* 🔴 修：原来这里 flex:1 1 auto 加在 .sparkline 上，
      而组件的 .sparkline 自带 width:100% ⇒ **宽度算两遍**，
      在 flex 行里被压成 **5px 宽**（实测）⇒ 趋势图变成一条竖线、
      与旁边的文字糊在一起。
      ⇒ 解法：flex 作用在**包装层**，组件本身只管自己的宽度。
 
-     🔴 2026-10-04 修 iOS 实机报的「趋势图出边框」（实测溢出 76px）：
+     🔴 修 iOS 实机报的「趋势图出边框」（实测溢出 76px）：
        `.row` 是 `flex-wrap: nowrap`，前三列固定宽（82+96+68=246px）
        已吃掉 300px 里的大部分，而我给 `.spark-wrap` 设了
        **`min-width: 80px` 阻止它收缩** ⇒ flex 放不下 ⇒ **必然溢出**。

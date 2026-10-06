@@ -3,7 +3,7 @@
 r"""
 motion.py — 动效门禁
 
-把 00-charter/07-动效规范.md 的自检清单变成机械检查。
+把动效自检清单变成机械检查。
 每一条都对应一个**真实犯过的错**，不是凭空设的规矩。
 
 检查项：
@@ -173,7 +173,7 @@ def main():
 
     print()
     if total_high:
-        print('HIGH 级 %d 项 —— 不许提交（见 00-charter/07-动效规范.md）' % total_high)
+        print('HIGH 级 %d 项 —— 不许提交（判据见 API.md 的「动效」）' % total_high)
         return 1
     print('无 HIGH 级问题。')
     return 0

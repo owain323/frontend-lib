@@ -139,7 +139,7 @@ const PAGE = 'http://127.0.0.1:8000/03-patterns/pagination/demo.html';
   pass(/第 4 页/.test(after.text), '⑦ 翻页后播报更新（"' + after.text + '"）');
   pass(after.sameNode, '⑦ live 区**常驻未替换**（只改 textContent · 依据 USWDS）');
 
-  // 🔴 视觉层级（2026-10-04 Owner 指出"不高级"后新增）
+  // 🔴 视觉层级
   //    真因：当前页同时带 aria-current 与 aria-disabled，
   //    而禁用规则排在后面 ⇒ **把底色覆盖成透明**（实测 rgba(0,0,0,0)）。
   /* 🔴 判据修正：必须在**第 1 页**查"上一页"的禁用态
@@ -232,7 +232,7 @@ const PAGE = 'http://127.0.0.1:8000/03-patterns/pagination/demo.html';
   pass(k3.cur === '1', '键盘 Home → 首页（实测 ' + k3.cur + '）');
   pass(k3.prevDis === true, '首页时"上一页" disabled ✅');
 
-  /* 🔴 逻辑关系（Owner："注重逻辑关系，不只是表面上的视觉设计"） */
+  /* 🔴 逻辑关系（要求：注重逻辑关系，不只是表面上的视觉设计） */
   // ① URL 同步：翻页后 ?page=N
   await p.evaluate(() => {
     document.querySelector('[data-pagination]').setAttribute('data-page', '1');
