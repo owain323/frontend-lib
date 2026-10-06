@@ -73,7 +73,11 @@ WHITELIST = {
     'PerspectiveCamera', 'OrthographicCamera', 'Scene', 'Group', 'Object3D',
     'BoxGeometry', 'SphereGeometry', 'PlaneGeometry', 'BufferGeometry',
     'MeshStandardMaterial', 'MeshBasicMaterial', 'MeshPhongMaterial',
-    'WebGLRenderer', 'AnimationMixer', 'AnimationClip', 'LoadingManager',
+    'WebGLRenderer',
+    # Python 标准库
+    'ArgumentParser', 'Namespace',
+    # 素材库文件名
+    'Shoelace', 'AnimationMixer', 'AnimationClip', 'LoadingManager',
 }
 
 PAT = re.compile(r'\b[A-Z][a-z]+(?:[A-Z][a-z]+)+\b')
@@ -98,6 +102,9 @@ def main():
         if 'vendor' in rel or rel.split('/')[-1] in SELF:
             continue
         if not rel.endswith(EXTS):
+            continue
+        # ★ 锁文件不扫：里面是包名与内容哈希（会被误认成专有名词）
+        if 'package-lock.json' in rel or 'yarn.lock' in rel:
             continue
         try:
             t = io.open(os.path.join(ROOT, rel), encoding='utf-8',

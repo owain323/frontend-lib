@@ -45,13 +45,14 @@ TIMING="${TIMING:-}"
 MODE="${MODE:-full}"
 run() {  # run <名字> <命令...>
   local name="$1"; shift
-  # 分层短路：fast 模式跳过浏览器类检查
-  case "$MODE" in
-    fast)
-      case "$name" in
-        visual|responsive|dark-cont|composition|firefox|a11y-scan|clicktest|rtl|kbd|perf-gate) return 0 ;;
-      esac ;;
-  esac
+  # ---------- 分层：按「需不需要浏览器」自动判定，而不是硬编码名单 ----------
+  # ⭐ 之前是硬编码一个跳过名单 ⇒ 新增浏览器门禁时会**漏掉**（我今天就漏过）。
+  # ⇒ 改成从命令本身判断：跑 node / puppeteer 的一律归「浏览器类」。
+  if [ "$MODE" = "fast" ]; then
+    case "$*" in
+      *node*|*puppeteer*|*playwright*|*with-server*) return 0 ;;
+    esac
+  fi
   local t0 t1 dt
   t0=$(date +%s)
   if out=$("$@" 2>&1); then

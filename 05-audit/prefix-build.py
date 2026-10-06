@@ -14,7 +14,7 @@ prefix-build.py — 生成带命名空间前缀的 CSS 副本
 
   业界做法：
     · Radix —— 不管主题，但把 part / state 用 class 与 data-state 暴露给宿主
-    · MUI  —— 提供 `MuiButton` 这样的稳定命名空间
+    · 供应商例如素材库都会提供空间化命名（不尽为同一事实）
     · WebKit —— 全部收进 shadow DOM（对本库不适用，太重）
 
   ⭐ 本库的做法：**保持短名，同时提供一个"加前缀"的构建工具**。

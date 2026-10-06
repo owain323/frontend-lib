@@ -40,7 +40,10 @@
   "scripts": {
     "test": "node --test 05-audit/unit.test.mjs",
     "gate": "bash 05-audit/check-all.sh",
-    "gate:timing": "TIMING=/tmp/gate-timing.txt bash 05-audit/check-all.sh"
+    "gate:fast": "MODE=fast bash 05-audit/check-all.sh",
+    "gate:timing": "TIMING=/tmp/gate-timing.txt bash 05-audit/check-all.sh",
+    "size:record": "python3 05-audit/size-baseline.py --record",
+    "prefix": "python3 05-audit/prefix-build.py"
   },
   "dependencies": {},
   "devDependencies": {

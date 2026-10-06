@@ -90,10 +90,13 @@ import 'frontend-lib/primitives/button/button.css';
 ## 开发
 
 ```bash
-npm ci
-npm test        # 单元测试
-npm run gate    # 全量检查
+npm ci                 # 按锁文件安装
+npm test               # 单元测试（约 100ms）
+npm run gate:fast      # 静态检查（约 45 秒）
+npm run gate           # 全量检查（约 6 分钟，含浏览器）
 ```
+
+改代码时跑 `gate:fast` 即可；**提交前**再跑一次 `gate`。
 
 ## 许可
 
