@@ -103,11 +103,38 @@ else
   echo "  [OK] 复用已在跑的服务 :8000"
 fi
 
-for g in states refs a11y viewport motion switch; do
-  run "$g"       $PY "05-audit/$g.py" --dir .
+# 🔴🔴 扫描目录必须**显式列举**，不能用 `.`
+# ---------------------------------------------------------------------------
+#   起因（2026-10-06 装 typescript 之后暴露）：
+#     `--dir .` 会连node_modules/ 一起扫进去
+#     ⇒ a11y 报「index.html 缺 lang」—— 那是 node_modules 里的第三方文件。
+#     ⇒ 门禁对**我们没写的代码**报错 = 假红，而且会掩盖真问题。
+#
+#   为什么不在各个 .py 里加排除：
+#     16 个门禁各改一遍，早晚会漏；而 `.gitignore` 里已有权威的忽略清单，
+#     用它生成扫描范围才是单一事实源。
+#
+#   ⚠️ 两个门禁不能吃多路径（实测踩过，所以分组调用）：
+#     · es5-gate  忽略 --dir，只按自己的 LIB_DIRS 走
+#     · 只收 .html 的门禁若传 .md，会把 markdown 当 HTML 解析 ⇒ 假红
+#       （viewport 报「START-HERE.md 缺 meta viewport」就是这么来的）
+SCAN_DIRS="01-tokens 02-primitives 03-patterns 04-recipes 09-assets examples"
+DIR_ARGS=""
+for d in $SCAN_DIRS; do
+  [ -d "$d" ] && DIR_ARGS="$DIR_ARGS $d"
 done
-for g in es5-gate tierA-gate icon-gate hover-gate measure-gate license-gate numeric-gate dark-gate hardcode-gate reuse-check _docclaims; do
-  run "$g"       $PY "05-audit/$g.py" --dir .
+
+# --- 只扫 HTML 的门禁：不含 .md ---
+for g in states refs a11y viewport motion switch; do
+  run "$g"       $PY "05-audit/$g.py" --dir $DIR_ARGS index.html
+done
+# --- 代码门禁---
+# ⚠️ es5-gate 吃的是**位置参数**（仓库根），不是 `--dir`。
+#    传 --dir 时它会扫到 0 个文件 ⇒ 0 违规 ⇒ 显示 PASS
+#    （它自己的源码第 98-103 行就写了这个警告，别再踩）。
+run "es5-gate"    $PY 05-audit/es5-gate.py .
+for g in tierA-gate icon-gate hover-gate measure-gate license-gate numeric-gate dark-gate hardcode-gate reuse-check _docclaims; do
+  run "$g"       $PY "05-audit/$g.py" --dir $DIR_ARGS
 done
 
 echo ""
@@ -226,6 +253,7 @@ if [ -n "$TIMING" ] && [ -s "$TIMING" ]; then
 fi
 
 run "tsc"          $PY 05-audit/tsc-gate.py
+run "pack-smoke"       bash 05-audit/pack-smoke.sh
 run "leak"        $PY 05-audit/leak-scan.py
 run "proper-noun" $PY 05-audit/proper-noun-scan.py
 run "hype"        $PY 05-audit/hype-scan.py

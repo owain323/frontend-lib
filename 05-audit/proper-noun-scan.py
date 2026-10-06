@@ -41,6 +41,10 @@ WHITELIST = {
     'WebGL', 'WebGL2', 'GLTF', 'DRM', 'ES5', 'ES6', 'ES2015', 'ES2020',
     'MIT', 'LGPL', 'Apache', 'BSD', 'GPL', 'ISC',
     'RTL', 'LTR', 'IME', 'I18N', 'L10N', 'A11Y',
+    # TypeScript 通用术语（声明文件里必然出现，不是内部代号）
+    'ComponentInstance', 'PresetName', 'SelectOption', 'SelectOptions',
+    'ComboboxOptions', 'DateRangeOptions', 'DateRangeStatics',
+    'FrontendLibGlobal', 'TreeOptions', 'Destroyable',
     # 浏览器 API
     'IntersectionObserver', 'MutationObserver', 'ResizeObserver',
     'KeyboardEvent', 'MouseEvent', 'PointerEvent', 'TouchEvent',
