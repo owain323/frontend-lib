@@ -1,0 +1,199 @@
+{
+  "files": {
+    "01-tokens/focus-ring.css": {
+      "gzip": 1787,
+      "raw": 4872
+    },
+    "01-tokens/polyfill.js": {
+      "gzip": 1694,
+      "raw": 4128
+    },
+    "01-tokens/scrollbar.css": {
+      "gzip": 2561,
+      "raw": 7296
+    },
+    "01-tokens/theme-toggle.js": {
+      "gzip": 2509,
+      "raw": 5452
+    },
+    "01-tokens/tokens.css": {
+      "gzip": 15244,
+      "raw": 37787
+    },
+    "01-tokens/typography.css": {
+      "gzip": 3263,
+      "raw": 6800
+    },
+    "02-primitives/badge/badge.css": {
+      "gzip": 2805,
+      "raw": 6467
+    },
+    "02-primitives/button/button.css": {
+      "gzip": 6262,
+      "raw": 15457
+    },
+    "02-primitives/card/card.css": {
+      "gzip": 3608,
+      "raw": 8905
+    },
+    "02-primitives/choice/choice.css": {
+      "gzip": 5532,
+      "raw": 15525
+    },
+    "02-primitives/combobox/combobox.css": {
+      "gzip": 2771,
+      "raw": 6900
+    },
+    "02-primitives/combobox/combobox.js": {
+      "gzip": 4322,
+      "raw": 12213
+    },
+    "02-primitives/date-range/date-range.css": {
+      "gzip": 1659,
+      "raw": 5224
+    },
+    "02-primitives/date-range/date-range.js": {
+      "gzip": 3930,
+      "raw": 10437
+    },
+    "02-primitives/input/input.css": {
+      "gzip": 3641,
+      "raw": 10021
+    },
+    "02-primitives/popover/popover.css": {
+      "gzip": 2578,
+      "raw": 7984
+    },
+    "02-primitives/popover/popover.js": {
+      "gzip": 3452,
+      "raw": 8489
+    },
+    "02-primitives/progress/progress.css": {
+      "gzip": 2963,
+      "raw": 7871
+    },
+    "02-primitives/select/select.css": {
+      "gzip": 2045,
+      "raw": 4502
+    },
+    "02-primitives/select/select.js": {
+      "gzip": 4896,
+      "raw": 13419
+    },
+    "02-primitives/separator/separator.css": {
+      "gzip": 1318,
+      "raw": 2884
+    },
+    "02-primitives/skeleton/skeleton.css": {
+      "gzip": 1472,
+      "raw": 3379
+    },
+    "02-primitives/switch/switch.css": {
+      "gzip": 7149,
+      "raw": 17535
+    },
+    "03-patterns/accordion/accordion.css": {
+      "gzip": 6866,
+      "raw": 18325
+    },
+    "03-patterns/accordion/accordion.js": {
+      "gzip": 6585,
+      "raw": 15791
+    },
+    "03-patterns/content/content.css": {
+      "gzip": 3617,
+      "raw": 9307
+    },
+    "03-patterns/drawer/drawer.css": {
+      "gzip": 1744,
+      "raw": 4206
+    },
+    "03-patterns/drawer/drawer.js": {
+      "gzip": 2740,
+      "raw": 6803
+    },
+    "03-patterns/dropdown/dropdown.css": {
+      "gzip": 1930,
+      "raw": 4044
+    },
+    "03-patterns/dropdown/dropdown.js": {
+      "gzip": 3366,
+      "raw": 8053
+    },
+    "03-patterns/form-validation/form-validation.css": {
+      "gzip": 4467,
+      "raw": 11038
+    },
+    "03-patterns/list/flip.js": {
+      "gzip": 3408,
+      "raw": 7969
+    },
+    "03-patterns/list/list.css": {
+      "gzip": 2475,
+      "raw": 6225
+    },
+    "03-patterns/nav/nav.css": {
+      "gzip": 3973,
+      "raw": 11122
+    },
+    "03-patterns/nav/toc.js": {
+      "gzip": 2083,
+      "raw": 4279
+    },
+    "03-patterns/overlay/overlay.css": {
+      "gzip": 4929,
+      "raw": 11612
+    },
+    "03-patterns/overlay/overlay.js": {
+      "gzip": 4556,
+      "raw": 11584
+    },
+    "03-patterns/pagination/pagination.css": {
+      "gzip": 3327,
+      "raw": 7663
+    },
+    "03-patterns/pagination/pagination.js": {
+      "gzip": 5853,
+      "raw": 15170
+    },
+    "03-patterns/states/states.css": {
+      "gzip": 4271,
+      "raw": 10688
+    },
+    "03-patterns/tabs/tabs.css": {
+      "gzip": 2346,
+      "raw": 5418
+    },
+    "03-patterns/tabs/tabs.js": {
+      "gzip": 2857,
+      "raw": 7195
+    },
+    "03-patterns/tooltip/tooltip.css": {
+      "gzip": 1514,
+      "raw": 3424
+    },
+    "03-patterns/tooltip/tooltip.js": {
+      "gzip": 1749,
+      "raw": 4050
+    },
+    "03-patterns/tree/tree.css": {
+      "gzip": 1651,
+      "raw": 3468
+    },
+    "03-patterns/tree/tree.js": {
+      "gzip": 3700,
+      "raw": 9898
+    },
+    "04-recipes/table/table.css": {
+      "gzip": 2604,
+      "raw": 5851
+    },
+    "04-recipes/tierA-tokens.css": {
+      "gzip": 3006,
+      "raw": 17329
+    }
+  },
+  "tolerance_percent": 5.0,
+  "total_gzip": 173078,
+  "total_raw": 444059
+}
