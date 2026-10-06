@@ -6,7 +6,7 @@ admission-gate.py — 新组件准入机械检查（总 G3）
 ===========================================================================
 🔴 这个脚本的定位
 ---------------------------------------------------------------------------
-  `00-charter/14-新组件准入清单.md` 写了 8 条必读纪律。
+  新组件准入要守 8 条纪律。
   但**清单会过期** —— 这是所有规范文档的通病。
 
   ⇒ 所以清单里的每一条，都必须有**对应的机械检查**放在这里。
@@ -170,10 +170,20 @@ def chk_no_stopprop_missing():
 
 
 def chk_charter_exists():
-    """准入清单本身必须在（否则 §5 的"活起来"是空话）"""
+    """内部准入清单（本地工作文档，不随公开仓库分发）。
+
+    🔴 为什么这里必须 skip 而不是 fail：
+       陌生开发者 clone 之后，00-charter/ 不存在（它在 .gitignore 里）。
+       原实现直接判FAIL ⇒ **公开仓库的门禁在公开环境下必然失败**，
+       而且提示语让人去读一个不存在的文件，纯属误导。
+
+       现在：文件在 ⇒ 照常校验 8 条 + 元规则；不在 ⇒ 标 skip，
+       理由写明"这是本地工作文档，不随仓库分发"。
+       其余五条检查全部是机械的，不依赖它，照常跑。
+    """
     if not os.path.exists(CHARTER):
-        return {'ok': False, 'missing': ['00-charter/14-新组件准入清单.md 不存在'],
-                'what': '准入清单存在'}
+        return {'skip': True, 'missing': [],
+                'what': '准入清单含8 条纪律 + 元规则（本地工作文档，未随仓库分发 ⇒ 跳过）'}
     s = io.open(CHARTER, encoding='utf-8').read()
     # 必须有 8 条（① - ⑧）
     marks = [m for m in '①②③④⑤⑥⑦⑧' if m in s]
@@ -184,7 +194,7 @@ def chk_charter_exists():
     if '元规则' not in s:
         miss.append('缺少「元规则」一节（门禁自己的假绿防护）')
     return {'ok': not miss, 'n': len(marks), 'missing': miss,
-            'what': '准入清单含 8 条纪律 + 元规则'}
+            'what': '准入清单含8 条纪律 + 元规则'}
 
 
 CHECKS = [
@@ -198,14 +208,18 @@ CHECKS = [
 
 
 def main():
-    print('  === 新组件准入检查（ G3）===')
+    print('  === 新组件准入检查（G3）===')
     bad = 0
+    skipped = 0
     for fn in CHECKS:
         r = fn()
         extra = ''
         if r.get('n') is not None:
             extra = '（%d 项）' % r['n']
-        if r['ok']:
+        if r.get('skip'):
+            skipped += 1
+            print('  SKIP  %s%s' % (r['what'], extra))
+        elif r['ok']:
             print('  OK    %s%s' % (r['what'], extra))
         else:
             bad += 1
@@ -214,10 +228,11 @@ def main():
                 print('        - %s' % m)
             if len(r['missing']) > 6:
                 print('        … 另有 %d 项' % (len(r['missing']) - 6))
+    if skipped:
+        print('        （%d 项跳过：依赖本地工作文档，不随仓库分发）' % skipped)
     if bad:
         print('')
-        print('  ⇒ %d 项未满足。新增组件前请先读：' % bad)
-        print('    00-charter/14-新组件准入清单.md')
+        print('  ⇒ %d 项未满足。新增组件前请先读API.md 的「组件契约」一节。' % bad)
         return 1
     return 0
 

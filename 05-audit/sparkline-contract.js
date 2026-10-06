@@ -2,7 +2,7 @@ const path = require('path');
 // ⭐ 库根用 __dirname 推导，不写死绝对路径（否则会泄漏本地目录结构）
 const REPO = path.resolve(__dirname, '..');
 // puppeteer-core 改由 browser.js 统一持有
-  // 🔴 2026-10-04 统一走 browser.js：那里会 setCacheEnabled(false)。
+  // 🔴 统一走 browser.js：那里会 setCacheEnabled(false)。
   //    没有它，页面里跑的是**缓存的旧代码**，测试会假通过
   //    （磁盘上明明改对了，浏览器里还是旧的）。
   const { launch } = require('./browser');
@@ -12,7 +12,7 @@ const AXE = require.resolve('axe-core');
  * sparkline 的行为契约
  *
  * 🔴 这个文件是被一个**真实的 bug** 逼出来的：
- *   2026-10-03 第一次跑时，9 个 sparkline **一个都没画出来**。
+ *   第一次跑时，9 个 sparkline **一个都没画出来**。
  *   根因：JS 里找的是 `.sparkline[data-spark]`，而 demo 里写的是 `class="spark"`。
  *   ⇒ **类名不一致 = 静默失效**，页面上什么都不显示、也不报错。
  *
@@ -100,7 +100,7 @@ const AXE = require.resolve('axe-core');
       kinds.area && kinds.area.paths >= 2);
 
   // ── 令牌驱动（不写死色）
-  // 🔴 2026-10-04 改判据：颜色**不再写在 stroke 属性上**
+  // 🔴 改判据：颜色**不再写在 stroke 属性上**
   //    （presentation attribute 里的 var() 各浏览器支持不一致，
   //     规范没保证，Safari 尤其不可靠 ⇒ 已全部改走 CSS 自定义属性）。
   //    所以查两件事：① 元素上没有写死色值 ② 计算值是令牌解析出来的
@@ -171,7 +171,7 @@ const AXE = require.resolve('axe-core');
   await pR.goto('http://127.0.0.1:8000/09-assets/sparkline/demo.html',
                { waitUntil: 'networkidle0' });
   const reduced = await pR.evaluate(() => {
-    // 🔴 2026-10-04 动画类已从 .spark-line 拆到 .spark-anim
+    // 🔴 动画类已从 .spark-line 拆到 .spark-anim
     //    （.spark-line 现在常驻，负责 fill:none）
     const line = document.querySelector('.spark-anim');
     return {
@@ -204,7 +204,7 @@ const AXE = require.resolve('axe-core');
       (withMotion ? withMotion.name + ' ' + withMotion.dur : '无') + '）',
       !!withMotion && withMotion.name !== 'none');
 
-  // ── 🔴🔴 MISSING != ZERO（2026-10-04 新增，来自 演示项目名 的图表契约）
+  // ── 🔴🔴 MISSING != ZERO
   //
   // 契约原文（演示项目名 ChartsPage L10 自己写的）：
   //     「MISSING != ZERO / INVALID != MISSING / 过滤必须可见」

@@ -31,7 +31,7 @@
 
   function toArray(x) { return Array.prototype.slice.call(x); }
 
-  /* 🔴 2026-10-03 刻意不用 Element.closest / Array.filter ——
+  /* 🔴 刻意不用 Element.closest / Array.filter ——
      它们是 ES5 之后才有的（closest 还要 ES6 风格的 DOM 扩展），
      而本库要跑在**精简档（某项目 上的 WebView）**上，版本不确定。
      同目录的 list.js / overlay.js 也都避开这两个 ——

@@ -184,7 +184,7 @@ def check_file(path):
     with open(path, encoding='utf-8', errors='replace') as f:
         src = f.read()
 
-    # 🔴 2026-10-02 修正一个真 bug：单遍扫描**假设 label 出现在 input 之前**。
+    # 🔴 修正一个真 bug：单遍扫描**假设 label 出现在 input 之前**。
     #    但两种顺序都是合法的 ——
     #      <label for="x">…</label><input id="x">    （label 在前）
     #      <input id="x"><label for="x">…</label>    （input 在前，本库现在用这个）

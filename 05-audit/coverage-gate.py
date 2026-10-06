@@ -37,7 +37,7 @@ SEP = chr(92)
 
 COMPONENT_DIRS = ('02-primitives', '03-patterns', '04-recipes', '09-assets')
 
-# 🔴 2026-10-06 归类修正：`04-recipes/longform` 是**排版页**（自带完整 CSS：
+# 🔴 归类修正：`04-recipes/longform` 是**排版页**（自带完整 CSS：
 #    .masthead / .article / .colophon），不是"组件"，它的正确性由
 #    `content.css` 的静态门禁 + 视觉基线保证，不需要组件契约。
 #    ⇒ 把它算进组件覆盖率会永远差 1%，反而让门禁变成"狼来了"。
@@ -88,7 +88,7 @@ def main():
     no_demo = []
     no_contract = []
     for name, d in comps:
-        # 🔴 2026-10-06 修正：demo 不叫 demo.html 的情况真实存在
+        # 🔴 修正：demo 不叫 demo.html 的情况真实存在
         #    （实测 04-recipes/longform 用的是 longform.html）
         #    ⇒ 只要目录里有任意 .html 且**不是** README，就当它有 demo
         htmls = [h for h in glob.glob(os.path.join(d, '*.html'))
@@ -151,7 +151,7 @@ def main():
     bad = len(no_demo) + len(no_contract)
     if bad:
         print('  ⇒ 🔴 有 %d 个组件**没有契约保护**' % bad)
-        print('    新增组件时必须同步加契约（见 00-charter/14-新组件准入清单.md）')
+        print('    新增组件时必须同步加契约（判据见 API.md 的「组件契约」）')
         return 1
     print('  ✅ 每个组件都有 demo 且都有契约保护')
     return 0

@@ -81,7 +81,7 @@ const REPO = path.resolve(__dirname, '..');
       },
 
       /* ④ 分隔线要看得见，且颜色要能随主题走
-         🔴 判据修正（2026-10-05 第一次跑就假失败）：
+         🔴 判据修正：
             原来只认 `background / border-color / background-color` 三个属性名，
             但实际写法是**简写 `border-top`** ⇒ 被判成"颜色未走令牌"。
             ⇒ 正则要覆盖 `border`、`border-top`、`border-bottom`、`background*` 全部。 */

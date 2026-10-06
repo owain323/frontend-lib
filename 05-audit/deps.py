@@ -3,7 +3,7 @@
 r"""
 deps.py — 令牌 → 组件的影响图
 
-：T-02（08-plan/长任务.md）
+
 ------------------------------------------------------------------
 为什么需要
 ----------
@@ -81,13 +81,13 @@ def defined_tokens():
 
 
 def main():
-    # 🔴 2026-10-03 修：`args` 必须排除位置参数（目录），否则
+    # 🔴 修：`args` 必须排除位置参数（目录），否则
     #    `deps.py --token xxx` 时 args[0] 是 '--token' 而 root 取到了 '--token'。
     argv = [a for a in sys.argv[1:] if not a.startswith('-')]
     root = os.path.abspath(argv[0]) if argv else ROOT
     t2c, c2t, files, local_all = collect()
     defined = defined_tokens()
-    # ⚠️ 2026-10-06 撤回一次改动：曾想豁免 `--progress`（组件私有参数），
+    # ⚠️ 撤回一次改动：曾想豁免 `--progress`（组件私有参数），
     #    但豁免会让"忘了设值"的组件静默用 0%（假绿）。
     #    ⇒ 正解是在 tokens.css 定义默认值，让门禁自然通过。
     usable = defined | local_all   # 全局定义的 + 组件自己定义的
@@ -129,7 +129,7 @@ def main():
         return 0
 
     if '--missing' in args:
-        # 🔴 2026-10-04 判据修正：**带 fallback 的引用不算"未定义"**。
+        # 🔴 判据修正：**带 fallback 的引用不算"未定义"**。
         #    例：accordion 的 `max-height: var(--acc-h, 0px)`
         #    —— `--acc-h` 由 accordion.js 在展开前动态测量写入
         #    （panel.style.setProperty('--acc-h', h + 'px')），

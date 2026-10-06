@@ -65,7 +65,7 @@
     this.opts = opts || {};
     this.items = toArray(root.querySelectorAll('.accordion__item'));
     if (!this.items.length) return;
-    // 🔴 2026-10-03 把 `--multi` 从 CSS 类改成 data 属性。
+    // 🔴 把 `--multi` 从 CSS 类改成 data 属性。
     //
     //   原因：它**不是样式变体，是行为开关**。
     //   多开模式下展开的那一项，和单开模式下展开的那一项
@@ -89,7 +89,7 @@
     // >6 个面板时不给 role=region（APG 的上限）
     this.useRegion = !root.classList.contains('accordion--many') &&
                      this.items.length <= 6;
-    /* 🔴 2026-10-04 Owner 实机报「收起后点另一项要点两次」的**最终解法**：
+    /* 🔴 真机实测反馈「收起后点另一项要点两次」的**最终解法**：
 
        实测量化：收起时下方 trigger 在动画中**上移 131px**。
        ⚠️ 试过两个办法都**无效**（都记在下面，别再走回头路）：
@@ -138,7 +138,7 @@
       var panel = it.querySelector('.accordion__panel');
       if (!btn || !panel) continue;
 
-      // 🔴 2026-10-04 修「id 跨实例撞名」（axe 报 landmark-unique 的真因）：
+      // 🔴 修「id 跨实例撞名」（axe 报 landmark-unique 的真因）：
       //   原来 `if (!panel.id) panel.id = 'acc-panel-' + (i + 1)`
       //   **每个 accordion 实例都从 1 开始编号** ⇒ 同一个页面有 3 个手风琴时
       //   ⇒ 出现 3 组 `acc-panel-1` ⇒ **id 全局不再唯一**（HTML 硬性要求）
@@ -156,7 +156,7 @@
       btn.setAttribute('aria-controls', panel.id);
       // ② panel → button（aria-labelledby）
       panel.setAttribute('aria-labelledby', btn.id);
-      // ⚠️ 2026-10-04 实测结论：这里**不要加** role="region"（我先加过，axe 立刻报
+      // ⚠️ 实测结论：这里**不要加** role="region"（曾经加过，axe 立刻报
       // landmark-unique，浏览器实验证实了因果）：
       //   · role="region" 本身就是一个 landmark
       //   ⇒ 一个页面有多个手风琴面板 = 多个 region
@@ -174,7 +174,7 @@
       // ④ heading 的 aria-level 与 h1-h6 天然隐含的一致 ⇒
       //    这里不动（用真实的 h2/h3 比显式 aria-level 更可靠）
 
-      // ⑤ 🔴 2026-10-04：建立**初始**的 data-state
+      // ⑤ 🔴 建立**初始**的 data-state
       //    CSS 靠 `[data-state="open"]` 触发高度过渡，
       //    没有它的话：HTML 里写了 aria-expanded="true" 也不会展开。
       var isOpen = btn.getAttribute('aria-expanded') === 'true';
@@ -204,7 +204,7 @@
            window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   };
 
-  /* 🔴 2026-10-04 锁高：收起动画期间**列表高度不变** ⇒ 下方 trigger 不位移。
+  /* 🔴 锁高：收起动画期间**列表高度不变** ⇒ 下方 trigger 不位移。
      量化依据：收起时下方 trigger 上移 **131px**，手指必然点空。
      ⚠️ 只在**收起**时锁 —— 展开时下方项本来就要让位，锁了反而不自然。 */
   /* ⚠️ 保留但不用：实测锁列表高度解决不了"项在列表内部上移"（见 set() 注释） */
@@ -294,7 +294,7 @@
   Accordion.prototype.bind = function () {
     var self = this;
 
-    /* 🔴 2026-10-04 修「收起后点另一项，第一次没反应」（Owner 实机报）
+    /* 🔴 修「收起后点另一项，第一次没反应」（真机实测反馈）
 
        真因：**收起动画期间整个列表在向上位移**。
        第 1 项的 panel 从 117px 缩到 0，第 2 项的 trigger **跟着往上挪**；

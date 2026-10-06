@@ -48,7 +48,7 @@
     /* ----------------------------------------------------------------
        判断"当前在第几节" —— **统一用计算，不用 IntersectionObserver**
 
-       🔴 2026-10-02 修正一个真 bug（Owner 报"导航不跟随文章移动"）：
+       🔴 修正一个真 bug（实测反馈"导航不跟随文章移动"）：
 
        旧实现用 IntersectionObserver + rootMargin:'-10% 0px -70% 0px'，
        靠 `seen[id] = isIntersecting` 增量维护。问题在于：

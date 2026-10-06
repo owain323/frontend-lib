@@ -1,11 +1,11 @@
 // puppeteer-core 改由 browser.js 统一持有
-  // 🔴 2026-10-04 统一走 browser.js：那里会 setCacheEnabled(false)。
+  // 🔴 统一走 browser.js：那里会 setCacheEnabled(false)。
   //    没有它，页面里跑的是**缓存的旧代码**，测试会假通过
   //    （磁盘上明明改对了，浏览器里还是旧的）。
   const { launch } = require('./browser');
 const AXE = require.resolve('axe-core');
 
-// 反向控制：注入 5 类典型违规，验证 axe 是否真能抓到（否则"0 违规"不可信）
+// 判别力验证：注入 5 类典型违规，验证 axe 是否真能抓到（否则"0 违规"不可信）
 const CASES = [
   ['image-alt', '<img src="x.png">'],
   ['label', '<input type="text">'],

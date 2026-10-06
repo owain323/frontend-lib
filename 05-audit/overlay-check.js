@@ -24,10 +24,10 @@ const REPO = path.resolve(__dirname, '..');
 
     extra: {
       /* ⓪ 弹层由 JS 动态创建 ⇒ 必须先打开一个再查
-         🔴 2026-10-05 判据修正：原来只在初始 DOM 里找 `.dialog`，
+         🔴 判据修正：原来只在初始 DOM 里找 `.dialog`，
             而它是点击后才由 overlay.js 插入的 ⇒ 永远查不到（假失败）。 */
       '0 先打开一个弹层': async (p) => {
-        /* 🔴 2026-10-05 实测更正：demo 的 #d1 **并没有绑定** open 行为
+        /* 🔴 实测更正：demo 的 #d1 **并没有绑定** open 行为
            （它只演示 toast，dialog 的用法写在文档片段里）⇒ 点它没反应。
            ⇒ 正确做法：**直接调组件公开 API** `Overlay.dialog({...})`，
               这才是"用组件的人会做的事"，也最贴近真实用法。 */
@@ -105,7 +105,7 @@ const REPO = path.resolve(__dirname, '..');
       },
 
       /* ④ ⭐ 焦点陷阱：弹层打开时 Tab 不能跑到外面
-         🔴 2026-10-05 修正：上一条（Esc）已经把弹层关掉了 ⇒ 这里必须**重开**。 */
+         🔴 修正：上一条（Esc）已经把弹层关掉了 ⇒ 这里必须**重开**。 */
       '焦点陷阱（Tab 留在弹层内）': async (p) => {
         await p.evaluate(() => {
           if (document.querySelector('.dialog')) return;
@@ -175,7 +175,7 @@ const REPO = path.resolve(__dirname, '..');
                                     : '🔴 关闭后焦点没归位（现在焦点在 ' + back.tag + '）' };
       },
 
-      /* 🔴 2026-10-06 补（ I3 复核时发现这条缺失）：背景隔离。
+      /* 🔴 补（ I3 复核时发现这条缺失）：背景隔离。
        *
        *  为什么必须查这条：
        *    focus trap 只拦住**键盘 Tab**，拦不住**读屏**。

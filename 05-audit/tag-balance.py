@@ -3,7 +3,7 @@
 r"""
 tag-balance.py — HTML 标签是否配平
 
-为什么需要这一条（2026-10-03 的实际收获）
+为什么需要这一条
 --------------------------------------------
 给 10 个页面补 `<main>` 地标时，**脚本两次失配**：
 
@@ -45,7 +45,7 @@ def check(path):
     body = blank_inner(body, 'script')
     body = blank_inner(body, 'style')
     body = re.sub(r'<!--.*?-->', '', body, flags=re.S)
-    # ⚠️ 2026-10-03 已知**假报**：源码里写 `<table><tr>`（不写 tbody）时，
+    # ⚠️ 已知**假报**：源码里写 `<table><tr>`（不写 tbody）时，
     #    浏览器会自动补一个 tbody，于是 DOM 里是配平的。
     #    只看源码的标签栈会误报"table 没闭合"。
     #    浏览器实测 index.html / card 的 demo，body 都只有 1 个子元素

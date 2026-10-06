@@ -53,8 +53,8 @@
   border-radius: var(--r-sm);
   box-shadow: var(--shadow-2);
 
-  /* 🔴 2026-10-03 去掉 `border-left: 3px solid`。
-     Owner 评价左侧竖条"很蠢"——它是纯装饰：3px 竖条在浅底上形成一条硬边，
+  /* 🔴 去掉 `border-left: 3px solid`。
+     评审意见左侧竖条"很蠢"——它是纯装饰：3px 竖条在浅底上形成一条硬边，
      视觉噪声大于信息量。已从全库去掉，**这里漏了**（典型的"只改一半"）。
 
      WCAG 1.4.1（不能只靠颜色）**不依赖竖条**：图标 + 文字本身就够了
@@ -87,7 +87,7 @@
 
 .toast__close {
   flex: none;
-  /* 🔴 2026-10-04：28 → 44（WCAG 2.5.5，Owner iOS 实机报后统一）
+  /* 🔴 28 → 44（WCAG 2.5.5，iOS 真机实测反馈后统一）
      🔴 注意用 min-width 而**不是** width：
         固定 `width: 28px` 会**赢过** min-width（同名属性里
         min-width 只在 width:auto 时才生效）⇒ 改完必须确认实测值。 */
@@ -148,7 +148,7 @@
   place-items: center;
   padding: var(--sp-5);
 
-  /* 🔴 2026-10-03 同 nav：写死的深色遮罩在暗色下会"消失"。改用令牌。 */
+  /* 🔴 同 nav：写死的深色遮罩在暗色下会"消失"。改用令牌。 */
   background: var(--scrim);
   /* 🔴 不做模糊：backdrop-filter 在旧 WebView 上要么无效要么掉帧 */
   animation: backdrop-in var(--dur-base) var(--ease-out);
@@ -193,9 +193,9 @@
 }
 
 /* 动作区：按钮**右对齐且相邻**。
-   🔴 2026-10-02 去掉 space-between + margin-right:auto。
+   🔴 去掉 space-between + margin-right:auto。
       原来让破坏性按钮靠左、取消靠右，中间空一大片 ——
-      Owner 评价「删除和取消放到中间来」，看着别扭。
+      评审意见「删除和取消放到中间来」，看着别扭。
       常规做法（Linear / Vercel / GitHub 都这样）：两个按钮挨着，一起靠右。
       次要的在左（取消），主要的在右（删除）。 */
 .dialog__actions {
@@ -211,7 +211,7 @@
    ---------------------------------------------------------------------------
    🔴 打开模态必须锁背景滚动，否则鼠标滚轮在弹层边缘会连带滚动背后页面。
 
-   🔴🔴 Owner 报"弹窗打开时整页明显向右移动" —— 这是锁滚动最典型的症状：
+   🔴🔴 实测反馈"弹窗打开时整页明显向右移动" —— 这是锁滚动最典型的症状：
    滚动条消失 ⇒ 可视区变宽 ⇒ 居中内容整体右移。
 
    **根治办法是 `scrollbar-gutter: stable`，不是 JS 补偿。**
@@ -238,7 +238,7 @@ body.is-locked, body[data-state="locked"] { overflow: hidden; }
 @media (max-width: 480px) {
   .dialog-backdrop { place-items: end center; padding: 0; }
   .dialog {
-    /* 🔴 2026-10-04 修一个 iPhone 实测到的 bug：
+    /* 🔴 修一个 iPhone 实测到的 bug：
        这里原本是 `max-width: none`（意图是"窄屏下撑满"），
        但**没有上界** —— 一旦内容里有最小宽度的东西
        （<table> / <pre> / 长 code / flex 不换行的行），

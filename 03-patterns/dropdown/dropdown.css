@@ -76,7 +76,7 @@
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  /* 🔴 2026-10-05 修：原来写 `min-height: 44px`，但 <li> 是 `display:list-item`
+  /* 🔴 修：原来写 `min-height: 44px`，但 <li> 是 `display:list-item`
      ⇒ 在 flex 容器里**未被拉伸**，实测只有 24px。
      ⇒ 改用 `height` 明确给足（或保持 flex 但显式 height）。
      ⚠️ 这类问题在桌面小屏看不出来，只有量了才发现。 */

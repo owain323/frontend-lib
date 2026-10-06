@@ -3,9 +3,9 @@
 r"""
 make-tiersnippet.py — 从 tokens.css 生成精简档 专用令牌文件
 
-为什么需要这个（2026-10-03 抓到的假承诺）
+为什么需要这个
 --------------------------------------------
-`00-charter/03-环境版本.md` 一直写着：
+精简档（Tier A）的硬约束是：
 
 > 「精简档：复制 `01-tokens/tokens.css` 的 **`[核心]` 段**，约 2 KB」
 
@@ -52,7 +52,7 @@ HEADER = """/* =================================================================
 
 def _strip_comments(src):
     """🔴 剥掉注释再找区块。
-    原因（2026-10-06 实测）：`tokens.css` 的**注释里**也写着
+    原因：`tokens.css` 的**注释里**也写着
     "prefers-color-scheme: dark"（那段说明"为什么用 @media"），
     而原代码用 `src.index(...)` ⇒ 找到的是**注释里那次** ⇒
     从错误位置数括号 ⇒ 永远配不平 ⇒ `UnboundLocalError`。
@@ -76,7 +76,7 @@ def _strip_comments(src):
 
 
 def extract(src):
-    """🔴 2026-10-06 修正：先剥注释再找（见 _strip_comments 的说明）。
+    """🔴 修正：先剥注释再找（见 _strip_comments 的说明）。
     原来是 `src.index(':root')` ⇒ 会命中注释里提到的 `:root`。"""
     plain = _strip_comments(src)
     i = plain.index(':root')

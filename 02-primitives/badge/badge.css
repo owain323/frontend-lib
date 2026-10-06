@@ -86,7 +86,7 @@
   transition: background var(--dur-fast) var(--ease-out);
 }
 
-/* 🔴 2026-10-03 两处修正：
+/* 🔴 两处修正：
    ① 加 @media (hover) 门控 —— 触屏上"点一下"会先点亮 hover 再 click，
       于是保持"被悬停"的颜色不褪（hover-gate 抓到的）。
    ② **不用 `filter: brightness(0.97)`** —— states 门禁把它列为反模式，
@@ -120,7 +120,7 @@
 /* ============================================================================
    实心态变体
    ============================================================================
-   🔴 2026-10-06 新增（暗色门禁抓出来的）：
+   🔴 新增（暗色门禁抓出来的）：
       demo 原来用**行内 style** 写 `background: var(--success); color: #fff`
       ⇒ 暗色下 --success 变浅（#6FAA7A），白字压上去只有 2.72:1
       ⇒ 行内 style 还会**绕过 tokens 门禁**（门禁只扫 CSS 文件）
@@ -139,7 +139,7 @@
 @media (prefers-color-scheme: dark) {
   /* 暗色下这些底色变浅 ⇒ 必须换深字。
      ⚠️ 用令牌而不是写死色值 —— 否则违反本库"零硬编码"纪律
-        （badge 契约的判据 ① 会当场报出来，我就是这么被抓到的）。 */
+        （badge 契约的判据 ① 会当场报出来，这条判据当场就会报出来）。 */
   .badge--solid-success { color: var(--text-on-solid); }
   .badge--solid-danger  { color: var(--text-on-solid); }
   .badge--solid-warning { color: var(--text-on-solid); }

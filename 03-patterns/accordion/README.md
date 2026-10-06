@@ -80,7 +80,7 @@ APG 明确写：
 原生 `<button>` **本身就响应** Enter/Space 并触发 click。
 手写 keydown 会造成**双触发**（keydown 切一次、click 又切一次）。
 
-反向控制验证过：注入 keydown 监听 ⇒ 契约测试 2 项立即被抓。
+判别力已验证：注入 keydown 监听 ⇒ 契约测试 2 项立即被抓。
 
 ## role="region" 的 ≤6 上限
 
@@ -118,4 +118,4 @@ APG 警告：
 - **>6 且加 `--many` ⇒ 不给 `role=region`**（实测 0/8）
 - axe 0 违规 / 29 条通过
 
-反向控制：注入 keydown 双触发 ⇒ **2 项立即被抓**。
+判别力验证：注入 keydown 双触发 ⇒ **2 项立即被抓**。

@@ -1,9 +1,9 @@
 /**
  * a11y-scan.js — 用 axe-core 扫每个 demo，报告真实的无障碍违规
  *
- * 为什么用 axe-core（2026-10-03）
+ * 为什么用 axe-core
  * ----------------------------
- * Owner 问「开源项目有没有这种模拟器，确保语义不会出问题，并且要可验证」。
+ * 提问「开源项目有没有这种模拟器，确保语义不会出问题，并且要可验证」。
  *
  * axe-core 是**业界标准**：
  *   · Deque Systems 维护，驱动 Chrome DevTools 的无障碍审计
@@ -42,7 +42,7 @@ const BASE = 'http://127.0.0.1:8000';
 
 // 🔴 KNOWN_OK = 已知且**已决定暂不做**的规则（会让门禁变红但不该变红）。
 //
-// 2026-10-03 更新：'landmark-one-main' 与 'region' **已清零**。
+// 更新：'landmark-one-main' 与 'region' **已清零**。
 //    之前它们在这里是因为批量改 HTML 出过事故（8 页面结构损坏）而放弃。
 //    现在用**安全做法**重做：只换开标签 + body 尾闭合标签（唯一确定，不需配对推断），
 //    改完立即用浏览器验 `document.body.children` 与 `.wrap` 的 tagName。
@@ -94,7 +94,7 @@ const PAGES = [
     await page.addScriptTag({ path: AXE });
     const r = await page.evaluate(async () => {
       const res = await window.axe.run(document, {
-        /* 🔴 2026-10-03 补 best-practice：反向控制发现 `duplicate-id` 漏检。
+        /* 🔴 补 best-practice：判别力验证发现 `duplicate-id` 漏检。
            原因是它不属于 WCAG 条款（tag 是 best-practice），
            而我原来只跑 wcag* 几个 tag ⇒ 重复 id 查不出来。
            而重复 id 会**破坏 label 的 for 关联和所有 ARIA 引用** ——
@@ -136,9 +136,9 @@ const PAGES = [
   }
   await browser.close();
   console.log('');
-  // 2026-10-03：分「已知且已决定不做」与「真问题」两类报告。
-  // 之前我把"缺 <main> 地标"和真问题混在一起报，看起来像还有 6 个页面坏了，
-  // 实际上那是 Owner 明确决定**放弃**的（批量改 HTML 出的事故已回滚，
+  // 分「已知且已决定不做」与「真问题」两类报告。
+  // 之前把"缺 <main> 地标"和真问题混在一起报，看起来像还有 6 个页面坏了，
+  // 实际上那是 最终决定**放弃**的（批量改 HTML 出的事故已回滚，
   // 结构已恢复原样）。混报会让人误判状态。
   console.log('合计 ' + totalV + ' 类违规 / ' + totalPass + ' 条规则通过');
   if (knownIssues.length) {

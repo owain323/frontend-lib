@@ -67,7 +67,7 @@
       menu.setAttribute('aria-label', opt.label || '菜单');
     }
     Array.prototype.forEach.call(menu.querySelectorAll('li'), function (li) {
-      /* 🔴 2026-10-05 修一个**静默失效**（实测发现）：
+      /* 🔴 修一个**静默失效**（实测发现）：
          demo 的 <li> 上**根本没有 dd__item 类** ⇒ CSS 里的
          `height: 44px` / 内边距 / hover **全部没生效**
          ⇒ 实测每项只有 24px（浏览器默认行高）。
@@ -122,7 +122,7 @@
     }
 
     /* ---------- 按钮 ---------- */
-    /* 🔴 2026-10-05 修：原来先 `setAttribute('aria-controls', menu.id || '')`
+    /* 🔴 修：原来先 `setAttribute('aria-controls', menu.id || '')`
        **再**给 menu.id ⇒ aria-controls 永远拿到空串。
        ⇒ 顺序必须反过来：**先确保有 id，再引用**。 */
     if (!menu.id) menu.id = 'dd-menu-' + (new Date()).getTime();
@@ -159,7 +159,7 @@
         return;
       }
 
-      /* 🔴 2026-10-05 修一个**静默失效的真 bug**：
+      /* 🔴 修一个**静默失效的真 bug**：
          原来写的是 `e.target.closest !== menu`
          ⇒ `e.target.closest` 是**函数本身**（没加括号！），
            它永远不等于 menu ⇒ 这个 if **永远为真** ⇒ 每次都提前 return

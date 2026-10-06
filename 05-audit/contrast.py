@@ -125,7 +125,7 @@ PAIRS = [
     ('控件边界 / 纸底',     '--border-control', '--paper',          3.0,  'ui'),
     ('控件边界 / 表面',     '--border-control', '--surface',        3.0,  'ui'),
     # 分层：底色与表面要有可见差，否则"表面浮在底上"的效果完全消失。
-    # 这不是 WCAG 要求，是设计底线 —— Owner 看 demo 时说"背景没渲染出来"，
+    # 这不是 WCAG 要求，是设计底线 —— 实测出现过"背景没渲染出来"，
     # 量出来 #fcfcfd vs #ffffff 只有 1.025:1，人眼根本分辨不出。
     ('表面 / 纸底（分层）', '--surface',        '--paper',          1.06, 'ui'),
 ]
@@ -142,7 +142,7 @@ def check_inline_sync(tokens, root, mode='light'):
        没有任何门禁能发现这件事：对比度是对的、引用是全的、结构是对的，
        只是**两边不一致**。
 
-    🔴 2026-10-03 暗色模式后必须**分两次核对**：
+    🔴 暗色模式后必须**分两次核对**：
        一个 HTML 里现在有**两份**色板（浅色 :root + @media dark 里的 :root）。
        之前用 `re.search` 只找**第一个匹配** ⇒ 拿暗色值去比浅色内联，
        全部误报。改法：dark 模式只在 `@media (prefers-color-scheme: dark)`
@@ -153,7 +153,7 @@ def check_inline_sync(tokens, root, mode='light'):
     import glob
     import _common
     bad = []
-    # 🔴 2026-10-03 加豁免：examples/ 下的页面**故意**自带一套令牌
+    # 🔴 加豁免：examples/ 下的页面**故意**自带一套令牌
     #    （那是 T-01 接入样板的核心论点：证明本库组件能在别人的令牌体系下工作）。
     #    它们与 tokens.css 不同**不是漂移**，是需要保留的设计。
     #    ⇒ 只有 demo / recipe（那些声称"内联了本库色板"）才该被检查。
@@ -162,7 +162,7 @@ def check_inline_sync(tokens, root, mode='light'):
         rel = os.path.relpath(f, root)
         if any(rel.startswith(x) for x in EXEMPT):
             continue          # 示例项目自带令牌，不是漂移
-        # 🔴 2026-10-06 排除**产物目录**（统一清单见 _common.py）
+        # 🔴 排除**产物目录**（统一清单见 _common.py）
         #    实测踩坑：`_current/` 里的文件扩展名是 .html 但内容是 PNG
         #    ⇒ 读它直接抛 UnicodeDecodeError，整个门禁崩掉。
         if _common.is_artifact(rel):
@@ -220,7 +220,7 @@ def main():
         print('找不到 tokens 文件：%s' % path)
         return 2
 
-    # 🔴 2026-10-03：暗色模式落地后，**两套配色都要跑**。
+    # 🔴 暗色模式落地后，**两套配色都要跑**。
     #    之前 load_tokens 解析整份文件，暗色块在末尾覆盖了同名令牌 ——
     #    于是这个门禁其实**只在验暗色**，浅色被悄悄放过了。
     all_fails, all_missing = [], []
@@ -290,9 +290,9 @@ if __name__ == '__main__':
     sys.exit(main())
 
 
-# 🔴 2026-10-04 加：暗色的**色相**门禁（Owner 实机打回过一次）
+# 暗色的**色相**门禁（真机实测否决过一次配色）
 #
-# Owner 原话：「主业是**白色兼灰色**是有高级感的，现在变成了**暖色**，太吓人了」
+# 实测反馈原话：「白色兼灰色是有高级感的，现在变成了暖色，太吓人了」
 #
 # ⇒ 本库的"高级感"来自**冷灰**（接近蓝的灰），这是产品调性，**不能改**。
 # ⇒ 机械判据：中性色的 R 和 B 差 ≤ 12（R 略高一点点才偏冷）。

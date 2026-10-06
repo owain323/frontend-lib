@@ -71,7 +71,7 @@ const REPO = path.resolve(__dirname, '..');
       },
 
       /* 骨架屏不能只靠灰块（要有 aria-busy 或文字说明在加载）
-         🔴 判据修正（2026-10-05 第一次跑时误报）：
+         🔴 判据修正：
             原来查 `.skeleton` 元素本身，但它被正确地标了 `aria-hidden="true"`
             （灰块是纯装饰，对 AT 无意义）⇒ 判据永远失败。
             ⇒ 正解：查**承载骨架屏的容器**，它才该带 role="status" / aria-busy。

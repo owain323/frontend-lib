@@ -4,7 +4,7 @@ const { launch } = require('./browser.js');
  * deco-clip-check.js — 图表「末端绘制物被裁」全局检查
  *
  * ============================================================================
- * 🔴 为什么需要（2026-10-04 Owner 实机报：「所有地方都会有这个问题，
+ * 🔴 为什么需要（真机实测反馈：「所有地方都会有这个问题，
  *    最右边的圆点永远被吃掉了一部分」）
  * ============================================================================
  * 那个 bug 的**真正根因**不是"末点圆点半径大于留白"，而是：
@@ -14,7 +14,7 @@ const { launch } = require('./browser.js');
  *          ⇒ 末点圆点被压扁、被 `overflow:hidden` 裁掉。
  *
  * ⭐ 为什么值得做成"全局门禁"：
- *   Owner 说「所有地方都有」—— **实测确认 8/8 张图全中**。
+ *   反馈「所有地方都有」—— **实测确认 8/8 张图全中**。
  *   这类 bug 的特点是：**单张看着还行，全库系统性错位**，
  *   而逐页肉眼检查**必然漏**。
  *
@@ -74,7 +74,7 @@ const MARGIN = 3;   // 末点圆点 r=2.5 ⇒ 余量 <3 必被裁一半
         const vbW = parseFloat(vb[2]);
         const vbH = parseFloat(vb[3]);
 
-        /* 🔴 2026-10-04 判据修正：末点位置必须从 **SVG 的 viewBox 坐标**算。
+        /* 🔴 判据修正：末点位置必须从 **SVG 的 viewBox 坐标**算。
            上一版用 getBoundingClientRect 量圆点 —— 但元素被 overflow:hidden 裁掉后，
            getBoundingClientRect 仍返回**未裁剪的几何位置**，
            于是每次都量到"余 0px"，**是假象**（我被它带着绕了一圈）。
@@ -139,7 +139,7 @@ const MARGIN = 3;   // 末点圆点 r=2.5 ⇒ 余量 <3 必被裁一半
   if (bad) {
     console.log('  ❌ ' + bad + ' 处「末端绘制物被裁」或 viewBox 不匹配。');
     console.log('');
-    console.log('  🔴 典型根因（2026-10-04 实测）：');
+    console.log('  🔴 典型根因：');
     console.log('     viewBox 宽度 = 量到的旧宽度（flex 收缩前），容器已被压窄');
     console.log('     ⇒ SVG 被压缩 ⇒ 端点圆点压扁 + overflow:hidden 裁掉。');
     console.log('     修法：① 用 getBoundingClientRect().width（不是 clientWidth）');

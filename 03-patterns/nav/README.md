@@ -6,7 +6,7 @@
 | **实测** | demo 三件事都能真机验证（页头/目录/抽屉） |
 | **适用** | 精简档 / B / C，`toc.js` 为 ES5 |
 | **依赖** | `01-tokens/tokens.css` + `02-primitives/button/button.css` |
-| **规范** | `00-charter/08-状态切换规范.md`（抽屉的展开/收起按它做）|
+| **规范** | 见本文件「状态切换」一节|
 
 ---
 
@@ -18,12 +18,12 @@ Toc.init({ links: '#toc-list .toc__link', sections: 'main h2[id]' });
 
 返回一个取消函数（解绑事件）。
 
-### 🔴 为什么不用 `IntersectionObserver`（Owner 报过 bug）
+### 🔴 为什么不用 `IntersectionObserver`（实测到 bug）
 
 第一版用的是 `IntersectionObserver` + `rootMargin: '-10% 0px -70% 0px'`，
 靠 `seen[id] = isIntersecting` 增量维护当前节。
 
-**Owner 报"导航不跟随文章移动"。** 根因：
+**实测反馈"导航不跟随文章移动"。** 根因：
 
 > **滚到两个 section 之间时，观察区里一个 section 都没有**
 > ⇒ `seen` 全为 false ⇒ 不调 `mark()` ⇒ 高亮停在上一个不动。

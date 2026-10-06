@@ -82,7 +82,7 @@ function parseRgb(s) {
 /** ⭐ 在页面里执行：遍历所有可见元素，找「文字 vs 有效底色」对比度不足的 */
 const SCAN = function () {
   /* ------------------------------------------------------------------
-   * 🔴 豁免清单（2026-10-06，Owner 批准）
+   * 🔴 豁免清单
    *
    * 有些对比度不足是**故意的** —— demo 页面专门演示"这样做不对"，
    * 它们的存在意义就是让门禁报出来。
@@ -128,7 +128,7 @@ const SCAN = function () {
       if (c) return c;
       n = n.parentElement;
     }
-    /* 🔴 2026-10-06 修一个**判据自身的 bug**（不是组件的问题）。
+    /* 🔴 修一个**判据自身的 bug**（不是组件的问题）。
        原来的 fallback：`getComputedStyle(document.body).backgroundColor`，
        拿不到就用 **白色 [255,255,255]**。
        ⚠️ 实测：本库的 demo 页面把背景写在 `background: var(--paper)` 上，

@@ -4,7 +4,7 @@ const { launch } = require('./browser.js');
  * contract-kit.js — 组件契约测试的公共框架
  *
  * ============================================================================
- * ⭐ 为什么有它（2026-10-04 Owner：「确保这个东西是不能出错的」）
+ * ⭐ 为什么有它
  * ============================================================================
  * 诊断发现：**16 个组件里只有 3 个有契约测试** ⇒ 另外 13 个改了没人知道。
  *
@@ -109,7 +109,7 @@ async function check(cfg) {
   };
 
   /**
-   * 🔴 2026-10-05 新增：**按组件类型豁免**通用判据
+   * 🔴 新增：**按组件类型豁免**通用判据
    * ---------------------------------------------------------------
    * 有些组件**本来就不该**满足某些通用判据：
    *   · badge（徽标）是**纯展示**⇒ 不可聚焦 ⇒ 不该要求焦点环、也不该有命中区
@@ -132,7 +132,7 @@ async function check(cfg) {
   const errs = [];
   p.on('pageerror', (e) => errs.push(e.message.slice(0, 50)));
   p.on('console', (m) => { if (m.type() === 'error') errs.push(m.text().slice(0, 50)); });
-  /* 🔴 2026-10-06  H4：viewport 可配。
+  /* 🔴 H4：viewport 可配。
    * 默认仍是手机（393×852，保持既有契约行为不变），
    * 契约可传 `viewport: 'tablet' | 'desktop' | {w,h}` 覆盖。
    *
@@ -155,8 +155,8 @@ async function check(cfg) {
 
   const cssPath = cfg.dir + '/' + cfg.name + '.css';
 
-  /* 🔴 2026-10-04 补：组件**自己**必须声明 focus-visible。
-     反向控制时发现：删掉 button.css 的 :focus-visible 规则，
+  /* 🔴 补：组件**自己**必须声明 focus-visible。
+     判别力验证时发现：删掉 button.css 的 :focus-visible 规则，
      契约仍然全绿 —— 因为 tokens/focus-ring.css 里有**全局兜底**。
      ⇒ 那不算"组件合格"，只算"被兜底救了"。 */
   if (fs.existsSync(cssPath)) {
@@ -209,7 +209,7 @@ async function check(cfg) {
                String(ringOn.className).split(' ')[0]) : null };
   }, cfg.primary);
   if (kb) {
-    /* 🔴 2026-10-04 判据修正：**焦点样式可以自绘**。
+    /* 🔴 判据修正：**焦点样式可以自绘**。
        input 类组件的常见做法是 `outline:none` + `border-color` 变色
        + `box-shadow` 外圈（input.css 就是这么做的，理由是
        「用户必须随时知道我现在在哪个框里」⇒ 用 :focus 而非 :focus-visible）。
@@ -224,7 +224,7 @@ async function check(cfg) {
           : shadowOk ? '自绘 box-shadow'
           : '祖先 ' + kb.ringOn + ' 上的 :focus-within 环') + '）');
   } else {
-    /* 🔴 2026-10-05：纯展示组件（badge / separator / content）**本来就不可聚焦**
+    /* 🔴 纯展示组件（badge / separator / content）**本来就不可聚焦**
        ⇒ 这不是缺陷。显式豁免并写明理由，仍留在报告里（避免被后人"补错"）。 */
     if (cfg.skipFocusRing) { pass(true, '② 焦点环（豁免：' + (cfg.note || '纯展示组件') + '）'); }
     else { pass(false, '② 键盘 Tab 后没有可聚焦元素'); }
@@ -237,7 +237,7 @@ async function check(cfg) {
       const r = el.getBoundingClientRect();
       if (r.width < 1 || r.height < 1) return;      // 隐藏的跳过
 
-      /* 🔴 2026-10-05 新增：**伪元素扩展的命中区也要算**。
+      /* 🔴 新增：**伪元素扩展的命中区也要算**。
          业界标准做法（视觉 32px / 命中 44px）：
            .btn--sm::after { position:absolute; top:50%; height:44px;
                               transform:translateY(-50%) }
@@ -259,14 +259,14 @@ async function check(cfg) {
         }
       } catch (e) { /* 伪元素读不到就按视觉尺寸算 */ }
 
-      /* 🔴 2026-10-04：若该元素的 ::after 用 `inset:0` 撑满了祖先卡片，
+      /* 🔴 若该元素的 ::after 用 `inset:0` 撑满了祖先卡片，
          那它的**命中区**其实是整张卡（伪元素量不到 getBoundingClientRect）
          ⇒ 这种情况跳过，交给「整卡可点」的命中测试去查。 */
       try {
         const af = getComputedStyle(el, '::after');
         if (af && af.content !== 'none' && af.position === 'absolute' &&
             /^0(px)?$/.test(String(af.inset || af.top || '').trim())) {
-          /* 🔴 2026-10-04 修正：原来用 `.card, [class*="card"]`，
+          /* 🔴 修正：原来用 `.card, [class*="card"]`，
              结果 **`[class*="card"]` 把 `.card__link` 自己也算成了宿主**
              （类名含 card）⇒ 宿主尺寸 = 166×26 ⇒ 永远不够大 ⇒ 跳过失效。
              ⇒ 改成：向上找**第一个** position:relative 的祖先（热区就是相对它定位的）。 */
@@ -280,7 +280,7 @@ async function check(cfg) {
           if (hr.width >= 44 && hr.height >= 44) return;   // 宿主够大，跳过
         }
       } catch (e) { /* getComputedStyle 对伪元素可能抛错，忽略 */ }
-      /* 🔴 2026-10-05：改用**有效命中尺寸** h/w（含伪元素扩展），
+      /* 🔴 改用**有效命中尺寸** h/w（含伪元素扩展），
          而不是视觉尺寸 r.width/r.height。 */
       if (w < 44 || h < 44) {
         out.push(el.tagName + '.' + String(el.className).slice(0, 16) +
@@ -290,7 +290,7 @@ async function check(cfg) {
     });
     return out;
   }, cfg.interactive || 'button, a[href], input, [role="button"], [role="tab"], [role="switch"]');
-  /* 🔴 2026-10-05 实现 `skipHitArea`（此前只在文档里写着，没真做）
+  /* 🔴 实现 `skipHitArea`（此前只在文档里写着，没真做）
      ⇒ 正文里的**行内链接**不适用 44px AAA：
         WCAG 2.5.5 说的是「**指针目标**」的间距与尺寸，
         而正文行内链接是**在文字流里**的，给它 44px 高会把行间距撑乱。
@@ -311,7 +311,7 @@ async function check(cfg) {
     const c = getComputedStyle(e);
     return { fg: c.color, bg: c.backgroundColor };
   }, cfg.primary);
-  /* 🔴🔴 2026-10-06 修正一个**影响全部 33 个契约**的假判据。
+  /* 🔴🔴 修正一个**影响全部 33 个契约**的假判据。
    *
    * 原来这里切暗色的方式是：
    *     document.documentElement.setAttribute('data-theme-current', 'dark')
@@ -336,7 +336,7 @@ async function check(cfg) {
              bodyBg: getComputedStyle(document.body).backgroundColor };
   }, cfg.primary);
   if (before && after) {
-    /* 🔴 判据修正（2026-10-04）：
+    /* 🔴 判据修正：
        原来对比的是「元素的文字 vs **页面底色**」⇒
        对**实心按钮**（蓝底蓝字边缘）会算出 1.07:1 的假失败。
        ⇒ 正确：对比该元素**自己的文字 vs 自己的底色** ——
@@ -348,7 +348,7 @@ async function check(cfg) {
          '④ 暗色下「文字 vs 自身底色」对比度 ' + (isNaN(r) ? 'NaN' : r.toFixed(2)) +
          ':1（需 4.5）· fg=' + after.fg + ' bg=' + selfBg);
     /* 暗色下底色必须真的变了（否则说明没跟随主题）
-       // 🔴 2026-10-05 修：原来这里直接写 `document.documentElement.getAttribute(...)`，
+       // 🔴 修：原来这里直接写 `document.documentElement.getAttribute(...)`，
        //    而它**在 Node 侧执行**（不在 p.evaluate 里）⇒ 抛 "document is not defined"
        //    ⇒ separator 契约（第一个触发"纯装饰豁免"分支的组件）一跑就崩。
        //
@@ -366,7 +366,7 @@ async function check(cfg) {
   } else {
     pass(true, '④ 暗色检查跳过（组件根选择器未匹配到）');
   }
-  /* 还原成亮色（对应上面的 emulateMediaFeatures，2026-10-06） */
+  /* 还原成亮色（对应上面的 emulateMediaFeatures，） */
   await p.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'light' }]);
   await new Promise((r) => setTimeout(r, 220));
 

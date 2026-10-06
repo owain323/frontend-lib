@@ -49,11 +49,11 @@
   .cap { font-size: var(--fs-xs); color: var(--text-tertiary); }
   /* 🔴 粘顶条：Safari 对 position:sticky 的处理与 Chrome 有差异
      （尤其父容器有 overflow 时会失效）。这是必测项。 */
-  /* 🔴 2026-10-04 加：明暗切换按钮。
-     Owner 实机提的：「暗色的模式，这个是需要你这边提供开关」。
+  /* 🔴 加：明暗切换按钮。
+     真机实测提出的：「暗色的模式，这个是需要你这边提供开关」。
      本库的令牌只靠 @media(prefers-color-scheme) 生效
      ⇒ 原来**只能改系统设置**才看得到暗色。 */
-  /* 🔴 2026-10-04 重做这个按钮（Owner 实机指出两个问题）
+  /* 🔴 重做这个按钮（真机实测指出两个问题）
 
      问题 ① 「底色是透明颜色的，透明颜色非常非常容易出现错误」
      实测确认：`background = rgba(0,0,0,0)` —— **完全透明**！
@@ -78,7 +78,7 @@
     display: inline-flex; align-items: center; gap: var(--sp-2);
 
     /* 🔴 关键：用**一定存在**的令牌，并显式写 background-color。
-       变量缺失时不会"静默变透明" —— 这是 Owner 说的"透明色容易出错"。 */
+       变量缺失时不会"静默变透明" —— 这是 反馈的"透明色容易出错"。 */
     background-color: #FFFFFF;
     background-image: linear-gradient(180deg, rgba(255,255,255,.92),
                                             rgba(244,245,247,.92));
@@ -134,7 +134,7 @@
     <strong>请顺手截几张图</strong>（尤其第 1、2、6 节）。
   </p>
 
-  <!-- 🔴 2026-10-04 文案改清楚（Owner：「别人不一定能看得懂」）
+  <!-- 🔴 文案改清楚（要求：别人不一定能看得懂）
        原来只有「明暗 跟随」三个字 ⇒ 不知道按下会发生什么。
        现在：**图标说明当前状态 + 文案说明按下后的动作**，读屏也有完整说明。 -->
   <button class="theme-fab" id="theme-fab"
@@ -184,7 +184,7 @@
 
   <h2>4 · 单选与复选（<strong>这两个不是一回事</strong>）</h2>
   <p class="note">
-    🔴 2026-10-04 Owner 指出并纠正的：<strong>我原来只演示了 radio，
+    🔴 评审指出并纠正的：<strong>我原来只演示了 radio，
     导致"点一下没反应"看起来像 bug。</strong>
     <br>真相：<strong>radio 选中后本来就无法取消</strong>（HTML 原生行为），这是**正确的**。
     <br>⇒ 下面把两种场景都摆出来，点一下就知道区别。
@@ -212,7 +212,7 @@
   </label>
 
   <h3 style="font-size:var(--fs-base);margin:var(--sp-5) 0 var(--sp-2);color:var(--text-secondary)">
-    B · 复选（checkbox）—— <strong>可以独立点开、也可以取消</strong> ⟵ Owner 要的就是这个
+    B · 复选（checkbox）—— <strong>可以独立点开、也可以取消</strong> ⟵ 要的就是这个
   </h3>
   <p class="small">
     典型场景：<strong>「我已阅读该协议」</strong> —— 勾上、再点一下就取消。
@@ -255,7 +255,7 @@
   <p class="note">
     点标题 → 下面<strong>应该平滑展开</strong>（不是"啪"一下出现），
     右侧三角<strong>应该转向</strong>。
-    <br>🔴 2026-10-04 重写：依据 <strong>Radix Collapsible 的一手实现</strong>
+    <br>🔴 重写：依据 <strong>Radix Collapsible 的一手实现</strong>
     —— 用 <code>grid-template-rows: 0fr → 1fr</code> 做高度动画，
     <strong>不需要猜内容有多高</strong>。
   </p>
@@ -297,12 +297,12 @@
   </div>
 
   <h3 style="font-size:var(--fs-base);margin:var(--sp-5) 0 var(--sp-2);color:var(--text-secondary)">
-    B · <strong>多列数据</strong> ⟵ Owner 提的「一个标题内部多列」
+    B · <strong>多列数据</strong> ⟵ 提出的「一个标题内部多列」
   </h3>
   <p class="small">
     这才是「一个标题内部多列」的真实场景：<strong>一行一个公司</strong>，
     点标题展开，下面是<strong>这一行的多列指标</strong>。
-    <br>🔴 2026-10-04 我第一次做成了<strong>四个卡片</strong>（3+1 断行、看不出在表达什么）
+    <br>🔴 我第一次做成了<strong>四个卡片</strong>（3+1 断行、看不出在表达什么）
     —— <strong>已废弃</strong>。改用<strong>真表格</strong>：列天然对齐，
     窄屏可横向滚动、表头固定在左侧。
   </p>
@@ -435,12 +435,12 @@
 <script src="../../03-patterns/accordion/accordion.js"></script>
 <script src="../../03-patterns/overlay/overlay.js"></script>
 <script>
-  // 明暗切换（Owner 实机要求：页面上要有开关）
+  // 明暗切换（真机实测要求：页面上要有开关）
   (function () {
     var fab = document.getElementById('theme-fab');
     var val = document.getElementById('theme-val');
     if (!fab || !window.Theme) return;
-    /* 🔴 2026-10-04 文案改清楚：
+    /* 🔴 文案改清楚：
        原来显示「当前状态」（跟随/亮/暗）⇒ 三个字太抽象。
        现在显示**用户能懂的话**：
          跟随系统 → 「跟随系统（浅色）」
@@ -465,7 +465,7 @@
       if (btn) btn.setAttribute('aria-label', ARIA[m] || ARIA.auto);
     }
     sync();
-    // 🔴 2026-10-04 Owner 指出「明暗 跟随」语义不清。
+    // 🔴 评审指出「明暗 跟随」语义不清。
     //    除了改文案，还要保证**点完立刻变** —— 原来只在初始化时 sync()，
     //    文案永远停在「跟随系统」，点三次都不变（实测发现的）。
     fab.addEventListener('click', function () { Theme.cycle(); sync(); });
@@ -480,7 +480,7 @@
   })();
 
   // 弹窗（复用本库的 Overlay）
-  // 🔴 2026-10-04 修正：这里第一版写的是 `Overlay.modal({body})` ——
+  // 🔴 修正：这里第一版写的是 `Overlay.modal({body})` ——
   //    **那是我编的 API**。真实接口是 `Overlay.dialog({ title, desc, actions })`。
   //    ⇒ 教训：写示例前先 grep 真实导出，别凭印象写。
   (function () {

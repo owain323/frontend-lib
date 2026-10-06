@@ -22,7 +22,7 @@
   --surface:          #ffffff;
   --surface-sunken:   #f1f3f5;
                                                                                
-                                                 
+                                               
                                                                                
                      
                                                                      
@@ -55,7 +55,7 @@
                                                                         
   --text-primary:     #15181c;                                
   --text-secondary:   #4f555e;               
-                                        
+                             
                                                
                                     
                                                  
@@ -64,7 +64,7 @@
   --text-tertiary:    #606770;                                                       
   --text-on-accent:   #ffffff;                                   
 
-                                     
+                          
                                              
                                  
                                                                 
@@ -72,7 +72,7 @@
                                      
   --text-on-solid:    #ffffff;                       
                                                                          
-                                                  
+                       
                                           
   --skeleton-bg:       #e9ecef;                     
   --skeleton-shimmer:   rgba(255, 255, 255, 0.72);            
@@ -80,7 +80,7 @@
   --skeleton-size:      40px;                       
   --skeleton-duration:  1.4s;                  
                                                                          
-                                        
+                             
                                                      
                                            
                               
@@ -99,7 +99,7 @@
   --progress-num:    0;
 
                                                                           
-                                       
+                            
                                             
   --z-popover:        60;                              
   --popover-min-w:    200px;
@@ -142,7 +142,7 @@
                       
                                                                         
   --accent:           #1b4d8f;
-                               
+                   
                                   
      不用 var(--accent) 是因为暗色下它太亮、铺满一大块会发光 */
   --switch-on:         #1b4d8f;               
@@ -188,7 +188,7 @@
                                                                           
          
                                                                      
-                                    
+                         
                                      
                                         
                               
@@ -231,7 +231,7 @@
                                        
                                                                         
   --r-sm:    6px;
-                                            
+                                 
                                                      
                                        
                             
@@ -259,7 +259,7 @@
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);                 
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);                       
 
-                                      
+                           
                                                  
                                           
                                  
@@ -277,7 +277,7 @@
   --z-base:    0;
   --z-sticky: 10;
   --z-header: 20;
-                                          
+                               
                                                       
                                                    
   --z-raised:  5;                           
@@ -286,7 +286,7 @@
   --z-toast:  50;
 
                                                                  
-                                  
+          
 
                                              
 
@@ -297,7 +297,7 @@
   --sz-touch-sm: 32px;                     
 
                                                                                
-                                     
+                          
                                                                                
                                   
                                            
@@ -313,20 +313,20 @@
 
 @media (prefers-color-scheme: dark) {
                                                                              
-                                      
+                       
                                                                              
-                                   
+                             
                                       
 
-               
-                                              
+              
+                                         
                                             
                                 
                                                  
                                          
 
                               
-                                               
+                                           
 
                      
                                    
@@ -336,7 +336,7 @@
                                                                                 
 
                                        
-:root {                                     
+:root {                          
                                            
   --paper:           #14171A;
   --surface:         #1C2024;
@@ -373,13 +373,13 @@
   --success:         #6FAA7A;
   --success-bg:      #16241A;
   --warning:         #C99A3F;
-                                  
+                   
                                  
                               
 
                                                
                                     
-                                       
+                                   
 
                                    
                               
@@ -408,5 +408,5 @@
   --serif:           "Iowan Old Style", "Palatino Linotype", Palatino,
                       Georgia, "Songti SC", serif;
   --tracking-normal: 0.01em;
-}                                
+}                  
 }

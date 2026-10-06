@@ -3,7 +3,7 @@
 r"""
 measure-gate.py — 检查行长（measure）是否用了语言感知的令牌
 
-背景（2026-10-03，Owner 提问触发）
+背景（由一个提问触发）：
 -----------------------------------
 中文排版用 `em` 限宽看起来"完美"，**但那是巧合**：1em = 1 个汉字宽。
 换到英文，同样的 `max-width: 20em` 只有 640px ≈ 20 字符 ——
@@ -61,9 +61,9 @@ def check(path):
 
 
 def main():
-    # 🔴 2026-10-03 修一个致命缺陷：原来写死扫 `0*`，
+    # 🔴 修一个致命缺陷：原来写死扫 `0*`，
     #    传别的目录当参数时**一个文件都扫不到** ⇒ 门禁永远"全绿"。
-    #    这正是"反向控制失败却没发现"的根源。
+    #    这正是"判别力验证失败却没发现"的根源。
     root = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 else ROOT
     files = sorted(glob.glob(os.path.join(root, '**', '*.html'), recursive=True))
     total = 0

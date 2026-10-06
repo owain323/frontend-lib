@@ -7,7 +7,7 @@ md-render.py — 内容渲染管线（Markdown → 自包含 HTML）
 **中间没有任何手写环节** —— 这正是它存在的意义：
 证明我们不发明标准之外的结构。
 
-依据：00-charter/06-内容渲染规范.md
+依据：本文件顶部列出的渲染约定
 
 用法：
     python md-render.py <input.md> [-o out.html] [--title "标题"] [--check]

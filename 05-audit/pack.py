@@ -50,8 +50,8 @@ INCLUDE = [
     '07-notes',          # 经验（含踩坑记录）
     '08-plan',           # 路线图
     '09-assets',
-    # 🔴 2026-10-04 加 10-review：截图是**看得到的证据**。
-    #    Owner 的话：「放在那边以后我都不会用的，这是极大的资源浪费」——
+    # 🔴 加 10-review：截图是**看得到的证据**。
+    #    判断依据：「放在那边以后我都不会用的，这是极大的资源浪费」——
     #    而发出去的包里**一张图都没有**（INCLUDE 里根本没有这一项）。
     #    ⇒ 截图必须在包里，否则别人看不到这库长什么样。
     '10-review',         # 图标素材
@@ -156,9 +156,9 @@ def main():
         def keep(r):
             if r.startswith(DROP):
                 return False
-            # 🔴 2026-10-04 加 .png/.svg/.json
+            # 🔴 加 .png/.svg/.json
             #    原来只收 .css/.js/.md/.html 四种 ⇒ **截图全被丢掉**，
-            #    slim 包里一张图都没有。Owner 的判断是对的：
+            #    slim 包里一张图都没有。这个判断是对的：
             #    「放在那边以后我都不会用的，这是极大的资源浪费」——
             #    看不到实物，就等于没有。
             return r.endswith(('.css', '.js', '.md', '.html',
@@ -181,10 +181,10 @@ def main():
     for top in ('00-charter', '01-tokens', '02-primitives', '03-patterns',
                 '04-recipes', '05-audit', '06-vendor', '07-notes',
                 '08-plan', '09-assets', '10-review'):
-        # 🔴 2026-10-04 修：这里原来数的是 `files`（**全量收集**），
+        # 🔴 修：这里原来数的是 `files`（**全量收集**），
         #    不是 `picked`（**实际打包的**）⇒ slim 明明没打 05-audit，
         #    报告却列「05-audit 44 个文件」—— **报告在骗人**。
-        #    Owner 的判断没错：「臃肿不堪」有一部分是这造成的。
+        #    这个判断没错：「臃肿不堪」有一部分是这造成的。
         n = len([1 for _, r in picked if r.startswith(top)])
         if n:
             print('  %-16s %d 个文件' % (top, n))

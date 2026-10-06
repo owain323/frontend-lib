@@ -5,7 +5,7 @@
    依赖：无
    适用：精简档 / B / C
 
-   🔴 为什么自己写，不用 auto-animate（2026-10-02 的决策，替代方案已评估）：
+   🔴 为什么自己写，不用 auto-animate：
 
         项目：        auto-animate      自己写 FLIP
         体积          ~8 KB             ~1.5 KB
@@ -79,7 +79,7 @@
     mutate();
 
     if (reduce) {
-      /* 🔴 reduced-motion：**减弱，不是归零**（2026-10-02 修正）
+      /* 🔴 reduced-motion：**减弱，不是归零**
 
          之前这里直接 return，等于"完全跳过" —— 与本库 CSS 层的策略
          （spinner 保留、骨架屏停止 = 减弱）自相矛盾。
@@ -116,8 +116,8 @@
 
       if (first[id] === undefined) {
         /* ---- 新增项：**只淡入，不位移** ----
-           🔴 2026-10-02 修正：原来这里还加了 translateY(6px)。
-           Owner 点"添加一条"时看到**文字重合了一瞬** —— 根因是：
+           🔴 修正：原来这里还加了 translateY(6px)。
+           点击"添加一条"时看到**文字重合了一瞬** —— 根因是：
            新项一边向上位移一边淡入，而它下方的旧行正往下滑开，
            两者在某一帧**交叉**，视觉上就是两行文字叠在一起。
 
@@ -140,7 +140,7 @@
       el.style.transition = 'none';
       el.style.transform = 'translate(' + dx + 'px, ' + dy + 'px)';
 
-      /* 🔴🔴 2026-10-02 修正一个**让动画完全不动**的经典错误（Owner 报"完全不动"）：
+      /* 🔴🔴 修正一个**让动画完全不动**的经典错误（实测反馈"完全不动"）：
 
          原写法是「下一帧把 transform 设成**同一个值**」——
              el.style.transform = translate(dx,dy);

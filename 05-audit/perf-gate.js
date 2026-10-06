@@ -1,5 +1,5 @@
 // puppeteer-core 改由 browser.js 统一持有
-  // 🔴 2026-10-04 统一走 browser.js：那里会 setCacheEnabled(false)。
+  // 🔴 统一走 browser.js：那里会 setCacheEnabled(false)。
   //    没有它，页面里跑的是**缓存的旧代码**，测试会假通过
   //    （磁盘上明明改对了，浏览器里还是旧的）。
   const { launch } = require('./browser');
@@ -7,12 +7,12 @@
 /**
  * perf-gate.js — 性能基线门禁
  *
- * ：T-05（08-plan/长任务.md）
+ * 
  * ------------------------------------------------------------
  * 为什么需要
  * ----------
  * `probe.js` 一直在量性能，但**没有基线** ⇒ 改坏了也没人知道。
- * 2026-10-03 实测（11 个页面）：
+ * 实测（11 个页面）：
  *     DOM 节点  67 – 157
  *     首屏      12 – 18ms（list 72 / nav 82 / choice 95 是 JS 较多的页面）
  *

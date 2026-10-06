@@ -8,7 +8,7 @@
 
 ---
 
-## 0.3.0 — 2026-10-03
+## 0.3.0 — 
 
 ### 新增
 
@@ -31,7 +31,7 @@
 `hover-gate` · `measure-gate` · `license-gate` · `numeric-gate`
 · `dark-gate` · `hardcode-gate` · `reuse-check` · `accent-gate`
 
-每道都做过**反向控制**（构造已知失败，确认工具抓得到）。
+每道都做过**判别力验证**（构造已知失败，确认工具抓得到）。
 
 ### 修复
 

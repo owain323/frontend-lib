@@ -58,7 +58,7 @@ ORDER = ['button', 'badge', 'separator', 'switch', 'input', 'choice', 'card',
 
 START = '### 第 3 步：只抄你真正要用的组件'
 # 🔴 结束标记必须**含 `##`**，否则会匹配到正文里出现的同一串字。
-#    （2026-10-03 第一版漏了 `##` ⇒ ValueError: substring not found）
+#    （第一版漏了 `##` ⇒ ValueError: substring not found）
 END = '## 抄完先做这三件事'
 
 
@@ -75,7 +75,7 @@ def measure():
         if not rel:
             continue
         n_css = sum(1 for _ in io.open(css, encoding='utf-8'))
-        # 🔴 2026-10-03：JS 文件名**曾经不统一**（list 是 flip.js、nav 是 toc.js），
+        # 🔴 JS 文件名**曾经不统一**（list 是 flip.js、nav 是 toc.js），
         #    按约定找不到时会静默显示「—」⇒ 读者以为不用抄 JS，
         #    而那恰恰是最危险的一栏（行为契约藏在里面）。
         #    ⇒ 找不到就退回"目录里唯一的 .js"，并把真实文件名带出去。
@@ -105,7 +105,7 @@ def build_table(rows):
            '',
            '| 组件 | 文件 | 行数 | JS | 什么时候要 |',
            '|---|---|---|---|---|']
-    # 🔴 2026-10-03 修正一个**危险的分类错误**（我自己犯的）：
+    # 🔴 修正一个**危险的分类错误**（我自己犯的）：
     #   原来凡是有 .js 的组件都在「JS」列标粗体，暗示"必须抄"。
     #   但 list 的 flip.js 是**可选的 FLIP 动画工具**、nav 的 toc.js 是
     #   **目录生成脚本** —— 两者都**不是组件的行为层**，

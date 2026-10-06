@@ -7,7 +7,7 @@ viewport.py — 响应式静态门禁（零负载版）
    而渲染要启动 headless Chrome —— 本机 16GB 内存曾因资源耗尽假死 4 次（M-0 铁律）。
    所以：
      静态版（本文件，默认）—— 零负载，覆盖下面 4 类**可判定**的问题
-     渲染取证 —— 需要向 Owner 申请后才能跑，不在本文件范围内
+     渲染取证 —— 需单独申请后才能跑，不在本文件范围内
 
 检查项：
   1. 缺 <meta name="viewport">                      HIGH
@@ -78,7 +78,7 @@ class ViewportCheck(HTMLParser):
             css_ratio = 'aspect-ratio' in style
             if not (has_w and has_h) and not css_ratio:
                 self.imgs_no_size.append((self.getpos()[0], a.get('src', '?')[:50]))
-            # 🔴 2026-10-02 新增两条（依据 00-charter/09-图片规范.md）：
+            # 🔴 新增两条（依据图片规范）：
             #   · 第一个 img 加 loading=lazy —— 极可能是首屏图，lazy 会拖慢 LCP
             #   · 有 srcset 没 sizes —— 浏览器会选错图，比不写 srcset 更糟
             self.img_order.append(a)
@@ -119,7 +119,7 @@ def check_html(path):
 
     n_img = len(c.imgs_no_size)
     for line, s in c.imgs_no_size[:6]:
-        # 🔴 2026-10-02：由 LOW 升为 HIGH。
+        # 🔴 由 LOW 升为 HIGH。
         #    CLS 是 Core Web Vitals 之一，且**完全可自动检测** ——
         #    能自动检测却按"建议"级别报，等于门禁没设防。
         probs.append((HIGH, 'img-size',
@@ -199,7 +199,7 @@ def main():
             paths.extend(glob.glob(os.path.join(a, '**', '*.css'), recursive=True))
         else:
             paths.append(a)
-    # 🔴 2026-10-06 排除**产物目录**（实测踩坑：报"缺 meta viewport"）
+    # 🔴 排除**产物目录**（实测踩坑：报"缺 meta viewport"）
     #    `glob('**/*.htm*')` 会扫到 `10-review/shots/_current/` ——
     #    那里存的是**截图产物**，扩展名被写成 .html（内容其实是 PNG），
     #    当然没有 <meta viewport> ⇒ 门禁长期假红。

@@ -46,6 +46,30 @@ CASES = [
      '\n.probe { color: #ff0000; }\n', '正常 CSS（应**不**被抓）'),
     ('leak-scan.py', 'README.md',
      '\n一段正常的中文说明文字。\n', '正常中文（应**不**被抓）'),
+    # ---- 公开可用性四判据（2026-10-06补）----
+    # 每条都配一个「正常样本」做反向控制，防止判据收得过窄变成永久假红。
+    ('leak-scan.py', '02-primitives/badge/badge.css',
+     '\n/* %s 报"点了不动" */\n' % terms.COLLAB_TRACE[0],
+     '内部协作痕迹（Owner 称谓）'),
+    ('leak-scan.py', '05-audit/css-imports.py',
+     '\nCLASS_OWNER = {}\n', '同名变量CLASS_OWNER（应**不**被抓）'),
+    ('leak-scan.py', '03-patterns/list/README.md',
+     '\n规则见 %s/05.md\n' % terms.INTERNAL_DIRS[0],
+     '引用内部目录（陌生人点进去只有 404）'),
+    ('leak-scan.py', '02-primitives/date-range/demo.html',
+     # ⚠️ 用**真实日期字面量**，不要从 WORK_STAMP_RE 切片 ——
+     #   那是正则源码片段（'20(?:26)-(?:09|10)-\\d{2}'），
+     #   切片拼出来的字符串不构成合法日期，门禁当然抓不到。
+     '\n<!-- 2026-10-03：原为写死 -->\n',
+     '注释里的工作日期戳'),
+    ('leak-scan.py', '02-primitives/date-range/demo.html',
+     '\n<!-- 范围 2020-01-01 ~ 2026-12-31，闰年用例 2024-02-29 -->\n',
+     '业务日期（应**不**被抓）'),
+    # ⚠️ 占位符必须写**完整的 ${NAME}** ——
+    #   取 PLACEHOLDER_RE[:2] 只能拿到转义符 `\$`，拼不出真占位符。
+    ('leak-scan.py', '02-primitives/switch/README.md',
+     '\n用法见 ${REPO}/docs\n',
+     '未替换的占位符'),
 ]
 
 
@@ -56,7 +80,7 @@ def run_gate(script):
 
 
 def main():
-    print('  === 门禁反向控制（K9：门禁也���被检验）===')
+    print('  === 门禁反向控制（门禁本身也要被检验）===')
     print('')
 
     backups = {}

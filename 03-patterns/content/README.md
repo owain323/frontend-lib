@@ -6,7 +6,7 @@
 | **实测** | 由 `05-audit/md-render.py` 渲染 `04-recipes/longform/content.md` 验证 |
 | **适用** | 精简档 / B / C，纯 CSS |
 | **依赖** | `01-tokens/tokens.css` |
-| **规范** | `00-charter/06-内容渲染规范.md`（**先读那份再改这份**）|
+| **规范** | 见本文件「内容渲染约定」一节|
 
 ---
 

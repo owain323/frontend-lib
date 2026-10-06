@@ -63,7 +63,7 @@ const REPO = path.resolve(__dirname, '..');
             .filter((e) => e.getClientRects().length);
           if (!nums.length) return { ok: true, note: '无 .num 列（跳过）' };
           const cs = getComputedStyle(nums[0]);
-          /* ⭐ 2026-10-06 修正：RTL 改造后表格用的是 `text-align: end`，
+          /* ⭐ 修正：RTL 改造后表格用的是 `text-align: end`，
            *   它在 LTR 下与 `right` **视觉完全相同**，
            *   但 Chrome 的 getComputedStyle 返回的是 'end'（不解析成 'right'）。
            *   ⇒ 判据必须同时接受两种写法，否则会把正确实现报成"未右对齐"。 */

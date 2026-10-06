@@ -44,7 +44,7 @@ TPL = '''<!DOCTYPE html>
 <link rel="stylesheet" href="03-patterns/nav/nav.css">
 </head>
 <body>
-<!-- 🔴 2026-10-04 补（a11y-scan 报 landmark-one-main / region 两违规）：
+<!-- 🔴 补（a11y-scan 报 landmark-one-main / region 两违规）：
      入口页必须有 <main> 地标，并提供"跳到主内容"的 skip link
      （WCAG 2.4.1 Bypass Blocks）—— 键盘用户按一次 Tab 就能跳过导航。
      ⚠️ 这段必须写在**生成器**里，否则每次重新生成 index.html 都会被覆盖。 -->

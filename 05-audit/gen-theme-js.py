@@ -3,7 +3,7 @@
 """
 gen-theme-js.py — 从 tokens.css 的 dark 段**自动生成** theme-toggle.js
 
-🔴 为什么必须生成，不能手写（2026-10-04 的教训）
+🔴 为什么必须生成，不能手写
 ------------------------------------------------
 我第一版 theme-toggle.js 里**手写**了 20 个暗色令牌值，
 结果**17 个与 tokens.css 不一致**，连名字都编错了
@@ -31,9 +31,9 @@ OUT = os.path.join(ROOT, '01-tokens', 'theme-toggle.js')
 # 只复制这些类型（字体/间距/圆角在 CSS 里已生效，不需要覆盖）
 WANT = re.compile(r'^--(paper|surface|text-|border-|accent|danger|success|'
                   r'warning|info|scrim|shadow|switch-on|scrollbar|focus-ring)')
-# 🔴 2026-10-04 加固：注释里的**中文分号**会把 `[^;]+` 骗过去
+# 🔴 加固：注释里的**中文分号**会把 `[^;]+` 骗过去
 #    （实测踩到：注释里写了 `#080a0c` 和 `；`，被当成 --paper 的值
-#      ⇒ --paper 整个丢失 ⇒ 切暗色时页面背景不变，Owner 实机报"背景是淡白色"）
+#      ⇒ --paper 整个丢失 ⇒ 切暗色时页面背景不变，真机实测报"背景是淡白色"）
 #    ⇒ 值里一旦出现 `#` 之后跟非法的值形态，就跳过。
 BAD_VALUE = re.compile(r'#[0-9a-fA-F]{3,8}[^0-9a-fA-F;\s]|\*\*|一')
 SKIP_VALUE = re.compile(r'/\*|font|^\s*$|calc\(|clamp\(')

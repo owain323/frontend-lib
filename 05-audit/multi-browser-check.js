@@ -72,7 +72,7 @@ const SCAN = function () {
     const r = el.getBoundingClientRect();
     if (r.width < 1 || r.height < 1) continue;
     if (r.bottom < 0 || r.top > innerHeight * 3) continue;
-    /* 🔴 2026-10-06 修正判据（原来报了一个**误报**）：
+    /* 🔴 修正判据（原来报了一个**误报**）：
        `pointer-events:none` 在下面两种状态是**完全正确**的：
          ① `disabled` 按钮        —— 本来就不该点
          ② `[aria-busy="true"]`  —— loading 态，**防重复提交**
@@ -92,7 +92,7 @@ const SCAN = function () {
   }
 
   /* ③ CSS 特性支持：逐个问浏览器"你认不认这个属性" */
-  /* 🔴 2026-10-06 修正：第一版问法是错的（`CSS.supports('color', p)`）
+  /* 🔴 修正：第一版问法是错的（`CSS.supports('color', p)`）
      ⇒ 把 `text-underline-offset` 这类**Firefox 其实支持**的属性误报成不支持。
      ⇒ 正确用法：`CSS.supports(属性名, 值)`。
      ⚠️ 教训与"判据比规范严"同源：**问法错了，结论就全错**。 */
