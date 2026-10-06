@@ -1,0 +1,15 @@
+{
+  "// 说明": "正例专用配置：这些是**合法用法**，必须全部编译通过。反例在 tsconfig.negative.json。",
+  "compilerOptions": {
+    "strict": true,
+    "noEmit": true,
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2020", "DOM"],
+    "types": [],
+    "paths": { "frontend-lib": ["../types/index.d.ts"] },
+    "baseUrl": "."
+  },
+  "include": ["positive.ts"]
+}

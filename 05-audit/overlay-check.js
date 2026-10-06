@@ -322,6 +322,116 @@ const REPO = path.resolve(__dirname, '..');
         }
         return { ok: true, note: '两层弹层焦点逐层归还正确' };
       },
+
+      /* ---------- 嵌套弹层：inert 的「归属权」（真bug 的回归测试） ----------
+       *
+       *  为什么必须单独一条：
+       *   焦点栈能过，不代表 inert 也能过 —— 它们是两套独立机制。
+       *   踩过的 bug：inert 记账写的是「这节点现在是 inert」，
+       *   而正确语义是「这节点是**我**设成 inert 的」。
+       *
+       *   触发路径：
+       *     A 开 → 背景被 A 锁
+       *     B 开 → 看到背景「已经是 inert」，记账但**没设过**
+       *     B 关 → 无脑解锁 ⇒ **A 还开着，背景却能点了**
+       *
+       *  判据：B 关闭之后、A 仍然打开的状态下，背景必须**仍然是 inert**。
+       *        这条判据在旧实现上必然失败（这是它存在的意义）。
+       */
+      '嵌套弹层：内层关闭不得解除外层的背景隔离': async (p) => {
+        /* 清理现场：契约累积执行，前面可能留下未关闭的弹层 */
+        await p.evaluate(() => {
+          var old = document.querySelectorAll('.dialog-backdrop');
+          for (var i = 0; i < old.length; i++) {
+            old[i].parentNode && old[i].parentNode.removeChild(old[i]);
+          }
+          var locked = document.querySelectorAll('[inert]');
+          for (var j = 0; j < locked.length; j++) { locked[j].inert = false; }
+        });
+
+        const supported = await p.evaluate(
+          () => 'inert' in HTMLElement.prototype);
+        if (!supported) {
+          return { ok: true,
+                   note: '当前环境不支持 inert（该判据不适用，跳过）' };
+        }
+
+        /* 造一个明确在背景里的元素 —— 它是否 inert 是可客观判定的 */
+        await p.evaluate(() => {
+          var bg = document.createElement('div');
+          bg.id = 'probe-bg';
+          bg.textContent = '背景容器';
+          document.body.appendChild(bg);
+          window.__openB2 = function () {
+            window.Overlay.dialog({
+              title: 'B2', desc: '内层',
+              actions: [{ label: '好', variant: 'primary' }],
+            });
+          };
+          window.Overlay.dialog({
+            title: 'A2', desc: '外层',
+            actions: [{ label: '打开 B2', variant: 'primary', keepOpen: true,
+                        onClick: function () { window.__openB2(); } }],
+          });
+        });
+        await new Promise((r) => setTimeout(r, 380));
+
+        const afterA = await p.evaluate(() => {
+          const bg = document.getElementById('probe-bg');
+          return { lockedByA: !!(bg && bg.inert) };
+        });
+        if (!afterA.lockedByA) {
+          return { ok: false, note: '前置条件不成立：外层未锁住背景，无法测归属权' };
+        }
+
+        /* 打开内层 */
+        await p.evaluate(() => {
+          const btns = document.querySelectorAll('[role="dialog"] button');
+          for (let i = 0; i < btns.length; i++) {
+            if ((btns[i].textContent || '').indexOf('B2') >= 0) { btns[i].click(); return; }
+          }
+        });
+        await new Promise((r) => setTimeout(r, 400));
+
+        const depth = await p.evaluate(() =>
+          document.querySelectorAll('[role="dialog"]').length);
+        if (depth < 2) {
+          return { ok: false,
+                   note: '未能构造嵌套（只开出 ' + depth + ' 层），判据无效' };
+        }
+
+        /* 🔴 核心断言点：只关内层，背景必须仍然是 inert */
+        await p.keyboard.press('Escape');
+        await new Promise((r) => setTimeout(r, 650));
+
+        const mid = await p.evaluate(() => {
+          const bg = document.getElementById('probe-bg');
+          return {
+            layers: document.querySelectorAll('[role="dialog"]').length,
+            stillInert: !!(bg && bg.inert),
+          };
+        });
+
+        /* 收尾：关掉外层再清理（无论断言成败都不留垃圾） */
+        await p.keyboard.press('Escape');
+        await new Promise((r) => setTimeout(r, 650));
+        await p.evaluate(() => {
+          const bg = document.getElementById('probe-bg');
+          if (bg) bg.parentNode.removeChild(bg);
+          try { delete window.__openB2; } catch (e) { window.__openB2 = null; }
+        });
+
+        if (mid.layers !== 1) {
+          return { ok: false,
+                   note: '关内层后应剩 1 层，实际 ' + mid.layers + '（判据场景没跑对）' };
+        }
+        if (!mid.stillInert) {
+          return { ok: false,
+                   note: '🔴 关掉内层后，外层还在开着，但背景已被解锁 ' +
+                         '⇒ inert 记账混淆了「当前状态」与「归属权」' };
+        }
+        return { ok: true, note: '内层关闭未解除外层的背景隔离 ✅' };
+      },
     },
   });
   process.exit(kit.report(r));
