@@ -1,0 +1,39 @@
+{
+  "Combobox": {
+    "add": "method",
+    "remove": "method",
+    "setOptions": "method",
+    "tags": "getter"
+  },
+  "DateRange": {
+    "clear": "method",
+    "from": "getter",
+    "set": "method",
+    "setPreset": "method",
+    "to": "getter",
+    "valid": "getter"
+  },
+  "DateRangeStatics": {
+    "addDays": "static-method",
+    "addMonths": "static-method",
+    "create": "static-method",
+    "iso": "static-method",
+    "quarterOf": "static-method",
+    "quarterRange": "static-method"
+  },
+  "Dropdown": {
+    "close": "method",
+    "destroy": "method",
+    "open": "method"
+  },
+  "Select": {
+    "close": "method",
+    "open": "method",
+    "value": "accessor"
+  },
+  "Tree": {
+    "destroy": "method",
+    "focusAt": "method",
+    "selected": "getter"
+  }
+}

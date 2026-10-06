@@ -257,7 +257,9 @@ run "pack-smoke"       bash 05-audit/pack-smoke.sh
 run "leak"        $PY 05-audit/leak-scan.py
 run "proper-noun" $PY 05-audit/proper-noun-scan.py
 run "hype"        $PY 05-audit/hype-scan.py
-run "api-snap"        $PY 05-audit/api-snapshot.py
+# ⚠️ 直接调 node，不套 with-server.sh ——
+#   check-all 自己已经起了 :8000，而 with-server.sh 遇到端口被占会直接报错。
+run "api-contract"     $PY 05-audit/api-contract-gate.py
 run "api-doc"      $PY 05-audit/api-doc-gate.py
 run "legacy-api"  $PY 05-audit/legacy-api-gate.py
 run "release"     $PY 05-audit/release-gate.py
