@@ -103,16 +103,26 @@ window.Overlay.dialog({ title: '确认', actions: [...] });
 
 短类名（`.btn` / `.card` / `.list`）**可能与宿主已有样式撞名**。
 
-两种规避方式：
+**规避方式一 · 加前缀**（推荐，库自带工具）
 
-1. **加前缀**（推荐）：在构建时统一加，如 `.fl-btn`
-   ```bash
-   # 用 sed 批量加前缀
-   find 0*-primitives -name '*.css' -exec sed -i 's/\.btn/.fl-btn/g' {} +
-   ```
-2. **提高加载顺序**：把本库样式放在宿主样式**之后**加载
+```bash
+# 预览会被改写哪些类
+python3 05-audit/prefix-build.py --check
 
-⚠️ 短类名带来的冲突风险由使用者自己评估；我们保留短名是因为移动端项目普遍这么做。
+# 生成带前缀的副本（源码不动，产物在 prefixed/）
+python3 05-audit/prefix-build.py --prefix fl
+```
+
+`.btn` → `.fl-btn`，BEM 元素与变体**自动跟随**
+（`.btn--primary` → `.fl-btn--primary`）。
+
+**规避方式二 · 调整加载顺序**
+把本库样式放在宿主样式**之后**加载。
+
+**规避方式三 · 让宿主改自己的类名**（最稳，但需要改动宿主）
+
+⚠️ `prefix-build.py` 的限制（诚实说明）：它是**文本级**替换，
+对写在 JS 字符串里的类名无效。真正稳妥的做法是 CSS Modules 或 shadow DOM。
 
 ---
 
