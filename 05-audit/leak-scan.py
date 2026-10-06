@@ -227,8 +227,12 @@ def main():
         # ⚠️ 06-vendor/ 豁免：那是**第三方协议合规台账**，
         #    里面的「核实日期」是台账的有效期（超过 6 个月要重查），
         #    删掉会让这份台账失去意义。那里是数据，不是过程痕迹。
+        # ⚠️ CHANGELOG.md 也豁免：那里的日期是**发布日期**，
+        #    属于发布记录的必要部分，不是内部过程痕迹。
+        #    （不豁免的话，每次发版都会假红 ⇒ 门禁被学会忽略。）
         if (rel.endswith(('.css', '.html', '.md', '.py', '.js'))
-                and not rel.startswith('06-vendor/')):
+                and not rel.startswith('06-vendor/')
+                and rel != 'CHANGELOG.md'):
             stamp = []
             for line in t.split('\n'):
                 s = line.lstrip()
