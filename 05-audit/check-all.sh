@@ -252,6 +252,7 @@ if [ -n "$TIMING" ] && [ -s "$TIMING" ]; then
   echo "    ⭐ 优化抓手：最慢的那几道通常反复启动浏览器 ⇒ 复用实例收益最大"
 fi
 
+run "bleed"         $PY 05-audit/bleed-gate.py
 run "tsc"          $PY 05-audit/tsc-gate.py
 run "pack-smoke"       bash 05-audit/pack-smoke.sh
 run "leak"        $PY 05-audit/leak-scan.py

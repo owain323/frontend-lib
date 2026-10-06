@@ -20,7 +20,7 @@
 - **i18n 度量令牌** `--measure-*`：按 `:lang()` 切换单位
   （CJK 用 `em`、拉丁用 `ch`、RTL 与连字语言各一套）。
   实测中/英/日/阿四语言，标题均 ≤ 2 行。
-- **统一检查入口** `bash 05-audit/check-all.sh`（70 道门禁一条命令，
+- **统一检查入口** `bash 05-audit/check-all.sh`（71 道门禁一条命令，
   `MODE=fast` 只跑跨平台安全的静态检查）
 - **自停服务器** `bash 05-audit/with-server.sh <命令>`——
   起服务器、跑命令、**一定停掉**（trap 绑退出路径）
