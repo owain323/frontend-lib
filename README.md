@@ -104,11 +104,16 @@ import 'frontend-lib/patterns/overlay/overlay.js';
 ```bash
 npm ci                 # 按锁文件安装
 npm test               # 单元测试（约 100ms）
+npm run test:types     # 类型契约：正例必过 + 反例必挂
 npm run gate:fast      # 静态检查（约 45 秒）
-npm run gate           # 全量检查（约 6 分钟，含浏览器）
+npm run gate           # 全量检查（含浏览器）
 ```
 
 改代码时跑 `gate:fast` 即可；**提交前**再跑一次 `gate`。
+
+类型声明在 `types/index.d.ts`。改动它之前先看
+[docs/ROADMAP.md](docs/ROADMAP.md) 里的「契约类工单」——
+那几项没做完之前，本库还不适合作为长期依赖引入。
 
 ## 许可
 
