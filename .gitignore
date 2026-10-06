@@ -37,6 +37,10 @@ prefixed/
 
 # --- 一次性验证截图（7MB+ 纯本地留档，对使用者没有价值）---
 #    需要时重跑对应门禁即可重新生成。
+# ⚠️ `shots/*.png` **不能**写成通配 —— 它会连 `shots/_baseline/` 里的
+#    视觉回归基线一起干掉（实测踩过），而基线是门禁判据，必须入库。
+#    ⇒ 改成逐个排除 _baseline 子目录。
 10-review/progress-*.png
 10-review/shots/*.png
+!10-review/shots/_baseline/
 10-review/ios/shot-*.png
