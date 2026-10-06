@@ -18,6 +18,39 @@
  */
 (function (global) {
   'use strict';
+  /* ---- 旧环境兼容：Element.closest 在老 WebView 上不存在 ----
+     直接调用会在真机上抛 `is not a function`（本地完全正常，
+     只在老环境炸 —— 属静默失效）。这里做模块内兜底，
+     不污染全局，也不需要使用者额外引入 polyfill。 */
+  function closest(el, sel) {
+    if (!el) return null;
+    if (el.closest) return el.closest(sel);
+    while (el && el.nodeType === 1) {
+      if (elMatches(el, sel)) return el;
+      el = el.parentElement;
+    }
+    return null;
+  }
+  function elMatches(el, sel) {
+    var m = sel.match(/^([a-zA-Z][\w-]*)/);
+    if (m && el.tagName.toLowerCase() !== m[1].toLowerCase()) return false;
+    var cls = sel.match(/\.([\w-]+)/g);
+    if (cls) {
+      for (var i = 0; i < cls.length; i++) {
+        var c = cls[i].slice(1);
+        if ((' ' + (el.className || '') + ' ').indexOf(' ' + c + ' ') < 0) return false;
+      }
+    }
+    var id = sel.match(/#([\w-]+)/);
+    if (id && el.id !== id[1]) return false;
+    var at = sel.match(/\[([\w-]+)(?:=["']?([^\]"']*)["']?)?\]/);
+    if (at) {
+      var v = el.getAttribute(at[1]);
+      if (v === null) return false;
+      if (at[2] !== undefined && v !== at[2]) return false;
+    }
+    return true;
+  }
 
   var uid = 0;
 
@@ -160,7 +193,7 @@
                'data-dr-preset="' + p.key + '">' + p.label + '</button>';
       }).join('');
       box.addEventListener('click', function (e) {
-        var b = e.target.closest ? e.target.closest('[data-dr-preset]') : null;
+        var b = e.target.closest ? closest(e.target, '[data-dr-preset]') : null;
         if (!b) return;
         var p = presets.filter(function (x) { return x.key === b.getAttribute('data-dr-preset'); })[0];
         if (!p) return;

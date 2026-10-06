@@ -216,6 +216,112 @@ const REPO = path.resolve(__dirname, '..');
         return { ok: true,
                  note: v.isolated + '/' + v.total + ' 个背景层已隔离 ✅' };
       },
+
+      /* ---------- 嵌套弹层：焦点必须逐层归还 ---------- */
+      '嵌套弹层：焦点逐层归还（栈行为）': async (p) => {
+        /* 场景：A 打开 → A 内再打开 B → 关 B → 关 A
+         * 要求：B 关后焦点回到 A 内；A 关后回到页面上的原按钮。
+         * ⚠️ 早期实现用**全局单值**记录触发元素，
+         *    B 会覆盖 A 的记录 ⇒ 第二次关闭时焦点无处可还。 */
+        /* ⭐ 清理现场：契约的判据是**累积执行**的，
+         *   前面的判据可能留下未关闭的弹层 ⇒ 后面拿到的
+         *   `querySelector('[role="dialog"] button')` 会是**旧弹层**的按钮，
+         *   场景完全跑偏。
+         *   （踩过三次：点错按钮 / 忘记点 / 拿到残留弹层。） */
+        await p.evaluate(() => {
+          var old = document.querySelectorAll('.dialog-backdrop');
+          for (var i = 0; i < old.length; i++) {
+            old[i].parentNode && old[i].parentNode.removeChild(old[i]);
+          }
+          var locked = document.querySelectorAll('[inert]');
+          for (var j = 0; j < locked.length; j++) { locked[j].inert = false; }
+        });
+
+        await p.evaluate(() => {
+          window.__probe = document.createElement('button');
+          window.__probe.id = 'probe-outer';
+          window.__probe.textContent = '外层触发';
+          document.body.appendChild(window.__probe);
+          window.__probe.focus();
+        });
+
+        /* ⭐ 正确构造嵌套：A 的按钮在**不关闭 A** 的前提下打开 B
+         *   （keepOpen + onClick 里再开一层）。
+         *   ⚠️ 早先写成 `querySelector('button').click()` ——
+         *      那点到的是 A 的**关闭按钮**，A 立刻被关掉，
+         *      于是只剩 B 一层，看起来像"嵌套功能坏了"。
+         *      ⇒ 契约本身写错时，会把 bug 报告在错误的层面上。 */
+        await p.evaluate(() => {
+          window.__openB = function () {
+            window.Overlay.dialog({
+              title: 'B', desc: '内层',
+              actions: [{ label: '好', variant: 'primary' }],
+            });
+          };
+          window.Overlay.dialog({
+            title: 'A', desc: '外层',
+            actions: [{ label: '打开 B', variant: 'primary', keepOpen: true,
+                        onClick: function () { window.__openB(); } }],
+          });
+        });
+        await new Promise((r) => setTimeout(r, 350));
+
+        /* ⭐ 关键一步：点 A 里的「打开 B」—— 没有这一步 B 永远不会出现，
+         *   后面的断言就在测一个"只有一层"的世界。
+         *   （踩过：改构造方式时忘了加点击，误以为嵌套坏了。） */
+        await p.evaluate(() => {
+          /* ⚠️ 用**文本**找按钮，不能靠下标 ——
+           *   dialog 里第一个 button 是**关闭按钮**，点了会把 A 关掉。 */
+          const btns = document.querySelectorAll('[role="dialog"] button');
+          for (let i = 0; i < btns.length; i++) {
+            if ((btns[i].textContent || '').indexOf('B') >= 0) { btns[i].click(); return; }
+          }
+        });
+        await new Promise((r) => setTimeout(r, 400));
+
+        const depth = await p.evaluate(() =>
+          document.querySelectorAll('[role="dialog"]').length);
+        if (depth < 2) {
+          return { ok: false,
+                   note: '未能构造嵌套场景（只开出 ' + depth + ' 层）' };
+        }
+
+        await p.keyboard.press('Escape');
+        await new Promise((r) => setTimeout(r, 600));  // 等离场动画（220ms）+ 焦点归位
+        const afterB = await p.evaluate(() => {
+          const d = document.querySelectorAll('[role="dialog"]');
+          return {
+            left: d.length,
+            inA: d.length ? d[d.length - 1].contains(document.activeElement) : false,
+          };
+        });
+        if (afterB.left !== 1) {
+          return { ok: false,
+                   note: '关掉内层后应剩 1 层，实际剩 ' + afterB.left };
+        }
+        if (!afterB.inA) {
+          return { ok: false,
+                   note: '关掉内层后焦点没回到外层弹层内 ⇒ 焦点栈实现有误' };
+        }
+
+        await p.keyboard.press('Escape');
+        await new Promise((r) => setTimeout(r, 600));  // 等离场动画（220ms）+ 焦点归位
+        const afterA = await p.evaluate(() => {
+          const t = document.getElementById('probe-outer');
+          const back = !!t && document.activeElement === t;
+          if (t) t.parentNode.removeChild(t);
+          try { delete window.__probe; } catch (e) { window.__probe = null; }
+          return { left: document.querySelectorAll('[role="dialog"]').length,
+                   back: back };
+        });
+        if (afterA.left !== 0) {
+          return { ok: false, note: '外层未关闭，剩 ' + afterA.left + ' 层' };
+        }
+        if (!afterA.back) {
+          return { ok: false, note: '关掉外层后焦点没回到最初的触发元素' };
+        }
+        return { ok: true, note: '两层弹层焦点逐层归还正确' };
+      },
     },
   });
   process.exit(kit.report(r));
