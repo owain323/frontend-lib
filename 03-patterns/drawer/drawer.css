@@ -18,7 +18,13 @@
   position: fixed;
   inset: 0;
   z-index: var(--z-modal);
-  background: rgba(0, 0, 0, .42);
+  /*🔴 改：原来是写死的 rgba(0,0,0,.42)——
+     暗色模式下遮罩明显偏黑（暗色下 --scrim 是 0.62 的黑，
+     而写死的 .42 在深底上几乎看不出来）。
+     overlay.css 与 nav.css 都用 var(--scrim)，只有这里漏了 ⇒
+     同一套库里三个遮罩表现不一致。
+     统一走令牌后，暗色跟随自动生效。 */
+  background: var(--scrim);
   display: flex;
   /* 抽屉从右侧滑入（可改成 left / top / bottom）*/
   justify-content: flex-end;

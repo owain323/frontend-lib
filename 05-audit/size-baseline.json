@@ -89,8 +89,8 @@
       "raw": 3379
     },
     "02-primitives/switch/switch.css": {
-      "gzip": 7136,
-      "raw": 17431
+      "gzip": 7352,
+      "raw": 17924
     },
     "03-patterns/accordion/accordion.css": {
       "gzip": 6838,
@@ -101,12 +101,12 @@
       "raw": 16060
     },
     "03-patterns/content/content.css": {
-      "gzip": 3630,
-      "raw": 9556
+      "gzip": 3802,
+      "raw": 9897
     },
     "03-patterns/drawer/drawer.css": {
-      "gzip": 1760,
-      "raw": 4237
+      "gzip": 1982,
+      "raw": 4606
     },
     "03-patterns/drawer/drawer.js": {
       "gzip": 2740,
@@ -194,6 +194,6 @@
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 173559,
-  "total_raw": 451023
+  "total_gzip": 174169,
+  "total_raw": 452226
 }

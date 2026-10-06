@@ -49,6 +49,10 @@ import glob
 import subprocess
 import shutil
 
+class _ShootFailed(RuntimeError):
+    """截图环节失败——必须让整道门禁失败，绝不能继续比 diff。"""
+
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SHOTS = os.path.join(ROOT, '10-review', 'shots')
 BASELINE = os.path.join(SHOTS, '_baseline')
@@ -123,7 +127,11 @@ SHOOT_JS = r"""
  *   新建 page 的成本约 300-500ms/次，23 次就 10 秒。
  */
 const fs = require('fs');
-const { launch } = require('05-audit/browser.js');
+// 🔴 用**绝对路径** require，而不是 require('05-audit/browser.js')
+//   ——后者依赖进程的 CWD 恰好是仓库根。一旦从别处调用本脚本，
+//     它就找不到模块（实测踩过：Cannot find module '05-audit/browser.js'），
+//   而截图失败原先只打印一行 ⇒ 视觉回归"假通过"。
+const { launch } = require(process.env.FL_BROWSER || './browser.js');
 const TASKS = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
 (async () => {
   const b = await launch();
@@ -214,13 +222,12 @@ def shoot(outdir):
         io.open(tmp_jsn, 'w', encoding='utf-8').write(_json.dumps(tasks))
         # 🔴 子进程必须继承 NODE_PATH：puppeteer-core 装在受管 workspace 里
         env = dict(os.environ)
-        for ws in (r'${WORKSPACE}/node_modules',
-                   os.path.join(ROOT, 'node_modules')):
-            if os.path.isdir(ws):
-                env['NODE_PATH'] = ws + os.pathsep + env.get('NODE_PATH', '')
-                break
+        # 🔴 并把browser.js 的绝对路径传进去，避免子进程 CWD 不确定
+        env['FL_BROWSER'] = os.path.join(ROOT, '05-audit', 'browser.js')
+        env['NODE_PATH'] = os.path.join(ROOT, 'node_modules') + \
+            os.pathsep + env.get('NODE_PATH', '')
         r = subprocess.run([node, tmp_js, tmp_jsn], capture_output=True,
-                           timeout=300, env=env)
+                           timeout=300, env=env, cwd=ROOT)
         os.remove(tmp_js)
         os.remove(tmp_jsn)
         _dt = _time.time() - _t0
@@ -234,9 +241,22 @@ def shoot(outdir):
             if line.startswith('TIMING '):
                 print('  [I1] 分项耗时 ' + line[7:])
         if r.returncode != 0 and ok == 0:
-            print('  [FAIL] 批量截图失败：%s'
-                  % (r.stderr or b'').decode('utf-8', 'replace')[:200])
+            msg = (r.stderr or b'').decode('utf-8', 'replace')[:300]
+            print('  [FAIL] 批量截图失败：%s' % msg)
         print('  截了 %d / %d 个页面' % (ok, len(_pages_exist())))
+
+        # 🔴🔴🔴 截图失败必须**向上传递**，不能只打印
+        #   实测（2026-10-06）：截图全部失败时 ok=0，
+        #   但 diff_all拿「基线的 N 张」和「当前的 0 张」去比，
+        #   结果输出「OK  23 / 0 个页面观感一致」——
+        #   **一张图都没截，却报全绿**。
+        #   这是最危险的一类假绿：它让人以为视觉回归过了。
+        if ok == 0:
+            raise _ShootFailed('一张截图都没成功（ok=0）——'
+                                    '视觉回归**未执行**，不能算通过')
+        if ok < len(_pages_exist()):
+            print('  ⚠️ 只截到 %d / %d 页；其余页面本轮**未验证**'
+                  % (ok, len(_pages_exist())))
     finally:
         srv.terminate()
         try:
@@ -392,6 +412,14 @@ def main():
         print('  [FAIL] 没有基线。请先跑：python 05-audit/shot-baseline.py --record')
         return 1
     n = shoot(CURRENT)
+    # 🔴🔴截图环节失败 ⇒ 整道门禁失败，绝不继续比 diff。
+    #   （原先只是打印一行，然后拿「基线 N 张 vs 当前 0 张」去比，
+    #    结果输出「OK 23 / 0 个页面观感一致」—— 一张没截却报全绿。）
+    if n == 0:
+        print('')
+        print('  [FAIL] 视觉回归**未执行**：一张都没截到')
+        print('         ⇒ 这次运行**不能算通过**（它压根没看任何东西）')
+        return 1
     # 🔴 先看基线是否录于当前 CSS（不是，但它本来就录于某个状态）
     st = read_stamp()
     if st:
