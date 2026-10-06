@@ -92,7 +92,7 @@
 
 /* ⭐ 焦点与悬停**用同一个视觉**（键盘与鼠标看到的是同一个高亮）*/
 .dd__item:focus,
-.dd__item.is-active {
+.dd__item.is-active, .dd__item[data-state="active"] {
   outline: none;                     /* 自己画，不用默认 outline */
   background: var(--accent-soft);
   color: var(--text-primary);

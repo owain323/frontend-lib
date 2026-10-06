@@ -190,10 +190,10 @@
    只在"校验有明确通过语义"时用（如"该用户名可用"）。
    普通输入框加成功态是噪音。
 
-   ⚠️ **本库没有 JS 自动加 .is-valid** —— `aria-invalid="false"` 由浏览器/你自己维护，
-      `.is-valid` 也要自己加。这条规则是给复用者的钩子，不是现成功能。
+   ⚠️ **本库没有 JS 自动加 .is-valid,    ⚠️ **本库没有 JS 自动加 [data-state="valid"]** —— `aria-invalid="false"` 由浏览器/你自己维护，
+      `.is-valid,       `[data-state="valid"]` 也要自己加。这条规则是给复用者的钩子，不是现成功能。
    ---------------------------------------------------------------- */
-.field__input[aria-invalid="false"].is-valid {
+.field__input[aria-invalid="false"].is-valid, .field__input[aria-invalid="false"][data-state="valid"] {
   border-color: var(--success);
 }
 

@@ -119,4 +119,4 @@
 }
 
 /* 退场（JS 加这个类，等动画结束再移除节点）*/
-.drawer.is-leaving { opacity: 0; transition: opacity 160ms var(--ease-out, ease); }
+.drawer.is-leaving, .drawer[data-state="leaving"] { opacity: 0; transition: opacity 160ms var(--ease-out, ease); }

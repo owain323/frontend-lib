@@ -300,13 +300,13 @@
    只在"动作不可逆且需要确认"时用（提交、支付）。
    普通操作加 success 是噪音。
    ---------------------------------------------------------------- */
-.btn.is-success {
+.btn.is-success, .btn[data-state="success"] {
   background: var(--success);
   /* 🔴 2026-10-03：暗色下底色变亮，写死的白字会看不清。 */
   color: var(--text-on-accent);
 }
-.btn.is-success .btn__label { opacity: 1; }
-.btn.is-success .btn__spinner { opacity: 0; }
+.btn.is-success, .btn[data-state="success"] .btn__label { opacity: 1; }
+.btn.is-success, .btn[data-state="success"] .btn__spinner { opacity: 0; }
 
 /* ---------------------------------------------------------------- 图标按钮
    正方形。必须带 aria-label，因为里面没有文字。

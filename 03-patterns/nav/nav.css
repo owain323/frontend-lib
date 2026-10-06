@@ -164,7 +164,7 @@
     transition: transform var(--dur-base) var(--ease-out);
     overflow-y: auto;
   }
-  .nav__list.is-open { transform: translateX(0); }
+  .nav__list.is-open,   .nav__list[data-state="open"] { transform: translateX(0); }
 
   .nav__link {
     padding: var(--sp-3) 0;
@@ -189,7 +189,7 @@
     pointer-events: none;
     transition: opacity var(--dur-base) var(--ease-out);
   }
-  .nav__scrim.is-open { opacity: 1; pointer-events: auto; }
+  .nav__scrim.is-open,   .nav__scrim[data-state="open"] { opacity: 1; pointer-events: auto; }
 }
 
 /* ============================================================================
@@ -266,7 +266,7 @@
   .nav__toggle[aria-expanded="true"] i { transform: none; }
   .nav__toggle[aria-expanded="true"] i::before { transform: none; }
   .nav__list { transform: translateX(100%); }
-  .nav__list.is-open { transform: translateX(0); }
+  .nav__list.is-open,   .nav__list[data-state="open"] { transform: translateX(0); }
 }
 
 /* ============================================================================
