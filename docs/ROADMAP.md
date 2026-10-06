@@ -62,18 +62,18 @@
 
 | # | 事项 | 判据 |
 |---|---|---|
-| W3 | **重写 API 契约门禁** —— 在真实浏览器里用 `Object.getOwnPropertyDescriptors` 取实例形状，与 `.d.ts` 双向比对（getter/setter/参数/回调/实例 vs 静态） | 故意改错类型必须被抓 |
-| W4 | **文档事实门禁** —— START-HERE/CHANGELOG 里的组件清单、数字必须与仓库真实一致 | 改一个组件名必须报错 |
-| W5 | **API.md 形式化** —— 明确 Factory / Create / Attach / Namespace / Utility 五类，把「例外」变成「规则」 | API.md 与实现不一致必须报错 |
+| W3 | ✅ **API 契约门禁已重写** —— 真浏览器取`getOwnPropertyDescriptors`，双向比对 | 已验：注入 `Select.destroy` + `getValue` 双双被抓 |
+| W4 | ✅ **文档事实门禁已建** —— 组件清单/门禁数/版本日期 | 已验：改门禁数字必报错 |
+| W5 | ✅ **API.md 已形式化** —— 实测出create 7 / attach 2 / construct 2 / direct 8 四类| 已验：把 Drawer 写成 create 必报错 |
 
 ### 🟠 P1 —— 发布工程类
 
 | # | 事项 | 判据 |
 |---|---|---|
 | W6 | **真实浏览器 API 快照** —— 从运行时提取，与类型、API.md 三方对照 | 与 W3 合并实施 |
-| W7 | **CI 补`npm ci` + WebKit** —— 移动 WebView 定位下，WebKit 优先级高于桌面 Firefox；nightly 跑全矩阵 | CI 里 lockfile 真被验证过 |
-| W8 | **lockfile 换官方 registry** —— 不把公开包的默认锁到第三方镜像 | `resolved` 全部指向 registry.npmjs.org |
-| W9 | **重新定位 prefix 策略** —— 或做成 CSS+JS+HTML 联动改写，或明确降级为 CSS-only 实验性工具并写清边界 | 行为组件加前缀后功能正常 |
+| W7 | ✅ **CI 已补 npm ci + WebKit** —— 拆三层 PR/契约/nightly | CI 每个 job 都装依赖 |
+| W8 | ✅ **lockfile 已换官方源** —— 91 处 npmmirror → npmjs | 已实测 npm ci 正常 |
+| W9 | ✅ **prefix 已做成三层联动** —— CSS/JS/HTML 同步改写 | 已验：只换 CSS 时 `display:block`失效，全换后 `flex` 生效 |
 
 ### 🟡 P2 —— 长期
 
