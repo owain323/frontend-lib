@@ -34,7 +34,7 @@
   pointer-events: none;                  /* 不挡住下面的元素 */
 }
 
-.tooltip.is-open {
+.tooltip.is-open, .tooltip[data-state="open"] {
   opacity: 1;
   visibility: visible;
 }

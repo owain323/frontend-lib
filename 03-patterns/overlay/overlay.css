@@ -111,7 +111,7 @@
 .toast__close:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 /* 关闭动画：往右淡出，和进场方向一致 */
-.toast.is-leaving {
+.toast.is-leaving, .toast[data-state="leaving"] {
   animation: toast-out var(--dur-fast) var(--ease-in-out) forwards;
 }
 
@@ -232,7 +232,7 @@
    ------------------------------------------------------------------------ */
 html { scrollbar-gutter: stable; }
 
-body.is-locked { overflow: hidden; }
+body.is-locked, body[data-state="locked"] { overflow: hidden; }
 
 /* 极窄屏：dialog 贴底（移动端习惯，比居中更符合直觉） */
 @media (max-width: 480px) {
@@ -267,7 +267,7 @@ body.is-locked { overflow: hidden; }
    ========================================================================= */
 @media (prefers-reduced-motion: reduce) {
   .toast,
-  .toast.is-leaving,
+  .toast.is-leaving,   .toast[data-state="leaving"],
   .dialog,
   .dialog-backdrop { animation: none; }
   .toast__timer { animation: none; width: 100%; }   /* 进度条停住，不假装还在倒计时 */

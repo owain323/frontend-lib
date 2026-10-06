@@ -146,7 +146,7 @@
   cursor: pointer;
 }
 
-.combo__opt.is-active { background: var(--accent-soft); }
+.combo__opt.is-active, .combo__opt[data-state="active"] { background: var(--accent-soft); }
 .combo__opt[aria-disabled="true"] {
   color: var(--text-tertiary);
   background: var(--surface-sunken);
@@ -183,35 +183,35 @@
    ⚠️ 这里**不用 `:has()`** —— 它是 ES6+ 选择器，
    在精简档 的老 WebView 上会**语法错误导致整段样式不执行**
    （不是"这条规则失效"，是"这一整块都不生效"）。
-   ⇒ 正解：由 JS 在 input 被禁用时给容器加 `.is-disabled` class，
+   ⇒ 正解：由 JS 在 input 被禁用时给容器加 `.is-disabled,    ⇒ 正解：由 JS 在 input 被禁用时给容器加 `[data-state="disabled"]` class，
      组件自己管状态，CSS 只管表现（这是 ES5 兼容的做法）。 */
 
-.combo__field.is-disabled {
+.combo__field.is-disabled, .combo__field[data-state="disabled"] {
   background: var(--surface-sunken);
   border-color: var(--border-decor);
   cursor: not-allowed;
 }
 
-.combo__field.is-disabled .combo__input {
+.combo__field.is-disabled, .combo__field[data-state="disabled"] .combo__input {
   color: var(--text-tertiary);
   cursor: not-allowed;
 }
 
 /* 禁用时标签的删除按钮也要变灰（否则看着能点）*/
-.combo__field.is-disabled .combo__tag-del {
+.combo__field.is-disabled, .combo__field[data-state="disabled"] .combo__tag-del {
   color: var(--text-tertiary);
   cursor: not-allowed;
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .combo__field.is-disabled .combo__tag-del:hover {
+  .combo__field.is-disabled,   .combo__field[data-state="disabled"] .combo__tag-del:hover {
     background: none;
     color: var(--text-tertiary);
   }
 }
 
 /* ---------- 禁用态（补 :disabled 写法，双保险）----------
-   ⚠️ 上面已用 .is-disabled（由 JS 同步）；这里再写一份 :disabled，
+   ⚠️ 上面已用 .is-disabled,    ⚠️ 上面已用 [data-state="disabled"]（由 JS 同步）；这里再写一份 :disabled，
       好处是**即使 JS 没跑**，样式也正确。
    （states 门禁的 input 形态判据也认这条 —— 双保险，不是绕过。） */
 .combo__input:disabled {
