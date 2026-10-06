@@ -39,9 +39,9 @@ import io
 import json
 import os
 import re
-import shutil
-import subprocess
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TYPES = os.path.join(ROOT, 'types', 'index.d.ts')
@@ -65,33 +65,9 @@ IGNORE = {'constructor', 'then', 'toJSON', 'valueOf'}
 
 # ---------------------------------------------------------------- 运行时
 def probe_runtime():
-    """跑 api-contract.js，拿运行时真实形状。返回 dict 或 None。
-
-    ⚠️ 直接调 node，**不套 with-server.sh**——
-       check-all 自己已经起了 :8000，而 with-server.sh 遇到端口被占会报错。
-    独立运行时才需要服务，此时调用方（或人）负责先起服务。
-    """
-    if not os.path.isfile(PROBER):
-        return None
-    node = shutil.which('node') or os.environ.get('NODE', 'node')
-    p = subprocess.run([node, PROBER], cwd=ROOT,
-                       capture_output=True, timeout=300)
-    out = (p.stdout or b'').decode('utf-8', 'replace')
-    # 只取最外层JSON（前几屏可能有服务日志）
-    i = out.find('{')
-    if i < 0:
-        return None
-    try:
-        return json.loads(out[i:])
-    except Exception:
-        # 逐段试，直到能解析
-        for j in range(i + 1, len(out)):
-            if out[j] == '}':
-                try:
-                    return json.loads(out[i:j + 1])
-                except Exception:
-                    continue
-    return None
+    """走公共 helper：自动确保 :8000 在跑（check-all 里已在跑，单独跑时自己起）。"""
+    import _probe
+    return _probe.run_probe('05-audit/api-contract.js')
 
 
 # ---------------------------------------------------------------- 类型侧
@@ -215,7 +191,10 @@ def main():
 
     rt = probe_runtime()
     if not rt:
-        print('  FAIL  拿不到运行时形状（api-contract.js 跑失败）')
+        print('  FAIL  拿不到运行时形状')
+        print('        ⇒ 已自动尝试起服务。检查：')
+        print('          · 8000 端口是否被别的程序占着')
+        print('          ·  05-audit/browser.js 能否找到浏览器')
         return 1
 
     errs = {k: v for k, v in rt.items() if isinstance(v, dict) and '__error' in v}

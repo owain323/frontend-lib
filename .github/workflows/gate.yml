@@ -1,38 +1,35 @@
 # ============================================================================
-# frontend-lib CI —— 只跑「跨平台安全」的那部分
-#
-# 🔴🔴 为什么全量门禁不在 CI 上跑（2026-10-06 实测结论）
-# ---------------------------------------------------------------------------
-#   我在 Linux runner 上真跑了一次全量（2 分 17 秒），结果：
-#       hygiene / perf-gate / states / a11y / viewport / accent-gate
-#       switch / tabs … 共 10+ 道门禁 FAIL
-#
-#   而**同一套门禁在本地 Windows 上全绿**。
-#
-#   ⇒ 根因是**平台差异**，不是代码坏了：
-#       · 字体渲染不同（视觉 diff 必然不一致）
-#       · 路径分隔符 / 编码处理不同（perf-gate 用相对路径算体积）
-#       · git 状态不同（CI 里是 shallow clone，repo-hygiene 判据受影响）
-#       · 浏览器版本不同（Chromium 由 puppeteer 下载，版本与本机不同）
-#
-#   ⚠️ **一个长期红的 CI 比没有 CI 更糟**：
-#      大家会习惯性忽略它 ⇒ 真正的新问题也一起被忽略。
-#
-#   ⇒ **决策：全量门禁只在本地跑，CI 只跑跨平台安全的那部分。**
-#      这同时**最省额度**（21 秒 vs 6 分钟）。
+# frontend-lib CI
 #
 # ============================================================================
-# CI 只跑这些（已实测 21 秒通过）
+# 三层设计（为什么要分层）
 # ---------------------------------------------------------------------------
-#   ① 单元测试        —— 纯函数，与平台无关
-#   ② 乱码            —— 纯文本检查
-#   ③ 注释配平        —— 纯文本检查
-#   ④ 性能预算        —— 只算 CSS 字节数，跨平台一致
-#   ⑤ 组件覆盖率      —— 只数文件，与平台无关
+#   pr         —— 每个 PR 都跑，必须快、必须跨平台可靠
+#   contract   —— 契约类门禁（类型/ API 形态 / 文档事实）
+#   nightly    —— 浏览器矩阵（含 WebKit），慢、可能因平台差异误报
 #
-#   ⚠️ **仓库卫生（repo-hygiene）也移出去了** ——
-#      它依赖 `git check-ignore`，在 shallow clone 下语义不同 ⇒ 在 CI 上误报。
-#      ⇒ 改为**本地推前必跑**（我已经每次都跑）。
+# 🔴🔴 为什么不全量门禁都塞进 PR
+# ---------------------------------------------------------------------------
+#   实测在 Linux runner 上跑全量会 FAIL 10+ 道（本地 Windows 全绿）：
+#     · 字体渲染不同 → 视觉 diff 必然不一致
+#     · 路径/编码处理不同 → 体积类门禁误报
+#     · shallow clone → 依赖 git 状态的判据语义不同
+#     · 浏览器版本不同 → 截图基线不匹配
+#
+#   ⚠️ **一个长期红的 CI 比没有 CI 更糟** ——
+#      大家会习惯性忽略它，真正的新问题也一起被忽略。
+#   ⇒ PR 只跑「实测跨平台可靠」的那部分；其余交给 nightly。
+#   ⚠️ 上面的清单**不是猜的**：每道都标注了它是否已在 PR 跑过并验证。
+#      新增门禁若不确定跨平台安全，先放 nightly。
+# ============================================================================
+#
+# 🔴🔴 npm ci 是必须的（评审指出，2026-10-06 修）
+# ---------------------------------------------------------------------------
+#   之前 CI 只有 node --test，**从没装过依赖** ——
+#   也就是说「锁文件可复现」这个承诺**从未被验证过**。
+#   而仓库自己又把 reproducible development environment 写进卖点。
+#   ⇒ 这是治理层的自相矛盾：修了，但没让任何人验证。
+#   ⇒ 现在每个 job 都先 npm ci。
 # ============================================================================
 
 name: gate
@@ -40,16 +37,23 @@ name: gate
 on:
   pull_request:
     branches: [master]
+  schedule:
+    # nightly：每天 UTC 03:17（错开整点，避开所有机器的高峰）
+    - cron: '17 3 * * *'
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  # ==================================================================
+  # ① PR 快门禁 —— 纯静态，零浏览器，秒级
+  # ==================================================================
   quick:
-    name: 快门禁（跨平台安全部分）
+    name: 快门禁（静态，跨平台）
     runs-on: ubuntu-latest
-    timeout-minutes: 5          # 🔴 兜底：卡住就掐掉，不烧额度
+    timeout-minutes: 6# 兜底：卡住就掐掉，不烧额度
     steps:
       - uses: actions/checkout@v4
 
@@ -57,22 +61,117 @@ jobs:
         with:
           node-version: '20'
 
-      - name: 单元测试（7 个纯函数，约 100ms，零依赖）
-        run: node --test 05-audit/unit.test.mjs
+      # 🔴 必须装依赖：否则 lockfile 的可复现性从未被验证
+      - name: 按锁文件安装（验证 lockfile 真能装）
+        run: npm ci
 
-      - name: 静态门禁（乱码 / 注释配平 / 性能预算 / 覆盖率）
+      - name: 单元测试
+        run: npm test
+
+      - name: 类型契约（正例必过 + 反例必挂）
+        run: python3 05-audit/tsc-gate.py
+
+      - name: 静态门禁
         run: |
           set -e
           python3 05-audit/mojibake-check.py .
           python3 05-audit/comment-balance.py
           python3 05-audit/perf-gate.py
           python3 05-audit/coverage-gate.py
+          python3 05-audit/doc-facts-gate.py
+          python3 05-audit/proper-noun-scan.py
+          python3 05-audit/hype-scan.py
+          python3 05-audit/leak-scan.py
+          python3 05-audit/es5-gate.py .
 
-      - name: 提示：全量门禁在本地跑
+      - name: 打包实装冒烟（npm pack → 装进空项目 → 核对）
+        run: bash 05-audit/pack-smoke.sh
+
+  # ==================================================================
+  # ② API 契约 —— 需要浏览器，但只要本地静态服务
+  # ==================================================================
+  contract:
+    name: API 契约（运行时 ↔ 类型 ↔ 文档）
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 按锁文件安装
+        run: npm ci
+
+      # 契约类门禁需要真实浏览器里创建实例
+      - name: 安装 Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: 运行时 API 形状 ↔ 类型声明
+        run: python3 05-audit/api-contract-gate.py
+
+      - name: API.md 接入形态 ↔ 实现
+        run: python3 05-audit/api-form-gate.py
+
+      - name: API 文档一致性
+        run: python3 05-audit/api-doc-gate.py
+
+  # ==================================================================
+  # ③ nightly 浏览器矩阵 —— 含 WebKit
+  # ==================================================================
+  #⭐ 为什么 WebKit 比 Firefox 重要（评审指出，已采纳）
+  #    本库定位是**移动 WebView**，iOS 上就是 WebKit。
+  #    而此前矩阵里是Chromium + Firefox（两个桌面浏览器），
+  #    唯独漏了真正的目标平台 —— **优先级排错了**。
+  browsers:
+    name: 浏览器矩阵（${{ matrix.name }}）
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false          # 一个引擎挂不影响其它引擎的报告
+      matrix:
+        include:
+          - name: chromium
+            engine: chromium
+          - name: webkit
+            engine: webkit
+          - name: firefox
+            engine: firefox
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 按锁文件安装
+        run: npm ci
+
+      - name: 安装 ${{ matrix.engine }}
+        run: npx playwright install --with-deps ${{ matrix.engine }}
+
+      # 视觉基线是本机生成的，跨平台必然不一致 ⇒ nightly 只跑不依赖截图的
+      - name: 契约测试（${{ matrix.engine }}）
         run: |
-          echo "─────────────────────────────────────────────────"
-          echo "ℹ️ 全量门禁（34 契约 + 视觉 + 响应式 + Firefox）"
-          echo "   **不在 CI 上跑** —— Linux 与 Windows 平台差异会导致"
-          echo "   10+ 道门禁误报（字体渲染 / 路径 / git 深度 / 浏览器版本）。"
-          echo "   ⇒ 它是**本地推前必跑**项：bash 05-audit/check-all.sh"
-          echo "─────────────────────────────────────────────────"
+          set -e
+          python3 -m http.server 8000 &
+          SRV=$!
+          sleep 2
+          trap "kill $SRV" EXIT
+          for c in select combobox date-range overlay accordion tabs \
+                   tree dropdown popover tooltip; do
+            if [ -f "05-audit/${c}-check.js" ]; then
+              echo "--- ${c}"
+              node "05-audit/${c}-check.js"
+            fi
+          done
+
+      - name: 上传失败截图
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shots-${{ matrix.engine }}
+          path: 10-review/shots/
+          retention-days: 7
