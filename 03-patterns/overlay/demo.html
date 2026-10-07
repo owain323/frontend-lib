@@ -7,54 +7,40 @@
 <title>Toast vs Dialog · 反馈层</title>
 <link rel="stylesheet" href="../../01-tokens/tokens.css">
 <link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/page.css">
 <link rel="stylesheet" href="../../02-primitives/button/button.css">
 <link rel="stylesheet" href="overlay.css">
 <style>
-  body { margin: 0; padding: var(--sp-7) var(--sp-5); background: var(--paper);
-         color: var(--text-primary); font: var(--fs-base)/var(--lh-base) system-ui, sans-serif; }
-  .wrap { max-width: 820px; margin: 0 auto; }
-
-  /* 对比演示卡：底色用中性，语义色只留在标题文字上 */
-  .bad { background: var(--surface-sunken); }
-  .good { background: var(--surface-sunken); }
-  .bad h3 { color: var(--danger); }
-  .good h3 { color: var(--success); }
-
-  h1 { font-size: var(--fs-2xl); line-height: var(--lh-tight); margin: 0 0 var(--sp-2); }
-  .lede { color: var(--text-secondary); margin: 0 0 var(--sp-6); }
-  h2 { font-size: var(--fs-lg); margin: var(--sp-7) 0 var(--sp-4);
-       padding-bottom: var(--sp-2); border-bottom: 1px solid var(--border-decor); }
-  p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6; }
-  code { font-family: var(--mono);   /* 原为写死的 ui-monospace，统一走令牌 */ font-size: var(--fs-xs);
-         background: var(--surface-sunken); padding: 1px 5px; border-radius: 4px; }
-  .box { background: var(--surface); border: 1px solid var(--border-decor);
-         border-radius: var(--r-md); padding: var(--sp-5); }
-  .row { display: flex; gap: var(--sp-3); flex-wrap: wrap; }
-  #tracker { position: sticky; top: var(--sp-3); z-index: var(--z-sticky);   /* 🔴*/ background: var(--surface);
+/* 对比演示卡：底色用中性，语义色只留在标题文字上 */
+.bad { background: var(--surface-sunken); }
+.good { background: var(--surface-sunken); }
+.bad h3 { color: var(--danger); }
+.good h3 { color: var(--success); }
+p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6; }
+.row { display: flex; gap: var(--sp-3); flex-wrap: wrap; }
+#tracker { position: sticky; top: var(--sp-3); z-index: var(--z-sticky);   /* 🔴*/ background: var(--surface);
              border: 1px solid var(--accent); border-radius: var(--r-md);
              padding: var(--sp-3) var(--sp-4); font-family: var(--mono);   /* 原为写死的 ui-monospace，统一走令牌 */
              font-size: var(--fs-xs); line-height: 1.8; box-shadow: var(--shadow-2); }
-  #tracker b { color: var(--accent); }
-  .log { color: var(--text-tertiary); }
-  /* 🔴 原来这里是 `1fr 1fr`（两列等宽）—— 那是"AI 味"清单的第一条：
-        等宽并排的卡片没有主次，看起来像模板填空。
+#tracker b { color: var(--accent); }
+.log { color: var(--text-tertiary); }
+/* 🔴 原来这里是 `1fr 1fr`（两列等宽）—— 那是"AI 味"清单的第一条： 等宽并排的卡片没有主次，看起来像模板填空。 改成不等宽：左边（本库做法）是**焦点**，占更宽； 右边（常见/错用）是**配角**，占窄且视觉降级。 不对称本身产生节奏，均一不产生。 */
+.two { display: grid; gap: var(--sp-5); grid-template-columns: 1.55fr 1fr; }
+@media (max-width: 44rem) {.two { grid-template-columns: 1fr; }
 
-        改成不等宽：左边（本库做法）是**焦点**，占更宽；
-        右边（常见/错用）是**配角**，占窄且视觉降级。
-        不对称本身产生节奏，均一不产生。 */
-  .two { display: grid; gap: var(--sp-5); grid-template-columns: 1.55fr 1fr; }
-  @media (max-width: 44rem) { .two { grid-template-columns: 1fr; } }
-
-  /* 配角一列降级：去掉填充色，只留左边线 —— 视觉重量明显低于焦点 */
-  .two > .aside-col {
+ }
+/* 配角一列降级：去掉填充色，只留左边线 —— 视觉重量明显低于焦点 */
+.two>.aside-col {
     border-left: 2px solid var(--border-decor-str);
     padding-left: var(--sp-4);
     background: none;
   }
-  @media (max-width: 700px) { .two { grid-template-columns: 1fr; } }
+@media (max-width: 700px) {.two { grid-template-columns: 1fr; }
+
+ }
 </style>
 </head>
-<body>
+<body class="page page">
 <main class="wrap">
 
   <h1>Toast vs Dialog</h1>
@@ -68,7 +54,7 @@
     <div class="log" id="t-log">打开一个 dialog，然后按 Tab 循环 —— 焦点不会跑到背后页面去。</div>
   </div>
 
-  <h2>Toast — 通知一下，你不需要做任何事</h2>
+  <h2 class="rule-bottom">Toast — 通知一下，你不需要做任何事</h2>
   <div class="box">
     <div class="row">
       <button class="btn btn--md btn--secondary" id="b1">普通提示</button>
@@ -82,7 +68,7 @@
     </p>
   </div>
 
-  <h2>Dialog — 必须处理完才能继续</h2>
+  <h2 class="rule-bottom">Dialog — 必须处理完才能继续</h2>
   <div class="box">
     <div class="row">
       <button class="btn btn--md btn--primary" id="d1">普通确认</button>
@@ -96,7 +82,7 @@
     </p>
   </div>
 
-  <h2>危险操作的两个特殊处理</h2>
+  <h2 class="rule-bottom">危险操作的两个特殊处理</h2>
   <div class="two">
     <div class="box good">
       <h3 style="margin:0 0 var(--sp-3); font-size:var(--fs-sm); font-weight:500">本库做法</h3>
@@ -115,7 +101,7 @@
     </div>
   </div>
 
-  <h2>滚动锁定：容易漏的那个细节</h2>
+  <h2 class="rule-bottom">滚动锁定：容易漏的那个细节</h2>
   <div class="note">
     打开 dialog 时页面内容会<strong>横向跳一下</strong> —— 因为滚动条被锁掉了，右边突然多出宽度。<br><br>
     修法：锁之前把滚动条宽度量出来，给 <code>body</code> 加等宽的 <code>padding-right</code>。
@@ -123,7 +109,7 @@
     <strong>怎么验证：</strong>本页右边有滚动条。点"普通确认"，注意页面内容有没有横移。
   </div>
 
-  <h2>用错比做丑严重得多</h2>
+  <h2 class="rule-bottom">用错比做丑严重得多</h2>
   <div class="two">
     <div class="box bad aside-col">
       <h3 style="margin:0 0 var(--sp-3); font-size:var(--fs-sm); font-weight:500; color:var(--danger)">
@@ -153,7 +139,7 @@
     </div>
   </div>
 
-  <h2>进场动效的克制</h2>
+  <h2 class="rule-bottom">进场动效的克制</h2>
   <div class="box">
     <p class="small" style="margin:0 0 var(--sp-3)">
       <code>scale</code> 只到 <strong>0.98</strong>，位移只有 <strong>8px</strong>。

@@ -7,31 +7,26 @@
 <title>气泡卡片 · popover</title>
 <link rel="stylesheet" href="../../01-tokens/tokens.css">
 <link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/page.css">
 <link rel="stylesheet" href="../button/button.css">
 <link rel="stylesheet" href="popover.css">
 <style>
-  body { padding: var(--sp-5) var(--sp-4) 96px; }
-  h1 { font-size: var(--fs-xl); margin: 0 0 var(--sp-2); }
-  h2 { font-size: var(--fs-lg); margin: var(--sp-7) 0 var(--sp-3); }
-  .lede { color: var(--text-secondary); margin: 0 0 var(--sp-5); }
-  .demo {
+.demo {
     background: var(--surface);
     border: 1px solid var(--border-decor);
     border-radius: var(--r-md);
     padding: var(--sp-4);
     margin-bottom: var(--sp-4);
   }
-  .row { display: flex; gap: var(--sp-3); flex-wrap: wrap; }
-  .note { font-size: var(--fs-sm); color: var(--text-secondary); margin-top: var(--sp-3); }
-  .bad-demo { background: var(--danger-bg); border-color: var(--danger); }
-  .bad { color: var(--danger); }
-  code { background: var(--surface-sunken); padding: 1px 4px; border-radius: var(--r-xs); }
-  table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
-  td, th { text-align: left; padding: var(--sp-2); border-bottom: 1px solid var(--border-decor); }
-  th { font-weight: 600; }
+.row { display: flex; gap: var(--sp-3); flex-wrap: wrap; }
+.bad-demo { background: var(--danger-bg); border-color: var(--danger); }
+.bad { color: var(--danger); }
+table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+td, th { text-align: left; padding: var(--sp-2); border-bottom: 1px solid var(--border-decor); }
+th { font-weight: 600; }
 </style>
 </head>
-<body>
+<body class="page page">
 
 <h1>气泡卡片 · popover</h1>
 <p class="lede">用户需要<strong>在里面操作</strong>，但不该被强制中断时用。</p>

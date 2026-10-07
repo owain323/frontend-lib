@@ -43,8 +43,9 @@ body {
   line-height: 1.6;
 }
 
-/* 提示框：需要注意但不紧急的信息。
-   🔴 语义上它对应的是"注意"，不是"错误" —— 别拿它装错误消息。 */
+/* 说明块：补充/解释，不是警告，更不是错误。要"注意"用 .note--warn。
+   🔴 0.4.2 底色 --warning-bg → --surface-sunken：实测 21 页用 .note，
+     20 页当灰底说明块手写同一个值，只有 1 页用 warning ⇒ 取众数。 */
 .note {
   /* 🔴 去掉 `border-left: 3px solid`。
      评审意见"很蠢的左边侧边阴影" —— 说得对：
@@ -52,16 +53,21 @@ body {
        ② 3px 竖条在浅底上形成一条硬边，视觉噪声比信息量大
        ③ 满库 13 处同款，一眼就能看出"模板感" —— 这正是 AI 味的来源。
      真实产品（GitHub callout / Vercel / Stripe）都是**纯底色 + 圆角**，没有竖条。 */
-  background: var(--warning-bg);
+  background: var(--surface-sunken);
+  color: var(--text-secondary);
   padding: var(--sp-3) var(--sp-4);
   border-radius: var(--r-sm);
   font-size: var(--fs-sm);
-  line-height: 1.65;
-  /* 🔴 补上外边距。评审指出「下边淡褐色的那一栏和上方两个贴得有点近」——
-     根因是它**完全没有 margin**，紧贴着上一块。
-     `.note` 是**独立区块**（不是句子的一部分），
-     上下都要留出呼吸：区块之间 ≥ --sp-5（24px），这是我的间距规范里的下限。 */
-  margin: var(--sp-5) 0;
+  line-height: 1.6;
+  /* 众数写法是 `margin: 0 0 var(--sp-4)`（9 页）。
+     上下都要留出呼吸，但它是**紧跟上下文的补充**，不是独立章节，
+     所以下边距给 --sp-4、上边距为 0（由上一个块的 margin 负责）。 */
+  margin: 0 0 var(--sp-4);
+}
+
+/* 注意块：同样一块，但要"提醒"而不是"补充" —— 唯一差别是底色。 */
+.note--warn {
+  background: var(--warning-bg);
 }
 
 /* 分隔线：比 border 轻，用于段落之间 */
@@ -140,8 +146,11 @@ code {
    ⚠️ 全部走令牌，不写死值 —— 换主题/换字号版本时自动跟随。
    ========================================================================== */
 .lede {
-  font-size: var(--fs-lg, 1.125rem);
+  /* 🔴 0.4.2：--fs-lg → --fs-md。前者与 h2 同档，导语抢了小节标题的层级。 */
+  font-size: var(--fs-md);
   line-height: 1.65;
   color: var(--text-secondary);
-  margin: 0 0 var(--sp-5);
+  /* 众数是 --sp-6（6 页）；--measure-lede 取代各页手写的 60ch / 62ch。 */
+  margin: 0 0 var(--sp-6);
+  max-width: var(--measure-lede);
 }

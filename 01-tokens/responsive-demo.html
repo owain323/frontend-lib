@@ -9,38 +9,27 @@
 <link rel="stylesheet" href="../02-primitives/button/button.css">
 <link rel="stylesheet" href="../02-primitives/input/input.css">
 <link rel="stylesheet" href="../02-primitives/card/card.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
 <style>
-  body { margin: 0; background: var(--paper); color: var(--text-primary);
-         font: var(--fs-base)/var(--lh-base) system-ui, sans-serif; }
-  .wrap { max-width: var(--measure); margin: 0 auto; padding: var(--sp-5); }
-  h1 { font-size: var(--fs-2xl); line-height: var(--lh-tight); margin: 0 0 var(--sp-3); }
-  h2 { font-size: var(--fs-lg); margin: var(--sp-7) 0 var(--sp-3); }
-  p  { margin: 0 0 var(--sp-4); }
-  code { font-family: var(--mono);   /* 原写死 ui-monospace，统一走令牌 */ font-size: 0.9em;
-         background: var(--surface-sunken); padding: 1px 5px; border-radius: 4px; }
-
-  /* 实时读数条 */
-  #meter { position: sticky; top: 0; z-index: var(--z-header);
+p { margin: 0 0 var(--sp-4); }
+/* 实时读数条 */
+#meter { position: sticky; top: 0; z-index: var(--z-header);
            background: var(--surface); border-bottom: 1px solid var(--border-decor);
            padding: var(--sp-3) var(--sp-5); display: flex; gap: var(--sp-5);
            flex-wrap: wrap; font-family: var(--mono);   /* 原写死 ui-monospace，统一走令牌 */ font-size: 12px; }
-  #meter b { color: var(--accent); }
-  .ruler { height: 14px; background: repeating-linear-gradient(90deg,
+#meter b { color: var(--accent); }
+.ruler { height: 14px; background: repeating-linear-gradient(90deg,
            var(--text-tertiary) 0 1px, transparent 1px 8px); opacity: .45; }
-
-  /* 断点演示：容器随宽度自动改变列数 —— 这才是断点该干的活 */
-  .auto-grid { display: grid; gap: var(--sp-4);
+/* 断点演示：容器随宽度自动改变列数 —— 这才是断点该干的活 */
+.auto-grid { display: grid; gap: var(--sp-4);
                grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); }
-  .note { background: var(--warning-bg); 
-          padding: var(--sp-3) var(--sp-4); border-radius: var(--r-sm);
-          font-size: var(--fs-sm); line-height: 1.65; margin: 0 0 var(--sp-4); }
-  .fixed-demo { display: flex; gap: var(--sp-3); align-items: center; flex-wrap: wrap;
+.fixed-demo { display: flex; gap: var(--sp-3); align-items: center; flex-wrap: wrap;
                 padding: var(--sp-4); background: var(--surface);
                 border: 1px solid var(--border-decor); border-radius: var(--r-md); }
-  .swatch { height: var(--sp-4); background: var(--accent); border-radius: 3px; }
+.swatch { height: var(--sp-4); background: var(--accent); border-radius: 3px; }
 </style>
 </head>
-<body>
+<body class="page page">
 
 <div id="meter">
   <span>视口 <b id="m-w">—</b></span>
@@ -51,11 +40,11 @@
   <span>按钮高 <b id="m-btn">—</b>（固定）</span>
 </div>
 
-<div class="wrap">
+<div class="wrap wrap--prose">
 
   <h1>响应式：流体管尺寸，断点管结构</h1>
 
-  <div class="note">
+  <div class="note note--warn">
     <strong>把浏览器窗口拖窄看左边那根读数条。</strong>
     注意最后一项：<strong>按钮高度不变</strong> —— UI 尺寸不参与流体，
     变了会让控件在不同屏幕下大小不一、布局抖动。

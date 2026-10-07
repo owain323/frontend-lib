@@ -10,6 +10,7 @@
 <title>iOS 验证 · frontend-lib</title>
 <link rel="stylesheet" href="../../01-tokens/tokens.css">
 <link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/page.css">
 <link rel="stylesheet" href="../../02-primitives/button/button.css">
 <link rel="stylesheet" href="../../02-primitives/badge/badge.css">
 <link rel="stylesheet" href="../../02-primitives/input/input.css">
@@ -23,51 +24,14 @@
 <link rel="stylesheet" href="../../03-patterns/states/states.css">
 <link rel="stylesheet" href="../../09-assets/sparkline/sparkline.css">
 <style>
-  body {
-    /* 🔴 不写 100vh：iOS Safari 收起地址栏时 100vh 不会变，
-       导致底部留白。用 min-height:100dvh（动态视口）才跟手。 */
-    min-height: 100vh;
-    min-height: 100dvh;
-    margin: 0;
-    /* 刘海安全区 */
-    padding: calc(env(safe-area-inset-top) + var(--sp-4))
-             max(env(safe-area-inset-right), var(--sp-4))
-             calc(env(safe-area-inset-bottom) + var(--sp-6))
-             max(env(safe-area-inset-left), var(--sp-4));
-    background: var(--paper);
-    color: var(--text-primary);
-  }
-  .wrap { max-width: 680px; margin: 0 auto; }
-  h1 { font-size: var(--fs-2xl); line-height: var(--lh-tight); margin: 0 0 var(--sp-2); }
-  h2 { font-size: var(--fs-lg); margin: var(--sp-7) 0 var(--sp-2);
-       padding-top: var(--sp-4); border-top: 1px solid var(--border-decor); }
-  .note { font-size: var(--fs-xs); color: var(--text-secondary);
-          margin: 0 0 var(--sp-4); max-width: 56ch; }
-  .row { display: flex; gap: var(--sp-3); flex-wrap: wrap;
+.row { display: flex; gap: var(--sp-3); flex-wrap: wrap;
          align-items: center; padding: var(--sp-3) 0; }
-  .spark { flex: 1 1 160px; min-width: 120px; }
-  .cap { font-size: var(--fs-xs); color: var(--text-tertiary); }
-  /* 🔴 粘顶条：Safari 对 position:sticky 的处理与 Chrome 有差异
-     （尤其父容器有 overflow 时会失效）。这是必测项。 */
-  /* 🔴 加：明暗切换按钮。
-     真机实测提出的：「暗色的模式，这个是需要你这边提供开关」。
-     本库的令牌只靠 @media(prefers-color-scheme) 生效
-     ⇒ 原来**只能改系统设置**才看得到暗色。 */
-  /* 🔴 重做这个按钮（真机实测指出两个问题）
-
-     问题 ① 「底色是透明颜色的，透明颜色非常非常容易出现错误」
-     实测确认：`background = rgba(0,0,0,0)` —— **完全透明**！
-     原因：我写的是 `background: var(--surface-raised)`，
-     而 **`--surface-raised` 在 tokens.css 的浅色段里没有定义**
-     （只定义在暗色段）⇒ 变量不存在 ⇒ 整个声明失效 ⇒ 透明。
-
-     ⇒ 修：**用已定义的令牌**，并加 `background-color` 明确兜底。
-        悬浮按钮压在页面上，**必须**有实体底色 + 边框 + 阴影。
-
-     问题 ② 「明暗 跟随」这三个字**别人不一定能看得懂**
-     ⇒ 改用**图标 + 明确文案**，且 `aria-label` 说人话。
-  */
-  .theme-fab {
+.spark { flex: 1 1 160px; min-width: 120px; }
+.cap { font-size: var(--fs-xs); color: var(--text-tertiary); }
+/* 🔴 粘顶条：Safari 对 position:sticky 的处理与 Chrome 有差异 （尤其父容器有 overflow 时会失效）。这是必测项。 */
+/* 🔴 加：明暗切换按钮。 真机实测提出的：「暗色的模式，这个是需要你这边提供开关」。 本库的令牌只靠 @media(prefers-color-scheme) 生效 ⇒ 原来**只能改系统设置**才看得到暗色。 */
+/* 🔴 重做这个按钮（真机实测指出两个问题） 问题 ① 「底色是透明颜色的，透明颜色非常非常容易出现错误」 实测确认：`background = rgba(0, 0, 0, 0)` —— **完全透明**！ 原因：我写的是 `background: var(--surface-raised)`， 而 **`--surface-raised` 在 tokens.css 的浅色段里没有定义** （只定义在暗色段）⇒ 变量不存在 ⇒ 整个声明失效 ⇒ 透明。 ⇒ 修：**用已定义的令牌**，并加 `background-color` 明确兜底。 悬浮按钮压在页面上，**必须**有实体底色+边框+阴影。 问题 ② 「明暗 跟随」这三个字**别人不一定能看得懂** ⇒ 改用**图标+明确文案**，且 `aria-label` 说人话。 */
+.theme-fab {
     position: fixed;
     right: max(env(safe-area-inset-right), var(--sp-4));
     bottom: calc(env(safe-area-inset-bottom) + var(--sp-4));
@@ -92,9 +56,8 @@
     font-size: var(--fs-sm);
     line-height: 1;
   }
-  /* 🔴 暗色下用实体深色（不是透明）：#121212 系的中性深灰 */
-  :root[data-theme-current="dark"] .theme-fab,
-  html[data-theme-current="dark"] .theme-fab {
+/* 🔴 暗色下用实体深色（不是透明）：#121212 系的中性深灰 */
+:root[data-theme-current="dark"] .theme-fab, html[data-theme-current="dark"] .theme-fab {
     background-color: #242424;
     background-image: linear-gradient(180deg, rgba(48,48,48,.94),
                                             rgba(30,30,30,.94));
@@ -102,18 +65,17 @@
     border-color: #5A5A5A;
     box-shadow: 0 2px 12px rgba(0,0,0,.5);
   }
-  .theme-fab:active { transform: scale(0.97); }
-  .theme-fab:focus-visible {
+.theme-fab:active { transform: scale(0.97); }
+.theme-fab:focus-visible {
     outline: 2px solid #1B4D8F; outline-offset: 2px;
   }
-  /* 图标：跟着当前状态变（太阳=在亮色下点→切暗）*/
-  .theme-fab__ico { font-size: 15px; line-height: 1; }
-  .theme-fab__txt {
+/* 图标：跟着当前状态变（太阳=在亮色下点→切暗）*/
+.theme-fab__ico { font-size: 15px; line-height: 1; }
+.theme-fab__txt {
     font-family: var(--sans);
     font-weight: 500;
   }
-
-  .sticky-probe {
+.sticky-probe {
     position: sticky; top: 0; z-index: var(--z-header, 100);
     margin: 0 calc(-1 * var(--sp-4)) var(--sp-3);
     padding: var(--sp-2) var(--sp-4);
@@ -124,7 +86,7 @@
   }
 </style>
 </head>
-<body>
+<body class="page page">
 <div class="wrap">
   <h1>iOS Safari 验证页</h1>
   <p class="note">
@@ -148,7 +110,7 @@
     ↓ 往下滚，看这条<strong>是否粘在顶部</strong>（Safari 最容易在这出问题）
   </div>
 
-  <h2>1 · 按钮与焦点环（<strong>最重要</strong>）</h2>
+  <h2 class="rule-top">1 · 按钮与焦点环（<strong>最重要</strong>）</h2>
   <p class="note">
     点一个按钮 → 环<strong>应该出现</strong>（触屏没有键盘焦点，但 iOS 会给按钮焦点）。
     如果一点就没环，是 <code>:focus-visible</code> 的问题。
@@ -160,7 +122,7 @@
     <button class="btn btn--primary" disabled>禁用</button>
   </div>
 
-  <h2>2 · 输入框与键盘</h2>
+  <h2 class="rule-top">2 · 输入框与键盘</h2>
   <p class="note">
     点输入框 → 键盘应该弹起，<strong>框仍然可见</strong>（不被键盘顶出屏幕）。
     字号 16px 以上，iOS 不会自动放大页面。
@@ -172,7 +134,7 @@
     </div>
   </div>
 
-  <h2>3 · 开关（原生 checkbox）</h2>
+  <h2 class="rule-top">3 · 开关（原生 checkbox）</h2>
   <p class="note">点一下应该切换。<strong>iOS 上原生 checkbox 的表现</strong>是最容易有差异的地方。</p>
   <div class="row">
     <span class="switch">
@@ -182,7 +144,7 @@
     </span>
   </div>
 
-  <h2>4 · 单选与复选（<strong>这两个不是一回事</strong>）</h2>
+  <h2 class="rule-top">4 · 单选与复选（<strong>这两个不是一回事</strong>）</h2>
   <p class="note">
     🔴 评审指出并纠正的：<strong>我原来只演示了 radio，
     导致"点一下没反应"看起来像 bug。</strong>
@@ -236,7 +198,7 @@
     <span class="choice__label"><span class="choice__mark"></span><span>剔除 ST</span></span>
   </label>
 
-  <h2>5 · 标签页</h2>
+  <h2 class="rule-top">5 · 标签页</h2>
   <p class="note">点下面那排标签 → 面板应该切换，选中项有<strong>蓝色下划线</strong>。</p>
   <div class="tabs" data-tabs>
     <div class="tabs__list" role="tablist" aria-orientation="horizontal" aria-label="iOS 验证">
@@ -251,7 +213,7 @@
     </div>
   </div>
 
-  <h2>6 · 折叠面板</h2>
+  <h2 class="rule-top">6 · 折叠面板</h2>
   <p class="note">
     点标题 → 下面<strong>应该平滑展开</strong>（不是"啪"一下出现），
     右侧三角<strong>应该转向</strong>。
@@ -375,14 +337,14 @@
     而<strong>首列（指标名）固定不动</strong>。
   </p>
 
-  <h2>7 · 弹窗（tap 目标与滚动）</h2>
+  <h2 class="rule-top">7 · 弹窗（tap 目标与滚动）</h2>
   <p class="note">点按钮 → 弹窗应该出现，<strong>内容很长时可以上下滚</strong>，
   背景应该盖住整屏（不是只盖住一部分）。</p>
   <div class="row">
     <button class="btn btn--primary" id="ios-modal">打开弹窗</button>
   </div>
 
-  <h2>8 · 趋势图（动画与令牌取色）</h2>
+  <h2 class="rule-top">8 · 趋势图（动画与令牌取色）</h2>
   <p class="note">
     这一条<strong>动图才有意义</strong>：线应该「从左往右画出来」。
     <br>⚠️ <strong>iOS 默认「减少动态效果」是开的</strong>（系统设置 → 辅助功能 → 动态效果）——
@@ -393,7 +355,7 @@
           data-spark-height="44" data-spark-last="yes"></span>
   </div>
 
-  <h2>9 · 徽章与分隔线</h2>
+  <h2 class="rule-top">9 · 徽章与分隔线</h2>
   <p class="note">徽章是<strong>淡底深字</strong>，不是饱和底白字（对比度不够）。</p>
   <div class="row">
     <span class="badge badge--success">已披露</span>
@@ -404,7 +366,7 @@
   <hr class="separator">
   <p class="cap">分隔线下面是 caption 文字。</p>
 
-  <h2>10 · 暗色模式</h2>
+  <h2 class="rule-top">10 · 暗色模式</h2>
   <p class="note">
     两种方式都能看：① 点<strong>右下角那个按钮</strong>（最快）
     ② 把手机系统调成深色（本库的令牌默认跟随系统）。
@@ -419,7 +381,7 @@
     </div>
   </div>
 
-  <h2>你只需要告诉我三件事</h2>
+  <h2 class="rule-top">你只需要告诉我三件事</h2>
   <p class="note">
     ① 上面哪几节<strong>和图上写的不一样</strong>（说编号就行）<br>
     ② 粘顶条（最上面那条灰条）<strong>滚下去有没有跟着粘住</strong><br>

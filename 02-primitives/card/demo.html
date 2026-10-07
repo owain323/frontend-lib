@@ -7,44 +7,36 @@
 <title>card · hover 无跳动</title>
 <link rel="stylesheet" href="../../01-tokens/tokens.css">
 <link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/page.css">
 <link rel="stylesheet" href="card.css">
 <style>
-  body { margin: 0; padding: var(--sp-7) var(--sp-5); background: var(--paper);
-         color: var(--text-primary); font: var(--fs-base)/var(--lh-base) system-ui, sans-serif; }
-  .wrap { max-width: 820px; margin: 0 auto; }
-  h1 { font-size: var(--fs-2xl); line-height: var(--lh-tight); margin: 0 0 var(--sp-2); }
-  .lede { color: var(--text-secondary); margin: 0 0 var(--sp-7); }
-  h2 { font-size: var(--fs-lg); margin: var(--sp-8) 0 var(--sp-4);
-       padding-bottom: var(--sp-2); border-bottom: 1px solid var(--border-decor); }
-  p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6; }
-  .grid3 { display: grid; gap: var(--sp-4); grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
-  code { font-family: var(--mono);   /* 原为写死的 ui-monospace，统一走令牌 */ font-size: var(--fs-xs);
-         background: var(--surface-sunken); padding: 1px 5px; border-radius: 4px; }
-  .cmp { display: grid; gap: var(--sp-5); grid-template-columns: 1.55fr 1fr; }
-  @media (max-width: 700px) { .cmp { grid-template-columns: 1fr; } }
-  .cmp > div { padding: var(--sp-5); border-radius: var(--r-md); border: 1px solid var(--border-decor); }
-  .box { background: var(--surface); border: 1px solid var(--border-decor);
-         border-radius: var(--r-md); padding: var(--sp-5); }
-  .bad { background: var(--surface-sunken); } .good { background: var(--surface-sunken); }
-  .cmp h3 { margin: 0 0 var(--sp-2); font-size: var(--fs-sm); font-weight: 500; }
-  .bad h3 { color: var(--danger); } .good h3 { color: var(--success); }
-  .cmp .stack { display: flex; flex-direction: column; gap: var(--sp-3); }
+p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6; }
+.grid3 { display: grid; gap: var(--sp-4); grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+.cmp { display: grid; gap: var(--sp-5); grid-template-columns: 1.55fr 1fr; }
+@media (max-width: 700px) {.cmp { grid-template-columns: 1fr; }
 
-  /* ---- 反例卡片：hover 时改 border-width，引起回流 ---- */
-  .card-bad { position: relative; background: var(--surface);
+ }
+.cmp>div { padding: var(--sp-5); border-radius: var(--r-md); border: 1px solid var(--border-decor); }
+.bad { background: var(--surface-sunken); }
+.good { background: var(--surface-sunken); }
+.cmp h3 { margin: 0 0 var(--sp-2); font-size: var(--fs-sm); font-weight: 500; }
+.bad h3 { color: var(--danger); }
+.good h3 { color: var(--success); }
+.cmp .stack { display: flex; flex-direction: column; gap: var(--sp-3); }
+/* ---- 反例卡片：hover 时改 border-width，引起回流 ---- */
+.card-bad { position: relative; background: var(--surface);
               border: 1px solid var(--border-decor); border-radius: var(--r-md);
               padding: var(--sp-4); font-size: var(--fs-sm); cursor: pointer;
               transition: border-color 180ms, box-shadow 180ms; }
-  .card-bad:hover { border-width: 4px; border-color: var(--accent); box-shadow: var(--shadow-2); }
-  .card-bad .ruler { height: 12px; background: repeating-linear-gradient(90deg,
+.card-bad:hover { border-width: 4px; border-color: var(--accent); box-shadow: var(--shadow-2); }
+.card-bad .ruler { height: 12px; background: repeating-linear-gradient(90deg,
               var(--text-tertiary) 0 1px, transparent 1px 8px); opacity: .5; margin-bottom: var(--sp-2); }
-
-  /* ---- 正确卡片：用库里的 .card--interactive ---- */
-  .card-ok .ruler { height: 12px; background: repeating-linear-gradient(90deg,
+/* ---- 正确卡片：用库里的 .card--interactive ---- */
+.card-ok .ruler { height: 12px; background: repeating-linear-gradient(90deg,
               var(--text-tertiary) 0 1px, transparent 1px 8px); opacity: .5; margin-bottom: var(--sp-2); }
 </style>
 </head>
-<body>
+<body class="page page">
 <main class="wrap">
 
   <h1>card · hover 无布局跳动</h1>
@@ -53,7 +45,7 @@
     <strong>绝不改 border-width / margin / padding / height</strong>。
   </p>
 
-  <h2>把 1px 的跳动放大给你看</h2>
+  <h2 class="rule-bottom">把 1px 的跳动放大给你看</h2>
   <div class="note">
     真实项目里这个 bug 通常是 <code>border: 1px → 2px</code>，只跳 1px ——
     轻到说不清哪里不对，但整页会显得廉价。<br>
@@ -104,14 +96,14 @@
     </div>
   </div>
 
-  <h2>抬起 2px，不是 8px</h2>
+  <h2 class="rule-bottom">抬起 2px，不是 8px</h2>
   <p class="small">
     卡片是"被拿起"，不是"被弹起"。8px 以上会有游戏感 ——
     长文和数据类界面不能要那种感觉。这也是森友会那套设计里我最认同的一条：
     卡片 20px 圆角、无投影、hover 只抬 2px。
   </p>
 
-  <h2>变体</h2>
+  <h2 class="rule-bottom">变体</h2>
   <div class="grid3">
     <div class="card card--flat">
       <div class="card__body">
@@ -133,7 +125,7 @@
     </div>
   </div>
 
-  <h2>整卡可点：Tab 一下试试</h2>
+  <h2 class="rule-bottom">整卡可点：Tab 一下试试</h2>
   <div class="grid3">
     <div class="card card--linked card--interactive">
       <div class="card__body">
@@ -156,7 +148,7 @@
     焦点样式用 <code>:focus-within</code>，内部链接获焦时整卡显示 ring。
   </p>
 
-  <h2>横向卡片（窄屏自动回退）</h2>
+  <h2 class="rule-bottom">横向卡片（窄屏自动回退）</h2>
   <div class="card card--row">
     <div class="card__media"></div>
     <div class="card__body">
@@ -165,7 +157,7 @@
     </div>
   </div>
 
-  <h2>门禁抓到的真问题</h2>
+  <h2 class="rule-bottom">门禁抓到的真问题</h2>
   <div class="note">
     给 <code>states.py</code> 加了 card 形态后，跑 某项目 立刻多报 4 项 HIGH：
     <code>.card</code> / <code>.card-grid</code> / <code>.side-card</code> <strong>全都缺 focus</strong> ——

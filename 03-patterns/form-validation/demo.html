@@ -7,38 +7,31 @@
 <title>表单校验 · 时机 / 汇总 / 焦点</title>
 <link rel="stylesheet" href="../../01-tokens/tokens.css">
 <link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/page.css">
 <link rel="stylesheet" href="../../02-primitives/input/input.css">
 <link rel="stylesheet" href="form-validation.css">
 <style>
-  body { margin: 0; padding: var(--sp-7) var(--sp-5); background: var(--paper);
-         color: var(--text-primary); font: var(--fs-base)/var(--lh-base) system-ui, sans-serif; }
-  .wrap { max-width: 860px; margin: 0 auto; }
-  h1 { font-size: var(--fs-2xl); line-height: var(--lh-tight); margin: 0 0 var(--sp-2); }
-  .lede { color: var(--text-secondary); margin: 0 0 var(--sp-7); }
-  h2 { font-size: var(--fs-lg); margin: var(--sp-8) 0 var(--sp-4);
-       padding-bottom: var(--sp-2); border-bottom: 1px solid var(--border-decor); }
-  p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6; }
-  code { font-family: var(--mono);   /* 原为写死的 ui-monospace，统一走令牌 */ font-size: var(--fs-xs);
-         background: var(--surface-sunken); padding: 1px 5px; border-radius: 4px; }
-  .grid2 { display: grid; gap: var(--sp-4); grid-template-columns: 1.55fr 1fr; }
-  @media (max-width: 700px) { .grid2 { grid-template-columns: 1fr; } }
-  .box { background: var(--surface); border: 1px solid var(--border-decor);
-         border-radius: var(--r-md); padding: var(--sp-5); }
-  .box h3 { margin: 0 0 var(--sp-2); font-size: var(--fs-sm); font-weight: 500; }
-  .bad { background: var(--surface-sunken); }
-  .good { background: var(--surface-sunken); }
-  .bad h3 { color: var(--danger); } .good h3 { color: var(--success); }
-  .btn { display:inline-flex; align-items:center; justify-content:center; height:44px;
+p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6; }
+.grid2 { display: grid; gap: var(--sp-4); grid-template-columns: 1.55fr 1fr; }
+@media (max-width: 700px) {.grid2 { grid-template-columns: 1fr; }
+
+ }
+.box h3 { margin: 0 0 var(--sp-2); font-size: var(--fs-sm); font-weight: 500; }
+.bad { background: var(--surface-sunken); }
+.good { background: var(--surface-sunken); }
+.bad h3 { color: var(--danger); }
+.good h3 { color: var(--success); }
+.btn { display:inline-flex; align-items:center; justify-content:center; height:44px;
          padding:0 var(--sp-5); border:1px solid transparent; border-radius:var(--r-sm);
          font-size:var(--fs-sm); font-weight:500; cursor:pointer; font-family:inherit;
          transition: background-color 120ms, border-color 120ms; }
-  .btn--primary { background: var(--accent); color: var(--text-on-accent); }
-  .btn--primary:hover { background: var(--accent-hover); }
-  .btn--secondary { background: var(--surface); color: var(--text-primary);
+.btn--primary { background: var(--accent); color: var(--text-on-accent); }
+.btn--primary:hover { background: var(--accent-hover); }
+.btn--secondary { background: var(--surface); color: var(--text-primary);
                     border-color: var(--border-control); }
-  .btn--secondary:hover { background: var(--surface-sunken); }
-  /* 反例：oninput 立即报错 */
-  .naive-error { display: block; color: var(--danger); font-size: var(--fs-xs);
+.btn--secondary:hover { background: var(--surface-sunken); }
+/* 反例：oninput 立即报错 */
+.naive-error { display: block; color: var(--danger); font-size: var(--fs-xs);
                  margin-top: var(--sp-1); min-height: 1.4em; }
 </style>
 <!-- 🔴 补（ H2a 顺带修出）：此页面用了 .btn--primary 却**没引 button.css**
@@ -47,7 +40,7 @@
      由 05-audit/css-imports.py 报出（它抓到过这个真问题） -->
 <link rel="stylesheet" href="../../02-primitives/button/button.css">
 </head>
-<body>
+<body class="page page">
 <main class="wrap">">
 
   <h1>表单校验</h1>
@@ -56,7 +49,7 @@
     这三件事决定了用户觉得表单"聪明"还是"烦人"。
   </p>
 
-  <h2>一、校验时机：别在 oninput 报错</h2>
+  <h2 class="rule-bottom">一、校验时机：别在 oninput 报错</h2>
   <p class="small">
     下面两个输入框规则完全一样，<strong>只有校验时机不同</strong>。都试着打几个字看差别。
   </p>
@@ -98,7 +91,7 @@
     而且把逻辑硬塞进样式层不可测。控制权交给 JS 加 <code>data-dirty</code> 属性。
   </div>
 
-  <h2>二、完整表单：提交后出错误汇总</h2>
+  <h2 class="rule-bottom">二、完整表单：提交后出错误汇总</h2>
   <p class="small">什么都不填，直接点提交。焦点会移到汇总上，汇总里每条可点击跳转。</p>
 
   <form class="form" id="f" novalidate>
@@ -131,7 +124,7 @@
     </div>
   </form>
 
-  <h2>三、错误文案：给建议，不给判断</h2>
+  <h2 class="rule-bottom">三、错误文案：给建议，不给判断</h2>
   <div class="grid2">
     <div class="box bad">
       <h3>反例</h3>
@@ -156,7 +149,7 @@
     </div>
   </div>
 
-  <h2>四、无障碍要点</h2>
+  <h2 class="rule-bottom">四、无障碍要点</h2>
   <div class="note">
     <div><strong>错误汇总</strong>：<code>role="alert"</code> + 提交后焦点移到它 ——
       否则屏幕阅读器用户不知道页面出现了新东西</div>

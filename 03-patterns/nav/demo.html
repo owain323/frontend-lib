@@ -6,44 +6,34 @@
 <link rel="icon" href="data:,">
 <title>导航 · 页头 / 目录 / 移动端抽屉</title>
 <link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/page.css">
 <link rel="stylesheet" href="../../02-primitives/button/button.css">
 <link rel="stylesheet" href="nav.css">
 <style>
-  body { margin: 0; background: var(--paper); color: var(--text-primary);
-         font: var(--fs-base)/var(--lh-base) system-ui, sans-serif; }
-  .skip { position: absolute; top: 0; left: 0; z-index: var(--z-raised);   /* 🔴*/
+.skip { position: absolute; top: 0; left: 0; z-index: var(--z-raised);   /* 🔴*/
           background: var(--accent); color: var(--text-on-accent); padding: var(--sp-2) var(--sp-4);
           font-size: var(--fs-sm); text-decoration: none;
           transform: translateY(-120%); }
-  .skip:focus { transform: translateY(0); }
-
-  .shell { display: grid; gap: var(--sp-6); max-width: 1040px; margin: 0 auto;
+.skip:focus { transform: translateY(0); }
+.shell { display: grid; gap: var(--sp-6); max-width: 1040px; margin: 0 auto;
            padding: var(--sp-6) var(--sp-5) var(--sp-8); grid-template-columns: 1fr; }
-  @media (min-width: 60rem) { .shell { grid-template-columns: 12rem minmax(0,1fr); } }
+@media (min-width: 60rem) {.shell { grid-template-columns: 12rem minmax(0,1fr); }
 
-  main { max-width: var(--measure-prose); min-width: 0; }
-  h1 { font-family: var(--sans); font-size: var(--fs-2xl); font-weight: 500;
-       letter-spacing: -0.02em; line-height: 1.15; margin: 0 0 var(--sp-3);
-       max-width: var(--measure-title); }
-  .lead { font-size: var(--fs-md); color: var(--text-secondary);
-          max-width: var(--measure-lede); line-height: 1.55; margin: 0 0 var(--sp-6); }
-  h2 { font-family: var(--sans); font-size: var(--fs-lg); font-weight: 500;
-       margin: var(--sp-7) 0 var(--sp-3); padding-top: var(--sp-4);
-       border-top: 2px solid var(--accent); max-width: 92%; }
-  p { max-width: var(--measure-prose); margin: 0 0 var(--sp-4); }
-  p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.7; }
-  code { font-family: var(--mono); font-size: 0.88em; background: var(--surface-sunken);
-         border: 1px solid var(--border-decor); border-radius: 3px; padding: 0.05em 0.3em; }
-
-  .aside { background: var(--warning-bg); 
+ }
+main { max-width: var(--measure-prose); min-width: 0; }
+p { max-width: var(--measure-prose); margin: 0 0 var(--sp-4); }
+p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.7; }
+.aside { background: var(--warning-bg); 
            padding: var(--sp-3) var(--sp-4); border-radius: var(--r-sm);
            font-size: var(--fs-sm); max-width: var(--measure-prose); margin: 0 0 var(--sp-5);
            line-height: 1.65; }
-  .spacer { height: 55vh; }          /* 让目录高亮有滚动空间 */
+.spacer { height: 55vh; }
 
+          /* 让目录高亮有滚动空间 */
 </style>
 </head>
-<body>
+<body class="page page">
 
 <a class="skip" href="#main">跳到主内容</a>
 
@@ -87,7 +77,7 @@
       ③ 点页头的"存储器"，看它是否标记为当前页。
     </div>
 
-    <h2 id="mem">存储器构成</h2>
+    <h2 id="mem" class="rule-top">存储器构成</h2>
     <p>
       AGC 的核心存储器是 2048 个 36 位字，总容量 73,728 位。指令与数据混在一起，
       地址按字计。真正让人吃惊的是每位宇航员分到的 4 KB 重写区——那不是共享内存，
@@ -99,7 +89,7 @@
     </p>
     <div class="spacer"></div>
 
-    <h2 id="sched">优先级与准入</h2>
+    <h2 id="sched" class="rule-top">优先级与准入</h2>
     <p>
       AGC 的调度靠优先级抢占：更高优先级的任务可以打断低优先级的任务。
       这套机制加上准入控制，让关键任务（姿态、点火）不会被普通计算饿死。
@@ -110,7 +100,7 @@
     </p>
     <div class="spacer"></div>
 
-    <h2 id="sim">把它跑起来</h2>
+    <h2 id="sim" class="rule-top">把它跑起来</h2>
     <p>
       工具链的成熟度足以支撑一次完整考古：从反汇编、到逐指令模拟、到和原厂手册对照。
       这条路走过一遍之后的结论是——手册里的描述与实现的实际行为在细节上有出入，

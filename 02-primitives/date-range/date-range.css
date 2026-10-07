@@ -29,6 +29,9 @@
 .drange__input {
   display: block;
   width: 100%;
+  /* 🔴 必须：input 的 UA 盒模型是 content-box，width:100% 只是内容宽，
+     加 padding+border 实际比容器宽 26px ⇒ 393px 视口横向溢出。 */
+  box-sizing: border-box;
   min-height: 44px;                    /* 🔴 命中区达标 */
   padding: 0 var(--sp-3);
   background: var(--surface);

@@ -14,13 +14,27 @@
     "   旧版校验器遇到不认识的键必须【忽略】，不能判文档非法。"
   ],
   "invariants": [
-    "I-1", "I-2", "I-3", "I-4",
-    "I-5", "I-6", "I-7",
-    "I-8", "I-9",
-    "I-10", "I-11", "I-12"
+    "I-1",
+    "I-2",
+    "I-3",
+    "I-4",
+    "I-5",
+    "I-6",
+    "I-7",
+    "I-8",
+    "I-9",
+    "I-10",
+    "I-11",
+    "I-12",
+    "I-13",
+    "I-14"
   ],
   "type": "object",
-  "required": ["schemaVersion", "profile", "nodes"],
+  "required": [
+    "schemaVersion",
+    "profile",
+    "nodes"
+  ],
   "properties": {
     "schemaVersion": {
       "type": "string",
@@ -29,7 +43,11 @@
     },
     "profile": {
       "type": "string",
-      "enum": ["creative", "standard", "strict"],
+      "enum": [
+        "creative",
+        "standard",
+        "strict"
+      ],
       "$comment": "详见 ai/profiles.json。三档决定『允许多不成熟的东西进入文档』。"
     },
     "capabilities": {
@@ -41,12 +59,16 @@
     },
     "root": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "$comment": "顶层节点的 id 顺序。数组顺序即渲染顺序。"
     },
     "nodes": {
       "type": "object",
-      "additionalProperties": { "$ref": "#/definitions/node" },
+      "additionalProperties": {
+        "$ref": "#/definitions/node"
+      },
       "$comment": [
         "id → 节点。**编辑的作用对象是 id，不是 HTML 路径。**",
         "理由：HTML 路径（第 3 个 div 的第 2 个子节点）在每次结构变动后都会失效，",
@@ -82,7 +104,10 @@
     },
     "node": {
       "type": "object",
-      "required": ["id", "kind"],
+      "required": [
+        "id",
+        "kind"
+      ],
       "properties": {
         "id": {
           "type": "string",
@@ -97,17 +122,23 @@
             "  slot    具名插入点（对应组件的 BEM 元素名）"
           ]
         },
-        "text": { "type": "string" },
+        "text": {
+          "type": "string"
+        },
         "props": {
           "type": "object",
           "$comment": "组件属性：变体名、状态取值等。取值受 ai/components.json 约束。"
         },
         "children": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "$comment": "子节点 id。移动子节点 = move 操作，不动内容。"
         },
-        "extensions": { "type": "object" }
+        "extensions": {
+          "type": "object"
+        }
       }
     }
   }

@@ -7,26 +7,16 @@
 <title>switch · 开关</title>
 <link rel="stylesheet" href="../../01-tokens/tokens.css">
 <link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/page.css">
 <link rel="stylesheet" href="../../02-primitives/switch/switch.css">
 <style>
-  .wrap { max-width: 820px; margin: 0 auto; padding: var(--sp-6) var(--sp-4); }
-  h1 { font-size: var(--fs-2xl); line-height: var(--lh-tight); margin: 0 0 var(--sp-2); }
-  .lede { color: var(--text-secondary); margin: 0 0 var(--sp-6); max-width: 60ch; }
-  h2 { font-size: var(--fs-lg); margin: var(--sp-8) 0 var(--sp-2);
-       padding-top: var(--sp-5); border-top: 1px solid var(--border-decor); }
-  .small { font-size: var(--fs-xs); color: var(--text-secondary); }
-  .row { display: flex; gap: var(--sp-5); flex-wrap: wrap; padding: var(--sp-4) 0;
+.row { display: flex; gap: var(--sp-5); flex-wrap: wrap; padding: var(--sp-4) 0;
          align-items: center; }
-  .box { background: var(--surface); border: 1px solid var(--border-decor);
-         border-radius: var(--r-md); padding: var(--sp-5); }
-  .box.bad { background: var(--surface-sunken); }
-  code { font-family: var(--mono); font-size: 0.9em;
-         background: var(--surface-sunken); padding: 1px 4px; border-radius: 3px; }
-  .state { font-family: var(--mono); font-size: var(--fs-xs);
+.state { font-family: var(--mono); font-size: var(--fs-xs);
            color: var(--text-secondary); }
 </style>
 </head>
-<body>
+<body class="page page">
 <main class="wrap">
   <h1>switch · 开关</h1>
   <p class="lede">
@@ -35,7 +25,7 @@
     读屏会播报「开关，已开启」而不是「复选框，已勾选」。
   </p>
 
-  <h2>基本用法</h2>
+  <h2 class="rule-top">基本用法</h2>
   <div class="row">
     <span class="switch">
       <input class="switch__input" type="checkbox" role="switch" id="s1">
@@ -45,7 +35,7 @@
     <span class="state" id="st1">当前：<b>开</b></span>
   </div>
 
-  <h2>只有滑块（文字视觉隐藏，语义保留）</h2>
+  <h2 class="rule-top">只有滑块（文字视觉隐藏，语义保留）</h2>
   <div class="row">
     <span class="switch">
       <input class="switch__input" type="checkbox" role="switch" id="s2" checked>
@@ -55,7 +45,7 @@
     <span class="small">看起来只有一个滑块，但读屏仍会念「暗色模式，开关，已开启」</span>
   </div>
 
-  <h2>两档尺寸</h2>
+  <h2 class="rule-top">两档尺寸</h2>
   <div class="row">
     <span class="switch">
       <input class="switch__input" type="checkbox" role="switch" id="s3">
@@ -69,7 +59,7 @@
     </span>
   </div>
 
-  <h2>禁用态</h2>
+  <h2 class="rule-top">禁用态</h2>
   <div class="row">
     <span class="switch">
       <input class="switch__input" type="checkbox" role="switch" id="s5" disabled>
@@ -78,7 +68,7 @@
     </span>
   </div>
 
-  <h2>键盘行为（APG Switch Pattern）</h2>
+  <h2 class="rule-top">键盘行为（APG Switch Pattern）</h2>
   <div class="box">
     <p>
       <strong>Space 切换 —— 这是唯一能切换的键。</strong><br>
@@ -91,7 +81,7 @@
     </p>
   </div>
 
-  <h2>反例</h2>
+  <h2 class="rule-top">反例</h2>
   <div class="box bad">
     <h3>反例：用 div + role="switch"，自己管所有状态</h3>
     <p class="small">

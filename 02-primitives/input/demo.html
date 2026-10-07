@@ -7,43 +7,40 @@
 <title>input · 五态矩阵</title>
 <link rel="stylesheet" href="../../01-tokens/tokens.css">
 <link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/page.css">
 <link rel="stylesheet" href="input.css">
 <!-- 下面第 5 格的 disabled 演示用到了 button 的类，必须显式引进来。
      🔴 这个漏了 refs.py 当场抓出来：按钮会变成浏览器默认样式，页面不报错、只是静默失效。 -->
 <link rel="stylesheet" href="../button/button.css">
 <style>
-  body { margin: 0; padding: var(--sp-7) var(--sp-5); background: var(--paper);
-         color: var(--text-primary); font: var(--fs-base)/var(--lh-base) system-ui, sans-serif; }
-  .wrap { max-width: 760px; margin: 0 auto; }
-  h1 { font-size: var(--fs-2xl); line-height: var(--lh-tight); margin: 0 0 var(--sp-2); }
-  .lede { color: var(--text-secondary); margin: 0 0 var(--sp-7); }
-  h2 { font-size: var(--fs-lg); margin: var(--sp-8) 0 var(--sp-4);
-       padding-bottom: var(--sp-2); border-bottom: 1px solid var(--border-decor); }
-  .grid { display: grid; gap: var(--sp-4); grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
-  .cell { background: var(--surface); border: 1px solid var(--border-decor);
+/* 🔴 `minmax(min(320px, 100%), 1fr)` 的 `min()` 不能省：
+   视口窄于 320px 时，`minmax(320px, 1fr)` 的轨道**不会**缩到 320 以下
+   ⇒ 320px 视口下每格 320px、加上页面内边距就横向溢出（实测 scrollWidth 341 > 320）。 */
+.grid { display: grid; gap: var(--sp-4); grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); }
+.cell { background: var(--surface); border: 1px solid var(--border-decor);
           border-radius: var(--r-md); padding: var(--sp-5); }
-  .cell h3 { margin: 0 0 var(--sp-1); font-size: var(--fs-sm); font-weight: 500; }
-  .cell p { margin: 0 0 var(--sp-3); font-size: var(--fs-xs);
+.cell h3 { margin: 0 0 var(--sp-1); font-size: var(--fs-sm); font-weight: 500; }
+.cell p { margin: 0 0 var(--sp-3); font-size: var(--fs-xs);
             color: var(--text-tertiary); line-height: 1.55; }
-  code { font-family: var(--mono);   /* 原为写死的 ui-monospace，统一走令牌 */ font-size: var(--fs-xs);
-         background: var(--surface-sunken); padding: 1px 5px; border-radius: 4px; }
-  .cmp { display: grid; gap: var(--sp-4); grid-template-columns: 1.55fr 1fr; }
-  @media (max-width: 620px) { .cmp { grid-template-columns: 1fr; } }
-  .cmp > div { padding: var(--sp-4); border-radius: var(--r-md); border: 1px solid var(--border-decor); }
-  .box { background: var(--surface); border: 1px solid var(--border-decor);
-         border-radius: var(--r-md); padding: var(--sp-5); }
-  .bad { background: var(--surface-sunken); } .good { background: var(--surface-sunken); }
-  .cmp h3 { margin: 0 0 var(--sp-3); font-size: var(--fs-sm); font-weight: 500; }
-  .bad h3 { color: var(--danger); } .good h3 { color: var(--success); }
-  .cmp p { font-size: var(--fs-xs); margin: var(--sp-3) 0 0; line-height: 1.6; }
-  /* 反例演示 */
-  .bad-input { width: 100%; box-sizing: border-box; height: 44px; padding: 0 var(--sp-3);
+.cmp { display: grid; gap: var(--sp-4); grid-template-columns: 1.55fr 1fr; }
+@media (max-width: 620px) {.cmp { grid-template-columns: 1fr; }
+
+ }
+.cmp>div { padding: var(--sp-4); border-radius: var(--r-md); border: 1px solid var(--border-decor); }
+.bad { background: var(--surface-sunken); }
+.good { background: var(--surface-sunken); }
+.cmp h3 { margin: 0 0 var(--sp-3); font-size: var(--fs-sm); font-weight: 500; }
+.bad h3 { color: var(--danger); }
+.good h3 { color: var(--success); }
+.cmp p { font-size: var(--fs-xs); margin: var(--sp-3) 0 0; line-height: 1.6; }
+/* 反例演示 */
+.bad-input { width: 100%; box-sizing: border-box; height: 44px; padding: 0 var(--sp-3);
                font-size: 14px; border: 1px solid #ccc; border-radius: var(--r-sm); }
-  .bad-input.err { border-color: red; }
-  .bad-err { color: red; font-size: 13px; }
+.bad-input.err { border-color: red; }
+.bad-err { color: red; font-size: 13px; }
 </style>
 </head>
-<body>
+<body class="page page">
 <main class="wrap">
 
   <h1>input · 五态矩阵</h1>
@@ -58,7 +55,7 @@
     搞反了表单会非常难用。自己 Tab 一遍下面的输入框就能体会。
   </div>
 
-  <h2>五态</h2>
+  <h2 class="rule-bottom">五态</h2>
   <div class="grid">
 
     <div class="cell">
@@ -120,7 +117,7 @@
 
   </div>
 
-  <h2>对比：常见写法 vs 本库写法</h2>
+  <h2 class="rule-bottom">对比：常见写法 vs 本库写法</h2>
   <div class="cmp">
     <div class="box bad">
       <h3>常见写法</h3>
@@ -155,7 +152,7 @@
     </div>
   </div>
 
-  <h2>交互演示：校验</h2>
+  <h2 class="rule-bottom">交互演示：校验</h2>
   <p class="small" style="max-width: var(--measure-prose); margin:0 0 var(--sp-4)">
     这里是<strong>分层校验</strong>：逐个输入试，每种错误会得到<strong>各自对应的</strong>提示。
     <span style="color:var(--danger)">1111aaa</span> → 「只能输入数字」·
@@ -178,7 +175,7 @@
     </div>
   </div>
 
-  <h2>iOS 那条 16px 不是审美</h2>
+  <h2 class="rule-bottom">iOS 那条 16px 不是审美</h2>
   <div class="note">
     iOS Safari 在输入框 <code>font-size &lt; 16px</code> 时，用户一聚焦就<strong>自动放大整个页面</strong>，
     而且不会自动缩回去。用户会以为页面坏了。<br><br>

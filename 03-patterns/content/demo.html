@@ -7,10 +7,10 @@
 <title>content · 正文渲染 · frontend-lib</title>
 <link rel="stylesheet" href="../../01-tokens/tokens.css">
 <link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/page.css">
 <link rel="stylesheet" href="content.css">
 <style>
-  body { margin: 0; padding: var(--sp-7) var(--sp-5); background: var(--paper); }
-  .demo-note {
+.demo-note {
     max-width: 42rem; margin: 0 auto var(--sp-6);
     padding: var(--sp-3) var(--sp-4);
     background: var(--surface-sunken);
@@ -19,7 +19,7 @@
   }
 </style>
 </head>
-<body>
+<body class="page page">
 
 <p class="demo-note">
   <strong>content</strong> 接管 Markdown 渲染出来的元素：<b>结构用标准</b>（CommonMark/GFF 决定），

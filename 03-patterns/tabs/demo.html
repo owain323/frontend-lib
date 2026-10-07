@@ -7,25 +7,15 @@
 <title>tabs · 标签页</title>
 <link rel="stylesheet" href="../../01-tokens/tokens.css">
 <link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/page.css">
 <link rel="stylesheet" href="../../02-primitives/button/button.css">
 <link rel="stylesheet" href="../../03-patterns/tabs/tabs.css">
 <style>
-  .wrap { max-width: 820px; margin: 0 auto; padding: var(--sp-6) var(--sp-4); }
-  h1 { font-size: var(--fs-2xl); line-height: var(--lh-tight); margin: 0 0 var(--sp-2); }
-  .lede { color: var(--text-secondary); margin: 0 0 var(--sp-6); max-width: 60ch; }
-  h2 { font-size: var(--fs-lg); margin: var(--sp-8) 0 var(--sp-2);
-       padding-top: var(--sp-5); border-top: 1px solid var(--border-decor); }
-  .small { font-size: var(--fs-xs); color: var(--text-secondary); }
-  .box { background: var(--surface); border: 1px solid var(--border-decor);
-         border-radius: var(--r-md); padding: var(--sp-5); }
-  .box.bad { background: var(--surface-sunken); }
-  code { font-family: var(--mono); font-size: 0.9em;
-         background: var(--surface-sunken); padding: 1px 4px; border-radius: 3px; }
-  .log { font-family: var(--mono); font-size: var(--fs-xs);
+.log { font-family: var(--mono); font-size: var(--fs-xs);
          color: var(--text-secondary); min-height: 1.5em; }
 </style>
 </head>
-<body>
+<body class="page page">
 <main class="wrap">
   <h1>tabs · 标签页</h1>
   <p class="lede">
@@ -33,7 +23,7 @@
     键盘行为完全按 APG Tabs Pattern：方向键切换、Home/End 跳首尾。
   </p>
 
-  <h2>基本用法（自动激活）</h2>
+  <h2 class="rule-top">基本用法（自动激活）</h2>
   <div class="tabs" data-tabs>
     <div class="tabs__list" role="tablist" aria-orientation="horizontal" aria-label="设置分组">
       <button class="tabs__tab" role="tab" id="t1" aria-controls="p1"
@@ -59,7 +49,7 @@
   </div>
   <p class="log" id="log1">切到哪个：<b id="logv1">基本信息</b></p>
 
-  <h2>禁用某个 tab</h2>
+  <h2 class="rule-top">禁用某个 tab</h2>
   <div class="tabs" data-tabs>
     <div class="tabs__list" role="tablist" aria-orientation="horizontal" aria-label="带禁用">
       <button class="tabs__tab" role="tab" id="d1" aria-controls="dp1"
@@ -80,7 +70,7 @@
     </div>
   </div>
 
-  <h2>手动激活（面板内容重时用）</h2>
+  <h2 class="rule-top">手动激活（面板内容重时用）</h2>
   <div class="tabs tabs--manual" data-tabs>
     <div class="tabs__list" role="tablist" aria-orientation="horizontal" aria-label="手动激活">
       <button class="tabs__tab" role="tab" id="m1" aria-controls="mp1"
@@ -96,7 +86,7 @@
     </div>
   </div>
 
-  <h2>键盘契约（APG / Radix）</h2>
+  <h2 class="rule-top">键盘契约（APG / Radix）</h2>
   <div class="box">
     <p>
       <strong>Tab</strong> 进入组时落在<strong>当前选中</strong>的 tab；再按 Tab 进面板<br>
@@ -112,7 +102,7 @@
     </p>
   </div>
 
-  <h2>反例</h2>
+  <h2 class="rule-top">反例</h2>
   <div class="box bad">
     <h3>反例：用 div 当 tab</h3>
     <p class="small">

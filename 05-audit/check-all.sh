@@ -94,6 +94,9 @@ run "cascade-layer" $PY 05-audit/cascade-layer-gate.py
 # 声明合法性：写了浏览器不认的属性（如 border-inset-inline-*）会**静默失效**，
 #   不报错、不影响解析、行为契约也抓不到 ⇒ 交给浏览器自己判定（CSS.supports）
 run "css-validity" node 05-audit/css-validity-gate.js
+# 页面骨架：骨架已收编的选择器（h1/h2/.wrap/body/code/…）页面不许再抄一遍
+#   —— 抄了会被 `.page` 前缀静默盖掉，变成"改了却没变"的死代码
+run "shell"       $PY 05-audit/shell-gate.py
 run "start-here" $PY 05-audit/fix-start-here.py --check
 run "content-hygiene" $PY 05-audit/hygiene.py
 run "shot-path"  $PY 05-audit/shot-path.py
@@ -165,6 +168,9 @@ echo ""
 echo "=== 浏览器门禁 ==="
 # 令牌在真浏览器里的计算值复核（fast 模式只跑静态的一半，这里补全）
 run "token-parse-b" $PY 05-audit/token-parse-gate.py
+# 骨架杠杆：改一处全局令牌，**每一页**真的跟着变（改前实测 36 处不跟随）
+#   同时量窄屏横向溢出；反向控制：不引骨架的宿主页面必须纹丝不动
+run "skel-lever"  node 05-audit/skeleton-lever-check.js
 # 明暗四种组合在真浏览器里成立，且**不加载 theme-toggle.js**
 run "theme-css"   node 05-audit/theme-css-gate.js
 run "accent-gate" $PY 05-audit/accent-gate.py

@@ -6,72 +6,59 @@
 <link rel="icon" href="data:,">
 <title>容器四态 · 真实场景</title>
 <link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/page.css">
 <link rel="stylesheet" href="../../02-primitives/button/button.css">
 <link rel="stylesheet" href="states.css">
 <style>
-  body { margin: 0; background: var(--paper); color: var(--text-primary);
-         font: var(--fs-base)/var(--lh-base) system-ui, sans-serif; }
-  .wrap { max-width: 860px; margin: 0 auto; padding: var(--sp-7) var(--sp-5) var(--sp-8); }
-
-  /* 这一屏唯一的视觉焦点：标题。窄到必然换行 —— 标题才有存在感 */
-  h1 { font-size: var(--fs-2xl); line-height: var(--lh-tight);
-       letter-spacing: -0.02em; margin: 0 0 var(--sp-3);
-       max-width: var(--measure-title); }
-  .standfirst { font-size: var(--fs-md); color: var(--text-secondary);
+/* 这一屏唯一的视觉焦点：标题。窄到必然换行 —— 标题才有存在感 */
+.standfirst { font-size: var(--fs-md); color: var(--text-secondary);
                 max-width: var(--measure-lede); margin: 0 0 var(--sp-6); line-height: 1.6; }
-
-  h2 { font-size: var(--fs-lg); margin: var(--sp-8) 0 var(--sp-3); max-width: var(--measure-title); }
-  h3 { font-size: var(--fs-md); margin: var(--sp-6) 0 var(--sp-2); }
-  p  { max-width: var(--measure-prose); margin: 0 0 var(--sp-3); }
-  p.lead { color: var(--text-secondary); }
-
-  code { font-family: var(--mono);   /* 原为写死的 ui-monospace，统一走令牌 */ font-size: 0.9em;
-         background: var(--surface-sunken); padding: 1px 5px; border-radius: 4px; }
-  .rule { border: 0; border-top: 1px solid var(--border-decor); margin: var(--sp-7) 0; }
-
-  /* 状态切换器：四个按钮会读成"四张卡的导航"，分段控件读成"一个东西的四个状态" */
-  .seg { display: inline-flex; border: 1px solid var(--border-control);
+h3 { font-size: var(--fs-md); margin: var(--sp-6) 0 var(--sp-2); }
+p { max-width: var(--measure-prose); margin: 0 0 var(--sp-3); }
+p.lead { color: var(--text-secondary); }
+/* 状态切换器：四个按钮会读成"四张卡的导航"，分段控件读成"一个东西的四个状态" */
+.seg { display: inline-flex; border: 1px solid var(--border-control);
          border-radius: var(--r-sm); overflow: hidden; margin-bottom: var(--sp-4); }
-  .seg button { appearance: none; border: 0; background: var(--surface);
+.seg button { appearance: none; border: 0; background: var(--surface);
                 padding: 9px 16px; font: inherit; font-size: var(--fs-xs);
                 color: var(--text-secondary); cursor: pointer;
                 border-right: 1px solid var(--border-decor); }
-  .seg button:last-child { border-right: 0; }
-  .seg button[aria-pressed="true"] { background: var(--accent); color: var(--text-on-accent); }
-  .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-
-  /* 舞台：整页唯一有边框的东西，因为它是演示主体 */
-  #stage { border: 1px solid var(--border-decor-str); border-radius: var(--r-md);
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--text-on-accent); }
+.seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+/* 舞台：整页唯一有边框的东西，因为它是演示主体 */
+#stage { border: 1px solid var(--border-decor-str); border-radius: var(--r-md);
            background: var(--surface); overflow: hidden; }
-  .stage-bar { display: flex; align-items: baseline; gap: var(--sp-3);
+.stage-bar { display: flex; align-items: baseline; gap: var(--sp-3);
                padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--border-decor);
                background: var(--surface-sunken); }
-  .stage-bar strong { font-size: var(--fs-sm); }
-  .stage-bar span { font-size: var(--fs-xs); color: var(--text-tertiary); }
-  .stage-body { padding: var(--sp-2) 0; min-height: 288px; }
-
-  /* 真实数据行 */
-  .row { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); }
-  .row + .row { border-top: 1px solid var(--border-decor); }
-  .row:hover { background: var(--surface-sunken); }
-  .row__t { flex: 1; min-width: 0; }
-  .row__name { font-size: var(--fs-sm); }
-  .row__meta { font-size: var(--fs-xs); color: var(--text-tertiary); }
-  .tag { font-size: var(--fs-xs); padding: 2px 8px; border-radius: var(--r-pill);
+.stage-bar strong { font-size: var(--fs-sm); }
+.stage-bar span { font-size: var(--fs-xs); color: var(--text-tertiary); }
+.stage-body { padding: var(--sp-2) 0; min-height: 288px; }
+/* 真实数据行 */
+.row { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); }
+.row+.row { border-top: 1px solid var(--border-decor); }
+.row:hover { background: var(--surface-sunken); }
+.row__t { flex: 1; min-width: 0; }
+.row__name { font-size: var(--fs-sm); }
+.row__meta { font-size: var(--fs-xs); color: var(--text-tertiary); }
+.tag { font-size: var(--fs-xs); padding: 2px 8px; border-radius: var(--r-pill);
          border: 1px solid var(--border-decor); color: var(--text-secondary); white-space: nowrap; }
-  .tag--up   { color: var(--danger);  border-color: var(--danger); }
-  .tag--down { color: var(--success); border-color: var(--success); }
-
-  .aside { background: var(--warning-bg); 
+.tag--up { color: var(--danger);  border-color: var(--danger); }
+.tag--down { color: var(--success); border-color: var(--success); }
+.aside { background: var(--warning-bg); 
            padding: var(--sp-3) var(--sp-4); font-size: var(--fs-sm);
            max-width: var(--measure-prose); margin: var(--sp-4) 0; line-height: 1.65; }
-  .cmp2 { display: grid; gap: var(--sp-5); grid-template-columns: 1.55fr 1fr; align-items: start; }
-  @media (max-width: 620px) { .cmp2 { grid-template-columns: 1fr; } }
-  .lbl { font-size: var(--fs-xs); color: var(--text-tertiary);
+.cmp2 { display: grid; gap: var(--sp-5); grid-template-columns: 1.55fr 1fr; align-items: start; }
+@media (max-width: 620px) {.cmp2 { grid-template-columns: 1fr; }
+
+ }
+.lbl { font-size: var(--fs-xs); color: var(--text-tertiary);
          margin-bottom: var(--sp-2); display: block; }
 </style>
 </head>
-<body>
+<body class="page page">
 <main class="wrap">
 
   <h1>加载中和没有数据，是两件事</h1>

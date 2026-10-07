@@ -149,7 +149,15 @@ def check(text, comps, profiles):
 
 
 def check_schema():
-    """③ 契约里声明的 invariants 必须能在 INVARIANT.md 里找到对应锚点。"""
+    """③ 契约声明的 invariants 与 INVARIANT.md 的锚点**双向**一一对应。
+
+    🔴 0.4.2 补反向检查。此前只查"声明了但文档里没有"（孤儿声明），
+       不查"文档里有但没声明" —— 而本函数上面的文档头写的是
+       「一一对应，不得有孤儿」。**声明是双向的，判据只做了一半**：
+       0.4.1 往文档里加了 I-12、并把旧 I-12 改成 I-13，
+       契约里却一直只有 I-1..I-12，门禁从没响过。
+       ⇒ 这类"文档说双向、实现单向"的门禁属于 I-10 那一类（假绿）。
+    """
     if not os.path.isfile(CONTRACT):
         return []
     try:
@@ -157,13 +165,15 @@ def check_schema():
     except Exception as e:
         return ['ai/contract.schema.json 解析失败：%s' % e]
     declared = doc.get('invariants') or []
-    if not declared:
-        return []
     text = io.open(INV, encoding='utf-8').read()
-    missing = [d for d in declared if d not in text]
+    anchors = re.findall(r'(?m)^#{2,4}\s*(I-\d+)\b', text)
     out = []
-    for d in missing:
-        out.append('契约声明了不变式 `%s`，但 INVARIANT.md 里找不到它 ⇒ 孤儿声明' % d)
+    for d in declared:
+        if d not in anchors:
+            out.append('契约声明了不变式 `%s`，但 INVARIANT.md 里找不到它 ⇒ 孤儿声明' % d)
+    for a in anchors:
+        if a not in declared:
+            out.append('INVARIANT.md 有锚点 `%s`，但契约没声明它 ⇒ 契约落后于文档' % a)
     return out
 
 
