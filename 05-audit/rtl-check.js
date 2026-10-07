@@ -54,6 +54,12 @@ const PHYSICAL = [
   { re: /(^|[;{\s])padding-right\s*:/g, name: 'padding-right' },
   { re: /(^|[;{\s])left\s*:\s*[^;]+;/g, name: 'left' },
   { re: /(^|[;{\s])right\s*:\s*[^;]+;/g, name: 'right' },
+  /* 🔴 0.4.2 补：边框**上色边**决定 CSS 小三角指向哪边 ——
+     写物理 `border-left-color` 的话，RTL 下左边变成内联终点 ⇒ 尖角指反。
+     实测 tooltip 就是这么坏的（`--inset-inline-start` 配 `border-left-color`）。
+     ⚠️ 只收内联轴的 left/right：上/下是块轴，RTL 不翻转，写物理没问题。 */
+  { re: /(^|[;{\s])border-left-color\s*:/g, name: 'border-left-color' },
+  { re: /(^|[;{\s])border-right-color\s*:/g, name: 'border-right-color' },
   { re: /text-align\s*:\s*left\b/g,   name: 'text-align:left' },
   { re: /text-align\s*:\s*right\b/g,  name: 'text-align:right' },
 ];

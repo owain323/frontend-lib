@@ -46,7 +46,11 @@
   border: 5px solid transparent;
 }
 
-/* 四个方位：只写常用的两个（上/下），左右留给 JS 换 class */
+/* 上下是**块轴**（RTL 不翻转，写物理没问题）；
+   左右是**内联轴**（RTL 会翻转 ⇒ 必须写逻辑属性）。
+   🔴 0.4.2 修：原本写物理 border-left/right-color。小三角是
+   "给哪条边上色、尖角就指向反方向" —— RTL 下左边变成内联终点 ⇒ 尖角指反，
+   指向气泡外侧而不是锚点（I-12 同一类：不报错，只是看着不对）。 */
 .tooltip--top::after {
   top: 100%; inset-inline-start: 50%;
   margin-inline-start: -5px;
@@ -60,12 +64,12 @@
 .tooltip--inset-inline-start::after {
   inset-inline-start: 100%; top: 50%;
   margin-top: -5px;
-  border-left-color: var(--text-primary);
+  border-inline-start-color: var(--text-primary);
 }
 .tooltip--inset-inline-end::after {
   inset-inline-end: 100%; top: 50%;
   margin-top: -5px;
-  border-right-color: var(--text-primary);
+  border-inline-end-color: var(--text-primary);
 }
 
 /* ---------- 暗色下气泡反过来（深底浅字）---------- */
@@ -77,8 +81,8 @@
   }
   .tooltip--top::after    { border-top-color: var(--surface-raised); }
   .tooltip--bottom::after { border-bottom-color: var(--surface-raised); }
-  .tooltip--inset-inline-start::after   { border-left-color: var(--surface-raised); }
-  .tooltip--inset-inline-end::after  { border-right-color: var(--surface-raised); }
+  .tooltip--inset-inline-start::after { border-inline-start-color: var(--surface-raised); }
+  .tooltip--inset-inline-end::after   { border-inline-end-color: var(--surface-raised); }
 }
 
 /* ---------- 减弱动效：不要淡入动画 ---------- */

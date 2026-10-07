@@ -77,6 +77,7 @@ node adapters/presentation/check.js deck.json
 | slide / deck 的语义 | 组件长什么样（核心的事） |
 | 每页元素数量、层级结构 | 颜色令牌（核心的事） |
 | 呈现形态特有的约束 | 无障碍（核心的事，且**任何形态下都要成立**） |
+| — | **"改一处全局，N 页是否跟着变"**（那是页面骨架的事：`01-tokens/page.css` + `shell` / `skel-lever` 两道门禁） |
 
 ⚠️ **无障碍不因呈现形态而打折。** 一页 PPT 也是给人看的，
 对比度、焦点可见、键盘可达在任何形态下都要成立 —— 这是核心的事，
@@ -84,7 +85,29 @@ node adapters/presentation/check.js deck.json
 
 ---
 
-## 五、如果以后要加别的形态
+## 五、这些检查有人跑吗
+
+🔴 曾经没有。`check.js` 的五条判据从写下到 0.4.2 之前，**一次都没被执行过** ——
+README 说有，实际没人跑。这是最隐蔽的一种假绿：它连"通过"报告都不产出。
+
+现在有 `05-audit/presentation-gate.py`（已接入 `check-all.sh`）：
+
+| 判据 | 怎么验 |
+|---|---|
+| 合规 deck 必须过 | `fixtures/deck-ok.json` ⇒ check.js exit 0 |
+| 违规 deck 必须红 | `fixtures/deck-bad.json` ⇒ exit ≠ 0 |
+| **五条判据各命中一次** | 少一条就红 ⇒ 判据被删/被改文案会立刻暴露 |
+| 两个真值源不漂移 | `check.js` 的 `MAX_PER_SLIDE` 必须等于 `deck.schema.json` 的 `nodes.maxItems` |
+| 门禁自己也会失效 | `--selftest`：把上限放宽到 999、去掉 `.slide-` 正则、把 schema 改成 8 ⇒ 门禁必须认出判据已失效 |
+
+自测：
+
+```bash
+python 05-audit/presentation-gate.py            # 正常跑
+python 05-audit/presentation-gate.py --selftest # 反向控制
+```
+
+## 六、如果以后要加别的形态
 
 照这个目录再加一个 `adapters/<形态>/`，同样用 `extensions.<形态>` 承载。
 **核心不需要改一行代码** —— 这就是它被分出来的全部意义。

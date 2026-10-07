@@ -9,6 +9,15 @@
  * 无依赖 · ES5 · 用法：
  *   Tooltip.attach(el, '文字')            // 默认 bottom
  *   Tooltip.attach(el, '文字', 'top')     // 指定方位
+ *   Tooltip.attach(el, '文字', 'start')   // 内联起点侧（RTL 下自动换到右边）
+ *   Tooltip.attach(el, '文字', 'left')    // 物理左（RTL 下**仍是物理左**）
+ *
+ * 🔴 0.4.2 修了两个实测出来的既有缺陷（都不报错，只是"看着不对"）：
+ *   ① `place='left'|'right'` 拼出的 `tooltip--left` / `--right` **CSS 里没有**
+ *      （只有 --inset-inline-start / -end）⇒ 这两个方位**没有小三角**。
+ *      ⇒ 现在按书写方向换算类名：物理左在 LTR 是内联起点、RTL 是内联终点。
+ *   ② 定位前**先入 DOM 再量**：游离元素 getBoundingClientRect() 全是 0
+ *      ⇒ top 方位与锚点完全重叠（实测 tip.top == anchor.top），左右上下偏半身。
  */
 (function (global) {
   'use strict';
@@ -39,45 +48,74 @@
     return r;
   }
 
+  /* 逻辑方位 ⇒ 类名后缀。CSS 里只有 --inset-inline-start / --inset-inline-end */
+  var CLS = {
+    top: 'top', bottom: 'bottom',
+    start: 'inset-inline-start', end: 'inset-inline-end',
+  };
+
+  /**
+   * 物理方位换算成逻辑方位。
+   * 物理「左」在 LTR 里是内联起点，在 RTL 里是内联终点 ——
+   * 不换算的话，RTL 下小三角会指向气泡外侧（见 tooltip.css 的注释）。
+   */
+  function resolve(el, place) {
+    var p = place || 'bottom';
+    if (p === 'top' || p === 'bottom' || p === 'start' || p === 'end') return p;
+    if (p !== 'left' && p !== 'right') return 'bottom';
+    var rtl = getComputedStyle(el).direction === 'rtl';
+    if (p === 'left') return rtl ? 'end' : 'start';
+    return rtl ? 'start' : 'end';
+  }
+
   /**
    * 给元素挂一个 tooltip
    * @param {Element} el 触发元素
    * @param {string} text 提示文字
-   * @param {string} [place] top / bottom / left / right（默认 bottom）
+   * @param {string} [place] top / bottom / start / end（默认 bottom）；
+   *                 left / right 也接受（物理方位，RTL 下按方向换算类名）
    */
   function attach(el, text, place) {
     if (!el || !text) return;
     ensureStyle();
 
+    var pos = resolve(el, place);
     var id = 'tt' + (++uid);
     var tip = document.createElement('div');
     tip.id = id;
-    tip.className = 'tooltip tooltip--' + (place || 'bottom');
+    tip.className = 'tooltip tooltip--' + CLS[pos];
     tip.setAttribute('role', 'tooltip');
     tip.textContent = text;
 
     var live = ensureLiveRegion();
 
     function show() {
-      /* 定位：放到元素下方（用 getBoundingClientRect，不硬算） */
+      /* 🔴 定位前**必须先入 DOM**：游离元素的 getBoundingClientRect() 全是 0
+         （实测：top 方位的气泡与锚点完全重叠，就是这么来的）。
+         先挂上去、藏起来量，量完再显示。 */
       tip.style.visibility = 'hidden';
       tip.style.display = 'block';
+      if (!tip.parentNode) document.body.appendChild(tip);
+
       var b = el.getBoundingClientRect();
       var t = tip.getBoundingClientRect();
-      var pos = place || 'bottom';
       if (pos === 'top') {
         tip.style.top = (b.top - t.height) + window.pageYOffset + 'px';
-      } else if (pos === 'left') {
-        tip.style.left = (b.left - t.width) + window.pageXOffset + 'px';
-        tip.style.top = (b.top + b.height / 2 - t.height / 2) + window.pageYOffset + 'px';
-      } else if (pos === 'right') {
-        tip.style.left = (b.right + window.pageXOffset) + 'px';
+        tip.style.left = (b.left + b.width / 2 - t.width / 2) + window.pageXOffset + 'px';
+      } else if (pos === 'start' || pos === 'end') {
+        var rtl = getComputedStyle(el).direction === 'rtl';
+        /* start = 气泡在锚点的内联起点侧：LTR 靠左（右缘贴锚点左缘），
+           RTL 靠右（左缘贴锚点右缘） */
+        var x = (pos === 'start')
+          ? (rtl ? b.right : b.left - t.width)
+          : (rtl ? b.left - t.width : b.right);
+        tip.style.left = x + window.pageXOffset + 'px';
         tip.style.top = (b.top + b.height / 2 - t.height / 2) + window.pageYOffset + 'px';
       } else {
         tip.style.top = (b.bottom + window.pageYOffset) + 'px';
         tip.style.left = (b.left + b.width / 2 - t.width / 2) + window.pageXOffset + 'px';
       }
-      document.body.appendChild(tip);
+      tip.style.visibility = '';       /* 交还给 CSS（data-state 控制显隐） */
       tip.setAttribute('data-state', 'open');
       live.textContent = text;
     }
