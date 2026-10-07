@@ -285,7 +285,14 @@ if [ -n "$TIMING" ] && [ -s "$TIMING" ]; then
 fi
 
 run "bleed"         $PY 05-audit/bleed-gate.py
-run "tsc"          $PY 05-audit/tsc-gate.py
+# ⚠️ typescript 没装时**必须显式 SKIP**，不能让它报 FAIL ——
+#    陌生人 clone 出来的副本按设计没有 node_modules，报 FAIL 会被读成
+#    "类型契约坏了"。与 visual 缺 Pillow 同一个约定（环境问题不冒充失败）。
+if [ -f "$NODE_MODULES/typescript/bin/tsc" ] || [ -f "node_modules/typescript/bin/tsc" ]; then
+  run "tsc"          $PY 05-audit/tsc-gate.py
+else
+  echo "  tsc              SKIP（缺 typescript：npm install 后才会跑）"
+fi
 run "pack-smoke"       bash 05-audit/pack-smoke.sh
 run "leak"        $PY 05-audit/leak-scan.py
 run "proper-noun" $PY 05-audit/proper-noun-scan.py
