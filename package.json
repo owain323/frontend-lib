@@ -1,6 +1,6 @@
 {
   "name": "frontend-lib",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "description": "移动 Web 组件库：CSS + 可选行为脚本，零第三方运行时依赖。样式用 bundler 引入，交互行为用 script 标签引入。",
   "keywords": [
     "css",
@@ -21,12 +21,14 @@
     "./patterns/*": "./03-patterns/*",
     "./recipes/*": "./04-recipes/*",
     "./assets/*": "./09-assets/*",
+    "./dist/*": "./dist/*",
     "./package.json": "./package.json"
   },
   "files": [
     "ai/",
     "adapters/",
     "types/",
+    "dist/",
     "01-tokens/",
     "02-primitives/",
     "03-patterns/",
@@ -45,6 +47,9 @@
     "gate:fast": "MODE=fast bash 05-audit/check-all.sh",
     "gate:timing": "TIMING=/tmp/gate-timing.txt bash 05-audit/check-all.sh",
     "size:record": "python3 05-audit/size-baseline.py --record",
+    "dist": "python3 05-audit/build-dist.py",
+    "dist:check": "python3 05-audit/build-dist.py --check && node 05-audit/dist-parity-check.js && python3 05-audit/dist-cost-gate.py",
+    "cost:update": "python3 05-audit/dist-cost-gate.py --update",
     "prefix": "python3 05-audit/prefix-build.py",
     "ai": "node ai/cli.js",
     "benchmark": "node benchmark/run.js",

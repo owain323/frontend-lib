@@ -1,0 +1,107 @@
+
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--border-decor);
+}
+
+.list__item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4) var(--sp-3) calc(var(--sp-4) - 2px);
+
+  
+  border-inline-start: 2px solid transparent;
+  border-bottom: 1px solid var(--border-decor);
+
+  transition: background-color var(--dur-fast) var(--ease-out),
+              border-inline-start-color var(--dur-fast) var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+.list__item:hover {
+  background: var(--surface-sunken);
+  border-inline-start-color: var(--border-decor-str);
+}
+}
+
+.list__item:focus-within {
+  background: var(--surface-sunken);
+  border-inline-start-color: var(--accent);
+}
+
+
+.list__actions .btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+
+.list__main { flex: 1; min-width: 0; }   
+
+.list__title {
+  display: block;
+  font-size: var(--fs-sm);
+  color: var(--text-primary);
+  
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.list__meta {
+  display: block;
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+.list__value {
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+.list__value--up   { color: var(--danger); }    
+.list__value--down { color: var(--success); }  
+
+
+.list__actions {
+  display: flex;
+  gap: var(--sp-2);
+  flex: none;
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+.list__item:hover .list__actions,
+.list__item:focus-within .list__actions { opacity: 1; }
+}
+
+@media (max-width: 34rem) {
+  .list__item {
+    flex-wrap: wrap;
+    row-gap: var(--sp-1);
+  }
+  .list__actions { width: 100%; opacity: 1; }   
+}
+
+
+.list__note {
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  padding: var(--sp-2) var(--sp-4);
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .list__item,
+  .list__actions { transition: none; }
+}
+
+

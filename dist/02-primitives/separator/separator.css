@@ -1,0 +1,40 @@
+
+
+.separator {
+  border: 0;
+  border-top: 1px solid var(--border-decor);
+  margin: var(--sp-6) 0;
+  height: 0;                
+}
+
+.separator--tight {
+  margin: var(--sp-4) 0;
+}
+
+
+.separator--label {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  border: 0;
+  margin: var(--sp-6) 0 var(--sp-3);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+
+.separator--label::before,
+.separator--label::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid var(--border-control);   
+}
+
+.separator--label::after {
+  display: none;            
+}
+
+.separator--label.separator--both::after {
+  display: block;
+}

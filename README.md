@@ -56,6 +56,35 @@ import 'frontend-lib/patterns/overlay/overlay.js';
 
 把 `01-tokens/` 和需要的组件目录复制进你的项目即可。
 
+---
+
+## dist：要不要用压缩产物
+
+源码目录（`01-tokens/` `02-primitives/` …）里的 CSS **带着全部注释** —— 全库 CSS 有
+**64% 是注释**（323.9 KB 原始里 207.5 KB）。那些注释是写给你看的取舍理由，不是写给你浏览器看的。
+
+⇒ 所以发布物里另有一份 `dist/`：
+
+| 产物 | 内容 | 什么时候用 |
+|---|---|---|
+| `dist/**/*.min.css` | 去注释 + 压缩 | **生产**（省 ~86%） |
+| `dist/**/*.css` | 只去注释，保留格式 | 想读又不想被注释淹没 / 要 diff |
+| `dist/**/*.js` | 只去注释，**不压缩** | 生产（JS 不压缩的理由见下） |
+
+```js
+import 'frontend-lib/dist/01-tokens/tokens.min.css';
+import 'frontend-lib/dist/02-primitives/button/button.min.css';
+```
+
+- **`dist/` 是导出物**，可以整个删掉重建（`npm run dist`）。真值永远是源码目录。
+- **JS 不做压缩**：手写压缩器会引入破坏 ES5 语义的风险，收益不抵风险 —— 这一点如实写在这里，
+  不假装 min 过。
+- **一致性有门禁守着**：`dist-parity` 把每个产物与源码喂给浏览器的 CSSOM，
+  必须解析出**同一份规则集**；`dist-fresh` 防"源码改了但 dist 没重建"。
+
+**采纳一个组件到底要付多少**：见 `dist/COSTS.md`（由脚本生成，每个数字都能复算）。
+`tokens` 的 min 版 **2.1 KB gzip**，比任何一个组件自己都贵 —— 那就是"只用一个组件"的真实起步价。
+
 **4 · 要成套的页面（可选）** —— 页面骨架
 
 `01-tokens/page.css` 是**页面级**的骨架：页面框、内容列宽、标题阶梯、
