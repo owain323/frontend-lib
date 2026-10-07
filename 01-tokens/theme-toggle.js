@@ -2,74 +2,43 @@
  * theme-toggle.js — 明暗切换（零依赖 · ES5）
  *
  * ============================================================================
- * 🔴 这个文件是**生成的**，不要手改
+ * 🔴 这个文件里**没有任何色值** —— 一条都没有
  * ============================================================================
- * 由 `05-audit/gen-theme-js.py` 从 `01-tokens/tokens.css` 的
- * `@media (prefers-color-scheme: dark)` 段提取生成。
+ * 以前它往 `:root` 上写 30 条 inline 属性来强制暗色。
+ * 代价见 `docs/INVARIANT.md` I-4：inline style 压过**一切**样式表，
+ * 使用者想覆盖 `--surface` 只能再加 `!important` 反击。
  *
- * ⚠️ 为什么要生成：
- *   我第一版**手写**了 20 个暗色令牌值，结果 **17 个与 tokens.css 不一致**，
- *   连名字都编错了（我写 `--warn` / `--danger-soft`，
- *   真名是 `--warning` / `--danger-bg`）。
+ * ⇒ 为了让「手动开关」能用，我们把整个配色层抬到了样式表之上。
+ *   这是为了一个按钮付出的代价，不值。
  *
- *   ⇒ **令牌只有一个权威来源**。手写第二份 = 必然漂移，
- *     而且**两边都能自洽、测不出来**。
+ * 现在：**CSS 自己表达暗色，本文件只翻一个属性。**
  *
- *   ⇒ 改 tokens.css 的暗色段之后，跑：
- *         python 05-audit/gen-theme-js.py
- *     `--check` 已接进门禁 ⇒ 漂移会变红。
+ *   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { … } }
+ *   :root[data-theme="dark"] { … }            ← 由 05-audit/theme-sync.py 生成
+ *
+ * ⇒ 色值的真值仍然**只有一份**（tokens.css）；
+ *   `[data-theme]` 段是生成的，漂移会被 `theme-sync.py --check` 抓到。
  *
  * ============================================================================
- * 为什么需要它（真机实测提出的）
+ * 三态而非两态：跟随系统 / 亮 / 暗
  * ============================================================================
- * 本库的令牌**只靠 `@media (prefers-color-scheme: dark)` 生效**
- * ⇒ 在手机上**只能靠改系统设置**看到暗色效果。
- * 反馈：「暗色的模式，这个是需要你这边提供开关，
- * 也就是网页的整个的开关，我才能看到的。」—— 合理。
- *
- * 这同时也是 **WCAG 1.4.3 的意图**：跟随系统是默认，
- * 但用户应当**能覆盖它**。
- *
- * 三态而非两态：跟随系统 / 亮 / 暗。
  * 「强制亮」也有意义（投影、外强光、OLED 省电）。
+ * 这也是 **WCAG 1.4.3 的意图**：跟随系统是默认，但用户应当**能覆盖它**。
+ *
+ * ============================================================================
+ * 两个属性的分工（容易混，写清楚）
+ * ============================================================================
+ *   data-theme         = **使用者显式选的**（'light' | 'dark'）
+ *                        auto 模式下**不设这个属性**，保持"真跟随系统"
+ *   data-theme-current = **最终生效的**（'dark' | 'light'）
+ *                        CSS 无法把"系统当前是暗色"表达成属性，
+ *                        所以这个解析结果必须由 JS 落在 DOM 上。
  */
 (function () {
   'use strict';
 
   var KEY = 'fe-theme';            // 'light' | 'dark' | 'auto'
   var root = document.documentElement;
-
-  /* 暗色令牌 —— **自动生成，共 27 个**。
-     值与 tokens.css 的 dark 段严格一致。 */
-  var DARK = {
-    '--accent': '#7AA9DE',
-    '--accent-hover': '#8FB8E6',
-    '--accent-soft': '#1C2C3D',
-    '--border-control': '#8A9099',
-    '--border-decor': '#2A3038',
-    '--border-decor-str': '#3A424C',
-    '--danger': '#E07A6E',
-    '--danger-bg': '#341D1A',
-    '--danger-hover': '#F09A90',
-    '--info': '#5B9BC4',
-    '--info-bg': '#13242F',
-    '--paper': '#14171A',
-    '--scrim': 'rgba(0, 0, 0, 0.62)',
-    '--scrollbar-thumb': '#6E747E',
-    '--scrollbar-thumb-hov': '#7D828A',
-    '--success': '#6FAA7A',
-    '--success-bg': '#16241A',
-    '--surface': '#1C2024',
-    '--surface-raised': '#232830',
-    '--surface-sunken': '#1A1D21',
-    '--switch-on': '#3E6EA8',
-    '--text-on-accent': '#0D1114',
-    '--text-primary': '#E4E7EA',
-    '--text-secondary': '#AEB6C0',
-    '--text-tertiary': '#9BA3AD',
-    '--warning': '#C99A3F',
-    '--warning-bg': '#242A31',
-  };
 
   function read() {
     try { return localStorage.getItem(KEY) || 'auto'; } catch (e) { return 'auto'; }
@@ -86,24 +55,21 @@
   function apply(mode) {
     var dark = mode === 'dark' || (mode === 'auto' && systemDark());
 
-    // ① 令牌：显式写一遍（inline style，优先级最高，稳）
-    //    🔴 用 removeProperty/setProperty 而不是 cssText，
-    //    否则会把元素上其它内联样式一起清掉。
-    for (var k in DARK) {
-      if (!DARK.hasOwnProperty(k)) continue;
-      if (dark) root.style.setProperty(k, DARK[k]);
-      else root.style.removeProperty(k);
-    }
-
-    // ② 让 CSS 知道当前是暗色（供 :not([data-theme-current]) 之类的选择器用）
-    root.setAttribute('data-theme-current', dark ? 'dark' : 'light');
-    // mode=auto 时**不设** data-theme，保持"真跟随系统"
+    // ① 只翻属性。色值一律由 CSS 决定，本文件不持有任何一个。
     if (mode === 'auto') root.removeAttribute('data-theme');
     else root.setAttribute('data-theme', mode);
 
+    // ② 解析结果落到 DOM（供 focus-ring.css 与图表适配层读）
+    root.setAttribute('data-theme-current', dark ? 'dark' : 'light');
+
     // ③ 主题色（iOS Safari 地址栏会跟着变）
+    //    ⚠️ 从 CSS 里**读**出来，不写死 —— 写死就是第二份真值（见 I-7）
     var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', dark ? '#14171a' : '#f6f7f8');
+    if (meta && typeof window.getComputedStyle === 'function') {
+      var v = window.getComputedStyle(root).getPropertyValue('--paper');
+      v = (v || '').trim();
+      if (v) meta.setAttribute('content', v);
+    }
   }
 
   var Theme = {

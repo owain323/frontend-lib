@@ -1,0 +1,94 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://frontend-lib.dev/ai/components.schema.json",
+  "title": "frontend-lib 组件契约",
+  "$comment": [
+    "描述 ai/components.json 的形状。那份文件由 05-audit/gen-ai-contract.py 生成。",
+    "",
+    "🔴 slots 为什么是 BEM 元素名：",
+    "   在本库里 `card__media` / `card__body` 就是『可以往里放东西的位置』，",
+    "   元素名与插槽名是同一个东西。这与 Web Awesome 的 slots 是同一概念，",
+    "   只是它用 <slot name>，我们用 class —— 因为我们不用 Shadow DOM。"
+  ],
+  "type": "object",
+  "required": ["schemaVersion", "components"],
+  "properties": {
+    "schemaVersion": { "type": "string" },
+    "generatedBy": { "type": "string" },
+    "libraryVersion": { "type": "string" },
+    "maturityCriteria": { "type": "object" },
+    "summary": { "type": "object" },
+    "components": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/component" }
+    }
+  },
+  "definitions": {
+    "component": {
+      "type": "object",
+      "required": ["id", "tier", "rootClass", "maturity", "slots", "states"],
+      "properties": {
+        "id": { "type": "string" },
+        "tier": { "type": "string", "enum": ["primitive", "pattern", "recipe"] },
+        "purpose": { "type": "string" },
+        "rootClass": { "type": "string" },
+        "maturity": { "type": "string", "enum": ["alpha", "beta", "stable"] },
+        "maturityReasons": {
+          "type": "object",
+          "properties": {
+            "hasDemo": { "type": "boolean" },
+            "hasDedicatedGate": { "type": "boolean" },
+            "statesOnDomAttributes": { "type": "boolean" }
+          },
+          "$comment": "成熟度是算出来的，不是拍的。改了这些信号，成熟度必须跟着变。"
+        },
+        "gates": { "type": "array", "items": { "type": "string" } },
+        "files": {
+          "type": "object",
+          "properties": {
+            "css": { "type": "string" },
+            "js": { "type": ["string", "null"] },
+            "demo": { "type": ["string", "null"] }
+          }
+        },
+        "slots": {
+          "type": "array",
+          "items": { "type": "string" },
+          "$comment": "BEM 元素名，即具名插入点。"
+        },
+        "variants": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "states": {
+          "type": "object",
+          "properties": {
+            "enum": {
+              "type": "object",
+              "$comment": "data-* 属性名 → 全部可能取值。状态是枚举字符串，不是布尔（I-9）。"
+            },
+            "boolean": { "type": "array", "items": { "type": "string" } },
+            "legacyClass": {
+              "type": "array",
+              "items": { "type": "string" },
+              "$comment": [
+                "仍未收敛到 data 属性的 .is-* 状态类。",
+                "非空 ⇒ 该组件违反 I-8（状态不在 DOM 上）⇒ 成熟度上限为 beta。"
+              ]
+            }
+          }
+        },
+        "aria": {
+          "type": "object",
+          "properties": {
+            "roles": { "type": "array", "items": { "type": "string" } },
+            "attrs": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "usesOtherNamespaces": { "type": "array", "items": { "type": "string" } },
+        "global": { "type": ["string", "null"] },
+        "behaviorRef": { "type": "string" }
+      }
+    }
+  }
+}

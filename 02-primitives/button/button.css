@@ -179,7 +179,7 @@
 @media (hover: hover) and (pointer: fine) {
 .btn--danger:hover {
   /* 加深而不是变亮 —— 危险动作 hover 变亮会显得"更安全"，是反的。
-     🔴 2026-10-03：深色模式下方向相反 —— 深底上"加深"等于消失，
+     🔴 深色模式下方向相反 —— 深底上"加深"等于消失，
      所以暗色必须**变亮**（下方 @media dark 里覆盖）。 */
   background: var(--danger-hover);
 }
@@ -300,13 +300,16 @@
    只在"动作不可逆且需要确认"时用（提交、支付）。
    普通操作加 success 是噪音。
    ---------------------------------------------------------------- */
-.btn.is-success, .btn[data-state="success"] {
+
+/* 🔴 与 combobox 同一处半自动改写事故，已修。
+     经过见 `docs/INVARIANT.md` I-8，不在这里重复第二份。 */
+.btn[data-state="success"] {
   background: var(--success);
   /* 🔴 暗色下底色变亮，写死的白字会看不清。 */
   color: var(--text-on-accent);
 }
-.btn.is-success, .btn[data-state="success"] .btn__label { opacity: 1; }
-.btn.is-success, .btn[data-state="success"] .btn__spinner { opacity: 0; }
+.btn[data-state="success"] .btn__label { opacity: 1; }
+.btn[data-state="success"] .btn__spinner { opacity: 0; }
 
 /* ---------------------------------------------------------------- 图标按钮
    正方形。必须带 aria-label，因为里面没有文字。

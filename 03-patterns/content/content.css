@@ -171,16 +171,19 @@
      这条由 viewport.py 门禁检查，本 CSS 不兜底 */
   border-radius: var(--r-sm);
 }
-.prose > a {
+/* 🔴 必须是**后代**选择器，不是 `> a`：正文链接几乎都在 `<p>` 里，
+   `> a` 只覆盖直接子链接 ⇒ 段落里的链接落到浏览器默认蓝，
+   暗色下对比度 1.91:1（`dark-contrast` 实测抓到）。 */
+.prose a {
   color: var(--accent);
   text-decoration: underline;
   text-underline-offset: 2px;
   text-decoration-thickness: 1px;
 }
 @media (hover: hover) and (pointer: fine) {
-.prose > a:hover { color: var(--text-primary); }
+.prose a:hover { color: var(--text-primary); }
 }
-.prose > a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.prose a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* 外链可访问性：新窗口打开必须告知 */
 .prose > a[target="_blank"]::after {
@@ -193,7 +196,7 @@
    🔴 实测：markdown-it 输出 `<s>`，GitHub/GFM 规范规定 `<del>`。
       两者都是合法 HTML（`<s>`=不再准确，`<del>`=已删除）但语义不同。
       ⇒ 样式必须同时支持，否则换渲染器就掉样式。
-      查证日期 2026-10-02，渲染器 markdown-it-py（commonmark preset + strikethrough）。 */
+      查证所用渲染器：markdown-it-py（commonmark preset + strikethrough）。 */
 .prose > del,
 .prose > s,
 .prose > li > del,
@@ -248,18 +251,19 @@
    ============================================================================
    暗色下浏览器默认链接蓝只有 1.91:1，几乎看不见 ⇒ 需要设 color。
 
-   🔴🔴 但**必须限定作用域**，不能写裸 `a {}`（2026-10-06 修正）
+   🔴🔴 但**必须限定作用域**，不能写裸 `a {}`
       裸标签选择器会命中**宿主页面的每一个链接** ——
       也就是说：使用者引入本库后，自己站点所有 <a> 的颜色都会被改掉。
       这正是「改一处、全库变样」的污染源之一。
 
-      正解：挂到本组件自己的根选择器上（.content 是本组件的根）。
-      作用域与组件一致，组件外完全不受影响。
+      正解：挂到本组件自己的根选择器上。作用域与组件一致，组件外完全不受影响。
+
+   🔴 修：这里原写 `.content a`，而本组件根类是 **`.prose`** ——
+     `.content` 全库 0 处出现 ⇒ 整段是死规则，而注释还写着它是根类。
+     文档说一套、代码是另一套 ⇒ "链接已处理"这个判断一直是假的。
    ============================================================================ */
-.content a,
-.content a:visited {
+.prose a:visited {
   color: var(--accent);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
-.content a:visited { color: var(--accent); }

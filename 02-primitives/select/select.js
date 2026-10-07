@@ -154,8 +154,8 @@
         idx = ((idx + dir) % n + n) % n;
       }
       activeIdx = idx;
-      options.forEach(function (o) { o.classList.remove('is-active'); });
-      options[idx].classList.add('is-active');
+      options.forEach(function (o) { o.removeAttribute('data-state'); });
+      options[idx].setAttribute('data-state', 'active');
       /* ⭐ aria-activedescendant：焦点始终在按钮上，靠它告诉读屏"当前在第几项" */
       btn.setAttribute('aria-activedescendant', options[idx].id);
       if (options[idx].scrollIntoView) {
@@ -191,7 +191,7 @@
       list.hidden = true;
       btn.setAttribute('aria-expanded', 'false');
       btn.removeAttribute('aria-activedescendant');
-      options.forEach(function (o) { o.classList.remove('is-active'); });
+      options.forEach(function (o) { o.removeAttribute('data-state'); });
       activeIdx = -1;
       /* ③ Esc 关闭时焦点**还给按钮**（不是选中项）*/
       if (restoreFocus !== false) btn.focus();

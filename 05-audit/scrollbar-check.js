@@ -160,14 +160,11 @@ function toHex(c) {
                           isMobile: true, hasTouch: true });
     await p.goto(PAGE + '?theme=' + mode, { waitUntil: 'networkidle0' });
     if (mode === 'dark') {
+      // ⚠️ 以前这里靠**注入 inline 令牌**模拟暗色 —— 那正是被拆掉的做法
+      //    （inline 压过样式表，见 INVARIANT I-4；而且它测的不是真实路径）。
+      //    现在 `data-theme="dark"` 本身就是真路径，直接设即可。
       await p.evaluate(() => {
-        document.documentElement.setAttribute('data-theme-current', 'dark');
-        // 直接注入暗色令牌，模拟 theme-toggle 的行为
-        const cs = getComputedStyle(document.documentElement);
-        ['--scrollbar-thumb', '--scrollbar-thumb-hov'].forEach((k) => {
-          const v = cs.getPropertyValue(k).trim();
-          if (v) document.documentElement.style.setProperty(k, v);
-        });
+        document.documentElement.setAttribute('data-theme', 'dark');
       });
     }
     await new Promise((r) => setTimeout(r, 200));

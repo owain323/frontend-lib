@@ -1,0 +1,56 @@
+{
+  "$comment": [
+    "能力协商：编辑方【声明自己能做什么】，前端库据此开放不同的操作集。",
+    "",
+    "🔴 为什么要协商，而不是判断模型名",
+    "   if (model === 'xxx') { ... } 这种写法有三个致命问题：",
+    "     ① 立刻过期 —— 新模型出来就失效",
+    "     ② 同一模型不同接入方式（带工具 / 不带工具）能力完全不同",
+    "     ③ 我们把别人的产品路线图写进了自己的代码，改不了也跟不上",
+    "   ⇒ 正解：**问能力，不问名字。**",
+    "     这是 HTTP 内容协商、CSS @supports 同一个思路 —— 探测能力本身。",
+    "",
+    "🔴 协商的方向是单向的：",
+    "   编辑方声明 → 本库决定开放哪些操作。",
+    "   本库**不**声明自己的版本去让对方适配 —— 那样就变成双向耦合了。"
+  ],
+  "schemaVersion": "1.0.0",
+  "capabilities": {
+    "structuredOutput": {
+      "label": "能稳定输出符合契约的 JSON",
+      "unlocks": ["patch.apply", "patch.batch"],
+      "without": ["只能整篇重写（风险高，需人工 diff）"]
+    },
+    "toolCalling": {
+      "label": "能调用外部工具",
+      "unlocks": ["validate.cli", "impact.report", "gate.run"],
+      "without": ["改完无法自证，必须交给人工验证"]
+    },
+    "visualInspection": {
+      "label": "能看到渲染结果",
+      "unlocks": ["visual.baseline", "visual.diff"],
+      "without": ["样式类错误只能靠门禁兜住，不能靠眼睛"]
+    },
+    "patchEditing": {
+      "label": "能按语义 id 增量修改",
+      "unlocks": ["patch.create", "patch.update", "patch.move",
+                  "patch.delete", "patch.replace"],
+      "without": ["只能 regenerate —— 每次都可能重写未改动的部分，",
+                  "这正是'改 A 坏 B'的来源"]
+    }
+  },
+  "defaults": {
+    "$comment": "未声明的能力一律视为 false —— 保守默认值。宁可少给，不可错给。",
+    "structuredOutput": false,
+    "toolCalling": false,
+    "visualInspection": false,
+    "patchEditing": false
+  },
+  "minimumForSafeEditing": {
+    "$comment": [
+      "要做**无人值守**的自动编辑，至少需要下面两项。",
+      "达不到 ⇒ 只应做『生成草稿 + 人工确认』，不应声称自动化。"
+    ],
+    "requires": ["structuredOutput", "patchEditing"]
+  }
+}

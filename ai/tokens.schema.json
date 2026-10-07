@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://frontend-lib.dev/ai/tokens.schema.json",
+  "title": "frontend-lib 令牌契约",
+  "$comment": [
+    "描述 ai/tokens.json 的形状，由 05-audit/gen-ai-contract.py 生成。",
+    "",
+    "🔴 为什么用 $value / $type 这种写法：",
+    "   这是 W3C Design Tokens 草案的形状，Open Props 与 Primer 都在用。",
+    "   好处是 Figma / Style Dictionary / 各类构建工具能**直接消费**，",
+    "   不需要我们再写一层的适配。对标的意义就在这里 —— 不是更好看，是更少重复。",
+    "",
+    "🔴 真值方向：tokens.css 是真值，本文件是导出物，",
+    "   一致性由 gen-ai-contract.py --check 保证（单向，不双向同步）。"
+  ],
+  "type": "object",
+  "required": ["schemaVersion", "source", "sets"],
+  "properties": {
+    "schemaVersion": { "type": "string" },
+    "source": { "type": "string" },
+    "sets": {
+      "type": "object",
+      "properties": {
+        "light": { "$ref": "#/definitions/tokenSet" },
+        "dark": { "$ref": "#/definitions/tokenSet" }
+      },
+      "required": ["light", "dark"]
+    },
+    "coverage": {
+      "type": "object",
+      "properties": {
+        "lightCount": { "type": "number" },
+        "darkCount": { "type": "number" },
+        "onlyInDark": { "type": "array", "items": { "type": "string" } },
+        "onlyInLight": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  },
+  "definitions": {
+    "tokenSet": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/definitions/token" }
+    },
+    "token": {
+      "type": "object",
+      "required": ["$value"],
+      "properties": {
+        "$value": { "type": "string" },
+        "$type": {
+          "type": "string",
+          "enum": ["color", "dimension", "number", "duration",
+                   "cubicBezier", "alias", "other"]
+        },
+        "$description": { "type": "string" }
+      }
+    }
+  }
+}

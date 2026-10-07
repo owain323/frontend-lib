@@ -146,15 +146,16 @@
    正确做法是延迟 300ms 再显示 loading 态。
 
    ⚠️ **这里只提供 CSS 能力，本库没有 JS 实现它。**
-      使用者需要自己写：`setTimeout(function(){ el.classList.add('is-shown') }, 300)`
+      使用者需要自己写：
+        `setTimeout(function(){ el.setAttribute('data-state', 'shown') }, 300)`
       —— 定时器到点才显示，没到就保持隐藏（骨架屏"至少闪一下"被消掉）。
 
-   🔴 修正注释：原文写「由 JS 在超时后加 .is-shown」，
-      **读起来像本库已经实现了** —— 但全库没有任何 JS 加过这个类。
+   🔴 修正注释：原文写「由 JS 在超时后加这个类」，
+      **读起来像本库已经实现了** —— 但全库没有任何 JS 加过它。
       这类"看起来实现了其实没有"最危险：会让人以为少写 JS 也能用。
       demo 也没有演示这一态。 */
 .state--delayed { visibility: hidden; }
-.state--delayed.is-shown { visibility: visible; }
+.state--delayed[data-state="shown"] { visibility: visible; }
 
 /* ============================================================================
    3. error —— 出错
@@ -191,14 +192,14 @@
    容器级 success 只在"这一步彻底结束"时出现（提交完成、支付完成），
    并且必须给出口：下一步去哪。
 
-   普通操作的成功反馈用 button 的 .is-success,    普通操作的成功反馈用 button 的 [data-state="success"]（1.2s 自动消失），
+   普通操作的成功反馈用 button 的 `data-state="success"`（1.2s 自动消失），
    不要用容器级 success —— 那会把一个瞬间反馈做成一个页面。
    ------------------------------------------------------------------------ */
 /* 🔴 删除 .state--success
    理由：**它自己的注释就写着"不要用容器级 success"**，
    却把样式留在文件里 —— 这是最坏的一种：
    注释说别用，CSS 却摆在那里，读者只会看到"有这个能力"。
-   瞬时反馈用 button 的 .is-success,    瞬时反馈用 button 的 [data-state="success"]（1.2s 自动消失）。
+   瞬时反馈用 button 的 `data-state="success"`（1.2s 自动消失）。
    ⇒ 要"落盘即用"的成功态，就该有一个真会被用到的类，
    而不是一个明确标注"别用"的。 */
 
@@ -251,7 +252,7 @@
       闪一下，比不显示更糟。要延迟显示。
 
    6. 把普通操作的成功做成整页 success
-      成功是过渡态。用 button 的 .is-success,       成功是过渡态。用 button 的 [data-state="success"]。
+      成功是过渡态。用 button 的 `data-state="success"`。
 
    7. 骨架屏不标 aria-hidden
       屏幕阅读器会把它读成一堆无意义内容。

@@ -111,7 +111,7 @@
 .toast__close:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 /* 关闭动画：往右淡出，和进场方向一致 */
-.toast.is-leaving, .toast[data-state="leaving"] {
+.toast[data-state="leaving"] {
   animation: toast-out var(--dur-fast) var(--ease-in-out) forwards;
 }
 
@@ -232,7 +232,9 @@
    ------------------------------------------------------------------------ */
 html { scrollbar-gutter: stable; }
 
-body.is-locked, body[data-state="locked"] { overflow: hidden; }
+/* ⚠️ 用**独立属性**而不是 `data-state`：锁的是滚动，不是这个元素的状态，
+   `data-state` 是留给组件自己的状态枚举的，混进去会污染枚举取值集合。 */
+body[data-scroll-locked] { overflow: hidden; }
 
 /* 极窄屏：dialog 贴底（移动端习惯，比居中更符合直觉） */
 @media (max-width: 480px) {
@@ -267,7 +269,7 @@ body.is-locked, body[data-state="locked"] { overflow: hidden; }
    ========================================================================= */
 @media (prefers-reduced-motion: reduce) {
   .toast,
-  .toast.is-leaving,   .toast[data-state="leaving"],
+  .toast[data-state="leaving"],
   .dialog,
   .dialog-backdrop { animation: none; }
   .toast__timer { animation: none; width: 100%; }   /* 进度条停住，不假装还在倒计时 */

@@ -36,7 +36,9 @@ WHITELIST = {
     'Puppeteer', 'Playwright', 'Jest', 'Vitest', 'Bash', 'PowerShell',
     'DevTools', 'Node', 'Deno', 'Bun', 'React', 'Vue', 'Angular', 'Svelte',
     # Python 标准异常（门禁脚本里会用到，不是内部代号）
+    #   SubprocessError = TimeoutExpired / CalledProcessError 的基类
     'RuntimeError', 'ValueError', 'TypeError', 'KeyError', 'OSError',
+    'SubprocessError', 'CalledProcessError', 'FileNotFoundError',
     # 协议 / 规范
     'HTTP', 'HTTPS', 'URL', 'URI', 'ARIA', 'WAI', 'APG', 'WCAG', 'CSS', 'HTML',
     'DOM', 'SVG', 'XML', 'JSON', 'YAML', 'TOML', 'API', 'REST', 'GraphQL',

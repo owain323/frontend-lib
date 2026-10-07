@@ -101,7 +101,7 @@
      🔴 CSS 变量**不能**用在 media query 条件里。
         所以下面四个只是"文档与计算的单一出处"，写 media query 时仍要写字面值：
 
-          @media (min-width: 48rem) { ... }   /* 不是 var(--bp-md) */
+          @media (min-width: 48rem) { ... }   ← 只能写字面值，不能写 var(--bp-md)
 
         留它们的理由：算流体值、给脚本查、以及让"我们有几个断点"这件事有唯一答案。
         ⚠️ 断点用的是 rem 不是 px —— 用户调大字号时断点跟着变，这才是对的。
@@ -439,7 +439,7 @@
    🔴 实测：markdown-it 输出 `<s>`，GitHub/GFM 规范规定 `<del>`。
       两者都是合法 HTML（`<s>`=不再准确，`<del>`=已删除）但语义不同。
       ⇒ 样式必须同时支持，否则换渲染器就掉样式。
-      查证日期 2026-10-02，渲染器 markdown-it-py（commonmark preset + strikethrough）。 */
+      查证所用渲染器：markdown-it-py（commonmark preset + strikethrough）。 */
 .prose > del,
 .prose > s,
 .prose > li > del,

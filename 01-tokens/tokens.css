@@ -21,8 +21,13 @@
   --paper:            #f6f7f8;
   --surface:          #ffffff;
   --surface-sunken:   #f1f3f5;
+  /* 🔴 浮层底（下拉/气泡/抽屉面板）。
+     这条**原本只在暗色段定义** ⇒ 浅色下 6 个组件（combobox/popover/select/
+     dropdown/tooltip/table）的 `background` 整条失效 ⇒ 实测**完全透明**。
+     浅色值 = --surface：浅色抬高靠阴影（--shadow-*），暗色才靠"面更亮"。 */
+  --surface-raised:   #ffffff;
 /* ============================================================================
-   🔴 2026-10-04滚动条令牌（判据：WCAG 2.5.5 Target Size）
+   🔴 滚动条令牌（判据：WCAG 2.5.5 Target Size）
    ----------------------------------------------------------------------------
    ⭐ 依据（5 个权威来源口径一致）：
      · CSS Scrollbars Level 1（W3C）—— scrollbar-width / color / gutter
@@ -142,9 +147,10 @@
      三选一，把另外两个删掉，别全留着。
      ---------------------------------------------------------------- */
   --accent:           #1b4d8f;
-  /* 开关开态轨道色 -- 浅色版
-     与品牌色一致；暗色下换用降彩度的值（见 dark 段）*/
-     不用 var(--accent) 是因为暗色下它太亮、铺满一大块会发光 */
+  /* 开关开态轨道色（浅色版）：与品牌色一致；暗色下换降彩度值（见 dark 段）。
+     不用 var(--accent) —— 暗色下 accent 太亮，铺满一大块会发光。
+     ⚠️ 这段注释原本**缺开头**，导致 --switch-on 被浏览器当成坏声明丢掉
+        （实测浅色下取值为空）。已由 token-parse-gate.py 兜住。 */
   --switch-on:         #1b4d8f; /* 7.82 AAA */
   --accent-hover:     #163a6d; /* 11.29 白字压上 · AAA */
   --accent-soft:      #e6eef7;   /* focus ring / 浅底，不要拿它放正文 */
@@ -175,7 +181,7 @@
      🔴 CSS 变量**不能**用在 media query 条件里。
         所以下面四个只是"文档与计算的单一出处"，写 media query 时仍要写字面值：
 
-          @media (min-width: 48rem) { ... }   /* 不是 var(--bp-md) */
+          @media (min-width: 48rem) { ... }   ← 只能写字面值，不能写 var(--bp-md)
 
         留它们的理由：算流体值、给脚本查、以及让"我们有几个断点"这件事有唯一答案。
         ⚠️ 断点用的是 rem 不是 px —— 用户调大字号时断点跟着变，这才是对的。
@@ -508,8 +514,11 @@
      ======================================================================== */
 
   /* 冷灰基座 -- 不用纯黑（OLED 拖影），不用暖灰（显廉价） */
-:root {   /* ← 补：这段暗色令牌原本是**裸声明**
-          （没有选择器包裹 ⇒ 浏览器直接丢弃 ⇒ 暗色模式从未生效过）*/
+  /* ⚠️ `:not([data-theme="light"])` —— 让「强制亮」能压过系统暗色。
+     不加这层 `:not`：系统暗色 + data-theme="light" 时，本段仍会命中
+     ⇒ 使用者点了「亮」却还是暗的（三态开关里最容易被忽略的一条路径）。
+     ⇒ 强制暗由下面生成的 `[data-theme="dark"]` 段负责，两边互不干扰。 */
+:root:not([data-theme="light"]) {
   --paper:           #14171A;
   --surface:         #1C2024;
   --surface-raised:  #232830;
@@ -572,16 +581,49 @@
   --accent-soft:     #1C2C3D;
 
   --scrim:           rgba(0, 0, 0, 0.62);
-  --sans:            -apple-system, BlinkMacSystemFont, "Segoe UI",
-                      "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
-                      sans-serif;
-  --mono:            ui-monospace, "SF Mono", "Menlo", "Consolas",
-                      "Liberation Mono", monospace;
-  --serif:           "Iowan Old Style", "Palatino Linotype", Palatino,
-                      Georgia, "Songti SC", serif;
-  --tracking-normal: 0.01em;
+  /* ⚠️ 这里原本还抄了一份 --sans/--mono/--serif/--tracking-normal —— 是死代码：
+     真正的字体栈定义在后面的 `:root`，同特异性且位置更靠后 ⇒ 无条件覆盖这里
+     （实测暗色下 --tracking-normal = 0，不是这里的 0.01em）。
+     留着还会被 theme-toggle.js 的差集规则复制成 inline style ⇒
+     inline 优先于样式表 ⇒ 强制暗色时字体被改。已删。 */
 }   /* ← :root 闭合*/
 }
+
+/* === BEGIN: dark-via-attr（由 05-audit/theme-sync.py 生成，勿手改）=== */
+:root[data-theme="dark"] {
+  --accent: #7AA9DE;
+  --accent-hover: #8FB8E6;
+  --accent-soft: #1C2C3D;
+  --border-control: #8A9099;
+  --border-decor: #2A3038;
+  --border-decor-str: #3A424C;
+  --danger: #E07A6E;
+  --danger-bg: #341D1A;
+  --danger-hover: #F09A90;
+  --info: #5B9BC4;
+  --info-bg: #13242F;
+  --paper: #14171A;
+  --scrim: rgba(0, 0, 0, 0.62);
+  --scrollbar-thumb: #6E747E;
+  --scrollbar-thumb-hov: #7D828A;
+  --skeleton-bg: #2E343C;
+  --skeleton-shimmer: rgba(255, 255, 255, 0.06);
+  --success: #6FAA7A;
+  --success-bg: #16241A;
+  --surface: #1C2024;
+  --surface-raised: #232830;
+  --surface-sunken: #1A1D21;
+  --switch-on: #3E6EA8;
+  --text-on-accent: #0D1114;
+  --text-on-solid: #0D1114;
+  --text-primary: #E4E7EA;
+  --text-secondary: #AEB6C0;
+  --text-tertiary: #9BA3AD;
+  --warning: #C99A3F;
+  --warning-bg: #242A31;
+}
+/* === END: dark-via-attr === */
+
 
 /* ============================================================================
    字体栈令牌

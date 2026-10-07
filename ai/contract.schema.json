@@ -1,0 +1,114 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://frontend-lib.dev/ai/contract.schema.json",
+  "title": "frontend-lib 编辑契约 · 文档信封",
+  "$comment": [
+    "这是【版本化契约】层：约定接口长什么样。会随版本变，但向后兼容。",
+    "它不规定 AI 该怎么做（那是 docs/GUIDANCE.md），",
+    "也不陈述客观事实（那是 docs/INVARIANT.md）。",
+    "",
+    "🔴 分层理由：把三者混在一起，约束就会变成天花板 ——",
+    "   模型变强时，你要放宽的是 Guidance，而不是把 Contract 和 Invariant 一起推翻。",
+    "",
+    "🔴 extensions 是前向兼容位：",
+    "   旧版校验器遇到不认识的键必须【忽略】，不能判文档非法。"
+  ],
+  "invariants": [
+    "I-1", "I-2", "I-3", "I-4",
+    "I-5", "I-6", "I-7",
+    "I-8", "I-9",
+    "I-10", "I-11", "I-12"
+  ],
+  "type": "object",
+  "required": ["schemaVersion", "profile", "nodes"],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "$comment": "契约版本，不是库版本。语义化：主版本=不兼容，次版本=新增可选能力。"
+    },
+    "profile": {
+      "type": "string",
+      "enum": ["creative", "standard", "strict"],
+      "$comment": "详见 ai/profiles.json。三档决定『允许多不成熟的东西进入文档』。"
+    },
+    "capabilities": {
+      "$ref": "#/definitions/capabilities",
+      "$comment": [
+        "能力协商：编辑方【声明自己有什么能力】，而不是我们【按模型名猜】。",
+        "按模型名分支会立刻过期，且无法容纳同一模型的不同接入方式。"
+      ]
+    },
+    "root": {
+      "type": "array",
+      "items": { "type": "string" },
+      "$comment": "顶层节点的 id 顺序。数组顺序即渲染顺序。"
+    },
+    "nodes": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/definitions/node" },
+      "$comment": [
+        "id → 节点。**编辑的作用对象是 id，不是 HTML 路径。**",
+        "理由：HTML 路径（第 3 个 div 的第 2 个子节点）在每次结构变动后都会失效，",
+        "而语义 id 不会 —— 这正是『改 A 坏 B』的技术根因。"
+      ]
+    },
+    "extensions": {
+      "type": "object",
+      "$comment": "前向兼容位。旧版校验器必须忽略未知键，不得判文档非法。"
+    }
+  },
+  "definitions": {
+    "capabilities": {
+      "type": "object",
+      "properties": {
+        "structuredOutput": {
+          "type": "boolean",
+          "$comment": "能否稳定输出符合本契约的 JSON"
+        },
+        "toolCalling": {
+          "type": "boolean",
+          "$comment": "能否调用外部工具（跑校验器、读文件）"
+        },
+        "visualInspection": {
+          "type": "boolean",
+          "$comment": "能否看到渲染结果（截图/浏览器）"
+        },
+        "patchEditing": {
+          "type": "boolean",
+          "$comment": "能否按语义 id 增量修改，而不是整篇重写"
+        }
+      }
+    },
+    "node": {
+      "type": "object",
+      "required": ["id", "kind"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,62}$",
+          "$comment": "语义 id。小写字母开头，稳定不变 —— 变 id 等于换了一个节点。"
+        },
+        "kind": {
+          "type": "string",
+          "$comment": [
+            "组件 id（见 ai/components.json），或内置种类：",
+            "  text    纯文本",
+            "  slot    具名插入点（对应组件的 BEM 元素名）"
+          ]
+        },
+        "text": { "type": "string" },
+        "props": {
+          "type": "object",
+          "$comment": "组件属性：变体名、状态取值等。取值受 ai/components.json 约束。"
+        },
+        "children": {
+          "type": "array",
+          "items": { "type": "string" },
+          "$comment": "子节点 id。移动子节点 = move 操作，不动内容。"
+        },
+        "extensions": { "type": "object" }
+      }
+    }
+  }
+}

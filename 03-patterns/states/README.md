@@ -79,7 +79,7 @@ fetch(...).then(r => { clearTimeout(t); showResult(r); });
 - ❌ **error 态没有重试出口** —— 死路
 - ❌ **结构未知时用骨架屏** —— 撒谎，且内容到位时跳动
 - ❌ **请求 <300ms 也显示骨架屏** —— 闪一下更糟
-- ❌ **把普通操作的成功做成整页 success** —— 成功是过渡态，用 button 的 `.is-success`（1.2s 自动消失）
+- ❌ **把普通操作的成功做成整页 success** —— 成功是过渡态，用 button 的 `data-state="success"`（1.2s 自动消失）
 - ❌ **把技术细节（错误码、堆栈）写进主文案** —— 用户要看的是"我该怎么办"。细节放 `.state__detail` 折叠
 
 ---
@@ -104,8 +104,11 @@ fetch(...).then(r => { clearTimeout(t); showResult(r); });
 
 | 类 | 作用 | 谁来加 |
 |---|---|---|
-| `.state--delayed` + `.is-shown` | 延迟 300ms 再显示骨架屏，避免快速返回时"闪一下" | **你**：定时器到点加 `.is-shown` |
-| `.field__input.is-valid` | 输入框"校验通过"态 | **你**：校验通过时加 `.is-valid` |
+| `.state--delayed` + `[data-state="shown"]` | 延迟 300ms 再显示骨架屏，避免快速返回时"闪一下" | **你**：定时器到点加 `data-state="shown"` |
+| `.field__input[data-state="valid"]` | 输入框"校验通过"态 | **你**：校验通过时加 `data-state="valid"` |
+
+⚠️ 状态一律写 `data-state` 属性，**不写状态类名**。理由见 `docs/INVARIANT.md` I-8：
+类名消失时 CSS 规则还在 ⇒ 静默错乱且无报错；属性是有限枚举，可被查询和校验。
 
 ⚠️ **本库不提供 JS 实现** —— 这两个是留给复用者的钩子。
 CSS 侧已经备好，JS 侧要自己写。写错了不会报错（类没加就是默认态），

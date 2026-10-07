@@ -35,10 +35,10 @@
 
 <h2>1 · 常规（排序 + 粘性表头 + 数字列）</h2>
 <div class="toolbar">
-  <button class="btn btn--sm" data-state="ready">常规</button>
-  <button class="btn btn--sm" data-state="loading">加载态</button>
-  <button class="btn btn--sm" data-state="empty">空态</button>
-  <button class="btn btn--sm" data-state="error">出错态</button>
+  <button class="btn btn--sm" data-demo="ready">常规</button>
+  <button class="btn btn--sm" data-demo="loading">加载态</button>
+  <button class="btn btn--sm" data-demo="empty">空态</button>
+  <button class="btn btn--sm" data-demo="error">出错态</button>
   <button class="btn btn--sm btn--primary" id="sortBtn">按营收排序</button>
 </div>
 <div id="host"></div>
@@ -150,8 +150,8 @@
     });
   }
 
-  document.querySelectorAll('[data-state]').forEach(function (b) {
-    b.addEventListener('click', function () { render(b.getAttribute('data-state')); });
+  document.querySelectorAll('[data-demo]').forEach(function (b) {
+    b.addEventListener('click', function () { render(b.getAttribute('data-demo')); });
   });
   document.getElementById('sortBtn').addEventListener('click', function () {
     sortKey = 'rev'; sortDir = -sortDir; render('ready');

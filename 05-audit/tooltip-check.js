@@ -87,7 +87,7 @@ const REPO = path.resolve(__dirname, '..');
           const hit = await p.evaluate(() =>
             !!(document.activeElement &&
                document.activeElement.hasAttribute('data-tooltip') &&
-               document.querySelector('.tooltip.is-open')));
+               document.querySelector('.tooltip[data-state="open"]')));
           if (hit) { found = true; break; }
         }
         return { ok: found,

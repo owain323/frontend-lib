@@ -86,10 +86,10 @@
   // 焦点管理：与本库 focus-visible 配合（不覆盖 outline）
   document.getElementById('save').addEventListener('click', function () {
     var b = this, s = document.getElementById('status');
-    b.classList.add('is-success'); b.setAttribute('aria-busy', 'true');
+    b.setAttribute('data-state', 'success'); b.setAttribute('aria-busy', 'true');
     s.textContent = '保存中…';
     setTimeout(function () {
-      b.classList.remove('is-success'); b.removeAttribute('aria-busy');
+      b.removeAttribute('data-state'); b.removeAttribute('aria-busy');
       s.textContent = '已保存';
     }, 900);
   });

@@ -156,8 +156,8 @@ Toc.init({ links: '#toc-list .toc__link', sections: 'main h2[id], main h1[id]' }
 
   function open() {
     lastFocused = document.activeElement;
-    list.classList.add('is-open');
-    scrim.classList.add('is-open');
+    list.setAttribute('data-state', 'open');
+    scrim.setAttribute('data-state', 'open');
     toggle.setAttribute('aria-expanded', 'true');
     toggle.setAttribute('aria-label', '关闭菜单');
     document.body.style.overflow = 'hidden';   /* 锁背景滚动 */
@@ -169,8 +169,8 @@ Toc.init({ links: '#toc-list .toc__link', sections: 'main h2[id], main h1[id]' }
 
   function close() {
     if (!isOpen()) { return; }
-    list.classList.remove('is-open');
-    scrim.classList.remove('is-open');
+    list.removeAttribute('data-state');
+    scrim.removeAttribute('data-state');
     toggle.setAttribute('aria-expanded', 'false');
     toggle.setAttribute('aria-label', '打开菜单');
     document.body.style.overflow = '';

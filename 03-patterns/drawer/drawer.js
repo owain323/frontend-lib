@@ -167,7 +167,7 @@
     function close() {
       if (closed) return;
       closed = true;
-      d.classList.add('is-leaving');
+      d.setAttribute('data-state', 'leaving');
       d.removeEventListener('keydown', onKey);
       host.removeEventListener('click', onBackdropClick);
       setBackgroundInert(false);

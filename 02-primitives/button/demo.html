@@ -102,7 +102,7 @@
     <div class="cell">
       <h3>7. success</h3>
       <p>仅用于不可逆动作（提交、支付）。普通操作加这个是噪音。</p>
-      <button class="btn btn--md btn--primary is-success">
+      <button class="btn btn--md btn--primary" data-state="success">
         <span class="btn__label">已提交</span><span class="btn__spinner"></span>
       </button>
     </div>
@@ -198,10 +198,10 @@
     b.setAttribute('aria-busy', 'true');
     setTimeout(function () {
       b.removeAttribute('aria-busy');
-      b.classList.add('is-success');
+      b.setAttribute('data-state', 'success');
       b.querySelector('.btn__label').textContent = '已提交';
       setTimeout(function () {
-        b.classList.remove('is-success');
+        b.removeAttribute('data-state');
         b.querySelector('.btn__label').textContent = '点我走一遍';
       }, 1200);
     }, 1400);

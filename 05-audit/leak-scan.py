@@ -246,11 +246,44 @@ def main():
                 and not rel.startswith('06-vendor/')
                 and rel != 'CHANGELOG.md'):
             stamp = []
+            # ⚠️ 原来只认「行首带标记」的行（`*` / `//` / `#` …）。
+            #    但块注释里的**续行**通常不带标记：
+            #        /* 🔴 2026-10-04 滚动条令牌
+            #           说明… */
+            #    ⇒ 这类日期戳**一条都查不到**（实测漏了 4 处，都已随发布版出去）。
+            #    ⇒ 改成跨行跟踪块注释状态：进入 `/*` 之后直到 `*/` 都算注释内。
+            #      ⚠️ 不能用「数 /* 与 */ 的个数」判断（那是老假绿根因），
+            #         必须按**位置**逐段推进。
+            in_block = False
             for line in t.split('\n'):
                 s = line.lstrip()
-                is_comment = (s.startswith(('*', '//', '/*', '#', '<!--', '-'))
-                              or s.startswith('/*'))
-                if is_comment:
+                scan_at = 0
+                while True:
+                    if not in_block:
+                        open_at = line.find('/*', scan_at)
+                        if open_at < 0:
+                            break
+                        close_at = line.find('*/', open_at + 2)
+                        if close_at < 0:
+                            # 本行开了块注释且没合上 ⇒ 从此处到行尾都在注释里
+                            stamp.extend(CHECK_STAMP[1].findall(line[open_at:]))
+                            in_block = True
+                            break
+                        # 同行开合 ⇒ 只查这段
+                        stamp.extend(CHECK_STAMP[1].findall(
+                            line[open_at:close_at + 2]))
+                        scan_at = close_at + 2
+                        continue
+                    # 已在块注释内
+                    close_at = line.find('*/', scan_at)
+                    if close_at < 0:
+                        stamp.extend(CHECK_STAMP[1].findall(line[scan_at:]))
+                        break
+                    stamp.extend(CHECK_STAMP[1].findall(line[scan_at:close_at + 2]))
+                    in_block = False
+                    scan_at = close_at + 2
+                # 行注释 / markdown：整行都算
+                if not in_block and s.startswith(('//', '#', '<!--', '-')):
                     stamp.extend(CHECK_STAMP[1].findall(line))
             if stamp:
                 hits.setdefault(CHECK_STAMP[0], []).append((rel, len(stamp)))

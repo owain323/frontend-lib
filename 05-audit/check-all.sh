@@ -72,6 +72,25 @@ echo "=== 静态门禁 ==="
 run "contrast"   $PY 05-audit/contrast.py
 run "cmp-contrast" $PY 05-audit/component-contrast.py
 run "tierA-sync" $PY 05-audit/make-tiersnippet.py --check
+# 🔴 2026-10-06 补：这条**本来就该在**，但一直没接进来。
+#    后果：theme-toggle.js 与 tokens.css 已经漂移了（28 vs 27 个暗色令牌），
+#    门禁一声不响 —— 而它自己的文档还写着「--check 已接进门禁」。
+#    ⇒ 文档说做了、实际没接，比没做更危险（你会以为有人在看）。
+run "theme-sync" $PY 05-audit/theme-sync.py --check
+# 机器可读契约（ai/components.json + ai/tokens.json）必须与源码一致
+run "ai-contract" $PY 05-audit/gen-ai-contract.py --check
+# 令牌解析正确性：孤儿注释收尾符 / var() 引用缺失 / （full 模式）浏览器复核
+run "token-parse" $PY 05-audit/token-parse-gate.py --no-browser
+# 机器可读契约层：schema 只用了实现过的关键字 / Profile 有鉴别力 / Patch 可回放
+run "ai-layer"  node 05-audit/ai-layer-gate.js
+# 规范三层分离：Invariant 层不许被 Contract / Guidance 污染
+run "invariant"  $PY 05-audit/invariant-gate.py
+# 兼容性 Benchmark：参考解法的十类编辑意图必须全部成立
+run "benchmark"  node benchmark/run.js
+# 核心不得混入呈现形态（slide/deck）语义 —— PPT 的事在 adapters/presentation/
+run "core-boundary" $PY 05-audit/core-boundary-gate.py
+# 级联分层就绪：`@layer` 计数 + 每处 !important 必须能归类（切层前的前提门控）
+run "cascade-layer" $PY 05-audit/cascade-layer-gate.py
 run "start-here" $PY 05-audit/fix-start-here.py --check
 run "content-hygiene" $PY 05-audit/hygiene.py
 run "shot-path"  $PY 05-audit/shot-path.py
@@ -141,6 +160,10 @@ echo ""
 echo "=== 浏览器门禁（需要 127.0.0.1:8000）==="
 echo ""
 echo "=== 浏览器门禁 ==="
+# 令牌在真浏览器里的计算值复核（fast 模式只跑静态的一半，这里补全）
+run "token-parse-b" $PY 05-audit/token-parse-gate.py
+# 明暗四种组合在真浏览器里成立，且**不加载 theme-toggle.js**
+run "theme-css"   node 05-audit/theme-css-gate.js
 run "accent-gate" $PY 05-audit/accent-gate.py
 run "perf-gate"   node 05-audit/perf-gate.js
 run "size-budget" $PY 05-audit/size-baseline.py

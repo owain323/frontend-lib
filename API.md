@@ -92,23 +92,43 @@ window.Overlay.dialog({ title: '确认', actions: [...] });
 | 属性 | 状态 | 含义 |
 |---|---|---|
 | `data-state` | ✅ | **状态表达的唯一公开方式**。取值见下表。样式与测试都读它 |
-| `data-state` 的取值 | ✅ | `open` / `closed` / `active` / `inactive` / `checked` / `unchecked` / `disabled` / `loading` / `selected` |
+| `data-state` 的取值 | ✅ | `open` / `closed` / `active` / `disabled` / `leaving` / `success` / `valid` / `shown` |
+| `data-dirty` | ✅ | 字段"已被校验过"（与 `data-state` **正交**：可同时 dirty 且 invalid） |
+| `data-scroll-locked` | 🟡 | `<body>` 上：浮层打开期间锁滚动（读它，不要自己加） |
 | `data-value` | 🟡 | 当前值 |
 | `data-place` | 🟡 | 浮层位置 |
-| `is-open` / `is-active` / `is-disabled` / `is-leaving` / `is-locked` | ⛔ | **内部实现**，请改用 `data-state`。随时可能变 |
 | `data-open` | 🟡 | 展开状态（旧写法，新代码用 `data-state`）|
 | `data-validate` | 🟡 | 表单校验相关标记 |
 
+🔴 **`is-*` 状态类名已移除（0.4.0 起）**
+
+过去 CSS 里同时写着 `.tooltip.is-open, .tooltip[data-state="open"]` 两套，
+但 JS 只加前者 ⇒ **文档让你用 `data-state`，实际它从来没被设过**。
+这是"承诺了一个不工作的 API"，比不做更糟。
+
+0.4.0 起统一为 `data-state`，`.is-*` 选择器全部删除。迁移是逐字替换：
+
+| 旧 | 新 |
+|---|---|
+| `.tooltip.is-open` | `.tooltip[data-state="open"]` |
+| `.combo__opt.is-active` | `.combo__opt[data-state="active"]` |
+| `.combo__field.is-disabled` | `.combo__field[data-state="disabled"]` |
+| `.drawer.is-leaving` / `.toast.is-leaving` | `[data-state="leaving"]` |
+| `body.is-locked` | `body[data-scroll-locked]` |
+| `.btn.is-success` | `.btn[data-state="success"]` |
+| `.field__input.is-valid` | `.field__input[data-state="valid"]` |
+| `.state--delayed.is-shown` | `.state--delayed[data-state="shown"]` |
+| `.field.is-dirty` | `.field[data-dirty]` |
+
 ⛔ **内部实现（别依赖）**：
 - 以 `_` 或 `js-` 开头的类名与属性
-- `is-*` 状态类名（请用 `data-state`）
 - 未列出的 `data-*`
 - DOM 层级与子元素顺序（除非本文件明确写了）
 
 ### 状态表达为什么要统一
 
 同一件事**只该有一种表达方式**。如果 `open` 同时用
-`data-open` / `.is-open` / `[aria-expanded]` 三处表示，
+`data-open` / `data-state` / `[aria-expanded]` 三处表示，
 改一处就会漏另一处 —— 第三方扩展成本极高。
 
 | 谁读 | 读什么 |
@@ -129,7 +149,11 @@ window.Overlay.dialog({ title: '确认', actions: [...] });
 | `.badge` `.card` `.list` `.input` | 🟡 | 基础类名 |
 | `<块名>__<元素>`（如 `.btn__label`）| ✅ | BEM 元素 |
 | `<块名>--<变体>`（如 `.btn--primary`）| ✅ | BEM 变体 |
-| `<块名>--<状态>`（如 `.is-disabled`）| ⛔ | 状态类名属**内部**。新代码请写 `[data-state="disabled"]` |
+| `<块名>--<状态>`（如 `.btn--primary`）| ✅ | BEM 变体（**静态**外观差异） |
+| 「当前处于哪个状态」 | ✅ | 一律写 **属性** `[data-state="…"]`，**不写状态类名** |
+
+⚠️ 区分两者：变体是"它长什么样"（静态，类名）；状态是"它现在怎么样"（会变，属性）。
+   状态写成类名的代价见 `docs/INVARIANT.md` I-8：类没了 CSS 规则还在 ⇒ 静默错乱、无报错。
 
 ### ⚠️ 命名空间冲突
 

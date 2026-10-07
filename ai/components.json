@@ -1,0 +1,1395 @@
+{
+  "schemaVersion": "1.0.0",
+  "generatedBy": "05-audit/gen-ai-contract.py",
+  "libraryVersion": "0.4.0",
+  "$comment": "机器可读的组件契约。slots = BEM 元素名（在本库里元素名就是插槽名），states.enum = 组件会在 DOM 上写出的 data-* 取值，states.legacyClass = 仍未收敛到 data 属性的历史状态类（INVARIANT I-8 未达标）。",
+  "maturityCriteria": {
+    "alpha": "缺 demo.html 或缺 05-audit 下的专属门禁 ⇒ 还没被机器验证过，不要用",
+    "beta": "有 demo + 专属门禁，但状态仍用 .is-* class 表达 ⇒ 违反 INVARIANT I-8（状态不在 DOM 上），改坏了 JS 会静默错乱",
+    "stable": "有 demo + 专属门禁 + 状态全部用 data-* 属性表达 ⇒ I-8 达标，可放心依赖",
+    "$note": "成熟度是【计算出来的】，不是拍的。给某个组件手工升级 stable 而它还有 .is-* ⇒ 门禁会红。"
+  },
+  "summary": {
+    "total": 27,
+    "byMaturity": {
+      "stable": 27
+    },
+    "byTier": {
+      "primitive": 13,
+      "pattern": 13,
+      "recipe": 1
+    }
+  },
+  "components": [
+    {
+      "id": "accordion",
+      "tier": "pattern",
+      "purpose": "可折叠分组",
+      "rootClass": "accordion",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true
+      },
+      "gates": [
+        "accordion-contract.js"
+      ],
+      "files": {
+        "css": "03-patterns/accordion/accordion.css",
+        "js": "03-patterns/accordion/accordion.js",
+        "demo": "03-patterns/accordion/demo.html"
+      },
+      "slots": [
+        "accordion__heading",
+        "accordion__hint",
+        "accordion__item",
+        "accordion__label",
+        "accordion__marker",
+        "accordion__panel",
+        "accordion__panel-inner",
+        "accordion__trigger"
+      ],
+      "variants": [
+        "accordion--flush"
+      ],
+      "states": {
+        "enum": {
+          "state": [
+            "closed",
+            "open"
+          ]
+        },
+        "boolean": [],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [
+          "button",
+          "region"
+        ],
+        "attrs": [
+          "disabled",
+          "expanded",
+          "hidden",
+          "labelledby"
+        ]
+      },
+      "usesOtherNamespaces": [],
+      "global": "Accordion",
+      "behaviorRef": "API.md#accordion"
+    },
+    {
+      "id": "content",
+      "tier": "pattern",
+      "purpose": "长文排版容器（标题/段落/列表/引用/代码）",
+      "rootClass": "prose",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true
+      },
+      "gates": [
+        "content-check.js"
+      ],
+      "files": {
+        "css": "03-patterns/content/content.css",
+        "js": null,
+        "demo": "03-patterns/content/demo.html"
+      },
+      "slots": [],
+      "variants": [],
+      "states": {
+        "enum": {},
+        "boolean": [],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [],
+        "attrs": []
+      },
+      "usesOtherNamespaces": [],
+      "global": null,
+      "behaviorRef": "API.md#content"
+    },
+    {
+      "id": "drawer",
+      "tier": "pattern",
+      "purpose": "侧边抽屉，含遮罩",
+      "rootClass": "drawer",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true
+      },
+      "gates": [
+        "drawer-check.js"
+      ],
+      "files": {
+        "css": "03-patterns/drawer/drawer.css",
+        "js": "03-patterns/drawer/drawer.js",
+        "demo": "03-patterns/drawer/demo.html"
+      },
+      "slots": [
+        "drawer__body",
+        "drawer__close",
+        "drawer__foot",
+        "drawer__head",
+        "drawer__title"
+      ],
+      "variants": [
+        "drawer--bottom",
+        "drawer--left",
+        "drawer--right",
+        "drawer--top"
+      ],
+      "states": {
+        "enum": {
+          "state": [
+            "leaving"
+          ]
+        },
+        "boolean": [],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [],
+        "attrs": []
+      },
+      "usesOtherNamespaces": [],
+      "global": null,
+      "behaviorRef": "API.md#drawer"
+    },
+    {
+      "id": "dropdown",
+      "tier": "pattern",
+      "purpose": "下拉菜单",
+      "rootClass": "dd",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true
+      },
+      "gates": [
+        "dropdown-check.js"
+      ],
+      "files": {
+        "css": "03-patterns/dropdown/dropdown.css",
+        "js": "03-patterns/dropdown/dropdown.js",
+        "demo": "03-patterns/dropdown/demo.html"
+      },
+      "slots": [
+        "dd__btn",
+        "dd__caret",
+        "dd__check",
+        "dd__item",
+        "dd__menu",
+        "dd__sep"
+      ],
+      "variants": [
+        "dd--end"
+      ],
+      "states": {
+        "enum": {
+          "state": [
+            "active"
+          ]
+        },
+        "boolean": [],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [
+          "menu",
+          "menuitem",
+          "separator"
+        ],
+        "attrs": [
+          "disabled",
+          "expanded"
+        ]
+      },
+      "usesOtherNamespaces": [],
+      "global": null,
+      "behaviorRef": "API.md#dropdown"
+    },
+    {
+      "id": "form-validation",
+      "tier": "pattern",
+      "purpose": "表单校验反馈与错误汇总",
+      "rootClass": "form",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true
+      },
+      "gates": [
+        "form-validation-check.js"
+      ],
+      "files": {
+        "css": "03-patterns/form-validation/form-validation.css",
+        "js": null,
+        "demo": "03-patterns/form-validation/demo.html"
+      },
+      "slots": [
+        "form__actions",
+        "form__notice",
+        "form__row",
+        "form__summary",
+        "form__summary-link",
+        "form__summary-title"
+      ],
+      "variants": [
+        "form--has-summary"
+      ],
+      "states": {
+        "enum": {},
+        "boolean": [
+          "dirty"
+        ],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [
+          "alert"
+        ],
+        "attrs": [
+          "describedby",
+          "hidden"
+        ]
+      },
+      "usesOtherNamespaces": [
+        "field__checking-hint",
+        "field__error",
+        "field__input"
+      ],
+      "global": null,
+      "behaviorRef": "API.md#form-validation"
+    },
+    {
+      "id": "list",
+      "tier": "pattern",
+      "purpose": "键值列表/条目列表",
+      "rootClass": "list",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true
+      },
+      "gates": [
+        "list-check.js"
+      ],
+      "files": {
+        "css": "03-patterns/list/list.css",
+        "js": "03-patterns/list/flip.js",
+        "demo": "03-patterns/list/demo.html"
+      },
+      "slots": [
+        "list__actions",
+        "list__item",
+        "list__main",
+        "list__meta",
+        "list__note",
+        "list__title",
+        "list__value",
+        "list__value--down",
+        "list__value--up"
+      ],
+      "variants": [],
+      "states": {
+        "enum": {},
+        "boolean": [],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [
+          "list"
+        ],
+        "attrs": [
+          "hidden"
+        ]
+      },
+      "usesOtherNamespaces": [],
+      "global": null,
+      "behaviorRef": "API.md#list"
+    },
+    {
+      "id": "nav",
+      "tier": "pattern",
+      "purpose": "顶部导航与目录",
+      "rootClass": "nav",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true
+      },
+      "gates": [
+        "nav-check.js"
+      ],
+      "files": {
+        "css": "03-patterns/nav/nav.css",
+        "js": "03-patterns/nav/toc.js",
+        "demo": "03-patterns/nav/demo.html"
+      },
+      "slots": [
+        "nav__brand",
+        "nav__inner",
+        "nav__link",
+        "nav__list",
+        "nav__scrim",
+        "nav__toggle"
+      ],
+      "variants": [],
+      "states": {
+        "enum": {
+          "state": [
+            "open"
+          ]
+        },
+        "boolean": [],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [],
+        "attrs": [
+          "controls",
+          "current",
+          "expanded",
+          "label"
+        ]
+      },
+      "usesOtherNamespaces": [
+        "toc__link",
+        "toc__list",
+        "toc__title"
+      ],
+      "global": null,
+      "behaviorRef": "API.md#nav"
+    },
+    {
+      "id": "overlay",
+      "tier": "pattern",
+      "purpose": "吐司提示与模态遮罩",
+      "rootClass": "toast",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true
+      },
+      "gates": [
+        "overlay-check.js"
+      ],
+      "files": {
+        "css": "03-patterns/overlay/overlay.css",
+        "js": "03-patterns/overlay/overlay.js",
+        "demo": "03-patterns/overlay/demo.html"
+      },
+      "slots": [
+        "toast__body",
+        "toast__close",
+        "toast__desc",
+        "toast__timer",
+        "toast__title"
+      ],
+      "variants": [
+        "toast--error",
+        "toast--success",
+        "toast--warning"
+      ],
+      "states": {
+        "enum": {
+          "state": [
+            "leaving"
+          ]
+        },
+        "boolean": [
+          "scroll-locked"
+        ],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [
+          "status"
+        ],
+        "attrs": []
+      },
+      "usesOtherNamespaces": [
+        "dialog__actions",
+        "dialog__desc",
+        "dialog__title"
+      ],
+      "global": null,
+      "behaviorRef": "API.md#overlay"
+    },
+    {
+      "id": "pagination",
+      "tier": "pattern",
+      "purpose": "分页控件",
+      "rootClass": "pagination",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true
+      },
+      "gates": [
+        "pagination-check.js"
+      ],
+      "files": {
+        "css": "03-patterns/pagination/pagination.css",
+        "js": "03-patterns/pagination/pagination.js",
+        "demo": "03-patterns/pagination/demo.html"
+      },
+      "slots": [
+        "pagination__ellipsis",
+        "pagination__item",
+        "pagination__link",
+        "pagination__list",
+        "pagination__live",
+        "pagination__sr",
+        "pagination__status"
+      ],
+      "variants": [],
+      "states": {
+        "enum": {},
+        "boolean": [],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [
+          "navigation",
+          "region"
+        ],
+        "attrs": [
+          "controls",
+          "current",
+          "disabled",
+          "label",
+          "live"
+        ]
+      },
+      "usesOtherNamespaces": [],
+      "global": "Pagination",
+      "behaviorRef": "API.md#pagination"
+    },
+    {
+      "id": "states",
+      "tier": "pattern",
+      "purpose": "空/加载/错误/成功四种整块状态",
+      "rootClass": "state",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true
+      },
+      "gates": [
+        "states-check.js"
+      ],
+      "files": {
+        "css": "03-patterns/states/states.css",
+        "js": null,
+        "demo": "03-patterns/states/demo.html"
+      },
+      "slots": [
+        "state__action",
+        "state__desc",
+        "state__detail",
+        "state__icon",
+        "state__title"
+      ],
+      "variants": [
+        "state--delayed",
+        "state--empty",
+        "state--error",
+        "state--loading"
+      ],
+      "states": {
+        "enum": {
+          "state": [
+            "shown"
+          ]
+        },
+        "boolean": [],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [
+          "alert",
+          "group",
+          "status"
+        ],
+        "attrs": [
+          "busy",
+          "hidden",
+          "label",
+          "live",
+          "pressed"
+        ]
+      },
+      "usesOtherNamespaces": [],
+      "global": null,
+      "behaviorRef": "API.md#states"
+    },
+    {
+      "id": "tabs",
+      "tier": "pattern",
+      "purpose": "选项卡切换",
+      "rootClass": "tabs",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true
+      },
+      "gates": [
+        "tabs-contract.js"
+      ],
+      "files": {
+        "css": "03-patterns/tabs/tabs.css",
+        "js": "03-patterns/tabs/tabs.js",
+        "demo": "03-patterns/tabs/demo.html"
+      },
+      "slots": [
+        "tabs__list",
+        "tabs__panel",
+        "tabs__panel--enter",
+        "tabs__tab"
+      ],
+      "variants": [
+        "tabs--manual",
+        "tabs--vertical"
+      ],
+      "states": {
+        "enum": {},
+        "boolean": [],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [
+          "tab",
+          "tablist",
+          "tabpanel"
+        ],
+        "attrs": [
+          "controls",
+          "disabled",
+          "label",
+          "labelledby",
+          "orientation",
+          "selected"
+        ]
+      },
+      "usesOtherNamespaces": [],
+      "global": "Tabs",
+      "behaviorRef": "API.md#tabs"
+    },
+    {
+      "id": "tooltip",
+      "tier": "pattern",
+      "purpose": "悬停/聚焦提示",
+      "rootClass": "tooltip",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true
+      },
+      "gates": [
+        "tooltip-check.js"
+      ],
+      "files": {
+        "css": "03-patterns/tooltip/tooltip.css",
+        "js": "03-patterns/tooltip/tooltip.js",
+        "demo": "03-patterns/tooltip/demo.html"
+      },
+      "slots": [],
+      "variants": [
+        "tooltip--bottom",
+        "tooltip--inset-inline-end",
+        "tooltip--inset-inline-start",
+        "tooltip--top"
+      ],
+      "states": {
+        "enum": {
+          "state": [
+            "open"
+          ]
+        },
+        "boolean": [
+          "tooltip"
+        ],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [],
+        "attrs": []
+      },
+      "usesOtherNamespaces": [],
+      "global": null,
+      "behaviorRef": "API.md#tooltip"
+    },
+    {
+      "id": "tree",
+      "tier": "pattern",
+      "purpose": "可展开树形结构",
+      "rootClass": "tree",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true
+      },
+      "gates": [
+        "tree-check.js"
+      ],
+      "files": {
+        "css": "03-patterns/tree/tree.css",
+        "js": "03-patterns/tree/tree.js",
+        "demo": "03-patterns/tree/demo.html"
+      },
+      "slots": [
+        "tree__count",
+        "tree__item",
+        "tree__label",
+        "tree__marker",
+        "tree__node"
+      ],
+      "variants": [],
+      "states": {
+        "enum": {},
+        "boolean": [],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [
+          "group"
+        ],
+        "attrs": [
+          "expanded",
+          "selected"
+        ]
+      },
+      "usesOtherNamespaces": [],
+      "global": null,
+      "behaviorRef": "API.md#tree"
+    },
+    {
+      "id": "badge",
+      "tier": "primitive",
+      "purpose": "状态标签：计数、分类、结果标记",
+      "rootClass": "badge",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true
+      },
+      "gates": [
+        "badge-check.js"
+      ],
+      "files": {
+        "css": "02-primitives/badge/badge.css",
+        "js": null,
+        "demo": "02-primitives/badge/demo.html"
+      },
+      "slots": [],
+      "variants": [
+        "badge--clickable",
+        "badge--danger",
+        "badge--info",
+        "badge--lg",
+        "badge--neutral",
+        "badge--solid-danger",
+        "badge--solid-success",
+        "badge--solid-warning",
+        "badge--success",
+        "badge--warning"
+      ],
+      "states": {
+        "enum": {},
+        "boolean": [],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [],
+        "attrs": []
+      },
+      "usesOtherNamespaces": [],
+      "global": null,
+      "behaviorRef": "API.md#badge"
+    },
+    {
+      "id": "button",
+      "tier": "primitive",
+      "purpose": "动作触发：主/次/危险/纯文字四档",
+      "rootClass": "btn",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true
+      },
+      "gates": [
+        "button-check.js"
+      ],
+      "files": {
+        "css": "02-primitives/button/button.css",
+        "js": null,
+        "demo": "02-primitives/button/demo.html"
+      },
+      "slots": [
+        "btn__label",
+        "btn__spinner"
+      ],
+      "variants": [
+        "btn--block",
+        "btn--danger",
+        "btn--ghost",
+        "btn--icon",
+        "btn--lg",
+        "btn--md",
+        "btn--primary",
+        "btn--secondary",
+        "btn--sm"
+      ],
+      "states": {
+        "enum": {
+          "state": [
+            "success"
+          ]
+        },
+        "boolean": [],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [],
+        "attrs": [
+          "busy",
+          "disabled"
+        ]
+      },
+      "usesOtherNamespaces": [],
+      "global": null,
+      "behaviorRef": "API.md#button"
+    },
+    {
+      "id": "card",
+      "tier": "primitive",
+      "purpose": "内容容器：媒体+正文+操作区三段",
+      "rootClass": "card",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true
+      },
+      "gates": [
+        "card-check.js"
+      ],
+      "files": {
+        "css": "02-primitives/card/card.css",
+        "js": null,
+        "demo": "02-primitives/card/demo.html"
+      },
+      "slots": [
+        "card__body",
+        "card__desc",
+        "card__footer",
+        "card__link",
+        "card__media",
+        "card__title"
+      ],
+      "variants": [
+        "card--compact",
+        "card--elevated",
+        "card--flat",
+        "card--interactive",
+        "card--linked",
+        "card--row",
+        "card--selected"
+      ],
+      "states": {
+        "enum": {},
+        "boolean": [],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [
+          "button",
+          "checkbox",
+          "switch"
+        ],
+        "attrs": []
+      },
+      "usesOtherNamespaces": [],
+      "global": null,
+      "behaviorRef": "API.md#card"
+    },
+    {
+      "id": "choice",
+      "tier": "primitive",
+      "purpose": "单选/多选/原生 select 外观的统一控件",
+      "rootClass": "choice",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true
+      },
+      "gates": [
+        "choice-check.js"
+      ],
+      "files": {
+        "css": "02-primitives/choice/choice.css",
+        "js": null,
+        "demo": "02-primitives/choice/demo.html"
+      },
+      "slots": [
+        "choice__group",
+        "choice__hint",
+        "choice__input",
+        "choice__label",
+        "choice__legend",
+        "choice__mark",
+        "choice__options"
+      ],
+      "variants": [
+        "choice--checkbox",
+        "choice--radio"
+      ],
+      "states": {
+        "enum": {},
+        "boolean": [],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [],
+        "attrs": [
+          "describedby",
+          "hidden"
+        ]
+      },
+      "usesOtherNamespaces": [
+        "select__arrow",
+        "select__control",
+        "select__control--auto"
+      ],
+      "global": null,
+      "behaviorRef": "API.md#choice"
+    },
+    {
+      "id": "combobox",
+      "tier": "primitive",
+      "purpose": "可搜索 + 可多选标签的输入控件",
+      "rootClass": "combo",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true
+      },
+      "gates": [
+        "combobox-check.js"
+      ],
+      "files": {
+        "css": "02-primitives/combobox/combobox.css",
+        "js": "02-primitives/combobox/combobox.js",
+        "demo": "02-primitives/combobox/demo.html"
+      },
+      "slots": [
+        "combo__empty",
+        "combo__field",
+        "combo__input",
+        "combo__list",
+        "combo__opt",
+        "combo__tag",
+        "combo__tag-del",
+        "combo__tag-text",
+        "combo__tags"
+      ],
+      "variants": [],
+      "states": {
+        "enum": {
+          "state": [
+            "active",
+            "disabled"
+          ]
+        },
+        "boolean": [],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [
+          "option",
+          "presentation"
+        ],
+        "attrs": [
+          "disabled",
+          "label",
+          "selected"
+        ]
+      },
+      "usesOtherNamespaces": [],
+      "global": null,
+      "behaviorRef": "API.md#combobox"
+    },
+    {
+      "id": "date-range",
+      "tier": "primitive",
+      "purpose": "日期区间选择，含预设快捷范围",
+      "rootClass": "drange",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true
+      },
+      "gates": [
+        "date-range-check.js"
+      ],
+      "files": {
+        "css": "02-primitives/date-range/date-range.css",
+        "js": "02-primitives/date-range/date-range.js",
+        "demo": "02-primitives/date-range/demo.html"
+      },
+      "slots": [
+        "drange__clear",
+        "drange__error",
+        "drange__field",
+        "drange__input",
+        "drange__label",
+        "drange__preset",
+        "drange__presets",
+        "drange__sep",
+        "drange__summary"
+      ],
+      "variants": [
+        "drange--disabled"
+      ],
+      "states": {
+        "enum": {},
+        "boolean": [],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [
+          "alert"
+        ],
+        "attrs": [
+          "hidden",
+          "invalid",
+          "live",
+          "pressed"
+        ]
+      },
+      "usesOtherNamespaces": [],
+      "global": null,
+      "behaviorRef": "API.md#date-range"
+    },
+    {
+      "id": "input",
+      "tier": "primitive",
+      "purpose": "文本输入及其标签/帮助/错误三件套",
+      "rootClass": "field",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true
+      },
+      "gates": [
+        "input-check.js"
+      ],
+      "files": {
+        "css": "02-primitives/input/input.css",
+        "js": null,
+        "demo": "02-primitives/input/demo.html"
+      },
+      "slots": [
+        "field__error",
+        "field__hint",
+        "field__input",
+        "field__input--sm",
+        "field__input--textarea",
+        "field__label",
+        "field__req"
+      ],
+      "variants": [
+        "field--row"
+      ],
+      "states": {
+        "enum": {
+          "state": [
+            "valid"
+          ]
+        },
+        "boolean": [],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [
+          "alert"
+        ],
+        "attrs": [
+          "describedby",
+          "hidden",
+          "invalid"
+        ]
+      },
+      "usesOtherNamespaces": [],
+      "global": null,
+      "behaviorRef": "API.md#input"
+    },
+    {
+      "id": "popover",
+      "tier": "primitive",
+      "purpose": "锚定到触发元素的浮层",
+      "rootClass": "popover",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true
+      },
+      "gates": [
+        "popover-check.js"
+      ],
+      "files": {
+        "css": "02-primitives/popover/popover.css",
+        "js": "02-primitives/popover/popover.js",
+        "demo": "02-primitives/popover/demo.html"
+      },
+      "slots": [
+        "popover__arrow",
+        "popover__desc",
+        "popover__footer",
+        "popover__title"
+      ],
+      "variants": [
+        "popover--bottom",
+        "popover--end",
+        "popover--start",
+        "popover--top"
+      ],
+      "states": {
+        "enum": {
+          "open": [
+            "true"
+          ]
+        },
+        "boolean": [],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [],
+        "attrs": [
+          "hidden"
+        ]
+      },
+      "usesOtherNamespaces": [],
+      "global": null,
+      "behaviorRef": "API.md#popover"
+    },
+    {
+      "id": "progress",
+      "tier": "primitive",
+      "purpose": "进度条与进度环",
+      "rootClass": "progress",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true
+      },
+      "gates": [
+        "progress-check.js"
+      ],
+      "files": {
+        "css": "02-primitives/progress/progress.css",
+        "js": null,
+        "demo": "02-primitives/progress/demo.html"
+      },
+      "slots": [
+        "progress__bar"
+      ],
+      "variants": [
+        "progress--danger",
+        "progress--indeterminate",
+        "progress--lg",
+        "progress--sm",
+        "progress--success",
+        "progress--warning"
+      ],
+      "states": {
+        "enum": {},
+        "boolean": [],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [
+          "progressbar"
+        ],
+        "attrs": [
+          "busy",
+          "hidden",
+          "label",
+          "valuemax",
+          "valuemin",
+          "valuenow"
+        ]
+      },
+      "usesOtherNamespaces": [
+        "progress-ring__label",
+        "progress-steps__seg",
+        "progress-steps__seg--current",
+        "progress-steps__seg--done"
+      ],
+      "global": null,
+      "behaviorRef": "API.md#progress"
+    },
+    {
+      "id": "select",
+      "tier": "primitive",
+      "purpose": "自定义下拉选择（非原生）",
+      "rootClass": "select",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true
+      },
+      "gates": [
+        "select-check.js"
+      ],
+      "files": {
+        "css": "02-primitives/select/select.css",
+        "js": "02-primitives/select/select.js",
+        "demo": "02-primitives/select/demo.html"
+      },
+      "slots": [
+        "select__btn",
+        "select__caret",
+        "select__check",
+        "select__list",
+        "select__opt",
+        "select__opt-text",
+        "select__value",
+        "select__value--placeholder"
+      ],
+      "variants": [
+        "select--block",
+        "select--end"
+      ],
+      "states": {
+        "enum": {
+          "state": [
+            "active"
+          ]
+        },
+        "boolean": [],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [
+          "option"
+        ],
+        "attrs": [
+          "disabled",
+          "expanded",
+          "selected"
+        ]
+      },
+      "usesOtherNamespaces": [],
+      "global": null,
+      "behaviorRef": "API.md#select"
+    },
+    {
+      "id": "separator",
+      "tier": "primitive",
+      "purpose": "分隔线，可带中间文字",
+      "rootClass": "separator",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true
+      },
+      "gates": [
+        "separator-check.js"
+      ],
+      "files": {
+        "css": "02-primitives/separator/separator.css",
+        "js": null,
+        "demo": "02-primitives/separator/demo.html"
+      },
+      "slots": [],
+      "variants": [
+        "separator--both",
+        "separator--label",
+        "separator--tight"
+      ],
+      "states": {
+        "enum": {},
+        "boolean": [],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [
+          "separator"
+        ],
+        "attrs": [
+          "label"
+        ]
+      },
+      "usesOtherNamespaces": [],
+      "global": null,
+      "behaviorRef": "API.md#separator"
+    },
+    {
+      "id": "skeleton",
+      "tier": "primitive",
+      "purpose": "加载占位骨架",
+      "rootClass": "skeleton",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true
+      },
+      "gates": [
+        "skeleton-check.js"
+      ],
+      "files": {
+        "css": "02-primitives/skeleton/skeleton.css",
+        "js": null,
+        "demo": "02-primitives/skeleton/demo.html"
+      },
+      "slots": [],
+      "variants": [
+        "skeleton--block",
+        "skeleton--circle",
+        "skeleton--text"
+      ],
+      "states": {
+        "enum": {},
+        "boolean": [],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [],
+        "attrs": [
+          "busy",
+          "hidden"
+        ]
+      },
+      "usesOtherNamespaces": [
+        "skeleton-list__row"
+      ],
+      "global": null,
+      "behaviorRef": "API.md#skeleton"
+    },
+    {
+      "id": "switch",
+      "tier": "primitive",
+      "purpose": "开关切换",
+      "rootClass": "switch",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true
+      },
+      "gates": [
+        "switch-contract.js",
+        "switch-geometry.js"
+      ],
+      "files": {
+        "css": "02-primitives/switch/switch.css",
+        "js": null,
+        "demo": "02-primitives/switch/demo.html"
+      },
+      "slots": [
+        "switch__input",
+        "switch__label",
+        "switch__label--sr",
+        "switch__thumb",
+        "switch__track"
+      ],
+      "variants": [
+        "switch--disabled",
+        "switch--lg"
+      ],
+      "states": {
+        "enum": {},
+        "boolean": [],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [
+          "switch"
+        ],
+        "attrs": []
+      },
+      "usesOtherNamespaces": [],
+      "global": null,
+      "behaviorRef": "API.md#switch"
+    },
+    {
+      "id": "table",
+      "tier": "recipe",
+      "purpose": "数据表格：排序/加载/空/错误四态",
+      "rootClass": "table",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true
+      },
+      "gates": [
+        "table-check.js"
+      ],
+      "files": {
+        "css": "04-recipes/table/table.css",
+        "js": null,
+        "demo": "04-recipes/table/demo.html"
+      },
+      "slots": [
+        "table__bar",
+        "table__empty",
+        "table__error",
+        "table__loading",
+        "table__sort"
+      ],
+      "variants": [
+        "table--compact"
+      ],
+      "states": {
+        "enum": {},
+        "boolean": [],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [
+          "alert",
+          "status"
+        ],
+        "attrs": [
+          "label",
+          "live",
+          "sort"
+        ]
+      },
+      "usesOtherNamespaces": [],
+      "global": null,
+      "behaviorRef": "API.md#table"
+    }
+  ]
+}
