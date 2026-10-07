@@ -1,0 +1,127 @@
+
+
+
+
+
+html {
+  scrollbar-width: thin;                 
+  scrollbar-color: var(--scrollbar-thumb) transparent;  
+}
+
+
+.scroll-y {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;     
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+  scrollbar-gutter: stable;              
+}
+
+.scroll-x {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+  scrollbar-gutter: stable;
+}
+
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+
+
+html::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+
+html::-webkit-scrollbar-track {
+  
+  background: transparent;
+}
+
+
+html::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border: 3px solid transparent;         
+  background-clip: content-box;          
+  border-radius: var(--scrollbar-radius);
+}
+
+html::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hov);
+  background-clip: content-box;
+}
+
+
+html::-webkit-scrollbar-button {
+  display: none;
+}
+
+
+html::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.scroll-y::-webkit-scrollbar,
+.scroll-x::-webkit-scrollbar,
+.scroll-thin::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+
+.scroll-y::-webkit-scrollbar-track,
+.scroll-x::-webkit-scrollbar-track,
+.scroll-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scroll-y::-webkit-scrollbar-thumb,
+.scroll-x::-webkit-scrollbar-thumb,
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border: 3px solid transparent;
+  background-clip: content-box;
+  border-radius: var(--scrollbar-radius);
+}
+
+.scroll-y::-webkit-scrollbar-thumb:hover,
+.scroll-x::-webkit-scrollbar-thumb:hover,
+.scroll-thin::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hov);
+  background-clip: content-box;
+}
+
+.scroll-y::-webkit-scrollbar-button,
+.scroll-x::-webkit-scrollbar-button,
+.scroll-thin::-webkit-scrollbar-button {
+  display: none;
+}
+
+.scroll-y::-webkit-scrollbar-corner,
+.scroll-x::-webkit-scrollbar-corner,
+.scroll-thin::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+
+.scroll-thin::-webkit-scrollbar { width: var(--scrollbar-size-thin); }
+
+.scroll-thin::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+
+
+
+@media (hover: hover) and (pointer: fine) {
+  html::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hov);
+  background-clip: content-box; }
+
+  .scroll-y::-webkit-scrollbar-thumb:hover,
+.scroll-x::-webkit-scrollbar-thumb:hover,
+.scroll-thin::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hov);
+  background-clip: content-box; }
+}

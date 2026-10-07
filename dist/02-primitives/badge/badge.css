@@ -1,0 +1,88 @@
+
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: 2px var(--sp-2);
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  font-size: var(--fs-xs);
+  line-height: 1.5;              
+  white-space: nowrap;
+  vertical-align: baseline;
+  
+}
+
+
+.badge--neutral {
+  background: var(--surface-sunken);
+  border-color: var(--border-decor);
+  color: var(--text-secondary);
+}
+
+.badge--success {
+  background: var(--success-bg);
+  border-color: var(--success-bg);       
+  color: var(--success);
+}
+
+.badge--danger {
+  background: var(--danger-bg);
+  border-color: var(--danger-bg);
+  color: var(--danger);
+}
+
+.badge--warning {
+  background: var(--warning-bg);
+  border-color: var(--warning-bg);
+  color: var(--warning);
+}
+
+.badge--info {
+  background: var(--info-bg);
+  border-color: var(--info-bg);
+  color: var(--info);
+}
+
+
+
+.badge--clickable {
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+
+
+@media (hover: hover) and (pointer: fine) {
+  .badge--neutral.badge--clickable:hover { border-color: var(--text-tertiary); }
+  .badge--success.badge--clickable:hover  { border-color: var(--success); }
+  .badge--warning.badge--clickable:hover  { border-color: var(--warning); }
+  .badge--danger.badge--clickable:hover   { border-color: var(--danger); }
+  .badge--info.badge--clickable:hover     { border-color: var(--info); }
+}
+
+
+@media (forced-colors: active) {
+  .badge {
+    border-color: currentColor;         
+  }
+}
+
+
+.badge--lg {
+  font-size: var(--fs-sm);
+  padding: var(--sp-1) var(--sp-3);
+}
+
+
+.badge--solid-success { background: var(--success); color: var(--text-on-solid); }
+.badge--solid-danger  { background: var(--danger);  color: var(--text-on-solid); }
+.badge--solid-warning { background: var(--warning); color: var(--text-on-solid); }
+
+
+@media (prefers-color-scheme: dark) {
+  
+  .badge--solid-success { color: var(--text-on-solid); }
+  .badge--solid-danger  { color: var(--text-on-solid); }
+  .badge--solid-warning { color: var(--text-on-solid); }
+}

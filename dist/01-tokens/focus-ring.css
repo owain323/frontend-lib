@@ -1,0 +1,44 @@
+
+
+:root {
+  
+  --focus-ring-width:   2px;
+  --focus-ring-offset:  2px;
+  --focus-ring-color:   var(--accent);
+  --focus-ring-inset:   rgba(255, 255, 255, .9);   
+}
+
+
+:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+
+:root[data-theme="dark"] :focus-visible,
+:root[data-theme="dark"]:focus-visible,
+:root[data-theme-current="dark"] :focus-visible,
+:root[data-theme-current="dark"]:focus-visible {
+  outline-color: var(--accent-hover);
+  box-shadow: 0 0 0 1px var(--focus-ring-inset);
+}
+
+
+:where(a, button, input, select, textarea, [tabindex]) {
+  scroll-margin-block: var(--focus-ring-offset) 5vh;
+}
+
+
+@media (prefers-reduced-motion: no-preference) {
+  :where(a, button, [role="button"], [role="tab"]) {
+    transition: outline-offset var(--dur-fast) var(--ease-out);
+  }
+  :where(a, button, [role="button"], [role="tab"]):focus-visible {
+    outline-offset: calc(var(--focus-ring-offset) + 1px);
+  }
+}
+
+
+.focus-inset:focus-visible {
+  outline-offset: calc(var(--focus-ring-width) * -1);
+}

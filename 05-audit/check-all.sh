@@ -190,6 +190,8 @@ echo ""
 echo "=== 浏览器门禁 ==="
 # 令牌在真浏览器里的计算值复核（fast 模式只跑静态的一半，这里补全）
 run "token-parse-b" $PY 05-audit/token-parse-gate.py
+# dist 产物与源码必须被浏览器解析成同一份规则集（M1：手写压缩器的唯一可信判据）
+run "dist-parity" node 05-audit/dist-parity-check.js
 # 骨架杠杆：改一处全局令牌，**每一页**真的跟着变（改前实测 36 处不跟随）
 #   同时量窄屏横向溢出；反向控制：不引骨架的宿主页面必须纹丝不动
 run "skel-lever"  node 05-audit/skeleton-lever-check.js
@@ -198,6 +200,10 @@ run "theme-css"   node 05-audit/theme-css-gate.js
 run "accent-gate" $PY 05-audit/accent-gate.py
 run "perf-gate"   node 05-audit/perf-gate.js
 run "size-budget" $PY 05-audit/size-baseline.py
+# dist 新鲜度：源码 sha256 变了而 dist 没重建 ⇒ 红（防"交付出去的是旧产物"）
+run "dist-fresh"  $PY 05-audit/build-dist.py --check
+# 采纳成本表：表上每个数字都必须能用同一脚本复算（手改一个数字 ⇒ 红）
+run "dist-cost"   $PY 05-audit/dist-cost-gate.py
 run "switch"     node 05-audit/switch-contract.js
 run "tabs"       node 05-audit/tabs-contract.js
 run "accordion"  node 05-audit/accordion-contract.js
