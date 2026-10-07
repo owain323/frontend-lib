@@ -7,30 +7,19 @@
 <title>列表 · 增删的平滑过渡</title>
 <link rel="stylesheet" href="../../01-tokens/tokens.css">
 <link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/page.css">
 <link rel="stylesheet" href="../../02-primitives/button/button.css">
 <link rel="stylesheet" href="../../03-patterns/states/states.css">
 <link rel="stylesheet" href="list.css">
 <style>
-  body { margin: 0; background: var(--paper); color: var(--text-primary);
-         font: var(--fs-base)/var(--lh-base) system-ui, sans-serif; }
-  .wrap { max-width: 720px; margin: 0 auto; padding: var(--sp-7) var(--sp-5) var(--sp-8); }
-
-  h1 { font-size: var(--fs-2xl); line-height: 1.15; letter-spacing: -0.02em;
-       font-weight: 500; margin: 0 0 var(--sp-3); max-width: var(--measure-title); }
-  .standfirst { font-size: var(--fs-md); color: var(--text-secondary);
+.standfirst { font-size: var(--fs-md); color: var(--text-secondary);
                 max-width: var(--measure-lede); line-height: 1.55; margin: 0 0 var(--sp-6); }
-  h2 { font-size: var(--fs-base); font-weight: 500; margin: var(--sp-7) 0 var(--sp-3);
-       color: var(--text-secondary); }
-  p { max-width: var(--measure-prose); margin: 0 0 var(--sp-3); }
-  p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.65; }
-  code { font-family: var(--mono);   /* 原为写死的 ui-monospace，统一走令牌 */ font-size: 0.88em;
-         background: var(--surface-sunken); border: 1px solid var(--border-decor);
-         border-radius: 3px; padding: 0.05em 0.3em; }
-
-  .bar { display: flex; gap: var(--sp-2); flex-wrap: wrap; margin-bottom: var(--sp-4); }
+p { max-width: var(--measure-prose); margin: 0 0 var(--sp-3); }
+p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.65; }
+.bar { display: flex; gap: var(--sp-2); flex-wrap: wrap; margin-bottom: var(--sp-4); }
 </style>
 </head>
-<body>
+<body class="page page">
 <main class="wrap">">
 
   <h1>删掉一行，其余行不该瞬移</h1>

@@ -45,6 +45,9 @@
   display: flex;
   align-items: center;
   gap: 2px;                     /* 🔴 刻意小 —— 依据第 7 条 */
+  /* 🔴 必须。7 个页码 × 44px 命中区窄屏放不下一行（393px 下溢出 7px）。
+     父级 .pagination 早写了 flex-wrap，列表自己没写 ⇒ 父级换行、子级照样溢出。 */
+  flex-wrap: wrap;
   list-style: none;
   margin: 0;
   padding: 0;

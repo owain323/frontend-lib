@@ -56,11 +56,49 @@ import 'frontend-lib/patterns/overlay/overlay.js';
 
 把 `01-tokens/` 和需要的组件目录复制进你的项目即可。
 
+**4 · 要成套的页面（可选）** —— 页面骨架
+
+`01-tokens/page.css` 是**页面级**的骨架：页面框、内容列宽、标题阶梯、
+行内代码、说明块。**它是选配的**，只有写了 `class="page"` 的页面才生效：
+
+```html
+<link rel="stylesheet" href="01-tokens/tokens.css">
+<link rel="stylesheet" href="01-tokens/typography.css">
+<link rel="stylesheet" href="01-tokens/page.css">
+<!-- 骨架要放在组件 CSS 之前：组件靠"后来者同特异性胜出"覆盖骨架，不用 !important -->
+<link rel="stylesheet" href="02-primitives/button/button.css">
+...
+<body class="page">
+  <main class="wrap">      <!-- 内容列，宽度 = var(--measure-page) -->
+    <h1>标题</h1>
+    <p class="lede">导语</p>
+    <h2 class="rule-top">带分隔线的小节</h2>
+  </main>
+</body>
+```
+
+为什么是 `class="page"` 而不是直接给 `body` / `h1` 写规则：
+裸标签选择器的作用域是**整个文档**，会改掉宿主页面自己的同名元素。
+挂一个类名是**显式选配** —— 不写就不生效，库对宿主页面零副作用。
+
+要改全局观感，改这几处就够了，**不要在页面里再写一遍**：
+
+| 想改什么 | 改哪里 |
+|---|---|
+| 内容列宽 | `--measure-page`（所有 `.wrap` 一起变） |
+| 标题字号 / 字距 | `--fs-2xl` / `--tracking-title` |
+| 页面内边距 | `--sp-6`（页面框）、`--sp-4`（左右下限） |
+| 行内代码底色 | `--surface-sunken` |
+| 说明块 | `--surface-sunken`（`.note--warn` 用 `--warning-bg`） |
+
+页面里重写这些选择器**不会报错，但也不会生效**（会被 `.page` 前缀的定义
+以更高特异性静默盖掉，成为死声明）⇒ `05-audit/shell-gate.py` 会拦住它。
+
 ## 目录
 
 | 路径 | 内容 |
 |---|---|
-| `01-tokens/` | 设计令牌（颜色 / 间距 / 字号 / 圆角）与排版基线 |
+| `01-tokens/` | 设计令牌（颜色 / 间距 / 字号 / 圆角）、排版基线、页面骨架（`page.css`，选配） |
 | `02-primitives/` | 基础组件：button / input / select / combobox / date-range 等 |
 | `03-patterns/` | 复合模式：nav / tabs / overlay / list / tree / table 等 |
 | `04-recipes/` | 页面级示例 |

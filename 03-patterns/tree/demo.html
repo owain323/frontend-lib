@@ -8,33 +8,25 @@
 <link rel="stylesheet" href="../../01-tokens/tokens.css">
 <link rel="stylesheet" href="../../01-tokens/typography.css">
 <link rel="stylesheet" href="../../01-tokens/focus-ring.css">
+<link rel="stylesheet" href="../../01-tokens/page.css">
 <link rel="stylesheet" href="tree.css">
 <style>
-  body { margin: 0; padding: var(--sp-7) var(--sp-5); background: var(--paper); }
-  .wrap { max-width: 44rem; margin: 0 auto; }
-  h1 { font-size: var(--fs-2xl); margin: 0 0 var(--sp-2); }
-  h2 { font-size: var(--fs-lg); margin: var(--sp-7) 0 var(--sp-3); }
-  .note {
-    padding: var(--sp-3) var(--sp-4); margin: 0 0 var(--sp-4);
-    background: var(--surface-sunken); border-radius: var(--r-sm);
-    font-size: var(--fs-sm); color: var(--text-secondary); line-height: 1.6;
-  }
-  .kbd {
+.kbd {
     display: inline-block; padding: 1px 6px; margin: 0 2px;
     background: var(--surface); border: 1px solid var(--border-decor);
     border-radius: var(--r-xs); font-family: var(--font-mono, monospace);
     font-size: .9em;
   }
-  .log {
+.log {
     margin-top: var(--sp-4); padding: var(--sp-3);
     background: var(--surface-sunken); border-radius: var(--r-sm);
     font-family: var(--font-mono, monospace); font-size: var(--fs-xs);
     color: var(--text-secondary); min-height: 3em;
   }
-  .frame { padding: var(--sp-3); border: 1px solid var(--border-decor); border-radius: var(--r-md); }
+.frame { padding: var(--sp-3); border: 1px solid var(--border-decor); border-radius: var(--r-md); }
 </style>
 </head>
-<body>
+<body class="page page">
 <main class="wrap">
 
 <h1>tree · 树形视图</h1>

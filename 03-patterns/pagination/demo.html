@@ -10,45 +10,29 @@
 <link rel="stylesheet" href="../../01-tokens/typography.css">
 <link rel="stylesheet" href="../../01-tokens/focus-ring.css">
 <link rel="stylesheet" href="../../01-tokens/scrollbar.css">
+<link rel="stylesheet" href="../../01-tokens/page.css">
 <link rel="stylesheet" href="pagination.css">
 <style>
-  body {
-    min-height: 100vh; margin: 0;
-    padding: calc(env(safe-area-inset-top) + var(--sp-6))
-             max(env(safe-area-inset-right), var(--sp-4))
-             calc(env(safe-area-inset-bottom) + var(--sp-6))
-             max(env(safe-area-inset-left), var(--sp-4));
-    background: var(--paper); color: var(--text-primary);
-  }
-  .wrap { max-width: 720px; margin: 0 auto; }
-  h1 { font-size: var(--fs-2xl); line-height: var(--lh-tight); margin: 0 0 var(--sp-2); }
-  h2 { font-size: var(--fs-lg); margin: var(--sp-7) 0 var(--sp-3);
-       padding-top: var(--sp-4); border-top: 1px solid var(--border-decor); }
-  .lede { color: var(--text-secondary); margin: 0 0 var(--sp-4); }
-  .note { font-size: var(--fs-sm); color: var(--text-secondary);
-          margin: 0 0 var(--sp-3); max-width: 68ch; line-height: 1.75; }
-  code { font-family: var(--mono); font-size: .92em;
-         background: var(--surface-sunken); padding: 1px 5px; border-radius: 3px; }
-  table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); margin: 0 0 var(--sp-4); }
-  th, td { text-align: left; padding: var(--sp-2) var(--sp-3);
+table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); margin: 0 0 var(--sp-4); }
+th, td { text-align: left; padding: var(--sp-2) var(--sp-3);
            border-bottom: 1px solid var(--border-decor); }
-  th { font-size: var(--fs-xs); color: var(--text-secondary); font-weight: 500; }
-  .ok { color: var(--success); } .no { color: var(--danger); }
-
-  .demo-box { background: var(--surface); border: 1px solid var(--border-decor);
+th { font-size: var(--fs-xs); color: var(--text-secondary); font-weight: 500; }
+.ok { color: var(--success); }
+.no { color: var(--danger); }
+.demo-box { background: var(--surface); border: 1px solid var(--border-decor);
               border-radius: var(--r-md); padding: var(--sp-4); }
-  .rows { margin: 0 0 var(--sp-4); }
-  .row { display: flex; justify-content: space-between; gap: var(--sp-3);
+.rows { margin: 0 0 var(--sp-4); }
+.row { display: flex; justify-content: space-between; gap: var(--sp-3);
          padding: var(--sp-2) 0; border-bottom: 1px solid var(--border-decor);
          font-size: var(--fs-sm); }
-  .row:last-child { border-bottom: 0; }
-  .row .n { font-family: var(--mono); color: var(--text-tertiary); }
-  .row .v { font-family: var(--mono); font-variant-numeric: tabular-nums; }
-  .live-echo { margin: var(--sp-3) 0 0; font-size: var(--fs-xs); color: var(--text-tertiary); }
-  .live-echo b { color: var(--text-secondary); font-family: var(--mono); }
+.row:last-child { border-bottom: 0; }
+.row .n { font-family: var(--mono); color: var(--text-tertiary); }
+.row .v { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.live-echo { margin: var(--sp-3) 0 0; font-size: var(--fs-xs); color: var(--text-tertiary); }
+.live-echo b { color: var(--text-secondary); font-family: var(--mono); }
 </style>
 </head>
-<body>
+<body class="page page">
 <div class="wrap">
 
   <h1>分页</h1>
@@ -57,7 +41,7 @@
     <strong>USWDS</strong> + <strong>MDN</strong> + Component Gallery + Mironsoft（5 个来源口径一致）。
   </p>
 
-  <h2>1 · 基本用法</h2>
+  <h2 class="rule-top">1 · 基本用法</h2>
   <p class="note">
     共 <b>248 条</b>，每页 <b>20 条</b> ⇒ <b>13 页</b>。
     <br><b>键盘试试</b>：Tab 聚焦到分页后，<code>←</code> <code>→</code> 翻页，
@@ -83,7 +67,7 @@
     </p>
   </div>
 
-  <h2>2 · 结构：六条硬要求</h2>
+  <h2 class="rule-top">2 · 结构：六条硬要求</h2>
   <table>
     <tr><th>要求</th><th>为什么</th></tr>
     <tr><td>包在 <code>&lt;nav aria-label&gt;</code> 里</td>
@@ -106,21 +90,21 @@
     —— 那会<b>覆盖 ul 的列表语义</b>（Component Gallery 明确点出）。
   </p>
 
-  <h2>3 · 当前页仍然是按钮（不是纯文字）</h2>
+  <h2 class="rule-top">3 · 当前页仍然是按钮（不是纯文字）</h2>
   <p class="note">
     USWDS 的说明听起来反直觉：<b>当前页也要是链接/按钮</b>，
     只是用 <code>aria-current</code> 标记 + 视觉高亮。
     <br>理由：读屏器无论用户是<b>浏览</b>还是<b>Tab 焦点</b>，都能播报当前页。
   </p>
 
-  <h2>4 · 槽位固定 7 个（USWDS 的规定）</h2>
+  <h2 class="rule-top">4 · 槽位固定 7 个（USWDS 的规定）</h2>
   <p class="note">
     永远显示：首页 · 当前页 · 最后一页 · 当前页两侧各一页。
     有遗漏就显示省略号，<b>且总数固定</b> —— 翻页时按钮位置不跳。
     <br>试试拖到第 5 页、第 11 页看槽位怎么变。
   </p>
 
-  <h2>5 · 命中区</h2>
+  <h2 class="rule-top">5 · 命中区</h2>
   <p class="note">
     每个按钮 <b>44×44px</b>，走 <code>--sz-touch</code> 令牌
     （<b>WCAG 2.5.5 Level AAA</b> 的要求；AA 级的 2.5.8 只要 24px，本库按 AAA 做）。
@@ -128,7 +112,7 @@
     <b>过大的水平间距会让视力/行动受限的用户"扫不到"而跳过元素</b>。
   </p>
 
-  <h2>6 · 窄屏</h2>
+  <h2 class="rule-top">6 · 窄屏</h2>
   <p class="note">
     页码窗口会换行，状态文本另起一行
     ⇒ <b>不产生横向溢出</b>。

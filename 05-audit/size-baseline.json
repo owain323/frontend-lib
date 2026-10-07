@@ -4,25 +4,29 @@
       "gzip": 2027,
       "raw": 5571
     },
+    "01-tokens/page.css": {
+      "gzip": 5282,
+      "raw": 12660
+    },
     "01-tokens/polyfill.js": {
       "gzip": 1694,
       "raw": 4128
     },
     "01-tokens/scrollbar.css": {
-      "gzip": 2541,
-      "raw": 7422
+      "gzip": 2619,
+      "raw": 7624
     },
     "01-tokens/theme-toggle.js": {
       "gzip": 2071,
       "raw": 4637
     },
     "01-tokens/tokens.css": {
-      "gzip": 15872,
-      "raw": 39954
+      "gzip": 16240,
+      "raw": 40935
     },
     "01-tokens/typography.css": {
-      "gzip": 3251,
-      "raw": 6868
+      "gzip": 3418,
+      "raw": 7295
     },
     "02-primitives/badge/badge.css": {
       "gzip": 2794,
@@ -49,8 +53,8 @@
       "raw": 12231
     },
     "02-primitives/date-range/date-range.css": {
-      "gzip": 1659,
-      "raw": 5224
+      "gzip": 1775,
+      "raw": 5416
     },
     "02-primitives/date-range/date-range.js": {
       "gzip": 3937,
@@ -61,8 +65,8 @@
       "raw": 10274
     },
     "02-primitives/popover/popover.css": {
-      "gzip": 2578,
-      "raw": 7984
+      "gzip": 2577,
+      "raw": 7960
     },
     "02-primitives/popover/popover.js": {
       "gzip": 3452,
@@ -93,20 +97,20 @@
       "raw": 17887
     },
     "03-patterns/accordion/accordion.css": {
-      "gzip": 7161,
-      "raw": 18424
+      "gzip": 7160,
+      "raw": 18418
     },
     "03-patterns/accordion/accordion.js": {
       "gzip": 6581,
       "raw": 16060
     },
     "03-patterns/content/content.css": {
-      "gzip": 4007,
-      "raw": 10279
+      "gzip": 4018,
+      "raw": 10089
     },
     "03-patterns/drawer/drawer.css": {
-      "gzip": 1978,
-      "raw": 4589
+      "gzip": 1976,
+      "raw": 4559
     },
     "03-patterns/drawer/drawer.js": {
       "gzip": 2739,
@@ -129,12 +133,12 @@
       "raw": 8075
     },
     "03-patterns/list/list.css": {
-      "gzip": 2466,
-      "raw": 6352
+      "gzip": 2447,
+      "raw": 6216
     },
     "03-patterns/nav/nav.css": {
-      "gzip": 3974,
-      "raw": 11380
+      "gzip": 4032,
+      "raw": 11253
     },
     "03-patterns/nav/toc.js": {
       "gzip": 2091,
@@ -149,8 +153,8 @@
       "raw": 12780
     },
     "03-patterns/pagination/pagination.css": {
-      "gzip": 3333,
-      "raw": 7817
+      "gzip": 3437,
+      "raw": 8046
     },
     "03-patterns/pagination/pagination.js": {
       "gzip": 5850,
@@ -161,8 +165,8 @@
       "raw": 10957
     },
     "03-patterns/tabs/tabs.css": {
-      "gzip": 2336,
-      "raw": 5407
+      "gzip": 2409,
+      "raw": 5435
     },
     "03-patterns/tabs/tabs.js": {
       "gzip": 2861,
@@ -177,8 +181,8 @@
       "raw": 4070
     },
     "03-patterns/tree/tree.css": {
-      "gzip": 1651,
-      "raw": 3468
+      "gzip": 1647,
+      "raw": 3462
     },
     "03-patterns/tree/tree.js": {
       "gzip": 3700,
@@ -189,11 +193,11 @@
       "raw": 6010
     },
     "04-recipes/tierA-tokens.css": {
-      "gzip": 2598,
-      "raw": 17203
+      "gzip": 2651,
+      "raw": 17877
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 175151,
-  "total_raw": 454945
+  "total_gzip": 181434,
+  "total_raw": 469819
 }

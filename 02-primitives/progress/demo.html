@@ -7,30 +7,25 @@
 <title>进度条 · progress</title>
 <link rel="stylesheet" href="../../01-tokens/tokens.css">
 <link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/page.css">
 <link rel="stylesheet" href="progress.css">
 <style>
-  body { padding: var(--sp-5) var(--sp-4) 64px; }
-  h1 { font-size: var(--fs-xl); margin: 0 0 var(--sp-2); }
-  h2 { font-size: var(--fs-lg); margin: var(--sp-7) 0 var(--sp-3); }
-  .lede { color: var(--text-secondary); margin: 0 0 var(--sp-5); }
-  .demo {
+.demo {
     background: var(--surface);
     border: 1px solid var(--border-decor);
     border-radius: var(--r-md);
     padding: var(--sp-4);
     margin-bottom: var(--sp-4);
   }
-  .row { display: flex; align-items: center; gap: var(--sp-3); }
-  .row + .row { margin-top: var(--sp-3); }
-  .pct { font-size: var(--fs-sm); color: var(--text-secondary);
+.row { display: flex; align-items: center; gap: var(--sp-3); }
+.row+.row { margin-top: var(--sp-3); }
+.pct { font-size: var(--fs-sm); color: var(--text-secondary);
          font-variant-numeric: tabular-nums; min-width: 3.2em; text-align: right; }
-  .note { font-size: var(--fs-sm); color: var(--text-secondary); margin-top: var(--sp-2); }
-  .bad-demo { background: var(--danger-bg); border-color: var(--danger); }
-  .bad { color: var(--danger); }
-  code { background: var(--surface-sunken); padding: 1px 4px; border-radius: var(--r-xs); }
+.bad-demo { background: var(--danger-bg); border-color: var(--danger); }
+.bad { color: var(--danger); }
 </style>
 </head>
-<body>
+<body class="page page">
 
 <h1>进度条 · progress</h1>
 <p class="lede">进度<strong>已知</strong>时用它；进度<strong>不知道</strong>时用 <code>skeleton</code>。混用是常见错误。</p>
@@ -131,7 +126,6 @@
     或不确定进度条（明说"不知道"）。
   </p>
 </div>
-
 
 <script>
 /* 🔴 I5：进度值用 **JS 写入**而不是行内 style

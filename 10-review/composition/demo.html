@@ -21,6 +21,7 @@
 <link rel="stylesheet" href="../../01-tokens/tokens.css">
 <link rel="stylesheet" href="../../01-tokens/typography.css">
 <link rel="stylesheet" href="../../01-tokens/focus-ring.css">
+<link rel="stylesheet" href="../../01-tokens/page.css">
 <link rel="stylesheet" href="../../02-primitives/button/button.css">
 <link rel="stylesheet" href="../../02-primitives/badge/badge.css">
 <link rel="stylesheet" href="../../02-primitives/choice/choice.css">
@@ -35,27 +36,18 @@
 <link rel="stylesheet" href="../../03-patterns/tree/tree.css">
 <link rel="stylesheet" href="../../03-patterns/dropdown/dropdown.css">
 <style>
-  body { margin: 0; padding: var(--sp-6) var(--sp-5); background: var(--paper); }
-  .wrap { max-width: 46rem; margin: 0 auto; }
-  h1 { font-size: var(--fs-xl); margin: 0 0 var(--sp-2); }
-  h2 { font-size: var(--fs-lg); margin: var(--sp-6) 0 var(--sp-3); }
-  .note {
-    padding: var(--sp-3) var(--sp-4); margin: 0 0 var(--sp-4);
-    background: var(--surface-sunken); border-radius: var(--r-sm);
-    font-size: var(--fs-sm); color: var(--text-secondary); line-height: 1.6;
-  }
-  .pad { padding: var(--sp-3) 0 var(--sp-6); }
-  .log {
+.pad { padding: var(--sp-3) 0 var(--sp-6); }
+.log {
     margin-top: var(--sp-3); padding: var(--sp-3);
     background: var(--surface-sunken); border-radius: var(--r-sm);
     font-family: var(--mono); font-size: var(--fs-xs);
     color: var(--text-secondary); min-height: 3em;
   }
-  /* 让下拉/弹层有足够内容可滚，测 z-index 时更真实 */
-  .tall { min-height: 22rem; }
+/* 让下拉/弹层有足够内容可滚，测 z-index 时更真实 */
+.tall { min-height: 22rem; }
 </style>
 </head>
-<body>
+<body class="page page">
 <main class="wrap">
 
 <h1>组合测试（组合契约的宿主）</h1>

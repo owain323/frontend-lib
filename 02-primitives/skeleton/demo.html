@@ -7,28 +7,24 @@
 <title>骨架屏 · skeleton</title>
 <link rel="stylesheet" href="../../01-tokens/tokens.css">
 <link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/page.css">
 <link rel="stylesheet" href="../button/button.css">
 <link rel="stylesheet" href="skeleton.css">
 <style>
-  body { padding: var(--sp-5) var(--sp-4) 64px; }
-  h1 { font-size: var(--fs-xl); margin: 0 0 var(--sp-2); }
-  h2 { font-size: var(--fs-lg); margin: var(--sp-7) 0 var(--sp-3); }
-  .lede { color: var(--text-secondary); margin: 0 0 var(--sp-5); }
-  .demo {
+.demo {
     background: var(--surface);
     border: 1px solid var(--border-decor);
     border-radius: var(--r-md);
     padding: var(--sp-4);
     margin-bottom: var(--sp-4);
   }
-  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
-  /* 反例演示：故意用深色底 + 白字，说明"骨架屏不该这样用" */
-  .bad-demo { background: var(--danger-bg); border-color: var(--danger); }
-  .note { font-size: var(--fs-sm); color: var(--text-secondary); margin-top: var(--sp-2); }
-  .bad { color: var(--danger); }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
+/* 反例演示：故意用深色底+白字，说明"骨架屏不该这样用" */
+.bad-demo { background: var(--danger-bg); border-color: var(--danger); }
+.bad { color: var(--danger); }
 </style>
 </head>
-<body>
+<body class="page page">
 
 <h1>骨架屏 · skeleton</h1>
 <p class="lede">加载态是移动端最高频的状态。形状不统一的加载态会让页面看起来"没做完"。</p>
