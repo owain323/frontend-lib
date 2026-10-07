@@ -49,10 +49,22 @@ NEGATIVE = os.path.join(TESTS, 'tsconfig.negative.json')
 
 
 def find_tsc():
-    """定位 tsc：优先本地 node_modules，其次 PATH。"""
-    local = os.path.join(ROOT, 'node_modules', 'typescript', 'bin', 'tsc')
-    if os.path.exists(local):
-        return [process_node(), local]
+    """定位 tsc：本地 node_modules → $NODE_MODULES → PATH。
+
+    🔴 0.4.2 补 $NODE_MODULES。此前只认 `<仓库>/node_modules`，
+       而陌生人 clone 出来的副本**没有 node_modules**（依赖按设计不入库），
+       于是这道门禁在副本里报 FAIL —— 那是**仪器缺失**，不是被测物坏了。
+       实测：同一份代码在主仓库 PASS、在 clone 里 FAIL，
+       报告里只看得到 "tsc FAIL"，很容易被读成"类型坏了"。
+    """
+    cands = [os.path.join(ROOT, 'node_modules', 'typescript', 'bin', 'tsc')]
+    nm = os.environ.get('NODE_MODULES')
+    if nm:
+        cands.append(os.path.join(nm, 'typescript', 'bin', 'tsc'))
+    cands.append(os.path.join(ROOT, 'node_modules', '.bin', 'tsc'))
+    for c in cands:
+        if os.path.exists(c):
+            return [process_node(), c]
     which = shutil.which('tsc')
     if which:
         return [which]
@@ -101,8 +113,18 @@ def main():
     # ---------- A. 正例必须编译通过 ----------
     rc, out = run_tsc(POSITIVE)
     if rc is None:
-        print('  FAIL  %s' % out)
-        return 1
+        # 🔴 仪器缺失 ≠ 被测物坏了。TYPE 测试文件必须都在（缺了才算真问题），
+        #   但 typescript 本身没装时**不能**报 FAIL —— 那会把环境问题
+        #   伪装成"类型坏了"，正是 measurement-integrity 里最容易被误读的一类。
+        missing_files = [p for p in (POSITIVE, NEGATIVE) if not os.path.isfile(p)]
+        if missing_files:
+            print('  FAIL  类型测试文件缺失：%s' % missing_files)
+            return 1
+        print('  SKIP  %s' % out)
+        print('        ⇒ 这不是失败，是**本机没装 typescript**（依赖按设计不入库）。')
+        print('        ⇒ 想跑：cd %s && npm install' % ROOT)
+        print('        ⇒ 装了才会跑；没装时这条门禁**没有发言权**，别当它通过。')
+        return 0
     if rc != 0:
         print('  FAIL  正例编译失败（这些是合法用法，不该报错）')
         for line in out.strip().split('\n')[:8]:
