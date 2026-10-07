@@ -19,6 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import terms  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+from _common import scannable_files  # noqa: E402
 
 # ============================================================================
 # 词表
@@ -174,13 +175,8 @@ EXTS = ('.js', '.ts', '.tsx', '.py', '.html', '.css', '.md', '.json',
 def main():
     print('  === 敏感信息扫描 ===')
     print('')
-    try:
-        out = subprocess.run(['git', '-c', 'core.quotePath=false', 'ls-files'],
-                             cwd=ROOT, capture_output=True, timeout=30)
-        files = [f for f in out.stdout.decode('utf-8', 'replace').split('\n')
-                 if f.strip()]
-    except Exception:
-        files = []
+    # 🔴 视野 = 磁盘上要交付的东西（含未跟踪的新文件），不是 git 索引
+    files = scannable_files(ROOT)
 
     hits = {}
     for rel in files:

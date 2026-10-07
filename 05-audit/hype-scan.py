@@ -28,6 +28,8 @@ import re
 import subprocess
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(ROOT, '05-audit'))
+from _common import scannable_files  # noqa: E402
 
 # ============================================================================
 # 自夸词表 —— 每条都要写清"为什么它属于自夸"
@@ -61,13 +63,8 @@ EXTS = ('.md', '.html', '.css', '.js', '.py', '.json', '.sh', '.yml', '.mjs')
 def main():
     print('  === 自我标榜词检测 ===')
     print('')
-    try:
-        out = subprocess.run(['git', '-c', 'core.quotePath=false', 'ls-files'],
-                             cwd=ROOT, capture_output=True, timeout=30)
-        files = [f for f in out.stdout.decode('utf-8', 'replace').split('\n')
-                 if f.strip()]
-    except Exception:
-        files = []
+    # 🔴 视野 = 磁盘上要交付的东西（含未跟踪的新文件），不是 git 索引
+    files = scannable_files(ROOT)
 
     hits = {}
     for rel in files:

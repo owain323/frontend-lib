@@ -31,6 +31,9 @@ import io
 import re
 import subprocess
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _common import origin_of, scannable_files  # noqa: E402
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # 禁止直接使用的较新 API ⇒ 替代方案
@@ -58,16 +61,19 @@ EXEMPT = {'01-tokens/polyfill.js'}
 def main():
     print('  === 旧环境兼容（K6）===')
     print('')
-    out = subprocess.run(['git', '-c', 'core.quotePath=false', 'ls-files'],
-                         cwd=ROOT, capture_output=True, timeout=30)
-    files = [f for f in out.stdout.decode('utf-8', 'replace').split('\n')
-             if f.strip()]
+    # 🔴 视野 = 磁盘上要交付的东西（含未跟踪的新文件），不是 git 索引
+    #    —— 见 _common.scannable_files 的事故说明。
+    files = scannable_files(ROOT)
 
     hits = {}
     for rel in files:
         if not rel.endswith('.js'):
             continue
-        if rel.startswith('05-audit/') or 'vendor' in rel or rel in EXEMPT:
+        # 🔴 豁免按**源路径**判定：dist/01-tokens/polyfill.js 就是
+        #    01-tokens/polyfill.js 去掉注释的产物 —— 它存在的意义就是补这些 API，
+        #    把自己判成「违规使用新 API」是门禁自相矛盾。
+        if rel.startswith('05-audit/') or 'vendor' in rel \
+                or origin_of(rel) in EXEMPT:
             continue
         try:
             s = io.open(os.path.join(ROOT, rel), encoding='utf-8',

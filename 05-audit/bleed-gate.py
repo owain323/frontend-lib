@@ -46,6 +46,9 @@ import re
 import subprocess
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _common import origin_of, scannable_files  # noqa: E402
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # 组件 CSS 目录（01-tokens 里只有 tokens.css 有例外）
@@ -68,14 +71,9 @@ RESET_OK = re.compile(
 
 
 def css_files():
-    try:
-        out = subprocess.run(
-            ['git', '-c', 'core.quotePath=false', 'ls-files'],
-            cwd=ROOT, capture_output=True, timeout=30)
-        files = [f for f in out.stdout.decode('utf-8', 'replace').split('\n')
-                 if f.strip()]
-    except Exception:
-        files = []
+    # 🔴 视野 = 磁盘上要交付的东西（含未跟踪的新文件），不是 git 索引
+    #    —— 见 _common.scannable_files 的事故说明。
+    files = scannable_files(ROOT)
     return [f for f in files
             if f.endswith('.css')
             and not f.startswith('05-audit/')
@@ -95,8 +93,12 @@ def scan():
         # 剥注释：注释里提到标签不算
         code = re.sub(r'/\*.*?\*/', '', src, flags=re.S)
         code = re.sub(r'(?m)^\s*//.*$', '', code)
-        in_token = os.path.basename(rel) in TOKEN_FILES
-        in_token_dir = rel.startswith('01-tokens')
+        # 🔴 例外按**源路径**判定：dist/01-tokens/tokens.css 与
+        #    01-tokens/tokens.css 是同一份内容，结论必须一致。
+        #    （否则同一条规则在源码侧放行、在产物侧报错 —— 门禁自相矛盾）
+        src_rel = origin_of(rel)
+        in_token = src_rel in TOKEN_FILES
+        in_token_dir = src_rel.startswith('01-tokens')
         for i, line in enumerate(code.split('\n'), 1):
             if not BARE.search(line):
                 continue

@@ -21,6 +21,8 @@ import re
 import subprocess
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(ROOT, '05-audit'))
+from _common import scannable_files  # noqa: E402
 
 # ★ 浏览器/运行时自带的全局——不是本库的公开 API
 _BUILTIN_GLOBALS = {
@@ -45,10 +47,8 @@ def declared():
 
 def implemented():
     """源码里实际挂载的全局对象"""
-    out = subprocess.run(['git', '-c', 'core.quotePath=false', 'ls-files'],
-                         cwd=ROOT, capture_output=True, timeout=30)
-    files = [f for f in out.stdout.decode('utf-8', 'replace').split('\n')
-             if f.strip()]
+    # 🔴 视野 = 磁盘上要交付的东西（含未跟踪的新文件），不是 git 索引
+    files = scannable_files(ROOT)
     found = set()
     for rel in files:
         if not rel.endswith('.js') or rel.startswith('05-audit/'):

@@ -234,11 +234,24 @@ def strip_js_comments(src):
 # 构建
 # ==========================================================================
 def sha256(path):
-    h = hashlib.sha256()
+    """
+    源码 sha256 —— 算的是**内容**，不是磁盘字节。
+
+    🔴 为什么必须先把 CRLF 归一成 LF（2026-10-08 克隆实测事故）
+       manifest 是在本仓库里生成的（本仓库部分是 LF、部分是 CRLF，混合状态）。
+       别人 clone 之后，Windows 的 core.autocrlf=true 会把 LF 签出成 CRLF。
+       ⇒ 内容**一个字没改**，17 个文件的 sha256 却全对不上，dist-fresh 误报红。
+
+       而且这个红**只在陌生人机器上出现**，本仓库永远绿
+       —— 正是最难发现的一类假红： maintainer 复现不了，用户一上来就撞上。
+
+    ⚠️ dist 是由源码的**内容**决定的，不是由换行符决定的：
+       构建读文件走文本模式（io.open），\r\n 早就被universal newline 归一成 \n，
+       所以产物本来就不含 CR。哈希跟着归一，判据才和内容真正对齐。
+    """
     with open(path, 'rb') as fh:
-        for chunk in iter(lambda: fh.read(65536), b''):
-            h.update(chunk)
-    return h.hexdigest()
+        data = fh.read()
+    return hashlib.sha256(data.replace(b'\r\n', b'\n')).hexdigest()
 
 
 def gz_size(text):
@@ -399,6 +412,28 @@ def selftest():
         print('  [FAIL] manifest 里没有文件')
         ok = False
     del fake
+
+    # ④ 🔴 换行符不变性（2026-10-08 克隆事故后的**常驻**反向控制）
+    #    事故：源码 17 个文件是 LF、32 个是 CRLF（混合状态）。
+    #          别人 clone 后 core.autocrlf=true 把 LF 签出成 CRLF
+    #          ⇒ 内容没变，17 个散列全对不上 ⇒ dist-fresh 只在陌生人机器上红。
+    #    ⇒ 这条自检把「换换行符必须仍然绿」钉死，防止以后有人改回按字节算。
+    probe = man['files'][0]['source'] if man.get('files') else None
+    if probe:
+        p = os.path.join(ROOT, probe)
+        raw = io.open(p, 'rb').read()
+        flipped = raw.replace(b'\r\n', b'\n') if b'\r\n' in raw \
+            else raw.replace(b'\n', b'\r\n')
+        try:
+            io.open(p, 'wb').write(flipped)
+            bad = check_freshness()
+        finally:
+            io.open(p, 'wb').write(raw)
+        if bad:
+            print('  [FAIL] 只改换行符就报不新鲜 ⇒ 判据又退化成按字节算了')
+            ok = False
+        else:
+            print('  [OK]   只换换行符（LF⇄CRLF）仍然新鲜 ⇒ 判据看的是内容')
     return 0 if ok else 1
 
 
