@@ -20,6 +20,7 @@ _common.py — 门禁脚本共享的常量
 ===========================================================================
 """
 import os
+import subprocess
 
 # ⭐ 视觉回归的产物目录（截图、diff 图、自检产物）。
 #    ⚠️ 它们**不是交付物**，不该被任何内容门禁扫描。
@@ -33,15 +34,80 @@ ARTIFACT_DIRS = (
 )
 
 
+# ⭐ 派生产物目录：**是交付物，但由源码生成**（dist/ 由 build-dist.py 产出）。
+#    ⚠️ 它和 ARTIFACT_DIRS 的处置**不同**，别混为一谈：
+#      · ARTIFACT_DIRS（截图等）⇒ 内容门禁**不该扫**（扩展名骗人）
+#      · DERIVED_DIRS（dist/）  ⇒ 内容门禁**要扫**，但判定规则必须与源路径一致
+#
+#    🔴 为什么必须一致（2026-10-08 实测，两个门禁同时误报红）
+#       `dist/01-tokens/tokens.css` 是 `01-tokens/tokens.css` 的产物，内容同源。
+#       但 bleed-gate 的 reset 例外、legacy-api-gate 的 polyfill 豁免
+#       都是**按路径前缀**写的（`rel.startswith('01-tokens')`）⇒ dist 那一侧不生效。
+#       结果：源码侧允许、产物侧报错 —— 同一份内容给出两个相反结论。
+#       这不是「dist 有问题」，而是**门禁把规则写在了路径上而不是内容上**。
+DERIVED_DIRS = ('dist/',)
+
+
 def is_artifact(path, root=None):
     """判断一个路径是否属于「产物 / 不该被内容门禁扫」"""
     p = str(path).replace(os.sep, '/')
     return any(a in p for a in ARTIFACT_DIRS)
 
 
+def origin_of(rel):
+    """
+    派生产物 ⇒ 源路径：'dist/01-tokens/tokens.css' ⇒ '01-tokens/tokens.css'
+    非派生产物原样返回。
+
+    用法：凡是要用**路径**决定例外/豁免/归属的地方，先过一遍这个函数，
+          规则就只写一份（写在源码路径上），产物自动跟随。
+    """
+    r = str(rel).replace(os.sep, '/')
+    for d in DERIVED_DIRS:
+        if r.startswith(d):
+            return r[len(d):]
+    return r
+
+
 def exclude_artifacts(paths):
     """从路径列表里剔除产物目录里的文件"""
     return [p for p in paths if not is_artifact(p)]
+
+
+def scannable_files(root):
+    """
+    门禁应当扫描的文件清单 = 已跟踪 ∪ 未跟踪但未被 .gitignore 忽略。
+
+    🔴 为什么不能只用 `git ls-files`（2026-10-08 实测事故）
+       dist/ 刚生成、还没 `git add` 时，`git ls-files` **看不见它**
+       ⇒ bleed / legacy-api 两道门禁本地全绿 ⇒ 提交 ⇒ clone 里跑 ⇒ 立刻红。
+       同一份内容，门禁因为**索引状态**给出两个相反结论。
+
+       ⚠️ 这类假绿最难查：maintainer 本地永远绿，只有陌生人一上来就撞上。
+       ⚠️ 而未跟踪文件恰恰是**最该被门禁看的** —— 它是刚写完的新代码。
+
+    ⇒ 门禁的视野必须是「磁盘上要交付的东西」，不是「git 索引里有什么」。
+
+    ⚠️ 本函数**不适合** repo-hygiene 那类「判断是否混进库」的门禁
+       —— 那种门禁的正确语义正是「只查索引」（工作区里留着是对的）。
+    """
+    def _run(args):
+        try:
+            out = subprocess.run(
+                ['git', '-c', 'core.quotePath=false'] + args,
+                cwd=root, capture_output=True, timeout=60)
+        except Exception:
+            return []
+        return [f for f in out.stdout.decode('utf-8', 'replace').split('\n')
+                if f.strip()]
+
+    seen, files = set(), []
+    for f in _run(['ls-files']) \
+            + _run(['ls-files', '--others', '--exclude-standard']):
+        if f not in seen:
+            seen.add(f)
+            files.append(f)
+    return files
 
 
 def walk_filtered(root, skip_dirs=None):

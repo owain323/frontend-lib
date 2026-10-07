@@ -23,6 +23,8 @@ import re
 import subprocess
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(ROOT, '05-audit'))
+from _common import scannable_files  # noqa: E402
 
 # ============================================================================
 # 技术词白名单 —— ⚠️ 新增必须写清理由
@@ -97,13 +99,8 @@ EXTS = ('.md', '.html', '.js', '.css', '.py', '.json', '.sh', '.mjs')
 def main():
     print('  === 专有名词检测（防黑名单漏项）===')
     print('')
-    try:
-        out = subprocess.run(['git', '-c', 'core.quotePath=false', 'ls-files'],
-                             cwd=ROOT, capture_output=True, timeout=30)
-        files = [f for f in out.stdout.decode('utf-8', 'replace').split('\n')
-                 if f.strip()]
-    except Exception:
-        files = []
+    # 🔴 视野 = 磁盘上要交付的东西（含未跟踪的新文件），不是 git 索引
+    files = scannable_files(ROOT)
 
     found = {}
     for rel in files:

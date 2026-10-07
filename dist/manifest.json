@@ -14,7 +14,7 @@
   "files": [
     {
       "source": "01-tokens/focus-ring.css",
-      "sourceSha256": "fac912f425623830c41741b856f90a6a55cc94e999988fd1ef7968628407645a",
+      "sourceSha256": "99897995b2e36ef927c4d4bb1948605c3bbba1f4692be432252ff6363fad53c3",
       "sourceBytes": 5472,
       "sourceGzip": 2022,
       "outputs": [
@@ -69,7 +69,7 @@
     },
     {
       "source": "01-tokens/scrollbar.css",
-      "sourceSha256": "b5e32914d50cc3df4e36ebd2e1f340c6a5f133aa0ba3bd6d4f62a5930f83a75b",
+      "sourceSha256": "4039e55c598b43d64f3138ad35f007e1af963633e5c913c091380fe011f4a20a",
       "sourceBytes": 7445,
       "sourceGzip": 2609,
       "outputs": [
@@ -89,7 +89,7 @@
     },
     {
       "source": "01-tokens/theme-toggle.js",
-      "sourceSha256": "a25ea46bdaf513a14f24ad783412a511365bbf928cc709755200992b8b5db494",
+      "sourceSha256": "8ebab1106dcbeaae96f5ad25daabfeb3b17745b4cb6c12f2e35a49e02a23b19e",
       "sourceBytes": 4535,
       "sourceGzip": 2059,
       "outputs": [
@@ -104,7 +104,7 @@
     },
     {
       "source": "01-tokens/tokens.css",
-      "sourceSha256": "c58be74614b891203f03f16229ee5accb44f0f7365cdb9d62b2688443e5959aa",
+      "sourceSha256": "4a623550d4ee3de5711f6b9d80592bdb25bee6290b6e185cb48638a0c80d4944",
       "sourceBytes": 40153,
       "sourceGzip": 16193,
       "outputs": [
@@ -124,7 +124,7 @@
     },
     {
       "source": "01-tokens/typography.css",
-      "sourceSha256": "3e547690a6e03992aae290bafc54f4f41f40cbc09fe845045e934d6f0ca48bfc",
+      "sourceSha256": "9fe778bb9b94505bccf0af89e652980b6bb559f3c0c308fe1c4df4541adcddde",
       "sourceBytes": 7139,
       "sourceGzip": 3401,
       "outputs": [
@@ -164,7 +164,7 @@
     },
     {
       "source": "02-primitives/button/button.css",
-      "sourceSha256": "8f4ab354e967811086aed2ee4c416061bae3267688c35b42b54c1c5855e95cb3",
+      "sourceSha256": "7c515a4cd306442821af2ac88643773e794f2ce6113fe15ee8183c0807864830",
       "sourceBytes": 15559,
       "sourceGzip": 6338,
       "outputs": [
@@ -184,7 +184,7 @@
     },
     {
       "source": "02-primitives/card/card.css",
-      "sourceSha256": "c1a6d218eb3cb6fd281ed0a77755ee320c6d5dd32e3cc71f56dab2bc2164334b",
+      "sourceSha256": "b96acdf650aeaea52884cda11a8e6162e775478230be54742a611e5fac868c37",
       "sourceBytes": 8894,
       "sourceGzip": 3596,
       "outputs": [
@@ -204,7 +204,7 @@
     },
     {
       "source": "02-primitives/choice/choice.css",
-      "sourceSha256": "5b1c399731208d16e899d274ad3616b37d172e5f79d1f00ef27fc739b4572363",
+      "sourceSha256": "1e88b36bf92b0c4918b75b3bd0e2a5f0707a2ad875062449f6fc82ea0f5d5753",
       "sourceBytes": 15468,
       "sourceGzip": 5516,
       "outputs": [
@@ -224,7 +224,7 @@
     },
     {
       "source": "02-primitives/combobox/combobox.css",
-      "sourceSha256": "c95cb10a6c4340e15d4459c72d7f770a1131cc84f063ebe0781ae38d2249dd4c",
+      "sourceSha256": "0bd2ae4dec32f3e549ed2dfe2162e7fb77993c4169e8a2896ffbc37fe0f8f0cb",
       "sourceBytes": 7168,
       "sourceGzip": 2893,
       "outputs": [
@@ -279,7 +279,7 @@
     },
     {
       "source": "02-primitives/date-range/date-range.js",
-      "sourceSha256": "c9ae926b39f96703b324ffec963b0dcdeba6ee7cce74e2e8d640a3a5ec34e55d",
+      "sourceSha256": "fe38436348282e2246f04315cca19f3f11d22666751f3f51806ebca2b043d287",
       "sourceBytes": 10415,
       "sourceGzip": 3918,
       "outputs": [
@@ -294,7 +294,7 @@
     },
     {
       "source": "02-primitives/input/input.css",
-      "sourceSha256": "48c93765e158cb252b5b7bb1d0328b13b56e49b36dcef8b7a2f0b3676d8016d3",
+      "sourceSha256": "9b6425c070ba9862725141f7b8e1c2893aacf34cf5074a29114a885c133a4c94",
       "sourceBytes": 10036,
       "sourceGzip": 3640,
       "outputs": [
@@ -334,7 +334,7 @@
     },
     {
       "source": "02-primitives/popover/popover.js",
-      "sourceSha256": "45053b16d498b12c45f27f70c660b5c5b7cf97a92caebd2ebaff827c27864694",
+      "sourceSha256": "7cdeb3906a215da131378c498693597432510dacf92dbe3de9f036c87f5b220b",
       "sourceBytes": 8274,
       "sourceGzip": 3435,
       "outputs": [
@@ -349,7 +349,7 @@
     },
     {
       "source": "02-primitives/progress/progress.css",
-      "sourceSha256": "88864e029c213e794d293e342c7cc94962444646cb2133b29a6c7fcc2673f632",
+      "sourceSha256": "f15622096b0295f0e9973a149cbe8baa43c8261dfc7f83ae6cf56d5d1de991fc",
       "sourceBytes": 7854,
       "sourceGzip": 2946,
       "outputs": [
@@ -389,7 +389,7 @@
     },
     {
       "source": "02-primitives/select/select.js",
-      "sourceSha256": "a5c283447b514787364f46f24ad4bb14696eeb778b2d30a6a58dbba5b7026ba6",
+      "sourceSha256": "7b75f6cc2fdd60934c7ade3268bc910bffff5cbe487bc5429e2586be6bdd00f2",
       "sourceBytes": 13396,
       "sourceGzip": 4884,
       "outputs": [
@@ -404,7 +404,7 @@
     },
     {
       "source": "02-primitives/separator/separator.css",
-      "sourceSha256": "f03ca5b5136953435566bc4cd49a15da40fe24c19cd84c959cdba865f96f3767",
+      "sourceSha256": "536b7691da6a82d695563e44c9c7a57e015ab0856624c04ae13e8d8b7789b6c8",
       "sourceBytes": 2811,
       "sourceGzip": 1310,
       "outputs": [
@@ -444,7 +444,7 @@
     },
     {
       "source": "02-primitives/switch/switch.css",
-      "sourceSha256": "6b96a786e30419251bf100f60844543449e1a4684996c7a8b9057f20f7da14e0",
+      "sourceSha256": "231b282dabebefc22b0678e1c81a55e00d0b697ac659f40e5d8e088bf44ecb6d",
       "sourceBytes": 17517,
       "sourceGzip": 7314,
       "outputs": [
@@ -484,7 +484,7 @@
     },
     {
       "source": "03-patterns/accordion/accordion.js",
-      "sourceSha256": "dd7347ed8eb183db32c06c19a9cc973b28a23419616a6f641d4a53948a362951",
+      "sourceSha256": "7d5343f649226f545e41af3336c4286a43fcff9f7b28795ab573559fc25fecda",
       "sourceBytes": 15718,
       "sourceGzip": 6559,
       "outputs": [
@@ -554,7 +554,7 @@
     },
     {
       "source": "03-patterns/dropdown/dropdown.css",
-      "sourceSha256": "c57dfe3d253c7624b35fb845e20201d14d52f400001d3978b1cf57a865e6e759",
+      "sourceSha256": "435297cb7a8ee050d98cd52b470932a420d63d1dcb6c5695069bf8133b2e0f77",
       "sourceBytes": 4044,
       "sourceGzip": 1929,
       "outputs": [
@@ -574,7 +574,7 @@
     },
     {
       "source": "03-patterns/dropdown/dropdown.js",
-      "sourceSha256": "860bd3412ac935bcc5d3afae2cdf0c8a0ad877722da929bd6301bce55b37094f",
+      "sourceSha256": "c24815b9b328bec0cd82958fbef4cfa42f7e6f1f49358c9905ad1203790e7178",
       "sourceBytes": 8030,
       "sourceGzip": 3355,
       "outputs": [
@@ -589,7 +589,7 @@
     },
     {
       "source": "03-patterns/form-validation/form-validation.css",
-      "sourceSha256": "888f3b240424f9043ed79790478cadcefa95688e16c1fa7678fd6a84d71105a3",
+      "sourceSha256": "5499064392ab31b6f399e3c4ca10ff5fd251ad8d691a56249ac7c0fe765757b5",
       "sourceBytes": 11313,
       "sourceGzip": 4606,
       "outputs": [
@@ -609,7 +609,7 @@
     },
     {
       "source": "03-patterns/list/flip.js",
-      "sourceSha256": "f5f235c2795ffb044747894affdb8ed17f53e5a3ff23498f7d5e6ab16f083426",
+      "sourceSha256": "22558a618de875bfb326f4854ab062bbdfef6b444a964458d08f0dc95a3b6487",
       "sourceBytes": 7874,
       "sourceGzip": 3367,
       "outputs": [
@@ -664,7 +664,7 @@
     },
     {
       "source": "03-patterns/nav/toc.js",
-      "sourceSha256": "943d4dc75a7f0ee3758c16a60d1a59f6306f994aee5aa03e7a95af6d34f40513",
+      "sourceSha256": "e6dd2c5c2706ab9587f7f4e804a89057a60867b048e9bcb0fcd4bd2560a591ca",
       "sourceBytes": 4271,
       "sourceGzip": 2075,
       "outputs": [
@@ -679,7 +679,7 @@
     },
     {
       "source": "03-patterns/overlay/overlay.css",
-      "sourceSha256": "863281a75f18d38fed374a9938094c5905967f64557286d2017fa8e8077d3cc2",
+      "sourceSha256": "c8b27baaf71460d6a166d3fcaa3310c13c38fdde1ce6068cbd5f9354b8047864",
       "sourceBytes": 11797,
       "sourceGzip": 5020,
       "outputs": [
@@ -699,7 +699,7 @@
     },
     {
       "source": "03-patterns/overlay/overlay.js",
-      "sourceSha256": "170248c942993c398e5d12c69ef82f2c3e891ab446dc18dbc03e14a87fecfeb6",
+      "sourceSha256": "d713714e656d77522d6896a153d66660d9ffbcf8be07ea11d66187b90a11208c",
       "sourceBytes": 12456,
       "sourceGzip": 4935,
       "outputs": [
@@ -714,7 +714,7 @@
     },
     {
       "source": "03-patterns/pagination/pagination.css",
-      "sourceSha256": "0698fac9ce69a681887c76b7b612c6888a69bcd9ed543bbc818c08d0f877275b",
+      "sourceSha256": "c4bc7e1504fb0a53a23830b1fdb9b8bd08ad0db05ffd249c04cfa3a81d45601f",
       "sourceBytes": 7851,
       "sourceGzip": 3422,
       "outputs": [
@@ -734,7 +734,7 @@
     },
     {
       "source": "03-patterns/pagination/pagination.js",
-      "sourceSha256": "ad5e36a46c130430ae32fa94ecf32d74c9d27820fb379ca11dffec56cd46279a",
+      "sourceSha256": "640b2e4b7b3a2711486f789847cd4f51d713eb2ce68f7afdef3582ddd10a5497",
       "sourceBytes": 14820,
       "sourceGzip": 5825,
       "outputs": [
@@ -749,7 +749,7 @@
     },
     {
       "source": "03-patterns/states/states.css",
-      "sourceSha256": "dce9e394b088d4cc3526737515c5f381fe5ce56d5cf5745a3ee8fcf5f53ae5e7",
+      "sourceSha256": "7c75b04628807cd81589cdbed8ac5b37fe1078e0f49744a06b38db36d6924876",
       "sourceBytes": 10698,
       "sourceGzip": 4271,
       "outputs": [
@@ -789,7 +789,7 @@
     },
     {
       "source": "03-patterns/tabs/tabs.js",
-      "sourceSha256": "7889b4bd6408612d595d8a408ca6bca4f0a39395bf0216b26587a9af5be8e409",
+      "sourceSha256": "a1561d164bc1c30a0e5256c2f5117e869b61ce1bd79c987c0523285c6b76d89a",
       "sourceBytes": 7184,
       "sourceGzip": 2845,
       "outputs": [
@@ -859,7 +859,7 @@
     },
     {
       "source": "03-patterns/tree/tree.js",
-      "sourceSha256": "0896a5a12579395f98c23b74eb248212fa3ad8e5f0dd2d82fc6e545cb85a9e6c",
+      "sourceSha256": "986088573580e7a011c70ac96b263a5e319aea5d5a143aad26fe06121355ae85",
       "sourceBytes": 9876,
       "sourceGzip": 3688,
       "outputs": [
@@ -874,7 +874,7 @@
     },
     {
       "source": "04-recipes/table/table.css",
-      "sourceSha256": "7afcc84528c5dd956273772a1d145a36e6ee74d9278eddac8e1c28f523032476",
+      "sourceSha256": "5ec906bbfb39cd11b428a29bc8f54660dfdd00264f484b79ddb101941ed42b6d",
       "sourceBytes": 5840,
       "sourceGzip": 2593,
       "outputs": [
@@ -894,7 +894,7 @@
     },
     {
       "source": "04-recipes/tierA-tokens.css",
-      "sourceSha256": "f80f7c4acc60b22e623d22e465f8eaf7b8476065ac8304471e274951d526cbd2",
+      "sourceSha256": "5de2c70f04ff0fa21a79ca8e80779442eb2ece173ba93706075aef4fceb32212",
       "sourceBytes": 17443,
       "sourceGzip": 2600,
       "outputs": [
