@@ -91,6 +91,9 @@ run "benchmark"  node benchmark/run.js
 run "core-boundary" $PY 05-audit/core-boundary-gate.py
 # 级联分层就绪：`@layer` 计数 + 每处 !important 必须能归类（切层前的前提门控）
 run "cascade-layer" $PY 05-audit/cascade-layer-gate.py
+# 声明合法性：写了浏览器不认的属性（如 border-inset-inline-*）会**静默失效**，
+#   不报错、不影响解析、行为契约也抓不到 ⇒ 交给浏览器自己判定（CSS.supports）
+run "css-validity" node 05-audit/css-validity-gate.js
 run "start-here" $PY 05-audit/fix-start-here.py --check
 run "content-hygiene" $PY 05-audit/hygiene.py
 run "shot-path"  $PY 05-audit/shot-path.py

@@ -31,7 +31,7 @@
   text-align: center;
 }
 
-.mv__stage--err { border-inset-inline-start: 3px solid var(--danger); }
+.mv__stage--err { border-inline-start: 3px solid var(--danger); }
 
 .mv__ph {
   font-size: var(--fs-sm);

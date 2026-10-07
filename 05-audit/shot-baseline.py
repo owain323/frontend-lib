@@ -85,6 +85,19 @@ PAGES = [
     ('03-patterns/drawer',        'demo.html', '抽屉'),
     ('03-patterns/dropdown',      'demo.html', '下拉菜单'),
     ('03-patterns/tooltip',       'demo.html', '文字提示'),
+    # ⭐ 下面这批是**补进来的**（原先漏了 ⇒ 覆盖缺口）：
+    #    实测事故：tabs.css / accordion.css 改了"边框属性名"这种
+    #    **会改变观感**的东西，而这两个组件**根本没有视觉基线**
+    #    ⇒ 改坏了也无人报警。补齐的原则：**有 CSS 且有 demo 的，一律纳入。**
+    #    （09-assets/echarts-adapter 不纳入：无 CSS，且依赖外部 CDN。）
+    ('02-primitives/popover',     'demo.html', '气泡卡片'),
+    ('02-primitives/progress',    'demo.html', '进度条'),
+    ('02-primitives/skeleton',    'demo.html', '骨架屏'),
+    ('03-patterns/accordion',     'demo.html', '折叠面板'),
+    ('03-patterns/pagination',    'demo.html', '分页'),
+    ('03-patterns/tabs',          'demo.html', '选项卡'),
+    ('09-assets/model-viewer',    'demo.html', '模型查看器'),
+    ('09-assets/sparkline',       'demo.html', '迷你图'),
     ('04-recipes/table',          'demo.html', '表格'),
     ('09-assets/bar',             'demo.html', '柱状图'),
     ('10-review/composition',     'demo.html', '组合页'),
@@ -102,6 +115,28 @@ def _which_node():
         if os.path.exists(c):
             return c
     return shutil.which('node') or shutil.which('node.exe')
+
+
+def shot_name(d, f):
+    """
+    截图文件名。**写入侧与比对侧必须共用这一个函数**。
+
+    🔴 一起真实假绿（陌生人 clone 才暴露）：
+       写入侧用 `d + '_' + f` ⇒ `02-primitives_button_demo.html`
+       比对侧却 glob `*.png` 并找同名 `02-primitives_button.png`
+       ⇒ **两边从来不是同一批文件**。
+
+       本地之所以还能"全绿"，是因为 `_current/` 里**残留着前一天的 .png**，
+       比对拿那些旧图去比基线 ⇒ 恒等 ⇒ 恒绿。
+       新 clone 的 `_current/` 是空的 ⇒ 23 页全部"当前截图缺失" ⇒ 真红。
+
+       ⇒ 也就是说：这道门禁在过去一段时间里**根本没有在比较本次的截图**。
+         它测的是"上次残留的图是否等于基线"—— 恒真。
+
+    修法：两侧共用本函数，命名不可能再分叉；
+          且比对侧若发现 `_current` 为空必须**判失败**，不能静默跳过。
+    """
+    return d.replace('/', '_') + '.png'
 
 
 def _pages_exist():
@@ -142,7 +177,19 @@ const TASKS = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
   for (const t of TASKS) {
     try {
       let _t0 = _m();
-      await p.setViewport({ width: t.w, height: t.h, deviceScaleFactor: 2 });
+      /* 🔴 deviceScaleFactor **必须写死为 1**，不能让它随环境变。
+         原因：`--record` 与 `--check` 走的是同一个 `shoot()`，
+         只要这里一改，基线尺寸就和"将来截的图"对不上 ⇒
+         每一页都报「尺寸变了」，而真正的原因**不是 CSS 改坏了**。
+
+         实测：`deviceScaleFactor: 2` 让图变成 786 宽，基线是 393
+         ⇒ 23 页全红。而此前这道门因比对错文件一直假绿，
+            所以这个不一致一直没被发现。
+
+         选 1 而不是 2 的理由：① 现有基线就是 1×，Tile 判据
+         （32×32 分块、最差块 10.5% 那个校准）也是在 1× 上验出来的；
+         ② 2× 会让基线从 2.7MB 涨到 7.2MB，代价换不来等价的判据提升。 */
+      await p.setViewport({ width: t.w, height: t.h, deviceScaleFactor: 1 });
       T.boot += _m() - _t0; _t0 = _m();
       /* 🔴  I1 优化（**基于分项实测**，不是猜）：
        *   实测 goto(networkidle0) = 35.5s（60%）、固定 settle = 16.3s（28%）、
@@ -188,6 +235,78 @@ const TASKS = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
 """
 
 
+class _ServerError(RuntimeError):
+    """静态服务器没起成 / 起的不是本仓库 ⇒ 必须整道门禁失败。"""
+
+
+def _start_server():
+    """
+    起一个**只属于本次运行**的静态服务器，返回 (server, port)。
+
+    🔴🔴 为什么不能再用固定端口 8000（实测事故，后果很隐蔽）
+    ---------------------------------------------------------------------------
+    端口被占时，`Popen(['python','-m','http.server','8000'])` 起的**子进程会
+    立刻以 "Address already in use" 退出**，而**父进程完全不知道** ——
+    `Popen` 不报错、返回值正常、后面的代码照常往下跑。
+
+    于是所有 `http://127.0.0.1:8000/...` 的请求都打到了**那个残留进程**上。
+    实测：本机 8000 上挂着两个上次跑残留的 http.server（PID 17232/17800），
+    而它们服务的目录是**另一个 clone**，里面的 nav.css 还是旧版。
+    ⇒ **截图截的是别的树**，门禁却在报"本仓库"的结论。
+
+    这类错误最危险的地方：它**既可能假绿也可能假红，而且没有任何告警**
+    —— 报告长得很正常，只是结论属于另一份代码。
+    （本次就是这么发现的：修好了 CSS，diff 数字却一字未变。）
+
+    ⇒ 解法两条，缺一不可：
+       ① **让操作系统分配端口**（bind 0）⇒ 物理上不可能撞车；
+       ② **canary 校验**：拉一个文件跟磁盘字节比一遍，
+          确认"我连上的确实是我要测的这个仓库"。
+    """
+    import http.server
+    import functools
+    import threading
+    import urllib.request
+
+    class _Quiet(http.server.SimpleHTTPRequestHandler):
+        def log_message(self, *a, **k):   # 别把每条请求打到 stderr
+            pass
+
+    handler = functools.partial(_Quiet, directory=ROOT)
+    srv = http.server.ThreadingHTTPServer(('127.0.0.1', 0), handler)
+    srv.daemon_threads = True
+    port = srv.server_address[1]
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+
+    # ---- ② canary：确认连上的是本仓库 ----
+    canary = 'index.html'
+    disk_path = os.path.join(ROOT, canary)
+    if os.path.exists(disk_path):
+        want = io.open(disk_path, 'rb').read()
+        got = None
+        last = None
+        for _ in range(40):                      # 最多等 ~4 秒
+            try:
+                got = urllib.request.urlopen(
+                    'http://127.0.0.1:%d/%s' % (port, canary), timeout=2).read()
+                break
+            except Exception as e:               # noqa: BLE001 起服务期间的短暂失败要重试
+                last = e
+                import time as _t
+                _t.sleep(0.1)
+        if got is None:
+            srv.shutdown()
+            raise _ServerError('静态服务器起不来（%s）：%s' % (canary, last))
+        if got != want:
+            srv.shutdown()
+            raise _ServerError(
+                'canary 校验失败：%d 端口上服务的 **不是本仓库**（%s 的字节对不上）\n'
+                '        ⇒ 多半是有残留的 http.server 占了端口。'
+                '本脚本已改用系统分配端口，若仍报此错请检查本机进程。'
+                % (port, canary))
+    return srv, port
+
+
 def shoot(outdir):
     """对每个受管页面截图到 outdir"""
     os.makedirs(outdir, exist_ok=True)
@@ -195,14 +314,9 @@ def shoot(outdir):
     if not node:
         print('  [FAIL] 找不到 node')
         return 0
-    # 静态服务器
-    srv = subprocess.Popen(
-        [sys.executable, '-m', 'http.server', '8000', '--bind', '127.0.0.1'],
-        cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    srv, port = _start_server()
     ok = 0
     try:
-        import time
-        time.sleep(1.2)
         # ----  I1：一次 node 截全部（原来每页一次）----
         import json as _json
         import time as _time
@@ -211,8 +325,8 @@ def shoot(outdir):
         tasks = []
         for d, f, label, path in pages:
             tasks.append({
-                'url': 'http://127.0.0.1:8000/%s/%s' % (d, f),
-                'out': os.path.join(outdir, d.replace('/', '_') + '_' + f),
+                'url': 'http://127.0.0.1:%d/%s/%s' % (port, d, f),
+                'out': os.path.join(outdir, shot_name(d, f)),
                 'w': VIEWPORT[0], 'h': VIEWPORT[1],
                 'label': label, 'wait': 300,
             })
@@ -258,11 +372,8 @@ def shoot(outdir):
             print('  ⚠️ 只截到 %d / %d 页；其余页面本轮**未验证**'
                   % (ok, len(_pages_exist())))
     finally:
-        srv.terminate()
-        try:
-            srv.wait(timeout=3)
-        except Exception:
-            srv.kill()
+        srv.shutdown()
+        srv.server_close()
     return ok
 
 
@@ -286,6 +397,15 @@ def diff_all(threshold=1.0, tolerance=12):
     passed, failed = 0, []
     os.makedirs(DIFFS, exist_ok=True)
 
+    # 🔴 反假绿：`_current` 为空（或根本没有刚截的图）必须**判失败**。
+    #    旧版只是逐页报"当前截图缺失"，但那 23 条 FAIL 会被误读成"图坏了"；
+    #    真实原因常常是**一次都没截**，而这种情况过去被本地残留图掩盖了。
+    fresh = [x for x in glob.glob(os.path.join(CURRENT, '*.png'))]
+    if not fresh:
+        return 0, [('(全部)', 100.0,
+                    '`_current` 里没有任何刚截的图 ⇒ 本次**没有可比的对象**。'
+                    ' 这不是"图不一致"，是"压根没截到"，必须判失败')]
+
     for name in sorted(bfiles):
         bp = os.path.join(BASELINE, name)
         cp = os.path.join(CURRENT, name)
@@ -299,7 +419,19 @@ def diff_all(threshold=1.0, tolerance=12):
             failed.append((name, 100.0, '打不开：%s' % e))
             continue
         if a.size != b.size:
-            failed.append((name, 100.0, '尺寸变了：%s → %s' % (a.size, b.size)))
+            # ⚠️ 尺寸不符**通常不是 CSS 回归**，而是截图设置变了
+            #    （deviceScaleFactor / viewport）⇒ 必须把这层意思说出来，
+            #    否则读报告的人会去 CSS 里找一个根本不存在的问题。
+            if (b.size[0] % a.size[0] == 0 and b.size[1] % a.size[1] == 0
+                    and b.size[0] // a.size[0] == b.size[1] // a.size[1]
+                    and b.size[0] // a.size[0] > 1):
+                k = b.size[0] // a.size[0]
+                why = ('截图倍率不一致（当前是基线的 %d 倍）⇒ 检查 '
+                       'deviceScaleFactor，不是 CSS 回归' % k)
+            else:
+                why = ('尺寸变了（viewport 或页面高度改了）'
+                       '：%s → %s' % (a.size, b.size))
+            failed.append((name, 100.0, why))
             continue
         w, h = a.size
         # ⭐⭐ 判据的核心：**分块（tile）检测，不是全页百分比**。
@@ -375,16 +507,74 @@ def main():
             return 2
 
     def css_fingerprint():
-        """所有 CSS 的内容指纹（用来判断基线是否录于当前代码）"""
+        """
+        所有 CSS 的内容指纹（用来判断基线是否录于当前代码）
+
+        🔴 必须**先归一化行尾**再哈希。
+        实测事故：Windows 上 `core.autocrlf=true` ⇒ `git clone` 检出的
+        CSS 全是 CRLF，而录基线的机器上是 LF ⇒ 指纹**必然不等**
+        ⇒ 视觉回归门禁在任何 Windows clone 上**永久红**，
+        而报错只说"指纹不符"，看不出是行尾造成的。
+
+        那不是"代码变了"，是"字节表示变了" —— 指纹不该区分这两者。
+        ⇒ 统一把 CRLF 折成 LF 再哈希。
+
+        🔴🔴 第二个实测事故（比行尾更隐蔽）：**旧版只 glob `0*/*/*.css`**。
+        这个"三段"模式**匹配不到二级路径**的文件，实测漏掉 5 个：
+            01-tokens/tokens.css、typography.css、focus-ring.css、
+            scrollbar.css、04-recipes/tierA-tokens.css
+        ⇒ 也就是说：**只改 tokens.css（改颜色、改暗色）时，指纹纹丝不动**，
+          门禁不会提示"基线可能过期"，于是 diff 出现了却没人知道为什么。
+
+        ⇒ 现在改为**遍历库目录**，取所有能影响渲染的文件（css/js/html）。
+        之所以连 js/html 一起算：截图是**渲染结果**，
+        改了 tree.js 的 DOM 结构或 demo.html 的内容，观感一样会变，
+        只算 CSS 会让指纹对这类改动假装没看见。
+        """
         import hashlib
         h = hashlib.sha256()
-        for f in sorted(glob.glob(os.path.join(ROOT, '0*', '*', '*.css'))):
-            h.update(os.path.relpath(f, ROOT).encode('utf-8'))
-            h.update(io.open(f, 'rb').read())
+        skip = {'.git', 'node_modules', '06-vendor', 'shots',
+                '_baseline', '_current', '_diff'}
+        exts = {'.css', '.js', '.html'}
+        files = []
+        for d in ('01-tokens', '02-primitives', '03-patterns', '04-recipes',
+                  '09-assets', '10-review', 'adapters'):
+            base = os.path.join(ROOT, d)
+            if not os.path.isdir(base):
+                continue
+            for dirpath, dirnames, filenames in os.walk(base):
+                dirnames[:] = [x for x in dirnames if x not in skip]
+                for fn in filenames:
+                    if os.path.splitext(fn)[1].lower() in exts:
+                        files.append(os.path.join(dirpath, fn))
+        for f in sorted(files):
+            rel = os.path.relpath(f, ROOT).replace('\\', '/')
+            h.update(rel.encode('utf-8'))
+            h.update(io.open(f, 'rb').read().replace(b'\r\n', b'\n'))
         return h.hexdigest()[:16]
 
     def stamp_path():
         return os.path.join(BASELINE, '_stamp.json')
+
+    def head_sha():
+        """
+        当前 HEAD。写进基线戳里，用于回答"这份基线到底录在哪份代码上"。
+
+        🔴 为什么必须记（一次真的查了很久的事故）：
+        排查时发现 `_baseline` 与它名义上所属的那个提交 **渲染结果并不一致**
+        —— 用该提交的代码重渲染，和基线差 2299 px（card）/ 7473 px（button）。
+        也就是说基线**录于更早的某个状态**，而光看指纹只能知道"不一样"，
+        答不出"差在哪份代码"。
+        ⇒ 记下 HEAD，下次就能直接把基线和它所属的提交对上。
+        """
+        try:
+            r = subprocess.run(['git', 'rev-parse', '--short', 'HEAD'],
+                               cwd=ROOT, capture_output=True, timeout=10)
+            if r.returncode == 0:
+                return (r.stdout or b'').decode('utf-8', 'replace').strip()
+        except Exception:
+            pass
+        return None
 
     def read_stamp():
         try:
@@ -402,9 +592,10 @@ def main():
         # 🔴 写指纹：下次报 diff 时能判断"是代码变了，还是基线录于旧代码"
         fp = css_fingerprint()
         io.open(stamp_path(), 'w', encoding='utf-8').write(json.dumps(
-            {'fingerprint': fp, 'pages': n}, ensure_ascii=False, indent=2))
+            {'fingerprint': fp, 'pages': n, 'head': head_sha()},
+            ensure_ascii=False, indent=2))
         print('  已录基线：%d 个页面 → %s' % (n, os.path.relpath(BASELINE, ROOT)))
-        print('  CSS 指纹：%s（用于判断基线是否过期）' % fp)
+        print('  渲染指纹（CSS+JS+HTML）：%s（用于判断基线是否过期）' % fp)
         return 0 if n else 1
 
     # 默认 --check
@@ -426,8 +617,11 @@ def main():
         now_fp = css_fingerprint()
         if now_fp != st.get('fingerprint'):
             print('  === 视觉回归 ===')
-            print('  ⚠️ CSS 指纹与基线不符：基线录于 %s，现在是 %s' % (
+            print('  ⚠️ 渲染指纹与基线不符：基线录于 %s，现在是 %s' % (
                 st.get('fingerprint', '?'), now_fp))
+            if st.get('head'):
+                print('     基线录制时的 HEAD：%s（现在 %s）'
+                      % (st.get('head'), head_sha() or '未知'))
             print('     ⇒ 如果这些 CSS 改动是**有意的**，请重录：--update')
             print('     ⇒ 否则这就是真回归，继续看下面的 diff：')
             print('')
@@ -437,7 +631,20 @@ def main():
         return 1
 
     print('  === 视觉回归（阈值 %.2f%%）===' % threshold)
-    print('  OK   %d / %d 个页面观感一致' % (passed, n))
+    compared = passed + len(failed)
+    print('  OK   %d / %d 个页面观感一致' % (passed, compared))
+    # 🔴 诚实报告：截了但**没有基线可比**的页面 = 本轮**没被验证**。
+    #    不写出来就会被当成"也通过了"（默认信任是最常见的假绿来源）。
+    bnames = {os.path.basename(x)
+              for x in glob.glob(os.path.join(BASELINE, '*.png'))}
+    unverified = [shot_name(d, f) for d, f, _ in PAGES
+                  if os.path.exists(os.path.join(ROOT, d, f))
+                  and shot_name(d, f) not in bnames]
+    if unverified:
+        print('  ⚠️ %d 个页面**截了但没有基线**，本轮未验证（跑 --update 录基线）：'
+              % len(unverified))
+        for u in unverified:
+            print('        %s' % u)
     for name, pct, why in failed:
         print('  FAIL  %-34s %s' % (name, why))
         print('        diff 图：%s' % os.path.join('10-review/shots/_diff', name))

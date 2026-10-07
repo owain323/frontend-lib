@@ -90,7 +90,7 @@
 /* ---------- 层级缩进（用左边框引导线）---------- */
 .tree ul ul {
   padding-inline-start: var(--sp-5);
-  border-inset-inline-start: 1px solid var(--border-decor);
+  border-inline-start: 1px solid var(--border-decor);
   margin-inline-start: var(--sp-4);          /* 缩进线的位置 */
 }
 

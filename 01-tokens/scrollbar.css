@@ -142,7 +142,12 @@ html::-webkit-scrollbar-corner {
 
 /* --- 次要场景：代码块等用更细的 --- */
 .scroll-thin::-webkit-scrollbar { width: var(--scrollbar-size-thin); }
-.scroll-thin::-webkit-scrollbar-thumb { border-width: 2px solid transparent; }
+/* 🔴 原写 `border-width: 2px solid transparent` ⇒ 整条被丢弃。
+   只补 border 不够：底色默认画到边框底下 ⇒ 必须配 background-clip。 */
+.scroll-thin::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
 
 /* ============================================================================
    三、移动端：只保留惯性滚动，不做外观定制

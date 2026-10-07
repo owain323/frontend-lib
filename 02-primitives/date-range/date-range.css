@@ -107,7 +107,7 @@
   gap: var(--sp-2);
   padding: var(--sp-2) var(--sp-3);
   background: var(--surface-sunken);
-  border-inset-inline-start: 3px solid var(--danger);
+  border-inline-start: 3px solid var(--danger);
   border-radius: var(--r-sm);
   color: var(--danger);
   font-size: var(--fs-xs);

@@ -73,7 +73,7 @@
 .tabs--vertical .tabs__list {
   flex-direction: column;
   border-bottom: 0;
-  border-inset-inline-end: 1px solid var(--border-decor);
+  border-inline-end: 1px solid var(--border-decor);
 }
 
 /* ---- 单个 tab */
@@ -98,7 +98,7 @@
   margin-bottom: 0;
   margin-inline-end: -1px;
   border-bottom: 0;
-  border-inset-inline-end: 2px solid transparent;
+  border-inline-end: 2px solid transparent;
   text-align: start;
 }
 
@@ -110,7 +110,9 @@
 }
 
 .tabs--vertical .tabs__tab[aria-selected="true"] {
-  border-right-color: var(--accent);
+  /* 🔴 必须与上面 `.tabs--vertical .tabs__tab` 的 border-inline-end 同一侧，
+     否则 RTL 下选中线画在错误的一边（物理 border-right-* 不会跟着翻转）。 */
+  border-inline-end-color: var(--accent);
 }
 
 /* 🔴 hover 门控：触屏上"点一下"会先点亮 hover 再 click ⇒ 粘住不褪 */

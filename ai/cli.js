@@ -34,6 +34,16 @@ var patch = require('./patch.js');
 
 var AI = __dirname;
 
+/* ⚠️ 不能用 `String#padEnd`：它是 ES2017，
+   在老 WebView 上会**直接抛异常**（静默失效，只在真机炸）。
+   本文件虽跑在 Node 里，但同一份代码被复制进页面用是完全可能的
+   ⇒ `legacy-api` 门禁就是这么抓到它的。 */
+function pad(s, n) {
+  var out = String(s);
+  while (out.length < n) out += ' ';
+  return out;
+}
+
 function readJSON(file) {
   var txt = fs.readFileSync(file, 'utf8');
   try {
@@ -257,7 +267,7 @@ function cmdTokens(args) {
     process.stdout.write('  -- ' + k + ' --\n');
     Object.keys(doc.sets[k]).sort().forEach(function (n) {
       var t = doc.sets[k][n];
-      process.stdout.write('    ' + n.padEnd(24) + t.$value.slice(0, 34) +
+      process.stdout.write('    ' + pad(n, 24) + t.$value.slice(0, 34) +
         '   [' + t.$type + ']\n');
     });
     process.stdout.write('\n');

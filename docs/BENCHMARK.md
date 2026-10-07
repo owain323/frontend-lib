@@ -122,7 +122,7 @@ Radix 把状态写成 `data-state="open"` / `"closed"` / `"indeterminate"`，枚
 
 ### 它是什么
 
-GitHub 的设计系统，跨 React / ViewComponent / Figma 多端。
+GitHub 的设计系统，跨 React / Rails View Component / Figma 多端。
 
 ### 🟢 学到的：成熟度是分级，而且每级有判据
 

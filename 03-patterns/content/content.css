@@ -104,7 +104,7 @@
 .prose > blockquote {
   margin: var(--sp-5) 0;
   padding: 0 0 0 var(--sp-4);
-  border-inset-inline-start: 3px solid var(--accent);
+  border-inline-start: 3px solid var(--accent);
 }
 .prose > blockquote > p {
   color: var(--text-secondary);
@@ -121,7 +121,7 @@
   margin: 0;
   padding: var(--sp-4);
   background: var(--surface-sunken);
-  border-inset-inline-start: 3px solid var(--border-decor-str);
+  border-inline-start: 3px solid var(--border-decor-str);
   border-radius: 0 var(--r-sm) var(--r-sm) 0;
   overflow-x: auto;
   font-family: var(--mono);
@@ -131,7 +131,8 @@
   -webkit-overflow-scrolling: touch;
 }
 /* 缩进代码块没有左边框语言标记，给个更淡的，暗示"这是次要代码" */
-.prose > pre:not([class]) { border-left-color: var(--border-decor); }
+/* 🔴 逻辑属性：与上面 .prose > pre 的 border-inline-start 同侧。 */
+.prose > pre:not([class]) { border-inline-start-color: var(--border-decor); }
 
 /* ---------------------------------------------------------------- 表格（GFM）
    🔴 必须是 <table>，不能用 div 模拟 —— div 会让屏幕阅读器读不出行列关系。 */
