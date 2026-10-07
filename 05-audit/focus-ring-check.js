@@ -130,7 +130,11 @@ function toHex(c) {
   pass(!shifted, '聚焦不引起布局偏移（outline 不占布局，rect 不变）');
 
   // ⑤ 暗色对比度
-  await p.evaluate(() => document.documentElement.setAttribute('data-theme-current', 'dark'));
+  // ⚠️ 必须用 `data-theme`（不是 `data-theme-current`）：
+  //    `data-theme-current` 只是**解析结果**的标记，CSS 里没有它的令牌规则
+  //    ⇒ 设了它，令牌仍是亮色，测出来的"暗色对比度"是**假绿**。
+  //    `data-theme="dark"` 才是真正切配色的那个（纯 CSS，见 theme-sync.py）。
+  await p.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'));
   await new Promise((r) => setTimeout(r, 250));
   const dk = await p.evaluate(() => {
     const cs = getComputedStyle(document.documentElement);

@@ -73,12 +73,12 @@
       savedPaddingRight = document.body.style.paddingRight;
       if (sbw > 0) document.body.style.paddingRight = sbw + 'px';
     }
-    document.body.classList.add('is-locked');
+    document.body.setAttribute('data-scroll-locked', 'true');
   }
 
   function unlockScroll() {
     if (--lockCount > 0) return;
-    document.body.classList.remove('is-locked');
+    document.body.removeAttribute('data-scroll-locked');
     document.body.style.paddingRight = savedPaddingRight;
   }
 
@@ -144,7 +144,7 @@
       if (closed) return;
       closed = true;
       if (auto) clearTimeout(timerId);
-      el.classList.add('is-leaving');
+      el.setAttribute('data-state', 'leaving');
       /* 动画结束再移除；reduced-motion 下 animation:none，220ms 后直接删 */
       setTimeout(function () {
         if (el.parentNode) el.parentNode.removeChild(el);

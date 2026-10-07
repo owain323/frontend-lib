@@ -19,7 +19,7 @@
 | 4 | **focus-visible** | `:focus-visible` 2px outline | **键盘用户彻底迷失** |
 | 5 | **disabled** | `:disabled` 明确色值（不用 opacity） | **点了没反应，以为坏了** |
 | 6 | **loading** | `[aria-busy]` + `pointer-events:none` | **重复提交** |
-| 7 | success | `.is-success`（约 1.2s） | 不知道成没成 |
+| 7 | success | `data-state="success"`（约 1.2s） | 不知道成没成 |
 
 🔴 实测动机：某项目 的按钮**只有 default + hover 两态**，`:disabled` 0 处。
 用户不会抱怨"你缺 disabled 态"，只会觉得"这个按钮点了没反应，是不是坏了"。

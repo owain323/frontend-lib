@@ -9,7 +9,7 @@
       但**那个区块从来不存在**。复用的人照着做只会找不到。
       这个文件就是那个"核心"，真的、能复制、能用。
 
-   体积：浅色 97 个令牌 + 暗色 34 个，零外链零构建。
+   体积：浅色 98 个令牌 + 暗色 30 个，零外链零构建。
    --------------------------------------------------------------------- */
 
 :root {
@@ -21,8 +21,13 @@
   --paper:            #f6f7f8;
   --surface:          #ffffff;
   --surface-sunken:   #f1f3f5;
+                       
+                                                         
+                                                             
+                                                      
+  --surface-raised:   #ffffff;
                                                                                
-                                               
+                                     
                                                                                
                      
                                                                      
@@ -142,9 +147,10 @@
                       
                                                                         
   --accent:           #1b4d8f;
-                   
-                                  
-     不用 var(--accent) 是因为暗色下它太亮、铺满一大块会发光 */
+                                            
+                                                
+                                                
+                                                 
   --switch-on:         #1b4d8f;               
   --accent-hover:     #163a6d;                       
   --accent-soft:      #e6eef7;                                
@@ -175,11 +181,11 @@
                                       
                                                    
 
-                                                                   
+                                                                       
 
-        留它们的理由：算流体值、给脚本查、以及让"我们有几个断点"这件事有唯一答案。
-        ⚠️ 断点用的是 rem 不是 px —— 用户调大字号时断点跟着变，这才是对的。
-     ---------------------------------------------------------------- */
+                                              
+                                                 
+                                                                        
   --bp-sm: 30rem;                         
   --bp-md: 48rem;                  
   --bp-lg: 64rem;                    
@@ -336,8 +342,11 @@
                                                                                 
 
                                        
-:root {                          
-                                           
+                                                      
+                                                   
+                                       
+                                                     
+:root:not([data-theme="light"]) {
   --paper:           #14171A;
   --surface:         #1C2024;
   --surface-raised:  #232830;
@@ -400,13 +409,10 @@
   --accent-soft:     #1C2C3D;
 
   --scrim:           rgba(0, 0, 0, 0.62);
-  --sans:            -apple-system, BlinkMacSystemFont, "Segoe UI",
-                      "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
-                      sans-serif;
-  --mono:            ui-monospace, "SF Mono", "Menlo", "Consolas",
-                      "Liberation Mono", monospace;
-  --serif:           "Iowan Old Style", "Palatino Linotype", Palatino,
-                      Georgia, "Songti SC", serif;
-  --tracking-normal: 0.01em;
+                                                                  
+                                              
+                                                
+                                                  
+                                     
 }                  
 }

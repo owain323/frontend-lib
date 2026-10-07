@@ -1,0 +1,73 @@
+{
+  "$comment": [
+    "三档 Profile：约束的【松紧】是可以选的，但 Invariant 在任何档位下都必须成立。",
+    "",
+    "🔴 这为什么重要（架构悖论的解）",
+    "   恐惧是：今天为防 AI 犯错加的约束，明天变成更强 AI 的天花板。",
+    "   解法不是'以后再说'，是**把松紧做成可选项 + 把边界分层**：",
+    "     · Invariant（客观事实）   —— 任何档位都不能违反",
+    "     · Contract（版本化约定） —— 任何档位都不能违反，但可以升版本",
+    "     · Guidance（工作建议）   —— creative 档位下只是提示",
+    "     · 组件成熟度门槛          —— 三档不同，这是松紧的来源",
+    "   ⇒ 模型变强 ⇒ 用户切到 creative，而不是我们去删约束。",
+    "   ⇒ 约束永远留着给需要的人，不成为任何人的天花板。"
+  ],
+  "schemaVersion": "1.0.0",
+  "profiles": {
+    "creative": {
+      "label": "放开了做",
+      "allowedMaturity": ["alpha", "beta", "stable"],
+      "allowedUnknownComponent": true,
+      "allowedUnknownVariant": true,
+      "allowedUnknownState": true,
+      "allowedExtensions": true,
+      "guidanceLevel": "advisory",
+      "$comment": [
+        "适合：探索期、原型、模型很强且你能自己看结果。",
+        "未知组件/变体/状态都放行 —— 因为本库的组件集合本来就不完整，",
+        "不让用新东西等于让使用者为我们的缺口买单。"
+      ]
+    },
+    "standard": {
+      "label": "默认",
+      "allowedMaturity": ["beta", "stable"],
+      "allowedUnknownComponent": true,
+      "allowedUnknownVariant": true,
+      "allowedUnknownState": false,
+      "allowedExtensions": true,
+      "guidanceLevel": "warn",
+      "$comment": [
+        "适合：日常。不允许用**没在契约里登记过的状态取值**，",
+        "因为状态取值写错 = 组件静默停在错误状态（I-8/I-9），",
+        "这是最难靠肉眼发现的一类错误。",
+        "但允许没登记过的组件/变体 —— 我们的清单不全，不该卡住使用者。"
+      ]
+    },
+    "strict": {
+      "label": "只许用验证过的",
+      "allowedMaturity": ["stable"],
+      "allowedUnknownComponent": false,
+      "allowedUnknownVariant": false,
+      "allowedUnknownState": false,
+      "allowedExtensions": false,
+      "guidanceLevel": "error",
+      "$comment": [
+        "适合：交付物、要交给别人维护的东西、无人值守的自动化流水线。",
+        "只允许成熟度 = stable 的组件（当前 16 个，见 ai/components.json）。",
+        "",
+        "⚠️ 诚实说明：这一档位下 **11 个组件不可用**（beta）。",
+        "   这不是缺陷，是信息 —— 它告诉你这 11 个的状态还活在 class 里，",
+        "   JS 一改坏就静默错乱（I-8）。收敛完成（工单 L3-R1）后它们会升为 stable。"
+      ]
+    }
+  },
+  "alwaysEnforced": {
+    "$comment": "无论哪一档都必须成立 —— 这些是 Invariant，不是偏好。",
+    "rules": [
+      "不得写裸标签选择器（I-1）",
+      "不得新增裸颜色/裸间距，绕过令牌（I-5）",
+      "不得用页面级 override 链表达局部改动（I-2）",
+      "不得把状态表达成只有 JS 才知道的形式（I-8）"
+    ]
+  }
+}

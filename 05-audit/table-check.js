@@ -85,12 +85,22 @@ const REPO = path.resolve(__dirname, '..');
             ⇒ 正解：**依次点开每个状态**再查，最后复位。 */
       '空/加载/出错三态齐全': async (p) => {
         const seen = { empty: false, loading: false, error: false };
-        /* 依次切换到三个状态，每次都查 DOM 里有没有对应的态 */
+        /* ⚠️ 用 `[data-demo]`，不是 `[data-state]`。
+           `data-state` 是**组件状态枚举**（open/closed/…），
+           demo 里那几个按钮是"切到哪个视图"的**演示控件**，两者不是一回事。
+           （之前混用同一个属性名，正是状态词汇被污染的典型。）
+
+           ⚠️ 且必须**显式记录有没有找到按钮** —— 旧版 `if (b) b.click()`
+              找不到就静默跳过，于是"按钮被删了"和"三态缺失"报的是同一句话。
+              ⇒ 找不到按钮要当成**失败**，否则这条判据是假绿。 */
+        const missBtn = [];
         for (const st of ['loading', 'empty', 'error']) {
-          await p.evaluate((s) => {
-            const b = document.querySelector('[data-state="' + s + '"]');
-            if (b) b.click();
+          const hit = await p.evaluate((s) => {
+            const b = document.querySelector('[data-demo="' + s + '"]');
+            if (b) { b.click(); return true; }
+            return false;
           }, st);
+          if (!hit) missBtn.push(st);
           await new Promise((r) => setTimeout(r, 220));
           const r = await p.evaluate(() => ({
             empty: !!document.querySelector('.table__empty'),
@@ -101,7 +111,7 @@ const REPO = path.resolve(__dirname, '..');
         }
         /* 复位回常规 */
         await p.evaluate(() => {
-          const b = document.querySelector('[data-state="ready"]');
+          const b = document.querySelector('[data-demo="ready"]');
           if (b) b.click();
         });
         await new Promise((r) => setTimeout(r, 200));
@@ -109,6 +119,9 @@ const REPO = path.resolve(__dirname, '..');
         if (!seen.empty) missing.push('空态');
         if (!seen.loading) missing.push('加载态');
         if (!seen.error) missing.push('出错态');
+        if (missBtn.length) {
+          missing.push('演示切换按钮缺失：' + missBtn.join('、'));
+        }
         return { ok: missing.length === 0,
                  note: missing.length ? '🔴 缺：' + missing.join('、') : '三态齐全' };
       },

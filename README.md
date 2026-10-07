@@ -65,6 +65,10 @@ import 'frontend-lib/patterns/overlay/overlay.js';
 | `03-patterns/` | 复合模式：nav / tabs / overlay / list / tree / table 等 |
 | `04-recipes/` | 页面级示例 |
 | `09-assets/` | 图表 |
+| `ai/` | **机器可读契约**：`components.json` / `tokens.json` / schema / 校验器 / 命令行 |
+| `adapters/` | 场景适配层（如演示文稿），**不进核心** |
+| `benchmark/` | 兼容性基准（10 类编辑意图，当前无模型实测记录） |
+| `docs/` | `INVARIANT.md`（不变式）· `GUIDANCE.md`（建议）· `BENCHMARK.md`（对标） |
 | `types/` | TypeScript 类型定义（描述 `window` 上的全局对象） |
 
 ## 浏览器支持
@@ -91,7 +95,55 @@ import 'frontend-lib/patterns/overlay/overlay.js';
 }
 ```
 
-暗色模式跟随系统（`prefers-color-scheme`），也可手动覆盖 `[data-theme]`。
+### 明暗模式
+
+**CSS 自己表达，不需要 JS**：
+
+| 你想要 | 做法 |
+|---|---|
+| 跟随系统 | 什么都不做（默认） |
+| 强制暗 | `<html data-theme="dark">` |
+| 强制亮 | `<html data-theme="light">` |
+
+三种都**不加载任何 JS 就成立** —— 这点由 `theme-css` 门禁在真浏览器里守着。
+
+想要一个可点的开关时，才加载 `01-tokens/theme-toggle.js`。
+它**只翻属性，不含任何色值**（色值的真值只有一份：`tokens.css`）。
+支持三态：跟随系统 / 亮 / 暗，`window.Theme.set('dark' | 'light' | 'auto')`。
+
+⚠️ 因为暗色是纯 CSS 表达的，你的覆盖**不会**被 inline style 压掉
+（旧版靠 JS 写 30 条 inline 属性，那是本库曾经最大的一处设计代价）。
+
+## 机器可读契约（给自动化工具用）
+
+组件与令牌不只有文档，还有**结构化数据**：
+
+```bash
+node ai/cli.js components --maturity=stable   # 列出达到 stable 的组件
+node ai/cli.js tokens --mode=dark             # 列出暗色令牌
+node ai/cli.js check  page.html               # 校验一份文档
+node ai/cli.js diff   a.html b.html           # 两份文档的差异
+```
+
+- `ai/components.json` / `ai/tokens.json` 由源码**生成**（`--check` 已接门禁）
+  ⇒ 改了源码忘记重新生成就红。真值只有一份，不靠"记得同步"。
+- 组件**成熟度是算出来的**，不是人写的（没人会主动把自己的组件标成 beta）。
+- 档位 `creative / standard / strict` 决定校验严格程度。
+  门禁会证明它有鉴别力：同一份文档在 `strict` 下的报错数必须**多于** `creative`。
+- 文档里带未知 `extensions` 时旧版校验器只忽略、不判非法（前向兼容）。
+
+## 规范分三层
+
+改动本库或写扩展之前，先知道该动哪一层：
+
+| 层 | 文件 | 性质 |
+|---|---|---|
+| **不变式** | `docs/INVARIANT.md` | 客观事实，永不变。有门禁守边界 |
+| **契约** | `ai/*.json` + `API.md` | 约定，随版本变 |
+| **建议** | `docs/GUIDANCE.md` | 工作建议，可整份推翻 |
+
+约束要放宽时动的是**建议层**，不变式一个字都不用动。
+对标了谁、故意不学谁，见 `docs/BENCHMARK.md`。
 
 ## 可访问性
 
@@ -107,6 +159,8 @@ npm test               # 单元测试（约 100ms）
 npm run test:types     # 类型契约：正例必过 + 反例必挂
 npm run gate:fast      # 静态检查（约 45 秒）
 npm run gate           # 全量检查（含浏览器）
+npm run ai -- check path/to/page.html    # 机器可读契约的命令行
+npm run benchmark                        # 兼容性基准
 ```
 
 改代码时跑 `gate:fast` 即可；**提交前**再跑一次 `gate`。

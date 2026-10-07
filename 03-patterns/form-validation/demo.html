@@ -95,7 +95,7 @@
   <div class="note">
     三层时机：<code>onblur</code> 首次校验 → 之后才实时（字段"脏"过）→ <code>onsubmit</code> 全量校验并弹汇总。<br>
     🔴 <strong>刻意没用 <code>:has()</code></strong>：它是 CSS Level 4，某项目 上 WebView 版本不确定，
-    而且把逻辑硬塞进样式层不可测。控制权交给 JS 加 <code>.is-dirty</code> 类。
+    而且把逻辑硬塞进样式层不可测。控制权交给 JS 加 <code>data-dirty</code> 属性。
   </div>
 
   <h2>二、完整表单：提交后出错误汇总</h2>
@@ -198,12 +198,12 @@ function checkField(field) {
   var v = input.value;
 
   if (rule.test(v)) {
-    field.classList.remove('is-dirty');
+    field.removeAttribute('data-dirty');
     input.removeAttribute('aria-invalid');
     err.textContent = '';
     return true;
   }
-  field.classList.add('is-dirty');
+  field.setAttribute('data-dirty', '');
   input.setAttribute('aria-invalid', 'true');
   err.textContent = rule.msg;
   return false;
@@ -217,7 +217,7 @@ fields.forEach(function (field) {
   input.addEventListener('blur', function () { checkField(field); });
   // 只有"脏"过的字段才实时校验 —— 未 blur 过的不打扰
   input.addEventListener('input', function () {
-    if (field.classList.contains('is-dirty')) checkField(field);
+    if (field.hasAttribute('data-dirty')) checkField(field);
   });
 });
 
@@ -245,15 +245,15 @@ form.addEventListener('submit', function (e) {
     return;
   }
 
-  /* 🔴 补：提交**成功**时也必须清掉各字段的 is-dirty。
-     原来只有"重置"按钮清 —— 于是提交成功后，字段仍带着 is-dirty，
+  /* 🔴 补：提交**成功**时也必须清掉各字段的 data-dirty。
+     原来只有"重置"按钮清 —— 于是提交成功后，字段仍带着 data-dirty，
      空的 .field__error 继续 display:flex。
      以前 .field__error 没内容时看不出问题（空元素不显示任何东西），
      加上错误图标后**空元素露出了一个圆点**，这个 bug 才显形。
      这是"视觉改动揭露旧 bug"的典型案例。 */
   form.classList.remove('form--has-summary');
   fields.forEach(function (f) {
-    f.classList.remove('is-dirty');
+    f.removeAttribute('data-dirty');
     f.querySelector('.field__input').removeAttribute('aria-invalid');
     f.querySelector('.field__error').textContent = '';
   });
@@ -267,7 +267,7 @@ form.addEventListener('reset', function () {
   form.classList.remove('form--has-summary');
   document.getElementById('summary-slot').innerHTML = '';
   fields.forEach(function (f) {
-    f.classList.remove('is-dirty');
+    f.removeAttribute('data-dirty');
     f.querySelector('.field__input').removeAttribute('aria-invalid');
     f.querySelector('.field__error').textContent = '';
   });

@@ -80,7 +80,7 @@ Toc.init({ links: '#toc-list .toc__link', sections: 'main h2[id]' });
 
 ```css
 .nav__list { transform: translateX(100%); transition: transform 180ms; }
-.nav__list.is-open { transform: translateX(0); }
+.nav__list[data-state="open"] { transform: translateX(0); }
 ```
 
 动 `width` 会引起重排，页面抖一下。

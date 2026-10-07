@@ -25,7 +25,7 @@
 
 ⚠️ **三种 toast 变体在本 demo 里没有演示** ——
 它们是给复用者的钩子，样式已备好，需要你自己触发。
-`state--delayed` / `is-valid` 同理（见各自 README）。
+`.state--delayed` / `[data-state="valid"]` 同理（见各自 README）。
 
 
 | | toast | dialog |

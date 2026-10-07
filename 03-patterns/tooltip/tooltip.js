@@ -78,12 +78,12 @@
         tip.style.left = (b.left + b.width / 2 - t.width / 2) + window.pageXOffset + 'px';
       }
       document.body.appendChild(tip);
-      tip.classList.add('is-open');
+      tip.setAttribute('data-state', 'open');
       live.textContent = text;
     }
 
     function hide() {
-      tip.classList.remove('is-open');
+      tip.removeAttribute('data-state');
       live.textContent = '';
     }
 
@@ -94,7 +94,7 @@
     /* 触屏：click 也出（没有 hover 的设备唯一入口）*/
     el.addEventListener('click', function (e) {
       e.stopPropagation();
-      if (tip.classList.contains('is-open')) hide(); else show();
+      if (tip.getAttribute('data-state') === 'open') hide(); else show();
     });
 
     /* ② Esc 能关（WCAG 1.4.13）*/

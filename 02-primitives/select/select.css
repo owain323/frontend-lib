@@ -116,9 +116,9 @@
 }
 
 /* ⭐ 焦点与"当前选中"是两件事，用**两个**视觉区分：
-   · .is-active,    · [data-state="active"]  = 键盘游标在该项（高亮）
+   · [data-state="active"]  = 键盘游标在该项（高亮，由 JS 同步）
    · [aria-selected=true] = 已被选中的值（勾 + 粗体） */
-.select__opt.is-active, .select__opt[data-state="active"] { background: var(--accent-soft); }
+.select__opt[data-state="active"] { background: var(--accent-soft); }
 .select__opt[aria-selected="true"] { font-weight: 600; }
 
 @media (hover: hover) and (pointer: fine) {

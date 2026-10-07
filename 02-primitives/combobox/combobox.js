@@ -180,8 +180,8 @@
         idx = ((idx + dir) % n + n) % n;
       }
       activeIdx = idx;
-      os.forEach(function (o) { o.classList.remove('is-active'); });
-      os[idx].classList.add('is-active');
+      os.forEach(function (o) { o.removeAttribute('data-state'); });
+      os[idx].setAttribute('data-state', 'active');
       /* ⭐ 焦点留在 input 上，靠 aria-activedescendant 告知读屏 */
       input.setAttribute('aria-activedescendant', os[idx].id);
       if (os[idx].scrollIntoView) os[idx].scrollIntoView({ block: 'nearest' });
@@ -299,8 +299,8 @@
       var field = root.querySelector('.combo__field') ||
                   input.parentElement;
       if (!field) return;
-      if (input.disabled) field.classList.add('is-disabled');
-      else field.classList.remove('is-disabled');
+      if (input.disabled) field.setAttribute('data-state', 'disabled');
+      else field.removeAttribute('data-state');
     }
     input.addEventListener('change', syncDisabled);
     syncDisabled();

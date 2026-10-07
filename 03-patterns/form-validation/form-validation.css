@@ -129,16 +129,21 @@
      b) 之后才实时    —— 字段"脏"过之后（用户回来修改）才实时报错
      c) onsubmit     —— 提交时全量校验，并弹出错误汇总
 
-   "脏"用 .is-dirty 标记，由 JS 加。CSS 只负责让脏字段的错误显示出来。
+   "脏"用 `data-dirty` 标记，由 JS 加。CSS 只负责让脏字段的错误显示出来。
 
    🔴 这里刻意**不用 `:has()`**（写第一版时用了，是错的）：
       一是把"何时校验"这个逻辑硬塞进样式层，行为不可测；
       二是 `:has()` 属 CSS Level 4，兼容性不稳 —— 某项目 上的 WebView
       版本不确定，精简档 不能冒这个险。
-      控制权交给 JS：字段校验后由 JS 加 .is-dirty，CSS 只认这个类。
+      控制权交给 JS：字段校验后由 JS 加 `data-dirty`，CSS 只认这个属性。
+
+   ⚠️ 为什么是 `data-dirty` 而不是 `data-state="dirty"`：
+      `data-state` 是"这个组件当前处于哪个枚举状态"（open/closed/…），
+      "脏"是**正交标记**（一个字段可以同时是 dirty 且 state=invalid）。
+      塞进同一个属性 ⇒ 两个维度互斥，表达不了组合。
    ------------------------------------------------------------------------ */
 .field__error { display: none; }
-.field.is-dirty .field__error { display: flex; }
+.field[data-dirty] .field__error { display: flex; }
 
 /* 错误汇总展开时，全部错误强制显示，不管字段脏不脏 —— 那是用户主动要看清单。
    ⚠️ 原来这里是 `.form--has-summary .field__error`（不带 :not(:empty)），
@@ -147,7 +152,7 @@
 .form--has-summary .field__error:not(:empty) { display: flex; }
 
 /* 🔴 兜底（必须放在上面两条**之后**）：**没有文字的错误提示一律不显示**。
-   `.is-dirty` 只表示"这个字段被校验过"，**不表示"它现在有错"**。
+   `[data-dirty]` 只表示"这个字段被校验过"，**不表示"它现在有错"**。
    以前没内容时看不出问题（空元素不渲染任何东西），
    加了错误图标之后，空元素会露出一个圆点。
 

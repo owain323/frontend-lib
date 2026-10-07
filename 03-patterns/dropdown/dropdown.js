@@ -110,8 +110,8 @@
       if (!list.length) return;
       if (i < 0) i = list.length - 1;
       if (i >= list.length) i = 0;
-      list.forEach(function (x) { x.classList.remove('is-active'); });
-      list[i].classList.add('is-active');
+      list.forEach(function (x) { x.removeAttribute('data-state'); });
+      list[i].setAttribute('data-state', 'active');
       list[i].focus();
       active = i;
     }

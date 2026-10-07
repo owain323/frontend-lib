@@ -1,0 +1,47 @@
+{
+  "$comment": [
+    "这是『人工持有』的那一半组件契约。",
+    "机器持有的那一半（元素名/变体/状态/文件）由 05-audit/gen-ai-contract.py 从源码抽出，",
+    "两者合并生成 ai/components.json；--check 模式下不一致即红。",
+    "",
+    "⚠️ 这里只放『无法从源码机械推出』的东西：根类、用途、成熟度理由。",
+    "能机械推出的东西放这里 = 第二份真值来源 = 必然漂移（见 INVARIANT I-7）。"
+  ],
+  "maturityCriteria": {
+    "alpha": "缺 demo.html 或缺 05-audit 下的专属门禁 ⇒ 还没被机器验证过，不要用",
+    "beta": "有 demo + 专属门禁，但状态仍用 .is-* class 表达 ⇒ 违反 INVARIANT I-8（状态不在 DOM 上），改坏了 JS 会静默错乱",
+    "stable": "有 demo + 专属门禁 + 状态全部用 data-* 属性表达 ⇒ I-8 达标，可放心依赖",
+    "$note": "成熟度是【计算出来的】，不是拍的。给某个组件手工升级 stable 而它还有 .is-* ⇒ 门禁会红。"
+  },
+  "components": {
+    "badge": { "rootClass": "badge", "purpose": "状态标签：计数、分类、结果标记" },
+    "button": { "rootClass": "btn", "purpose": "动作触发：主/次/危险/纯文字四档" },
+    "card": { "rootClass": "card", "purpose": "内容容器：媒体+正文+操作区三段" },
+    "choice": { "rootClass": "choice", "purpose": "单选/多选/原生 select 外观的统一控件" },
+    "combobox": { "rootClass": "combo", "purpose": "可搜索 + 可多选标签的输入控件" },
+    "date-range": { "rootClass": "drange", "purpose": "日期区间选择，含预设快捷范围" },
+    "input": { "rootClass": "field", "purpose": "文本输入及其标签/帮助/错误三件套" },
+    "popover": { "rootClass": "popover", "purpose": "锚定到触发元素的浮层" },
+    "progress": { "rootClass": "progress", "purpose": "进度条与进度环" },
+    "select": { "rootClass": "select", "purpose": "自定义下拉选择（非原生）" },
+    "separator": { "rootClass": "separator", "purpose": "分隔线，可带中间文字" },
+    "skeleton": { "rootClass": "skeleton", "purpose": "加载占位骨架" },
+    "switch": { "rootClass": "switch", "purpose": "开关切换" },
+
+    "accordion": { "rootClass": "accordion", "purpose": "可折叠分组" },
+    "content": { "rootClass": "prose", "purpose": "长文排版容器（标题/段落/列表/引用/代码）" },
+    "drawer": { "rootClass": "drawer", "purpose": "侧边抽屉，含遮罩" },
+    "dropdown": { "rootClass": "dd", "purpose": "下拉菜单" },
+    "form-validation": { "rootClass": "form", "purpose": "表单校验反馈与错误汇总" },
+    "list": { "rootClass": "list", "purpose": "键值列表/条目列表" },
+    "nav": { "rootClass": "nav", "purpose": "顶部导航与目录" },
+    "overlay": { "rootClass": "toast", "purpose": "吐司提示与模态遮罩" },
+    "pagination": { "rootClass": "pagination", "purpose": "分页控件" },
+    "states": { "rootClass": "state", "purpose": "空/加载/错误/成功四种整块状态" },
+    "tabs": { "rootClass": "tabs", "purpose": "选项卡切换" },
+    "tooltip": { "rootClass": "tooltip", "purpose": "悬停/聚焦提示" },
+    "tree": { "rootClass": "tree", "purpose": "可展开树形结构" },
+
+    "table": { "rootClass": "table", "tier": "recipe", "purpose": "数据表格：排序/加载/空/错误四态" }
+  }
+}

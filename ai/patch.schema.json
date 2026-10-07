@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://frontend-lib.dev/ai/patch.schema.json",
+  "title": "frontend-lib 补丁操作契约",
+  "$comment": [
+    "🔴 补丁的作用对象是【语义 id】，不是 HTML、也不是 CSS 选择器。",
+    "",
+    "为什么：",
+    "  · HTML 路径（第 3 个 div 的第 2 个子节点）—— 结构一变就失效",
+    "  · CSS 选择器（.page-3 h1）—— 会把作用域扩散到整个文档（I-1/I-2）",
+    "  · 语义 id —— 稳定、可比、可回放、可 diff",
+    "",
+    "五种操作：create / update / move / delete / replace",
+    "其中 **move 是内容保持操作**：只改挂载位置，一个字节的内容都不碰。",
+    "这是对『改布局把内容改没了』这个具体故障的直接回答 ——",
+    "把它做成一种**结构上不可能出错**的操作，而不是靠提醒 AI 小心。"
+  ],
+  "type": "object",
+  "required": ["schemaVersion", "ops"],
+  "properties": {
+    "schemaVersion": { "type": "string" },
+    "ops": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/op" }
+    }
+  },
+  "definitions": {
+    "op": {
+      "type": "object",
+      "required": ["op"],
+      "properties": {
+        "op": {
+          "type": "string",
+          "enum": ["create", "update", "move", "delete", "replace"]
+        },
+        "id": { "type": "string" },
+        "node": { "type": "object" },
+        "parent": { "type": ["string", "null"] },
+        "index": { "type": "number" },
+        "set": { "type": "object" },
+        "unset": { "type": "array", "items": { "type": "string" } },
+        "$comment": { "type": "string" }
+      },
+      "allOf": [
+        {
+          "$comment": "五种操作各自的必需字段（用 allOf 表达，便于校验器逐条给出原因）"
+        }
+      ]
+    }
+  },
+  "opRequirements": {
+    "$comment": [
+      "这张表不是 JSON Schema 标准键，是我们的**元信息**，",
+      "由 ai/validate.js 读取执行（表达力比 allOf/if-then 强，且报错可读）。",
+      "放在这里而不是写在代码里，是为了让『每种操作需要什么』这件事可被外部读取。"
+    ],
+    "create":  ["op", "node"],
+    "update":  ["op", "id"],
+    "move":    ["op", "id", "parent"],
+    "delete":  ["op", "id"],
+    "replace": ["op", "id", "node"]
+  }
+}
