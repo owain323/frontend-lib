@@ -157,7 +157,7 @@
     align-items: stretch;
     gap: 0;
     background: var(--surface);
-    border-inset-inline-start: 1px solid var(--border-decor);
+    border-inline-start: 1px solid var(--border-decor);
     box-shadow: var(--shadow-2);
 
     transform: translateX(100%);        /* 收起态：在视口外 */
@@ -233,7 +233,7 @@
   color: var(--text-tertiary);
   text-decoration: none;
   font-size: var(--fs-xs);
-  border-inset-inline-start: 2px solid var(--border-decor);
+  border-inline-start: 2px solid var(--border-decor);
   white-space: nowrap;                 /* 目录项换行就乱了 */
   overflow: hidden;
   text-overflow: ellipsis;
@@ -248,7 +248,9 @@
    "true" 表示"在当前范围内当前位置"，目录高亮用它是通行做法。 */
 .toc__link[aria-current="true"] {
   color: var(--accent);
-  border-left-color: var(--accent);
+  /* 🔴 必须是 border-inline-start-color（逻辑），与 .toc__link 的
+     border-inline-start 同侧。写物理 border-left-color 的话 RTL 下会着错边。 */
+  border-inline-start-color: var(--accent);
   font-weight: 500;
 }
 

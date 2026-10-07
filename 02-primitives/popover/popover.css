@@ -100,28 +100,28 @@
   top: -6px;
   inset-inline-start: 50%;
   margin-inline-start: -5px;
-  border-inset-inline-end: none;
+  border-inline-end: none;
   border-bottom: none;
 }
 .popover--top .popover__arrow {
   bottom: -6px;
   inset-inline-start: 50%;
   margin-inline-start: -5px;
-  border-inset-inline-start: none;
+  border-inline-start: none;
   border-top: none;
 }
 .popover--end .popover__arrow {
   inset-inline-start: -6px;
   top: 50%;
   margin-top: -5px;
-  border-inset-inline-end: none;
+  border-inline-end: none;
   border-top: none;
 }
 .popover--start .popover__arrow {
   inset-inline-end: -6px;
   top: 50%;
   margin-top: -5px;
-  border-inset-inline-start: none;
+  border-inline-start: none;
   border-bottom: none;
 }
 

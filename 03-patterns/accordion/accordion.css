@@ -173,7 +173,7 @@
   flex: 0 0 auto;
   width: 8px;
   height: 8px;
-  border-inset-inline-end: 2px solid var(--text-tertiary);
+  border-inline-end: 2px solid var(--text-tertiary);
   border-bottom: 2px solid var(--text-tertiary);
   transform: rotate(45deg) translate(-1px, -1px);
   transition: transform var(--acc-dur) var(--acc-ease);

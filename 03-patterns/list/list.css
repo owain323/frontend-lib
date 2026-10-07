@@ -24,19 +24,19 @@
 
   /* 🔴 hover 不跳动的关键：左侧线用 transparent **预留位**，
      hover 时只改颜色。
-     如果用 border-left: 2px solid transparent 然后改成 3px，或者
+     如果用 border-inline-start: 2px solid transparent 然后改成 3px，或者
      hover 时才加 border —— 内容会横移 1~2px，这就是"列表在抖"。 */
-  border-inset-inline-start: 2px solid transparent;
+  border-inline-start: 2px solid transparent;
   border-bottom: 1px solid var(--border-decor);
 
   transition: background-color var(--dur-fast) var(--ease-out),
-              border-left-color var(--dur-fast) var(--ease-out);
+              border-inline-start-color var(--dur-fast) var(--ease-out);
 }
 
 @media (hover: hover) and (pointer: fine) {
 .list__item:hover {
   background: var(--surface-sunken);
-  border-left-color: var(--border-decor-str);
+  border-inline-start-color: var(--border-decor-str);
 }
 }
 /* 🔴 行内操作可聚焦时，整行给反馈。
@@ -44,7 +44,7 @@
    那样 Tab 会为每一行多停一次，键盘用户要按几十次才能穿过列表。 */
 .list__item:focus-within {
   background: var(--surface-sunken);
-  border-left-color: var(--accent);
+  border-inline-start-color: var(--accent);
 }
 
 /* 键盘 Tab 时行内按钮的焦点环（不加会看不见） */
