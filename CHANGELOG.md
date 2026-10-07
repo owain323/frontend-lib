@@ -89,6 +89,58 @@
 ⇒ 关闭状态的浮层仍占着滚动溢出区，把整页撑出横向滚动。
 门禁里以**显式例外**打印（每次都印，不静默）；修法见脚本注释。
 
+### 补：呈现适配层的五条判据**此前一次都没被执行过**
+
+`adapters/presentation/check.js` 声称守五条判据（版面必须已登记 / 单页元素 ≤ 12 /
+非封面页必须有标题 / 标题层级不跳级 / 禁 `.slide-N` 这类页面级选择器），
+而 `core-boundary` 只验了 `to-doc.js` 的往返 ⇒ **`check.js` 从来没被任何门禁跑过**。
+读 README 的人会以为有人在看，实际没人看 —— 这是 I-10 的第 5 个实证，
+也是最难发现的一类：它连"通过"报告都不产出。
+
+- 新增 `05-audit/presentation-gate.py`（已接入 `check-all.sh`）：
+  合规 deck（`fixtures/deck-ok.json`）必须过；违规 deck（`fixtures/deck-bad.json`）
+  必须红，且**五条判据各命中一次**（少一条就红 ⇒ 判据被删/改文案立刻暴露）；
+  `check.js` 的 `MAX_PER_SLIDE` 必须等于 `deck.schema.json` 的 `nodes.maxItems`
+  （两个真值源，改一处忘一处就成了"文档说 12、代码放 20"）。
+- 反向控制：把上限放宽到 999 / 去掉 `.slide-` 正则 / 把 schema 改成 8
+  ⇒ 门禁必须认出对应判据已失效。
+
+⚠️ 本版**没有**新增任何 PPT 能力：没有凭空造适配层，
+`adapters/presentation/` 是既有的、只是第一次被真的跑起来。
+
+### 修：tooltip 的左右方位**根本没有小三角**，而且落点算错了
+
+两处都是**静默**的：不报错、门禁不红，只是"看着不太对"。
+
+1. **类名对不上**：`tooltip.js` 的 `place='left'|'right'` 拼出 `tooltip--left` /
+   `--right`，而 `tooltip.css` 与契约 `ai/components.json` 里只有
+   `--inset-inline-start` / `--inset-inline-end` ⇒ 这两个方位的 `::after`
+   四条边全是 transparent ⇒ **没有小三角**。演示页 `p-left` / `p-right` 正在用。
+   修：`place` 按书写方向换算（物理左在 LTR 是内联起点、在 RTL 是内联终点），
+   并新增 `start` / `end` 两个逻辑方位。
+2. **量的时候元素还没进 DOM**：`show()` 先读 `getBoundingClientRect()` 再
+   `appendChild` ⇒ 游离元素拿到全 0。实测后果：
+   `top` 方位的气泡与锚点**完全重叠**（tip.top 398 == anchor.top 398，
+   正确值应是 364），`left` / `right` 上下偏半个身位。
+   修：先挂上去、藏起来量，量完再显示。顺带给 `top` 补了水平居中
+   （原来只有 `bottom` 居中，`top` 的 left 是静态位置，实测偏 16px）。
+3. **RTL 尖角指反**：CSS 里 `--inset-inline-start` 配的是物理
+   `border-left-color`。小三角是"给哪条边上色、尖角就指向反方向"，
+   RTL 下左边变成内联终点 ⇒ 尖角指向气泡外侧。改成
+   `border-inline-start-color` / `border-inline-end-color`。
+
+配套：
+- `tooltip-check.js` 新增判据⑥：在真浏览器里量 `::after` 的四条边 ——
+  LTR/RTL × left/right 四个组合必须**各恰好一条边有色，且 RTL 落在相反的物理边**
+  （修之前是 0 条）。判据写完后先跑一次确认它会红，才动手改代码。
+- `rtl-check.js` 的物理属性词表补上 `border-left-color` / `border-right-color`
+  —— 原来只收 margin/padding/left/right/text-align，**边框上色边漏了**，
+  这正是它能静默到现在的原因。已反向控制（注入 1 处 ⇒ 门禁报 1 处）。
+
+> 体积：`tooltip.js` 1.7 → 2.6 KB，`tooltip.css` 1.5 → 1.7 KB ⇒ 单文件容差（5%）
+> 超了。成因可归因：新增 `resolve()` 方位换算 + 逻辑定位 + 两条"为什么"注释。
+> 全库 gzip 177.2 → 178.3 KB（+0.62%，预算内）⇒ 已重录基线。
+
 ### 为什么可以重录视觉基线
 
 31 页大小全部变化（页面高度 ±30 ~ ±150px）。变化**来源已逐条归因**：

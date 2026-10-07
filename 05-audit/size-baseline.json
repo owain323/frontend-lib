@@ -173,12 +173,12 @@
       "raw": 7395
     },
     "03-patterns/tooltip/tooltip.css": {
-      "gzip": 1520,
-      "raw": 3435
+      "gzip": 1717,
+      "raw": 3797
     },
     "03-patterns/tooltip/tooltip.js": {
-      "gzip": 1747,
-      "raw": 4070
+      "gzip": 2679,
+      "raw": 6213
     },
     "03-patterns/tree/tree.css": {
       "gzip": 1647,
@@ -198,6 +198,6 @@
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 181434,
-  "total_raw": 469819
+  "total_gzip": 182563,
+  "total_raw": 472324
 }

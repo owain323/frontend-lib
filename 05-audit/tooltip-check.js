@@ -130,7 +130,80 @@ const REPO = path.resolve(__dirname, '..');
         return { ok: has, note: has ? 'pointer-events:none ✅' : '🔴 会挡住下面的点击' };
       },
 
-      /* ⑥ 暗色下气泡要反色（否则深底深字）*/
+      /* ⑥ 左右方位的小三角**真的画出来了**，且 RTL 下指向相反的物理边
+         🔴 为什么补这条（0.4.2 实测出来的既有缺口）：
+            `tooltip.js` 的 `place='left'|'right'` 会拼出 `tooltip--left` /
+            `--right`，而 `tooltip.css` 里**根本没有这两个类**（只有
+            `--inset-inline-start` / `--inset-inline-end`）
+            ⇒ 这两个方位的气泡**完全没有小三角**（::after 四条边全是
+            transparent），而 demo 里 `p-left` / `p-right` 正好在用。
+            这是最典型的静默失效：不报错、不红，只是少一块。
+         ⚠️ 为什么必须**在真浏览器里量**：
+            读源码只能知道"类名对不对"，知道不了"这条声明有没有被渲染出来"。
+            计算样式是浏览器给的，不是我推断的。 */
+      '左右方位的小三角真的画出来了（含 RTL）': async (p) => {
+        const r = await p.evaluate(() => {
+          function one(dir, place) {
+            var box = document.createElement('div');
+            box.setAttribute('dir', dir);
+            box.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;' +
+                                'z-index:99999;background:transparent';
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.textContent = 'p';
+            btn.style.cssText = 'position:absolute;top:300px;left:300px;' +
+                                'width:60px;height:24px';
+            box.appendChild(btn);
+            document.body.appendChild(box);
+            window.Tooltip.attach(btn, 'probe', place);
+            btn.click();                       // click 会 show（内部 stopPropagation）
+            var tips = document.querySelectorAll('.tooltip[data-state="open"]');
+            var tip = tips[tips.length - 1];
+            if (!tip) { box.remove(); return { err: '气泡没弹出' }; }
+            var cs = getComputedStyle(tip, '::after');
+            var sides = {
+              top: cs.borderTopColor, bottom: cs.borderBottomColor,
+              left: cs.borderLeftColor, right: cs.borderRightColor,
+            };
+            var visible = Object.keys(sides).filter(function (k) {
+              return sides[k] && sides[k] !== 'rgba(0, 0, 0, 0)' &&
+                     sides[k] !== 'transparent';
+            });
+            var out = { cls: tip.className, visible: visible,
+                        dir: getComputedStyle(btn).direction };
+            box.remove();
+            tip.remove();
+            return out;
+          }
+          return {
+            ltrLeft: one('ltr', 'left'), rtlLeft: one('rtl', 'left'),
+            ltrRight: one('ltr', 'right'), rtlRight: one('rtl', 'right'),
+          };
+        });
+        /* 期望：恰好一条边有色；且 LTR 与 RTL 落在**相反**的物理边 */
+        const want = [
+          ['ltr + left', r.ltrLeft, 'left'],
+          ['rtl + left', r.rtlLeft, 'right'],
+          ['ltr + right', r.ltrRight, 'right'],
+          ['rtl + right', r.rtlRight, 'left'],
+        ];
+        const bad = [];
+        for (const [label, got, side] of want) {
+          if (got.err) { bad.push(label + '：' + got.err); continue; }
+          if (got.visible.length !== 1) {
+            bad.push(label + '：有色边 ' + got.visible.length + ' 条（应为 1 条）' +
+                     ' class=' + got.cls);
+          } else if (got.visible[0] !== side) {
+            bad.push(label + '：有色边是 ' + got.visible[0] + '（应为 ' + side + '）' +
+                     ' class=' + got.cls);
+          }
+        }
+        return { ok: bad.length === 0,
+                 note: bad.length ? '🔴 ' + bad.join('；')
+                                  : '四个组合各有一条有色边，且 RTL 物理边相反 ✅' };
+      },
+
+      /* ⑦ 暗色下气泡要反色（否则深底深字）*/
       '暗色下气泡反色': async () => {
         const fs = require('fs');
         const raw = kit.stripComments(

@@ -89,6 +89,8 @@ run "invariant"  $PY 05-audit/invariant-gate.py
 run "benchmark"  node benchmark/run.js
 # 核心不得混入呈现形态（slide/deck）语义 —— PPT 的事在 adapters/presentation/
 run "core-boundary" $PY 05-audit/core-boundary-gate.py
+# 呈现层自己的五条判据必须**真的会红**（0.4.2 补：它们此前一次都没被执行过）
+run "presentation" $PY 05-audit/presentation-gate.py
 # 级联分层就绪：`@layer` 计数 + 每处 !important 必须能归类（切层前的前提门控）
 run "cascade-layer" $PY 05-audit/cascade-layer-gate.py
 # 声明合法性：写了浏览器不认的属性（如 border-inset-inline-*）会**静默失效**，

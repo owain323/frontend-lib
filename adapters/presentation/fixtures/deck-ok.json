@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "1.0.0",
+  "title": "季度复盘（合规样例）",
+  "$comment": [
+    "这份 deck **必须**通过 adapters/presentation/check.js（门禁 presentation 的正例）。",
+    "它同时是给陌生人看的「一份合规 deck 长什么样」的最小样本：",
+    "  · 版面只用 deck.schema.json 已登记的",
+    "  · 单页元素 <= 12",
+    "  · 非封面页有标题",
+    "  · 有 subtitle 就有 title",
+    "  · 不出现 .slide-N / .page-N 这类页面级选择器"
+  ],
+  "slides": [
+    {
+      "id": "cover",
+      "layout": "title",
+      "title": "季度复盘",
+      "nodes": [
+        { "id": "cover-title", "kind": "text", "text": "季度复盘", "role": "title" },
+        { "id": "cover-sub", "kind": "text", "text": "2026 Q3", "role": "subtitle" }
+      ]
+    },
+    {
+      "id": "bullets",
+      "layout": "bullets",
+      "title": "三个结论",
+      "nodes": [
+        { "id": "b-title", "kind": "text", "text": "三个结论", "role": "title" },
+        { "id": "b-1", "kind": "text", "text": "收入同比 +12%", "role": "body" },
+        { "id": "b-2", "kind": "text", "text": "毛利持平", "role": "body" },
+        { "id": "b-3", "kind": "text", "text": "费用率下降 1.4pt", "role": "body" }
+      ]
+    },
+    {
+      "id": "closing",
+      "layout": "closing",
+      "title": "下一步",
+      "nodes": [
+        { "id": "c-title", "kind": "text", "text": "下一步", "role": "title" },
+        { "id": "c-caption", "kind": "text", "text": "下周一出细化方案", "role": "caption" }
+      ]
+    }
+  ]
+}

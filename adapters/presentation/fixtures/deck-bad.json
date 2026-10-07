@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "1.0.0",
+  "title": "反例：每一页故意违反一条判据",
+  "$comment": [
+    "这份 deck **故意违规**，供 05-audit/presentation-gate.py 做反向控制：",
+    "check.js 必须 exit != 0，且下面 5 条判据**各被命中一次**。",
+    "如果哪天 check.js 改了措辞或删了判据，这道门禁会红 ——",
+    "那正是它的目的：『门禁报通过』不等于『门禁还在工作』。"
+  ],
+  "slides": [
+    {
+      "id": "bad-layout",
+      "layout": "hero-shot",
+      "title": "版面没登记",
+      "nodes": [
+        { "id": "bl-title", "kind": "text", "text": "版面没登记", "role": "title" }
+      ]
+    },
+    {
+      "id": "too-many",
+      "layout": "bullets",
+      "title": "元素超上限",
+      "nodes": [
+        { "id": "tm-title", "kind": "text", "text": "元素超上限", "role": "title" },
+        { "id": "tm-1", "kind": "text", "text": "一", "role": "body" },
+        { "id": "tm-2", "kind": "text", "text": "二", "role": "body" },
+        { "id": "tm-3", "kind": "text", "text": "三", "role": "body" },
+        { "id": "tm-4", "kind": "text", "text": "四", "role": "body" },
+        { "id": "tm-5", "kind": "text", "text": "五", "role": "body" },
+        { "id": "tm-6", "kind": "text", "text": "六", "role": "body" },
+        { "id": "tm-7", "kind": "text", "text": "七", "role": "body" },
+        { "id": "tm-8", "kind": "text", "text": "八", "role": "body" },
+        { "id": "tm-9", "kind": "text", "text": "九", "role": "body" },
+        { "id": "tm-10", "kind": "text", "text": "十", "role": "body" },
+        { "id": "tm-11", "kind": "text", "text": "十一", "role": "body" },
+        { "id": "tm-12", "kind": "text", "text": "十二", "role": "body" }
+      ]
+    },
+    {
+      "id": "no-title",
+      "layout": "two-col",
+      "nodes": [
+        { "id": "nt-1", "kind": "text", "text": "左栏", "role": "body" },
+        { "id": "nt-2", "kind": "text", "text": "右栏", "role": "body" }
+      ]
+    },
+    {
+      "id": "level-skip",
+      "layout": "two-col",
+      "nodes": [
+        { "id": "ls-sub", "kind": "text", "text": "有副标题却没主标题", "role": "subtitle" },
+        { "id": "ls-1", "kind": "text", "text": "正文", "role": "body" }
+      ]
+    },
+    {
+      "id": "page-override",
+      "layout": "title-body",
+      "title": "页面级选择器",
+      "nodes": [
+        { "id": "po-title", "kind": "text", "text": "页面级选择器", "role": "title" },
+        { "id": "po-1", "kind": "text", "text": "用 .slide-3 单独调这一页的字号", "role": "body" }
+      ]
+    }
+  ]
+}
