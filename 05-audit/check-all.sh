@@ -112,7 +112,28 @@ echo "=== 启动本地静态服务（Python 与浏览器门禁都要用）==="
 #    ⇒ 调用方忘了起服务时，6 个浏览器门禁**集体报"失败"**，
 #      而那其实是**环境问题，不是组件问题** —— 极易被误读成"代码坏了"。
 #    ⇒ 现在：没有就起，跑完关掉（trap 保证异常时也清理）。
-if ! curl -s -o /dev/null --max-time 2 "http://127.0.0.1:8000/index.html"; then
+# 🔴🔴 2026-10-07 补 canary：光看"8000 上有服务"**不够**，
+#   要看它服务的是不是**这一棵树**。
+#   实测：我自己在 /e/frontend-lib 手动起过一个 http.server 忘了关，
+#   然后在 /tmp/fl-clone4（克隆副本）里跑全量 —— 运行器看到 8000 已通，
+#   愉快地"复用已在跑的服务"，于是 100 多道浏览器门禁量的全是**源仓库**。
+#   症状很有迷惑性：107 道 PASS，只有 selftest 红（它要现生成临时文件，
+#   在别人的根目录下 404）。若不是它红，这就是一次完美的假绿。
+#   ⇒ 判据：拉一个仓库里的真实文件，与本地**字节比对**（不是看返回码）。
+_SRV_PID=""          # set -u 下 trap 里引用未赋值变量会报错 ⇒ 先给空值
+_canary() {
+  curl -s --max-time 3 "http://127.0.0.1:8000/index.html" 2>/dev/null | cmp -s - index.html
+}
+if curl -s -o /dev/null --max-time 2 "http://127.0.0.1:8000/index.html"; then
+  if _canary; then
+    echo "  [OK] 复用已在跑的服务 :8000（canary 字节一致 ⇒ 同一棵树）"
+  else
+    echo "  [FAIL] :8000 上跑的是**另一棵树**（index.html 字节与本地不一致）"
+    echo "         ⇒ 继续跑下去，浏览器门禁量的就不是这份代码（INVARIANT I-10 实证 6）"
+    echo "         ⇒ 请停掉占用 8000 的进程再跑。"
+    exit 2
+  fi
+else
   echo "  [启动] 本地静态服务 :8000"
   $PY -m http.server 8000 --bind 127.0.0.1 --directory . >/dev/null 2>&1 &
   _SRV_PID=$!
@@ -121,13 +142,12 @@ if ! curl -s -o /dev/null --max-time 2 "http://127.0.0.1:8000/index.html"; then
     curl -s -o /dev/null --max-time 1 "http://127.0.0.1:8000/index.html" && break
     sleep 0.4
   done
-  if curl -s -o /dev/null --max-time 2 "http://127.0.0.1:8000/index.html"; then
-    echo "  [OK] 服务已就绪"
+  if _canary; then
+    echo "  [OK] 服务已就绪（canary 字节一致）"
   else
-    echo "  [FAIL] 服务起不来 —— 浏览器门禁结果**不可信**"
+    echo "  [FAIL] 服务起不来或起了另一棵 —— 浏览器门禁结果**不可信**"
+    exit 2
   fi
-else
-  echo "  [OK] 复用已在跑的服务 :8000"
 fi
 
 # 🔴🔴 扫描目录必须**显式列举**，不能用 `.`
