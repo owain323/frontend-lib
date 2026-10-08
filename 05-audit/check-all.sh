@@ -106,6 +106,8 @@ run "mojibake"   $PY 05-audit/mojibake-check.py .
 run "repo-hygiene"  $PY 05-audit/repo-hygiene.py
 run "deps"      $PY 05-audit/deps.py --missing
 run "behavior"  $PY 05-audit/gen-behavior.py --check
+# 行为覆盖矩阵：哪些组件必须有哪种行为（不许靠省略跳过）
+run "beh-matrix" $PY 05-audit/behavior-matrix-gate.py
 echo ""
 echo "=== 启动本地静态服务（Python 与浏览器门禁都要用）==="
 # 🔴 修：门禁脚本**自己保证**服务在跑。
@@ -226,6 +228,11 @@ run "dismissable" node 05-audit/dismissable-check.js
 run "focus-return" node 05-audit/focus-return-check.js
 run "roving" node 05-audit/roving-check.js
 run "typeahead" node 05-audit/typeahead-check.js
+# 🔴 反向控制也**必须每次都跑**，不能只在写的时候验证一次。
+#    理由（今天一天踩了两次）：突变体的正则是硬编码的，源码一改形状它就匹配不上
+#    ⇒ 那条"反例"根本没生效 ⇒ 自检报"突变没生效"，但**没人看** ⇒ 门禁看起来是好的、
+#      实际上已经没牙了。⇒ 让它每次都跑，掉了牙自己会叫。
+run "beh-reverse" bash 05-audit/behavior-reverse.sh
 run "form-validation"       node 05-audit/form-validation-check.js
   # N1：RTL 双向布局（只报告：物理属性在 LTR 页里是正确的）
   run "rtl"         node 05-audit/rtl-check.js
