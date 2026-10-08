@@ -1,6 +1,28 @@
 (function (global) {
 'use strict';
 
+var flEmit = function (el, name, detail) {
+if (!el || !el.dispatchEvent) return null;
+var type = name.indexOf('fl-') === 0 ? name : 'fl-' + name;
+var ev = null;
+
+if (typeof window.CustomEvent === 'function') {
+try {
+ev = new window.CustomEvent(type, {
+detail: detail || null, bubbles: true, cancelable: false
+});
+} catch (e) { ev = null; }
+}
+if (!ev) {
+try {
+ev = document.createEvent('CustomEvent');
+ev.initCustomEvent(type, true, false, detail || null);
+} catch (e2) { return null; }
+}
+el.dispatchEvent(ev);
+return ev;
+};
+
 var flRoving = function (opts) {
 var opt = opts || {};
 var container = opt.container;
@@ -314,6 +336,9 @@ typeahead.type(k);
 function select(it) {
 items.forEach(function (x) { x.node.setAttribute('aria-selected', 'false'); });
 it.node.setAttribute('aria-selected', 'true');
+flEmit(root, 'fl-select', { value: it.node.getAttribute('data-value') ||
+it.node.textContent.replace(/^\s+|\s+$/g, ''),
+item: it });
 if (opt.onSelect) opt.onSelect(it);
 }
 
@@ -341,7 +366,7 @@ if (firstVisible) roving.rove(firstVisible.node);
 return {
 focusAt: focusAt,
 get selected() { return current(); },
-destroy: function () { roving.destroy(); root.innerHTML = ''; },
+destroy: function () { roving.destroy(); typeahead.destroy(); root.innerHTML = ''; },
 };
 }
 

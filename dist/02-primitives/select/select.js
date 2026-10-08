@@ -63,6 +63,28 @@ destroy: function () { stop(); },
 };
 };
 
+var flEmit = function (el, name, detail) {
+if (!el || !el.dispatchEvent) return null;
+var type = name.indexOf('fl-') === 0 ? name : 'fl-' + name;
+var ev = null;
+
+if (typeof window.CustomEvent === 'function') {
+try {
+ev = new window.CustomEvent(type, {
+detail: detail || null, bubbles: true, cancelable: false
+});
+} catch (e) { ev = null; }
+}
+if (!ev) {
+try {
+ev = document.createEvent('CustomEvent');
+ev.initCustomEvent(type, true, false, detail || null);
+} catch (e2) { return null; }
+}
+el.dispatchEvent(ev);
+return ev;
+};
+
 function closest(el, sel) {
 if (!el) return null;
 if (el.closest) return el.closest(sel);
@@ -169,6 +191,8 @@ if (ck) ck.textContent = on ? '✓' : '';
 
 var hidden = root.querySelector('input[type="hidden"]');
 if (hidden) hidden.value = selected == null ? '' : selected;
+flEmit(root, 'fl-change',
+{ value: selected, text: optText(options[selectedIdx()] || options[0]) });
 if (opt.onChange) opt.onChange(selected, optText(options[selectedIdx()] || options[0]));
 }
 
@@ -207,6 +231,7 @@ btn.setAttribute('aria-expanded', 'true');
 btn.focus();
 
 setActive(activeIndex());
+flEmit(root, 'fl-open', null);
 if (opt.onOpen) opt.onOpen();
 }
 function close(restoreFocus) {
@@ -218,6 +243,7 @@ activeIdx = -1;
 typeahead.clear();
 
 if (restoreFocus !== false) btn.focus();
+flEmit(root, 'fl-close', null);
 if (opt.onClose) opt.onClose();
 }
 function commit(i) {

@@ -4,6 +4,28 @@
 var uid = 0;
 'use strict';
 
+var flEmit = function (el, name, detail) {
+if (!el || !el.dispatchEvent) return null;
+var type = name.indexOf('fl-') === 0 ? name : 'fl-' + name;
+var ev = null;
+
+if (typeof window.CustomEvent === 'function') {
+try {
+ev = new window.CustomEvent(type, {
+detail: detail || null, bubbles: true, cancelable: false
+});
+} catch (e) { ev = null; }
+}
+if (!ev) {
+try {
+ev = document.createEvent('CustomEvent');
+ev.initCustomEvent(type, true, false, detail || null);
+} catch (e2) { return null; }
+}
+el.dispatchEvent(ev);
+return ev;
+};
+
 function toArray(x) { return Array.prototype.slice.call(x); }
 
 var raf = (typeof window.requestAnimationFrame === 'function')
@@ -134,6 +156,7 @@ setTimeout(settle, 400);
 }
 }
 
+flEmit(this.root, 'fl-change', { value: btn.id, open: open, item: btn });
 if (typeof this.opts.onChange === 'function') {
 this.opts.onChange(btn, open);
 }

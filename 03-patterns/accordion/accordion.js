@@ -34,6 +34,30 @@
   var uid = 0;
   'use strict';
 
+  /* ==== BEHAVIOR INJECT BEGIN: emit ==== */
+  var flEmit = function (el, name, detail) {
+    if (!el || !el.dispatchEvent) return null;
+    var type = name.indexOf('fl-') === 0 ? name : 'fl-' + name;
+    var ev = null;
+    /* 老 WebView 没有 CustomEvent 构造函数 ⇒ 兜底走 createEvent（理由见文件头）*/
+    if (typeof window.CustomEvent === 'function') {
+      try {
+        ev = new window.CustomEvent(type, {
+          detail: detail || null, bubbles: true, cancelable: false
+        });
+      } catch (e) { ev = null; }
+    }
+    if (!ev) {
+      try {
+        ev = document.createEvent('CustomEvent');
+        ev.initCustomEvent(type, true, false, detail || null);
+      } catch (e2) { return null; }
+    }
+    el.dispatchEvent(ev);
+    return ev;
+  };
+  /* ==== BEHAVIOR INJECT END: emit ==== */
+
   function toArray(x) { return Array.prototype.slice.call(x); }
 
   /* requestAnimationFrame 的 ES5 安全版 */
@@ -260,6 +284,8 @@
       }
     }
 
+    /* 手风琴没有 data-value ⇒ value 用按钮 id（组件自生成、实例内唯一）*/
+    flEmit(this.root, 'fl-change', { value: btn.id, open: open, item: btn });
     if (typeof this.opts.onChange === 'function') {
       this.opts.onChange(btn, open);
     }

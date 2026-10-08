@@ -19,6 +19,29 @@
  */
 (function (global) {
   'use strict';
+  /* ==== BEHAVIOR INJECT BEGIN: emit ==== */
+  var flEmit = function (el, name, detail) {
+    if (!el || !el.dispatchEvent) return null;
+    var type = name.indexOf('fl-') === 0 ? name : 'fl-' + name;
+    var ev = null;
+    /* 老 WebView 没有 CustomEvent 构造函数 ⇒ 兜底走 createEvent（理由见文件头）*/
+    if (typeof window.CustomEvent === 'function') {
+      try {
+        ev = new window.CustomEvent(type, {
+          detail: detail || null, bubbles: true, cancelable: false
+        });
+      } catch (e) { ev = null; }
+    }
+    if (!ev) {
+      try {
+        ev = document.createEvent('CustomEvent');
+        ev.initCustomEvent(type, true, false, detail || null);
+      } catch (e2) { return null; }
+    }
+    el.dispatchEvent(ev);
+    return ev;
+  };
+  /* ==== BEHAVIOR INJECT END: emit ==== */
   /* ---- 旧环境兼容：Element.closest 在老 WebView 上不存在 ----
      直接调用会在真机上抛 `is not a function`（本地完全正常，
      只在老环境炸 —— 属静默失效）。这里做模块内兜底，
@@ -148,6 +171,7 @@
       }).join('');
       var hidden = root.querySelector('input[type="hidden"]');
       if (hidden) hidden.value = tags.join(',');
+      flEmit(root, 'fl-change', { value: tags.slice() });
       if (opt.onChange) opt.onChange(tags.slice());
     }
     function addTag(v) {

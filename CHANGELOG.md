@@ -8,6 +8,79 @@
 
 ---
 
+## 0.7.1 — 2026-10-09
+
+### 加：统一事件模型 —— 组件**开始真的发 DOM 事件**（emit 核）
+
+在此之前，本库**一个 DOM 事件都不发**，只有构造时传进来的回调
+（`onChange` / `onSelect` / `onOpen` / `onClose`）。
+
+对陌生人来说这是最隐蔽的一类坑：
+
+```js
+root.addEventListener('change', fn);   // 写得很自然
+// ⇒ 永远不触发，而且**没有任何报错**。
+```
+
+他不会去翻文档找"本库只支持回调"，只会认定"这个库是坏的"。
+
+⚠️ 而且就算**随手补上**事件，也有两个坑是只有跑起来才看得见的：
+
+| 坑 | 为什么静态扫不出来 |
+|---|---|
+| 事件名不加前缀 | 组件内部有原生 `<input>` / `<button>`，它们的 `change` / `click` 会**冒泡上来** ⇒ 调用方收到自己没订阅过的东西 |
+| `new CustomEvent(...)` | 老 WebView **没有这个构造函数**，它在**用户交互的路径上**抛异常 —— 本地 Chrome 永远测不出来，真机上表现为"点了没反应" |
+
+⇒ 抽成工具核 `01-tokens/behavior/emit.js`，**兜底逻辑全库只有一份**。
+
+统一约定（十个组件一致）：`fl-` 前缀 · `bubbles: true` · `cancelable: false` ·
+派发在**组件根**（⇒ `e.target` 就是组件根）· `e.detail.value` 带值。
+
+| 组件 | 新增事件 |
+|---|---|
+| `Select` | `fl-change` `fl-open` `fl-close` |
+| `Combobox` | `fl-change` |
+| `DateRange` | `fl-change` |
+| `Accordion` | `fl-change` |
+| `Tabs` | `fl-change` |
+| `Tree` | `fl-select` |
+| `Dropdown` | `fl-select` `fl-open` `fl-close` |
+| `Pagination` | `fl-change` |
+| `Popover` | `fl-open` `fl-close` |
+| `Drawer` | `fl-close` |
+
+⚠️ 委托时**必须认 `e.target`**：事件会冒泡，嵌套组件会在同一个祖先上给你
+   两个 `fl-change`。事件名不能代替身份。
+
+### 加：门禁 `emit`（九条，含老 WebView 兜底的现场验证）
+
+⑦ 这条不是"顺便测一下"：老分支平时**永远走不到**，写错了本地一行报错都没有。
+⇒ 判据**现场把 `window.CustomEvent` 摘掉**，强制走 `createEvent` +
+`initCustomEvent` 那条路，断言事件照样送到、`type` / `detail` / `bubbles` 一致。
+
+⑨ 唯一入口：组件源码里**不许私自**造事件。
+   判据先把注入块整段摘掉再看块外手写部分（否则使用点里必然命中——那是注入进来的）；
+   只扫源码不扫 dist（dist 压缩后注释被剥掉，扫它必假红）。
+
+反向控制：6 个突变 + ⑨ 的三向验证（该抓的抓到 / 注入块内不误报 / 真仓库 0 命中）。
+
+### 成本（实测，不是估的）
+
+| | 原始 | gzip |
+|---|---|---|
+| 注入块（每个使用点一份） | +731 B | +411 B |
+| 10 个组件合计 | **+9.7 KB**（各 +880…+1059 B） | **+3.4 KB**（各 +291…+387 B） |
+| 全库（含 dist 与核文件） | +11.8 KB | +5.1 KB（+2.62%） |
+
+体积基线已按实测值重录。
+
+### 修
+
+- `Tree` 的 `destroy()` 此前没有销毁 typeahead（留下一个已无意义的定时器），已补上。
+- `docs`：`API.md` 新增「事件」一节（事件一览 + 五条统一约定 + 委托示例）。
+
+---
+
 ## 0.7.0 — 2026-10-08
 
 ### 加：行为覆盖矩阵 `ai/behaviors.json` + 门禁（M3）

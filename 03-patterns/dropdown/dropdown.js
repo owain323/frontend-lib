@@ -15,6 +15,30 @@
 (function (global) {
   'use strict';
 
+  /* ==== BEHAVIOR INJECT BEGIN: emit ==== */
+  var flEmit = function (el, name, detail) {
+    if (!el || !el.dispatchEvent) return null;
+    var type = name.indexOf('fl-') === 0 ? name : 'fl-' + name;
+    var ev = null;
+    /* 老 WebView 没有 CustomEvent 构造函数 ⇒ 兜底走 createEvent（理由见文件头）*/
+    if (typeof window.CustomEvent === 'function') {
+      try {
+        ev = new window.CustomEvent(type, {
+          detail: detail || null, bubbles: true, cancelable: false
+        });
+      } catch (e) { ev = null; }
+    }
+    if (!ev) {
+      try {
+        ev = document.createEvent('CustomEvent');
+        ev.initCustomEvent(type, true, false, detail || null);
+      } catch (e2) { return null; }
+    }
+    el.dispatchEvent(ev);
+    return ev;
+  };
+  /* ==== BEHAVIOR INJECT END: emit ==== */
+
   /* ==== BEHAVIOR INJECT BEGIN: roving ==== */
   var flRoving = function (opts) {
     var opt = opts || {};
@@ -238,6 +262,7 @@
       menu.hidden = false;
       btn.setAttribute('aria-expanded', 'true');
       active = -1;
+      flEmit(root, 'fl-open', null);
       if (opt.onOpen) opt.onOpen();
     }
 
@@ -247,6 +272,7 @@
       btn.setAttribute('aria-expanded', 'false');
       active = -1;
       if (restoreFocus !== false && document.contains(btn)) btn.focus();
+      flEmit(root, 'fl-close', null);
       if (opt.onClose) opt.onClose();
     }
 
@@ -301,6 +327,8 @@
       e.stopPropagation();
       if (li.getAttribute('aria-disabled') === 'true') return;
       close();                          /* 激活后关闭 + 归位 */
+      flEmit(root, 'fl-select',
+             { value: li.getAttribute('data-value') || li.textContent.trim(), item: li });
       if (opt.onSelect) opt.onSelect(li.getAttribute('data-value') || li.textContent.trim(), li);
     });
 

@@ -1,6 +1,28 @@
 (function () {
 'use strict';
 
+var flEmit = function (el, name, detail) {
+if (!el || !el.dispatchEvent) return null;
+var type = name.indexOf('fl-') === 0 ? name : 'fl-' + name;
+var ev = null;
+
+if (typeof window.CustomEvent === 'function') {
+try {
+ev = new window.CustomEvent(type, {
+detail: detail || null, bubbles: true, cancelable: false
+});
+} catch (e) { ev = null; }
+}
+if (!ev) {
+try {
+ev = document.createEvent('CustomEvent');
+ev.initCustomEvent(type, true, false, detail || null);
+} catch (e2) { return null; }
+}
+el.dispatchEvent(ev);
+return ev;
+};
+
 var SLOTS = 7;
 
 function el(tag, cls, text) {
@@ -111,6 +133,7 @@ this.announce();
 
 if (opts.scroll !== false) this.scrollToTop();
 this.syncURL();
+flEmit(this.node, 'fl-change', { value: n, page: n });
 if (typeof this.onChange === 'function') this.onChange(n);
 };
 
