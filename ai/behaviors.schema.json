@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://frontend-lib.dev/ai/behaviors.schema.json",
+  "title": "frontend-lib 行为覆盖矩阵",
+  "$comment": [
+    "描述 ai/behaviors.json 的形状：**哪些组件必须有哪种微行为**。",
+    "",
+    "🔴 为什么这份表要存在：四个微行为核抽完之后，『谁还没收编』『谁不适用』",
+    "   只写在人的脑子里 ⇒ 『不适用』和『忘了做』看起来一模一样。",
+    "",
+    "🔴 四种状态：",
+    "   core   已收编到核（门禁会去源码里核实真的用了核）",
+    "   manual 有手写实现但未收编（必须写现状）",
+    "   gap    应当有但根本没实现（必须写理由，计入缺口预算）",
+    "   n/a    不适用（必须写理由）",
+    "",
+    "⚠️ 不登记 = 门禁红：不许靠省略跳过。",
+    "⚠️ manual / gap 的数量受 budget 棘轮约束，只能降、不能升。",
+    "",
+    "⚠️ 本 schema 只用了 ai/validate.js 白名单里的关键字（propertyNames 不在",
+    "   白名单里 ⇒ 不能用；键名合法性由 behavior-matrix-gate.py 的第 ⑥ 条守）。"
+  ],
+  "type": "object",
+  "required": ["version", "behaviors", "budget", "matrix"],
+  "properties": {
+    "version": { "type": "string" },
+    "behaviors": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["coreFile", "gate", "fn", "meaning"],
+        "properties": {
+          "coreFile": { "type": "string" },
+          "gate": { "type": "string" },
+          "fn": { "type": "string", "pattern": "^fl[A-Z]" },
+          "meaning": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "budget": {
+      "type": "object",
+      "required": ["manual", "gap"],
+      "properties": {
+        "manual": { "type": "integer", "minimum": 0 },
+        "gap": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "matrix": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}

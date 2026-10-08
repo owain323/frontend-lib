@@ -165,3 +165,6 @@ h1 { font-size: 31px }          /* 改一个，14 页全变 */
 - `ai/validate.js` + `node ai/cli.js check <文件>` —— 零依赖校验
 - `ai/profiles.json` —— 三档严格程度；`strict` 只允许 `stable` 组件
 - `ai/capabilities.json` —— 按**能力**协商可用操作，不按模型名分支
+- `ai/behaviors.json` —— **行为覆盖矩阵**：哪些组件必须有哪种微行为
+  （状态：`core` 已收编 / `manual` 手写未收编 / `gap` 应做未做 / `n/a` 不适用）
+  ⇒ **不登记就红**，不许靠省略跳过；`manual` 与 `gap` 的数量有棘轮，只能降不能升

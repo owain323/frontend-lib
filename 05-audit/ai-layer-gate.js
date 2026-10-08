@@ -53,7 +53,7 @@ function readJSON(rel) {
 // ---------------------------------------------------------------- ① 关键字白名单
 try {
   validate.assertSchemasUseOnlySupported();
-  ok('① 四份 schema 只用了校验器实现过的关键字');
+  ok('① 五份 schema 只用了校验器实现过的关键字');
 } catch (e) {
   bad('① schema 用了未实现的关键字', e.message);
 }
@@ -72,7 +72,8 @@ try {
     try {
       // 临时把探针纳入扫描：直接调用内部同样的逻辑
       var files = ['contract.schema.json', 'components.schema.json',
-                   'tokens.schema.json', 'patch.schema.json'];
+                   'tokens.schema.json', 'patch.schema.json',
+                   'behaviors.schema.json'];
       // 用同一套白名单手动扫探针
       var SUP = require(path.join(AI, 'validate.js')).SUPPORTED_KEYWORDS;
       var probe = JSON.parse(fs.readFileSync(path.join(AI, '_probe.schema.json'), 'utf8'));
@@ -97,6 +98,10 @@ try {
   var r2 = validate.validate(readJSON('tokens.schema.json'), toks);
   expect(r2.ok, '② tokens.json 符合 tokens.schema.json',
     JSON.stringify(r2.errors.slice(0, 3)));
+  var beh = readJSON('behaviors.json');
+  var r3 = validate.validate(readJSON('behaviors.schema.json'), beh);
+  expect(r3.ok, '② behaviors.json 符合 behaviors.schema.json',
+    JSON.stringify(r3.errors.slice(0, 3)));
 })();
 
 // ---------------------------------------------------------------- ③ Profile 鉴别力
