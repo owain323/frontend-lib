@@ -127,7 +127,7 @@ import 'frontend-lib/dist/02-primitives/button/button.min.css';
 
 | 路径 | 内容 |
 |---|---|
-| `01-tokens/` | 设计令牌（颜色 / 间距 / 字号 / 圆角）、排版基线、页面骨架（`page.css`，选配） |
+| `01-tokens/` | 设计令牌（颜色 / 间距 / 字号 / 圆角）、排版基线、页面骨架（`page.css`，选配）、`behavior/` 微行为核 |
 | `02-primitives/` | 基础组件：button / input / select / combobox / date-range 等 |
 | `03-patterns/` | 复合模式：nav / tabs / overlay / list / tree / table 等 |
 | `04-recipes/` | 页面级示例 |

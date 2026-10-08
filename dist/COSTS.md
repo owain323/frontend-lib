@@ -25,7 +25,7 @@
 | primitive | `combobox` | 2.1 KB | 1.0 KB | 3.6 KB | **6.7 KB** | 22.9 KB | −16.2 KB |
 | primitive | `date-range` | 2.1 KB | 0.8 KB | 2.3 KB | **5.3 KB** | 21.4 KB | −16.1 KB |
 | primitive | `input` | 2.1 KB | 1.0 KB | — | **3.2 KB** | 19.4 KB | −16.2 KB |
-| primitive | `popover` | 2.1 KB | 0.8 KB | 1.4 KB | **4.3 KB** | 21.7 KB | −17.3 KB |
+| primitive | `popover` | 2.1 KB | 0.8 KB | 1.8 KB | **4.8 KB** | 22.2 KB | −17.4 KB |
 | primitive | `progress` | 2.1 KB | 0.7 KB | — | **2.8 KB** | 18.7 KB | −15.9 KB |
 | primitive | `select` | 2.1 KB | 0.8 KB | 2.3 KB | **5.3 KB** | 22.6 KB | −17.3 KB |
 | primitive | `separator` | 2.1 KB | 0.2 KB | — | **2.4 KB** | 17.1 KB | −14.7 KB |
@@ -34,7 +34,7 @@
 | pattern | `accordion` | 2.1 KB | 1.3 KB | 1.5 KB | **5.0 KB** | 29.2 KB | −24.2 KB |
 | pattern | `content` | 2.1 KB | 1.0 KB | — | **3.2 KB** | 19.7 KB | −16.6 KB |
 | pattern | `drawer` | 2.1 KB | 0.8 KB | 1.6 KB | **4.5 KB** | 20.4 KB | −15.9 KB |
-| pattern | `dropdown` | 2.1 KB | 0.8 KB | 1.5 KB | **4.5 KB** | 21.0 KB | −16.5 KB |
+| pattern | `dropdown` | 2.1 KB | 0.8 KB | 2.0 KB | **4.9 KB** | 21.8 KB | −16.9 KB |
 | pattern | `form-validation` | 2.1 KB | 0.8 KB | — | **2.9 KB** | 20.3 KB | −17.4 KB |
 | pattern | `list` | 2.1 KB | 0.6 KB | — | **2.7 KB** | 18.2 KB | −15.5 KB |
 | pattern | `nav` | 2.1 KB | 1.2 KB | — | **3.4 KB** | 19.8 KB | −16.4 KB |
@@ -47,8 +47,8 @@
 
 ## 三、全库
 
-- 全部组件都用上（min，含 tokens 一份）：**46.0 KB**
-- 源码版（带注释）全库 gzip：177.7 KB
+- 全部组件都用上（min，含 tokens 一份）：**46.9 KB**
+- 源码版（带注释）全库 gzip：181.3 KB
 
 > ⚠️ 源码版那个数字**不是**要付的钱：它包含我们的注释（全库 CSS 有 64% 是注释）。
 > 它的用途只有一个 —— 让人看清"dist 到底省了多少"。

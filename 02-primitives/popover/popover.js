@@ -13,6 +13,67 @@
 (function (global) {
   'use strict';
 
+  /* ==== BEHAVIOR INJECT BEGIN: dismissable ==== */
+  var flDismissable = function (opts) {
+    var opt = opts || {};
+    var escOn = opt.escOn || [];
+    var inside = opt.inside || [];
+    var when = opt.when || function () { return true; };
+    var onDismiss = opt.onDismiss || function () {};
+
+    var shared = window.__flDismiss || (window.__flDismiss = { stack: [], bound: false });
+
+    function isInside(node) {
+      if (!node) return false;
+      for (var i = 0; i < inside.length; i++) {
+        var el = inside[i];
+        if (!el || !el.contains) continue;
+        if (el === node || el.contains(node)) return true;
+      }
+      return false;
+    }
+
+    function onKey(e) {
+      if (!when()) return;
+      var k = e.key;
+      if (k !== 'Escape' && k !== 'Esc' && e.keyCode !== 27) return;
+      if (e.preventDefault) e.preventDefault();
+      if (e.stopPropagation) e.stopPropagation();
+      onDismiss(e, 'esc');
+    }
+
+    function onDocClick(e) {
+      var top = null;
+      for (var i = shared.stack.length - 1; i >= 0; i--) {
+        if (shared.stack[i].when()) { top = shared.stack[i]; break; }
+      }
+      if (!top || top.isInside(e.target)) return;
+      top.onDismiss(e, 'outside');
+    }
+
+    var rec = { when: when, isInside: isInside, onDismiss: onDismiss };
+
+    for (var j = 0; j < escOn.length; j++) {
+      if (escOn[j]) escOn[j].addEventListener('keydown', onKey);
+    }
+    shared.stack.push(rec);
+    if (!shared.bound) {
+      shared.bound = true;
+      document.addEventListener('click', onDocClick, true);
+    }
+
+    return {
+      destroy: function () {
+        for (var j = 0; j < escOn.length; j++) {
+          if (escOn[j]) escOn[j].removeEventListener('keydown', onKey);
+        }
+        var k = shared.stack.indexOf(rec);
+        if (k >= 0) shared.stack.splice(k, 1);
+      },
+    };
+  };
+  /* ==== BEHAVIOR INJECT END: dismissable ==== */
+
   /* ⭐ 同一时间只开一个 popover —— 两个叠着会让用户不知道该关哪个 */
   var current = null;
 
@@ -109,40 +170,35 @@
     trigger.setAttribute('aria-haspopup', 'dialog');
     trigger.setAttribute('aria-expanded', 'false');
     trigger.addEventListener('click', function (e) {
-      e.stopPropagation();   /* ⭐ 见下方「外部点击」的说明 */
+      /* ⭐ 不要把它交给"外部点击"判定：触发器在浮层**外面**，
+         但点它是"切换"不是"关闭"。dismissable 核的 `inside` 含 anchor，
+         anchor 又含 trigger ⇒ 已经算作内部；这里 stopPropagation 只是
+         顺手阻止更外层的组件（如 dropdown）也收到这次点击。 */
+      e.stopPropagation();
       toggle();
     });
 
-    /* ---- 键盘：触发器上用 Enter / Space 也能开 ---- */
-    trigger.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && box.getAttribute('data-open') === 'true') {
-        e.stopPropagation();
-        close();
-      }
+    /* ---- Esc / 点击外部关闭：走 dismissable 核（01-tokens/behavior/dismissable.js）
+       —— 手写的两个 Esc 分支与外部点击监听已删除，全库统一到一处。 ---- */
+    var dismiss = flDismissable({
+      escOn: [trigger, box],
+      inside: [box, anchor],   /* anchor 含 trigger ⇒ 点触发器不算"外部" */
+      when: function () { return box.getAttribute('data-open') === 'true'; },
+      onDismiss: function (e, reason) { close(); },
     });
 
-    /* ---- 浮层内部按键 ---- */
-    box.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') {
-        /* 🔴 必须 stopPropagation —— 否则若 popover 放在 dialog 里，
-         *    按一次 Esc 会**把两层一起关掉**（本库真实踩过的坑）。 */
-        e.stopPropagation();
-        close();
-        return;
-      }
-      /* 🔴 Tab **不做任何处理** —— 这是修正后的行为。
-       *
-       *  第一版（错）：在浮层内循环 Tab（最后一个绕回第一个）。
-       *  实测焦点序列：近 7 天 → 近 30 天 → 取消 → 应用 → 近 7 天 → …
-       *  ⇒ 用户**被困住了**，出不去。
-       *
-       *  ⭐ 正确做法（Radix Popover 的默认 `trapFocus={false}`）：
-       *    popover 是**非模态**的，Tab 应当自然走到页面下一个可聚焦元素。
-       *    困住用户是 dialog 的行为，不是 popover 的。
-       *    焦点"进入"浮层已经由 open() 里的 focus() 保证了，
-       *    不需要用 trap 来维持。
-       */
-    });
+    /* 🔴 Tab **不做任何处理** —— 这是修正后的行为，别"顺手"加回来。
+     *
+     *  第一版（错）：在浮层内循环 Tab（最后一个绕回第一个）。
+     *  实测焦点序列：近 7 天 → 近 30 天 → 取消 → 应用 → 近 7 天 → …
+     *  ⇒ 用户**被困住了**，出不去。
+     *
+     *  ⭐ 正确做法（Radix Popover 的默认 `trapFocus={false}`）：
+     *    popover 是**非模态**的，Tab 应当自然走到页面下一个可聚焦元素。
+     *    困住用户是 dialog 的行为，不是 popover 的。
+     *    焦点"进入"浮层已经由 open() 里的 focus() 保证了，
+     *    不需要用 trap 来维持。
+     */
 
     /* ---- 关闭态的内容不可聚焦 ---- */
     box.addEventListener('transitionend', function () {
@@ -158,6 +214,7 @@
       close: close,
       toggle: toggle,
       destroy: function () {
+        dismiss.destroy();
         close();
         box.remove();
         anchor.remove();
@@ -186,25 +243,8 @@
     arrow.style.marginLeft = Math.max(12, Math.min(offset, max)) + 'px';
   }
 
-  /* ---- 外部点击关闭（挂在 document 上，只装一次） ---- */
-  var installed = false;
-  function installOutsideClick() {
-    if (installed) return;
-    installed = true;
-    document.addEventListener('click', function (e) {
-      if (!current) return;
-      /* ⭐ 关键：`contains` 判断要把**触发元素**也算进去 ——
-         否则点触发器时，事件先冒泡到 document 会被判成"外部点击"，
-         刚打开就立刻被关掉（这是最常见的 popover bug）。 */
-      if (current.el.contains(e.target) ||
-          current.el.parentNode.contains(e.target)) return;
-      current.close();
-    }, true);   /* 捕获阶段，比 trigger 的 handler 更早跑 */
-  }
-
   var Popover = {
     attach: function (trigger, opts) {
-      installOutsideClick();
       return attach(trigger, opts);
     },
     closeAll: function () { if (current) current.close(); },
