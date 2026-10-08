@@ -76,6 +76,22 @@ root.addEventListener('change', fn);   // 写得很自然
 
 ### 修
 
+- 🔴 **我自己引入的一次静默回归**（实测，不是推演）：
+  注入 emit 核之后，`gen-ai-contract.py` 抽全局名的正则 `window\.([A-Z]\w*)\s*=`
+  把核里 `typeof window.CustomEvent === 'function'` 的 **`===` 第一个 `=`**
+  当成了赋值 ⇒ **10 个组件的 `global` 全变成 `CustomEvent`**。
+
+  ⚠️ 最恶劣的一点：**它没让任何门禁变红**。
+  干净克隆跑完**当时全套**门禁 EXIT=0 —— 因为那道门禁的判据是
+  「契约 == 生成器重跑一遍」，而生成器**正是**写错的那个（自己跟自己对答案）。
+
+  ⇒ 三处修：正则改 `=(?!=)`；抽取前先摘掉 `BEHAVIOR INJECT` 块（核不是组件源码）；
+     新增判据「`ai/components.json` 声明的 `global` 必须在**浏览器实测**里存在」
+     （`api-form` 判据 4 + 反向控制，用 `CustomEvent` 当事故真值反例）。
+  ⇒ 顺带：`global` 从此也认 `global.X =`（IIFE 参数写法），
+     此前 `select` / `dropdown` / `tree` / `combobox` / `date-range` / `popover`
+     的 `global` 一直是 `null` —— 契约在骗人，它们明明都有全局对象。
+  ⇒ 记录在 `docs/INVARIANT.md` I-10 实证 9。
 - `Tree` 的 `destroy()` 此前没有销毁 typeahead（留下一个已无意义的定时器），已补上。
 - `docs`：`API.md` 新增「事件」一节（事件一览 + 五条统一约定 + 委托示例）。
 

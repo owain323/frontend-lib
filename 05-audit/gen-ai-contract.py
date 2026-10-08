@@ -75,12 +75,41 @@ RE_STATE_BOOL = re.compile(r'\[data-([a-z-]+)\]')
 RE_ISCLASS = re.compile(r'\.is-([a-z][a-z0-9-]*)')
 RE_ROLE = re.compile(r'role\s*=\s*["\']([a-z]+)["\']')
 RE_ARIA = re.compile(r'\baria-([a-z]+)\s*=')
-RE_GLOBAL = re.compile(r'window\.([A-Z][A-Za-z0-9]*)\s*=')
+# ⚠️ `=(?!=)` 是必需的，不是洁癖：
+#    第一版写成 `\s*=`，而核里有 `typeof window.CustomEvent === 'function'`
+#    ⇒ `===` 的第一个 `=` 被当成赋值 ⇒ 10 个组件的 global 全被抓成
+#    `CustomEvent`（实测事故，见 CHANGELOG 0.7.1 修一节）。
+#    两种写法都要认：`window.X = `（直接挂）与 `global.X = `（IIFE 参数）。
+#    只认前者时，select / dropdown / tree 这些的 global 一直是 `null`
+#    —— 契约在骗人：它们明明都有全局对象。
+RE_GLOBAL = re.compile(r'(?:window|global)\.([A-Z][A-Za-z0-9]*)\s*=(?!=)')
+
+# 🔴 注入块里的**不是这个组件自己的代码** —— 它是核的副本。
+#    凡"这个组件是什么"的抽取，都必须先把它摘掉，否则核一改，
+#    27 个组件的契约跟着变（而且没人会发现）。
+RE_INJECT_BEGIN = re.compile(r'/\*\s*=+\s*BEHAVIOR INJECT BEGIN:.*?\*/')
+RE_INJECT_END = re.compile(r'/\*\s*=+\s*BEHAVIOR INJECT END:.*?\*/')
 
 
 def read(path):
     with io.open(path, 'r', encoding='utf-8') as f:
         return f.read()
+
+
+def strip_inject(text):
+    """摘掉 `BEHAVIOR INJECT` 块（核被整块注入进使用点，那不是组件的源码）。"""
+    out = []
+    in_block = False
+    for ln in text.split('\n'):
+        if RE_INJECT_BEGIN.search(ln):
+            in_block = True
+            continue
+        if RE_INJECT_END.search(ln):
+            in_block = False
+            continue
+        if not in_block:
+            out.append(ln)
+    return '\n'.join(out)
 
 
 def strip_comments(css):
@@ -130,9 +159,10 @@ def scan_component(cid, cdir, tier, meta):
             js_path = os.path.join(cdir, sorted(cands)[0])
     demo_path = first(cdir, 'demo.html')
 
+    js_text = strip_inject(read(js_path)) if js_path else ''
     text = css
     if js_path:
-        text += '\n' + read(js_path)
+        text += '\n' + js_text
     if demo_path:
         text += '\n' + read(demo_path)
 
@@ -162,7 +192,7 @@ def scan_component(cid, cdir, tier, meta):
 
     global_name = None
     if js_path:
-        m = RE_GLOBAL.search(read(js_path))
+        m = RE_GLOBAL.search(js_text)
         if m:
             global_name = m.group(1)
 

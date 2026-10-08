@@ -76,7 +76,7 @@
         ]
       },
       "usesOtherNamespaces": [],
-      "global": "CustomEvent",
+      "global": "Accordion",
       "behaviorRef": "API.md#accordion"
     },
     {
@@ -159,7 +159,7 @@
         "attrs": []
       },
       "usesOtherNamespaces": [],
-      "global": "CustomEvent",
+      "global": "Drawer",
       "behaviorRef": "API.md#drawer"
     },
     {
@@ -213,7 +213,7 @@
         ]
       },
       "usesOtherNamespaces": [],
-      "global": "CustomEvent",
+      "global": "Dropdown",
       "behaviorRef": "API.md#dropdown"
     },
     {
@@ -315,7 +315,7 @@
         ]
       },
       "usesOtherNamespaces": [],
-      "global": null,
+      "global": "FLIP",
       "behaviorRef": "API.md#list"
     },
     {
@@ -369,7 +369,7 @@
         "toc__list",
         "toc__title"
       ],
-      "global": null,
+      "global": "Toc",
       "behaviorRef": "API.md#nav"
     },
     {
@@ -425,7 +425,7 @@
         "dialog__desc",
         "dialog__title"
       ],
-      "global": null,
+      "global": "Overlay",
       "behaviorRef": "API.md#overlay"
     },
     {
@@ -476,7 +476,7 @@
         ]
       },
       "usesOtherNamespaces": [],
-      "global": "CustomEvent",
+      "global": "Pagination",
       "behaviorRef": "API.md#pagination"
     },
     {
@@ -588,7 +588,7 @@
         ]
       },
       "usesOtherNamespaces": [],
-      "global": "CustomEvent",
+      "global": "Tabs",
       "behaviorRef": "API.md#tabs"
     },
     {
@@ -633,7 +633,7 @@
         "attrs": []
       },
       "usesOtherNamespaces": [],
-      "global": null,
+      "global": "Tooltip",
       "behaviorRef": "API.md#tooltip"
     },
     {
@@ -678,7 +678,7 @@
         ]
       },
       "usesOtherNamespaces": [],
-      "global": "CustomEvent",
+      "global": "Tree",
       "behaviorRef": "API.md#tree"
     },
     {
@@ -938,7 +938,7 @@
         ]
       },
       "usesOtherNamespaces": [],
-      "global": "CustomEvent",
+      "global": "Combobox",
       "behaviorRef": "API.md#combobox"
     },
     {
@@ -991,7 +991,7 @@
         ]
       },
       "usesOtherNamespaces": [],
-      "global": "CustomEvent",
+      "global": "DateRange",
       "behaviorRef": "API.md#date-range"
     },
     {
@@ -1095,7 +1095,7 @@
         ]
       },
       "usesOtherNamespaces": [],
-      "global": "CustomEvent",
+      "global": "Popover",
       "behaviorRef": "API.md#popover"
     },
     {
@@ -1208,7 +1208,7 @@
         ]
       },
       "usesOtherNamespaces": [],
-      "global": "CustomEvent",
+      "global": "Select",
       "behaviorRef": "API.md#select"
     },
     {
