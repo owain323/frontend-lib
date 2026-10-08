@@ -1,6 +1,38 @@
 (function (global) {
 'use strict';
 
+var flFocusReturn = function (opts) {
+var opt = opts || {};
+var saved = null;
+
+return {
+save: function () {
+var a = document.activeElement;
+saved = (a && a !== document.body && a.focus) ? a : null;
+return saved;
+},
+
+restore: function () {
+var target = saved;
+
+if (!target || !document.contains(target)) target = opt.fallback || null;
+if (!target) { saved = null; return false; }
+try {
+target.focus();
+} catch (e) {
+saved = null;
+return false;
+}
+var ok = document.activeElement === target;
+saved = null;
+return ok;
+},
+
+target: function () { return saved; },
+clear: function () { saved = null; },
+};
+};
+
 var FOCUSABLE = [
 'a[href]',
 'button:not([disabled])',
@@ -51,7 +83,8 @@ function open(opt) {
 opt = opt || {};
 var place = opt.place || 'right';
 
-var lastFocused = document.activeElement;
+var fr = flFocusReturn({});
+fr.save();
 
 var host = document.createElement('div');
 host.className = 'drawer-backdrop';
@@ -161,9 +194,7 @@ if (host.parentNode) host.parentNode.removeChild(host);
 d.addEventListener('transitionend', remove, { once: true });
 setTimeout(remove, 320);
 
-if (lastFocused && document.contains(lastFocused)) {
-try { lastFocused.focus(); } catch (e) {  }
-}
+fr.restore();
 if (opt.onClose) opt.onClose();
 }
 

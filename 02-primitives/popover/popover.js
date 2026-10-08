@@ -74,6 +74,41 @@
   };
   /* ==== BEHAVIOR INJECT END: dismissable ==== */
 
+  /* ==== BEHAVIOR INJECT BEGIN: focus-return ==== */
+  var flFocusReturn = function (opts) {
+    var opt = opts || {};
+    var saved = null;
+
+    return {
+      save: function () {
+        var a = document.activeElement;
+        saved = (a && a !== document.body && a.focus) ? a : null;
+        return saved;
+      },
+
+      restore: function () {
+        var target = saved;
+        /* ⚠️ 见文档 ②：不判 contains 的话，元素被移除后 focus() 不报错
+           但焦点不动 ⇒ 用户以为还回去了，其实掉在 body 上。 */
+        if (!target || !document.contains(target)) target = opt.fallback || null;
+        if (!target) { saved = null; return false; }
+        try {
+          target.focus();
+        } catch (e) {
+          saved = null;
+          return false;
+        }
+        var ok = document.activeElement === target;
+        saved = null;   /* 见文档 ③ */
+        return ok;
+      },
+
+      target: function () { return saved; },
+      clear: function () { saved = null; },
+    };
+  };
+  /* ==== BEHAVIOR INJECT END: focus-return ==== */
+
   /* ⭐ 同一时间只开一个 popover —— 两个叠着会让用户不知道该关哪个 */
   var current = null;
 
@@ -125,11 +160,14 @@
     positionArrow(box, trigger);
     anchor.appendChild(box);
 
-    var lastFocused = null;
+    /* 焦点归位走 focus-return 核（01-tokens/behavior/focus-return.js）。
+       fallback 给 trigger：万一打开它的那个元素被删了，焦点至少回到触发器，
+       而不是掉到 body 上（键盘用户要从页面开头重新 Tab）。 */
+    var fr = flFocusReturn({ fallback: trigger });
 
     function open() {
       if (current && current !== api) current.close();
-      lastFocused = document.activeElement;
+      fr.save();
       box.setAttribute('data-open', 'true');
       /* 🔴 关闭态必须用 **inert**，不能用 pointer-events ——
        *   实测踩坑：`pointer-events:none` **拦不住 Tab**
@@ -153,10 +191,8 @@
       box.setAttribute('data-open', 'false');
       /* ⭐ 见 open() 的说明：必须 inert，不能只靠 pointer-events */
       box.setAttribute('inert', '');
-      /* ⭐ 焦点归还 —— 否则键盘用户要从页面开头重新 Tab。
-       *    ⚠️ 归还目标必须是**触发元素**，不是 body。 */
-      if (lastFocused && lastFocused.focus) lastFocused.focus();
-      lastFocused = null;
+      /* ⭐ 焦点归还 —— 否则键盘用户要从页面开头重新 Tab。 */
+      fr.restore();
       if (current === api) current = null;
       if (opts.onClose) opts.onClose();
     }

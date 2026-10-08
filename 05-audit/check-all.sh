@@ -223,6 +223,7 @@ run "skeleton"    node 05-audit/skeleton-check.js
 run "progress"    node 05-audit/progress-check.js
 run "popover"     node 05-audit/popover-check.js
 run "dismissable" node 05-audit/dismissable-check.js
+run "focus-return" node 05-audit/focus-return-check.js
 run "form-validation"       node 05-audit/form-validation-check.js
   # N1：RTL 双向布局（只报告：物理属性在 LTR 页里是正确的）
   run "rtl"         node 05-audit/rtl-check.js

@@ -60,6 +60,38 @@ if (k >= 0) shared.stack.splice(k, 1);
 };
 };
 
+var flFocusReturn = function (opts) {
+var opt = opts || {};
+var saved = null;
+
+return {
+save: function () {
+var a = document.activeElement;
+saved = (a && a !== document.body && a.focus) ? a : null;
+return saved;
+},
+
+restore: function () {
+var target = saved;
+
+if (!target || !document.contains(target)) target = opt.fallback || null;
+if (!target) { saved = null; return false; }
+try {
+target.focus();
+} catch (e) {
+saved = null;
+return false;
+}
+var ok = document.activeElement === target;
+saved = null;
+return ok;
+},
+
+target: function () { return saved; },
+clear: function () { saved = null; },
+};
+};
+
 var current = null;
 
 function focusableIn(root) {
@@ -97,11 +129,11 @@ box.innerHTML =
 positionArrow(box, trigger);
 anchor.appendChild(box);
 
-var lastFocused = null;
+var fr = flFocusReturn({ fallback: trigger });
 
 function open() {
 if (current && current !== api) current.close();
-lastFocused = document.activeElement;
+fr.save();
 box.setAttribute('data-open', 'true');
 
 box.removeAttribute('inert');
@@ -120,8 +152,7 @@ box.setAttribute('data-open', 'false');
 
 box.setAttribute('inert', '');
 
-if (lastFocused && lastFocused.focus) lastFocused.focus();
-lastFocused = null;
+fr.restore();
 if (current === api) current = null;
 if (opts.onClose) opts.onClose();
 }
