@@ -15,6 +15,89 @@
 (function (global) {
   'use strict';
 
+  /* ==== BEHAVIOR INJECT BEGIN: roving ==== */
+  var flRoving = function (opts) {
+    var opt = opts || {};
+    var container = opt.container;
+    var all = opt.items || function () { return []; };
+    var movable = opt.movable || all;
+    var nodeOf = opt.nodeOf || function (x) { return x; };
+    var axis = opt.axis || 'x';
+    var loop = opt.loop !== false;
+    var homeEnd = opt.homeEnd !== false;
+    /* ④ tabindex: false ⇒ 只要步进，不要 roving tabindex（理由见文件头）*/
+    var roveTab = opt.tabindex !== false;
+    var onMove = opt.onMove || function () {};
+
+    /* ① tabindex 落在**全集**上：禁用项也必须是 -1，否则 Tab 会停上去 */
+    function rove(target) {
+      if (!roveTab) return target;
+      var l = all() || [];
+      for (var i = 0; i < l.length; i++) {
+        var n = nodeOf(l[i]);
+        if (!n || !n.setAttribute) continue;
+        n.setAttribute('tabindex', n === target ? '0' : '-1');
+      }
+      return target;
+    }
+
+    /* ② 取模循环：对负数、对 |d| > n 都对 */
+    function step(i, d) {
+      var n = (movable() || []).length;
+      if (!n) return -1;
+      if (loop) return ((i + d) % n + n) % n;
+      var t = i + d;
+      return (t < 0 || t >= n) ? -1 : t;
+    }
+
+    function indexOfNode(node) {
+      var l = movable() || [];
+      for (var i = 0; i < l.length; i++) {
+        if (nodeOf(l[i]) === node) return i;
+      }
+      return -1;
+    }
+
+    function onKey(e) {
+      var l = movable() || [];
+      if (!l.length) return;
+      var i = indexOfNode(e.target);
+      if (i < 0) return;
+      var k = e.key;
+      var next = -1;
+      var reason = 'step';
+
+      if (axis === 'y') {
+        if (k === 'ArrowDown') next = step(i, 1);
+        else if (k === 'ArrowUp') next = step(i, -1);
+      } else {
+        if (k === 'ArrowRight') next = step(i, 1);
+        else if (k === 'ArrowLeft') next = step(i, -1);
+      }
+      if (homeEnd && k === 'Home') { next = 0; reason = 'home'; }
+      else if (homeEnd && k === 'End') { next = l.length - 1; reason = 'end'; }
+
+      if (next < 0 || next >= l.length) return;
+      /* ③ 只拦事件，不替组件决定移动后做什么 */
+      if (e.preventDefault) e.preventDefault();
+      if (e.stopPropagation) e.stopPropagation();
+      onMove(next, l[next], reason);
+    }
+
+    if (container) container.addEventListener('keydown', onKey);
+
+    /* ⚠️ 只暴露有人用的东西（理由见文件头）*/
+    return {
+      rove: rove,
+      step: step,
+      indexOf: indexOfNode,
+      destroy: function () {
+        if (container) container.removeEventListener('keydown', onKey);
+      },
+    };
+  };
+  /* ==== BEHAVIOR INJECT END: roving ==== */
+
   /* ==== BEHAVIOR INJECT BEGIN: dismissable ==== */
   var flDismissable = function (opts) {
     var opt = opts || {};
@@ -183,6 +266,20 @@
       return active >= 0 ? list[active] : document.activeElement;
     }
 
+    /* ↑↓ 与 Home / End 走 roving 核（01-tokens/behavior/roving.js）。
+       ⭐ tabindex: false —— 本组件按 APG **不用** roving tabindex：
+         菜单项永远是 tabindex="-1"，焦点由程序移动，Tab 的作用是**关闭菜单**。
+         若让核把某一项改成 "0"，菜单里就会多出一个 Tab 停靠点，
+         「Tab 用来关闭菜单」这条契约当场失效（dropdown-check 第 41 行在守）。
+       ⇒ 要的是同一套**步进 / 绕回 / Home·End**，不是同一套 tabindex。 */
+    var roving = flRoving({
+      container: root,
+      items: function () { return itemsOf(menu); },
+      axis: 'y',
+      tabindex: false,
+      onMove: function (i) { focusAt(i); },
+    });
+
     /* ---------- 按钮 ---------- */
     /* 🔴 修：原来先 `setAttribute('aria-controls', menu.id || '')`
        **再**给 menu.id ⇒ aria-controls 永远拿到空串。
@@ -230,12 +327,10 @@
          ⇒ 正解：`closest(e.target, '[data-dd-menu]')`（**加括号调用**）。 */
       if (closest(e.target, '[data-dd-menu]') !== menu) return;
 
-      /* ① ↑↓ 移动（循环）*/
-      if (k === 'ArrowDown') { e.preventDefault(); focusAt(active + 1); return; }
-      if (k === 'ArrowUp')   { e.preventDefault(); focusAt(active - 1); return; }
-      /* ⑤ Home / End 跳首末 */
-      if (k === 'Home')      { e.preventDefault(); focusAt(0); return; }
-      if (k === 'End')       { e.preventDefault(); focusAt(itemsOf(menu).length - 1); return; }
+      /* ① ↑↓ 移动（循环）· ⑤ Home / End 跳首末
+         ⇒ 已移到 roving 核（见上面的 flRoving），这里不再重复实现。
+            ⚠️ 不要在这里再写一遍：核与组件挂在**同一个 root** 上，
+               两个监听器都会跑 ⇒ 一次按键走两步。 */
 
       /* ② Esc 关闭 + 归位 —— 已移到 dismissable 核（01-tokens/behavior/dismissable.js）。
          留在原地会**关两次**（同一元素上的两个监听器，stopPropagation 挡不住
@@ -265,7 +360,7 @@
     return {
       open: open,
       close: close,
-      destroy: function () { dismiss.destroy(); menu.hidden = true; },
+      destroy: function () { roving.destroy(); dismiss.destroy(); menu.hidden = true; },
     };
   }
 

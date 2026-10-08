@@ -7,9 +7,9 @@
     "manifesto 里的 sourceSha256 变了而 dist 没重建 ⇒ dist-parity/dist-fresh 门禁会红"
   ],
   "totals": {
-    "sourceFiles": 51,
-    "sourceBytes": 479612,
-    "distGzip": 87858
+    "sourceFiles": 52,
+    "sourceBytes": 496266,
+    "distGzip": 89995
   },
   "files": [
     {
@@ -38,6 +38,21 @@
           "kind": "stripped",
           "bytes": 601,
           "gzip": 287
+        }
+      ],
+      "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
+    },
+    {
+      "source": "01-tokens/behavior/roving.js",
+      "sourceSha256": "691aa1b93f4a6bbd820107aa8896eae01984f3297488994e2258777349393a58",
+      "sourceBytes": 7225,
+      "sourceGzip": 3001,
+      "outputs": [
+        {
+          "path": "dist/01-tokens/behavior/roving.js",
+          "kind": "stripped",
+          "bytes": 1853,
+          "gzip": 732
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
@@ -604,15 +619,15 @@
     },
     {
       "source": "03-patterns/dropdown/dropdown.js",
-      "sourceSha256": "ea06985454a176f792772215531de8340c245d2702b2d31a62b2c57076ab46ed",
-      "sourceBytes": 10518,
-      "sourceGzip": 4234,
+      "sourceSha256": "7bb0efa725ba4ce5d29025e80aa562ab6c927a81c568d441ee9191035444b449",
+      "sourceBytes": 13896,
+      "sourceGzip": 5319,
       "outputs": [
         {
           "path": "dist/03-patterns/dropdown/dropdown.js",
           "kind": "stripped",
-          "bytes": 5883,
-          "gzip": 2071
+          "bytes": 7602,
+          "gzip": 2546
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
@@ -819,15 +834,15 @@
     },
     {
       "source": "03-patterns/tabs/tabs.js",
-      "sourceSha256": "a1561d164bc1c30a0e5256c2f5117e869b61ce1bd79c987c0523285c6b76d89a",
-      "sourceBytes": 7184,
-      "sourceGzip": 2845,
+      "sourceSha256": "0230dd02a043a935106bd5fc7d93d5824f2198f52ae83259008ae522be8d7c77",
+      "sourceBytes": 9747,
+      "sourceGzip": 3832,
       "outputs": [
         {
           "path": "dist/03-patterns/tabs/tabs.js",
           "kind": "stripped",
-          "bytes": 4086,
-          "gzip": 1430
+          "bytes": 5258,
+          "gzip": 1803
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
@@ -889,15 +904,15 @@
     },
     {
       "source": "03-patterns/tree/tree.js",
-      "sourceSha256": "986088573580e7a011c70ac96b263a5e319aea5d5a143aad26fe06121355ae85",
-      "sourceBytes": 9876,
-      "sourceGzip": 3688,
+      "sourceSha256": "e561065a8dff6832e343a5740c35d13d1ccfd8d20d7139ed956353fe16bfbc71",
+      "sourceBytes": 13364,
+      "sourceGzip": 5060,
       "outputs": [
         {
           "path": "dist/03-patterns/tree/tree.js",
           "kind": "stripped",
-          "bytes": 5527,
-          "gzip": 1855
+          "bytes": 7224,
+          "gzip": 2412
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"

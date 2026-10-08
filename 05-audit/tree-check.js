@@ -69,6 +69,40 @@ const REPO = path.resolve(__dirname, '..');
         return r;
       },
 
+      /* ⭐ 同一条不变量，但**含收起的节点**也一起数，
+         而且**自己先走一遍键盘**再数。
+         为什么必须自己走：第一版我只数**初始状态** ⇒ 把 tree.js 里
+         focusAt() 的「其余置 -1」删掉后它**依然全绿**
+         ⇒ 那是一条"报告通过、什么也没查"的假绿（INVARIANT I-10 实证 8）。
+         ⇒ 正解：判据必须先制造状态变化（移动 / 收起 / 再展开），再数。
+         ⚠️ 反向控制（实测）：删掉那行 ⇒ 本条红（实测 3 个 0）。 */
+      'roving tabindex（走一遍键盘 + 收起再展开后仍只一个 0）': async (p) => {
+        /* ① 自己准备前提：焦点落到第一个节点 */
+        await p.evaluate(() => {
+          const n = document.querySelector('#t1 .tree__node');
+          if (n) n.focus();
+        });
+        /* ② 移动 → 收起 → 再移动 → 再展开：制造"节点被藏起来"的机会 */
+        for (const k of ['ArrowRight', 'ArrowDown', 'ArrowDown', 'ArrowLeft',
+                         'ArrowDown', 'ArrowRight', 'ArrowDown']) {
+          await p.keyboard.press(k);
+          await new Promise((r) => setTimeout(r, 120));
+        }
+        const r = await p.evaluate(() => {
+          const all = [...document.querySelectorAll('#t1 .tree__node')];
+          if (!all.length) return { ok: true, note: '无节点（跳过）' };
+          const zeros = all.filter((n) => n.getAttribute('tabindex') === '0');
+          return { ok: zeros.length <= 1,
+                   note: '走完 7 次按键后，共 ' + all.length + ' 个节点（含收起的），' +
+                         zeros.length + ' 个 tabindex=0' +
+                         (zeros.length > 1
+                           ? '（🔴 多出的 Tab 停靠点：' +
+                             zeros.map((n) => (n.textContent || '').trim().slice(0, 6)).join('/') + '）'
+                           : ' ✅ 收起/展开都不会漏') };
+        });
+        return r;
+      },
+
       /* ① ↑↓ 移动 */
       '↑↓ 在节点间移动': async (p) => {
         await p.evaluate(() => {

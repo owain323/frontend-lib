@@ -47,7 +47,7 @@
 | `Dropdown` | ✅ | create | `create` |
 | `Pagination` | ✅ | create | `create` `update` `pagesOf` |
 | `Accordion` | ✅ | **construct** | 实例方法在原型上：`toggle` `set` `bind` `init` … |
-| `Tabs` | ✅ | **construct** | 实例方法在原型上：`select` `focusables` `rove` `step` `edge` |
+| `Tabs` | ✅ | **construct** | 实例方法在原型上：`select` `focusables` `enabled` `rove` `bind`（方向键游走已并入 roving 核） |
 | `Tooltip` | ✅ | attach | `attach` |
 | `Popover` | ✅ | attach | `attach` `closeAll` `current` |
 | `Overlay` | ✅ | direct | `dialog` `toast` |

@@ -1,6 +1,84 @@
 (function () {
 'use strict';
 
+var flRoving = function (opts) {
+var opt = opts || {};
+var container = opt.container;
+var all = opt.items || function () { return []; };
+var movable = opt.movable || all;
+var nodeOf = opt.nodeOf || function (x) { return x; };
+var axis = opt.axis || 'x';
+var loop = opt.loop !== false;
+var homeEnd = opt.homeEnd !== false;
+
+var roveTab = opt.tabindex !== false;
+var onMove = opt.onMove || function () {};
+
+function rove(target) {
+if (!roveTab) return target;
+var l = all() || [];
+for (var i = 0; i < l.length; i++) {
+var n = nodeOf(l[i]);
+if (!n || !n.setAttribute) continue;
+n.setAttribute('tabindex', n === target ? '0' : '-1');
+}
+return target;
+}
+
+function step(i, d) {
+var n = (movable() || []).length;
+if (!n) return -1;
+if (loop) return ((i + d) % n + n) % n;
+var t = i + d;
+return (t < 0 || t >= n) ? -1 : t;
+}
+
+function indexOfNode(node) {
+var l = movable() || [];
+for (var i = 0; i < l.length; i++) {
+if (nodeOf(l[i]) === node) return i;
+}
+return -1;
+}
+
+function onKey(e) {
+var l = movable() || [];
+if (!l.length) return;
+var i = indexOfNode(e.target);
+if (i < 0) return;
+var k = e.key;
+var next = -1;
+var reason = 'step';
+
+if (axis === 'y') {
+if (k === 'ArrowDown') next = step(i, 1);
+else if (k === 'ArrowUp') next = step(i, -1);
+} else {
+if (k === 'ArrowRight') next = step(i, 1);
+else if (k === 'ArrowLeft') next = step(i, -1);
+}
+if (homeEnd && k === 'Home') { next = 0; reason = 'home'; }
+else if (homeEnd && k === 'End') { next = l.length - 1; reason = 'end'; }
+
+if (next < 0 || next >= l.length) return;
+
+if (e.preventDefault) e.preventDefault();
+if (e.stopPropagation) e.stopPropagation();
+onMove(next, l[next], reason);
+}
+
+if (container) container.addEventListener('keydown', onKey);
+
+return {
+rove: rove,
+step: step,
+indexOf: indexOfNode,
+destroy: function () {
+if (container) container.removeEventListener('keydown', onKey);
+},
+};
+};
+
 function toArray(x) { return Array.prototype.slice.call(x); }
 
 function closest(el, sel) {
@@ -34,6 +112,18 @@ this.panels = toArray(root.querySelectorAll('[role="tabpanel"]'));
 this.vertical = this.list.getAttribute('aria-orientation') === 'vertical';
 
 this.manual = root.classList.contains('tabs--manual');
+
+var self = this;
+this.roving = flRoving({
+container: this.list,
+items: function () { return self.tabs; },
+movable: function () { return self.focusables(); },
+axis: this.vertical ? 'y' : 'x',
+onMove: function (i, tab) {
+if (self.manual) { self.rove(tab); tab.focus(); }
+else self.select(tab, true);
+},
+});
 this.bind();
 }
 
@@ -46,9 +136,8 @@ return filter(this.tabs, this.enabled, this);
 };
 
 Tabs.prototype.rove = function (target) {
-for (var i = 0; i < this.tabs.length; i++) {
-this.tabs[i].setAttribute('tabindex', this.tabs[i] === target ? '0' : '-1');
-}
+if (!this.roving) return;
+this.roving.rove(target);
 };
 Tabs.prototype.select = function (tab, focusIt) {
 if (!this.enabled(tab)) return;
@@ -80,31 +169,6 @@ this.opts.onChange(tab.getAttribute('data-value') || tab.id, tab);
 }
 };
 
-Tabs.prototype.step = function (from, delta) {
-var list = this.focusables();
-if (!list.length) return;
-var i = list.indexOf(from);
-if (i < 0) i = 0;
-
-var n = (i + delta + list.length) % list.length;
-var next = list[n];
-if (this.manual) {
-
-this.rove(next);
-next.focus();
-} else {
-this.select(next, true);
-}
-};
-
-Tabs.prototype.edge = function (which) {
-var list = this.focusables();
-if (!list.length) return;
-var target = which === 'home' ? list[0] : list[list.length - 1];
-if (this.manual) { this.rove(target); target.focus(); }
-else this.select(target, true);
-};
-
 Tabs.prototype.bind = function () {
 var self = this;
 
@@ -128,27 +192,11 @@ this.list.addEventListener('keydown', function (e) {
 var tab = closest(e.target, '[role="tab"]');
 if (!tab) return;
 var k = e.key;
-var handled = true;
 
-if (k === 'ArrowRight' || (self.vertical && k === 'ArrowDown')) {
-self.step(tab, 1);
-} else if (k === 'ArrowLeft' || (self.vertical && k === 'ArrowUp')) {
-self.step(tab, -1);
-} else if (k === 'Home') {
-self.edge('home');
-} else if (k === 'End') {
-self.edge('end');
-} else if (k === 'Enter' || k === ' ') {
-
-if (self.manual) self.select(tab, false);
-else handled = false;
-} else {
-handled = false;
-}
-
-if (handled) {
+if (k !== 'Enter' && k !== ' ' && k !== 'Spacebar') return;
+if (self.manual) {
 e.preventDefault();
-e.stopPropagation();
+self.select(tab, false);
 }
 });
 };
