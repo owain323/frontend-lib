@@ -20,6 +20,72 @@
  */
 (function (global) {
   'use strict';
+
+  /* ==== BEHAVIOR INJECT BEGIN: typeahead ==== */
+  var flTypeahead = function (opts) {
+    var opt = opts || {};
+    var items = opt.items || function () { return []; };
+    var textOf = opt.textOf || function (x) { return String((x && x.textContent) || ''); };
+    var usable = opt.usable || function () { return true; };
+    var timeout = opt.timeout || 500;
+    var onHit = opt.onHit || function () {};
+    var buf = '';
+    var timer = null;
+    var last = -1;
+
+    function stop() {
+      if (timer) { clearTimeout(timer); timer = null; }
+    }
+
+    /* 连打同一字符 ⇒ 只按首字符匹配（理由见文件头 ③④）*/
+    function repeated(s) {
+      if (s.length < 2) return false;
+      for (var i = 1; i < s.length; i++) {
+        if (s.charAt(i) !== s.charAt(0)) return false;
+      }
+      return true;
+    }
+
+    function find(needle) {
+      var l = items() || [];
+      var n = l.length;
+      if (!n) return -1;
+      for (var k = 0; k < n; k++) {
+        var i = (last + 1 + k) % n;      /* ① 从当前项之后开始 ⇒ 会绕回 */
+        if (!usable(l[i])) continue;     /* ⑤ */
+        if (textOf(l[i]).toLowerCase().indexOf(needle) === 0) return i;
+      }
+      return -1;                          /* ⑥ */
+    }
+
+    function type(ch) {
+      if (!ch) return -1;
+      buf += String(ch).toLowerCase();    /* ② */
+      stop();
+      timer = setTimeout(clear, timeout); /* ④ */
+      var needle = repeated(buf) ? buf.charAt(0) : buf;   /* ③ */
+      var i = find(needle);
+      if (i >= 0) {
+        last = i;
+        onHit(i, (items() || [])[i], buf);
+      }
+      return i;
+    }
+
+    /* 只清缓冲，不清 last（理由见文件头）*/
+    function clear() {
+      buf = '';
+      stop();
+    }
+
+    return {
+      type: type,
+      clear: clear,
+      buffer: function () { return buf; },
+      destroy: function () { stop(); },
+    };
+  };
+  /* ==== BEHAVIOR INJECT END: typeahead ==== */
   /* ---- 旧环境兼容：Element.closest 在老 WebView 上不存在 ----
      直接调用会在真机上抛 `is not a function`（本地完全正常，
      只在老环境炸 —— 属静默失效）。这里做模块内兜底，
@@ -67,8 +133,6 @@
     var isMulti = !!opt.multiple;
     var selected = opt.value != null ? String(opt.value) : null;
     var activeIdx = -1;
-    var typeBuf = '';
-    var typeTimer = null;
 
     list.setAttribute('role', 'listbox');
     if (isMulti) list.setAttribute('aria-multiselectable', 'true');
@@ -94,6 +158,18 @@
     function enabled() {
       return options.filter(function (o) { return o.getAttribute('aria-disabled') !== 'true'; });
     }
+    /* 类型搜索（连续打字定位）走 typeahead 核（01-tokens/behavior/typeahead.js）。
+       ⭐ 之前这里只实现了"累积前缀"，**没有连打同一字符时循环** ⇒
+         连按两次同一个字母，游标不动（用户以为卡了）。
+       ⭐ 而 tree 里那一份只实现了循环、没有累积 —— 两份各缺一半。
+       ⇒ 核一次把两半都补齐（APG 的 typeahead 约定），两处共用一份规则。 */
+    var typeahead = flTypeahead({
+      items: function () { return options; },
+      textOf: optText,
+      usable: function (o) { return o.getAttribute('aria-disabled') !== 'true'; },
+      onHit: function (i) { setActive(i, 1); },
+    });
+
     function selectedIdx() {
       for (var i = 0; i < options.length; i++) {
         if (options[i].getAttribute('data-value') === selected) return i;
@@ -193,6 +269,7 @@
       btn.removeAttribute('aria-activedescendant');
       options.forEach(function (o) { o.removeAttribute('data-state'); });
       activeIdx = -1;
+      typeahead.clear();   /* 关闭即清空缓冲：下次打开不该接着上次的半个词 */
       /* ③ Esc 关闭时焦点**还给按钮**（不是选中项）*/
       if (restoreFocus !== false) btn.focus();
       if (opt.onClose) opt.onClose();
@@ -268,18 +345,12 @@
         if (activeIdx >= 0) commit(activeIdx);
         return;
       }
-      /* ④ 类型搜索 */
+      /* ④ 类型搜索 —— 已移到 typeahead 核（见上面的 flTypeahead）。
+         ⚠️ 核不监听键盘：Enter / Space / Tab 在本组件各有语义，
+            只有"单个可打印字符"才算打字。 */
       if (k.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
-        typeBuf += k.toLowerCase();
-        clearTimeout(typeTimer);
-        typeTimer = setTimeout(function () { typeBuf = ''; }, 500);
-        for (var i = 0; i < options.length; i++) {
-          if (optText(options[i]).toLowerCase().indexOf(typeBuf) === 0) {
-            if (options[i].getAttribute('aria-disabled') !== 'true') setActive(i, 1);
-            break;
-          }
-        }
+        typeahead.type(k);
       }
     }
     /* 挂在按钮上（焦点常驻处）*/

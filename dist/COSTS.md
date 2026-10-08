@@ -27,7 +27,7 @@
 | primitive | `input` | 2.1 KB | 1.0 KB | — | **3.2 KB** | 19.4 KB | −16.2 KB |
 | primitive | `popover` | 2.1 KB | 0.8 KB | 1.9 KB | **4.9 KB** | 22.6 KB | −17.6 KB |
 | primitive | `progress` | 2.1 KB | 0.7 KB | — | **2.8 KB** | 18.7 KB | −15.9 KB |
-| primitive | `select` | 2.1 KB | 0.8 KB | 2.3 KB | **5.3 KB** | 22.6 KB | −17.3 KB |
+| primitive | `select` | 2.1 KB | 0.8 KB | 2.6 KB | **5.6 KB** | 23.5 KB | −17.9 KB |
 | primitive | `separator` | 2.1 KB | 0.2 KB | — | **2.4 KB** | 17.1 KB | −14.7 KB |
 | primitive | `skeleton` | 2.1 KB | 0.5 KB | — | **2.6 KB** | 17.3 KB | −14.6 KB |
 | primitive | `switch` | 2.1 KB | 0.8 KB | — | **2.9 KB** | 23.0 KB | −20.1 KB |
@@ -43,12 +43,12 @@
 | pattern | `states` | 2.1 KB | 0.9 KB | — | **3.0 KB** | 20.0 KB | −17.0 KB |
 | pattern | `tabs` | 2.1 KB | 0.6 KB | 1.8 KB | **4.6 KB** | 21.9 KB | −17.4 KB |
 | pattern | `tooltip` | 2.1 KB | 0.6 KB | 1.1 KB | **3.8 KB** | 20.1 KB | −16.3 KB |
-| pattern | `tree` | 2.1 KB | 0.6 KB | 2.4 KB | **5.1 KB** | 22.4 KB | −17.3 KB |
+| pattern | `tree` | 2.1 KB | 0.6 KB | 2.7 KB | **5.4 KB** | 23.1 KB | −17.6 KB |
 
 ## 三、全库
 
-- 全部组件都用上（min，含 tokens 一份）：**48.6 KB**
-- 源码版（带注释）全库 gzip：190.0 KB
+- 全部组件都用上（min，含 tokens 一份）：**49.3 KB**
+- 源码版（带注释）全库 gzip：193.9 KB
 
 > ⚠️ 源码版那个数字**不是**要付的钱：它包含我们的注释（全库 CSS 有 64% 是注释）。
 > 它的用途只有一个 —— 让人看清"dist 到底省了多少"。

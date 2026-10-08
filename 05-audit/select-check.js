@@ -161,6 +161,43 @@ const REPO = path.resolve(__dirname, '..');
                        (r.txt.indexOf('Fund') >= 0 ? ' ✅ 类型搜索生效' : ' 🔴 没跳到匹配项') };
       },
 
+      /* ⭐ 二次打开后，类型搜索必须**仍然可用**（缓冲不被上一次残留污染）。
+         迁移前缓冲是组件里的闭包变量，**关闭时从来不清** ⇒ 二次打开再打同一个
+         字母会拼成 "ff" ⇒ 匹配不上 ⇒ 打字"突然失效"。
+
+         ⚠️ 反向控制（实测，别照字面猜）：把 `typeahead.type(k)` 的接线删掉
+            ⇒ 本条红（实测 ⇒ 游标停在「港股通」）。
+         ⚠️ 但它**守不住** `close()` 里的 `typeahead.clear()`：实测把那行删掉后
+            本条**仍然绿** —— 因为核自带的 500ms 超时也会把缓冲清掉，
+            两个机制任一生效就够。⇒ 注释里不许写成"守的是 clear()"，
+            那是**没被证明的声称**（I-10：报告通过 ≠ 查到了东西）。 */
+      '类型搜索：二次打开后仍然命中（缓冲不被上次污染）': async (p) => {
+        const btn = '#s1 [data-select-btn]';
+        const readActive = () => p.evaluate((sel) => {
+          const ad = document.querySelector(sel).getAttribute('aria-activedescendant');
+          const o = document.getElementById(ad);
+          return o ? o.textContent.replace(/[✓\s]/g, '').trim().slice(0, 10) : '?';
+        }, btn);
+
+        await p.evaluate((sel) => document.querySelector(sel).click(), btn);
+        await new Promise((r) => setTimeout(r, 60));
+        await p.keyboard.press('KeyF');
+        await new Promise((r) => setTimeout(r, 60));
+        await p.keyboard.press('Escape');            /* 关闭（且焦点归位）*/
+        await new Promise((r) => setTimeout(r, 60));
+        await p.evaluate((sel) => document.querySelector(sel).click(), btn);
+        await new Promise((r) => setTimeout(r, 60));
+        await p.keyboard.press('KeyF');
+        await new Promise((r) => setTimeout(r, 120));
+        const txt = await readActive();
+        await p.keyboard.press('Escape');
+        await new Promise((r) => setTimeout(r, 280));
+        return { ok: txt.indexOf('Fund') >= 0,
+                 note: '二次打开后再打 "f" ⇒ 游标在「' + txt + '」' +
+                       (txt.indexOf('Fund') >= 0 ? ' ✅ 仍然命中'
+                                                 : ' 🔴 打字失效') };
+      },
+
       /* 选中态有勾（形状线索，不只靠颜色）*/
       '选中项有勾 + aria-selected': async (p) => {
         const r = await p.evaluate(() => {

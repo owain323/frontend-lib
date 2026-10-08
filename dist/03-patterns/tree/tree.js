@@ -79,6 +79,68 @@ if (container) container.removeEventListener('keydown', onKey);
 };
 };
 
+var flTypeahead = function (opts) {
+var opt = opts || {};
+var items = opt.items || function () { return []; };
+var textOf = opt.textOf || function (x) { return String((x && x.textContent) || ''); };
+var usable = opt.usable || function () { return true; };
+var timeout = opt.timeout || 500;
+var onHit = opt.onHit || function () {};
+var buf = '';
+var timer = null;
+var last = -1;
+
+function stop() {
+if (timer) { clearTimeout(timer); timer = null; }
+}
+
+function repeated(s) {
+if (s.length < 2) return false;
+for (var i = 1; i < s.length; i++) {
+if (s.charAt(i) !== s.charAt(0)) return false;
+}
+return true;
+}
+
+function find(needle) {
+var l = items() || [];
+var n = l.length;
+if (!n) return -1;
+for (var k = 0; k < n; k++) {
+var i = (last + 1 + k) % n;
+if (!usable(l[i])) continue;
+if (textOf(l[i]).toLowerCase().indexOf(needle) === 0) return i;
+}
+return -1;
+}
+
+function type(ch) {
+if (!ch) return -1;
+buf += String(ch).toLowerCase();
+stop();
+timer = setTimeout(clear, timeout);
+var needle = repeated(buf) ? buf.charAt(0) : buf;
+var i = find(needle);
+if (i >= 0) {
+last = i;
+onHit(i, (items() || [])[i], buf);
+}
+return i;
+}
+
+function clear() {
+buf = '';
+stop();
+}
+
+return {
+type: type,
+clear: clear,
+buffer: function () { return buf; },
+destroy: function () { stop(); },
+};
+};
+
 function closest(el, sel) {
 if (!el) return null;
 if (el.closest) return el.closest(sel);
@@ -172,6 +234,12 @@ nodeOf: function (it) { return it.node; },
 axis: 'y',
 onMove: function (i) { focusAt(i); },
 });
+
+var typeahead = flTypeahead({
+items: function () { return visible(); },
+textOf: function (it) { return String((it && it.node && it.node.textContent) || '').trim(); },
+onHit: function (i) { focusAt(i); },
+});
 function setExpanded(it, open) {
 if (!it.ul) return;
 it.li.setAttribute('aria-expanded', open ? 'true' : 'false');
@@ -236,18 +304,10 @@ select(it);
 return;
 }
 
-if (/^[a-zA-Z\u4e00-\u9fa5]$/.test(k)) {
+if (k.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey &&
+k !== ' ') {
 e.preventDefault();
-var list = visible();
-var start = cur + 1;
-for (var n = 0; n < list.length; n++) {
-var idx = (start + n) % list.length;
-var lbl = (list[idx].node.textContent || '').trim();
-if (lbl.charAt(0).toLowerCase() === k.toLowerCase()) {
-focusAt(idx);
-return;
-}
-}
+typeahead.type(k);
 }
 });
 

@@ -12,6 +12,10 @@
       "gzip": 3001,
       "raw": 7225
     },
+    "01-tokens/behavior/typeahead.js": {
+      "gzip": 2360,
+      "raw": 5477
+    },
     "01-tokens/focus-ring.css": {
       "gzip": 2027,
       "raw": 5571
@@ -93,8 +97,8 @@
       "raw": 4691
     },
     "02-primitives/select/select.js": {
-      "gzip": 4901,
-      "raw": 13720
+      "gzip": 5838,
+      "raw": 15955
     },
     "02-primitives/separator/separator.css": {
       "gzip": 1318,
@@ -197,8 +201,8 @@
       "raw": 3575
     },
     "03-patterns/tree/tree.js": {
-      "gzip": 5060,
-      "raw": 13364
+      "gzip": 5772,
+      "raw": 15762
     },
     "04-recipes/table/table.css": {
       "gzip": 2606,
@@ -210,6 +214,6 @@
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 195322,
-  "total_raw": 507193
+  "total_gzip": 199331,
+  "total_raw": 517303
 }
