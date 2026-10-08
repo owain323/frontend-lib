@@ -177,8 +177,8 @@
       "raw": 8046
     },
     "03-patterns/pagination/pagination.js": {
-      "gzip": 6171,
-      "raw": 15702
+      "gzip": 6410,
+      "raw": 16156
     },
     "03-patterns/states/states.css": {
       "gzip": 4289,
@@ -189,8 +189,8 @@
       "raw": 5594
     },
     "03-patterns/tabs/tabs.js": {
-      "gzip": 4123,
-      "raw": 10680
+      "gzip": 4353,
+      "raw": 11083
     },
     "03-patterns/tooltip/tooltip.css": {
       "gzip": 1723,
@@ -218,6 +218,6 @@
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 204550,
-  "total_raw": 529398
+  "total_gzip": 205019,
+  "total_raw": 530255
 }

@@ -230,9 +230,7 @@ window.Tabs = Tabs;
 function init() {
 var nodes = document.querySelectorAll('[data-tabs]');
 for (var i = 0; i < nodes.length; i++) {
-nodes[i].tabsInstance = new Tabs(nodes[i], {
-onChange: nodes[i].getAttribute('data-on-change') || null
-});
+nodes[i].tabsInstance = new Tabs(nodes[i], {});
 }
 }
 
