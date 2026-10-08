@@ -39,16 +39,16 @@
 | pattern | `list` | 2.1 KB | 0.6 KB | — | **2.7 KB** | 18.2 KB | −15.5 KB |
 | pattern | `nav` | 2.1 KB | 1.2 KB | — | **3.4 KB** | 19.8 KB | −16.4 KB |
 | pattern | `overlay` | 2.1 KB | 1.2 KB | 1.9 KB | **5.2 KB** | 25.5 KB | −20.3 KB |
-| pattern | `pagination` | 2.1 KB | 0.8 KB | 2.5 KB | **5.4 KB** | 25.2 KB | −19.8 KB |
+| pattern | `pagination` | 2.1 KB | 0.8 KB | 2.5 KB | **5.4 KB** | 25.4 KB | −20.0 KB |
 | pattern | `states` | 2.1 KB | 0.9 KB | — | **3.0 KB** | 20.0 KB | −17.0 KB |
-| pattern | `tabs` | 2.1 KB | 0.6 KB | 2.0 KB | **4.8 KB** | 22.2 KB | −17.4 KB |
+| pattern | `tabs` | 2.1 KB | 0.6 KB | 2.0 KB | **4.8 KB** | 22.4 KB | −17.7 KB |
 | pattern | `tooltip` | 2.1 KB | 0.6 KB | 1.1 KB | **3.8 KB** | 20.1 KB | −16.3 KB |
 | pattern | `tree` | 2.1 KB | 0.6 KB | 2.9 KB | **5.7 KB** | 23.4 KB | −17.7 KB |
 
 ## 三、全库
 
 - 全部组件都用上（min，含 tokens 一份）：**51.4 KB**
-- 源码版（带注释）全库 gzip：199.1 KB
+- 源码版（带注释）全库 gzip：199.6 KB
 
 > ⚠️ 源码版那个数字**不是**要付的钱：它包含我们的注释（全库 CSS 有 64% 是注释）。
 > 它的用途只有一个 —— 让人看清"dist 到底省了多少"。

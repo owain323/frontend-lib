@@ -25,6 +25,26 @@ api-form-gate.py — API.md 的「接入形态」必须与实现一致（任务 
        · 成员列表不符        → 🔴 写了不存在的成员
        · 文档漏了整个全局    → 🔴 使用者根本不知道它存在
   4. `ai/components.json` 里声明的 `global`，必须是**浏览器里真探到**的全局
+  5. **源码注释里承诺的 API 必须真实存在**：
+     `<全局>.<方法>(` 以及 `var x = <全局>.create(...)` 之后的 `x.<方法>(`
+
+===========================================================================
+判据 5 是怎么来的（又一个「承诺了不存在的接口」）
+---------------------------------------------------------------------------
+  pagination.js 的文件头用法示例写着：
+
+      var pg = Pagination.create(...);
+      pg.on('change', fn);        // ← `on` 从来没实现过
+
+  而 `Pagination` 上只有 `create` / `update` / `pagesOf`。
+  照抄这段的人会在运行时拿到 `pg.on is not a function`。
+
+  ⚠️ 它就是 `is-*` 状态类那次事故的同一形态（0.4.0）：
+     **文档/注释说有，实现里没有**，而没有任何门禁在比对这两者。
+     区别只是上次在 API.md，这次在源码注释。
+
+  ⇒ 判据 5 把注释里的「用法示例」也挂到浏览器实测这根桩上。
+     识别实例别名（`pg` ⇒ `Pagination`）是必需的，不然抓不到这一例。
 
 ===========================================================================
 判据 4 是怎么来的（一次真事故，不是推演）
@@ -120,6 +140,87 @@ def check_globals(decls, rt):
     return bad
 
 
+def js_comments(text):
+    """取出 JS 里所有注释（块注释 + 行注释）。只用于**看注释里写了什么**。"""
+    out = []
+    i, n = 0, len(text)
+    while i < n:
+        if text[i:i + 2] == '/*':
+            e = text.find('*/', i + 2)
+            e = n if e < 0 else e
+            out.append(text[i:e])
+            i = e + 2
+        elif text[i:i + 2] == '//':
+            e = text.find('\n', i)
+            e = n if e < 0 else e
+            out.append(text[i:e])
+            i = e
+        else:
+            i += 1
+    return '\n'.join(out)
+
+
+def promises_in(rel, raw, known_globals):
+    """单个文件里，注释承诺了哪些 `<全局>.<方法>()` / `<实例>.<方法>()`。
+
+    返回 [(相对路径, 全局名, 方法名, 是否经别名)]。
+
+    ⚠️ 为什么要认别名：真实那一例是 `var pg = Pagination.create(...)`
+       然后写 `pg.on(...)`。只认 `Pagination.on(` 这条判据当场失效
+       —— 而它恰恰是为这一例才存在的。
+
+    ⚠️ 纯函数（不读文件）⇒ 反向控制可以喂合成文本，不必改真仓库。
+    """
+    if not known_globals:
+        return []
+    alt = '|'.join(sorted(known_globals, key=len, reverse=True))
+    re_alias = re.compile(r'\bvar\s+(\w+)\s*=\s*(%s)\s*\.' % alt)
+    re_direct = re.compile(r'\b(%s)\.(\w+)\s*\(' % alt)
+    out = []
+    ctext = js_comments(raw)
+    for m in re_direct.finditer(ctext):
+        out.append((rel, m.group(1), m.group(2), False))
+    aliases = {}
+    for m in re_alias.finditer(raw):
+        aliases.setdefault(m.group(1), m.group(2))
+    for a, g in sorted(aliases.items()):
+        for m in re.finditer(r'\b%s\.(\w+)\s*\(' % re.escape(a), ctext):
+            out.append((rel, g, m.group(1), True))
+    return out
+
+
+def scan_comment_promises(known_globals):
+    for d in ('02-primitives', '03-patterns'):
+        base = os.path.join(ROOT, d)
+        if not os.path.isdir(base):
+            continue
+        for name in sorted(os.listdir(base)):
+            sub = os.path.join(base, name)
+            if not os.path.isdir(sub):
+                continue
+            for f in sorted(os.listdir(sub)):
+                if not f.endswith('.js'):
+                    continue
+                rel = '%s/%s/%s' % (d, name, f)
+                raw = io.open(os.path.join(sub, f), encoding='utf-8').read()
+                for item in promises_in(rel, raw, known_globals):
+                    yield item
+
+
+def check_comment_promises(promises, rt):
+    """承诺的方法必须在浏览器实测的成员里（静态成员或原型方法）。"""
+    bad = []
+    for rel, g, method, via_alias in promises:
+        a = rt.get(g)
+        if not a or a.get('absent') or a.get('error'):
+            bad.append((rel, g, method, '这个全局本身就没探到'))
+            continue
+        real = set(a.get('members', {})) | set(a.get('protoMethods', {}))
+        if method not in real:
+            bad.append((rel, g, method, '实测成员：' + ', '.join(sorted(real))))
+    return bad
+
+
 def selftest():
     """判据 4 的反向控制：该红的必须红，该绿的必须绿。"""
     print('  === api-form · 契约 global 反向控制 ===')
@@ -156,6 +257,59 @@ def selftest():
         ok = False
     else:
         print('  [OK]   页面里 absent 的全局 ⇒ 抓到')
+
+    # ⑤ 判据 5：注释里承诺的方法必须真实存在
+    rt5 = {'Pagination': {'members': {'create': 'function',
+                                      'update': 'function',
+                                      'pagesOf': 'function'}},
+           'Tabs': {'members': {}, 'protoMethods': {'select': 'function'}}}
+
+    # ⑤-a 先验证**扫描器本身**（上面几条只验了判定函数，没验扫描器 ——
+    #     第一版扫描器的别名正则用了非捕获组 ⇒ group(2) 直接 IndexError，
+    #     而自检**没抓到**，因为它根本没跑扫描器。这是又一条"没跑到的判据"。）
+    sample = ('/*\n * var pg = Pagination.create(el);\n'
+              ' * pg.on(\'change\', fn);\n */\n'
+              'var pg = Pagination.create(el);\npg.update(2);\n')
+    got = promises_in('x.js', sample, ['Pagination'])
+    # `create` 也在注释里（那句 `var pg = Pagination.create(el)`），
+    # 所以命中两条才对 —— `create` 是**真存在**的，由判定函数放行。
+    want = {('x.js', 'Pagination', 'create', False),
+            ('x.js', 'Pagination', 'on', True)}
+    if set(got) != want:
+        print('  [FAIL] 扫描器抓不出 `pg.on`（或抓出了别的）⇒ %s' % (got,))
+        ok = False
+    else:
+        print('  [OK]   扫描器抓得到别名形式 `pg.on`，且不放过实现里的同名调用')
+
+    # ⑤-b 只扫注释：实现里 `pg.update(...)` 不该算"承诺"
+    if promises_in('x.js', 'pg.update(2);\n', ['Pagination']):
+        print('  [FAIL] 实现里的调用被当成注释承诺 ⇒ 判据会假红')
+        ok = False
+    else:
+        print('  [OK]   只扫注释：实现里的同名调用不算承诺')
+    good5 = [('x.js', 'Pagination', 'create', False),
+             ('x.js', 'Tabs', 'select', True)]
+    if check_comment_promises(good5, rt5):
+        print('  [FAIL] 注释里承诺的方法都存在却报了问题 ⇒ 判据过严')
+        ok = False
+    else:
+        print('  [OK]   注释里承诺的方法都存在 ⇒ 不报（含原型方法与别名）')
+
+    # ⭐ 事故真值：pagination.js 文件头写过 `pg.on('change', ...)`
+    bad5 = check_comment_promises([('p.js', 'Pagination', 'on', True)], rt5)
+    if not bad5:
+        print('  [FAIL] 注释里承诺的 `pg.on` 没被抓到 ⇒ 门禁是瞎的')
+        ok = False
+    else:
+        print('  [OK]   注释里承诺的 `pg.on` ⇒ 抓到（本判据存在的理由）')
+
+    # ⑥ 直接调用形式也不能漏
+    if not check_comment_promises([('p.js', 'Pagination', 'nothing', False)],
+                                  rt5):
+        print('  [FAIL] 直接写 `Pagination.nothing(` 没被抓到 ⇒ 门禁是瞎的')
+        ok = False
+    else:
+        print('  [OK]   直接写 `Pagination.nothing(` ⇒ 抓到')
 
     return 0 if ok else 1
 
@@ -231,6 +385,19 @@ def main():
         print('       第一个 `=` 当成赋值）。这是**静默**的错：重跑生成器')
         print('       会让契约与源码"一致"，于是没人发现它已经是错的。')
 
+    # 判据 5：源码注释里承诺的 API 必须真实存在
+    promises = scan_comment_promises(list(rt.keys()))
+    bad_promises = check_comment_promises(promises, rt)
+    if bad_promises:
+        print('')
+        print('  🔴 源码注释里承诺了不存在的 API（照抄会 TypeError）：')
+        for rel, g, method, why in bad_promises:
+            print('     %s' % rel)
+            print('        %s.%s ⇒ %s' % (g, method, why))
+        print('')
+        print('     ⇒ 这是 `is-*` 状态类那次事故的同一形态：说有、实现没有。')
+        print('       改成文档里真实存在的写法，或把该方法实现出来。')
+
     # 实现里有、文档里完全没提的
     documented = set(rows)
     undocumented = sorted(k for k, v in rt.items()
@@ -252,7 +419,7 @@ def main():
             print('     %s（%s）' % (n, ', '.join(sorted(
                 rt[n].get('members', {}))) or '无静态成员'))
 
-    if bad or bad_globals:
+    if bad or bad_globals or bad_promises:
         return 1
 
     n_by_form = {}

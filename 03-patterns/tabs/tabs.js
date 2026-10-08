@@ -284,12 +284,17 @@
   window.Tabs = Tabs;
 
   // 自动初始化：<div class="tabs" data-tabs>
+  //
+  // ⚠️ 这里**曾经**写过 `onChange: el.getAttribute('data-on-change')` ——
+  //    它把一个**字符串**塞进了要求函数的位置，`select()` 里
+  //    `typeof this.opts.onChange === 'function'` 永远不成立
+  //    ⇒ 这个属性从第一天起就**从来没有生效过**，而且没有任何报错。
+  //    现已删除：自动初始化不接回调，要收通知请用 `fl-change` 事件
+  //    （见 API.md「事件」一节）。
   function init() {
     var nodes = document.querySelectorAll('[data-tabs]');
     for (var i = 0; i < nodes.length; i++) {
-      nodes[i].tabsInstance = new Tabs(nodes[i], {
-        onChange: nodes[i].getAttribute('data-on-change') || null
-      });
+      nodes[i].tabsInstance = new Tabs(nodes[i], {});
     }
   }
 

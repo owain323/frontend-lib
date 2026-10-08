@@ -26,7 +26,13 @@
  *   <script src="03-patterns/pagination/pagination.js"></script>
  *   <script>
  *     var pg = Pagination.create(document.querySelector('[data-pagination]'));
- *     pg.on('change', function (p) { loadPage(p); });
+ *     // 翻页通知走 **DOM 事件**（本库没有 `on` 这种订阅方法 ——
+ *     // 曾经在注释里写过 `pg.on` 的写法，那是**从来没有存在过**的 API，
+ *     // 照抄只会在运行时得到 `pg.on is not a function`。现已由门禁判据 5 盯着：
+ *     // 源码注释里承诺的「某全局 / 某实例的某方法」，必须在浏览器里真探得到。）
+ *     pg.node.addEventListener('fl-change', function (e) {
+ *       loadPage(e.detail.value);
+ *     });
  *   </script>
  */
 (function () {

@@ -8,8 +8,8 @@
   ],
   "totals": {
     "sourceFiles": 54,
-    "sourceBytes": 520585,
-    "distGzip": 93772
+    "sourceBytes": 521442,
+    "distGzip": 93757
   },
   "files": [
     {
@@ -809,9 +809,9 @@
     },
     {
       "source": "03-patterns/pagination/pagination.js",
-      "sourceSha256": "b71f7480212f4e3562f380f05e92c87981444943c1d1ea8497ffda1fc024ccda",
-      "sourceBytes": 15702,
-      "sourceGzip": 6171,
+      "sourceSha256": "f22cae6d22cb151e1e090ae7d481de16b7fb6af3af2fd8de02350b87cd727432",
+      "sourceBytes": 16156,
+      "sourceGzip": 6410,
       "outputs": [
         {
           "path": "dist/03-patterns/pagination/pagination.js",
@@ -864,15 +864,15 @@
     },
     {
       "source": "03-patterns/tabs/tabs.js",
-      "sourceSha256": "6855b66d60dab9192359c32d5e4fe07bf06147a0cb0e14bb17e73b518ee00a60",
-      "sourceBytes": 10680,
-      "sourceGzip": 4123,
+      "sourceSha256": "c03381b03bd40e5a78faab9797067a0bbf991c11dda16c26f72728d2f3239247",
+      "sourceBytes": 11083,
+      "sourceGzip": 4353,
       "outputs": [
         {
           "path": "dist/03-patterns/tabs/tabs.js",
           "kind": "stripped",
-          "bytes": 5878,
-          "gzip": 2022
+          "bytes": 5819,
+          "gzip": 2007
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"

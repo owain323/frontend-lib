@@ -56,6 +56,77 @@ const SCAN_DIRS = ['02-primitives', '03-patterns'];
  */
 const RE_CUSTOM_EVENT = /CustomEvent|initCustomEvent/;
 
+/**
+ * ⑩ 不许用 **HTML 属性**当回调（`data-on-*`）。
+ *
+ * ⚠️ 这一条来自一次真事故：`tabs.js` 的自动初始化写过
+ *      `onChange: el.getAttribute('data-on-change') || null`
+ *    —— 把一个**字符串**塞进了要求函数的位置，于是
+ *      `typeof this.opts.onChange === 'function'` 永远不成立。
+ *      ⇒ 这个属性**从第一天起就没生效过**，而且**没有任何报错**。
+ *
+ *    HTML 属性里放不出函数（只能放名字，而按名字找全局又是另一套约定），
+ *    ⇒ 凡是 `data-on-*` 形式的回调，物理上只能是死代码。
+ *    要收通知就用 `fl-*` 事件（见 API.md「事件」一节）。
+ */
+const RE_DATA_ON = /data-on-[a-z]/;
+
+/**
+ * 剥掉 JS 注释（带字符串状态，避免把 `'/*'` 之类的字面量当注释）。
+ *
+ * ⚠️ 为什么必须先剥：这条判据第一版扫**原始行**，结果把 tabs.js 里
+ *    **解释这段历史的注释**也命中了（注释里引用了那句旧代码）。
+ *    ⇒ 判据要管的是"代码真的去读这个属性"，不是"有人提到它"。
+ */
+function stripComments(src) {
+  const out = [];
+  let i = 0, n = src.length, q = null;
+  while (i < n) {
+    const c = src[i], d = src[i + 1];
+    if (q) {
+      if (c === '\\') { out.push(c, d || ''); i += 2; continue; }
+      if (c === q) q = null;
+      out.push(c); i++; continue;
+    }
+    if (c === '"' || c === "'" || c === '`') { q = c; out.push(c); i++; continue; }
+    if (c === '/' && d === '/') { while (i < n && src[i] !== '\n') i++; continue; }
+    if (c === '/' && d === '*') {
+      const e = src.indexOf('*/', i + 2);
+      i = (e < 0 ? n : e + 2);
+      continue;
+    }
+    out.push(c); i++;
+  }
+  return out.join('');
+}
+
+function dataOnHits(text) {
+  const out = [];
+  text.split('\n').forEach(function (ln, i) {
+    if (RE_DATA_ON.test(ln)) out.push(i + 1);
+  });
+  return out;
+}
+
+function scanDataOn() {
+  const out = [];
+  for (const d of SCAN_DIRS) {
+    const base = path.join(ROOT, d);
+    if (!fs.existsSync(base)) continue;
+    for (const name of fs.readdirSync(base)) {
+      const sub = path.join(base, name);
+      if (!fs.statSync(sub).isDirectory()) continue;
+      for (const f of fs.readdirSync(sub)) {
+        if (!f.endsWith('.js')) continue;
+        const rel = d + '/' + name + '/' + f;
+        dataOnHits(stripComments(fs.readFileSync(path.join(sub, f), 'utf8')))
+          .forEach(function (ln) { out.push(rel + ':' + ln); });
+      }
+    }
+  }
+  return out;
+}
+
 function violationsIn(rel, text) {
   const out = [];
   let inBlock = false;
@@ -212,8 +283,24 @@ const NAMES = {
 (async () => {
   const raw = fs.readFileSync(CORE, 'utf8');
   const statics = scanRepo();
+  const dataOn = scanDataOn();
 
   if (process.argv.includes('--selftest')) {
+    /* ⑩ 的反向控制：三向验证 */
+    if (dataOnHits("el.getAttribute('data-on-change')").length !== 1) {
+      console.log('  [FAIL] ⑩ 抓不到 data-on-* 回调 ⇒ 门禁是瞎的');
+      process.exit(1);
+    }
+    if (dataOnHits("root.setAttribute('data-open', 'true')").length !== 0) {
+      console.log('  [FAIL] ⑩ 把 `data-open` 误判成回调 ⇒ 门禁会假红');
+      process.exit(1);
+    }
+    if (dataOn.length) {
+      console.log('  [FAIL] ⑩ 真仓库就有命中 ⇒ 判据过严：' + dataOn.join(', '));
+      process.exit(1);
+    }
+    console.log('  [OK]   ⑩ 不许用 HTML 属性当回调：抓得到、不误伤、真仓库 0 命中');
+
     /* ⑨ 的反向控制：三向验证（该抓的抓到 / 该放的放过 / 真仓库不误报） */
     if (violationsIn('x.js', 'var e = new CustomEvent("fl-x");').length !== 1) {
       console.log('  [FAIL] ⑨ 抓不到块外手写的 new CustomEvent ⇒ 门禁是瞎的');
@@ -293,6 +380,13 @@ const NAMES = {
     console.log('    X    ⑨ 唯一入口：组件源码不许私自造事件 ⇒ ' + statics.join(', '));
   } else {
     console.log('    OK   ⑨ 唯一入口：组件源码里没有私自造事件');
+  }
+  if (dataOn.length) {
+    bad++;
+    console.log('    X    ⑩ 不许用 HTML 属性当回调（data-on-* 只能是死代码）⇒ ' +
+                dataOn.join(', '));
+  } else {
+    console.log('    OK   ⑩ 不许用 HTML 属性当回调（要收通知用 fl-* 事件）');
   }
   console.log('');
   if (bad || r.errs.length) {
