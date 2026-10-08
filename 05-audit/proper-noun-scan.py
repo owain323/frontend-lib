@@ -68,6 +68,8 @@ WHITELIST = {
     'CimInstance', 'ChartsPage', 'DateRange', 'CommonMark', 'DejaVu',
     'BlinkMacSystemFont', 'ChartAdapter', 'LinearProgress',
     'CircularProgress', 'DamagedHelmet',
+    # Chrome 报错里出现的类名（原文照抄才便于以后检索，不是内部代号）
+    'ProcessSingleton',
     # 键名 / 事件名 / 字体 / 语言 API / 异常类
     'AppData', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowUp',
     'MarkdownIt', 'ModelViewer', 'NullPointerException', 'OrbitControls',

@@ -137,7 +137,15 @@ async function launch(opts) {
   // ⚠️ 必须用 path.join —— 之前写死 '\\' 分隔符，
   //    在 Linux/macOS 上会造出一个**名字里带反斜杠**的目录，
   //    临时 profile 散落在文件系统里。CI 上必踩。
-  const profile = path.join(os.tmpdir(),
+  //
+  // 🔴 FL_TMPDIR（2026-10-08 加）：系统临时目录**所在盘写满了**的时候，
+  //    Chrome 会直接报 "磁盘空间不足 / 无法创建 ProcessSingleton" 而**启动失败**，
+  //    于是浏览器门禁全红 —— 而代码其实一个字都没问题
+  //    （本库实测：C 盘 476G 用满，E 盘还有 421G）。
+  //    ⇒ 允许把临时 profile 指到别的盘。**不设就与原来完全一样**，
+  //      所以不影响任何默认环境（包括陌生人克隆后的第一次运行）。
+  const tmpRoot = process.env.FL_TMPDIR || os.tmpdir();
+  const profile = path.join(tmpRoot,
     'fe-cache-' + process.pid + '-' + Date.now());
   const browser = await puppeteer.launch({
     executablePath: CHROME,

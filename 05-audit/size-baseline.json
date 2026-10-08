@@ -4,6 +4,10 @@
       "gzip": 2287,
       "raw": 5295
     },
+    "01-tokens/behavior/focus-return.js": {
+      "gzip": 1645,
+      "raw": 3768
+    },
     "01-tokens/focus-ring.css": {
       "gzip": 2027,
       "raw": 5571
@@ -73,8 +77,8 @@
       "raw": 7960
     },
     "02-primitives/popover/popover.js": {
-      "gzip": 3956,
-      "raw": 9587
+      "gzip": 4322,
+      "raw": 10801
     },
     "02-primitives/progress/progress.css": {
       "gzip": 2962,
@@ -117,8 +121,8 @@
       "raw": 4559
     },
     "03-patterns/drawer/drawer.js": {
-      "gzip": 2739,
-      "raw": 6813
+      "gzip": 3149,
+      "raw": 7976
     },
     "03-patterns/dropdown/dropdown.css": {
       "gzip": 1942,
@@ -202,6 +206,6 @@
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 186240,
-  "total_raw": 481249
+  "total_gzip": 188661,
+  "total_raw": 487394
 }

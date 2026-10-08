@@ -15,6 +15,41 @@
 (function (global) {
   'use strict';
 
+  /* ==== BEHAVIOR INJECT BEGIN: focus-return ==== */
+  var flFocusReturn = function (opts) {
+    var opt = opts || {};
+    var saved = null;
+
+    return {
+      save: function () {
+        var a = document.activeElement;
+        saved = (a && a !== document.body && a.focus) ? a : null;
+        return saved;
+      },
+
+      restore: function () {
+        var target = saved;
+        /* ⚠️ 见文档 ②：不判 contains 的话，元素被移除后 focus() 不报错
+           但焦点不动 ⇒ 用户以为还回去了，其实掉在 body 上。 */
+        if (!target || !document.contains(target)) target = opt.fallback || null;
+        if (!target) { saved = null; return false; }
+        try {
+          target.focus();
+        } catch (e) {
+          saved = null;
+          return false;
+        }
+        var ok = document.activeElement === target;
+        saved = null;   /* 见文档 ③ */
+        return ok;
+      },
+
+      target: function () { return saved; },
+      clear: function () { saved = null; },
+    };
+  };
+  /* ==== BEHAVIOR INJECT END: focus-return ==== */
+
   var FOCUSABLE = [
     'a[href]',
     'button:not([disabled])',
@@ -67,8 +102,12 @@
     var place = opt.place || 'right';
 
     /* ⭐ 记住"打开那一刻的焦点"—— 关闭时要还回去。
-       （必须在插入 DOM **之前**记录，否则会记到新节点上。） */
-    var lastFocused = document.activeElement;
+       （必须在插入 DOM **之前**记录，否则会记到新节点上。）
+       走 focus-return 核（01-tokens/behavior/focus-return.js）：
+       抽屉没有 fallback —— 打开它的元素若被删了，就维持现状不动，
+       不假装"还回去了"。 */
+    var fr = flFocusReturn({});
+    fr.save();
 
     var host = document.createElement('div');
     host.className = 'drawer-backdrop';
@@ -180,11 +219,9 @@
       }
       d.addEventListener('transitionend', remove, { once: true });
       setTimeout(remove, 320);
-      /* ⭐ ③ 焦点归位：回到打开抽屉的那个元素。
-         若它已被移除（例如列表项被删了）⇒ 退到 body，不抛错。 */
-      if (lastFocused && document.contains(lastFocused)) {
-        try { lastFocused.focus(); } catch (e) { /* 元素不可聚焦则忽略 */ }
-      }
+      /* ⭐ ③ 焦点归位：回到打开抽屉的那个元素（核里已处理
+         "元素被移除 / 不可聚焦"两种降级，都不抛错）。 */
+      fr.restore();
       if (opt.onClose) opt.onClose();
     }
 

@@ -7,9 +7,9 @@
     "manifesto 里的 sourceSha256 变了而 dist 没重建 ⇒ dist-parity/dist-fresh 门禁会红"
   ],
   "totals": {
-    "sourceFiles": 50,
-    "sourceBytes": 473467,
-    "distGzip": 87244
+    "sourceFiles": 51,
+    "sourceBytes": 479612,
+    "distGzip": 87858
   },
   "files": [
     {
@@ -23,6 +23,21 @@
           "kind": "stripped",
           "bytes": 1506,
           "gzip": 641
+        }
+      ],
+      "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
+    },
+    {
+      "source": "01-tokens/behavior/focus-return.js",
+      "sourceSha256": "7555e2194ced31b68bce20261519ec44b9350988d99fa6c0280ef81e51846a50",
+      "sourceBytes": 3768,
+      "sourceGzip": 1645,
+      "outputs": [
+        {
+          "path": "dist/01-tokens/behavior/focus-return.js",
+          "kind": "stripped",
+          "bytes": 601,
+          "gzip": 287
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
@@ -349,15 +364,15 @@
     },
     {
       "source": "02-primitives/popover/popover.js",
-      "sourceSha256": "5dc6fa1bc255f7c64f07107c4c4860b4532ebc01b6d11f3fad82be59899c49a4",
-      "sourceBytes": 9587,
-      "sourceGzip": 3956,
+      "sourceSha256": "55b24ba14544f6a6dcbf7b1a18cfb700dca48ab04b286e51bb94880425de81b0",
+      "sourceBytes": 10801,
+      "sourceGzip": 4322,
       "outputs": [
         {
           "path": "dist/02-primitives/popover/popover.js",
           "kind": "stripped",
-          "bytes": 4958,
-          "gzip": 1831
+          "bytes": 5491,
+          "gzip": 1990
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
@@ -554,15 +569,15 @@
     },
     {
       "source": "03-patterns/drawer/drawer.js",
-      "sourceSha256": "72b95c8570eb127cb04b379a535475630351847c52515f2202ce36a3dd3f6729",
-      "sourceBytes": 6813,
-      "sourceGzip": 2739,
+      "sourceSha256": "321be6097e075dff394e17d68ba3cac55130d8db93b31a9702c8382cd3473c2e",
+      "sourceBytes": 7976,
+      "sourceGzip": 3149,
       "outputs": [
         {
           "path": "dist/03-patterns/drawer/drawer.js",
           "kind": "stripped",
-          "bytes": 4603,
-          "gzip": 1639
+          "bytes": 5117,
+          "gzip": 1807
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
