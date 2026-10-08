@@ -105,6 +105,7 @@ run "shot-path"  $PY 05-audit/shot-path.py
 run "mojibake"   $PY 05-audit/mojibake-check.py .
 run "repo-hygiene"  $PY 05-audit/repo-hygiene.py
 run "deps"      $PY 05-audit/deps.py --missing
+run "behavior"  $PY 05-audit/gen-behavior.py --check
 echo ""
 echo "=== 启动本地静态服务（Python 与浏览器门禁都要用）==="
 # 🔴 修：门禁脚本**自己保证**服务在跑。
@@ -221,6 +222,7 @@ run "states"       node 05-audit/states-check.js
 run "skeleton"    node 05-audit/skeleton-check.js
 run "progress"    node 05-audit/progress-check.js
 run "popover"     node 05-audit/popover-check.js
+run "dismissable" node 05-audit/dismissable-check.js
 run "form-validation"       node 05-audit/form-validation-check.js
   # N1：RTL 双向布局（只报告：物理属性在 LTR 页里是正确的）
   run "rtl"         node 05-audit/rtl-check.js

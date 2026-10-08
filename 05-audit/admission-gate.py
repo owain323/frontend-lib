@@ -156,6 +156,17 @@ def chk_no_stopprop_missing():
         if not os.path.exists(p):
             continue
         s = io.open(p, encoding='utf-8').read()
+
+        # ⭐ 走 dismissable 核的，判据交给核自己的浏览器门禁：
+        #    `dismissable-check.js` 有一条突变体专门把核里的 stopPropagation 删掉，
+        #    要求判据**必须抓到**（抓不到 ⇒ 那份门禁是瞎的，exit 1）。
+        #    ⇒ 这里不需要再认一遍某种写法，认"用了核"即可。
+        #    ⚠️ 原先这条判据只认 `if (k === 'Escape'…)` **这一种写法**，
+        #       于是"换一种写法"（哪怕更对）也会被判违规 —— 那是判据绑在写法上，
+        #       不是绑在性质上（I-15）。
+        if 'BEHAVIOR INJECT BEGIN: dismissable' in s:
+            continue
+
         # 找处理 Escape 的分支，看它附近有没有 stopPropagation
         ok = False
         for m in re.finditer(r'if \(k === .Escape.[^)]*\)\s*\{', s):

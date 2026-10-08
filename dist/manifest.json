@@ -7,11 +7,26 @@
     "manifesto 里的 sourceSha256 变了而 dist 没重建 ⇒ dist-parity/dist-fresh 门禁会红"
   ],
   "totals": {
-    "sourceFiles": 49,
-    "sourceBytes": 464371,
-    "distGzip": 85689
+    "sourceFiles": 50,
+    "sourceBytes": 473467,
+    "distGzip": 87244
   },
   "files": [
+    {
+      "source": "01-tokens/behavior/dismissable.js",
+      "sourceSha256": "eeac0e204197fd85ef298121bf042f5a908950c74b12b86800fe6e5b1b265ce2",
+      "sourceBytes": 5295,
+      "sourceGzip": 2287,
+      "outputs": [
+        {
+          "path": "dist/01-tokens/behavior/dismissable.js",
+          "kind": "stripped",
+          "bytes": 1506,
+          "gzip": 641
+        }
+      ],
+      "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
+    },
     {
       "source": "01-tokens/focus-ring.css",
       "sourceSha256": "99897995b2e36ef927c4d4bb1948605c3bbba1f4692be432252ff6363fad53c3",
@@ -334,15 +349,15 @@
     },
     {
       "source": "02-primitives/popover/popover.js",
-      "sourceSha256": "7cdeb3906a215da131378c498693597432510dacf92dbe3de9f036c87f5b220b",
-      "sourceBytes": 8274,
-      "sourceGzip": 3435,
+      "sourceSha256": "5dc6fa1bc255f7c64f07107c4c4860b4532ebc01b6d11f3fad82be59899c49a4",
+      "sourceBytes": 9587,
+      "sourceGzip": 3956,
       "outputs": [
         {
           "path": "dist/02-primitives/popover/popover.js",
           "kind": "stripped",
-          "bytes": 3820,
-          "gzip": 1406
+          "bytes": 4958,
+          "gzip": 1831
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
@@ -574,15 +589,15 @@
     },
     {
       "source": "03-patterns/dropdown/dropdown.js",
-      "sourceSha256": "c24815b9b328bec0cd82958fbef4cfa42f7e6f1f49358c9905ad1203790e7178",
-      "sourceBytes": 8030,
-      "sourceGzip": 3355,
+      "sourceSha256": "ea06985454a176f792772215531de8340c245d2702b2d31a62b2c57076ab46ed",
+      "sourceBytes": 10518,
+      "sourceGzip": 4234,
       "outputs": [
         {
           "path": "dist/03-patterns/dropdown/dropdown.js",
           "kind": "stripped",
-          "bytes": 4401,
-          "gzip": 1582
+          "bytes": 5883,
+          "gzip": 2071
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"

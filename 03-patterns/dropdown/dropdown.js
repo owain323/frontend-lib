@@ -14,6 +14,68 @@
  */
 (function (global) {
   'use strict';
+
+  /* ==== BEHAVIOR INJECT BEGIN: dismissable ==== */
+  var flDismissable = function (opts) {
+    var opt = opts || {};
+    var escOn = opt.escOn || [];
+    var inside = opt.inside || [];
+    var when = opt.when || function () { return true; };
+    var onDismiss = opt.onDismiss || function () {};
+
+    var shared = window.__flDismiss || (window.__flDismiss = { stack: [], bound: false });
+
+    function isInside(node) {
+      if (!node) return false;
+      for (var i = 0; i < inside.length; i++) {
+        var el = inside[i];
+        if (!el || !el.contains) continue;
+        if (el === node || el.contains(node)) return true;
+      }
+      return false;
+    }
+
+    function onKey(e) {
+      if (!when()) return;
+      var k = e.key;
+      if (k !== 'Escape' && k !== 'Esc' && e.keyCode !== 27) return;
+      if (e.preventDefault) e.preventDefault();
+      if (e.stopPropagation) e.stopPropagation();
+      onDismiss(e, 'esc');
+    }
+
+    function onDocClick(e) {
+      var top = null;
+      for (var i = shared.stack.length - 1; i >= 0; i--) {
+        if (shared.stack[i].when()) { top = shared.stack[i]; break; }
+      }
+      if (!top || top.isInside(e.target)) return;
+      top.onDismiss(e, 'outside');
+    }
+
+    var rec = { when: when, isInside: isInside, onDismiss: onDismiss };
+
+    for (var j = 0; j < escOn.length; j++) {
+      if (escOn[j]) escOn[j].addEventListener('keydown', onKey);
+    }
+    shared.stack.push(rec);
+    if (!shared.bound) {
+      shared.bound = true;
+      document.addEventListener('click', onDocClick, true);
+    }
+
+    return {
+      destroy: function () {
+        for (var j = 0; j < escOn.length; j++) {
+          if (escOn[j]) escOn[j].removeEventListener('keydown', onKey);
+        }
+        var k = shared.stack.indexOf(rec);
+        if (k >= 0) shared.stack.splice(k, 1);
+      },
+    };
+  };
+  /* ==== BEHAVIOR INJECT END: dismissable ==== */
+
   /* ---- 旧环境兼容：Element.closest 在老 WebView 上不存在 ----
      直接调用会在真机上抛 `is not a function`（本地完全正常，
      只在老环境炸 —— 属静默失效）。这里做模块内兜底，
@@ -175,8 +237,9 @@
       if (k === 'Home')      { e.preventDefault(); focusAt(0); return; }
       if (k === 'End')       { e.preventDefault(); focusAt(itemsOf(menu).length - 1); return; }
 
-      /* ② Esc 关闭 + 归位 */
-      if (k === 'Escape' || k === 'Esc') { e.preventDefault(); e.stopPropagation(); close(true); return; }
+      /* ② Esc 关闭 + 归位 —— 已移到 dismissable 核（01-tokens/behavior/dismissable.js）。
+         留在原地会**关两次**（同一元素上的两个监听器，stopPropagation 挡不住
+         同级的另一个监听器，那是 stopImmediatePropagation 的活）⇒ onClose 被调两遍。 */
 
       /* ③ Tab 关闭（不拦截，让焦点自然走到下一个）*/
       if (k === 'Tab') { close(false); return; }
@@ -189,11 +252,21 @@
       }
     });
 
-    document.addEventListener('click', function (e) {
-      if (!root.contains(e.target) && !menu.hidden) close(false);
+    /* Esc / 点击外部关闭：走 dismissable 核（01-tokens/behavior/dismissable.js）。
+       ⚠️ 外部点击必须归位焦点吗？不 —— APG 只在 **Esc** 时要求归还，
+       点外面是用户主动去别处，抢回焦点反而打断他。⇒ onDismiss 按 reason 分。 */
+    var dismiss = flDismissable({
+      escOn: [root],
+      inside: [root],
+      when: function () { return !menu.hidden; },
+      onDismiss: function (e, reason) { close(reason === 'esc'); },
     });
 
-    return { open: open, close: close, destroy: function () { menu.hidden = true; } };
+    return {
+      open: open,
+      close: close,
+      destroy: function () { dismiss.destroy(); menu.hidden = true; },
+    };
   }
 
   global.Dropdown = { create: create };
