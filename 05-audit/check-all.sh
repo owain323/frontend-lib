@@ -343,6 +343,7 @@ run "hype"        $PY 05-audit/hype-scan.py
 run "doc-facts"       $PY 05-audit/doc-facts-gate.py
 run "api-contract"     $PY 05-audit/api-contract-gate.py
 run "api-form"       $PY 05-audit/api-form-gate.py
+run "api-form-rev"   $PY 05-audit/api-form-gate.py --selftest
 run "api-doc"      $PY 05-audit/api-doc-gate.py
 run "legacy-api"  $PY 05-audit/legacy-api-gate.py
 run "release"     $PY 05-audit/release-gate.py

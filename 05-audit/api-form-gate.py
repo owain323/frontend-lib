@@ -24,9 +24,27 @@ api-form-gate.py — API.md 的「接入形态」必须与实现一致（任务 
        · 形态不符            → 🔴 使用者会照着错的写法调
        · 成员列表不符        → 🔴 写了不存在的成员
        · 文档漏了整个全局    → 🔴 使用者根本不知道它存在
+  4. `ai/components.json` 里声明的 `global`，必须是**浏览器里真探到**的全局
+
+===========================================================================
+判据 4 是怎么来的（一次真事故，不是推演）
+---------------------------------------------------------------------------
+  生成器用 `window\.([A-Z]\w*)\s*=` 抽组件暴露的全局名。
+  注入 emit 核之后，核里有 `typeof window.CustomEvent === 'function'`
+  ⇒ `===` 的**第一个** `=` 被当成赋值 ⇒ **10 个组件的 global 全变成
+  `CustomEvent`**。
+
+  ⚠️ 最恶劣的地方：这道事故**没有让任何门禁变红**。
+     · 生成器重跑一次 ⇒ 契约与"源码"一致 ⇒ `ai-contract` 门禁绿
+     · API.md 那张表是**另一套**判据（浏览器实测），它没看 components.json
+  ⇒ 契约文件悄悄变成错的，而报告全绿。
+
+  ⇒ 判据 4 把 components.json 挂到**浏览器实测**这根桩上：
+     `CustomEvent` 不在探测名单里 ⇒ 立刻红。
 ===========================================================================
 """
 import io
+import json
 import os
 import re
 import sys
@@ -74,7 +92,78 @@ def members_from_cell(cell):
     return set(re.findall(r'`([A-Za-z_$][\w$]*)`', cell))
 
 
+def load_contract_globals():
+    """ai/components.json 里每个组件声明的 global。"""
+    p = os.path.join(ROOT, 'ai', 'components.json')
+    if not os.path.isfile(p):
+        return None
+    try:
+        data = json.load(io.open(p, encoding='utf-8'))
+    except Exception:
+        return None
+    return [(c.get('id'), c.get('global')) for c in data.get('components', [])]
+
+
+def check_globals(decls, rt):
+    """判据 4：声明的 global 必须是浏览器里真探到的全局。
+
+    ⚠️ 纯函数（不读文件、不起浏览器）⇒ 反向控制可以直接喂合成数据，
+       不必真去改仓库里的契约文件。
+    """
+    bad = []
+    for cid, g in decls or []:
+        if not g:
+            continue          # 纯 CSS 组件没有全局，不算问题
+        a = rt.get(g)
+        if not a or a.get('absent') or a.get('error'):
+            bad.append((cid, g))
+    return bad
+
+
+def selftest():
+    """判据 4 的反向控制：该红的必须红，该绿的必须绿。"""
+    print('  === api-form · 契约 global 反向控制 ===')
+    rt = {'Select': {'form': 'create'}, 'Tabs': {'form': 'construct'},
+          'Toast': {'absent': True}}
+    ok = True
+
+    # ① 全对 ⇒ 不许报
+    good = [('select', 'Select'), ('tabs', 'Tabs'), ('card', None)]
+    if check_globals(good, rt):
+        print('  [FAIL] 声明都对却报了问题 ⇒ 判据过严')
+        ok = False
+    else:
+        print('  [OK]   声明都对 ⇒ 不报（含纯 CSS 组件的 null）')
+
+    # ② 事故真值：global 被抽成 CustomEvent ⇒ 必须红
+    if not check_globals([('accordion', 'CustomEvent')], rt):
+        print('  [FAIL] global=CustomEvent 没被抓到 ⇒ 门禁是瞎的')
+        ok = False
+    else:
+        print('  [OK]   global=CustomEvent ⇒ 抓到（0.7.1 那次事故的真值）')
+
+    # ③ 全局名不在探测名单里（典型成因：把**组件 id** 当成全局名，
+    #    `select` 而不是 `Select`）⇒ 必须红
+    if not check_globals([('select', 'select')], rt):
+        print('  [FAIL] 不在探测名单里的全局名没被抓到 ⇒ 门禁是瞎的')
+        ok = False
+    else:
+        print('  [OK]   不在探测名单里的全局名 ⇒ 抓到')
+
+    # ④ 声明了但页面里 absent ⇒ 必须红
+    if not check_globals([('overlay', 'Toast')], rt):
+        print('  [FAIL] 页面里 absent 的全局没被抓到 ⇒ 门禁是瞎的')
+        ok = False
+    else:
+        print('  [OK]   页面里 absent 的全局 ⇒ 抓到')
+
+    return 0 if ok else 1
+
+
 def main():
+    if '--selftest' in sys.argv:
+        return selftest()
+
     print('  === API 接入形态一致性（任务 W5）===')
     print('')
 
@@ -126,6 +215,22 @@ def main():
                         ', '.join(sorted(missing)),
                         ', '.join(sorted(real_members))))
 
+    # 判据 4：ai/components.json 声明的 global 必须是浏览器里真探到的
+    decls = load_contract_globals()
+    if decls is None:
+        print('  FAIL  读不到 ai/components.json')
+        return 1
+    bad_globals = check_globals(decls, rt)
+    if bad_globals:
+        print('')
+        print('  🔴 ai/components.json 声明了浏览器里不存在的 global：')
+        for cid, g in bad_globals:
+            print('     %-14s global=%s' % (cid, g))
+        print('')
+        print('     ⇒ 多半是「契约生成器的正则抓错了东西」（例如把 `===` 的')
+        print('       第一个 `=` 当成赋值）。这是**静默**的错：重跑生成器')
+        print('       会让契约与源码"一致"，于是没人发现它已经是错的。')
+
     # 实现里有、文档里完全没提的
     documented = set(rows)
     undocumented = sorted(k for k, v in rt.items()
@@ -147,7 +252,7 @@ def main():
             print('     %s（%s）' % (n, ', '.join(sorted(
                 rt[n].get('members', {}))) or '无静态成员'))
 
-    if bad:
+    if bad or bad_globals:
         return 1
 
     n_by_form = {}
