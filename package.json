@@ -1,6 +1,6 @@
 {
   "name": "frontend-lib",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "移动 Web 组件库：CSS + 可选行为脚本，零第三方运行时依赖。样式用 bundler 引入，交互行为用 script 标签引入。",
   "keywords": [
     "css",

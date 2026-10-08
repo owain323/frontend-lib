@@ -1,6 +1,84 @@
 (function (global) {
 'use strict';
 
+var flRoving = function (opts) {
+var opt = opts || {};
+var container = opt.container;
+var all = opt.items || function () { return []; };
+var movable = opt.movable || all;
+var nodeOf = opt.nodeOf || function (x) { return x; };
+var axis = opt.axis || 'x';
+var loop = opt.loop !== false;
+var homeEnd = opt.homeEnd !== false;
+
+var roveTab = opt.tabindex !== false;
+var onMove = opt.onMove || function () {};
+
+function rove(target) {
+if (!roveTab) return target;
+var l = all() || [];
+for (var i = 0; i < l.length; i++) {
+var n = nodeOf(l[i]);
+if (!n || !n.setAttribute) continue;
+n.setAttribute('tabindex', n === target ? '0' : '-1');
+}
+return target;
+}
+
+function step(i, d) {
+var n = (movable() || []).length;
+if (!n) return -1;
+if (loop) return ((i + d) % n + n) % n;
+var t = i + d;
+return (t < 0 || t >= n) ? -1 : t;
+}
+
+function indexOfNode(node) {
+var l = movable() || [];
+for (var i = 0; i < l.length; i++) {
+if (nodeOf(l[i]) === node) return i;
+}
+return -1;
+}
+
+function onKey(e) {
+var l = movable() || [];
+if (!l.length) return;
+var i = indexOfNode(e.target);
+if (i < 0) return;
+var k = e.key;
+var next = -1;
+var reason = 'step';
+
+if (axis === 'y') {
+if (k === 'ArrowDown') next = step(i, 1);
+else if (k === 'ArrowUp') next = step(i, -1);
+} else {
+if (k === 'ArrowRight') next = step(i, 1);
+else if (k === 'ArrowLeft') next = step(i, -1);
+}
+if (homeEnd && k === 'Home') { next = 0; reason = 'home'; }
+else if (homeEnd && k === 'End') { next = l.length - 1; reason = 'end'; }
+
+if (next < 0 || next >= l.length) return;
+
+if (e.preventDefault) e.preventDefault();
+if (e.stopPropagation) e.stopPropagation();
+onMove(next, l[next], reason);
+}
+
+if (container) container.addEventListener('keydown', onKey);
+
+return {
+rove: rove,
+step: step,
+indexOf: indexOfNode,
+destroy: function () {
+if (container) container.removeEventListener('keydown', onKey);
+},
+};
+};
+
 function closest(el, sel) {
 if (!el) return null;
 if (el.closest) return el.closest(sel);
@@ -71,13 +149,13 @@ return items.filter(function (it) {
 return it.node && it.node.offsetParent !== null;
 });
 }
+
 function focusAt(i) {
 var list = visible();
 if (!list.length) return;
 if (i < 0) i = list.length - 1;
 if (i >= list.length) i = 0;
-list.forEach(function (x) { x.node.setAttribute('tabindex', '-1'); });
-list[i].node.setAttribute('tabindex', '0');
+roving.rove(list[i].node);
 list[i].node.focus();
 cur = i;
 }
@@ -85,6 +163,15 @@ function current() {
 var list = visible();
 return cur >= 0 && cur < list.length ? list[cur] : null;
 }
+
+var roving = flRoving({
+container: root,
+items: function () { return items; },
+movable: function () { return visible(); },
+nodeOf: function (it) { return it.node; },
+axis: 'y',
+onMove: function (i) { focusAt(i); },
+});
 function setExpanded(it, open) {
 if (!it.ul) return;
 it.li.setAttribute('aria-expanded', open ? 'true' : 'false');
@@ -104,12 +191,6 @@ root.addEventListener('keydown', function (e) {
 var k = e.key;
 var it = current();
 if (!it) return;
-
-if (k === 'ArrowDown') { e.preventDefault(); focusAt(cur + 1); return; }
-if (k === 'ArrowUp')   { e.preventDefault(); focusAt(cur - 1); return; }
-
-if (k === 'Home') { e.preventDefault(); focusAt(0); return; }
-if (k === 'End')  { e.preventDefault(); focusAt(visible().length - 1); return; }
 
 if (k === 'ArrowRight') {
 e.preventDefault();
@@ -195,12 +276,12 @@ select(it);
 });
 
 var firstVisible = visible()[0];
-if (firstVisible) firstVisible.node.setAttribute('tabindex', '0');
+if (firstVisible) roving.rove(firstVisible.node);
 
 return {
 focusAt: focusAt,
 get selected() { return current(); },
-destroy: function () { root.innerHTML = ''; },
+destroy: function () { roving.destroy(); root.innerHTML = ''; },
 };
 }
 

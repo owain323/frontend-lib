@@ -29,6 +29,89 @@
 (function () {
   'use strict';
 
+  /* ==== BEHAVIOR INJECT BEGIN: roving ==== */
+  var flRoving = function (opts) {
+    var opt = opts || {};
+    var container = opt.container;
+    var all = opt.items || function () { return []; };
+    var movable = opt.movable || all;
+    var nodeOf = opt.nodeOf || function (x) { return x; };
+    var axis = opt.axis || 'x';
+    var loop = opt.loop !== false;
+    var homeEnd = opt.homeEnd !== false;
+    /* ④ tabindex: false ⇒ 只要步进，不要 roving tabindex（理由见文件头）*/
+    var roveTab = opt.tabindex !== false;
+    var onMove = opt.onMove || function () {};
+
+    /* ① tabindex 落在**全集**上：禁用项也必须是 -1，否则 Tab 会停上去 */
+    function rove(target) {
+      if (!roveTab) return target;
+      var l = all() || [];
+      for (var i = 0; i < l.length; i++) {
+        var n = nodeOf(l[i]);
+        if (!n || !n.setAttribute) continue;
+        n.setAttribute('tabindex', n === target ? '0' : '-1');
+      }
+      return target;
+    }
+
+    /* ② 取模循环：对负数、对 |d| > n 都对 */
+    function step(i, d) {
+      var n = (movable() || []).length;
+      if (!n) return -1;
+      if (loop) return ((i + d) % n + n) % n;
+      var t = i + d;
+      return (t < 0 || t >= n) ? -1 : t;
+    }
+
+    function indexOfNode(node) {
+      var l = movable() || [];
+      for (var i = 0; i < l.length; i++) {
+        if (nodeOf(l[i]) === node) return i;
+      }
+      return -1;
+    }
+
+    function onKey(e) {
+      var l = movable() || [];
+      if (!l.length) return;
+      var i = indexOfNode(e.target);
+      if (i < 0) return;
+      var k = e.key;
+      var next = -1;
+      var reason = 'step';
+
+      if (axis === 'y') {
+        if (k === 'ArrowDown') next = step(i, 1);
+        else if (k === 'ArrowUp') next = step(i, -1);
+      } else {
+        if (k === 'ArrowRight') next = step(i, 1);
+        else if (k === 'ArrowLeft') next = step(i, -1);
+      }
+      if (homeEnd && k === 'Home') { next = 0; reason = 'home'; }
+      else if (homeEnd && k === 'End') { next = l.length - 1; reason = 'end'; }
+
+      if (next < 0 || next >= l.length) return;
+      /* ③ 只拦事件，不替组件决定移动后做什么 */
+      if (e.preventDefault) e.preventDefault();
+      if (e.stopPropagation) e.stopPropagation();
+      onMove(next, l[next], reason);
+    }
+
+    if (container) container.addEventListener('keydown', onKey);
+
+    /* ⚠️ 只暴露有人用的东西（理由见文件头）*/
+    return {
+      rove: rove,
+      step: step,
+      indexOf: indexOfNode,
+      destroy: function () {
+        if (container) container.removeEventListener('keydown', onKey);
+      },
+    };
+  };
+  /* ==== BEHAVIOR INJECT END: roving ==== */
+
   function toArray(x) { return Array.prototype.slice.call(x); }
 
   /* 🔴 刻意不用 Element.closest / Array.filter ——
@@ -67,6 +150,23 @@
     this.vertical = this.list.getAttribute('aria-orientation') === 'vertical';
     // automatic（默认）：方向键移动即激活；manual：只移动焦点
     this.manual = root.classList.contains('tabs--manual');
+
+    /* 方向键游走走 roving 核（01-tokens/behavior/roving.js）。
+       ⭐ 两个列表必须分开：
+         items   = 全部 tab（含禁用）⇒ tabindex 也要给禁用项设成 -1，
+                   否则 Tab 会停在禁用项上
+         movable = 可用 tab ⇒ 方向键只在这里面移动，跳过禁用项 */
+    var self = this;
+    this.roving = flRoving({
+      container: this.list,
+      items: function () { return self.tabs; },
+      movable: function () { return self.focusables(); },
+      axis: this.vertical ? 'y' : 'x',
+      onMove: function (i, tab) {
+        if (self.manual) { self.rove(tab); tab.focus(); }   // manual：只移焦点
+        else self.select(tab, true);                        // automatic：移动即激活
+      },
+    });
     this.bind();
   }
 
@@ -78,11 +178,11 @@
     return filter(this.tabs, this.enabled, this);
   };
 
-  /* 🔴 roving 的核心：把 tabindex="0" 给 active，其余 -1 */
+  /* 🔴 roving 的核心：把 tabindex="0" 给 active，其余 -1
+     —— 实现已移到 roving 核，这里只做转发（规则只有一份）。 */
   Tabs.prototype.rove = function (target) {
-    for (var i = 0; i < this.tabs.length; i++) {
-      this.tabs[i].setAttribute('tabindex', this.tabs[i] === target ? '0' : '-1');
-    }
+    if (!this.roving) return;
+    this.roving.rove(target);
   };
   Tabs.prototype.select = function (tab, focusIt) {
     if (!this.enabled(tab)) return;
@@ -114,31 +214,6 @@
     }
   };
 
-  Tabs.prototype.step = function (from, delta) {
-    var list = this.focusables();
-    if (!list.length) return;
-    var i = list.indexOf(from);
-    if (i < 0) i = 0;
-    // 循环：最后一个的下一个是第一个
-    var n = (i + delta + list.length) % list.length;
-    var next = list[n];
-    if (this.manual) {
-      // 手动模式：只移动焦点，**不切面板**
-      this.rove(next);
-      next.focus();
-    } else {
-      this.select(next, true);
-    }
-  };
-
-  Tabs.prototype.edge = function (which) {
-    var list = this.focusables();
-    if (!list.length) return;
-    var target = which === 'home' ? list[0] : list[list.length - 1];
-    if (this.manual) { this.rove(target); target.focus(); }
-    else this.select(target, true);
-  };
-
   Tabs.prototype.bind = function () {
     var self = this;
 
@@ -165,27 +240,16 @@
       var tab = closest(e.target, '[role="tab"]');
       if (!tab) return;
       var k = e.key;
-      var handled = true;
 
-      if (k === 'ArrowRight' || (self.vertical && k === 'ArrowDown')) {
-        self.step(tab, 1);
-      } else if (k === 'ArrowLeft' || (self.vertical && k === 'ArrowUp')) {
-        self.step(tab, -1);
-      } else if (k === 'Home') {
-        self.edge('home');
-      } else if (k === 'End') {
-        self.edge('end');
-      } else if (k === 'Enter' || k === ' ') {
-        // 手动模式下 Enter/Space 才激活
-        if (self.manual) self.select(tab, false);
-        else handled = false;      // automatic 模式交给 button 的默认行为
-      } else {
-        handled = false;
-      }
-
-      if (handled) {
-        e.preventDefault();   // 阻止方向键滚动页面
-        e.stopPropagation();
+      /* ↑↓←→ 与 Home / End 已由 roving 核接管（见构造函数里的 flRoving），
+         这里只剩 Enter / Space。
+         ⚠️ automatic 模式下**不要** preventDefault —— 交给 button 的默认行为
+         （它会触发 click ⇒ select）。只有 manual 模式才需要显式激活：
+         那种模式下方向键只移了焦点，面板还没切。 */
+      if (k !== 'Enter' && k !== ' ' && k !== 'Spacebar') return;
+      if (self.manual) {
+        e.preventDefault();
+        self.select(tab, false);
       }
     });
   };

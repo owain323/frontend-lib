@@ -67,15 +67,27 @@ PPT 事故的形态就是"14 页一起改，改完一起崩"。
 
 ### G-5 需要"Esc 关闭 / 点外部关闭 / 焦点归位 / 方向键游走 / 首字母跳转"时，用核，别自己写
 
-真值源在 `01-tokens/behavior/`（现有 `dismissable`）。用法：
+真值源在 `01-tokens/behavior/`（现有 `dismissable`、`focus-return`、`roving`）。用法：
 
 1. 在组件文件里留出注入标记
-   `/* ==== BEHAVIOR INJECT BEGIN: dismissable ==== */` … `END`
+   `/* ==== BEHAVIOR INJECT BEGIN: roving ==== */` … `END`
 2. 跑 `python 05-audit/gen-behavior.py`，把核写进来
-3. 调它（如 `flDismissable({ escOn, inside, when, onDismiss })`），并在 `destroy()` 里成对销毁
+3. 调它（如 `flRoving({ container, items, movable, axis, onMove })`），并在 `destroy()` 里成对销毁
 
-**为什么现在需要**：14 个组件 JS 里，Esc 关闭被手写了 10 处、点击外部 7 处。
-每多一个副本，就多一个"这处忘了修"的机会 —— 而且这种漏**不报错**。
+⚠️ 先确认**这个核管的是不是你这件事** —— "看起来像"不等于"是"：
+
+| 你要的 | 用不用核 |
+|---|---|
+| Esc / 点外部关闭 | `dismissable` |
+| 关闭后焦点还给谁 | `focus-return` |
+| 一组项里用方向键**移动 DOM 焦点** | `roving` |
+| 方向键是**翻页 / 展开收起**这类命令 | **不用** —— 那不是游走，是命令键 |
+| 焦点常驻触发器、靠 `aria-activedescendant` 报位置 | **不用** —— 核靠 `e.target` 判断当前项，这种模式下焦点根本不在项上 |
+| APG 菜单（菜单项按规范全 `tabindex="-1"`） | 用 `roving`，但传 `tabindex: false`（只接管步进，不碰 tabindex） |
+
+**为什么现在需要**：14 个组件 JS 里，Esc 关闭被手写了 10 处、点击外部 7 处、
+roving tabindex 33 处。每多一个副本，就多一个"这处忘了修"的机会 ——
+而且这种漏**不报错**（同一件事在不同组件里手感不一样，只有键盘用户会遇到）。
 
 **什么时候可以删**：当这类行为只剩一处实现时（那正是本条的目的）。
 
@@ -89,7 +101,7 @@ PPT 事故的形态就是"14 页一起改，改完一起崩"。
 4. 不写 .page-N .xxx 这类页面级 override 链
 5. 改组件样式后必须重跑该组件的视觉基线
 6. 改之前先跑 impact-report.py 看影响范围
-7. 需要 Esc 关闭 / 点外部关闭 这类行为时，用 01-tokens/behavior/ 里的核，别自己重写
+7. 需要 Esc 关闭 / 点外部关闭 / 焦点归位 / 方向键游走 这类行为时，用 01-tokens/behavior/ 里的核，别自己重写
 发现自己在写页面级 override ⇒ 停下来，改组件
 ```
 
