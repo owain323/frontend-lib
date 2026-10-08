@@ -92,6 +92,28 @@ clear: function () { saved = null; },
 };
 };
 
+var flEmit = function (el, name, detail) {
+if (!el || !el.dispatchEvent) return null;
+var type = name.indexOf('fl-') === 0 ? name : 'fl-' + name;
+var ev = null;
+
+if (typeof window.CustomEvent === 'function') {
+try {
+ev = new window.CustomEvent(type, {
+detail: detail || null, bubbles: true, cancelable: false
+});
+} catch (e) { ev = null; }
+}
+if (!ev) {
+try {
+ev = document.createEvent('CustomEvent');
+ev.initCustomEvent(type, true, false, detail || null);
+} catch (e2) { return null; }
+}
+el.dispatchEvent(ev);
+return ev;
+};
+
 var current = null;
 
 function focusableIn(root) {
@@ -143,6 +165,8 @@ if (f.length) f[0].focus();
 else box.setAttribute('tabindex', '-1'), box.focus();
 
 current = api;
+
+flEmit(anchor, 'fl-open', null);
 if (opts.onOpen) opts.onOpen();
 }
 
@@ -154,6 +178,7 @@ box.setAttribute('inert', '');
 
 fr.restore();
 if (current === api) current = null;
+flEmit(anchor, 'fl-close', null);
 if (opts.onClose) opts.onClose();
 }
 

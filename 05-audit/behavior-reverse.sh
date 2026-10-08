@@ -41,6 +41,7 @@ run "dismissable" node 05-audit/dismissable-check.js --selftest
 run "focus-return" node 05-audit/focus-return-check.js --selftest
 run "roving"      node 05-audit/roving-check.js --selftest
 run "typeahead"   node 05-audit/typeahead-check.js --selftest
+run "emit"        node 05-audit/emit-check.js --selftest
 run "matrix"      $PY 05-audit/behavior-matrix-gate.py --selftest
 
 exit $fail

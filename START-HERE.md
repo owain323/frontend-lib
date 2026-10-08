@@ -41,8 +41,8 @@
 | 输入框 | `02-primitives/input/input.css` | 238 | — | 有表单就要 |
 | 单选/复选/下拉 | `02-primitives/choice/choice.css` | 395 | — | 有选择就要 |
 | 卡片 | `02-primitives/card/card.css` | 246 | — | 有分组内容就要 |
-| 标签页 | `03-patterns/tabs/tabs.css` | 159 | **必需 275** (`tabs.js`) | 同层级内容切换就要 |
-| 折叠面板 | `03-patterns/accordion/accordion.css` | 452 | **必需 342** (`accordion.js`) | 长表单分段就要 |
+| 标签页 | `03-patterns/tabs/tabs.css` | 159 | **必需 301** (`tabs.js`) | 同层级内容切换就要 |
+| 折叠面板 | `03-patterns/accordion/accordion.css` | 452 | **必需 368** (`accordion.js`) | 长表单分段就要 |
 | 表单校验 | `03-patterns/form-validation/form-validation.css` | 263 | — | 提交前要校验就要 |
 | 列表增删 | `03-patterns/list/list.css` | 162 | 可选 201 (`flip.js`，FLIP 增删动画，纯增强) | 列表会动态增删就要 |
 | 导航/抽屉 | `03-patterns/nav/nav.css` | 299 | 可选 111 (`toc.js`，自动生成目录，纯增强) | 内容长要目录就要 |

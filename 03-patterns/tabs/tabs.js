@@ -29,6 +29,30 @@
 (function () {
   'use strict';
 
+  /* ==== BEHAVIOR INJECT BEGIN: emit ==== */
+  var flEmit = function (el, name, detail) {
+    if (!el || !el.dispatchEvent) return null;
+    var type = name.indexOf('fl-') === 0 ? name : 'fl-' + name;
+    var ev = null;
+    /* 老 WebView 没有 CustomEvent 构造函数 ⇒ 兜底走 createEvent（理由见文件头）*/
+    if (typeof window.CustomEvent === 'function') {
+      try {
+        ev = new window.CustomEvent(type, {
+          detail: detail || null, bubbles: true, cancelable: false
+        });
+      } catch (e) { ev = null; }
+    }
+    if (!ev) {
+      try {
+        ev = document.createEvent('CustomEvent');
+        ev.initCustomEvent(type, true, false, detail || null);
+      } catch (e2) { return null; }
+    }
+    el.dispatchEvent(ev);
+    return ev;
+  };
+  /* ==== BEHAVIOR INJECT END: emit ==== */
+
   /* ==== BEHAVIOR INJECT BEGIN: roving ==== */
   var flRoving = function (opts) {
     var opt = opts || {};
@@ -209,6 +233,8 @@
     this.active = tab;
     this.rove(tab);
     if (focusIt) tab.focus();
+    flEmit(this.root, 'fl-change',
+           { value: tab.getAttribute('data-value') || tab.id, tab: tab });
     if (typeof this.opts.onChange === 'function') {
       this.opts.onChange(tab.getAttribute('data-value') || tab.id, tab);
     }

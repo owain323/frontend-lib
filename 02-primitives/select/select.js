@@ -86,6 +86,29 @@
     };
   };
   /* ==== BEHAVIOR INJECT END: typeahead ==== */
+  /* ==== BEHAVIOR INJECT BEGIN: emit ==== */
+  var flEmit = function (el, name, detail) {
+    if (!el || !el.dispatchEvent) return null;
+    var type = name.indexOf('fl-') === 0 ? name : 'fl-' + name;
+    var ev = null;
+    /* 老 WebView 没有 CustomEvent 构造函数 ⇒ 兜底走 createEvent（理由见文件头）*/
+    if (typeof window.CustomEvent === 'function') {
+      try {
+        ev = new window.CustomEvent(type, {
+          detail: detail || null, bubbles: true, cancelable: false
+        });
+      } catch (e) { ev = null; }
+    }
+    if (!ev) {
+      try {
+        ev = document.createEvent('CustomEvent');
+        ev.initCustomEvent(type, true, false, detail || null);
+      } catch (e2) { return null; }
+    }
+    el.dispatchEvent(ev);
+    return ev;
+  };
+  /* ==== BEHAVIOR INJECT END: emit ==== */
   /* ---- 旧环境兼容：Element.closest 在老 WebView 上不存在 ----
      直接调用会在真机上抛 `is not a function`（本地完全正常，
      只在老环境炸 —— 属静默失效）。这里做模块内兜底，
@@ -201,6 +224,8 @@
       /* hidden input 承接表单值（自建组件最容易漏的）*/
       var hidden = root.querySelector('input[type="hidden"]');
       if (hidden) hidden.value = selected == null ? '' : selected;
+      flEmit(root, 'fl-change',
+             { value: selected, text: optText(options[selectedIdx()] || options[0]) });
       if (opt.onChange) opt.onChange(selected, optText(options[selectedIdx()] || options[0]));
     }
 
@@ -261,6 +286,7 @@
       btn.focus();
       /* ① 焦点落在**选中项**（没有选中则落在第一个未禁用的项）*/
       setActive(activeIndex());
+      flEmit(root, 'fl-open', null);
       if (opt.onOpen) opt.onOpen();
     }
     function close(restoreFocus) {
@@ -272,6 +298,7 @@
       typeahead.clear();   /* 关闭即清空缓冲：下次打开不该接着上次的半个词 */
       /* ③ Esc 关闭时焦点**还给按钮**（不是选中项）*/
       if (restoreFocus !== false) btn.focus();
+      flEmit(root, 'fl-close', null);
       if (opt.onClose) opt.onClose();
     }
     function commit(i) {

@@ -1,6 +1,28 @@
 (function (global) {
 'use strict';
 
+var flEmit = function (el, name, detail) {
+if (!el || !el.dispatchEvent) return null;
+var type = name.indexOf('fl-') === 0 ? name : 'fl-' + name;
+var ev = null;
+
+if (typeof window.CustomEvent === 'function') {
+try {
+ev = new window.CustomEvent(type, {
+detail: detail || null, bubbles: true, cancelable: false
+});
+} catch (e) { ev = null; }
+}
+if (!ev) {
+try {
+ev = document.createEvent('CustomEvent');
+ev.initCustomEvent(type, true, false, detail || null);
+} catch (e2) { return null; }
+}
+el.dispatchEvent(ev);
+return ev;
+};
+
 var flRoving = function (opts) {
 var opt = opts || {};
 var container = opt.container;
@@ -205,6 +227,7 @@ function open() {
 menu.hidden = false;
 btn.setAttribute('aria-expanded', 'true');
 active = -1;
+flEmit(root, 'fl-open', null);
 if (opt.onOpen) opt.onOpen();
 }
 
@@ -214,6 +237,7 @@ menu.hidden = true;
 btn.setAttribute('aria-expanded', 'false');
 active = -1;
 if (restoreFocus !== false && document.contains(btn)) btn.focus();
+flEmit(root, 'fl-close', null);
 if (opt.onClose) opt.onClose();
 }
 
@@ -257,6 +281,8 @@ if (!li) return;
 e.stopPropagation();
 if (li.getAttribute('aria-disabled') === 'true') return;
 close();
+flEmit(root, 'fl-select',
+{ value: li.getAttribute('data-value') || li.textContent.trim(), item: li });
 if (opt.onSelect) opt.onSelect(li.getAttribute('data-value') || li.textContent.trim(), li);
 });
 

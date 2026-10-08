@@ -228,6 +228,7 @@ run "dismissable" node 05-audit/dismissable-check.js
 run "focus-return" node 05-audit/focus-return-check.js
 run "roving" node 05-audit/roving-check.js
 run "typeahead" node 05-audit/typeahead-check.js
+run "emit" node 05-audit/emit-check.js
 # 🔴 反向控制也**必须每次都跑**，不能只在写的时候验证一次。
 #    理由（今天一天踩了两次）：突变体的正则是硬编码的，源码一改形状它就匹配不上
 #    ⇒ 那条"反例"根本没生效 ⇒ 自检报"突变没生效"，但**没人看** ⇒ 门禁看起来是好的、

@@ -85,6 +85,63 @@ window.Overlay.dialog({ title: '确认', actions: [...] });
 
 ---
 
+## 事件
+
+组件除了构造时传入的**回调**，还会派发 **DOM 事件**。两者不是二选一：
+
+|  | 回调 | 事件 |
+|---|---|---|
+| 订阅者数量 | 一个（构造时那一个） | 任意多个 |
+| 谁来订阅 | 只能是你自己创建实例的那一处 | 任何拿到 DOM 的代码，包括**没创建它**的代码 |
+| 能不能委托 | 不能 | 能（事件冒泡，可在祖先上统一收） |
+
+### 统一约定（五个核都一样的五条）
+
+| 约定 | 值 | 为什么 |
+|---|---|---|
+| 事件名 | 一律 `fl-` 前缀 | 组件内部有原生 `<input>` / `<button>`，它们的 `change` / `click` 会**冒泡上来**；不加前缀 ⇒ 你会收到自己没订阅过的东西 |
+| 冒泡 | `bubbles: true` | 可以在祖先上做事件委托 |
+| 可撤销 | `cancelable: false` | 本库的事件是**通知**，不是"可撤销的动作"。要拦就在回调里 `return false` |
+| 派发位置 | **组件根元素** | ⇒ `e.target` 就是组件根 |
+| 携带数据 | `e.detail.value` | 有值的组件都在 `value` 上；组件自己的字段另加 |
+
+⚠️ **委托时必须认 `e.target`**：事件会冒泡，嵌套组件（例如 tabs 里放
+   select）会在**同一个祖先**上给你两个 `fl-change`。事件名**不能**代替身份。
+
+### 事件一览
+
+| 组件 | 事件 | `e.detail` | 何时派发 |
+|---|---|---|---|
+| `Select` | `fl-change` | `{ value, text }` | 选中并关闭后 |
+| `Select` | `fl-open` / `fl-close` | — | 展开 / 收起 |
+| `Combobox` | `fl-change` | `{ value }`（字符串数组） | 标签增删 |
+| `DateRange` | `fl-change` | `{ value: { from, to }, valid }` | 区间变化（**含校验失败**） |
+| `Accordion` | `fl-change` | `{ value, open, item }` | 展开或收起 |
+| `Tabs` | `fl-change` | `{ value, tab }` | 切换标签 |
+| `Tree` | `fl-select` | `{ value, item }` | 选中节点 |
+| `Dropdown` | `fl-select` | `{ value, item }` | 选中菜单项 |
+| `Dropdown` | `fl-open` / `fl-close` | — | 展开 / 收起 |
+| `Pagination` | `fl-change` | `{ value, page }` | 翻页 |
+| `Popover` | `fl-open` / `fl-close` | — | 展开 / 收起 |
+| `Drawer` | `fl-close` | — | 关闭**动画开始前**（晚一点它已不在 DOM 上） |
+
+```js
+// 直接订阅
+root.addEventListener('fl-change', function (e) {
+  console.log(e.detail.value);
+});
+
+// 在祖先上委托（认 e.target，不认事件名）
+document.body.addEventListener('fl-change', function (e) {
+  if (e.target.matches('[data-select]')) { /* … */ }
+});
+```
+
+🔴 `Accordion` 的 `value` 是**按钮 id**（组件自己生成、实例内唯一）——
+   手风琴没有 `data-value` 属性，别去找它。
+
+---
+
 ## DOM 契约
 
 组件通过 `data-*` 暴露结构与状态。**这些是公开的**：

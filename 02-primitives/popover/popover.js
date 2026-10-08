@@ -108,6 +108,29 @@
     };
   };
   /* ==== BEHAVIOR INJECT END: focus-return ==== */
+  /* ==== BEHAVIOR INJECT BEGIN: emit ==== */
+  var flEmit = function (el, name, detail) {
+    if (!el || !el.dispatchEvent) return null;
+    var type = name.indexOf('fl-') === 0 ? name : 'fl-' + name;
+    var ev = null;
+    /* 老 WebView 没有 CustomEvent 构造函数 ⇒ 兜底走 createEvent（理由见文件头）*/
+    if (typeof window.CustomEvent === 'function') {
+      try {
+        ev = new window.CustomEvent(type, {
+          detail: detail || null, bubbles: true, cancelable: false
+        });
+      } catch (e) { ev = null; }
+    }
+    if (!ev) {
+      try {
+        ev = document.createEvent('CustomEvent');
+        ev.initCustomEvent(type, true, false, detail || null);
+      } catch (e2) { return null; }
+    }
+    el.dispatchEvent(ev);
+    return ev;
+  };
+  /* ==== BEHAVIOR INJECT END: emit ==== */
 
   /* ⭐ 同一时间只开一个 popover —— 两个叠着会让用户不知道该关哪个 */
   var current = null;
@@ -183,6 +206,8 @@
       else box.setAttribute('tabindex', '-1'), box.focus();
 
       current = api;
+      /* 先派发事件再调回调 ⇒ 回调抛异常也不连累其它订阅者（核文件头 ⑦）*/
+      flEmit(anchor, 'fl-open', null);
       if (opts.onOpen) opts.onOpen();
     }
 
@@ -194,6 +219,7 @@
       /* ⭐ 焦点归还 —— 否则键盘用户要从页面开头重新 Tab。 */
       fr.restore();
       if (current === api) current = null;
+      flEmit(anchor, 'fl-close', null);
       if (opts.onClose) opts.onClose();
     }
 

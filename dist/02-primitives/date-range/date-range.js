@@ -1,6 +1,28 @@
 (function (global) {
 'use strict';
 
+var flEmit = function (el, name, detail) {
+if (!el || !el.dispatchEvent) return null;
+var type = name.indexOf('fl-') === 0 ? name : 'fl-' + name;
+var ev = null;
+
+if (typeof window.CustomEvent === 'function') {
+try {
+ev = new window.CustomEvent(type, {
+detail: detail || null, bubbles: true, cancelable: false
+});
+} catch (e) { ev = null; }
+}
+if (!ev) {
+try {
+ev = document.createEvent('CustomEvent');
+ev.initCustomEvent(type, true, false, detail || null);
+} catch (e2) { return null; }
+}
+el.dispatchEvent(ev);
+return ev;
+};
+
 function closest(el, sel) {
 if (!el) return null;
 if (el.closest) return el.closest(sel);
@@ -129,6 +151,8 @@ if (summary) summary.innerHTML = s ? ('区间 <b>' + s + '</b>') : '';
 
 function emit() {
 var ok = validate();
+flEmit(root, 'fl-change',
+{ value: { from: from.value, to: to.value }, valid: ok });
 if (opt.onChange) {
 opt.onChange({ from: from.value, to: to.value, valid: ok }, ok);
 }

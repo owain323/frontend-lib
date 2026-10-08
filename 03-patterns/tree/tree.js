@@ -21,6 +21,30 @@
 (function (global) {
   'use strict';
 
+  /* ==== BEHAVIOR INJECT BEGIN: emit ==== */
+  var flEmit = function (el, name, detail) {
+    if (!el || !el.dispatchEvent) return null;
+    var type = name.indexOf('fl-') === 0 ? name : 'fl-' + name;
+    var ev = null;
+    /* 老 WebView 没有 CustomEvent 构造函数 ⇒ 兜底走 createEvent（理由见文件头）*/
+    if (typeof window.CustomEvent === 'function') {
+      try {
+        ev = new window.CustomEvent(type, {
+          detail: detail || null, bubbles: true, cancelable: false
+        });
+      } catch (e) { ev = null; }
+    }
+    if (!ev) {
+      try {
+        ev = document.createEvent('CustomEvent');
+        ev.initCustomEvent(type, true, false, detail || null);
+      } catch (e2) { return null; }
+    }
+    el.dispatchEvent(ev);
+    return ev;
+  };
+  /* ==== BEHAVIOR INJECT END: emit ==== */
+
   /* ==== BEHAVIOR INJECT BEGIN: roving ==== */
   var flRoving = function (opts) {
     var opt = opts || {};
@@ -378,6 +402,9 @@
     function select(it) {
       items.forEach(function (x) { x.node.setAttribute('aria-selected', 'false'); });
       it.node.setAttribute('aria-selected', 'true');
+      flEmit(root, 'fl-select', { value: it.node.getAttribute('data-value') ||
+                                          it.node.textContent.replace(/^\s+|\s+$/g, ''),
+                                  item: it });
       if (opt.onSelect) opt.onSelect(it);
     }
 
@@ -412,7 +439,7 @@
     return {
       focusAt: focusAt,
       get selected() { return current(); },
-      destroy: function () { roving.destroy(); root.innerHTML = ''; },
+      destroy: function () { roving.destroy(); typeahead.destroy(); root.innerHTML = ''; },
     };
   }
 
