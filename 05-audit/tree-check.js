@@ -212,6 +212,53 @@ const REPO = path.resolve(__dirname, '..');
                        (first !== last ? ' ✅' : ' 🔴 没动') };
       },
 
+      /* ⭐ 类型搜索：连打**同一个**字符必须在匹配项之间循环。
+         为什么这条必须有：迁移前 tree 只做"单字符跳转"、select 只做"累积"，
+         两处**各缺一半**，而"连打同一字符要循环"这一半**全库没人实现**
+         ⇒ 用户连按两次同一个字母，游标不动，看起来像卡了。
+         ⚠️ 反向控制：把核里 repeated() 的特判去掉 ⇒ 本条红。 */
+      '类型搜索：连打同一字符 ⇒ 循环': async (p) => {
+        const at = () => p.evaluate(() =>
+          (document.activeElement.textContent || '').trim().slice(0, 10));
+        await p.evaluate(() => {
+          const n = document.querySelector('#t1 .tree__node');
+          if (n) n.focus();
+        });
+        await new Promise((r) => setTimeout(r, 120));
+        await p.keyboard.press('KeyB');
+        await new Promise((r) => setTimeout(r, 160));
+        const a = await at();
+        await p.keyboard.press('KeyB');
+        await new Promise((r) => setTimeout(r, 160));
+        const b = await at();
+        const okB = /^b/i.test(a) && /^b/i.test(b);
+        return { ok: a !== b && okB,
+                 note: '连打 b：' + a + ' → ' + b +
+                       (a !== b && okB ? ' ✅ 在匹配项之间循环'
+                                       : ' 🔴 停在原地（连打同一字符没循环）') };
+      },
+
+      /* ⭐ 类型搜索：多字符**累积**成前缀。
+         反向控制同上（旧实现按单字符逐个跳 ⇒ "ba" 永远到不了 base.css）。 */
+      '类型搜索：多字符累积（"ba" ⇒ base.css）': async (p) => {
+        /* 上一条刚打过 b ⇒ 先等缓冲超时清空，否则这次拼成 "bba" */
+        await new Promise((r) => setTimeout(r, 700));
+        await p.evaluate(() => {
+          const n = document.querySelector('#t1 .tree__node');
+          if (n) n.focus();
+        });
+        await new Promise((r) => setTimeout(r, 120));
+        await p.keyboard.press('KeyB');
+        await p.keyboard.press('KeyA');
+        await new Promise((r) => setTimeout(r, 200));
+        const t = await p.evaluate(() =>
+          (document.activeElement.textContent || '').trim().slice(0, 10));
+        return { ok: /^base/i.test(t),
+                 note: '打 "ba" ⇒ 「' + t + '」' +
+                       (/^base/i.test(t) ? ' ✅ 累积成前缀命中'
+                                         : ' 🔴 只按单字符匹配（没累积）') };
+      },
+
       /* ③ `*` 展开本层同级（APG 特有）*/
       '` * ` 展开本层全部同级': async (p) => {
         const r = await p.evaluate(() => {

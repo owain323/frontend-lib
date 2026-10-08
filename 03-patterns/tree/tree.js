@@ -104,6 +104,72 @@
   };
   /* ==== BEHAVIOR INJECT END: roving ==== */
 
+  /* ==== BEHAVIOR INJECT BEGIN: typeahead ==== */
+  var flTypeahead = function (opts) {
+    var opt = opts || {};
+    var items = opt.items || function () { return []; };
+    var textOf = opt.textOf || function (x) { return String((x && x.textContent) || ''); };
+    var usable = opt.usable || function () { return true; };
+    var timeout = opt.timeout || 500;
+    var onHit = opt.onHit || function () {};
+    var buf = '';
+    var timer = null;
+    var last = -1;
+
+    function stop() {
+      if (timer) { clearTimeout(timer); timer = null; }
+    }
+
+    /* 连打同一字符 ⇒ 只按首字符匹配（理由见文件头 ③④）*/
+    function repeated(s) {
+      if (s.length < 2) return false;
+      for (var i = 1; i < s.length; i++) {
+        if (s.charAt(i) !== s.charAt(0)) return false;
+      }
+      return true;
+    }
+
+    function find(needle) {
+      var l = items() || [];
+      var n = l.length;
+      if (!n) return -1;
+      for (var k = 0; k < n; k++) {
+        var i = (last + 1 + k) % n;      /* ① 从当前项之后开始 ⇒ 会绕回 */
+        if (!usable(l[i])) continue;     /* ⑤ */
+        if (textOf(l[i]).toLowerCase().indexOf(needle) === 0) return i;
+      }
+      return -1;                          /* ⑥ */
+    }
+
+    function type(ch) {
+      if (!ch) return -1;
+      buf += String(ch).toLowerCase();    /* ② */
+      stop();
+      timer = setTimeout(clear, timeout); /* ④ */
+      var needle = repeated(buf) ? buf.charAt(0) : buf;   /* ③ */
+      var i = find(needle);
+      if (i >= 0) {
+        last = i;
+        onHit(i, (items() || [])[i], buf);
+      }
+      return i;
+    }
+
+    /* 只清缓冲，不清 last（理由见文件头）*/
+    function clear() {
+      buf = '';
+      stop();
+    }
+
+    return {
+      type: type,
+      clear: clear,
+      buffer: function () { return buf; },
+      destroy: function () { stop(); },
+    };
+  };
+  /* ==== BEHAVIOR INJECT END: typeahead ==== */
+
   /* ---- 旧环境兼容：Element.closest 在老 WebView 上不存在 ----
      直接调用会在真机上抛 `is not a function`（本地完全正常，
      只在老环境炸 —— 属静默失效）。这里做模块内兜底，
@@ -211,6 +277,15 @@
       axis: 'y',
       onMove: function (i) { focusAt(i); },
     });
+
+    /* 类型搜索走 typeahead 核。
+       ⭐ items 用 **visible()**：收起的节点不在视野里，不该被匹配到；
+       ⭐ textOf 要 trim —— 节点文本前后常带缩进空白，不 trim 会一个都匹配不上。 */
+    var typeahead = flTypeahead({
+      items: function () { return visible(); },
+      textOf: function (it) { return String((it && it.node && it.node.textContent) || '').trim(); },
+      onHit: function (i) { focusAt(i); },
+    });
     function setExpanded(it, open) {
       if (!it.ul) return;
       it.li.setAttribute('aria-expanded', open ? 'true' : 'false');
@@ -290,19 +365,13 @@
         return;
       }
 
-      /* ⑥ 首字母跳转（a-z）*/
-      if (/^[a-zA-Z\u4e00-\u9fa5]$/.test(k)) {
+      /* ⑥ 首字母跳转 —— 已移到 typeahead 核（见上面的 flTypeahead）。
+         ⭐ 之前这里只实现"单字符跳转"，不累积 ⇒ 打 "co" 只会先跳到 c 项
+            再跳到 o 项，永远到不了 "components"。累积那一半由核补上。 */
+      if (k.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey &&
+          k !== ' ') {
         e.preventDefault();
-        var list = visible();
-        var start = cur + 1;
-        for (var n = 0; n < list.length; n++) {
-          var idx = (start + n) % list.length;
-          var lbl = (list[idx].node.textContent || '').trim();
-          if (lbl.charAt(0).toLowerCase() === k.toLowerCase()) {
-            focusAt(idx);
-            return;
-          }
-        }
+        typeahead.type(k);
       }
     });
 
