@@ -60,6 +60,21 @@ META = os.path.join(AI, 'components.meta.json')
 OUT_COMPONENTS = os.path.join(AI, 'components.json')
 OUT_TOKENS = os.path.join(AI, 'tokens.json')
 TOKENS_CSS = os.path.join(ROOT, '01-tokens', 'tokens.css')
+BEHAVIORS = os.path.join(AI, 'behaviors.json')
+
+
+def load_behavior_matrix():
+    """M8：成熟度判据要用行为矩阵（manual / gap）。
+
+    ⚠️ 文件不存在 ⇒ 返回空 dict（而不是崩）：本文件也用于 `--check`，
+       行为矩阵是另一张独立的表，不该让它俩互相锁死。
+    """
+    if not os.path.isfile(BEHAVIORS):
+        return {}
+    return json.loads(io.open(BEHAVIORS, encoding='utf-8').read()).get('matrix', {})
+
+
+BEH_MATRIX = load_behavior_matrix()
 
 SCAN = [
     ('02-primitives', 'primitive'),
@@ -211,9 +226,26 @@ def scan_component(cid, cdir, tier, meta):
     # INVARIANT I-8：状态必须活在 DOM 属性上，不能活在 class 里
     i8_ok = len(legacy) == 0
 
+    # 🔴 M8：成熟度必须**有鉴别力**。只用上面三条判据的话 27 个组件全是 stable，
+    #    ladder 等于没用（对标 Primer 的六档阶梯，每档都有硬判据）。
+    #    ⇒ 第四条：该收编到微行为核的**还没收编**（manual）或**根本没做**（gap）
+    #      的组件，不配 stable —— 它改一处不会全库跟着变（I-14）。
+    #    ⚠️ 行为矩阵用的是 **JS 文件名**（flip.js ⇒ flip），组件 id 用的是目录名
+    #       （list/）⇒ 必须按文件名查，否则 list/nav 这类将来出现 gap 会被漏掉。
+    debt = []
+    if js_path:
+        bkey = os.path.basename(js_path)[:-3]
+        for b, cells in BEH_MATRIX.items():
+            v = cells.get(bkey)
+            if v is None:
+                continue
+            st = v[0] if isinstance(v, list) else v
+            if st in ('manual', 'gap'):
+                debt.append(b + ':' + st)
+
     if not (has_demo and has_gate):
         maturity = 'alpha'
-    elif not i8_ok:
+    elif not i8_ok or debt:
         maturity = 'beta'
     else:
         maturity = 'stable'
@@ -228,6 +260,7 @@ def scan_component(cid, cdir, tier, meta):
             'hasDemo': has_demo,
             'hasDedicatedGate': has_gate,
             'statesOnDomAttributes': i8_ok,
+            'behaviorDebt': debt,      # M8：manual/gap 清单，非空 ⇒ 最高只能 beta
         },
         'gates': dedicated,
         'files': {

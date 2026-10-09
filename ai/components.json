@@ -1,18 +1,21 @@
 {
   "schemaVersion": "1.0.0",
   "generatedBy": "05-audit/gen-ai-contract.py",
-  "libraryVersion": "0.7.5",
+  "libraryVersion": "0.7.6",
   "$comment": "机器可读的组件契约。slots = BEM 元素名（在本库里元素名就是插槽名），states.enum = 组件会在 DOM 上写出的 data-* 取值，states.legacyClass = 仍未收敛到 data 属性的历史状态类（INVARIANT I-8 未达标）。",
   "maturityCriteria": {
     "alpha": "缺 demo.html 或缺 05-audit 下的专属门禁 ⇒ 还没被机器验证过，不要用",
-    "beta": "有 demo + 专属门禁，但状态仍用 .is-* class 表达 ⇒ 违反 INVARIANT I-8（状态不在 DOM 上），改坏了 JS 会静默错乱",
-    "stable": "有 demo + 专属门禁 + 状态全部用 data-* 属性表达 ⇒ I-8 达标，可放心依赖",
-    "$note": "成熟度是【计算出来的】，不是拍的。给某个组件手工升级 stable 而它还有 .is-* ⇒ 门禁会红。"
+    "beta": "有 demo + 专属门禁，但**下面至少有一条没过**：① 状态仍用 .is-* class 表达（违反 INVARIANT I-8）；② 该收编到微行为核的行为还是**手写副本**（manual）或**根本没做**（gap） ⇒ 改一处不会全库跟着变（I-14 的病）",
+    "stable": "以上四条全过：有 demo + 专属门禁 + 状态全在 data-* 属性上 + 行为零欠账",
+    "$note": "成熟度是【计算出来的】，不是拍的。手写把某个组件改成 stable 而它还有 manual / gap ⇒ 门禁会红。",
+    "$whyFourth": "🔴 为什么 M8 要加第四条（0.7.6）：只用前三条时 27 个组件**全是 stable** ⇒ ladder 没有任何鉴别力（对标 Primer 六档阶梯，每档都有硬判据）。补上行为欠账这一条后：stable 20 / beta 7。",
+    "$strictImpact": "⚠️ strict 档位只放行 stable ⇒ 这 7 个组件在 strict 下不可用（accordion / combobox / drawer / dropdown / overlay / select / tooltip）。这是**有意的**：它们的行为还有手写副本或缺一个该有的行为。要用就切 standard 档。"
   },
   "summary": {
     "total": 27,
     "byMaturity": {
-      "stable": 27
+      "beta": 7,
+      "stable": 20
     },
     "byTier": {
       "primitive": 13,
@@ -26,11 +29,14 @@
       "tier": "pattern",
       "purpose": "可折叠分组",
       "rootClass": "accordion",
-      "maturity": "stable",
+      "maturity": "beta",
       "maturityReasons": {
         "hasDemo": true,
         "hasDedicatedGate": true,
-        "statesOnDomAttributes": true
+        "statesOnDomAttributes": true,
+        "behaviorDebt": [
+          "roving:gap"
+        ]
       },
       "gates": [
         "accordion-contract.js"
@@ -88,7 +94,8 @@
       "maturityReasons": {
         "hasDemo": true,
         "hasDedicatedGate": true,
-        "statesOnDomAttributes": true
+        "statesOnDomAttributes": true,
+        "behaviorDebt": []
       },
       "gates": [
         "content-check.js"
@@ -118,11 +125,14 @@
       "tier": "pattern",
       "purpose": "侧边抽屉，含遮罩",
       "rootClass": "drawer",
-      "maturity": "stable",
+      "maturity": "beta",
       "maturityReasons": {
         "hasDemo": true,
         "hasDedicatedGate": true,
-        "statesOnDomAttributes": true
+        "statesOnDomAttributes": true,
+        "behaviorDebt": [
+          "dismissable:manual"
+        ]
       },
       "gates": [
         "drawer-check.js"
@@ -167,11 +177,15 @@
       "tier": "pattern",
       "purpose": "下拉菜单",
       "rootClass": "dd",
-      "maturity": "stable",
+      "maturity": "beta",
       "maturityReasons": {
         "hasDemo": true,
         "hasDedicatedGate": true,
-        "statesOnDomAttributes": true
+        "statesOnDomAttributes": true,
+        "behaviorDebt": [
+          "focus-return:manual",
+          "typeahead:gap"
+        ]
       },
       "gates": [
         "dropdown-check.js"
@@ -225,7 +239,8 @@
       "maturityReasons": {
         "hasDemo": true,
         "hasDedicatedGate": true,
-        "statesOnDomAttributes": true
+        "statesOnDomAttributes": true,
+        "behaviorDebt": []
       },
       "gates": [
         "form-validation-check.js"
@@ -279,7 +294,8 @@
       "maturityReasons": {
         "hasDemo": true,
         "hasDedicatedGate": true,
-        "statesOnDomAttributes": true
+        "statesOnDomAttributes": true,
+        "behaviorDebt": []
       },
       "gates": [
         "list-check.js"
@@ -327,7 +343,8 @@
       "maturityReasons": {
         "hasDemo": true,
         "hasDedicatedGate": true,
-        "statesOnDomAttributes": true
+        "statesOnDomAttributes": true,
+        "behaviorDebt": []
       },
       "gates": [
         "nav-check.js"
@@ -377,11 +394,15 @@
       "tier": "pattern",
       "purpose": "吐司提示与模态遮罩",
       "rootClass": "toast",
-      "maturity": "stable",
+      "maturity": "beta",
       "maturityReasons": {
         "hasDemo": true,
         "hasDedicatedGate": true,
-        "statesOnDomAttributes": true
+        "statesOnDomAttributes": true,
+        "behaviorDebt": [
+          "dismissable:manual",
+          "focus-return:manual"
+        ]
       },
       "gates": [
         "overlay-check.js"
@@ -437,7 +458,8 @@
       "maturityReasons": {
         "hasDemo": true,
         "hasDedicatedGate": true,
-        "statesOnDomAttributes": true
+        "statesOnDomAttributes": true,
+        "behaviorDebt": []
       },
       "gates": [
         "pagination-check.js"
@@ -488,7 +510,8 @@
       "maturityReasons": {
         "hasDemo": true,
         "hasDedicatedGate": true,
-        "statesOnDomAttributes": true
+        "statesOnDomAttributes": true,
+        "behaviorDebt": []
       },
       "gates": [
         "states-check.js"
@@ -547,7 +570,8 @@
       "maturityReasons": {
         "hasDemo": true,
         "hasDedicatedGate": true,
-        "statesOnDomAttributes": true
+        "statesOnDomAttributes": true,
+        "behaviorDebt": []
       },
       "gates": [
         "tabs-contract.js"
@@ -596,11 +620,15 @@
       "tier": "pattern",
       "purpose": "悬停/聚焦提示",
       "rootClass": "tooltip",
-      "maturity": "stable",
+      "maturity": "beta",
       "maturityReasons": {
         "hasDemo": true,
         "hasDedicatedGate": true,
-        "statesOnDomAttributes": true
+        "statesOnDomAttributes": true,
+        "behaviorDebt": [
+          "dismissable:manual",
+          "focus-return:manual"
+        ]
       },
       "gates": [
         "tooltip-check.js"
@@ -645,7 +673,8 @@
       "maturityReasons": {
         "hasDemo": true,
         "hasDedicatedGate": true,
-        "statesOnDomAttributes": true
+        "statesOnDomAttributes": true,
+        "behaviorDebt": []
       },
       "gates": [
         "tree-check.js"
@@ -690,7 +719,8 @@
       "maturityReasons": {
         "hasDemo": true,
         "hasDedicatedGate": true,
-        "statesOnDomAttributes": true
+        "statesOnDomAttributes": true,
+        "behaviorDebt": []
       },
       "gates": [
         "badge-check.js"
@@ -735,7 +765,8 @@
       "maturityReasons": {
         "hasDemo": true,
         "hasDedicatedGate": true,
-        "statesOnDomAttributes": true
+        "statesOnDomAttributes": true,
+        "behaviorDebt": []
       },
       "gates": [
         "button-check.js"
@@ -789,7 +820,8 @@
       "maturityReasons": {
         "hasDemo": true,
         "hasDedicatedGate": true,
-        "statesOnDomAttributes": true
+        "statesOnDomAttributes": true,
+        "behaviorDebt": []
       },
       "gates": [
         "card-check.js"
@@ -842,7 +874,8 @@
       "maturityReasons": {
         "hasDemo": true,
         "hasDedicatedGate": true,
-        "statesOnDomAttributes": true
+        "statesOnDomAttributes": true,
+        "behaviorDebt": []
       },
       "gates": [
         "choice-check.js"
@@ -890,11 +923,14 @@
       "tier": "primitive",
       "purpose": "可搜索 + 可多选标签的输入控件",
       "rootClass": "combo",
-      "maturity": "stable",
+      "maturity": "beta",
       "maturityReasons": {
         "hasDemo": true,
         "hasDedicatedGate": true,
-        "statesOnDomAttributes": true
+        "statesOnDomAttributes": true,
+        "behaviorDebt": [
+          "dismissable:manual"
+        ]
       },
       "gates": [
         "combobox-check.js"
@@ -950,7 +986,8 @@
       "maturityReasons": {
         "hasDemo": true,
         "hasDedicatedGate": true,
-        "statesOnDomAttributes": true
+        "statesOnDomAttributes": true,
+        "behaviorDebt": []
       },
       "gates": [
         "date-range-check.js"
@@ -1003,7 +1040,8 @@
       "maturityReasons": {
         "hasDemo": true,
         "hasDedicatedGate": true,
-        "statesOnDomAttributes": true
+        "statesOnDomAttributes": true,
+        "behaviorDebt": []
       },
       "gates": [
         "input-check.js"
@@ -1057,7 +1095,8 @@
       "maturityReasons": {
         "hasDemo": true,
         "hasDedicatedGate": true,
-        "statesOnDomAttributes": true
+        "statesOnDomAttributes": true,
+        "behaviorDebt": []
       },
       "gates": [
         "popover-check.js"
@@ -1107,7 +1146,8 @@
       "maturityReasons": {
         "hasDemo": true,
         "hasDedicatedGate": true,
-        "statesOnDomAttributes": true
+        "statesOnDomAttributes": true,
+        "behaviorDebt": []
       },
       "gates": [
         "progress-check.js"
@@ -1160,11 +1200,15 @@
       "tier": "primitive",
       "purpose": "自定义下拉选择（非原生）",
       "rootClass": "select",
-      "maturity": "stable",
+      "maturity": "beta",
       "maturityReasons": {
         "hasDemo": true,
         "hasDedicatedGate": true,
-        "statesOnDomAttributes": true
+        "statesOnDomAttributes": true,
+        "behaviorDebt": [
+          "dismissable:manual",
+          "focus-return:manual"
+        ]
       },
       "gates": [
         "select-check.js"
@@ -1220,7 +1264,8 @@
       "maturityReasons": {
         "hasDemo": true,
         "hasDedicatedGate": true,
-        "statesOnDomAttributes": true
+        "statesOnDomAttributes": true,
+        "behaviorDebt": []
       },
       "gates": [
         "separator-check.js"
@@ -1262,7 +1307,8 @@
       "maturityReasons": {
         "hasDemo": true,
         "hasDedicatedGate": true,
-        "statesOnDomAttributes": true
+        "statesOnDomAttributes": true,
+        "behaviorDebt": []
       },
       "gates": [
         "skeleton-check.js",
@@ -1306,7 +1352,8 @@
       "maturityReasons": {
         "hasDemo": true,
         "hasDedicatedGate": true,
-        "statesOnDomAttributes": true
+        "statesOnDomAttributes": true,
+        "behaviorDebt": []
       },
       "gates": [
         "switch-contract.js",
@@ -1352,7 +1399,8 @@
       "maturityReasons": {
         "hasDemo": true,
         "hasDedicatedGate": true,
-        "statesOnDomAttributes": true
+        "statesOnDomAttributes": true,
+        "behaviorDebt": []
       },
       "gates": [
         "table-check.js"

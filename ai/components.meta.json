@@ -9,39 +9,121 @@
   ],
   "maturityCriteria": {
     "alpha": "缺 demo.html 或缺 05-audit 下的专属门禁 ⇒ 还没被机器验证过，不要用",
-    "beta": "有 demo + 专属门禁，但状态仍用 .is-* class 表达 ⇒ 违反 INVARIANT I-8（状态不在 DOM 上），改坏了 JS 会静默错乱",
-    "stable": "有 demo + 专属门禁 + 状态全部用 data-* 属性表达 ⇒ I-8 达标，可放心依赖",
-    "$note": "成熟度是【计算出来的】，不是拍的。给某个组件手工升级 stable 而它还有 .is-* ⇒ 门禁会红。"
+    "beta": "有 demo + 专属门禁，但**下面至少有一条没过**：① 状态仍用 .is-* class 表达（违反 INVARIANT I-8）；② 该收编到微行为核的行为还是**手写副本**（manual）或**根本没做**（gap） ⇒ 改一处不会全库跟着变（I-14 的病）",
+    "stable": "以上四条全过：有 demo + 专属门禁 + 状态全在 data-* 属性上 + 行为零欠账",
+    "$note": "成熟度是【计算出来的】，不是拍的。手写把某个组件改成 stable 而它还有 manual / gap ⇒ 门禁会红。",
+    "$whyFourth": "🔴 为什么 M8 要加第四条（0.7.6）：只用前三条时 27 个组件**全是 stable** ⇒ ladder 没有任何鉴别力（对标 Primer 六档阶梯，每档都有硬判据）。补上行为欠账这一条后：stable 20 / beta 7。",
+    "$strictImpact": "⚠️ strict 档位只放行 stable ⇒ 这 7 个组件在 strict 下不可用（accordion / combobox / drawer / dropdown / overlay / select / tooltip）。这是**有意的**：它们的行为还有手写副本或缺一个该有的行为。要用就切 standard 档。"
   },
   "components": {
-    "badge": { "rootClass": "badge", "purpose": "状态标签：计数、分类、结果标记" },
-    "button": { "rootClass": "btn", "purpose": "动作触发：主/次/危险/纯文字四档" },
-    "card": { "rootClass": "card", "purpose": "内容容器：媒体+正文+操作区三段" },
-    "choice": { "rootClass": "choice", "purpose": "单选/多选/原生 select 外观的统一控件" },
-    "combobox": { "rootClass": "combo", "purpose": "可搜索 + 可多选标签的输入控件" },
-    "date-range": { "rootClass": "drange", "purpose": "日期区间选择，含预设快捷范围" },
-    "input": { "rootClass": "field", "purpose": "文本输入及其标签/帮助/错误三件套" },
-    "popover": { "rootClass": "popover", "purpose": "锚定到触发元素的浮层" },
-    "progress": { "rootClass": "progress", "purpose": "进度条与进度环" },
-    "select": { "rootClass": "select", "purpose": "自定义下拉选择（非原生）" },
-    "separator": { "rootClass": "separator", "purpose": "分隔线，可带中间文字" },
-    "skeleton": { "rootClass": "skeleton", "purpose": "加载占位骨架" },
-    "switch": { "rootClass": "switch", "purpose": "开关切换" },
-
-    "accordion": { "rootClass": "accordion", "purpose": "可折叠分组" },
-    "content": { "rootClass": "prose", "purpose": "长文排版容器（标题/段落/列表/引用/代码）" },
-    "drawer": { "rootClass": "drawer", "purpose": "侧边抽屉，含遮罩" },
-    "dropdown": { "rootClass": "dd", "purpose": "下拉菜单" },
-    "form-validation": { "rootClass": "form", "purpose": "表单校验反馈与错误汇总" },
-    "list": { "rootClass": "list", "purpose": "键值列表/条目列表" },
-    "nav": { "rootClass": "nav", "purpose": "顶部导航与目录" },
-    "overlay": { "rootClass": "toast", "purpose": "吐司提示与模态遮罩" },
-    "pagination": { "rootClass": "pagination", "purpose": "分页控件" },
-    "states": { "rootClass": "state", "purpose": "空/加载/错误/成功四种整块状态" },
-    "tabs": { "rootClass": "tabs", "purpose": "选项卡切换" },
-    "tooltip": { "rootClass": "tooltip", "purpose": "悬停/聚焦提示" },
-    "tree": { "rootClass": "tree", "purpose": "可展开树形结构" },
-
-    "table": { "rootClass": "table", "tier": "recipe", "purpose": "数据表格：排序/加载/空/错误四态" }
+    "badge": {
+      "rootClass": "badge",
+      "purpose": "状态标签：计数、分类、结果标记"
+    },
+    "button": {
+      "rootClass": "btn",
+      "purpose": "动作触发：主/次/危险/纯文字四档"
+    },
+    "card": {
+      "rootClass": "card",
+      "purpose": "内容容器：媒体+正文+操作区三段"
+    },
+    "choice": {
+      "rootClass": "choice",
+      "purpose": "单选/多选/原生 select 外观的统一控件"
+    },
+    "combobox": {
+      "rootClass": "combo",
+      "purpose": "可搜索 + 可多选标签的输入控件"
+    },
+    "date-range": {
+      "rootClass": "drange",
+      "purpose": "日期区间选择，含预设快捷范围"
+    },
+    "input": {
+      "rootClass": "field",
+      "purpose": "文本输入及其标签/帮助/错误三件套"
+    },
+    "popover": {
+      "rootClass": "popover",
+      "purpose": "锚定到触发元素的浮层"
+    },
+    "progress": {
+      "rootClass": "progress",
+      "purpose": "进度条与进度环"
+    },
+    "select": {
+      "rootClass": "select",
+      "purpose": "自定义下拉选择（非原生）"
+    },
+    "separator": {
+      "rootClass": "separator",
+      "purpose": "分隔线，可带中间文字"
+    },
+    "skeleton": {
+      "rootClass": "skeleton",
+      "purpose": "加载占位骨架"
+    },
+    "switch": {
+      "rootClass": "switch",
+      "purpose": "开关切换"
+    },
+    "accordion": {
+      "rootClass": "accordion",
+      "purpose": "可折叠分组"
+    },
+    "content": {
+      "rootClass": "prose",
+      "purpose": "长文排版容器（标题/段落/列表/引用/代码）"
+    },
+    "drawer": {
+      "rootClass": "drawer",
+      "purpose": "侧边抽屉，含遮罩"
+    },
+    "dropdown": {
+      "rootClass": "dd",
+      "purpose": "下拉菜单"
+    },
+    "form-validation": {
+      "rootClass": "form",
+      "purpose": "表单校验反馈与错误汇总"
+    },
+    "list": {
+      "rootClass": "list",
+      "purpose": "键值列表/条目列表"
+    },
+    "nav": {
+      "rootClass": "nav",
+      "purpose": "顶部导航与目录"
+    },
+    "overlay": {
+      "rootClass": "toast",
+      "purpose": "吐司提示与模态遮罩"
+    },
+    "pagination": {
+      "rootClass": "pagination",
+      "purpose": "分页控件"
+    },
+    "states": {
+      "rootClass": "state",
+      "purpose": "空/加载/错误/成功四种整块状态"
+    },
+    "tabs": {
+      "rootClass": "tabs",
+      "purpose": "选项卡切换"
+    },
+    "tooltip": {
+      "rootClass": "tooltip",
+      "purpose": "悬停/聚焦提示"
+    },
+    "tree": {
+      "rootClass": "tree",
+      "purpose": "可展开树形结构"
+    },
+    "table": {
+      "rootClass": "table",
+      "tier": "recipe",
+      "purpose": "数据表格：排序/加载/空/错误四态"
+    }
   }
 }
