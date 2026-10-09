@@ -81,6 +81,8 @@ run "theme-sync" $PY 05-audit/theme-sync.py --check
 run "ai-contract" $PY 05-audit/gen-ai-contract.py --check
 # 令牌解析正确性：孤儿注释收尾符 / var() 引用缺失 / （full 模式）浏览器复核
 run "token-parse" $PY 05-audit/token-parse-gate.py --no-browser
+# 令牌受众：每个令牌都得登记「给谁用的」；孤儿不许是 internal、公开孤儿必须进受审名单
+run "token-aud"  $PY 05-audit/token-audience-gate.py
 # 机器可读契约层：schema 只用了实现过的关键字 / Profile 有鉴别力 / Patch 可回放
 run "ai-layer"  node 05-audit/ai-layer-gate.js
 # 规范三层分离：Invariant 层不许被 Contract / Guidance 污染

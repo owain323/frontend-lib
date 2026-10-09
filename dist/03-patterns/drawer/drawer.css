@@ -92,10 +92,11 @@
 
 
 @media (prefers-reduced-motion: no-preference) {
-  .drawer--right  { animation: drawer-in-right  220ms var(--ease-out, ease); }
-  .drawer--left   { animation: drawer-in-left   220ms var(--ease-out, ease); }
-  .drawer--top    { animation: drawer-in-top    220ms var(--ease-out, ease); }
-  .drawer--bottom { animation: drawer-in-bottom 220ms var(--ease-out, ease); }
+  
+  .drawer--right  { animation: drawer-in-right  220ms var(--ease-drawer, ease); }
+  .drawer--left   { animation: drawer-in-left   220ms var(--ease-drawer, ease); }
+  .drawer--top    { animation: drawer-in-top    220ms var(--ease-drawer, ease); }
+  .drawer--bottom { animation: drawer-in-bottom 220ms var(--ease-drawer, ease); }
 
   @keyframes drawer-in-right  { from { transform: translateX(16px); opacity: .6; } }
   @keyframes drawer-in-left   { from { transform: translateX(-16px); opacity: .6; } }

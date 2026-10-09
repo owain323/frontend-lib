@@ -113,10 +113,11 @@
    ⚠️ 用 transform 而不是 left/right（合成层动画，不触发重排）。
    ⚠️ 动画只做"位移 + 少量透明度"，**不做大幅缩放** —— 那看起来廉价。 */
 @media (prefers-reduced-motion: no-preference) {
-  .drawer--right  { animation: drawer-in-right  220ms var(--ease-out, ease); }
-  .drawer--left   { animation: drawer-in-left   220ms var(--ease-out, ease); }
-  .drawer--top    { animation: drawer-in-top    220ms var(--ease-out, ease); }
-  .drawer--bottom { animation: drawer-in-bottom 220ms var(--ease-out, ease); }
+  /* --ease-drawer：滑入面板专用曲线（不是通用的 --ease-out） */
+  .drawer--right  { animation: drawer-in-right  220ms var(--ease-drawer, ease); }
+  .drawer--left   { animation: drawer-in-left   220ms var(--ease-drawer, ease); }
+  .drawer--top    { animation: drawer-in-top    220ms var(--ease-drawer, ease); }
+  .drawer--bottom { animation: drawer-in-bottom 220ms var(--ease-drawer, ease); }
 
   @keyframes drawer-in-right  { from { transform: translateX(16px); opacity: .6; } }
   @keyframes drawer-in-left   { from { transform: translateX(-16px); opacity: .6; } }

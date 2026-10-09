@@ -1,0 +1,73 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://frontend-lib.dev/ai/tokens.audience.schema.json",
+  "title": "frontend-lib 令牌受众登记",
+  "$comment": [
+    "描述 ai/tokens.audience.json 的形状：**每个令牌是给谁用的**。",
+    "",
+    "🔴 为什么这份登记要存在：『声明了 108 个令牌、9 个从没被引用』早就量出来过，",
+    "   但它只是一句观察，不是判据 ⇒ 没人被它拦住过。而那 9 个根本不是同一种东西：",
+    "     · 断点          物理上不可能被 var() 引用（进不了 media query 条件）",
+    "     · 阶梯档位      没人用是本分（那是阶梯）",
+    "     · 为某组件造的  造它的人以为接上了，其实没有 ⇒ 真缺陷",
+    "     · 被取代的遗留  死重量 ⇒ 真缺陷",
+    "   在『只数孤儿个数』的视角下它们完全一样 ⇒ 必须先登记受众，判据才有鉴别力。",
+    "",
+    "🔴 三种受众：",
+    "   public    契约的一部分：文档承诺使用者可以直接引用；改名/改值算破坏性变更",
+    "   internal  库自己的实现细节：使用者不该依赖",
+    "   reference 给人/脚本读的常量：CSS 里物理上不可能被 var() 引用",
+    "",
+    "⚠️ 本文件是**手写**的，不是生成的。生成出来的『契约』只跟再生成一遍比，",
+    "   没有引入任何新信息（docs/INVARIANT.md I-10 实证 9）。",
+    "⚠️ 本 schema 只用了 ai/validate.js 白名单里的关键字（propertyNames 不在白名单）。"
+  ],
+  "type": "object",
+  "required": ["schemaVersion", "audiences", "families", "tokens", "budget"],
+  "properties": {
+    "schemaVersion": { "type": "string" },
+    "source": { "type": "string" },
+    "$comment": { "type": "string" },
+    "audiences": {
+      "type": "object",
+      "required": ["public", "internal", "reference"],
+      "additionalProperties": { "type": "string", "minLength": 1 }
+    },
+    "families": {
+      "type": "object",
+      "patternProperties": {
+        "^--[a-z][a-z0-9-]*$": {
+          "type": "object",
+          "required": ["audience", "why"],
+          "properties": {
+            "audience": { "enum": ["public", "internal", "reference"] },
+            "why": { "type": "string", "minLength": 1 }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "tokens": {
+      "type": "object",
+      "patternProperties": {
+        "^--[a-z][a-z0-9-]*$": {
+          "type": "object",
+          "required": ["audience", "why"],
+          "properties": {
+            "audience": { "enum": ["public", "internal", "reference"] },
+            "why": { "type": "string", "minLength": 1 }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "budget": {
+      "type": "object",
+      "required": ["orphan"],
+      "properties": {
+        "orphan": { "type": "integer", "minimum": 0 },
+        "$comment": { "type": "string" }
+      }
+    }
+  }
+}
