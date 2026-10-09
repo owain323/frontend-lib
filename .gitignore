@@ -50,3 +50,7 @@ node_modules/
 10-review/shots/*.png
 !10-review/shots/_baseline/
 10-review/ios/shot-*.png
+
+# 引擎证据是**生成物**：每台机器上跑出来的引擎/版本都不一样，
+# 而且装不上时会记下本机路径 ⇒ 不入库（脱敏是第二道防线，不靠它兜底）
+10-review/engine-evidence.json

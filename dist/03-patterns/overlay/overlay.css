@@ -164,10 +164,11 @@
 }
 
 
-html { scrollbar-gutter: stable; }
 
 
 body[data-scroll-locked] { overflow: hidden; }
+
+
 
 
 @media (max-width: 480px) {

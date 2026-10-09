@@ -44,6 +44,29 @@ var ROOT = path.dirname(__dirname);
 var EVIDENCE = path.join(ROOT, '10-review', 'engine-evidence.json');
 var ENGINES = ['chromium', 'webkit', 'firefox'];
 
+/**
+ * 脱敏：把绝对路径 / 用户名从错误信息里抹掉。
+ *
+ * 🔴 为什么必须有这个函数（2026-10-09 远端复跑实测）
+ * ---------------------------------------------------------------
+ *   引擎装不上时，Playwright 的报错里带着**本机绝对路径**
+ *   （`C:\Users\<用户名>\AppData\Local\ms-playwright\...`）。
+ *   这份证据是要**落盘**的 ⇒ 一等公民级别的泄漏。
+ *
+ *   ⚠️ 它在本地**发现不了**：本机浏览器都装齐了，`unavailable` 是空的。
+ *     只有在**没装浏览器的机器**上跑（干净克隆就是这种机器），
+ *     那份文件里才会出现路径 —— 而那时它已经进了仓库。
+ *   ⇒ 凡是"把运行时信息写进仓库"的门禁，出口都要过这一道。
+ */
+function scrub(s) {
+  var out = String(s == null ? '' : s);
+  var home = os.homedir();
+  if (home) out = out.split(home).join('<HOME>');
+  out = out.replace(/[A-Za-z]:[\\/][^\s"'|]*/g, '<PATH>');       /* C:\... */
+  out = out.replace(/\/(?:Users|home|root)\/[^\s"'|]*/g, '<PATH>'); /* /home/... */
+  return out;
+}
+
 /* 纯函数：给一份 {引擎: UA} 表，找出重复的 UA。 */
 function duplicateUAs(rows) {
   var seen = {};
@@ -64,7 +87,7 @@ async function probe(engines) {
   try {
     browser = require('./browser.js');
   } catch (e) {
-    return { fatal: 'require ./browser.js 失败：' + e.message, rows: [], unavailable: engines.slice() };
+    return { fatal: 'require ./browser.js 失败：' + scrub(e.message), rows: [], unavailable: engines.slice() };
   }
   var rows = [];
   var unavailable = [];
@@ -78,7 +101,7 @@ async function probe(engines) {
       var ver = (typeof b.version === 'function') ? await b.version() : '?';
       rows.push({ engine: eng, ua: String(ua), version: String(ver) });
     } catch (e) {
-      unavailable.push({ engine: eng, why: String(e.message).split('\n')[0] });
+      unavailable.push({ engine: eng, why: scrub(String(e.message).split('\n')[0]) });
     } finally {
       if (b) { try { await b.close(); } catch (e2) { /* 忽略 */ } }
     }
@@ -100,7 +123,7 @@ async function main() {
       '  ' + x.ua.slice(0, 62) + '\n');
   });
   r.unavailable.forEach(function (x) {
-    process.stdout.write('  [SKIP] ' + x.engine.padEnd(9) + ' 本机跑不起来：' + x.why.slice(0, 70) + '\n');
+    process.stdout.write('  [SKIP] ' + x.engine.padEnd(9) + ' 本机跑不起来：' + scrub(x.why).slice(0, 70) + '\n');
   });
 
   /* ④ 可用引擎 < 2 ⇒ 无从证明"不同" ⇒ SKIP，绝不报通过 */
@@ -193,6 +216,18 @@ async function selftest() {
   expect('三个已知引擎名都能正确归一（含 chrome→chromium）',
     okKnown && browser.engineOf({ engine: 'Chrome' }) === 'chromium');
 
+  /* ⑤ 落盘证据必须脱敏 —— 反面就是"干净克隆上生成的文件里带本机路径" */
+  var leaky = "Executable doesn't exist at C:\\Users\\someone\\AppData\\Local" +
+    "\\ms-playwright\\firefox-1543\\firefox.exe";
+  expect('Windows 盘符路径 + 用户名 ⇒ 必须脱敏',
+    scrub(leaky).indexOf('someone') < 0 && scrub(leaky).indexOf('C:\\Users') < 0,
+    scrub(leaky));
+  var leaky2 = 'Executable doesn\'t exist at /home/alice/.cache/ms-playwright/firefox';
+  expect('POSIX 家目录路径 ⇒ 必须脱敏',
+    scrub(leaky2).indexOf('alice') < 0, scrub(leaky2));
+  expect('普通消息里的词不被误删（不误报）',
+    scrub('浏览器没装，请 npx playwright install').indexOf('playwright') >= 0);
+
   process.stdout.write('\n' + (bad ? '  ❌ 反向控制有 ' + bad + ' 条没抓到' : '  ✅ 反向控制全绿') + '\n');
   return bad ? 1 : 0;
 }
@@ -203,4 +238,4 @@ if (require.main === module) {
     function (e) { process.stdout.write('  🔴 崩了：' + e.message + '\n'); process.exit(1); });
 }
 
-module.exports = { duplicateUAs: duplicateUAs, probe: probe, ENGINES: ENGINES };
+module.exports = { duplicateUAs: duplicateUAs, probe: probe, scrub: scrub, ENGINES: ENGINES };

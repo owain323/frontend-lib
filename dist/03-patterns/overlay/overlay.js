@@ -12,8 +12,9 @@ var FOCUSABLE = [
 
 var lockCount = 0;
 
-var focusStack = [];
-var savedPaddingRight = '';
+var scrollLock = { changed: false, saved: '', varSet: false };
+
+var inertRefs = [];
 
 function focusableIn(root) {
 var all = Array.prototype.slice.call(root.querySelectorAll(FOCUSABLE));
@@ -23,17 +24,18 @@ return el.offsetParent !== null || el === document.activeElement;
 });
 }
 
-function supportsScrollbarGutter() {
-return ('scrollbarGutter' in document.documentElement.style);
-}
-
 function lockScroll() {
 if (lockCount++ > 0) return;
 
-if (!supportsScrollbarGutter()) {
 var sbw = window.innerWidth - document.documentElement.clientWidth;
-savedPaddingRight = document.body.style.paddingRight;
-if (sbw > 0) document.body.style.paddingRight = sbw + 'px';
+if (sbw > 0) {
+var cur = parseFloat(getComputedStyle(document.body).paddingRight) || 0;
+scrollLock.saved = document.body.style.paddingRight;
+document.body.style.paddingRight = (cur + sbw) + 'px';
+scrollLock.changed = true;
+document.documentElement.style.setProperty(
+'--overlay-scrollbar-width', sbw + 'px');
+scrollLock.varSet = true;
 }
 document.body.setAttribute('data-scroll-locked', 'true');
 }
@@ -41,7 +43,36 @@ document.body.setAttribute('data-scroll-locked', 'true');
 function unlockScroll() {
 if (--lockCount > 0) return;
 document.body.removeAttribute('data-scroll-locked');
-document.body.style.paddingRight = savedPaddingRight;
+if (scrollLock.varSet) {
+document.documentElement.style.removeProperty('--overlay-scrollbar-width');
+scrollLock.varSet = false;
+}
+
+if (scrollLock.changed) {
+document.body.style.paddingRight = scrollLock.saved;
+scrollLock.changed = false;
+scrollLock.saved = '';
+}
+}
+
+function inertAcquire(node) {
+for (var i = 0; i < inertRefs.length; i++) {
+if (inertRefs[i].node === node) { inertRefs[i].count++; return; }
+}
+inertRefs.push({ node: node, count: 1 });
+node.inert = true;
+}
+
+function inertRelease(node) {
+for (var i = 0; i < inertRefs.length; i++) {
+if (inertRefs[i].node !== node) continue;
+inertRefs[i].count--;
+if (inertRefs[i].count <= 0) {
+node.inert = false;
+inertRefs.splice(i, 1);
+}
+return;
+}
 }
 
 function toast(opts) {
@@ -118,7 +149,6 @@ function dialog(opts) {
 opts = opts || {};
 
 var myTrigger = document.activeElement;
-focusStack.push(myTrigger);
 
 var backdrop = document.createElement('div');
 backdrop.className = 'dialog-backdrop';
@@ -214,29 +244,28 @@ document.body.querySelectorAll('body > *')
 nodes.forEach(function (n) {
 
 if (n.classList.contains('dialog-backdrop')) return;
-
-var changedByMe = !n.inert;
-inerted.push({ node: n, changedByMe: changedByMe });
-if (changedByMe) n.inert = true;
+inerted.push(n);
+inertAcquire(n);
 });
 }
 
 function close() {
 if (closed) return;
 closed = true;
+
+var ae = document.activeElement;
+var focusIsMine = !ae || ae === document.body ||
+box.contains(ae) || backdrop.contains(ae);
+
 if (backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
 
-inerted.forEach(function (x) {
-if (x.changedByMe) x.node.inert = false;
-});
+inerted.forEach(inertRelease);
 unlockScroll();
 
-var trigger = focusStack.pop();
-if (trigger && document.contains(trigger)) {
-trigger.focus();
-} else {
-document.body.focus();
+if (focusIsMine && myTrigger && document.contains(myTrigger)) {
+myTrigger.focus();
 }
+
 }
 
 return { el: box, close: close };

@@ -56,8 +56,18 @@ SCAN_DIRS = ('02-primitives', '03-patterns', '04-recipes', '09-assets')
 TOKEN_FILES = {'01-tokens/tokens.css'}
 
 # 会被判为「裸标签选择器」的元素
+#
+# 🔴 `html` / `body` 以前**不在**这里（2026-10-09 修）——
+#    于是 `RESET_OK` 里那条 `html|body` 分支是**永远到不了的死代码**：
+#    BARE 不匹配 html/body ⇒ 流程在 `if not BARE.search(line): continue` 就走了，
+#    根本轮不到 RESET_OK。**门禁自己写的边界，自己的判据没覆盖。**
+#    实测后果：`03-patterns/overlay/overlay.css` 里躺着一条
+#        html { scrollbar-gutter: stable; }
+#    它不依赖弹层是否打开 —— 只要导入 overlay.css 就改整个文档的布局。
+#    ⇒ 这正是本门禁存在的理由，而它一次都没抓到过。
 TAGS = ('h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'ul', 'ol', 'li',
-        'table', 'th', 'td', 'button', 'input', 'select', 'textarea', 'a')
+        'table', 'th', 'td', 'button', 'input', 'select', 'textarea', 'a',
+        'html', 'body')
 
 # 行首裸标签（后面跟 , { 或空白+{）
 BARE = re.compile(
