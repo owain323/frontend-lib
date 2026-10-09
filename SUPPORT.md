@@ -50,13 +50,18 @@
 
 ### 门禁数量
 
-不写死数字 —— 它由 `doc-facts-gate.py` 从 `05-audit/check-all.sh` 自动算，
+不写死数字 —— 它由 `doc-facts-gate.py` 从 `05-audit/check-all.sh` **按名单**算，
 文档里写错会被判红。查当前数字：
 
 ```
-python3 05-audit/doc-facts-gate.py     # 会打印注册数 vs 文档里写的数
-grep -c '^[[:space:]]*run "' 05-audit/check-all.sh
+python3 05-audit/doc-facts-gate.py
 ```
+
+⚠️ **不要用 `grep -c 'run "'` 去数**：那会给出 **99** 这种偏小的数。
+原因是 `check-all.sh` 里有 `for g in …` 循环（里面的 `run "$g"` 是缩进的、名字是变量，
+grep 一条都数不到），还有 `skip "…"`（这台机器跑不了的门禁，也是注册数的一部分）。
+`doc-facts-gate.py` 会展开循环、把 `run` / `run_report` / `skip` 三种登记方式
+按**名字去重**后计数 ⇒ **任何机器上都是同一个数**。
 
 ---
 
