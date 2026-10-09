@@ -79,6 +79,62 @@ def run_gate(script):
     return p.returncode, (p.stdout or b'').decode('utf-8', 'replace')
 
 
+def _check_scannable_fallback():
+    """🔴 反向控制：`scannable_files()` 在**没有 git** 的树里不得返回 0 个文件。
+
+    ⚠️ 为什么这条必须存在（2026-10-09 实测发现的路径）：
+       用远端 tarball（无 .git）当干净克隆跑全套门禁时 ——
+         · api-doc 报「实现里挂载的全局对象：**0 个**」⇒ 红（还算吵）
+         · leak-scan 四个注入**一个都没抓到** ⇒ 报"无敏感信息"（**假绿**）
+       根因：`scannable_files()` 只走 `git ls-files`，没有 git 就返回空列表。
+       ⚠️ 而"扫到 0 个文件 ⇒ 什么都没抓到 ⇒ 报通过"，正是 I-10
+          （报告通过却什么也没查）的又一种形态 —— 而且是最安静的那种。
+
+    ⇒ 本函数验证两件事：
+       ① 无 git 的临时目录里，兜底必须真的枚举出文件（不许 0 个）
+       ② 兜底的视野必须与 git 视野**一致**（多一个少一个都不行：
+          少了 ⇒ 漏检；多了 ⇒ 把 gitignore 掉的生成产物也扫进来）
+    """
+    import shutil
+    sys.path.insert(0, os.path.join(ROOT, '05-audit'))
+    import _common
+
+    out = []
+
+    # ① 无 git ⇒ 不许返回 0
+    tmp = tempfile.mkdtemp(prefix='fl-nogit-')
+    try:
+        io.open(os.path.join(tmp, 'a.js'), 'w', encoding='utf-8').write('var a=1;')
+        io.open(os.path.join(tmp, '.gitignore'), 'w', encoding='utf-8').write(
+            'gen/\n*.log\n')
+        os.makedirs(os.path.join(tmp, 'gen'))
+        io.open(os.path.join(tmp, 'gen', 'x.js'), 'w', encoding='utf-8').write('x')
+        io.open(os.path.join(tmp, 'b.log'), 'w', encoding='utf-8').write('x')
+        got = _common.scannable_files(tmp)
+        if 'a.js' not in got:
+            out.append('无 git 时兜底没枚举出 a.js（返回 %r）⇒ 假绿的根源' % (got,))
+        elif 'gen/x.js' in got or 'b.log' in got:
+            out.append('兜底没有尊重 .gitignore（扫进了 %r）' % (got,))
+        else:
+            print('  OK   %-14s 无 git 的树里仍能枚举出文件，且尊重 .gitignore'
+                  % 'scannable_files')
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+    # ② 两种视野必须一致
+    git_view = set(_common.scannable_files(ROOT))
+    walk_view = set(_common._walk_all(ROOT))
+    if git_view != walk_view:
+        extra = sorted(walk_view - git_view)[:4]
+        less = sorted(git_view - walk_view)[:4]
+        out.append('兜底视野与 git 视野不一致（兜底多 %s / 兜底少 %s）'
+                   % (extra, less))
+    else:
+        print('  OK   %-14s 兜底视野与 git 视野完全一致（%d 个文件）'
+              % ('scannable_files', len(git_view)))
+    return out
+
+
 def main():
     print('  === 门禁反向控制（门禁本身也要被检验）===')
     print('')
@@ -86,6 +142,10 @@ def main():
     backups = {}
     bad = 0
     passed = 0
+
+    for line in _check_scannable_fallback():
+        print('  X    ' + line)
+        bad += 1
 
     for script, rel, inject, why in CASES:
         path = os.path.join(ROOT, rel)
