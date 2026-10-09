@@ -293,6 +293,29 @@ def selftest():
     def run(d, b=None, c=None):
         return check(d, b or base, c or cur, V)[0]
 
+    # 🔴 突变体的版本号必须**从当前版本推导**，不能写死。
+    #    实测踩过（0.7.8 收口时）：写死的 removeIn='0.7.8' 在 0.7.7 时是"未来"，
+    #    升到 0.7.8 就变成"已到期" ⇒ ④ 连带触发 ⇒ 隔离断言报"实际 2 条"。
+    #    ⇒ 写死版本号的自检会随版本推进**静默失效**，
+    #      而且它失效的样子（隔离断言红）很像"判据坏了"，极易误判。
+    Vk = vkey(V)
+    assert Vk[1] >= 2, '反向控制需要次版本 ≥ 2 才造得出"过去"的版本（当前 %s）' % V
+
+    def this_minor():          # 当前次版本的 .0 ⇒ 必定 ≤ 当前版本
+        return '%d.%d.0' % (Vk[0], Vk[1])
+
+    def same_minor_future():   # 同一次版本、但在未来 ⇒ ③ 红，④ 不红
+        return '%d.%d.%d' % (Vk[0], Vk[1], Vk[2] + 50)
+
+    def next_minor():          # 下一个次版本 ⇒ 在未来，且已跨一个次版本
+        return '%d.%d.0' % (Vk[0], Vk[1] + 1)
+
+    def past_minor():          # 上一个次版本 ⇒ 必定已到期（④ 用）
+        return '%d.%d.0' % (Vk[0], Vk[1] - 1)
+
+    def past_minor2():         # 上两个次版本 ⇒ 与 past_minor() 搭配时 ③ 仍成立
+        return '%d.%d.0' % (Vk[0], Vk[1] - 2)
+
     # ② 预告未来
     expect('deprecatedIn 写成未来版本 ⇒ 必须红',
            run(clone(lambda d: d['planned'][0].update(
@@ -300,19 +323,20 @@ def selftest():
            '不许预告未来')
     # ③ 没跨次版本
     only('removeIn 与 deprecatedIn 同一个次版本 ⇒ 没给迁移窗口 ⇒ 必须红',
-         run(clone(lambda d: d['planned'][0].update(removeIn='0.7.8'))),
+         run(clone(lambda d: d['planned'][0].update(
+             deprecatedIn=this_minor(), removeIn=same_minor_future()))),
          '没跨一个次版本')
     # ④ 到期不删
-    # ⚠️ 合成条目自己也得守 ③（跨次版本），否则 ③ 会连带红 ⇒ 隔离断言过不了
     only('已到期却还留在公开面里 ⇒ 承诺了没删 ⇒ 必须红',
          run(clone(lambda d: d['planned'][0].update(
-             deprecatedIn='0.6.0', removeIn='0.7.0'))),
+             deprecatedIn=past_minor2(), removeIn=past_minor()))),
          '承诺了却没删')
     # ⑤ 提前删（连基线一起改 ⇒ 排除 ⑦ ⑨，孤立出 ⑤）
     name = json.loads(depr_raw)['planned'][0]['name']
     kind = json.loads(depr_raw)['planned'][0]['kind']
     only('还没到期却已从公开面消失（提前删）⇒ 必须红',
-         run(json.loads(depr_raw),
+         run(clone(lambda d: d['planned'][0].update(
+             deprecatedIn=this_minor(), removeIn=next_minor())),
              clone_base(lambda b: b[kind].remove(name)),
              clone_cur(lambda c: c[kind].remove(name))),
          '提前删了')
@@ -335,7 +359,7 @@ def selftest():
     only('已到期且已消失，但基线里从来没有它（名字打错）⇒ 必须红',
          run(clone(lambda d: d['planned'].append(
              {'id': 'typo', 'kind': 'token', 'name': '--typo-token',
-              'deprecatedIn': '0.6.0', 'removeIn': '0.7.0',
+              'deprecatedIn': past_minor2(), 'removeIn': past_minor(),
               'reason': '合成样本'}))),
          '从来没有')
     # ① 缺字段
