@@ -89,6 +89,7 @@ grep -c '^[[:space:]]*run "' 05-audit/check-all.sh
 |---|---|
 | **popover 没有碰撞翻转** | 浮层按声明的方向挂出（`end` 方向 = 锚点右侧），**不会**因为贴边而自动翻到另一侧。⇒ 锚点靠近视口右缘时 `end` 方向会溢出。使用者需要自己选方向，或把锚点放在有余量的位置。 |
 | **没有 codemod / 运行时废弃告警** | 废弃流程（`ai/deprecations.json`）只是**版本号承诺**：到期允许移除，但不会在运行时警告你还在用。要真拦截得自己在 CI 加 lint。 |
+| **弹层锁滚动只补流式内容** | 锁滚动时补偿加在 `body` 的 `padding-right` 上，`position: fixed` 的元素相对视口定位、管不到 ⇒ 页面里若有吸底条，需要自己用 `--overlay-scrollbar-width` 补（见 `03-patterns/overlay/README.md`）。这是当前方案的**已知取舍**，不是还没做。 |
 
 ---
 

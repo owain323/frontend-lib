@@ -263,6 +263,8 @@ run "tap-highlight" node 05-audit/tap-highlight-check.js
 run "choice" node 05-audit/choice-check.js
 run "nav" node 05-audit/nav-check.js
 run "overlay" node 05-audit/overlay-check.js
+# 弹层对**宿主页面**的影响（补偿叠加 / 引用计数 / 焦点归位 / 不横向跳 / 宽度公开）
+run "overlay-host" node 05-audit/overlay-host-check.js
 run "table" node 05-audit/table-check.js
 run "tooltip" node 05-audit/tooltip-check.js
 run "dropdown" node 05-audit/dropdown-check.js

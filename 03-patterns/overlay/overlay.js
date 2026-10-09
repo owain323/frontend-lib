@@ -27,14 +27,28 @@
   ].join(',');
 
   var lockCount = 0;          /* 防止多个弹层重复加 padding */
-  /* 每个打开中的弹层各自记住「打开前焦点在哪」。
-     * ⭐ 必须是**栈**而不是单个变量 ——
-     *   弹层 A 打开弹层 B 时，B 会覆盖掉 A 记录的触发元素，
-     *   于是 B 关闭后焦点还给了 B 的触发器（可能就在 A 里面），
-     *   再关 A 时已经不知道该还给谁了。
-     */
-  var focusStack = [];
-  var savedPaddingRight = '';
+
+  /* 🔴 滚动锁定的**记账**
+     以前只有一个 `savedPaddingRight`，问题是：
+       · 支持 scrollbar-gutter 时它**从头到尾是 ''**，
+         关闭时却无条件 `body.style.paddingRight = savedPaddingRight`
+         ⇒ 把宿主页面原有的内联 padding-right **清空了**；
+       · 降级路径里它是**替换**（`= sbw + 'px'`），把宿主原有的值覆盖掉。
+     ⇒ 改成两件事分开记：**原值** + **这次到底改没改**。
+       只恢复本组件**真的改过**的属性 —— 没碰过的东西不许写回。 */
+  var scrollLock = { changed: false, saved: '', varSet: false };
+
+  /* 🔴 背景 inert 的**引用计数**
+     以前用「所有权记账」：`changedByMe = !n.inert` ——
+     只有自己真正设过 true 的节点，关闭时才恢复 false。
+     ⚠️ 它**假设弹层按打开的逆序关闭**（LIFO）。一旦不是：
+        A 开 → 背景 locked（A 记 changedByMe=true）
+        B 开 → 背景已 inert（B 记 changedByMe=false，不碰它）
+        **先关 A** → A 解锁背景 ⇒ B 还开着，背景却能点了
+        用户看到的是「弹窗明明还在，页面却能点」。
+     ⇒ 改成引用计数：**只要还有弹层需要锁，背景就不许解锁**，
+       与关闭顺序无关。这与"所有权"的区别就是引用计数解决不了的问题。 */
+  var inertRefs = [];         /* [{node, count}] —— ES5 没有 Map，用数组 */
 
   /* ---------------------------------------------------------------- 工具 */
   function focusableIn(root) {
@@ -49,29 +63,32 @@
   /* ---------------------------------------------------------------- 滚动锁定
      🔴 实测反馈"弹窗打开时整页明显向右移动"。
 
-     根因不是"忘了补偿"，而是**补偿本身不可靠**：
-     demo 的 body 已有左右 padding，JS 只改 paddingRight，
-     两者的叠加关系在不同浏览器 / 不同 body 设定下并不一致 —— 实测就是没生效。
+     为什么不用 `scrollbar-gutter: stable`（两种写法都量过，都放弃）：
+       · 无条件 `html{…}` ⇒ **导入即生效**：一个弹层没开过，宿主的
+         `100vw` 也已被压窄 ⇒ 改宿主全局布局，与"组件只影响自己"冲突。
+       · 状态级 `html[data-scroll-locked]{…}` ⇒ 锁定后才占位，
+         `100vw` 元素反而从 393 跳到 378 ⇒ 抖动只是换了个地方发生。
+     ⇒ 改回 JS **叠加**补偿：基准取 `getComputedStyle` 而不是内联样式
+       （宿主的 padding 也可能来自样式表），替换会把宿主排版吃掉。
 
-     **根治在 CSS**：overlay.css 里的 `html { scrollbar-gutter: stable }`
-     让浏览器**始终为滚动条预留位置**，滚动条消失时内容区宽度不变。
-
-     下面这段 JS 是**降级路径**，只在浏览器不支持 scrollbar-gutter 时才介入。
+     ⭐ 补偿只能覆盖流式内容。`position: fixed` 相对**视口**定位，
+       body 的 padding 管不到 ⇒ 把滚动条宽度公开成
+       `--overlay-scrollbar-width`（仅锁定期间存在）让宿主自己补：
+           .my-fixed { right: var(--overlay-scrollbar-width, 0px) }
   */
-  function supportsScrollbarGutter() {
-    return ('scrollbarGutter' in document.documentElement.style);
-  }
-
   function lockScroll() {
     if (lockCount++ > 0) return;
 
-    /* 只在浏览器**不支持** scrollbar-gutter 时才做 JS 补偿。
-       支持的浏览器已经由 CSS 从根上解决了，这里再补一次就是重复补偿，
-       反而会把内容推窄。 */
-    if (!supportsScrollbarGutter()) {
-      var sbw = window.innerWidth - document.documentElement.clientWidth;
-      savedPaddingRight = document.body.style.paddingRight;
-      if (sbw > 0) document.body.style.paddingRight = sbw + 'px';
+    /* ⭐ 先量，再锁 —— 锁上之后滚动条就没了，量出来是 0 */
+    var sbw = window.innerWidth - document.documentElement.clientWidth;
+    if (sbw > 0) {
+      var cur = parseFloat(getComputedStyle(document.body).paddingRight) || 0;
+      scrollLock.saved = document.body.style.paddingRight;
+      document.body.style.paddingRight = (cur + sbw) + 'px';
+      scrollLock.changed = true;
+      document.documentElement.style.setProperty(
+        '--overlay-scrollbar-width', sbw + 'px');
+      scrollLock.varSet = true;
     }
     document.body.setAttribute('data-scroll-locked', 'true');
   }
@@ -79,7 +96,39 @@
   function unlockScroll() {
     if (--lockCount > 0) return;
     document.body.removeAttribute('data-scroll-locked');
-    document.body.style.paddingRight = savedPaddingRight;
+    if (scrollLock.varSet) {
+      document.documentElement.style.removeProperty('--overlay-scrollbar-width');
+      scrollLock.varSet = false;
+    }
+    /* 🔴 只恢复**自己真的改过**的。没碰过就一个字节都不许写回 ——
+       否则会把宿主原有的内联 padding-right 清成空字符串。 */
+    if (scrollLock.changed) {
+      document.body.style.paddingRight = scrollLock.saved;
+      scrollLock.changed = false;
+      scrollLock.saved = '';
+    }
+  }
+
+  /** 取一个背景节点的引用计数条目（没有就建一个并置 inert）。 */
+  function inertAcquire(node) {
+    for (var i = 0; i < inertRefs.length; i++) {
+      if (inertRefs[i].node === node) { inertRefs[i].count++; return; }
+    }
+    inertRefs.push({ node: node, count: 1 });
+    node.inert = true;
+  }
+
+  /** 还一个引用；降到 0 才真正解锁。 */
+  function inertRelease(node) {
+    for (var i = 0; i < inertRefs.length; i++) {
+      if (inertRefs[i].node !== node) continue;
+      inertRefs[i].count--;
+      if (inertRefs[i].count <= 0) {
+        node.inert = false;
+        inertRefs.splice(i, 1);
+      }
+      return;
+    }
   }
 
   /* ================================================================ Toast
@@ -162,8 +211,10 @@
   function dialog(opts) {
     opts = opts || {};
 
+    /* ⭐ 焦点归还**绑到这个实例**，不进全局栈。
+       全局栈 + pop() 在非 LIFO 关闭时会还错人
+       （先关外层会把焦点从内层手里抢走）。 */
     var myTrigger = document.activeElement;
-    focusStack.push(myTrigger);
 
     var backdrop = document.createElement('div');
     backdrop.className = 'dialog-backdrop';
@@ -266,20 +317,16 @@
     /* 背景 inert：把背后页面整个变不可交互 —— 比 focus trap 更彻底。
        支持就用（现代浏览器都有），不支持就靠上面的 focus trap 兜底。
 
-       🔴🔴 必须按「归属权」记账，不能只记「当前是不是 inert」
+       🔴🔴 计数用**引用计数**，不用「所有权」
        ---------------------------------------------------------------------------
-       两种记法的差别，在嵌套场景下是致命的：
-
-         错：看到已inert 就记账，关时一律解锁
-             A 开 → 背景 locked（记进 A）
-             B 开 → 背景已 inert（记进 B，但**B 并没有锁它**）
-             B 关 → 解锁背景 ⇒ **A 还开着，背景却能点了**
-             用户看到的是「弹窗明明还在，页面却能点了」——像应用坏了。
-
-         对：记账时同时记「这是不是我改的」
-             只有自己真正设过 true 的节点，关闭时才恢复 false。
-             B 看到的那个已 inert 节点是A 的 ⇒ B 不碰它。
-       ⇒ 这是「引用」与「所有权」的区别，和引用计数失效是同一类 bug。
+       以前的写法是 `changedByMe = !n.inert`：只有自己真正设过 true 的，
+       关闭时才恢复 false。**它假设弹层按打开的逆序关闭**。
+       一旦调用方先关外层（公开的 close() 允许这么做）：
+          A 开 → 背景 locked（A 记 changedByMe=true）
+          B 开 → 背景已 inert（B 记 changedByMe=false，不碰它）
+          **A.close()** → A 解锁背景 ⇒ B 还开着，背景却能点了
+       ⇒ 改成引用计数：**只要还有弹层需要锁，背景就不许解锁**，
+         与关闭顺序无关（见文件头 inertRefs 的注释）。
     */
     if ('inert' in HTMLElement.prototype) {
       var nodes = Array.prototype.slice.call(
@@ -288,32 +335,36 @@
       nodes.forEach(function (n) {
         /* 任何已有的 backdrop（外层）都跳过 —— 它们自己管自己的 */
         if (n.classList.contains('dialog-backdrop')) return;
-        /* ⭐ 关键：先判断归属权，再决定要不要记账。
-           已被别人锁住的节点，我只登记不解锁（changedByMe=false）。 */
-        var changedByMe = !n.inert;
-        inerted.push({ node: n, changedByMe: changedByMe });
-        if (changedByMe) n.inert = true;
+        inerted.push(n);
+        inertAcquire(n);
       });
     }
 
     function close() {
       if (closed) return;
       closed = true;
+
+      /* 🔴 焦点归还前先看清**焦点现在在谁手里**（必须在移除 backdrop 之前读，
+         移除之后 activeElement 会变成 body）。
+         ⚠️ 只有焦点还在这个弹层里（或已经掉到 body）时才归还 ——
+            否则就是**从别人手里抢焦点**：
+            先关外层时，内层正拿着焦点，外层不许把它抢走。 */
+      var ae = document.activeElement;
+      var focusIsMine = !ae || ae === document.body ||
+        box.contains(ae) || backdrop.contains(ae);
+
       if (backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
-      /* ⭐ 只恢复**自己设过**的；别人锁住的一律不动。
-           否则内层关闭会误解锁外层还需要的隔离。 */
-      inerted.forEach(function (x) {
-        if (x.changedByMe) x.node.inert = false;
-      });
+      /* ⭐ 引用计数：还一个引用，降到 0 才真的解锁 ⇒ 与关闭顺序无关 */
+      inerted.forEach(inertRelease);
       unlockScroll();
-      /* 🔴 焦点必须回到触发它的那个元素。
+
+      /* 🔴 焦点必须回到**触发它的那个元素**。
          不还的话，键盘用户要重新 Tab 一遍才能回到原处。 */
-      var trigger = focusStack.pop();
-      if (trigger && document.contains(trigger)) {
-        trigger.focus();
-      } else {
-        document.body.focus();
+      if (focusIsMine && myTrigger && document.contains(myTrigger)) {
+        myTrigger.focus();
       }
+      /* ⚠️ 不写 `document.body.focus()`：body 默认不可聚焦，
+         那行从来没起过作用，只会让人以为"有兜底"。 */
     }
 
     return { el: box, close: close };

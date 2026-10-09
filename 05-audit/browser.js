@@ -181,6 +181,18 @@ async function launchPlaywright(engine) {
   return wrap(browser, engine);
 }
 
+/**
+ * ⚠️ headless 默认 `--hide-scrollbars` ⇒ 滚动条宽度为 0。
+ *    于是"锁滚动时补偿了滚动条宽度"这类判据会**平凡通过** ——
+ *    补偿量是 0，加没加都一样 ⇒ 假绿。
+ *    ⇒ 需要真实滚动条时传 `{ showScrollbars: true }`。
+ */
+function launchArgsFor(opts) {
+  var extra = {};
+  if (opts && opts.showScrollbars) extra.ignoreDefaultArgs = ['--hide-scrollbars'];
+  return extra;
+}
+
 async function launchChromium(opts) {
   // 🔴 找不到浏览器时**明确失败**，绝不静默退化成"没跑=通过"。
   //   静默退化是门禁假绿的经典形态：CI 上没装浏览器 ⇒ 契约一条没跑 ⇒ 全绿。
@@ -224,6 +236,7 @@ async function launchChromium(opts) {
       '--disable-http-cache',
       '--user-data-dir=' + profile,
     ],
+    ...launchArgsFor(opts),
     ...(opts || {}),
   });
   browser.__profile = profile;

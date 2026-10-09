@@ -66,15 +66,43 @@ Tab 在弹层内循环，**绝不跑到背后的页面去**。
 
 ### 3. 滚动锁定 + 滚动条补偿
 
-锁背景滚动时**必须把滚动条宽度补到 body 上**：
+锁背景滚动时**必须把滚动条宽度补到 body 上**。
+
+🔴 补偿要**叠加**在宿主原有值上，**不是替换**（实测踩过）：
 
 ```js
 var sbw = window.innerWidth - document.documentElement.clientWidth;
-document.body.style.paddingRight = sbw + 'px';
+// 基准取**计算样式**：宿主的 padding 也可能来自样式表，不只是内联样式
+var cur = parseFloat(getComputedStyle(document.body).paddingRight) || 0;
+document.body.style.paddingRight = (cur + sbw) + 'px';
 ```
+
+写成 `= sbw + 'px'` 会把宿主原有的 `padding-right` 覆盖掉——
+宿主一有左右 padding，关掉弹层后排版就变了。
 
 滚动条消失后内容会横向跳一下——**弹层"闪"的感觉大半来自这里。**
 最容易被忽略、也最容易被当成"动画没做好"。
+
+**不用 `scrollbar-gutter: stable`**（两种写法都在真机量过，都放弃）：
+
+| 写法 | 流式内容 | `100vw` 元素 | 代价 |
+|---|---|---|---|
+| 无条件 `html { scrollbar-gutter: stable }` | 稳 | 稳 | **导入即生效**：一个弹层没开过，宿主的 `100vw` 也被压窄 |
+| 状态级 `html[data-scroll-locked] { … }` | 稳 | **跳**（393→378） | 抖动只是从流式内容转移到了 `100vw` 元素上 |
+
+它要稳就必须"一直"占位，而"一直"与"组件只影响自己"冲突。
+
+**页面里有 `position: fixed` 的元素怎么办**
+
+`fixed` 相对**视口**定位，body 的 padding 管不到它 ⇒ 锁定后吸底条会往右挪。
+本库在锁定期间把滚动条宽度公开成变量，宿主自己补：
+
+```css
+.my-bar { right: var(--overlay-scrollbar-width, 0px); }
+```
+
+（只在弹层打开期间存在，关闭即清除；与 Radix 的
+`--removed-body-scroll-bar-size` 同款契约。）
 
 ---
 

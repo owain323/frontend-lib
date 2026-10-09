@@ -263,7 +263,16 @@ const CASES = {
     desc: '弹窗：打开/关闭/焦点/无横向位移（实测到"整页往右移"）',
     run: async (p) => {
       const out = [];
-      const x0 = await p.evaluate(() => document.body.getBoundingClientRect().left);
+      /* ⭐ 量 **body 内容盒宽度**，不是 `body.getBoundingClientRect().left`。
+         以前量 left —— body 左边永远贴着视口左边，恒为 0，
+         任何 bug 都测不出来（判据形同虚设，2026-10-09 发现）。
+         真正会跳的是**宽度**：滚动条消失 ⇒ 可视区变宽 ⇒ 内容被拉宽。 */
+      const contentW = () => p.evaluate(() => {
+        const cs = getComputedStyle(document.body);
+        return Math.round(document.body.getBoundingClientRect().width
+          - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0));
+      });
+      const x0 = await contentW();
       await p.click('#d1');
       await new Promise((r) => setTimeout(r, 400));
       const dlg = await p.evaluate(() => {
@@ -281,10 +290,10 @@ const CASES = {
       out.push({ ok: !!dlg, label: '点「普通确认」弹出 dialog',
                  note: dlg ? '已弹出' : '没弹出', detail: '' });
       if (dlg) {
-        const x1 = await p.evaluate(() => document.body.getBoundingClientRect().left);
+        const x1 = await contentW();
         out.push({ ok: Math.abs(x1 - x0) < 1, label: '弹窗打开时页面无横向位移',
-                   note: '位移 ' + Math.round(Math.abs(x1 - x0)) + 'px',
-                   detail: 'scrollbar-gutter 失效就会跳' });
+                   note: '内容宽 ' + x0 + '→' + x1 + 'px',
+                   detail: '滚动条补偿失效就会跳' });
         out.push({ ok: dlg.count === 2, label: '有 2 个动作按钮',
                    note: dlg.count + ' 个', detail: '' });
         out.push({ ok: dlg.gap < 24, label: '两个按钮相邻',
@@ -606,7 +615,10 @@ const CASES = {
   const only = process.argv[2];
   const names = only ? [only] : Object.keys(CASES);
 
-  const b = await launch();
+  /* ⭐ 开**真实滚动条**：headless 默认 `--hide-scrollbars` ⇒ 滚动条宽度恒为 0
+     ⇒ "打开弹层会不会横向跳"根本没有可观测的量（补偿 0 == 没补偿）。
+     开着它，那条判据才有牙。 */
+  const b = await launch({ showScrollbars: true });
 
   let total = 0, passed = 0;
   for (const name of names) {

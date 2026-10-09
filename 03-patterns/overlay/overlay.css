@@ -214,27 +214,35 @@
    🔴🔴 实测反馈"弹窗打开时整页明显向右移动" —— 这是锁滚动最典型的症状：
    滚动条消失 ⇒ 可视区变宽 ⇒ 居中内容整体右移。
 
-   **根治办法是 `scrollbar-gutter: stable`，不是 JS 补偿。**
-   它让浏览器**始终为滚动条预留位置**，滚动条消失时内容区宽度不变
-   ⇒ 根本不会移动，也就不需要任何 JS。
+   为什么**不用** `scrollbar-gutter: stable`（实测推翻）
+   ------------------------------------------------------------------------
+   它确实能让内容不跳，但前提是**一直**占位。两种写法都量过
+   （`showScrollbars` 打开，滚动条 15px，视口 393）：
 
-   为什么之前的 JS 补偿不可靠（实测就是没生效）：
-     demo 的 body 已有 `padding: var(--sp-7) var(--sp-5)`（左右各 20px），
-     而 JS 只改 `paddingRight`。补偿量与已有 padding 的叠加关系
-     在不同浏览器 / 不同 body 设定下并不一致 —— 这不是能靠 JS 稳妥解决的。
+     · 无条件 `html { scrollbar-gutter: stable }`
+       三项全稳，但**导入即生效**：一个弹层都没开，宿主的 `100vw`
+       就已经被压到 378。改宿主全局布局，与"组件只影响自己"冲突。
 
-   降级路径（给不支持 scrollbar-gutter 的老浏览器）：
-     ① 下面这条 overflow: hidden 锁住滚动
-     ② JS 量出滚动条宽度补上（overlay.js 的 lockScroll）
+     · 状态级 `html[data-scroll-locked] { scrollbar-gutter: stable }`
+       流式内容稳了，但 `100vw` 元素从 393 跳到 378 ——
+       锁定前没占位、锁定后占位，抖动只是换了个地方发生。
+
+   ⇒ 所以这里**只锁滚动**，宽度补偿交给 JS 叠加（overlay.js 的 lockScroll），
+     实测流式内容与 `100vw` 两者都不动。
 
    ⚠️ 锁 `body` 就够了，**不要同时锁 `html`** ——
       两者都锁会让某些浏览器出现双层滚动容器。
    ------------------------------------------------------------------------ */
-html { scrollbar-gutter: stable; }
 
 /* ⚠️ 用**独立属性**而不是 `data-state`：锁的是滚动，不是这个元素的状态，
    `data-state` 是留给组件自己的状态枚举的，混进去会污染枚举取值集合。 */
 body[data-scroll-locked] { overflow: hidden; }
+
+/* 命中上面这条时，JS 会同时在 `html` 上给出
+   `--overlay-scrollbar-width`（滚动条宽度，仅锁定期间存在）。
+   body 的 padding 补偿管不到 `position: fixed` 的元素，
+   宿主若有吸底条，自己用这个变量补：
+       .my-bar { right: var(--overlay-scrollbar-width, 0px) }   */
 
 /* 极窄屏：dialog 贴底（移动端习惯，比居中更符合直觉） */
 @media (max-width: 480px) {
