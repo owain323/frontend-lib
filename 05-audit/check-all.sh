@@ -68,6 +68,44 @@ run() {  # run <名字> <命令...>
   fi
 }
 
+# 🔴 run_report <名字> <命令...> —— **报告模式**（N16）
+#  与 run() 的区别只有一条：脚本**发现问题时**不判失败（误报率偏高，见 css-imports 头），
+#  但：① 脚本**自身出错**仍然判失败；② 报告**必须打出来**。
+#
+#  为什么必须单独有一个：以前 css-imports 写成
+#     `$PY css-imports.py >/dev/null 2>&1 && echo PASS || true`
+#  ⇒ 报告被丢进 /dev/null（这条门禁的**唯一产出**被销毁），
+#     脚本崩了也被 `|| true` 吞掉 ⇒ 它既不算门禁、也不报告、也不失败。
+#
+#  ⚠️ 用 run_report 的门禁**仍然计入总数**（doc-facts-gate 认这个名字），
+#     但它不会让整套变红 —— 文档里写总数时要知道这一点。
+# 🔴 skip <名字> <原因> —— **显式登记"这条门禁存在，但本机跑不了"**
+#  为什么必须有它：以前缺环境时只是 `echo "... SKIP"`，
+#  那行**不在门禁名单里** ⇒ 门禁总数随机器变化（有 node 的机器多 3 条）。
+#  ⇒ 文档里写"共 N 道"就必须跟机器绑定，否则必有一条是错的。
+#  ⇒ 改成显式登记：**注册数在任何机器上都是同一个数**，变的只是"执行了几条"。
+skip() {
+  printf '  %-16s SKIP  （%s）\n' "$1" "$2"
+}
+
+run_report() {
+  local name="$1"; shift
+  if [ "$MODE" = "fast" ]; then
+    case "$*" in
+      *node*|*puppeteer*|*playwright*|*with-server*) return 0 ;;
+    esac
+  fi
+  local out
+  if out=$("$@" 2>&1); then
+    printf '  %-16s 报告（发现项不判失败）\n' "$name"
+    [ -n "$out" ] && echo "$out" | head -8 | sed 's/^/       /'
+  else
+    printf '  %-16s FAIL（脚本自身出错）\n' "$name"
+    echo "$out" | head -8 | sed 's/^/       /'
+    fail=$((fail+1))
+  fi
+}
+
 echo "=== 静态门禁 ==="
 run "contrast"   $PY 05-audit/contrast.py
 run "cmp-contrast" $PY 05-audit/component-contrast.py
@@ -220,7 +258,11 @@ run "size-budget" $PY 05-audit/size-baseline.py
 run "dist-fresh"  $PY 05-audit/build-dist.py --check
 # 采纳成本表：表上每个数字都必须能用同一脚本复算（手改一个数字 ⇒ 红）
 run "dist-cost"   $PY 05-audit/dist-cost-gate.py
-run "switch"     node 05-audit/switch-contract.js
+# 🔴 N17：标签**不能撞车**。上面「只扫 HTML」的循环里已经跑过 `05-audit/switch.py`，
+#    标签也叫 `switch` ⇒ 日志里两条不同命令同名（一条扫 HTML、一条跑契约）。
+#    ⇒ 计数口径不清（静态算 123 个不同名、实测 125），红的时候也分不清是哪条。
+#    按 `a11y`(py) / `a11y-scan`(js) 的既有惯例：JS 契约用脚本名。
+run "switch-contract" node 05-audit/switch-contract.js
 run "tabs"       node 05-audit/tabs-contract.js
 run "accordion"  node 05-audit/accordion-contract.js
 run "chart"      node 05-audit/chart-check.js
@@ -233,7 +275,7 @@ run "card"       node 05-audit/card-check.js
 run "badge"       node 05-audit/badge-check.js
 run "list"       node 05-audit/list-check.js
 run "content"       node 05-audit/content-check.js
-run "states"       node 05-audit/states-check.js
+run "states-check" node 05-audit/states-check.js   # 同上：与循环里的 states.py 区分
 run "skeleton"    node 05-audit/skeleton-check.js
 run "progress"    node 05-audit/progress-check.js
 run "popover"     node 05-audit/popover-check.js
@@ -275,8 +317,8 @@ run "combobox" node 05-audit/combobox-check.js
 run "date-range" node 05-audit/date-range-check.js
 run "composition" node 05-audit/composition-check.js
 
-# CSS 引用完整性（只报告不 fail：class 名跨组件复用，误报率偏高）
-  $PY 05-audit/css-imports.py >/dev/null 2>&1 && echo "  css-imports    PASS（只报告模式）" || true
+# CSS 引用完整性（发现项只报告不 fail：class 名跨组件复用，误报率偏高）
+run_report "css-imports" $PY 05-audit/css-imports.py
 run "comment-bal" $PY 05-audit/comment-balance.py
 run "dark-cont"   node 05-audit/dark-contrast.js
 run "admission"   $PY 05-audit/admission-gate.py
@@ -285,17 +327,17 @@ run "selftest"    $PY 05-audit/selftest.py
 # ----------  H4/H5/H8：响应式 · 单元测试 · 性能预算 ----------
 # ⚠️ 单元测试放最前：它只要 100ms，是"每次改代码后都该跑"的那一层。
 if command -v node >/dev/null 2>&1; then
-  if node --test 05-audit/unit.test.mjs >/dev/null 2>&1; then
-    echo "  unit            PASS（7 个纯函数测试，~100ms）"
-  else
-    echo "  unit            FAIL"; FAILED=$((FAILED+1))
-    node --test 05-audit/unit.test.mjs 2>&1 | grep -E "^not ok" | head -5 | sed 's/^/         /'
-  fi
+  # 🔴 N15：`FAILED` 是**另一个变量**，而结尾只判 `fail`
+  #    ⇒ 单元测试挂了，整套门禁照样 `exit 0`（实测取证：unit FAIL 而 EXIT=0）。
+  #    ⇒ 统一用 `fail`。（改用 run() 后这一行由 run() 自己加，不会再分叉。）
+  run "unit"       node --test 05-audit/unit.test.mjs
   run "responsive"  node 05-audit/responsive-check.js
   # H3：Firefox（官方构建，非 Juggler）—— 单实例串行，控内存
   PW_PATH="${NODE_MODULES:-node_modules}/playwright" run "firefox" node 05-audit/multi-browser-check.js
 else
-  echo "  unit            SKIP（无 node）"
+  skip "unit"       "无 node"
+  skip "responsive" "无 node"
+  skip "firefox"    "无 node"
 fi
 run "perf"         $PY 05-audit/perf-gate.py
 run "coverage"    $PY 05-audit/coverage-gate.py
@@ -304,12 +346,12 @@ run "coverage"    $PY 05-audit/coverage-gate.py
 if $PY -c "from PIL import Image" 2>/dev/null; then
   run "visual"    $PY 05-audit/shot-baseline.py --check
 else
-  echo "  visual         SKIP（缺 Pillow，装了才会跑）"
+  skip "visual" "缺 Pillow，装了才会跑"
 fi
 
 echo ""
-echo "=== 死类报告（只报告，不 fail：判据需要人判断）==="
-$PY 05-audit/dead-class-gate.py | sed 's/^/  /'
+# 🔴 与 css-imports 同类：只报告不判失败，但**必须把报告打出来**且计入注册数（N16）
+run_report "dead-class" $PY 05-audit/dead-class-gate.py
 
 echo ""
 if [ "$MODE" != "full" ]; then
@@ -347,7 +389,7 @@ run "bleed"         $PY 05-audit/bleed-gate.py
 if [ -f "$NODE_MODULES/typescript/bin/tsc" ] || [ -f "node_modules/typescript/bin/tsc" ]; then
   run "tsc"          $PY 05-audit/tsc-gate.py
 else
-  echo "  tsc              SKIP（缺 typescript：npm install 后才会跑）"
+  skip "tsc" "缺 typescript：npm install 后才会跑"
 fi
 run "pack-smoke"       bash 05-audit/pack-smoke.sh
 run "leak"        $PY 05-audit/leak-scan.py
