@@ -16,7 +16,7 @@
  * 用法
  * ----------------------------------------------------------------------------
  *   frontend-lib ai check      <doc.json> [--profile=strict]
- *   frontend-lib ai validate   <file.json> --schema=contract|components|tokens|patch
+ *   frontend-lib ai validate   <file.json> --schema=contract|components|tokens|tokensAudience|tokensTree|patch
  *   frontend-lib ai diff       <a.json> <b.json>
  *   frontend-lib ai patch      <doc.json> <patch.json> [-o out.json]
  *   frontend-lib ai components [--maturity=stable] [--json]
@@ -120,6 +120,8 @@ var SCHEMAS = {
   contract: 'contract.schema.json',
   components: 'components.schema.json',
   tokens: 'tokens.schema.json',
+  tokensAudience: 'tokens.audience.schema.json',
+  tokensTree: 'tokens.tree.schema.json',
   patch: 'patch.schema.json'
 };
 
@@ -275,6 +277,37 @@ function cmdTokens(args) {
   process.exit(0);
 }
 
+function cmdTree(args) {
+  var doc = readJSON(path.join(AI, 'tokens.tree.json'));
+  var set = flag('set', null);
+  var cat = flag('cat', null);
+  if (flag('json', false)) {
+    out(cat && set ? doc.sets[set][cat] : (set ? doc.sets[set] : doc));
+    process.exit(0);
+  }
+  /* 第二种导出是给**工具链**（Style Dictionary / Figma Tokens）的：
+     分层、键名不带 --、字段用 value/type（不带 $）。
+     `ai tokens` 那份是 DTCG 形状，喂不进这两套工具 ⇒ 两种各出一份。 */
+  process.stdout.write('  === 令牌（第二种导出 · 分层 / 无 -- 前缀 / value 不带 $）===\n');
+  process.stdout.write('  浅色 ' + doc.meta.lightCount + ' / 暗色 ' +
+    doc.meta.darkCount + ' · 类别 ' + doc.meta.categories.length + '\n\n');
+  ['light', 'dark'].forEach(function (k) {
+    if (set && set !== k) return;
+    process.stdout.write('  -- ' + k + ' --\n');
+    Object.keys(doc.sets[k]).sort().forEach(function (c) {
+      if (cat && cat !== c) return;
+      process.stdout.write('    ' + c + '\n');
+      Object.keys(doc.sets[k][c]).sort().forEach(function (leaf) {
+        var t = doc.sets[k][c][leaf];
+        process.stdout.write('      ' + pad(leaf, 22) + t.value.slice(0, 30) +
+          '   [' + t.type + ']\n');
+      });
+    });
+    process.stdout.write('\n');
+  });
+  process.exit(0);
+}
+
 function cmdProfile() {
   var doc = readJSON(path.join(AI, 'profiles.json'));
   if (flag('json', false)) { out(doc); process.exit(0); }
@@ -318,6 +351,7 @@ var CMDS = {
   patch: cmdPatch,
   components: cmdComponents,
   tokens: cmdTokens,
+  tree: cmdTree,
   profile: cmdProfile,
   capabilities: cmdCapabilities
 };
@@ -328,11 +362,12 @@ function main() {
     process.stdout.write(
       'frontend-lib ai —— 独立校验入口（零依赖、不联网、不依赖任何模型）\n\n' +
       '  ai check        <doc.json> [--profile=creative|standard|strict]\n' +
-      '  ai validate     <file.json> --schema=contract|components|tokens|patch\n' +
+      '  ai validate     <file.json> --schema=contract|components|tokens|tokensAudience|tokensTree|patch\n' +
       '  ai diff         <改动前.json> <改动后.json>      按语义 id 比对\n' +
       '  ai patch        <doc.json> <patch.json> [-o out.json]\n' +
       '  ai components   [--maturity=stable|beta|alpha]\n' +
       '  ai tokens       [--set=light|dark]\n' +
+      '  ai tree         [--set=light|dark] [--cat=color]\n' +
       '  ai profile      列出三档及其差异\n' +
       '  ai capabilities 列出可协商的能力\n');
     process.exit(0);

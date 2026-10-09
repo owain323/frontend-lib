@@ -44,5 +44,6 @@ run "typeahead"   node 05-audit/typeahead-check.js --selftest
 run "emit"        node 05-audit/emit-check.js --selftest
 run "matrix"      $PY 05-audit/behavior-matrix-gate.py --selftest
 run "token-aud"   $PY 05-audit/token-audience-gate.py --selftest
+run "token-tree"  $PY 05-audit/token-tree-gate.py --selftest
 
 exit $fail
