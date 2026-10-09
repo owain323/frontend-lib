@@ -86,6 +86,10 @@
     if (!input || !list) throw new Error('Combobox: 缺少 [data-combo-input] 或 [data-combo-list]');
     if (!list.id) list.id = 'combo-list-' + (++uid);
 
+    /* 🔴 每个实例进来就领一个序号：
+       以前只在 `!list.id` 时递增 ⇒ 调用方给了 list id 时多个实例共用一个号。 */
+    var seq = ++uid;
+
     var ALL = opt.options || [];              /* [{value, label}] */
     var tags = [];                            /* 已选 */
     var activeIdx = -1;
@@ -97,7 +101,7 @@
     input.setAttribute('aria-autocomplete', 'list');
     input.setAttribute('aria-expanded', 'false');
     input.setAttribute('aria-controls', list.id);
-    if (!input.id) input.id = 'combo-input-' + uid;
+    if (!input.id) input.id = 'combo-input-' + seq;
     if (!input.getAttribute('aria-label') && !root.querySelector('label[for="' + input.id + '"]')) {
       input.setAttribute('aria-label', opt.label || '输入');
     }
@@ -150,9 +154,11 @@
                     '</mark>' + esc(raw.slice(k + q.length));
           }
         }
+        /* ⭐ 必须真写出来：`setActive()` 在读它，读屏也需要它*/
         return '<li class="combo__opt" role="option" id="' + list.id + '-o' + i + '"' +
                ' data-value="' + esc(o.value) + '"' +
-               ' aria-selected="' + (picked ? 'true' : 'false') + '">' +
+               ' aria-selected="' + (picked ? 'true' : 'false') + '"' +
+               (o.disabled ? ' aria-disabled="true"' : '') + '>' +
                '<span class="combo__opt-text">' + label + '</span></li>';
       }).join('');
       activeIdx = -1;
@@ -174,9 +180,20 @@
       flEmit(root, 'fl-change', { value: tags.slice() });
       if (opt.onChange) opt.onChange(tags.slice());
     }
+    function isDisabled(v) {
+      for (var i = 0; i < ALL.length; i++) {
+        if (ALL[i].value === v) return !!ALL[i].disabled;
+      }
+      return false;
+    }
+
+    /* ⭐ max 的**唯一入口**：点击 / Enter / 公开 add 全走这里。
+       以前只在 commitActive 里"加完发现满了才关列表" ⇒ 另外两条路能绕过。 */
     function addTag(v) {
       if (v == null || v === '') return false;
-      if (tags.indexOf(v) >= 0) return false;      /* 不重复 */
+      if (isDisabled(v)) return false;                       /* 禁用项 */
+      if (tags.indexOf(v) >= 0) return false;                /* 不重复 */
+      if (opt.max && tags.length >= opt.max) return false;    /* 🔴 上限 */
       tags.push(v);
       paintTags();
       return true;
@@ -199,9 +216,18 @@
       dir = dir || 1;
       var n = os.length;
       var idx = ((i % n) + n) % n;
+      /* 🔴 全禁用时不许落在禁用项上：
+         以前跑满 n 次无条件 break，停哪算哪。APG：没有可选项 ⇒ 没有"当前项"。 */
+      var found = false;
       for (var k = 0; k < n; k++) {
-        if (os[idx].getAttribute('aria-disabled') !== 'true') break;
+        if (os[idx].getAttribute('aria-disabled') !== 'true') { found = true; break; }
         idx = ((idx + dir) % n + n) % n;
+      }
+      if (!found) {
+        activeIdx = -1;
+        os.forEach(function (o) { o.removeAttribute('data-state'); });
+        input.removeAttribute('aria-activedescendant');
+        return;
       }
       activeIdx = idx;
       os.forEach(function (o) { o.removeAttribute('data-state'); });
@@ -234,8 +260,9 @@
       return ok;
     }
 
-    /* ---------- 键盘（焦点常驻 input）---------- */
-    input.addEventListener('keydown', function (e) {
+    /* ---------- 键盘（焦点常驻 input）----------
+       ⭐ 具名函数：`destroy()` 要按同一个引用摘除，匿名的摘不掉。 */
+    function onKeydown(e) {
       var k = e.key;
 
       /* ↑↓ 在建议间移动 */
@@ -285,37 +312,43 @@
       }
       if (k === 'Home' && !list.hidden) { e.preventDefault(); setActive(0, 1); return; }
       if (k === 'End' && !list.hidden) { e.preventDefault(); setActive(opts().length - 1, -1); return; }
-    });
+    }
 
-    /* ---------- 输入即过滤 ---------- */
-    input.addEventListener('input', function () {
-      open();
-    });
-    input.addEventListener('focus', function () { open(); });
-    input.addEventListener('click', function () { open(); });
+    function onInput() { open(); }
+    function onFocus() { open(); }
+    function onClick() { open(); }
 
     /* ---------- 标签删除 ---------- */
-    if (tagBox) {
-      tagBox.addEventListener('click', function (e) {
-        var b = e.target.closest ? closest(e.target, '[data-del]') : null;
-        if (!b) return;
-        removeTag(b.getAttribute('data-del'));
-        input.focus();                      /* 删除后焦点回输入框 */
-      });
+    function onTagClick(e) {
+      /* 🔴 原来是 `e.target.closest ? closest(...) : null` ⇒ 没有原生 closest
+         时直接返回 null，兜底永远跑不到。直接调，它内部自己判。 */
+      var b = closest(e.target, '[data-del]');
+      if (!b) return;
+      removeTag(b.getAttribute('data-del'));
+      input.focus();                      /* 删除后焦点回输入框 */
     }
 
     /* ---------- 点选项 ---------- */
-    list.addEventListener('click', function (e) {
-      var o = e.target.closest ? closest(e.target, '[role="option"]') : null;
+    function onListClick(e) {
+      var o = closest(e.target, '[role="option"]');
       if (!o) return;
       addTag(o.getAttribute('data-value'));
       input.value = '';
       paintList();
       input.focus();
-    });
-    document.addEventListener('click', function (e) {
+    }
+    /* 🔴 document 级监听：实例销毁后必须摘掉，否则每个死实例都握着 DOM 引用。 */
+    function onDocClick(e) {
       if (!root.contains(e.target)) close();
-    });
+    }
+
+    input.addEventListener('keydown', onKeydown);
+    input.addEventListener('input', onInput);
+    input.addEventListener('focus', onFocus);
+    input.addEventListener('click', onClick);
+    if (tagBox) tagBox.addEventListener('click', onTagClick);
+    list.addEventListener('click', onListClick);
+    document.addEventListener('click', onDocClick);
 
     /* 🔴 禁用态同步：CSS 不用 :has()（ES6+ 兼容问题，见 combobox.css 注释）
        ⇒ 由这里根据 input.disabled 给容器加 class。 */
@@ -329,11 +362,30 @@
     input.addEventListener('change', syncDisabled);
     syncDisabled();
 
+    /* ---------- 销毁----------
+       以前没有 destroy，而上面注册了 document 级监听 ⇒ 实例没了监听还在。
+       ⇒ 具名注册（见上）+ 这里逐个摘除；**幂等**（重复调用不抛）。 */
+    var destroyed = false;
+    function destroy() {
+      if (destroyed) return;
+      destroyed = true;
+      input.removeEventListener('keydown', onKeydown);
+      input.removeEventListener('input', onInput);
+      input.removeEventListener('focus', onFocus);
+      input.removeEventListener('click', onClick);
+      input.removeEventListener('change', syncDisabled);
+      if (tagBox) tagBox.removeEventListener('click', onTagClick);
+      list.removeEventListener('click', onListClick);
+      document.removeEventListener('click', onDocClick);
+      close();
+    }
+
     paintTags();
     return {
       get tags() { return tags.slice(); },
       add: addTag, remove: removeTag,
       setOptions: function (o) { ALL = o || []; paintList(); },
+      destroy: destroy,
     };
   }
 

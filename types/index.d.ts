@@ -118,7 +118,14 @@ export interface Select {
 export interface ComboboxOptions {
   label: string;
   options: SelectOption[];
-  /** 最多可选几个（超出会关闭下拉） */
+  /**
+   * 最多可选几个 —— **硬上限**，不是"选满了就收起下拉"。
+   *
+   * ⭐ 三条入口都受它约束：点选项 / Enter 提交 / 公开 `add()`。
+   *   （以前只在 `commitActive()` 里"加完发现满了才关列表"，
+   *     公开 `add()` 和点击路径都能绕过 —— 2026-10-10 修。）
+   *   满了以后 `add()` 返回 `false`，标签数量不再变化。
+   */
   max?: number;
   placeholder?: string;
   disabled?: boolean;
@@ -133,21 +140,34 @@ export interface ComboboxOptions {
 
 /**
  * ⭐ 与 `combobox.js` 实际返回对齐。
- *   runtime 返回：`{ get tags(), add, remove, setOptions }`
+ *   runtime 返回：`{ get tags(), add, remove, setOptions, destroy }`
  *
  * ⚠️ `tags` 是**属性（getter）**，不是方法 —— 用 `c.tags`，不是 `c.tags()`。
  *   早期类型写成方法，于是文档与实际用法对不上。
- *   ⚠️ 它**没有** destroy()。
+ *
+ * 🔴 关于 `destroy()`（2026-10-10 修）：
+ *   以前这里写"它**没有** destroy()" —— 那句话曾经是真的，
+ *   但组件注册了一个 **document 级** click 监听却没人摘，
+ *   ⇒ 实例销毁后监听还活着（每个死掉的实例都握着一份 DOM 引用）。
+ *   现在有 `destroy()` 了，**卸载时必须调用**（或至少在移除节点前调用）。
  */
 export interface Combobox {
   /** 已选中的 value 数组（只读快照，每次访问返回新数组） */
   readonly tags: string[];
-  /** 追加一项（空值会被忽略） */
+  /**
+   * 追加一项。
+   * 返回 `false` 表示没加进去：空值 / 已存在 / **禁用项** / **已达 max**。
+   */
   add(value: string): boolean;
   /** 移除一项 */
   remove(value: string): void;
   /** 替换候选项 */
   setOptions(options: SelectOption[]): void;
+  /**
+   * 解绑全部监听（含 document 级）并收起列表。**幂等**。
+   * ⚠️ 移除 DOM 之前请先调用它，否则监听会泄漏。
+   */
+  destroy(): void;
 }
 
 /* ============================================================================
@@ -158,7 +178,7 @@ export interface Combobox {
  * ⭐ 内置预设区间名。
  *
  *   ⚠️ 这五个是**实现里真实存在的全部值**，取自 `date-range.js` 的 PRESETS：
- *       thisQ（���季度） / lastQ（上季度） / lastM（上月）
+ *       thisQ（本季度） / lastQ（上季度） / lastM（上月）
  *       thisY（今年）   / yoy（去年同期）
  *
  *   之前类型里写的是'today' / 'week' / 'month' / 'lastMonth' /

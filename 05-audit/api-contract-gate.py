@@ -168,7 +168,7 @@ def norm_rt(kind):
         return 'method'
     if kind in ('getter', 'accessor'):
         # 🔴 getter / accessor **对使用者都是「读属性」**
-        #   区别只在能不能写，而那是 types 侧的 readonly 与���。
+        #   区别只在能不能写，而那是 types 侧的 readonly 与非 readonly 之分。
         #   早期把 accessor 归成独立类别 ⇒ Select.value（可读写）
         #   被误报成「types=value vs runtime=getter」的假红。实测踩过。
         return 'prop'
