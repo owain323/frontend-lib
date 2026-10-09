@@ -314,6 +314,9 @@ run "tree" node 05-audit/tree-check.js
 run "drawer" node 05-audit/drawer-check.js
 run "select" node 05-audit/select-check.js
 run "combobox" node 05-audit/combobox-check.js
+  # 实例级契约：max / disabled / destroy / 唯一 id / closest 兜底
+  # （demo 页上查不出来，必须自己造实例）
+  run "combobox-inst" node 05-audit/combobox-instance-check.js
 run "date-range" node 05-audit/date-range-check.js
 run "composition" node 05-audit/composition-check.js
 

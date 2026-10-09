@@ -8,8 +8,8 @@
   ],
   "totals": {
     "sourceFiles": 54,
-    "sourceBytes": 525480,
-    "distGzip": 93942
+    "sourceBytes": 528210,
+    "distGzip": 94748
   },
   "files": [
     {
@@ -319,15 +319,15 @@
     },
     {
       "source": "02-primitives/combobox/combobox.js",
-      "sourceSha256": "f233ecf5f5b9ebc97355abdc1035769e29743e456c50ef2304cb1e5a117567f1",
-      "sourceBytes": 13111,
-      "sourceGzip": 4660,
+      "sourceSha256": "f0950cd2fa60dbe8adff8c013ebb9ef5c4d4795eb6f5aee9b7d130de46419dc7",
+      "sourceBytes": 15597,
+      "sourceGzip": 5530,
       "outputs": [
         {
           "path": "dist/02-primitives/combobox/combobox.js",
           "kind": "stripped",
-          "bytes": 11243,
-          "gzip": 3888
+          "bytes": 13567,
+          "gzip": 4704
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
@@ -354,15 +354,15 @@
     },
     {
       "source": "02-primitives/date-range/date-range.js",
-      "sourceSha256": "aaf04602645feb17b433bdf6adc4fd97d17c09c89077ba74404e0b4301535d9f",
-      "sourceBytes": 11341,
-      "sourceGzip": 4271,
+      "sourceSha256": "f12a6f8430b552eda7f4685b9a3962eac4e59316894fb7d4a973023bd6261244",
+      "sourceBytes": 11585,
+      "sourceGzip": 4385,
       "outputs": [
         {
           "path": "dist/02-primitives/date-range/date-range.js",
           "kind": "stripped",
-          "bytes": 7437,
-          "gzip": 2600
+          "bytes": 7412,
+          "gzip": 2590
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"

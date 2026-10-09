@@ -1,6 +1,7 @@
 {
   "Combobox": {
     "add": "method",
+    "destroy": "method",
     "remove": "method",
     "setOptions": "method",
     "tags": "getter"

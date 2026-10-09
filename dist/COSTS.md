@@ -22,8 +22,8 @@
 | primitive | `button` | 2.1 KB | 1.0 KB | — | **3.1 KB** | 22.2 KB | −19.1 KB |
 | primitive | `card` | 2.1 KB | 0.9 KB | — | **3.1 KB** | 19.5 KB | −16.4 KB |
 | primitive | `choice` | 2.1 KB | 1.1 KB | — | **3.2 KB** | 21.4 KB | −18.2 KB |
-| primitive | `combobox` | 2.1 KB | 1.0 KB | 3.8 KB | **6.9 KB** | 23.4 KB | −16.5 KB |
-| primitive | `date-range` | 2.1 KB | 0.8 KB | 2.5 KB | **5.5 KB** | 21.9 KB | −16.4 KB |
+| primitive | `combobox` | 2.1 KB | 1.0 KB | 4.6 KB | **7.7 KB** | 24.2 KB | −16.5 KB |
+| primitive | `date-range` | 2.1 KB | 0.8 KB | 2.5 KB | **5.5 KB** | 22.0 KB | −16.5 KB |
 | primitive | `input` | 2.1 KB | 1.0 KB | — | **3.2 KB** | 19.5 KB | −16.4 KB |
 | primitive | `popover` | 2.1 KB | 0.8 KB | 2.1 KB | **5.1 KB** | 23.1 KB | −18.0 KB |
 | primitive | `progress` | 2.1 KB | 0.7 KB | — | **2.8 KB** | 18.9 KB | −16.0 KB |
@@ -47,8 +47,8 @@
 
 ## 三、全库
 
-- 全部组件都用上（min，含 tokens 一份）：**51.6 KB**
-- 源码版（带注释）全库 gzip：200.9 KB
+- 全部组件都用上（min，含 tokens 一份）：**52.4 KB**
+- 源码版（带注释）全库 gzip：201.9 KB
 
 > ⚠️ 源码版那个数字**不是**要付的钱：它包含我们的注释（全库 CSS 有 64% 是注释）。
 > 它的用途只有一个 —— 让人看清"dist 到底省了多少"。

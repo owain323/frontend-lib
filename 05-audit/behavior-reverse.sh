@@ -50,6 +50,8 @@ run "deprecation" $PY 05-audit/deprecation-gate.py --selftest
 run "workflow"    node 05-audit/workflow-gate.js --selftest
 run "engine"      node 05-audit/engine-gate.js --selftest
 run "engine-probe" node 05-audit/engine-probe.js --selftest
+run "combobox-inst" $PY 05-audit/combobox-instance-reverse.py
+run "mojibake"    $PY 05-audit/mojibake-check.py --selftest
 run "doc-facts"    $PY 05-audit/doc-facts-gate.py --selftest
 # 弹层宿主影响：判据真会红吗？（变异 overlay.js 后重跑，跑绿了就是假绿）
 run "overlay-host" $PY 05-audit/overlay-host-reverse.py

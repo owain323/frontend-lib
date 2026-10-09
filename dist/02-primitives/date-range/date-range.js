@@ -191,7 +191,8 @@ return '<button class="drange__preset" type="button" aria-pressed="false" ' +
 'data-dr-preset="'+ p.key + '">' + p.label + '</button>';
 }).join('');
 box.addEventListener('click', function (e) {
-var b = e.target.closest ? closest(e.target, '[data-dr-preset]') : null;
+
+var b = closest(e.target, '[data-dr-preset]');
 if (!b) return;
 var p = presets.filter(function (x) { return x.key === b.getAttribute('data-dr-preset'); })[0];
 if (!p) return;

@@ -218,7 +218,10 @@
                'data-dr-preset="' + p.key + '">' + p.label + '</button>';
       }).join('');
       box.addEventListener('click', function (e) {
-        var b = e.target.closest ? closest(e.target, '[data-dr-preset]') : null;
+        /* 🔴 同样是"兜底永远跑不到"的死代码（与 combobox 同一处）：
+           `e.target.closest ? closest(...) : null` ⇒ 没有原生 closest 时返回 null。
+           直接调 `closest()`，它内部自己判 `el.closest` 在不在。 */
+        var b = closest(e.target, '[data-dr-preset]');
         if (!b) return;
         var p = presets.filter(function (x) { return x.key === b.getAttribute('data-dr-preset'); })[0];
         if (!p) return;
