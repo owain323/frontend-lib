@@ -8,8 +8,8 @@
   ],
   "totals": {
     "sourceFiles": 54,
-    "sourceBytes": 521442,
-    "distGzip": 93757
+    "sourceBytes": 522190,
+    "distGzip": 93754
   },
   "files": [
     {
@@ -179,21 +179,21 @@
     },
     {
       "source": "01-tokens/tokens.css",
-      "sourceSha256": "4a623550d4ee3de5711f6b9d80592bdb25bee6290b6e185cb48638a0c80d4944",
-      "sourceBytes": 40153,
-      "sourceGzip": 16193,
+      "sourceSha256": "e6ba48f3bc3be09ad3fd4bda1c3cb03adb50fb67237fd027fcbf8f76a70290f7",
+      "sourceBytes": 40590,
+      "sourceGzip": 16378,
       "outputs": [
         {
           "path": "dist/01-tokens/tokens.css",
           "kind": "stripped",
-          "bytes": 8223,
-          "gzip": 2640
+          "bytes": 8202,
+          "gzip": 2635
         },
         {
           "path": "dist/01-tokens/tokens.min.css",
           "kind": "minified",
-          "bytes": 6194,
-          "gzip": 2198
+          "bytes": 6179,
+          "gzip": 2194
         }
       ]
     },
@@ -594,21 +594,21 @@
     },
     {
       "source": "03-patterns/drawer/drawer.css",
-      "sourceSha256": "cbdb319ba41d7b93540ebcc8e52794c072151bb6a09975f823ad7b857be2c259",
-      "sourceBytes": 4559,
-      "sourceGzip": 1976,
+      "sourceSha256": "85ebf0c03de57e2b73172bdc5d102ee340d7fa01df154f490cfd5b161bea08e0",
+      "sourceBytes": 4652,
+      "sourceGzip": 2022,
       "outputs": [
         {
           "path": "dist/03-patterns/drawer/drawer.css",
           "kind": "stripped",
-          "bytes": 2748,
-          "gzip": 860
+          "bytes": 2763,
+          "gzip": 865
         },
         {
           "path": "dist/03-patterns/drawer/drawer.min.css",
           "kind": "minified",
-          "bytes": 2326,
-          "gzip": 794
+          "bytes": 2338,
+          "gzip": 798
         }
       ]
     },
@@ -969,21 +969,21 @@
     },
     {
       "source": "04-recipes/tierA-tokens.css",
-      "sourceSha256": "5de2c70f04ff0fa21a79ca8e80779442eb2ece173ba93706075aef4fceb32212",
-      "sourceBytes": 17443,
-      "sourceGzip": 2600,
+      "sourceSha256": "0e6247efa0be2ec8f617f50f44a472652483c712c29f044abea07c7eb3aab1db",
+      "sourceBytes": 17661,
+      "sourceGzip": 2603,
       "outputs": [
         {
           "path": "dist/04-recipes/tierA-tokens.css",
           "kind": "stripped",
-          "bytes": 16643,
-          "gzip": 2056
+          "bytes": 16862,
+          "gzip": 2058
         },
         {
           "path": "dist/04-recipes/tierA-tokens.min.css",
           "kind": "minified",
-          "bytes": 3145,
-          "gzip": 1290
+          "bytes": 3130,
+          "gzip": 1285
         }
       ]
     }

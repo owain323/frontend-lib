@@ -1,0 +1,53 @@
+{
+  "schemaVersion": "1.0.0",
+  "source": "01-tokens/tokens.css",
+  "$comment": "手写，不是生成的。生成出来的『契约』只跟再生成一遍比，没有引入新信息（见 docs/INVARIANT.md I-10 实证 9）。这个文件回答的问题是：每个令牌是**给谁用的**。",
+
+  "audiences": {
+    "public": "契约的一部分：文档承诺使用者可以直接引用。改名/改值算破坏性变更。",
+    "internal": "库自己的实现细节：使用者不该依赖。可以改名改值，不必公告。",
+    "reference": "给人/脚本读的常量：CSS 里**物理上不可能**被 var() 引用（断点进不了 media query 条件），所以『没人引用』是它的本分，不是病。"
+  },
+
+  "families": {
+    "--accent":   { "audience": "public",    "why": "品牌色三档（--accent / -hover / -soft）：换主题色的第一入口" },
+    "--border":   { "audience": "public",    "why": "描边三档：控件 / 装饰 / 强装饰" },
+    "--bp-":      { "audience": "reference", "why": "断点：CSS media query 条件里用不了 var()，只能当锚点给流体计算和脚本查询" },
+    "--danger":   { "audience": "public",    "why": "危险色（--danger / -hover / -bg）" },
+    "--dur-":     { "audience": "public",    "why": "时长阶梯：快 / 基准 / 慢" },
+    "--ease-":    { "audience": "public",    "why": "缓动阶梯：默认 / 进出 / 滑入" },
+    "--fs-":      { "audience": "public",    "why": "字号阶梯：阶梯允许有暂未使用的档位（那是阶梯，不是死代码）" },
+    "--info":     { "audience": "public",    "why": "信息色（--info / -bg）" },
+    "--lh-":      { "audience": "public",    "why": "行高阶梯：紧 / 基准 / 松" },
+    "--lift-":    { "audience": "public",    "why": "抬升阴影阶梯" },
+    "--measure-": { "audience": "public",    "why": "版心阶梯：正文 / 标题 / 导语 / 引言 / 边注 / 页面列宽" },
+    "--mono":     { "audience": "public",    "why": "等宽字族" },
+    "--paper":    { "audience": "public",    "why": "页面底色" },
+    "--popover-": { "audience": "internal",  "why": "气泡组件自己的尺寸与时长，是组件调参不是主题令牌" },
+    "--progress": { "audience": "internal",  "why": "进度条内部参数（--progress 是数值本身，不是族前缀）" },
+    "--r-":       { "audience": "public",    "why": "圆角阶梯" },
+    "--ring-":    { "audience": "internal",  "why": "焦点环尺寸，只由 focus-ring.css 消费" },
+    "--sans":     { "audience": "public",    "why": "无衬线字族" },
+    "--scrim":    { "audience": "internal",  "why": "遮罩底色，overlay 用" },
+    "--scrollbar-": { "audience": "internal", "why": "滚动条外观，scrollbar.css 用" },
+    "--serif":    { "audience": "public",    "why": "衬线字族" },
+    "--shadow-":  { "audience": "public",    "why": "阴影阶梯 1 / 2" },
+    "--skeleton-":{ "audience": "internal",  "why": "骨架屏内部参数" },
+    "--sp-":      { "audience": "public",    "why": "间距阶梯 1–8" },
+    "--success":  { "audience": "public",    "why": "成功色（--success / -bg）" },
+    "--surface":  { "audience": "public",    "why": "表面色（--surface / -sunken / -raised）" },
+    "--switch-":  { "audience": "internal",  "why": "开关轨道色，只由 switch 消费" },
+    "--sz-":      { "audience": "public",    "why": "触控尺寸（--sz-touch / -sm）：点按目标最小边" },
+    "--text-":    { "audience": "public",    "why": "文字色五档（primary / secondary / tertiary / on-accent / on-solid）" },
+    "--tracking-":{ "audience": "public",    "why": "字距阶梯（标题 / 常规）" },
+    "--warning":  { "audience": "public",    "why": "警告色（--warning / -bg）" },
+    "--z-":       { "audience": "internal",  "why": "层级栈：库内部层序，使用者不该依赖具体数值（依赖了就会和以后的层打架）" }
+  },
+
+  "tokens": {},
+
+  "budget": {
+    "orphan": 7,
+    "$comment": "棘轮：孤儿令牌总数只能降。降了就把这个数字一起改小，不许偷偷升。"
+  }
+}
