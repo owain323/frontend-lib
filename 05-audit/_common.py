@@ -19,6 +19,8 @@ _common.py — 门禁脚本共享的常量
      新增产物目录时只改一处，不会再漏掉某个门禁。
 ===========================================================================
 """
+import fnmatch
+import io
 import os
 import subprocess
 
@@ -107,7 +109,78 @@ def scannable_files(root):
         if f not in seen:
             seen.add(f)
             files.append(f)
+
+    # 🔴 没有 git（zip / tarball 解压出来的树、或机器没装 git）⇒ 退回文件系统遍历
+    #    ⚠️ 不退回的后果是**假绿**：扫到 0 个文件 ⇒ 什么都没抓到 ⇒ 报"通过"。
+    #       api-doc 会红（它要求两边数量一致），但 leak-scan 这类"扫到才算问题"
+    #       的门禁会**安静地通过** —— 这比红更危险。
+    #    实测发现路径：把远端 tarball（无 .git）当干净克隆跑全套门禁，
+    #       api-doc 报"实现里挂载的全局对象：0 个"、leak-scan 四个注入全没抓到。
+    if not files:
+        files = _walk_all(root)
     return files
+
+
+def _ignore_patterns(root):
+    """.gitignore 里的模式（够用的子集）。
+
+    ⚠️ 诚实的边界：这不是一个完整的 gitignore 实现。只认三种最常见的写法 ——
+       目录名（`node_modules/`）、扩展名（`*.png`）、整条路径（`dist/x.css`）。
+       否定式（`!foo`）与 `**` 不认。
+       它服务于"无 git 时的兜底"，不是要替代 git。
+    """
+    pats = []
+    p = os.path.join(root, '.gitignore')
+    if not os.path.isfile(p):
+        return pats
+    try:
+        raw = io.open(p, encoding='utf-8', errors='replace').read()
+    except IOError:
+        return pats
+    for ln in raw.splitlines():
+        s = ln.strip()
+        if not s or s.startswith('#'):
+            continue
+        neg = s.startswith('!')
+        if neg:
+            s = s[1:]
+        pats.append((neg, s.rstrip('/')))
+    return pats
+
+
+def _ignored(rel, pats):
+    """后写的规则说了算（与 git 一致），`!` 开头的把前面命中的重新放行。
+
+    ⚠️ 为什么必须认否定式：`.gitignore` 里就有
+         `10-review/shots/*.png` + `!10-review/shots/_baseline/`
+       —— 不认 `!` 的话，兜底视野会把**已入库的基线截图**也排除掉
+         （实测本地 git 视野 463 个文件、兜底只剩 432）。
+    """
+    hit = False
+    name = os.path.basename(rel)
+    for neg, pat in pats:
+        if '/' in pat:
+            m = fnmatch.fnmatch(rel, pat) or rel.startswith(pat + '/')
+        else:
+            m = (fnmatch.fnmatch(rel, pat) or fnmatch.fnmatch(name, pat)
+                 or rel.split('/')[0] == pat)
+        if m:
+            hit = not neg
+    return hit
+
+
+def _walk_all(root):
+    """兜底：遍历文件系统，跳过产物目录与 .gitignore 命中的路径"""
+    pats = _ignore_patterns(root)
+    out = []
+    for dirpath, _dirnames, filenames in walk_filtered(root):
+        for fn in filenames:
+            rel = os.path.relpath(os.path.join(dirpath, fn), root)
+            rel = rel.replace(os.sep, '/')
+            if pats and _ignored(rel, pats):
+                continue
+            out.append(rel)
+    return sorted(out)
 
 
 def walk_filtered(root, skip_dirs=None):
