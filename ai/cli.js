@@ -16,7 +16,7 @@
  * 用法
  * ----------------------------------------------------------------------------
  *   frontend-lib ai check      <doc.json> [--profile=strict]
- *   frontend-lib ai validate   <file.json> --schema=contract|components|tokens|tokensAudience|tokensTree|patch
+ *   frontend-lib ai validate   <file.json> --schema=contract|components|tokens|tokensAudience|tokensTree|deprecations|patch
  *   frontend-lib ai diff       <a.json> <b.json>
  *   frontend-lib ai patch      <doc.json> <patch.json> [-o out.json]
  *   frontend-lib ai components [--maturity=stable] [--json]
@@ -122,6 +122,7 @@ var SCHEMAS = {
   tokens: 'tokens.schema.json',
   tokensAudience: 'tokens.audience.schema.json',
   tokensTree: 'tokens.tree.schema.json',
+  deprecations: 'deprecations.schema.json',
   patch: 'patch.schema.json'
 };
 
@@ -362,7 +363,7 @@ function main() {
     process.stdout.write(
       'frontend-lib ai —— 独立校验入口（零依赖、不联网、不依赖任何模型）\n\n' +
       '  ai check        <doc.json> [--profile=creative|standard|strict]\n' +
-      '  ai validate     <file.json> --schema=contract|components|tokens|tokensAudience|tokensTree|patch\n' +
+      '  ai validate     <file.json> --schema=contract|components|tokens|tokensAudience|tokensTree|deprecations|patch\n' +
       '  ai diff         <改动前.json> <改动后.json>      按语义 id 比对\n' +
       '  ai patch        <doc.json> <patch.json> [-o out.json]\n' +
       '  ai components   [--maturity=stable|beta|alpha]\n' +

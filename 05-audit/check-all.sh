@@ -114,6 +114,8 @@ run "behavior"  $PY 05-audit/gen-behavior.py --check
 run "beh-matrix" $PY 05-audit/behavior-matrix-gate.py
 # 成熟度阶梯：档位 = 独立重算；🔴 ladder 必须有鉴别力（不许 27 个组件全 stable）
 run "maturity"  $PY 05-audit/maturity-gate.py
+# 废弃治理：移除公开名字必须走流程（登记 → 迁移窗口 → 兑现）；基线只增不减
+run "deprecation" $PY 05-audit/deprecation-gate.py
 echo ""
 echo "=== 启动本地静态服务（Python 与浏览器门禁都要用）==="
 # 🔴 修：门禁脚本**自己保证**服务在跑。
