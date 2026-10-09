@@ -47,5 +47,8 @@ run "token-aud"   $PY 05-audit/token-audience-gate.py --selftest
 run "token-tree"  $PY 05-audit/token-tree-gate.py --selftest
 run "maturity"    $PY 05-audit/maturity-gate.py --selftest
 run "deprecation" $PY 05-audit/deprecation-gate.py --selftest
+run "workflow"    node 05-audit/workflow-gate.js --selftest
+run "engine"      node 05-audit/engine-gate.js --selftest
+run "engine-probe" node 05-audit/engine-probe.js --selftest
 
 exit $fail

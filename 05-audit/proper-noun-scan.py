@@ -55,6 +55,10 @@ WHITELIST = {
     'IntersectionObserver', 'MutationObserver', 'ResizeObserver',
     'KeyboardEvent', 'MouseEvent', 'PointerEvent', 'TouchEvent',
     'CustomEvent', 'FileReader', 'FileLoader', 'XMLHttpRequest',
+    # 浏览器引擎标识（UA 判据直接比对这些字面量 —— 是技术词，不是内部代号）:
+    #   · AppleWebKit  —— WebKit / Chromium 的 UA 里**都有**（Chromium 是它的分叉）
+    #   · HeadlessChrome —— Chromium 无头模式的 UA 字面量
+    'AppleWebKit', 'HeadlessChrome',
     'AbortController', 'ArrayBuffer', 'DataView', 'Intl', 'DateTimeFormat',
     'NumberFormat', 'Collator', 'Promise', 'Proxy', 'Reflect',
     'WeakMap', 'WeakSet', 'Map', 'Set', 'Symbol', 'Generator',

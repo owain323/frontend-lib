@@ -19,6 +19,7 @@ release-gate.py — 发布契约门禁（工单 J4/J5/J6）
 判据
 ---------------------------------------------------------------------------
   ① VERSION 文件 == package.json.version == CHANGELOG 最新版本
+     == **package-lock.json 的根包版本**（2026-10-09 补）
   ② repository.url 指向真实仓库（不是 example.invalid）
   ③ LICENSE 文件**真实存在**且 package.json 声明与它一致
   ④ package.json 的 files 里列出的路径**都真实存在**
@@ -83,6 +84,38 @@ def main():
             bad += 1
         if cl_ver == '(未找到)' and cl:
             print('      ! CHANGELOG 里没识别到版本号（格式可能变了）')
+
+        # ---- ①b package-lock.json 的根包版本（2026-10-09 外部评审实测）----
+        #  评审实测：package.json = 0.7.7，而 package-lock.json 的根包还是 0.3.0。
+        #  ⚠️ 这不一定让 `npm ci` 失败 —— 正因为**不一定**失败，它才会一直没人发现：
+        #     锁文件里那个版本号是"我上一次 npm install 时的包版本"，
+        #     它漂移时没有任何一处会报错，直到有人去读它。
+        #  ⇒ 对一个把「我说什么，系统就是什么」当卖点的库，这是自己打自己的脸。
+        lock = read_json('package-lock.json')
+        if lock is None:
+            print('      X package-lock.json 读不到 ⇒ 锁文件本身不存在或不合法')
+            bad += 1
+        else:
+            # lockfile v2/v3 有两处：顶层 version 与 packages[""].version
+            lock_v = lock.get('version')
+            pkgs = lock.get('packages') or {}
+            lock_root = (pkgs.get('') or {}).get('version')
+            print('      package-lock   = %s（packages[""] = %s）'
+                  % (lock_v, lock_root))
+            for label, v in (('version', lock_v), ('packages[""].version', lock_root)):
+                if v is not None and v != ver:
+                    print('      X package-lock.json 的 %s = %s，与 VERSION(%s) 不一致'
+                          % (label, v, ver))
+                    bad += 1
+            lock_name = lock.get('name')
+            if lock_name and lock_name != pkg.get('name'):
+                print('      X package-lock.json 的 name = %s，与 package.json(%s) 不一致'
+                      % (lock_name, pkg.get('name')))
+                bad += 1
+            # 🔴 没有 node_modules 也要能判（锁文件是**提交物**，不是安装产物）
+            if lock_root is None and lock_v is None:
+                print('      X package-lock.json 里找不到根包版本 ⇒ 判据视野已空')
+                bad += 1
 
     # ---------- ② repository ----------
     print('  [2] repository')

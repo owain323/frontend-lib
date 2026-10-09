@@ -22,10 +22,25 @@
  *   这是本文件存在的全部理由。
  *
  * ============================================================================
+ * 🔴🔴 引擎选择（2026-10-09 外部评审实测驱动）
+ * ============================================================================
+ *   CI 的 `browsers` 矩阵声明了 chromium / webkit / firefox 三种引擎，
+ *   但**没有一个地方把引擎名传给启动器** ——
+ *   `matrix.engine` 只用在 `npx playwright install` 那一步。
+ *   ⇒ 三个作业跑的都是 Chromium，"跨浏览器矩阵"是**假的**。
+ *
+ *   ⚠️ 这比"没做跨浏览器"更糟：它给出了一份**看起来存在**的证据。
+ *      评审拿它当覆盖证明，使用者拿它当兼容承诺，而它什么都没测。
+ *
+ *   ⇒ 修法是让引擎成为**启动参数**，并且让测试报告里出现真实引擎名：
+ *       const b = await launch({ engine: 'webkit' });
+ *     或环境变量：FL_ENGINE=webkit node 05-audit/xxx-check.js
+ * ============================================================================
  * 用法
  * ============================================================================
  *   const { launch } = require('./browser');
- *   const b = await launch();
+ *   const b = await launch();                       // 默认 chromium
+ *   const b = await launch({ engine: 'webkit' });   // 显式选引擎
  *
  *   // 或者只拿一个已关缓存的 page：
  *   const { newPage } = require('./browser');
@@ -115,8 +130,58 @@ const CHROME = CANDIDATES.find((p) => {
   try { return fsx.existsSync(p); } catch (e) { return false; }
 }) || findPlaywrightChrome();
 
+/**
+ * 引擎名归一。
+ * ⚠️ 只认这三个名字 —— 写错（`chrome` / `Webkit`）要**立刻报错**，
+ *    否则"选了引擎"这个动作本身就可能是假的。
+ */
+const KNOWN = { chromium: 'chromium', chrome: 'chromium', webkit: 'webkit', firefox: 'firefox' };
+function engineOf(opts) {
+  var raw = (opts && opts.engine) || process.env.FL_ENGINE || 'chromium';
+  var e = KNOWN[String(raw).toLowerCase()];
+  if (!e) {
+    throw new Error('未知浏览器引擎：' + raw +
+      '（只认 chromium / webkit / firefox）\n' +
+      '  ⇒ 写错名字会让它静默退回别处，等于没选。');
+  }
+  return e;
+}
+
 /** 关掉缓存的 launch —— 所有测试脚本必须用它，别自己调 puppeteer.launch */
 async function launch(opts) {
+  var engine = engineOf(opts);
+  if (engine !== 'chromium') return launchPlaywright(engine);
+  return launchChromium(opts);
+}
+
+/**
+ * Playwright 引擎（webkit / firefox）。
+ *
+ * ⚠️ 为什么用 Proxy 适配而不是逐个方法手写
+ * ----------------------------------------------------
+ * 39 个脚本用的是 puppeteer 的页面 API。Playwright 覆盖面很大但不完全一样
+ * （缺 setViewport / setCacheEnabled / emulateMediaFeatures）。
+ * 逐个手写会漏；用 Proxy 把没特殊处理的方法**直通**到 Playwright，
+ * 只为真正缺的那几个写实现 ⇒ 覆盖面由"我有没有想全"变成"它本来就有"。
+ */
+async function launchPlaywright(engine) {
+  var pw;
+  try {
+    pw = require('playwright');
+  } catch (e) {
+    throw new Error('引擎 ' + engine + ' 需要 playwright，但没装（npm ci 后会装）。\n' +
+      '  ⇒ 没有它就是"这台机器跑不了这个引擎"，必须报错，**不许退回 Chromium** ——\n' +
+      '     退回 Chromium 会让矩阵再次变成"三个作业跑同一个浏览器"。');
+  }
+  var browser = await pw[engine].launch({ headless: true });
+  browser.__engine = engine;
+  /* ⚠️ Playwright 的 version() 是**同步**的，puppeteer 的也是 ——
+     但 chromium 分支拿的是 puppeteer 对象，两边都当同步值读。 */
+  browser.__version = (typeof browser.version === 'function') ? browser.version() : '?';
+  return wrap(browser, engine);
+}
+
+async function launchChromium(opts) {
   // 🔴 找不到浏览器时**明确失败**，绝不静默退化成"没跑=通过"。
   //   静默退化是门禁假绿的经典形态：CI 上没装浏览器 ⇒ 契约一条没跑 ⇒ 全绿。
   if (!CHROME) {
@@ -162,6 +227,10 @@ async function launch(opts) {
     ...(opts || {}),
   });
   browser.__profile = profile;
+  /* ⭐ puppeteer 的 version() 是 **Promise**，Playwright 的是同步字符串。
+     ⇒ 这里统一 await 成字符串，免得报告里出现 `[object Promise]`。 */
+  try { browser.__version = await browser.version(); }
+  catch (e) { browser.__version = '?'; }
   return wrap(browser);
 }
 
@@ -178,12 +247,16 @@ async function launch(opts) {
  * ⇒ 正确做法：**在 browser 层面包 newPage**，
  *    无论调用方怎么开页面，都逃不掉。
  */
-function wrap(browser) {
+function wrap(browser, engine) {
+  engine = engine || 'chromium';
   const origNewPage = browser.newPage.bind(browser);
   browser.newPage = async function (...args) {
     const page = await origNewPage(...args);
-    try { await page.setCacheEnabled(false); } catch (e) { /* 忽略 */ }
-    return page;
+    /* ⭐ Playwright 那两个引擎的 page 缺几个 puppeteer 方法 ⇒ 套一层适配；
+       chromium 保持原样（39 个脚本在它上面本来就绿，不许动）。 */
+    const p = engine === 'chromium' ? page : shimPage(page, browser);
+    try { await p.setCacheEnabled(false); } catch (e) { /* Playwright 无此 API，见 shim */ }
+    return p;
   };
   // 顺带把 createIncognitoBrowser / browserContext 也包上
   if (typeof browser.createIncognitoBrowser === 'function') {
@@ -201,7 +274,69 @@ function wrap(browser) {
       return ctx;
     };
   }
+  browser.__engine = engine;
   return browser;
+}
+
+/**
+ * Playwright 的 page → puppeteer 风格的 page。
+ *
+ * 🔴 用 Proxy 而不是逐个方法手写：
+ *    手写时覆盖面 = "我想到了多少"，漏一个就是运行时 undefined 崩溃；
+ *    Proxy 的覆盖面 = "Playwright 本来就有多少"，只为**真的缺的**写实现。
+ *
+ * ⚠️ `cur` 是可变的：需要 isMobile / hasTouch / deviceScaleFactor 时，
+ *    Playwright **只能在建 context 时**设这些 ⇒ 只能重建 context + page。
+ *    Proxy 让"重建"变成换一个内部引用，调用方手里的对象**不需要更新**。
+ */
+function shimPage(page, browser) {
+  let cur = page;
+  const shims = {
+    /* puppeteer: setViewport({width,height,isMobile,hasTouch,deviceScaleFactor}) */
+    setViewport: async function (vp) {
+      vp = vp || {};
+      const w = vp.width || 393, h = vp.height || 852;
+      const needDevice = vp.isMobile || vp.hasTouch ||
+        (vp.deviceScaleFactor && vp.deviceScaleFactor !== 1);
+      if (needDevice) {
+        const ctx = await browser.newContext({
+          viewport: { width: w, height: h },
+          isMobile: !!vp.isMobile,
+          hasTouch: !!vp.hasTouch,
+          deviceScaleFactor: vp.deviceScaleFactor || 1,
+        });
+        const np = await ctx.newPage();
+        try { await cur.close(); } catch (e) { /* 忽略 */ }
+        cur = np;                        // ⭐ 换引用即可，调用方无感
+        return;
+      }
+      return cur.setViewportSize({ width: w, height: h });
+    },
+    /* Playwright 没有 setCacheEnabled：每次 launch 都是全新 context，
+       本来就不会跨运行复用磁盘缓存 ⇒ 语义上等价于"已关"。 */
+    setCacheEnabled: async function () { return undefined; },
+    /* puppeteer: emulateMediaFeatures([{name,value}]) → Playwright: emulateMedia({...}) */
+    emulateMediaFeatures: async function (list) {
+      const opt = {};
+      (list || []).forEach((f) => {
+        if (f.name === 'prefers-color-scheme') opt.colorScheme = f.value;
+        else if (f.name === 'prefers-reduced-motion') opt.reducedMotion = f.value;
+        else if (f.name === 'forced-colors') opt.forcedColors = f.value;
+      });
+      return cur.emulateMedia(opt);
+    },
+    /* 让调用方能问"我到底在哪个引擎上" —— 报告里必须出现真实引擎名 */
+    engine: function () { return browser.__engine; },
+  };
+  return new Proxy({}, {
+    get: function (_t, k) {
+      if (Object.prototype.hasOwnProperty.call(shims, k)) return shims[k];
+      const v = cur[k];
+      return typeof v === 'function' ? v.bind(cur) : v;
+    },
+    set: function (_t, k, v) { cur[k] = v; return true; },
+    has: function (_t, k) { return k in shims || k in cur; },
+  });
 }
 
 /**
@@ -240,4 +375,4 @@ async function withPage(vp, fn) {
   }
 }
 
-module.exports = { launch, newPage, withPage, CHROME };
+module.exports = { launch, newPage, withPage, CHROME, engineOf, ENGINES: ['chromium', 'webkit', 'firefox'] };

@@ -53,7 +53,7 @@ jobs:
   quick:
     name: 快门禁（静态，跨平台）
     runs-on: ubuntu-latest
-    timeout-minutes: 6# 兜底：卡住就掐掉，不烧额度
+    timeout-minutes: 6 # 兜底：卡住就掐掉，不烧额度
     steps:
       - uses: actions/checkout@v4
 
@@ -152,8 +152,21 @@ jobs:
       - name: 安装 ${{ matrix.engine }}
         run: npx playwright install --with-deps ${{ matrix.engine }}
 
+      # 🔴 引擎自证（评审给的验收标准，2026-10-09 加）
+      #    光有 matrix.engine 不够 —— 它以前只用在 install 这一步，
+      #    测试启动器根本没收到 ⇒ 三个作业跑的都是 Chromium。
+      #    ⇒ 必须由作业自己站出来报一次 UA，并校验它与声明的引擎一致。
+      #      （Chromium 的 UA 里也含 "AppleWebKit"，所以不能只判这个子串）
+      - name: 引擎自证（${{ matrix.engine }}）
+        run: node 05-audit/engine-probe.js
+        env:
+          FL_ENGINE: ${{ matrix.engine }}
+
       # 视觉基线是本机生成的，跨平台必然不一致 ⇒ nightly 只跑不依赖截图的
       - name: 契约测试（${{ matrix.engine }}）
+        env:
+          # ⭐ 这一行就是"矩阵真的分引擎"的开关：没有它，三个作业跑同一个浏览器
+          FL_ENGINE: ${{ matrix.engine }}
         run: |
           set -e
           python3 -m http.server 8000 &

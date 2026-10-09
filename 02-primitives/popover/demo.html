@@ -19,6 +19,13 @@
     margin-bottom: var(--sp-4);
   }
 .row { display: flex; gap: var(--sp-3); flex-wrap: wrap; }
+/* ⭐ 四个方向的演示必须**竖排**（跨引擎实测）
+   `end` 方向的浮层挂在锚点右侧（`inset-inline-start: 100%`），
+   横排时第 3 个按钮的浮层会顶到 483px —— 而手机视口是 393px。
+   ⚠️ 这不是"改测试让它过"：溢出是**真的**，Chromium 只是用
+      `innerWidth` 被内容撑大的方式把它量成了"没溢出"（WebKit 不会）。
+      竖排后每个方向都有整行宽度可用 ⇒ 演示成立，也不需要假装组件会翻转。 */
+.row--stack { flex-direction: column; align-items: flex-start; }
 .bad-demo { background: var(--danger-bg); border-color: var(--danger); }
 .bad { color: var(--danger); }
 table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
@@ -33,8 +40,8 @@ th { font-weight: 600; }
 
 <h2>1 · 四个方向</h2>
 <div class="demo">
-  <div class="row">
-    <button class="btn btn--md btn--secondary" id="p1">下方</button>
+<div class="row row--stack">
+<button class="btn btn--md btn--secondary" id="p1">下方</button>
     <button class="btn btn--md btn--secondary" id="p2">上方</button>
     <button class="btn btn--md btn--secondary" id="p3">右侧</button>
     <button class="btn btn--md btn--secondary" id="p4">左侧</button>
