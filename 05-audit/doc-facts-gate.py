@@ -60,12 +60,52 @@ def real_components():
 
 
 def real_gate_count():
-    """check-all.sh 里实际注册的门禁条数。"""
+    """check-all.sh 里注册的门禁条数（**展开 for 循环**）。
+
+    🔴 2026-10-09 修正：原来只数 `^run\\s+"` ⇒ 报 **99**。
+       但 `check-all.sh` 里有两段 `for g in <一长串>; do run "$g" ...; done`，
+       它们的 `run` 是**缩进**的、名字还是变量 `$g` ⇒ 一条都不算进去。
+       实测（把 run 换成只报数的桩，真跑一遍）：**121** 条被执行，
+       静态注册（含条件执行的 visual）**122** 条。
+
+       ⚠️ 一个自称"实际注册条数"的函数报出偏小的数，比不报更危险：
+          文档照它写就是错的，而门禁还会替这个错数**背书**
+          （这正是 I-10「报告通过却什么也没查」的近亲）。
+
+    🔴 中途踩到的坑（记下来，因为它**差点骗过我**）：
+       第一版修正只加了循环展开，算出来 121 —— 与桩实测的 121 **一模一样**，
+       看起来完全对。但按名单逐条核对才发现是两个错**刚好抵消**：
+         · `run "visual"` 在 `if 有 Pillow` 里 ⇒ 注册了，本机没执行（-1）
+         · `PW_PATH="..." run "firefox"` 前面挂着环境变量前缀 ⇒ 我的正则没算（+1）
+       ⇒ **对的数字、错的名单**。核对总数会漏掉它，只有比对名单才抓得到。
+
+    ⚠️ 诚实边界：这里返回的是**注册**条数。有几条按环境跳过
+       （`visual` 要 Pillow、`tsc` 要 typescript、`responsive` / `firefox` 要 node），
+       所以"这一台机器上跑了几条"会小于等于它。文档里写门禁总数时按注册数写。
+    """
     p = os.path.join(ROOT, '05-audit', 'check-all.sh')
     if not os.path.isfile(p):
         return None
-    s = io.open(p, encoding='utf-8').read()
-    return len(re.findall(r'^run\s+"', s, re.M))
+    n = 0
+    loops = {}                       # 循环变量 -> 取值个数
+    # ⚠️ `run` 前面可能挂环境变量前缀：
+    #      PW_PATH="${NODE_MODULES:-node_modules}/playwright" run "firefox" ...
+    #    只锚 `^\s*run` 会**漏掉 firefox**。实测：漏 1 条、同时又把条件执行的
+    #    `visual` 算进来 ⇒ 两个错刚好抵消成 121（**对的数字，错的名单**）。
+    #    ⇒ 这种"凑巧对上"比错得更危险，必须按名单逐条核对。
+    re_run = r'^\s*(?:\w+=\S+\s+)*run\s+"([^"]+)"'
+    for l in io.open(p, encoding='utf-8').read().split('\n'):
+        m_for = re.match(r'^\s*for\s+(\w+)\s+in\s+(.+?)\s*;\s*do\s*$', l)
+        if m_for:
+            loops[m_for.group(1)] = len(m_for.group(2).split())
+            continue
+        m_run = re.match(re_run, l)
+        if not m_run:
+            continue
+        name = m_run.group(1)
+        m_var = re.match(r'^\$(\w+)$', name)
+        n += loops.get(m_var.group(1), 0) if m_var else 1
+    return n
 
 
 def strip_code(s):
