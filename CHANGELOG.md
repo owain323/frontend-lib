@@ -106,8 +106,8 @@ B 还开着，背景却能点了 —— 用户看到的是「弹窗明明还在�
 | `03-patterns_overlay` | 378 → 393 宽 | 删掉无条件 `html{scrollbar-gutter:stable}`：那 15px 是它**在没开弹层时也在占位**的证据 |
 | `10-review_composition` | 378 → 393 宽 | 同上（该页引入了 overlay） |
 
-🔴 顺带记一条差点踩进去的坑：曾以为差异是"批次 A 把 Chromium 启动从
-   puppeteer 换成 Playwright，headless 默认 `--hide-scrollbars` ⇒ 宽了 15px"，
+🔴 顺带记一条差点踩进去的坑：曾以为差异是"Chromium 启动器从 puppeteer 换成
+   Playwright（引擎矩阵那一版），headless 默认 `--hide-scrollbars` ⇒ 宽了 15px"，
    于是给截图脚本加了 `showScrollbars` —— 结果 **28 张集体变动**。
    实测基线图宽度分布后才发现：31 张里 28 张本来就是 393（隐藏滚动条），
    只有那 2 张 378 是 `scrollbar-gutter` 占的位。

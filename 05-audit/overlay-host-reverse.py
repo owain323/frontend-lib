@@ -79,7 +79,10 @@ def main():
         print('  ⚠️ 发现残留备份 ⇒ 先还原（上次没跑完）')
         os.replace(BAK, SRC)
 
-    orig = io.open(SRC, encoding='utf-8').read()
+    # 🔴 必须 `newline=''` 读：默认文本模式会把 CRLF 统一成 LF，
+    #    写回时就把整个文件的换行改掉了 —— 内容没变，git 却看到一整片红。
+    #    （实测踩到：跑完一次反向控制，`overlay.js` 变成已修改状态。）
+    orig = io.open(SRC, encoding='utf-8', newline='').read()
     io.open(BAK, 'w', encoding='utf-8', newline='').write(orig)
 
     bad = 0
@@ -87,7 +90,11 @@ def main():
         code, fails = run_gate()
         print('  基线（未变异）  EXIT=%d   FAIL=%d' % (code, len(fails)))
         if code != 0:
-            print('  🔴 基线就是红的：先修 overlay-host-check，再谈反向控制')
+            if fails:
+                print('  🔴 基线就是红的：先修 overlay-host-check，再谈反向控制')
+            else:
+                print('  🔴 基线跑不起来（一条 FAIL 都没有）：'
+                      '多半是崩了或 8000 端口没有静态服务')
             bad += 1
 
         for why, old, new, tag in MUTANTS:
@@ -101,6 +108,14 @@ def main():
             code, fails = run_gate()
             if code == 0:
                 print('  🔴 %s ⇒ 门禁还是绿的（判据 %s 没牙）' % (why, tag))
+                bad += 1
+            elif not fails:
+                # 🔴 这里踩过：静态服务没起时门禁是**崩了**（退出非 0、一条 FAIL 都没有），
+                #    只判退出码会把它当成"抓到了" ⇒ 反向控制自己变成假绿。
+                #    ⇒ 必须是"判红"才算，崩了/环境缺失一律报不合格。
+                print('  🔴 %s ⇒ 门禁退出 %d 但**一条 FAIL 都没有**：'
+                      '多半是崩了或环境缺失（如 8000 端口没服务），'
+                      '这不算判据有鉴别力' % (why, code))
                 bad += 1
             else:
                 print('  OK  %s ⇒ 抓到 %d 条（判据 %s 有鉴别力）' % (why, len(fails), tag))
