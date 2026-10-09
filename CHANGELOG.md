@@ -95,6 +95,25 @@ B 还开着，背景却能点了 —— 用户看到的是「弹窗明明还在�
   有一个跑绿就是假绿）。接进 `behavior-reverse.sh`，**每次都跑**。
 - 运行时变量 `--overlay-scrollbar-width`（仅锁定期间）。
 
+### 视觉基线重录（3 张图，全部是有意改动）
+
+⚠️ 这次重录是在**远端干净树**里跑出来的：本地那次 `visual` 因环境被判 SKIP
+（同一台机器上判定不稳定）⇒ 本地全绿**其实没查这一项**。差异三张：
+
+| 页面 | 基线 → 现在 | 为什么 |
+|---|---|---|
+| `02-primitives_popover` | 483 → 393 宽 | 修掉了 popover 横向溢出（视口只有 393，原来撑到 483） |
+| `03-patterns_overlay` | 378 → 393 宽 | 删掉无条件 `html{scrollbar-gutter:stable}`：那 15px 是它**在没开弹层时也在占位**的证据 |
+| `10-review_composition` | 378 → 393 宽 | 同上（该页引入了 overlay） |
+
+🔴 顺带记一条差点踩进去的坑：曾以为差异是"批次 A 把 Chromium 启动从
+   puppeteer 换成 Playwright，headless 默认 `--hide-scrollbars` ⇒ 宽了 15px"，
+   于是给截图脚本加了 `showScrollbars` —— 结果 **28 张集体变动**。
+   实测基线图宽度分布后才发现：31 张里 28 张本来就是 393（隐藏滚动条），
+   只有那 2 张 378 是 `scrollbar-gutter` 占的位。
+   ⇒ 量具没换，是产品真的变了。已把这段写进 `shot-baseline.py` 注释，
+     免得后来者再"修"一次。
+
 ### 体积基线重录（有意增长）
 
 源码 `03-patterns/overlay/overlay.js` 12456 → 15291 B（+22.8%）超出 5% 容差，

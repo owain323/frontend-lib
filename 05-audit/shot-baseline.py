@@ -169,6 +169,12 @@ const fs = require('fs');
 const { launch } = require(process.env.FL_BROWSER || './browser.js');
 const TASKS = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
 (async () => {
+  /* ⚠️ 这里**不要**随手加 `showScrollbars` —— 量具一换，全基线作废。
+     实测记档：基线 31 张里 28 张宽 393（headless 默认 `--hide-scrollbars`），
+     只有 `overlay` / `composition` 两张是 378 —— 那 15px 不是滚动条，
+     是当年 `overlay.css` 里无条件 `html{scrollbar-gutter:stable}` 在占位。
+     那条规则已按"组件只影响自己"删掉 ⇒ 这两张回到 393 是**有意的**。
+     若改成 showScrollbars，28 张会集体变 378，把"换了仪器"误记成"产品变了"。 */
   const b = await launch();
   const p = await b.newPage();
   let ok = 0;
