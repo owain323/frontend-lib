@@ -87,6 +87,11 @@ run "token-aud"  $PY 05-audit/token-audience-gate.py
 run "token-tree" $PY 05-audit/token-tree-gate.py
 # 机器可读契约层：schema 只用了实现过的关键字 / Profile 有鉴别力 / Patch 可回放
 run "ai-layer"  node 05-audit/ai-layer-gate.js
+# CI 工作流配置：**真 YAML 解析**（不是正则）—— timeout-minutes 必须是整数、
+#   run 引用的脚本必须存在、每个 job 必须装依赖
+run "workflow"   node 05-audit/workflow-gate.js
+# 浏览器引擎矩阵：跑起来的引擎之间 UA 必须**两两不同**（不许"三个作业跑同一个浏览器"）
+run "engine"     node 05-audit/engine-gate.js
 # 规范三层分离：Invariant 层不许被 Contract / Guidance 污染
 run "invariant"  $PY 05-audit/invariant-gate.py
 # 兼容性 Benchmark：参考解法的十类编辑意图必须全部成立
