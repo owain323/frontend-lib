@@ -54,7 +54,7 @@ function readJSON(rel) {
 // ---------------------------------------------------------------- ① 关键字白名单
 try {
   validate.assertSchemasUseOnlySupported();
-  ok('① 七份 schema 只用了校验器实现过的关键字');
+  ok('① 八份 schema 只用了校验器实现过的关键字');
 } catch (e) {
   bad('① schema 用了未实现的关键字', e.message);
 }
@@ -75,7 +75,7 @@ try {
       var files = ['contract.schema.json', 'components.schema.json',
                    'tokens.schema.json', 'patch.schema.json',
                    'behaviors.schema.json', 'tokens.audience.schema.json',
-                   'tokens.tree.schema.json'];
+                   'tokens.tree.schema.json', 'deprecations.schema.json'];
       // 用同一套白名单手动扫探针
       var SUP = require(path.join(AI, 'validate.js')).SUPPORTED_KEYWORDS;
       var probe = JSON.parse(fs.readFileSync(path.join(AI, '_probe.schema.json'), 'utf8'));
@@ -112,6 +112,10 @@ try {
   var r5 = validate.validate(readJSON('tokens.tree.schema.json'), tree);
   expect(r5.ok, '② tokens.tree.json 符合 tokens.tree.schema.json',
     JSON.stringify(r5.errors.slice(0, 3)));
+  var dep = readJSON('deprecations.json');
+  var r6 = validate.validate(readJSON('deprecations.schema.json'), dep);
+  expect(r6.ok, '② deprecations.json 符合 deprecations.schema.json',
+    JSON.stringify(r6.errors.slice(0, 3)));
 })();
 
 // ---------------------------------------------------------------- ③ Profile 鉴别力

@@ -46,5 +46,6 @@ run "matrix"      $PY 05-audit/behavior-matrix-gate.py --selftest
 run "token-aud"   $PY 05-audit/token-audience-gate.py --selftest
 run "token-tree"  $PY 05-audit/token-tree-gate.py --selftest
 run "maturity"    $PY 05-audit/maturity-gate.py --selftest
+run "deprecation" $PY 05-audit/deprecation-gate.py --selftest
 
 exit $fail

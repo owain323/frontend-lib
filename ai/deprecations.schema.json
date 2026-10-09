@@ -1,0 +1,85 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://frontend-lib.dev/ai/deprecations.schema.json",
+  "title": "frontend-lib 废弃登记册",
+  "$comment": [
+    "描述 ai/deprecations.json 的形状：**库里曾经有 / 现在有但将来要删的公开名字**。",
+    "",
+    "🔴 为什么这份登记要存在：移除一个公开名字是**对下游的破坏性变更**，",
+    "   而此前它不受任何门禁约束 —— 0.7.4 移除了 `--measure`，只在更新日志里",
+    "   记了一笔 ⇒ 没有机器可读的地方说清『什么时候开始算废弃 / 什么时候允许删 /",
+    "   删了之后用什么替代』。下游只能靠人肉记忆迁移。",
+    "",
+    "🔴 两个桶：",
+    "   planned     走流程的：先登记，到 removeIn 才允许删（判据双向看住）",
+    "   retroactive 事后补登：已经删了才来登记 ⇒ 历史欠账，数量由 budget 当棘轮",
+    "",
+    "⚠️ 本文件是**手写**的，不是生成的（生成的契约只跟再生成一遍比，没有新信息，",
+    "   docs/INVARIANT.md I-10 实证 9）。",
+    "⚠️ 本 schema 只用了 ai/validate.js 白名单里的关键字。"
+  ],
+  "type": "object",
+  "required": ["schemaVersion", "planned", "retroactive", "budget"],
+  "properties": {
+    "schemaVersion": { "type": "string" },
+    "$comment": {},
+    "policy": {
+      "type": "object",
+      "required": ["minLead"],
+      "properties": {
+        "minLead": { "type": "string", "minLength": 1 },
+        "$whyMinLead": { "type": "string" },
+        "$whatWeCannotDo": { "type": "string" }
+      }
+    },
+    "planned": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "name", "deprecatedIn", "removeIn", "reason"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "kind": { "enum": ["token", "class"] },
+          "name": { "type": "string", "minLength": 1 },
+          "deprecatedIn": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+          "removeIn": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+          "reason": { "type": "string", "minLength": 1 },
+          "replacement": {
+            "oneOf": [
+              { "type": "null" },
+              { "type": "string", "minLength": 1 },
+              { "type": "array", "items": { "type": "string", "minLength": 1 } }
+            ]
+          },
+          "replacementNote": { "type": "string" }
+        }
+      }
+    },
+    "retroactive": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "name", "removedIn"],
+        "properties": {
+          "kind": { "enum": ["token", "class"] },
+          "name": { "type": "string", "minLength": 1 },
+          "removedIn": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+          "replacement": {
+            "oneOf": [
+              { "type": "null" },
+              { "type": "string", "minLength": 1 },
+              { "type": "array", "items": { "type": "string", "minLength": 1 } }
+            ]
+          }
+        }
+      }
+    },
+    "budget": {
+      "type": "object",
+      "required": ["retroactive"],
+      "properties": {
+        "retroactive": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}
