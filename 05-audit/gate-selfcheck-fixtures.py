@@ -24,6 +24,7 @@ gate-selfcheck-fixtures.py — 门禁的反向控制（K9：Test the Tests）
 """
 import io
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -77,6 +78,91 @@ def run_gate(script):
     p = subprocess.run([PY, os.path.join(ROOT, '05-audit', script)],
                        cwd=ROOT, capture_output=True, timeout=90)
     return p.returncode, (p.stdout or b'').decode('utf-8', 'replace')
+
+
+def hits_for(out, rel):
+    """leak-scan 输出里**属于 rel 这一个文件**的命中行。
+
+    🔴 为什么不能只看退出码（2026-10-09 事故真值）：
+       我在 CHANGELOG.md 里写了「工单」这个内部流程词 ⇒ leak-scan 全库报 1 处。
+       而这里十条样本**全是拿退出码判的** ⇒ 4 条「正常内容应不被抓」被报成
+       **「误报了」** —— 报告是**误导性**的：它们一个都没误报，
+       红的是另一个不相干的文件。
+       ⇒ 判据必须**归因到被注入的那一个文件**，不能用全库的脸色。
+    """
+    return re.findall(r'^\s*' + re.escape(rel) + r'\b.*$', out, re.M)
+
+
+def scanned_n(out):
+    """leak-scan 实际扫了多少个文件。
+
+    ⚠️ 顺手堵一个更隐蔽的假绿：扫到 **0 个文件**时退出码也是 0，
+       ⇒ 「正常内容应不被抓」那几条会**全部假绿通过**。
+       现在要求"确实扫到了文件"才算"未被误报"。
+    """
+    m = re.search(r'扫了\s*(\d+)\s*个文件', out)
+    return int(m.group(1)) if m else 0
+
+
+def verdict(script, rel, why):
+    """跑一次门禁，给出 (是否如预期, 说明)。注入由调用方负责。
+
+    🔴 抽成函数不只是为了少写代码：
+       下面 `_check_attribution()` 要在**别处有命中**的前提下跑同一条判据，
+       两条路径必须走**同一份判定逻辑** —— 否则"归因检查"可能在验证一个
+       早已和真实路径漂移的副本（I-10：报告通过却没查到被测代码）。
+    """
+    _code, out = run_gate(script)
+    hits = hits_for(out, rel)
+    n = scanned_n(out)
+    if '应**不**被抓' not in why:                 # 该被抓
+        if hits:
+            return True, '如预期报错（命中 %s：%s）' % (rel, hits[0].strip())
+        return False, '门禁**没抓到**（已失效！扫了 %d 个文件）' % n
+    if hits:                                      # 不该被抓，却被点名
+        return False, '**误报**了：%s' % hits[0].strip()
+    if n <= 0:
+        return False, '⚠️ 扫了 **0 个文件** ⇒ 这条"通过"不作数（门禁视野已空）'
+    return True, '未被误报（已扫 %d 个文件）' % n
+
+
+def _check_attribution():
+    """🔴 反向控制：判据必须**归因到被注入的那一个文件**。
+
+    事故真值（2026-10-09）：旧逻辑用**全库退出码**判定 ⇒ 别处一个命中，
+    就让 4 条「正常内容」被报成「**误报**了」—— 报告是**误导性**的，
+    它们一条都没误报，红的是另一个不相干的文件。
+
+    ⇒ 本函数把那个场景重造一遍，确认新逻辑不再被带偏：
+         · 被注入的文件**必须**被点名
+         · 没被注入的文件**必须不**被点名（**哪怕全库退出码是红的**）
+    """
+    victim = 'CHANGELOG.md'
+    bystander = '02-primitives/badge/badge.css'
+    p_v = os.path.join(ROOT, victim)
+    p_b = os.path.join(ROOT, bystander)
+    if not (os.path.isfile(p_v) and os.path.isfile(p_b)):
+        return ['归因检查跳过：样本文件不存在（%s / %s）' % (victim, bystander)]
+    orig = io.open(p_v, encoding='utf-8').read()
+    try:
+        with io.open(p_v, 'w', encoding='utf-8', newline='') as fh:
+            fh.write(orig + '\n内部流程词：%s\n' % terms.PROCESS_WORDS[0])
+        code, out = run_gate('leak-scan.py')
+        # ① 场景必须真的造出来：全库得是红的，否则这次验证是**空转**
+        if code == 0:
+            return ['场景没造出来：注入后 leak-scan 竟全库通过 ⇒ 归因验证等于没跑']
+        # ② 被注入的文件必须被点名
+        if not hits_for(out, victim):
+            return ['注入了内部流程词，leak-scan 却没点名 %s ⇒ 门禁没抓到' % victim]
+        # ③ 🔴 关键：在"别处有命中"的前提下，**真跑一条**「正常内容」样本
+        #    ⇒ 退回"只看退出码"的旧逻辑，这一条会立刻红（旧逻辑在此场景必报误报）
+        ok, msg = verdict('leak-scan.py', bystander, '正常 CSS（应**不**被抓）')
+    finally:
+        with io.open(p_v, 'w', encoding='utf-8', newline='') as fh:
+            fh.write(orig)
+    if not ok:
+        return ['别处有命中时，未被注入的样本被判成「%s」⇒ 判据没归因到单个文件' % msg]
+    return []
 
 
 def _check_scannable_fallback():
@@ -147,6 +233,13 @@ def main():
         print('  X    ' + line)
         bad += 1
 
+    att = _check_attribution()
+    for line in att:
+        print('  X    ' + line)
+        bad += 1
+    if not att:
+        print('  OK   leak-scan 的命中归因到单个文件（别处命中不会带偏本项）')
+
     for script, rel, inject, why in CASES:
         path = os.path.join(ROOT, rel)
         if not os.path.isfile(path):
@@ -162,26 +255,15 @@ def main():
         with io.open(path, 'w', encoding='utf-8', newline='') as fh:
             fh.write(orig + inject)
 
-        code, out = run_gate(script)
-
-        if expect_fail:
-            ok = code != 0
-            if ok:
-                passed += 1
-            else:
-                bad += 1
-            print('  %s %-14s 注入「%s」→ %s' % (
-                'OK  ' if ok else 'X ', script, why,
-                '如预期报错' if ok else '门禁**没抓到**（已失效！）'))
+        # 🔴 归因到**被注入的那一个文件**（见 hits_for 的注释）：
+        #    全库退出码会把别处的命中算到这条样本头上 ⇒ 报告误导。
+        ok, msg = verdict(script, rel, why)
+        if ok:
+            passed += 1
         else:
-            ok = code == 0
-            if ok:
-                passed += 1
-            else:
-                bad += 1
-            print('  %s %-14s 正常内容「%s」→ %s' % (
-                'OK  ' if ok else 'X ', script, why,
-                '未被误报' if ok else '**误报**了'))
+            bad += 1
+        label = '注入「%s」' % why if expect_fail else '正常内容「%s」' % why
+        print('  %s %-14s %s → %s' % ('OK  ' if ok else 'X ', script, label, msg))
 
         # 还原
         with io.open(path, 'w', encoding='utf-8', newline='') as fh:

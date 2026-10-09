@@ -112,6 +112,8 @@ run "deps"      $PY 05-audit/deps.py --missing
 run "behavior"  $PY 05-audit/gen-behavior.py --check
 # 行为覆盖矩阵：哪些组件必须有哪种行为（不许靠省略跳过）
 run "beh-matrix" $PY 05-audit/behavior-matrix-gate.py
+# 成熟度阶梯：档位 = 独立重算；🔴 ladder 必须有鉴别力（不许 27 个组件全 stable）
+run "maturity"  $PY 05-audit/maturity-gate.py
 echo ""
 echo "=== 启动本地静态服务（Python 与浏览器门禁都要用）==="
 # 🔴 修：门禁脚本**自己保证**服务在跑。

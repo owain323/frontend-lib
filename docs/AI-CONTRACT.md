@@ -179,3 +179,10 @@ h1 { font-size: 31px }          /* 改一个，14 页全变 */
 - `ai/behaviors.json` —— **行为覆盖矩阵**：哪些组件必须有哪种微行为
   （状态：`core` 已收编 / `manual` 手写未收编 / `gap` 应做未做 / `n/a` 不适用）
   ⇒ **不登记就红**，不许靠省略跳过；`manual` 与 `gap` 的数量有棘轮，只能降不能升
+- **`maturity`（成熟度）是算出来的，不是拍的** —— 每个组件有一个
+  `maturity`（`alpha` / `beta` / `stable`）和一份 `maturityReasons`。
+  四条判据：有 `demo.html` · 有专属门禁 · 状态全在 `data-*` 属性上（I-8）
+  · **行为零欠账**（矩阵里没有 `manual` / `gap`）。
+  ⇒ 手写把某个组件改成 `stable` 而它还欠着账，门禁会红（`05-audit/maturity-gate.py`）。
+  ⇒ ⚠️ `strict` 档位只放行 `stable`：欠着账的组件在 `strict` 下**不可用**，
+     这是有意的 —— 要用就切 `standard`，并接受它们可能还有手写副本。
