@@ -83,6 +83,8 @@ run "ai-contract" $PY 05-audit/gen-ai-contract.py --check
 run "token-parse" $PY 05-audit/token-parse-gate.py --no-browser
 # 令牌受众：每个令牌都得登记「给谁用的」；孤儿不许是 internal、公开孤儿必须进受审名单
 run "token-aud"  $PY 05-audit/token-audience-gate.py
+# 第二种令牌导出（分层 / 无 -- 前缀 / value 不带 $）：形状 + 浏览器 CSSOM 复核
+run "token-tree" $PY 05-audit/token-tree-gate.py
 # 机器可读契约层：schema 只用了实现过的关键字 / Profile 有鉴别力 / Patch 可回放
 run "ai-layer"  node 05-audit/ai-layer-gate.js
 # 规范三层分离：Invariant 层不许被 Contract / Guidance 污染

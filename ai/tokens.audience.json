@@ -19,7 +19,7 @@
     "--fs-":      { "audience": "public",    "why": "字号阶梯：阶梯允许有暂未使用的档位（那是阶梯，不是死代码）" },
     "--info":     { "audience": "public",    "why": "信息色（--info / -bg）" },
     "--lh-":      { "audience": "public",    "why": "行高阶梯：紧 / 基准 / 松" },
-    "--lift-":    { "audience": "public",    "why": "抬升阴影阶梯" },
+    "--lift-":    { "audience": "public",    "why": "动效的位移量（translate 的距离），不是阴影 —— 同样时长下幅度不统一就会感觉乱" },
     "--measure-": { "audience": "public",    "why": "版心阶梯：正文 / 标题 / 导语 / 引言 / 边注 / 页面列宽" },
     "--mono":     { "audience": "public",    "why": "等宽字族" },
     "--paper":    { "audience": "public",    "why": "页面底色" },

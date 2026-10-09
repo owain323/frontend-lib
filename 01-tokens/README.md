@@ -104,6 +104,30 @@ px 上下限不尊重"用户把浏览器字号调大"的设置——下限会锁
 
 ---
 
+## 两份机器可读导出（给不同胃口的工具）
+
+| 文件 | 形状 | 喂给谁 |
+|---|---|---|
+| `ai/tokens.json` | DTCG 草案：键名带 `--`，字段带 `$`（`$value` / `$type`） | 想**读**令牌的人 / 认 DTCG 的工具 |
+| `ai/tokens.tree.json` | 分层：键名不带 `--`，字段不带 `$`（`value` / `type`） | **Style Dictionary / Figma Tokens（Tokens Studio）** |
+
+为什么要两份：**`$value` 和 `value` 是不兼容的两套约定**，
+同一个文件喂不进两类工具。`tokens.tree.json` 的 `index` 段把两种键名互相对应
+（`--paper` ↔ `color/paper`）。
+
+命令行可直接查：
+
+```bash
+node ai/cli.js tokens [--set=light|dark]        # 第一种
+node ai/cli.js tree   [--set=light|dark] [--cat=color]   # 第二种
+```
+
+⚠️ 第二份是**生成物**，它的正确性不是靠"再生成一遍"保证的 ——
+`token-tree-gate.py` 判据 ⑤ 会把每一个名字、每一个值拿到**真浏览器**里，
+用 Chrome 自己的 CSS 解析器（CSSOM）重新读一遍再比。
+
+---
+
 ## 库里没引用、但承诺给你用的令牌
 
 下面这些令牌**本库的组件一个都没用**（`token-audience-gate.py` 会一直盯着这个数：
