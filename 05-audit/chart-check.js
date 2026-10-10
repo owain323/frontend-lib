@@ -149,9 +149,184 @@ const CHART_DIRS = ['09-assets/sparkline', '09-assets/bar', '09-assets/model-vie
 /* ================================================================== *
  * 报告
  * ================================================================== */
-console.log('');
-console.log('  === 图表契约（charter 13）===');
-out.forEach((x) => console.log('    ' + (x.ok ? 'OK  ' : 'FAIL') + '  ' + x.what));
-console.log('');
-if (bad) { console.log('  ❌ 图表契约：' + bad + ' 项不满足'); process.exit(1); }
-console.log('  ✅ 图表契约全部满足');
+function report() {
+  console.log('');
+  console.log('  === 图表契约（charter 13）===');
+  out.forEach((x) => console.log('    ' + (x.ok ? 'OK  ' : 'FAIL') + '  ' + x.what));
+  console.log('');
+  if (bad) {
+    console.log('  ❌ 图表契约：' + bad + ' 项不满足');
+    process.exit(1);
+  }
+  console.log('  ✅ 图表契约全部满足');
+  process.exit(0);
+}
+
+/* ================================================================== *
+ * 🔴🔴 结果级判据：堆叠必须**量**出来（外部评审 VIZ-REPORT-01 · P0-1）
+ * ------------------------------------------------------------------ *
+ *   上面四条查的都是"CSS / 源码里有没有某个写法" —— 那是**结构**。
+ *   而"两个系列到底有没有叠起来"是**渲染结果**，结构对了结果照样能错：
+ *
+ *     实测事故：`Bar.draw()` 把累计数组成了每个系列的**局部变量**，
+ *     ⇒ 系列二也从基线起算、还同宽同位 ⇒ 把系列一的底部整块盖住，
+ *     ⇒ 图上看着像一根双色柱，读者读到的"总高"其实是**最后一个系列**。
+ *     而这个版本的全部静态判据（含本文件）都是绿的。
+ *
+ *   ⇒ 判据必须从 SVG 里读真实坐标：
+ *       · 堆叠：同一 x 上，上一段的**底边** == 下一段的**顶边**
+ *       · 重叠（缺陷形态）：两段**底边**都落在基线上
+ * ================================================================== */
+const BAR_URL = 'http://127.0.0.1:8000/09-assets/bar/demo.html';
+
+(async () => {
+  let browser = null;
+  try {
+    const { launch } = require('./browser.js');
+    browser = await launch();
+    const page = await browser.newPage();
+    await page.goto(BAR_URL, { waitUntil: 'networkidle0' });
+
+    /* ⑤ 堆叠几何：同一类目上，各段首尾相接 */
+    const geo = await page.evaluate(() => {
+      const host = document.getElementById('b1');
+      const rects = [...host.querySelectorAll('rect.bar__bar')].map((r) => ({
+        x: +r.getAttribute('x'), y: +r.getAttribute('y'),
+        h: +r.getAttribute('height'), w: +r.getAttribute('width'),
+        clipped: r.getAttribute('data-clipped'),
+      }));
+      return { rects: rects, tops: window.__b1tops || null };
+    });
+
+    if (!geo.rects.length) {
+      pass(false, '⑤ 堆叠几何：demo 里一根柱子都没有 ⇒ 判据无从生效（疑 JS 报错）');
+    } else {
+      const byX = {};
+      geo.rects.forEach((r) => { (byX[r.x] = byX[r.x] || []).push(r); });
+      const groups = Object.keys(byX);
+      const baseline = Math.max(...geo.rects.map((r) => r.y + r.h));
+      let joined = 0, overlapped = 0, groupsWith2 = 0;
+      let worst = '';
+      groups.forEach((x) => {
+        const seg = byX[x].slice().sort((a, b) => a.y - b.y);   // y 小者在上
+        if (seg.length < 2) return;
+        groupsWith2++;
+        /* 堆叠：每相邻两段，上段的底边 == 下段的顶边 */
+        let ok = true;
+        for (let i = 0; i < seg.length - 1; i++) {
+          const gap = (seg[i].y + seg[i].h) - seg[i + 1].y;
+          if (Math.abs(gap) > 0.02) ok = false;
+          if (!worst) worst = 'gap=' + gap.toFixed(2);
+        }
+        if (ok) joined++;
+        /* 重叠（修复前的形态）：两段的**底边**都落在基线上 */
+        if (seg.every((s) => Math.abs((s.y + s.h) - baseline) < 0.02)) overlapped++;
+      });
+      pass(groupsWith2 > 0 && joined === groupsWith2 && overlapped === 0,
+           '⑤ 堆叠几何：多系列首尾相接（不是同起点重叠）· ' +
+           groupsWith2 + ' 组多段 · 相接 ' + joined + ' · 重叠 ' + overlapped +
+           ' · 基线 y=' + baseline.toFixed(1) + ' ' + worst);
+    }
+
+    /* ⑥ 累计高度必须与数据相符 —— 不该只是"看起来叠起来了" */
+    const cum = await page.evaluate(() => {
+      const box = document.createElement('div');
+      box.style.cssText = 'position:absolute;left:-9999px;top:0';
+      document.body.appendChild(box);
+      const r = window.Bar.draw({
+        host: box,
+        max: 100, height: 200,            /* ⇒ plotH = 200 - 14 - 22 = 164 */
+        series: [
+          { name: 'A', values: [10, 20] },
+          { name: 'B', values: [30, 40] },
+          { name: 'C', values: [60, 15] },
+        ],
+      });
+      const rects = [...box.querySelectorAll('rect.bar__bar')].map((x) => ({
+        x: +x.getAttribute('x'), y: +x.getAttribute('y'), h: +x.getAttribute('height'),
+      }));
+      const out = { tops: r.tops, mode: r.mode, rects: rects };
+      box.remove();
+      return out;
+    });
+    /* 两列的合计分别应为 100（10+30+60，顶到量程）与 75（20+40+15） */
+    const tops = cum.tops || [];
+    pass(tops.length === 2 && Math.abs(tops[0] - 100) < 1e-6 && Math.abs(tops[1] - 75) < 1e-6,
+         '⑥ 累计高度 = 各系列之和【tops=' + JSON.stringify(tops) + '，应 [100, 75]】');
+
+    /* 且必须真的画到那么高：整列的总像素高度 == 合计/量程 × plotH
+       plotH = height(200) − padT(14) − padB(22) = 164 */
+    const byCol = {};
+    cum.rects.forEach((r) => { (byCol[r.x] = byCol[r.x] || []).push(r); });
+    const cols = Object.keys(byCol).sort((a, b) => a - b);
+    const heights = cols.map((x) => {
+      const seg = byCol[x];
+      const top = Math.min(...seg.map((s) => s.y));
+      const bottom = Math.max(...seg.map((s) => s.y + s.h));
+      return +(bottom - top).toFixed(2);
+    });
+    const expH = [164, (75 / 100) * 164];
+    pass(heights.length === 2 &&
+         Math.abs(heights[0] - expH[0]) < 0.5 &&
+         Math.abs(heights[1] - expH[1]) < 0.5,
+         '⑥ 画出来的柱高与合计相符【实测 ' + JSON.stringify(heights) +
+         '，应 ' + JSON.stringify(expH.map((h) => +h.toFixed(2))) + '】');
+
+    /* ⑦ 堆叠**合计**超出量程：单段都没超、加起来超了，也必须被裁掉并说明
+       （这是堆叠独有的失败形态 —— 只查单段超没超抓不到） */
+    const clip = await page.evaluate(() => {
+      const host = document.getElementById('b1c');
+      if (!host) return null;
+      const rects = [...host.querySelectorAll('rect.bar__bar')].map((r) => ({
+        y: +r.getAttribute('y'), h: +r.getAttribute('height'),
+        c: r.getAttribute('data-clipped'),
+      }));
+      const noteEl = host.querySelector('.bar__note');
+      return {
+        n: rects.length,
+        clipped: rects.filter((r) => r.c === '1').length,
+        minTop: rects.length ? Math.min(...rects.map((r) => r.y)) : null,
+        note: noteEl ? noteEl.textContent : '',
+      };
+    });
+    if (!clip || !clip.n) {
+      pass(false, '⑦ 合计超量程：找不到 #b1c 的柱子 ⇒ 判据无从生效');
+    } else {
+      /* demo 里 max=12，有 3 个类目合计 13 > 12 ⇒ 顶端应被压到绘图区顶(padT=14) */
+      pass(clip.clipped > 0 && Math.abs(clip.minTop - 14) < 0.5 && /合计/.test(clip.note),
+           '⑦ 合计超出量程会被裁且写明【被标记 ' + clip.clipped + ' 段 · 顶端 y=' +
+           clip.minTop.toFixed(1) + '（应 14）· 脚注「' +
+           clip.note.slice(0, 24) + '」】');
+    }
+
+    /* ⑧ 图例的色必须就是柱子的色 —— 否则图例在骗人 */
+    const leg = await page.evaluate(() => {
+      const host = document.getElementById('b1');
+      const byClass = {};
+      host.querySelectorAll('rect.bar__bar').forEach((r) => {
+        const m = (r.getAttribute('class') || '').match(/bar__s(\d)/);
+        if (m) byClass[m[1]] = getComputedStyle(r).fill;
+      });
+      return [...host.querySelectorAll('.bar__legend-swatch')].map((s) => {
+        const m = (s.getAttribute('class') || '').match(/bar__s(\d)/);
+        return { swatch: getComputedStyle(s).backgroundColor,
+                 bar: m ? byClass[m[1]] : null,
+                 name: (s.parentElement.textContent || '').trim() };
+      });
+    });
+    const legendOk = leg.length >= 2 &&
+      leg.every((x) => x.bar && x.swatch === x.bar) &&
+      leg.every((x) => x.name && x.name.length > 0);
+    pass(legendOk, '⑧ 图例色块与柱填充同色且有名字【' +
+      leg.map((x) => x.name + ':' + x.swatch + ' vs ' + x.bar).join(' · ') + '】');
+  } catch (e) {
+    /* 🔴 浏览器起不来就**判失败**，不写"跳过"：
+       P0-1 事故里上面四条静态判据全是绿的，正因为它们压根没看渲染结果。 */
+    pass(false, '⑤⑥⑦⑧ 结果级判据：浏览器不可用 ⇒ ' +
+                String((e && e.message) || e).slice(0, 80));
+  } finally {
+    if (browser) { try { await browser.close(); } catch (e2) { /* 收尾异常不影响判据 */ } }
+    report();
+  }
+})();
+

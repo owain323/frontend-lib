@@ -30,8 +30,8 @@
 > 它的值直接从 `ai/components.json` 与目录实际内容读出来 —— **不信上面的说法，信这个**。
 
 <!-- ==== AI-INVENTORY-BEGIN ==== -->
-- 组件 **28** 个（`beta` 7 · `stable` 21）
-- `04-recipes/`（页面级示例）：`analysis-report`（组合型研究报告：正文 + 辅助栏并排，窄屏退回单栏） · `data-showcase`（四种数据表达方式对照：我到底该用哪个） · `longform`（单栏长文排版与阅读节奏） · `table`（专业数据表格：列级格式与单位，三种用途预设）
+- 组件 **29** 个（`beta` 7 · `stable` 22）
+- `04-recipes/`（页面级示例）：`analysis-report`（组合型研究报告：正文 + 辅助栏并排，窄屏退回单栏） · `data-showcase`（四种数据表达方式对照：我到底该用哪个） · `longform`（单栏长文排版与阅读节奏） · `report`（报告版式系统 v1：共享基础 + 三种版式取舍（杂志 / 科研技术 / 金融研究）） · `table`（专业数据表格：列级格式与单位，三种用途预设）
 - `09-assets/`（图表与可视化）：`bar`（柱状图，含 charter 13 图表规范的裁剪铁律） · `echarts-adapter`（把令牌喂给 ECharts，按需引入；本库不含 ECharts） · `model-viewer`（惰性加载的 3D 模型查看器） · `scientific-plot`（二维科学绘图：坐标轴 / 误差棒 / 置信区间带 / 对数轴） · `sparkline`（迷你趋势线，没有坐标轴的走势提示）
 <!-- ==== AI-INVENTORY-END ==== -->
 

@@ -129,6 +129,11 @@
       "rootClass": "report",
       "tier": "recipe",
       "purpose": "组合型研究报告页面：正文与辅助栏并排，窄屏自然退回单栏"
+    },
+    "report": {
+      "rootClass": "rep",
+      "tier": "recipe",
+      "purpose": "报告版式系统 v1：共享基础 + 三套版式（杂志/科研技术/金融研究），只换一个 rep--* 类即可切换取舍"
     }
   }
 }

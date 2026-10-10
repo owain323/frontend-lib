@@ -74,6 +74,18 @@
 </p>
 <div id="proof"></div>
 
+<!-- ========================================================================
+     自证：动态文本进表格前必须转义
+     ===================================================================== -->
+<h2 class="rule-top">5 · 转义自证（这一列故意含有 HTML）</h2>
+<p class="note">
+  表格 Cells 经常来自外部系统：<code>&lt;b&gt;</code>、<code>&amp;</code>、
+  带着引号的属性串都会出现在真实数据里。
+  它们必须<strong>原样显示</strong>，而不是被当成标签执行。
+  <br>⇒ 示例里的每一处动态文本都先过 <code>esc()</code>，UI 结构才是写死的 HTML。
+</p>
+<div id="escproof"></div>
+
 </main>
 
 <script>
@@ -91,6 +103,20 @@
        percent         输入是**比例** ⇒ 乘 100 加 %（正数不加 +）
        signed-percent  同上，但正数加 + 、负数加 −（用于"同比/变化"）
      ====================================================================== */
+
+  /* 🔴🔴 动态文本一律**先转义**再拼进 HTML（外部评审 VIZ-REPORT-01 · P1-1）
+     ----------------------------------------------------------------------
+     这个页面是给人**照抄**的示例。用字符串拼表格本身没问题，
+     问题在于把**数据里的文本**（公司名、列标签、单位）直接塞进 innerHTML：
+     数据一旦来自外部，`<b>x</b>` 会被当成标签、`<img onerror=…>` 会被执行。
+     ⇒ 规则只有一条：**凡是数据来的，出门前先 esc()**。
+        schema 写死的 HTML（表头结构、样式类）才可以直接拼。 */
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
 
   function fixed(v, p) {
     var n = Number(v);
@@ -138,8 +164,9 @@
   }
 
   function headLabel(c) {
-    var u = c.unit ? ' <span class="table__unit">' + c.unit + '</span>' : '';
-    return c.label + u;
+    /* 标签与单位都来自列定义（外部数据）⇒ 都要 esc */
+    var u = c.unit ? ' <span class="table__unit">' + esc(c.unit) + '</span>' : '';
+    return esc(c.label) + u;
   }
 
   /* ---------------------------------------------------------------- 数据 */
@@ -224,11 +251,11 @@
       FIN_COLS.forEach(function (c) {
         var v = cell(r[c.key], c);
         if (c.format === 'text' && c.key === 'name') {
-          h += '<th scope="row">' + v.text + '</th>';   /* 行表头：读屏知道是谁的行 */
+          h += '<th scope="row">' + esc(v.text) + '</th>';  /* 行表头：读屏知道是谁的行 */
         } else if (v.cls) {
-          h += '<td class="' + v.cls + '">' + v.text + '</td>';
+          h += '<td class="' + v.cls + '">' + esc(v.text) + '</td>';
         } else {
-          h += '<td>' + v.text + '</td>';
+          h += '<td>' + esc(v.text) + '</td>';
         }
       });
       h += '</tr>';
@@ -278,7 +305,7 @@
     '<thead><tr><th scope="col" rowspan="2">合金牌号</th>';
   GROUPS.forEach(function (g) {
     /* colspan=2：每个温度组下有"抗拉强度"和"断后伸长率"两列 */
-    a += '<th scope="colgroup" colspan="2">' + g.label + '</th>';
+    a += '<th scope="colgroup" colspan="2">' + esc(g.label) + '</th>';
   });
   a += '</tr><tr>';
   GROUPS.forEach(function () {
@@ -288,7 +315,7 @@
   a += '</tr></thead><tbody>';
 
   ACAD.forEach(function (r) {
-    a += '<tr><th scope="row">' + r.alloy + '</th>';
+    a += '<tr><th scope="row">' + esc(r.alloy) + '</th>';
     GROUPS.forEach(function (g) {
       var pair = r[g.key];
       a += '<td class="num">' + grouped(pair[0], 0) + '</td>' +
@@ -313,8 +340,10 @@
   ];
 
   function pText(p) {
-    /* p 值有自己的书写惯例：< .001 不写成 0.000 */
-    if (p < 0.001) return '&lt; .001';
+    /* p 值有自己的书写惯例：< .001 不写成 0.000
+       ⚠️ 这里返回的是**纯文本**（尖括号留给插入点的 esc 处理），
+          以前直接返回 '&lt;' 这种转义后的串 ⇒ 再逃一次会露出 &amp;lt; */
+    if (p < 0.001) return '< .001';
     return fixed(p, 3).replace(/^0\./, '.');
   }
 
@@ -334,8 +363,8 @@
     var ciCell = '<td class="num stat__ci">[' + fixed(r.ci[0], 3) + ', ' +
       fixed(r.ci[1], 3) + ']</td>';
     var sig = r.p < 0.05 ? ' stat__p--sig' : '';
-    var pCell = '<td class="num stat__p' + sig + '">' + pText(r.p) + '</td>';
-    s += '<tr><th scope="row">' + r.term + '</th>' + estCell + ciCell + pCell + '</tr>';
+    var pCell = '<td class="num stat__p' + sig + '">' + esc(pText(r.p)) + '</td>';
+    s += '<tr><th scope="row">' + esc(r.term) + '</th>' + estCell + ciCell + pCell + '</tr>';
   });
   s += '</tbody></table></div>' +
     '<p class="table__foot">注：括号内为标准误；置信区间与 p 值由调用方计算并提供，' +
@@ -365,13 +394,49 @@
   PROOF.forEach(function (r) {
     var v = cell(r.value, { format: r.format, precision: r.precision });
     var rawIn = r.value === null ? 'null' : String(r.value);
-    p += '<tr><th scope="row">' + r.label + '</th>' +
-         '<td class="num">' + rawIn + '</td>' +
-         '<td class="' + (v.cls || '') + '">' + v.text + '</td>' +
-         '<td>' + r.why + '</td></tr>';
+    p += '<tr><th scope="row">' + esc(r.label) + '</th>' +
+         '<td class="num">' + esc(rawIn) + '</td>' +
+         '<td class="' + (v.cls || '') + '">' + esc(v.text) + '</td>' +
+         '<td>' + esc(r.why) + '</td></tr>';
   });
   p += '</tbody></table></div>';
   document.getElementById('proof').innerHTML = p;
+
+  /* --------------------------------- 自证区：动态文本不会被当成 HTML ------ *
+     数据里出现尖括号在现实中很常见：
+       部门名写成「研发 & 设计」、SKU 里带 `<规划>N/A`、第三方系统吐出 HTML。
+     它们必须**原样显示**，而不是变成标签。
+
+     ⚠️ 为什么这里不放真正可执行的攻击串
+       —— 一是没必要（能证明"没被当成标签"的判据不需要真的去执行它），
+          二是不想在一份会被到处复制的示例里留下一份开箱即用的载荷。
+       ⇒ 这里用"标签 + 引号闭合的属性串"两种形态，足以覆盖失败模式。 */
+  var ESC_DATA = [
+    { label: '含标签的组名 <b>加粗</b>', raw: '<b>加粗</b>',
+      expect: '尖括号原样显示，不产生 <b> 元素' },
+    { label: '含链接 Github 风格的 <a href="#">链接</a>', raw: '<a href="#">链接</a>',
+      expect: '不产生 <a> 元素' },
+    { label: '引号 + 事件属性', raw: '" onmouseover="window.__escaped = 0" x="',
+      expect: '不产生任何事件处理属性' },
+    { label: '和号 & 大于小于', raw: 'A & B < C > D',
+      expect: '显示为字面字符' }
+  ];
+
+  var e2 = '<div class="table"><table>' +
+    '<caption class="table__cap">动态文本按**文本**渲染，不当 HTML 解释</caption>' +
+    '<thead><tr><th scope="col">列定义</th><th scope="col">原始数据</th>' +
+    '<th scope="col">渲染结果</th><th scope="col">验收点</th></tr></thead><tbody>';
+  ESC_DATA.forEach(function (r) {
+    /* ⭐ 每一处插值都过 esc —— 这就是这一节要示范的做法 */
+    e2 += '<tr><th scope="row">' + esc(r.label) + '</th>' +
+          '<td class="num"><code>' + esc(r.raw) + '</code></td>' +
+          '<td><code>' + esc(r.raw) + '</code></td>' +
+          '<td>' + esc(r.expect) + '</td></tr>';
+  });
+  e2 += '</tbody></table></div>' +
+    '<p class="table__foot">复查方式：用浏览器看这一节的单元格 —— ' +
+    '第二、三列应当<b>原样显示</b>尖括号文本，而不是把它们变成样式。</p>';
+  document.getElementById('escproof').innerHTML = e2;
 })();
 </script>
 </body>

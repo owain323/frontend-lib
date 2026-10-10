@@ -212,9 +212,13 @@
       "gzip": 2101,
       "raw": 5789
     },
+    "04-recipes/report/report.css": {
+      "gzip": 5210,
+      "raw": 13635
+    },
     "04-recipes/table/table.css": {
-      "gzip": 4352,
-      "raw": 12133
+      "gzip": 4932,
+      "raw": 13330
     },
     "04-recipes/tierA-tokens.css": {
       "gzip": 2650,
@@ -222,6 +226,6 @@
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 211325,
-  "total_raw": 552612
+  "total_gzip": 217115,
+  "total_raw": 567444
 }
