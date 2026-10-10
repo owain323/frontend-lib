@@ -189,6 +189,8 @@ bash 05-audit/check-all.sh       # 全量门禁约 130 项，本机约 8 分钟
   `node 05-audit/scientific-plot-check.js`。
 - 想看每道门禁**自己有没有牙**：`bash 05-audit/behavior-reverse.sh`
   （对门禁做突变，验证它会红、且只红该红的那一条）。
+- 想知道**我们踩过哪些坑**：`ERRORS.md`。只记真的红过的门禁和真的做错过的事，
+  每条写清症状 → 根因 → 纠正规则，规则都能照着执行。
 
 ### 经过实际验证的
 
