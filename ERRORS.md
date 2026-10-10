@@ -45,12 +45,17 @@
   2. 开工前第一件事是看 C 盘剩余空间
   3. npm 一律带 `--cache <非系统盘路径>`，别让缓存撑爆系统盘
 
-## E2 · 改组件名/路径后没重新生成 `ai/` 契约
+## E2 · 改了源码（**含版本号**）没重新生成 `ai/` 契约
 
-- **症状**：`maturity-gate --selftest` → `FileNotFoundError: 04-recipes/analysis-report/report.css`
-- **根因**：把 `report.css` 改名成 `analysis-report.css`，但 `ai/components.json` 是**生成物**，
-  仍指向旧路径。生成物不能手改，也不能靠"跑一次门禁看看"
-- **纠正规则**：改名 / 增删组件后必须
+- **症状 1**：`maturity-gate --selftest` →
+  `FileNotFoundError: 04-recipes/analysis-report/report.css`
+- **症状 2**（0.8.1 发版时踩到）：`ai-contract` →
+  「`ai/components.json` 与源码不一致」—— 只改了 `VERSION` 与 `package.json` 的版本号，
+  没动任何组件，照样红
+- **根因**：`ai/components.json` 是**生成物**，里面带着 `libraryVersion`。
+  改组件名/路径会让它指向旧路径；改版本号会让它记录旧版本。
+  生成物不能手改，也不能靠"跑一次门禁看看"
+- **纠正规则**：改组件名 / 增删组件 / **发版改版本号** 之后，都要
   `python 05-audit/gen-ai-contract.py` → `python 05-audit/gen-ai-contract.py --check`
 
 ## E3 · 门禁正在跑的时候 `git add -A`

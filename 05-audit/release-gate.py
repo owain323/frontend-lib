@@ -206,6 +206,35 @@ def main():
         print('      ! 有 devDependencies 但**缺锁文件** ⇒ 版本会漂移')
     else:
         print('      OK devDependencies %d 项 + %s' % (len(dev), lock[0]))
+
+    # ---------- ⑨ 对外文档必须进包（0.8.1 收口时发现）----------
+    #  起因：README 里写着「START-HERE.md（根目录）是给人类复用者的三步清单」，
+    #  而 files 白名单里根本没有它 —— npm 用户照着 README 找不到那个文件。
+    #  同一批漏掉的还有 API.md / ERRORS.md / SUPPORT.md / CHANGELOG.md / docs/。
+    #  ⇒ 文档写了、包里没有，等于这份文档对 npm 用户不存在。
+    #  判据：仓库里的**对外文档**（根级 .md + docs/）必须在 files 白名单里。
+    print('  [9] 对外文档都进了包')
+
+    def in_files(rel):
+        for f in files:
+            f2 = f.rstrip('/')
+            if rel == f2 or rel.startswith(f2 + '/'):
+                return True
+        return False
+
+    miss = []
+    for name in sorted(os.listdir(ROOT)):
+        if name.endswith('.md') and os.path.isfile(
+                os.path.join(ROOT, name)) and not in_files(name):
+            miss.append(name)
+    if os.path.isdir(os.path.join(ROOT, 'docs')) and not in_files('docs'):
+        miss.append('docs/')
+    if miss:
+        print('      X 这些对外文档不在 files 白名单 ⇒ npm 包里读不到：%s'
+              % '、'.join(miss))
+        bad += 1
+    else:
+        print('      OK 根级 .md 与 docs/ 都在包里')
     print('')
     if bad:
         print('  => 有 %d 项发布契约未闭环' % bad)
