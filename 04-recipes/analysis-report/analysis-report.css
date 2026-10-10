@@ -134,6 +134,9 @@
   color: var(--text-tertiary);
 }
 .report__aside dd { margin: 0; color: var(--text-primary); }
+/* 🔴 不用 inline style 写字号颜色：inline 的优先级高于一切样式表（INVARIANT I-4），
+      使用者想覆盖它只能再加 !important —— 演示页不该教这个。 */
+.report__aside p { margin: 0; font-size: var(--fs-sm); color: var(--text-secondary); }
 
 /* ---------- 图表容器 ---------- */
 .report__fig {

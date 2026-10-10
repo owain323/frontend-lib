@@ -181,8 +181,8 @@
       "raw": 16522
     },
     "03-patterns/states/states.css": {
-      "gzip": 4289,
-      "raw": 10957
+      "gzip": 4141,
+      "raw": 10631
     },
     "03-patterns/tabs/tabs.css": {
       "gzip": 2419,
@@ -209,8 +209,8 @@
       "raw": 17277
     },
     "04-recipes/analysis-report/analysis-report.css": {
-      "gzip": 1953,
-      "raw": 5504
+      "gzip": 2101,
+      "raw": 5789
     },
     "04-recipes/table/table.css": {
       "gzip": 4352,
@@ -223,5 +223,5 @@
   },
   "tolerance_percent": 5.0,
   "total_gzip": 211325,
-  "total_raw": 552653
+  "total_raw": 552612
 }

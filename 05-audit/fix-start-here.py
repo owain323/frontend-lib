@@ -20,6 +20,7 @@ badge / separator / tabs / accordion。
       python 05-audit/fix-start-here.py            # 重建
 """
 import io
+import json
 import os
 import re
 import sys
@@ -143,6 +144,64 @@ def build_table(rows):
     return '\n'.join(out)
 
 
+AI_BEGIN = '<!-- ==== AI-INVENTORY-BEGIN ==== -->'
+AI_END = '<!-- ==== AI-INVENTORY-END ==== -->'
+
+# 每个目录一句「它回答什么问题」——写的是**用途**，不是文件清单。
+# 🔴 新增目录必须到这里登记：不登记 ⇒ 本脚本直接报错退出，
+#    而不是静默漏掉（链子里少一个环是最难被发现的一种错）。
+RECIPE_DESC = {
+    'analysis-report': '组合型研究报告：正文 + 辅助栏并排，窄屏退回单栏',
+    'data-showcase': '四种数据表达方式对照：我到底该用哪个',
+    'longform': '单栏长文排版与阅读节奏',
+    'table': '专业数据表格：列级格式与单位，三种用途预设',
+}
+ASSET_DESC = {
+    'bar': '柱状图，含 charter 13 图表规范的裁剪铁律',
+    'echarts-adapter': '把令牌喂给 ECharts，按需引入；本库不含 ECharts',
+    'model-viewer': '惰性加载的 3D 模型查看器',
+    'scientific-plot': '二维科学绘图：坐标轴 / 误差棒 / 置信区间带 / 对数轴',
+    'sparkline': '迷你趋势线，没有坐标轴的走势提示',
+}
+
+
+def inventory():
+    """给 ai/START-HERE.md 用的「实测清单」。
+
+    三条都是**数出来的**，不是手抄的：
+      · 组件数与成熟度分布 ← ai/components.json
+      · 04-recipes/ 与 09-assets/ 下的目录 ← 实际目录列表
+    """
+    p = os.path.join(ROOT, 'ai', 'components.json')
+    if not os.path.isfile(p):
+        raise SystemExit('ai/components.json 不存在 —— 先跑 '
+                         'python 05-audit/gen-ai-contract.py')
+    comps = json.loads(io.open(p, encoding='utf-8').read())['components']
+    ms = {}
+    for c in comps:
+        ms[c.get('maturity', '?')] = ms.get(c.get('maturity', '?'), 0) + 1
+
+    def listing(base, desc):
+        d = os.path.join(ROOT, base)
+        names = sorted(x for x in os.listdir(d)
+                       if os.path.isdir(os.path.join(d, x)))
+        miss = [x for x in names if x not in desc]
+        if miss:
+            raise SystemExit(
+                '%s/ 下这些目录在 fix-start-here.py 里没有说明：%s\n'
+                '⇒ 在 %s 里补一句它回答什么问题，再跑本脚本'
+                % (base, '、'.join(miss),
+                   'RECIPE_DESC' if base == '04-recipes' else 'ASSET_DESC'))
+        return ' · '.join('`%s`（%s）' % (x, desc[x]) for x in names)
+
+    return '\n'.join([
+        '- 组件 **%d** 个（%s）' % (len(comps), ' · '.join(
+            '`%s` %d' % (k, ms[k]) for k in sorted(ms))),
+        '- `04-recipes/`（页面级示例）：%s' % listing('04-recipes', RECIPE_DESC),
+        '- `09-assets/`（图表与可视化）：%s' % listing('09-assets', ASSET_DESC),
+    ])
+
+
 def main():
     rows = measure()
     table = build_table(rows)
@@ -151,18 +210,33 @@ def main():
     i = s.index(START)
     j = s.index(END)
     head, tail = s[:i], s[j:]
-    new = head + START + '\n' + table + '\n' + tail
+
+    inv = inventory()
+    ai_p = os.path.join(ROOT, 'ai', 'START-HERE.md')
+    s2 = io.open(ai_p, encoding='utf-8').read()
+    i2 = s2.index(AI_BEGIN)
+    j2 = s2.index(AI_END) + len(AI_END)
+    want2 = AI_BEGIN + '\n' + inv + '\n' + AI_END
 
     if '--check' in sys.argv:
+        bad = 0
         cur = s[i:j]
         if _norm(cur) == _norm(START + '\n' + table + '\n'):
             print('  [OK  ] START-HERE.md 的组件表与实际文件一致')
-            return 0
-        print('  [FAIL] START-HERE.md 的组件表已漂移 —— 跑 fix-start-here.py')
-        return 1
+        else:
+            print('  [FAIL] START-HERE.md 的组件表已漂移 —— 跑 fix-start-here.py')
+            bad = 1
+        if _norm(s2[i2:j2]) == _norm(want2):
+            print('  [OK  ] ai/START-HERE.md 的实测清单与实际一致')
+        else:
+            print('  [FAIL] ai/START-HERE.md 的实测清单已漂移 —— 跑 fix-start-here.py')
+            bad = 1
+        return bad
 
-    io.open(p, 'w', encoding='utf-8').write(new)
+    io.open(p, 'w', encoding='utf-8').write(head + START + '\n' + table + '\n' + tail)
     print('  ✓ 已重建 START-HERE.md 的组件表（%d 个组件）' % len(rows))
+    io.open(ai_p, 'w', encoding='utf-8').write(s2[:i2] + want2 + s2[j2:])
+    print('  ✓ 已重建 ai/START-HERE.md 的实测清单')
     return 0
 
 
