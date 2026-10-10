@@ -8,8 +8,8 @@
   ],
   "totals": {
     "sourceFiles": 55,
-    "sourceBytes": 539378,
-    "distGzip": 97107
+    "sourceBytes": 539663,
+    "distGzip": 97126
   },
   "files": [
     {
@@ -949,21 +949,21 @@
     },
     {
       "source": "04-recipes/analysis-report/analysis-report.css",
-      "sourceSha256": "d07ff589778f5c5c4c7f6a3b618b0996e32c7e2d1dc57a61c87d358462bb4d5b",
-      "sourceBytes": 5504,
-      "sourceGzip": 1953,
+      "sourceSha256": "21f9cda13f39f7fcf200476e2c2cd8f61cf17aad417311c8d947bb3a97ae6aee",
+      "sourceBytes": 5789,
+      "sourceGzip": 2101,
       "outputs": [
         {
           "path": "dist/04-recipes/analysis-report/analysis-report.css",
           "kind": "stripped",
-          "bytes": 3585,
-          "gzip": 900
+          "bytes": 3673,
+          "gzip": 908
         },
         {
           "path": "dist/04-recipes/analysis-report/analysis-report.min.css",
           "kind": "minified",
-          "bytes": 3095,
-          "gzip": 820
+          "bytes": 3174,
+          "gzip": 831
         }
       ]
     },

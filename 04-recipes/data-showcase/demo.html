@@ -30,6 +30,10 @@
 .figbox { border: 1px solid var(--border-decor); border-radius: var(--r-md);
           padding: var(--sp-3); background: var(--surface); margin: var(--sp-4) 0;
           overflow-x: auto; }
+/* 图注：写在图纸外面以免挡住数据；用 figcaption 而不是 <p> ——
+   屏幕阅读器会把它读成「图 1 的说明」，语义本身就是信息。 */
+.figbox figcaption { margin-top: var(--sp-2); font-size: var(--fs-xs);
+                     color: var(--text-tertiary); }
 </style>
 </head>
 <body class="page">
@@ -86,7 +90,7 @@
 
 <figure class="figbox">
   <div id="scatter"></div>
-  <figcaption style="font-size:var(--fs-xs);color:var(--text-tertiary);margin-top:var(--sp-2)">
+  <figcaption>
     图 1 · 反应温度与转化率的关系（散点为实测均值，误差棒为 ±1 标准差）。
     示例数据，非真实实验结果。
   </figcaption>

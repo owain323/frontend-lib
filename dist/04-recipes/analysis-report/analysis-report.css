@@ -120,6 +120,8 @@
 }
 .report__aside dd { margin: 0; color: var(--text-primary); }
 
+.report__aside p { margin: 0; font-size: var(--fs-sm); color: var(--text-secondary); }
+
 
 .report__fig {
   margin: var(--sp-5) 0;

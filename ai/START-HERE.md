@@ -17,13 +17,23 @@
 |---|---|
 | 设计令牌（色/间距/字号/圆角，明暗双主题，纯 CSS 无需 JS） | `01-tokens/tokens.css` |
 | 排版与页面骨架（**选配**，写在 `class="page"` 上才生效） | `01-tokens/typography.css`、`page.css` |
-| 27 个组件（CSS 为主 + 可选 JS），当前 20 `stable` / 7 `beta` | `02-primitives/`、`03-patterns/` |
+| 组件（CSS 为主 + 可选 JS） | `02-primitives/`、`03-patterns/` |
 | 微行为核（Esc 关闭 / 焦点归还 / 方向键游走） | `01-tokens/behavior/` |
-| 页面级示例 | `04-recipes/`（`longform` 长文、`table` 数据表格等） |
-| 图表资产 | `09-assets/`（`sparkline`、`echarts-adapter`） |
+| 页面级示例 | `04-recipes/`（清单见下节） |
+| 图表与可视化资产 | `09-assets/`（清单见下节） |
 | 机器可读契约 + 命令行 | `ai/*.json`、`ai/cli.js` |
 
 **没有的**（别找）：图标、React/Vue 组件（只有 CSS 类）、构建配置。
+
+> 🔴 下面这一段里的**数字与目录清单会漂移**（加一个组件就错一处），
+> 所以它由 `05-audit/fix-start-here.py` 生成；手改会被 `npm run gate` 判为漂移。
+> 它的值直接从 `ai/components.json` 与目录实际内容读出来 —— **不信上面的说法，信这个**。
+
+<!-- ==== AI-INVENTORY-BEGIN ==== -->
+- 组件 **28** 个（`beta` 7 · `stable` 21）
+- `04-recipes/`（页面级示例）：`analysis-report`（组合型研究报告：正文 + 辅助栏并排，窄屏退回单栏） · `data-showcase`（四种数据表达方式对照：我到底该用哪个） · `longform`（单栏长文排版与阅读节奏） · `table`（专业数据表格：列级格式与单位，三种用途预设）
+- `09-assets/`（图表与可视化）：`bar`（柱状图，含 charter 13 图表规范的裁剪铁律） · `echarts-adapter`（把令牌喂给 ECharts，按需引入；本库不含 ECharts） · `model-viewer`（惰性加载的 3D 模型查看器） · `scientific-plot`（二维科学绘图：坐标轴 / 误差棒 / 置信区间带 / 对数轴） · `sparkline`（迷你趋势线，没有坐标轴的走势提示）
+<!-- ==== AI-INVENTORY-END ==== -->
 
 ## 2 · 什么时候值得用 / 什么时候别用
 
@@ -39,7 +49,7 @@
 |---|---|
 | 有哪些组件、多大、JS 是否必需 | 根目录 `START-HERE.md`（组件表由 `05-audit/fix-start-here.py` 生成，不会漂移） |
 | 组件清单与成熟度 | `node ai/cli.js components --maturity=stable` |
-| 令牌名与取值 | `node ai/cli.js tokens --mode=dark`、`ai/tree` |
+| 令牌名与取值 | `node ai/cli.js tokens --mode=dark`、`node ai/cli.js tree`（分层视图） |
 | 组件真实长什么样 | 该组件目录下的 `demo.html` |
 | 页面怎么搭 | `04-recipes/` 下的示例 |
 | 令牌怎么改 | README「主题定制」（覆盖 CSS 变量，不需重新编译） |
@@ -51,9 +61,9 @@
 
 | 信号 | 怎么看 |
 |---|---|
-| 成熟度 | `ai/components.json` 的 `maturity` 是**算出来的**（判据在 `components.meta.json`），不是人写的 |
+| 成熟度 | `ai/components.json` 的 `maturity` 是**算出来的**（判据在 `ai/components.meta.json`），不是人写的 |
 | 有没有 demo | 组件目录下有 `demo.html` 就能直接跑起来对照 |
-| 有没有门禁守 | `05-audit/` 下 112 道检查，`npm run gate` 全跑 |
+| 有没有门禁守 | `05-audit/check-all.sh`（`npm run gate`）一次跑全，逐项打印 `PASS`/`FAIL`/`SKIP` |
 | 浏览器支持 | README「浏览器支持」表：桌面 Chrome/Edge/Firefox 已验证；**iOS/Android WebView 未在真机验证** |
 
 ⚠️ **未在真机验证的项就是没验证**，不要替它打包票。
