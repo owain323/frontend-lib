@@ -64,10 +64,14 @@ PATTERNS = [
     #    正解：要求盘符**前面不是点**（相对路径必有 ../ 或 ./）。
     ('posix 盘符', re.compile(
         r'(?<![\w:/.])/[a-z]/[A-Za-z0-9_.-]+')),
-    ('仓库绝对路径', re.compile(r'E:[/' + re.escape(chr(92)) + r']frontend-lib|'
-                                 r'(?<![\w:/])/e/frontend', re.I)),
+    # 🔴 判据只保留"这是别人机器上的绝对目录"这个**形状**，
+    #   不再把本仓库自己的开发路径硬编码进来 ——
+    #   那等于门禁自身携带一处路径痕迹（见 ERRORS E26）。
+    ('仓库绝对路径', re.compile(
+        r'(?<![A-Za-z0-9_])[A-Z]:[/' + re.escape(chr(92)) + r'][A-Za-z0-9_.-]+[/'
+        + re.escape(chr(92)) + r']')),
     ('内部代号', re.compile('|'.join(re.escape(w) for w in terms.HARD_BAN), re.I)),
-    ('自有域名', terms.domain_pat()),
+    ('自有域名', terms.self_identity_pat()),
     ('内部流程', terms.process_pat()),
     # 回环与通配地址不是泄漏（本地测试的正常写法）
     ('私网 IP', re.compile(
@@ -107,8 +111,13 @@ CHECKS_EXTRA = [
 #      同时排除标识符形态（前面紧跟字母/下划线）。
 # ⇒ 顺带的好处：`owner` 作为 CSS 属性名、GitHub 术语等常见词不再误报。
 # ============================================================================
+# 🔴 「内部协作痕迹」= 内部称谓 + **本仓库账号名**。
+#   账号名从 package.json 读（terms.self_identity_pat），不在词表里写字面量 ——
+#   否则这份公开词表本身就携带一处身份泄漏（见 ERRORS E26）。
 COLLAB_RE_STRICT = re.compile(
-    r'(?<![A-Za-z0-9_])' + '|'.join(re.escape(w) for w in terms.COLLAB_TRACE))
+    r'(?<![A-Za-z0-9_])(?:' +
+    '|'.join(re.escape(w) for w in terms.COLLAB_TRACE) +
+    '|' + terms.self_identity_pat().pattern + r')')
 
 # 工作日期戳单独判：只在注释/文档里查，且必须命中 2026-09 / 2026-10
 CHECK_STAMP = ('工作日期戳', re.compile(terms.WORK_STAMP_RE))

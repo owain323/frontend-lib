@@ -28,8 +28,31 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import terms  # noqa: E402
 
-OWNER = 'owain323'
-REPO = 'frontend-lib'
+# 🔴 账号名与仓库名**从 package.json 读**，不写死。
+#   为什么：门禁脚本是要公开的，把内部账号名硬编码进去，
+#   等于为了"检测泄漏"而**自己制造了一处泄漏**（见 ERRORS E26）。
+#   读的是同一份身份来源（repository/homepage/bugs 里的自指地址），
+#   所以门禁自身不再携带任何真实身份字面量。
+def _identity():
+    import json as _json
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    with open(os.path.join(root, 'package.json'), encoding='utf-8') as f:
+        data = _json.load(f)
+    urls = []
+    for k in ('repository', 'homepage', 'bugs'):
+        v = data.get(k)
+        if isinstance(v, str):
+            urls.append(v)
+        elif isinstance(v, dict):
+            urls += [x for x in v.values() if isinstance(x, str)]
+    for u in urls:
+        m = re.search(r'github\.com[/:]([^/]+)/([^/#?]+?)(?:\.git)?(?:$|[/#?])', u)
+        if m:
+            return m.group(1), m.group(2)
+    raise SystemExit('⛔ 从 package.json 读不出仓库身份，无法继续')
+
+
+OWNER, REPO = _identity()
 
 # 🔴 仓库是**私有**的 ⇒ 匿名请求会 404。
 #    ⇒ 必须带 token（跟外人看到的差别在于：外人根本看不到私有库，
@@ -64,7 +87,11 @@ PATTERNS = [
     ('用户目录', re.compile(r'[A-Za-z]:/Users/(?!someone|probe-user|<)' +
                             r'|[A-Za-z]:' + re.escape(chr(92) * 2) +
                             r'Users' + re.escape(chr(92) * 2) + r'(?!someone)')),
-    ('仓库绝对路径', re.compile(r'E:[/\\]frontend-lib|(?<![\w/])/e/frontend', re.I)),
+    # 🔴 判据：**其他盘符**下的具体目录（D:/xxx/ 之类）。
+    #   原来写的是 `E:[/\\]frontend-lib|/e/frontend` —— 把本仓库自己的
+    #   开发路径硬编码进判据里，等于门禁自身携带一处路径痕迹
+    #   （见 ERRORS E26）。现在只保留"这是别人的机器上的目录"这个**形状**。
+    ('仓库绝对路径', re.compile(r'(?<![A-Za-z0-9_])[A-Z]:[/\\][A-Za-z0-9_.-]+[/\\]', re.I)),
     ('内部代号', re.compile(r'ESP32|SpendLatch|CostPilot|CHRONOS', re.I)),
     ('内部场景', re.compile(r'录视频|做网站|做小程序')),
     # ⚠️ 自带域名判据收窄（2026-10-10）：
@@ -73,11 +100,10 @@ PATTERNS = [
     #    npm 页面靠它定位源码，删了 npm 就点不开。
     #    同一处判定 leak-scan.py 里早就写明了（"域名本身就是仓库身份的一部分"），
     #    两道门禁在此**口径不一致** —— 本轮统一。
-    #  ⇒ 判据与 leak-scan 共用同一份（terms.domain_pat），
-    #    「仓库身份字段」的判定也共用 terms.outside_repo_field：
-    #    按**取值**放过 repository / homepage / bugs，不是按文件整份豁免
-    #    （整份豁免会让同一文件里别的字段也漏过去，见 ERRORS E8 / E14）。
-    ('自有域名', terms.domain_pat()),
+    #  ⇒ 判据与 leak-scan 共用同一份（terms.self_identity_pat()），
+    #    身份片段也从 package.json 读，脚本里**不留真实账号名字面量**
+    #    （见 ERRORS E26）。
+    ('自有域名', terms.self_identity_pat()),
     # ⚠️ 判据收窄：「我们」在技术说明里是**正常表述**
     #    （例："让我们有几个断点有唯一答案"）⇒ 整词匹配会全库假红。
     #    ⇒ 只查**对话口吻**（对读者说话）与**自夸式团队叙述**。

@@ -60,7 +60,10 @@ SOFT_WARN = [
 # ============================================================================
 COLLAB_TRACE = [
     _T('Owner'),                # 内部称谓
-    _T('owain'),                # 内部账号名片段
+    # ⚠️ 账号名**不写在这里**（原来写的是字面量）——
+    #    那会让这份公开的词表自己携带一处身份泄漏（见 ERRORS E26）。
+    #    账号名由 self_identity_pat() 从 package.json 读，
+    #    并在 leak-scan 的「内部协作痕迹」一栏合并进来。
 ]
 
 # ⭐ 这些是**代码变量名**，不是内部称谓 —— 必须排除，否则永久假红。
@@ -132,15 +135,6 @@ def process_pat():
     parts.append(r'(?:本轮|本次|这个|该|按|见|据)\s*' + _T('工', '单'))
     return re.compile('|'.join(parts), re.I)
 
-# 域名片段
-DOMAIN = _T('owain')
-
-
-def domain_pat():
-    """自有域名判据（两道门禁共用，别再各写一份 —— 见 ERRORS E19）。"""
-    return re.compile(DOMAIN + r'\d*', re.I)
-
-
 # ⭐ 仓库身份字段：repository / homepage / bugs 里出现的账号名是**仓库身份**，
 #    不是泄漏 —— npm 页面与依赖扫描器靠它定位源码，删了就点不开。
 REPO_FIELDS = ('repository', 'homepage', 'bugs')
@@ -148,6 +142,57 @@ REPO_FIELDS = ('repository', 'homepage', 'bugs')
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _SELF_URLS = None
+
+
+# 🔴 自指身份**从 package.json 读**，不在脚本里写真实账号名。
+#   为什么：把内部账号名硬编码进门禁脚本，等于为了"检测泄漏"
+#   而自己制造一处泄漏 —— 外人 clone 下来第一眼就看见（见 ERRORS E26）。
+#   判据要的是"这段文字是不是**本仓库自己**的身份"，
+#   身份来源就是 repository/homepage/bugs，读一次即可。
+def _identity_tokens():
+    """本仓库的身份片段 —— **只取账号名（handle）**，不取仓库名。
+
+    ⚠️ 为什么不把仓库名也当判据：仓库名在全库到处都是
+    （每个 CSS 文件头都写着 `仓库名 / 目录 / 文件名`，`.github/workflows` 里也有），
+    算进来会一次报 100 处假红。真正需要保护的是**账号名**。
+    """
+    global _IDENT
+    if _IDENT is not None:
+        return _IDENT
+    toks = set()
+    try:
+        with io.open(os.path.join(_ROOT, 'package.json'), encoding='utf-8') as f:
+            data = json.load(f)
+    except Exception:
+        data = {}
+    for key in REPO_FIELDS:
+        v = data.get(key)
+        vals = [v] if isinstance(v, str) else (
+            [x for x in v.values() if isinstance(x, str)] if isinstance(v, dict) else [])
+        for u in vals:
+            m = re.search(r'github\.com[/:]([^/]+)/', u)
+            if m:
+                owner = m.group(1)
+                toks.add(owner)
+                toks.add(owner.rstrip('0123456789'))   # 账号带数字后缀 → 也认字母前缀
+    _IDENT = sorted(t for t in toks if len(t) >= 4)
+    return _IDENT
+
+
+_IDENT = None
+
+
+def self_identity_pat():
+    """本仓库自指身份的判据（两道门禁共用，见 ERRORS E19）。
+
+    命中"本仓库自己的账号名/仓库名（含数字后缀）"⇒ 那是仓库身份，不算泄漏；
+    命中形态之外的账号名 ⇒ 才是真痕迹（由 hits_outside_repo_field 裁决位置）。
+    """
+    toks = _identity_tokens()
+    if not toks:
+        # 读不出身份时**不猜**：退化为永不命中的判据，宁可漏报也不制造假身份
+        return re.compile(r'(?!x)x')
+    return re.compile('|'.join(re.escape(t) for t in toks) + r'\d*', re.I)
 
 
 def _field_values(text):
