@@ -95,6 +95,44 @@ def contract():
     return json.load(io.open(p, encoding='utf-8'))
 
 
+# 🔴 F4 原本有个洞（0.8.0 收口时发现）：判据只认 ASCII 组件名
+#    `([A-Za-z][\w-]*)\s*(…)?\s*(还没做|…)`，
+#    中文名**一整类**都抓不到 —— 根 START-HERE.md 里那句
+#    「数据表格 / 指标块 / 徽章 ❌ 还没做」就是这样漏网的
+#    （徽章在第 39 行就列着，自己打自己，门禁一声不吭）。
+#
+# 补判据的三条约束：
+#   ① 中文名的**唯一来源**是 fix-start-here.py 的 CN —— 这里不抄第二份，
+#      抄了就会各自漂移（那正是本门禁要防的那类错）。
+#   ② 别名表为空 ⇒ 报错退出，不许静默跳过（沿用本门禁「视野已空 = 失败」的纪律）。
+#   ③ 「名字」与「还没做」之间**必须有一个分隔符**（`|` / ❌ / ✗ / ×）。
+#      没有这条收紧，「状态还没做」「目录还没做」这类普通句子会误报 ——
+#      宁可漏报，不可误报：误报会让人学会忽略这道门禁。
+CN_EXCLUDE = {'目录', '状态', '空', '加载', '错', '成功', '单选', '多选'}
+# recipe 不在 CN 里（CN 只覆盖组件），但对外文档会用中文说它
+CN_EXTRA = {'表格': 'table', '数据表格': 'table'}
+
+
+def build_cn_alias():
+    """中文名 -> 组件 id。"""
+    import importlib.util
+    p = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                     'fix-start-here.py')
+    spec = importlib.util.spec_from_file_location('_fix_start_here_cn', p)
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    out = {}
+    for cid, cn in m.CN.items():
+        cn = re.sub(u'（[^）]*）', '', cn)      # 去掉括号里的补充说明
+        for part in cn.split('/'):
+            part = part.strip()
+            if part and part not in CN_EXCLUDE:
+                out.setdefault(part, cid)
+    for k, v in CN_EXTRA.items():
+        out.setdefault(k, v)
+    return out
+
+
 def real_components():
     """仓库里真实存在的组件：目录下有 .css 或 .js。
 
@@ -283,6 +321,24 @@ def main():
     for v in comps.values():
         all_names.update(v)
 
+    # ---------- 中文别名（F4b）：拿不到就报错，不许静默不查 ----------
+    try:
+        cn_alias = build_cn_alias()
+    except Exception as e:                       # noqa: BLE001
+        cn_alias = {}
+        problems.append(('05-audit/fix-start-here.py', '真值缺失',
+                         '读不到中文组件名 ⇒ F4 的中文判据无从核对：%r' % (e,)))
+    pat_cn = None
+    if not cn_alias:
+        problems.append(('05-audit/fix-start-here.py', '真值缺失',
+                         '中文组件别名表为空 ⇒ 中文名说「还没做」查不出来'))
+    else:
+        pat_cn = re.compile(
+            u'(%s)[^一-鿿]{0,6}[|❌✗×][^一-鿿]{0,6}'
+            u'(?:还没做|未做|待补|计划做|尚未提供|缺失)'
+            % '|'.join(re.escape(k)
+                       for k in sorted(cn_alias, key=len, reverse=True)))
+
     # ---------- 真值自检：真值本身不可信 ⇒ 不许往下判 ----------
     n_comp = None
     maturity = {}
@@ -371,6 +427,20 @@ def main():
                          '第 %d 行：%s（真实存在于 %s）'
                          % (no, name,
                             next(d for d, v in comps.items() if name in v))))
+
+        # F4b 中文名（ASCII 判据抓不到的一整类）
+        if pat_cn is not None:
+            for line, no in iter_lines(text):
+                for m in pat_cn.finditer(line):
+                    cid = cn_alias[m.group(1)]
+                    where = next((d for d, v in comps.items() if cid in v),
+                                 None)
+                    if where is None:
+                        continue
+                    problems.append(
+                        (f, '组件已存在却被称为「还没做」（中文名）',
+                         '第 %d 行：%s（= `%s`，真实存在于 %s）'
+                         % (no, m.group(1), cid, where)))
 
     # ---------- CHANGELOG：只查当前版本段（历史快照不追改） ----------
     p = os.path.join(ROOT, 'CHANGELOG.md')
