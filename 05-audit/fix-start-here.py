@@ -286,6 +286,22 @@ def build_recipes():
     return out
 
 
+def build_assets():
+    """09-assets/ 下的能力清单 —— 与 ai/START-HERE.md 同源，同一份 ASSET_DESC。"""
+    d = os.path.join(ROOT, '09-assets')
+    names = sorted(x for x in os.listdir(d) if os.path.isdir(os.path.join(d, x)))
+    miss = [x for x in names if x not in ASSET_DESC]
+    if miss:
+        raise SystemExit('09-assets/ 下这些目录在 ASSET_DESC 里没有说明：%s'
+                         % '、'.join(miss))
+    # 🔴 不要再加中文名前缀：ASSET_DESC 本身第一句就是中文名
+    #    （"柱状图，含…""迷你趋势线，没有…"），拼上去就变成"柱状图 —— 柱状图，含…"。
+    out = ['| 目录 | 它解决什么 |', '|---|---|']
+    for n in names:
+        out.append('| `09-assets/%s/` | %s |' % (n, ASSET_DESC[n]))
+    return '\n'.join(out)
+
+
 AI_BEGIN = '<!-- ==== AI-INVENTORY-BEGIN ==== -->'
 AI_END = '<!-- ==== AI-INVENTORY-END ==== -->'
 
@@ -305,6 +321,11 @@ ASSET_DESC = {
     'scientific-plot': '二维科学绘图：坐标轴 / 误差棒 / 置信区间带 / 对数轴',
     'sparkline': '迷你趋势线，没有坐标轴的走势提示',
 }
+# 09-assets/README.md 里的目录表也由本脚本生成 —— 2026-10-10 收口时发现：
+# 那份 README 的标题还写着「素材（图标）」，而这一层早就是 5 个图表能力，
+# 正文里一个字都没提。跟 START-HERE 是同一个病：目录会变，散文不会跟着变。
+ASSET_BEGIN = '<!-- ==== ASSET-LIST-BEGIN ==== -->'
+ASSET_END = '<!-- ==== ASSET-LIST-END ==== -->'
 
 
 def load_components():
@@ -366,6 +387,13 @@ def main():
     j2 = s2.index(AI_END) + len(AI_END)
     want2 = AI_BEGIN + '\n' + inv + '\n' + AI_END
 
+    assets = build_assets()
+    a_p = os.path.join(ROOT, '09-assets', 'README.md')
+    s3 = io.open(a_p, encoding='utf-8').read()
+    i3 = s3.index(ASSET_BEGIN)
+    j3 = s3.index(ASSET_END) + len(ASSET_END)
+    want3 = ASSET_BEGIN + '\n' + assets + '\n' + ASSET_END
+
     if '--check' in sys.argv:
         bad = 0
         cur = s[i:j]
@@ -379,12 +407,19 @@ def main():
         else:
             print('  [FAIL] ai/START-HERE.md 的实测清单已漂移 —— 跑 fix-start-here.py')
             bad = 1
+        if _norm(s3[i3:j3]) == _norm(want3):
+            print('  [OK  ] 09-assets/README.md 的能力清单与实际一致')
+        else:
+            print('  [FAIL] 09-assets/README.md 的能力清单已漂移 —— 跑 fix-start-here.py')
+            bad = 1
         return bad
 
     io.open(p, 'w', encoding='utf-8').write(head + START + '\n' + table + '\n' + tail)
     print('  ✓ 已重建 START-HERE.md 的组件表（%d 个组件）' % len(rows))
     io.open(ai_p, 'w', encoding='utf-8').write(s2[:i2] + want2 + s2[j2:])
     print('  ✓ 已重建 ai/START-HERE.md 的实测清单')
+    io.open(a_p, 'w', encoding='utf-8').write(s3[:i3] + want3 + s3[j3:])
+    print('  ✓ 已重建 09-assets/README.md 的能力清单')
     return 0
 
 
