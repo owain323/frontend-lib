@@ -94,6 +94,10 @@ WHITELIST = {
     'ArgumentParser', 'Namespace',
     # 素材库文件名
     'Shoelace', 'AnimationMixer', 'AnimationClip', 'LoadingManager',
+    # 本库对外公开的全局名（不是内部代号，API.md 里有登记）
+    'ScientificPlot',
+    # 化学元素符号连写（示例内容里的化学式，如 LiNi₀.₈Co₀.₁Mn₀.₁O₂）
+    'LiNi',
 }
 
 PAT = re.compile(r'\b[A-Z][a-z]+(?:[A-Z][a-z]+)+\b')

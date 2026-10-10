@@ -163,8 +163,148 @@
 .table--compact thead th,
 .table--compact tbody td { padding: var(--sp-1) var(--sp-2); }
 
+/* ============================================================================
+   表题 / 脚注 / 来源
+   ============================================================================
+   学术与统计表格要求"这张表是什么、数据从哪来"与表本身绑在一起，
+   不能只靠正文的一句话。⇒ 用 <caption>（表题）+ 表后脚注两块表达。
+   ============================================================================ */
+.table__cap {
+  caption-side: top;
+  text-align: start;
+  padding: var(--sp-2) var(--sp-3);
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+}
+
+.table__foot {
+  margin: var(--sp-2) 0 0;
+  padding: 0 var(--sp-1);
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  line-height: 1.6;
+}
+.table__foot ol { margin: 0; padding-inline-start: var(--sp-4); }
+
+/* ============================================================================
+   多级表头
+   ============================================================================
+   🔴 多级表头不是"多画一行 <th>"就完事：
+      屏幕阅读器靠 scope / id / headers 把单元格和它真正的表头对上。
+      只画两层 <tr> 而不标 scope ⇒ 读屏读到"3.2"时不知道它是哪一列的。
+      ⇒ 样式只负责让它看起来是两层，**语义由 HTML 负责**（见 demo.html）。
+   ============================================================================ */
+.table thead tr + tr th {
+  /* 第二层表头：贴近第一层，靠上边框区分而不是加粗字号 */
+  top: 2.4em;                        /* 跟着第一层 sticky 一起粘 */
+  font-weight: 500;
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  border-bottom: 1px solid var(--border-decor);
+}
+
+/* 分组表头（跨列）居中，让"这两列属于同一组"看得出来 */
+.table thead th[colspan] {
+  text-align: center;
+  border-inline-start: 1px solid var(--border-decor);
+}
+.table thead th[colspan]:first-child { border-inline-start: 0; }
+
+/* ============================================================================
+   预设一：业务 / 财务数据表（默认观感的明确化）
+   ============================================================================
+   重点：数字比较、金额精度、单位、负数、正负号语义。
+   单位写在**列头**而不是每个单元格里 —— 一列重复 20 次"万元"只会增加噪音。
+   ============================================================================ */
+.table--financial thead th { white-space: nowrap; }
+/* 行表头（公司名等）不换行 —— 换来换去会让整张表的行高参差，难竖着读 */
+.table--financial tbody th { white-space: nowrap; }
+
+/* 单位后缀：列头里的小字，与列名区分开 */
+.table__unit {
+  font-weight: 400;
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+}
+
+/* 🔴 缺失值：既不是 0，也不是空字符串 —— 必须看得出"这里没数据" */
+.table .num--na,
+.table .cell--na {
+  color: var(--text-tertiary);
+  text-align: center;
+}
+
+/* ============================================================================
+   预设二：学术出版表格（三线表）
+   ============================================================================
+   为什么不是"把财务表改成灰的"：
+   论文表格的读者要**逐格比对数值**，竖线和斑马纹会干扰视线；
+   三线表只留顶线、表头下线、底线三条，把注意力留给数字本身。
+   ============================================================================ */
+.table--academic {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  max-height: none;                  /* 三线表不滚动：它应当完整呈现 */
+}
+.table--academic table { background: transparent; }
+
+.table--academic thead th {
+  background: transparent;
+  color: var(--text-primary);
+  font-weight: 600;
+  border-top: 2px solid var(--border-decor-str);
+  border-bottom: 1px solid var(--border-decor);
+  position: static;                  /* 不滚动 ⇒ 不需要 sticky */
+}
+.table--academic thead tr + tr th {
+  font-weight: 400;
+  border-top: 0;
+  border-bottom: 1px solid var(--border-decor);
+}
+.table--academic tbody td,
+.table--academic tbody th {
+  border-bottom: 0;                  /* 行间不画线 */
+}
+.table--academic tbody tr:last-child td,
+.table--academic tbody tr:last-child th {
+  border-bottom: 1px solid var(--border-decor);   /* 底线 */
+}
+@media (hover: hover) and (pointer: fine) {
+  .table--academic tbody tr:hover { background: transparent; }
+}
+
+/* ============================================================================
+   预设三：统计 / 实验结果表
+   ============================================================================
+   🔴 这些列的格式**不能**交给通用数字格式化：
+      · 估计值与其标准误是**两个数**，不是"一个带括号的字符串"
+      · 置信区间是**区间**，不是两个独立数字
+      · p 值有自己的书写惯例（< .001 不写 0.000）
+   组件只负责把它们放在各自的语义位置，**不替调用方计算显著性**。
+   ============================================================================ */
+.table--stats .stat__se {            /* 标准误：次级信息，弱化 */
+  color: var(--text-tertiary);
+  font-size: var(--fs-xs);
+}
+.table--stats .stat__p {             /* p 值：等宽且右对齐 */
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+.table--stats .stat__p--sig {        /* 达到显著性水平：加粗（不只靠颜色） */
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.table--stats .stat__ci {            /* 置信区间：方括号是它的语义符号 */
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ---------- 窄屏：表格横向滚动，不挤压列 ---------- */
 /* ---------- 打印：去掉粘性（打印时不需要）---------- */
 @media print {
   .table { max-height: none; overflow: visible; }
   .table thead th { position: static; }
+  .table--academic thead th { border-top: 2px solid var(--text-primary); }
 }

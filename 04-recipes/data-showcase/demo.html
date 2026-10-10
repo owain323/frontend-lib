@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>data-showcase · 数据展示能力对照 · frontend-lib</title>
+
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/focus-ring.css">
+<link rel="stylesheet" href="../../01-tokens/page.css">
+
+<link rel="stylesheet" href="../../09-assets/sparkline/sparkline.css">
+<link rel="stylesheet" href="../../09-assets/scientific-plot/scientific-plot.css">
+<link rel="stylesheet" href="../../04-recipes/table/table.css">
+
+<style>
+/* 本示例页自己的排布，不属于组件 */
+.row4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+        gap: var(--sp-3); margin: var(--sp-4) 0; }
+.kpi { padding: var(--sp-3); background: var(--surface-raised);
+       border: 1px solid var(--border-decor); border-radius: var(--r-md); }
+.kpi__label { font-size: var(--fs-xs); color: var(--text-tertiary); margin: 0 0 var(--sp-1); }
+.kpi__value { font-size: var(--fs-xl); font-weight: 600; margin: 0 0 var(--sp-2);
+              font-variant-numeric: tabular-nums; }
+.kpi__foot { font-size: var(--fs-xs); color: var(--text-tertiary); margin: var(--sp-2) 0 0; }
+.when { font-size: var(--fs-sm); color: var(--text-secondary); }
+.when b { color: var(--text-primary); }
+.figbox { border: 1px solid var(--border-decor); border-radius: var(--r-md);
+          padding: var(--sp-3); background: var(--surface); margin: var(--sp-4) 0;
+          overflow-x: auto; }
+</style>
+</head>
+<body class="page">
+<main class="wrap">
+
+<h1>数据展示能力对照</h1>
+<p class="lede">
+  同一套设计令牌，四种不同的表达方式。它们回答的问题不一样，
+  所以<strong>不能用同一个组件凑合</strong>。
+</p>
+<p class="note">
+  本页用于对照"各自的适用场景"，不是组件大集合。每节只放该能力最典型的一种形态。
+</p>
+
+<!-- ================================================================= -->
+<h2 class="rule-top">1 · BI 迷你趋势（经营指标）</h2>
+<p class="when">
+  回答的问题：<b>"这个指标最近是涨还是跌？"</b>
+  —— 只给形状，不给精确数值。适合放在标题旁、卡片角上，一屏能扫过十几个。
+</p>
+
+<div class="row4">
+  <div class="kpi">
+    <p class="kpi__label">月活跃用户</p>
+    <p class="kpi__value">128.4 万</p>
+    <span class="sparkline" data-spark="98,104,101,112,109,118,121,117,124,126,123,128"
+          data-spark-height="28" data-spark-last="yes"></span>
+    <p class="kpi__foot">近 12 个月</p>
+  </div>
+  <div class="kpi">
+    <p class="kpi__label">订单转化率</p>
+    <p class="kpi__value">3.42%</p>
+    <span class="sparkline" data-spark="2.1,2.4,2.3,2.7,2.9,2.8,3.0,3.1,3.0,3.3,3.4,3.42"
+          data-spark-height="28" data-spark-color="var(--success)"></span>
+    <p class="kpi__foot">近 12 个月</p>
+  </div>
+  <div class="kpi">
+    <p class="kpi__label">退款率</p>
+    <p class="kpi__value">1.08%</p>
+    <span class="sparkline" data-spark="1.9,1.8,1.7,1.6,1.5,1.6,1.4,1.3,1.3,1.2,1.1,1.08"
+          data-spark-type="bar" data-spark-height="28" data-spark-color="var(--text-tertiary)"></span>
+    <p class="kpi__foot">近 12 个月</p>
+  </div>
+</div>
+<p class="table__foot">数据来源：示例数据，用于演示 sparkline 的三种形态（线 / 面积 / 柱）。</p>
+
+<!-- ================================================================= -->
+<h2 class="rule-top">2 · 科学坐标图（数值 + 不确定性）</h2>
+<p class="when">
+  回答的问题：<b>"这些测量值落在哪？误差多大？"</b>
+  —— 需要真实坐标轴、单位、误差棒。BI 迷你趋势给不了这些：
+  它没有数值轴，也不表达不确定性。
+</p>
+
+<figure class="figbox">
+  <div id="scatter"></div>
+  <figcaption style="font-size:var(--fs-xs);color:var(--text-tertiary);margin-top:var(--sp-2)">
+    图 1 · 反应温度与转化率的关系（散点为实测均值，误差棒为 ±1 标准差）。
+    示例数据，非真实实验结果。
+  </figcaption>
+</figure>
+
+<!-- ================================================================= -->
+<h2 class="rule-top">3 · 学术出版表格</h2>
+<p class="when">
+  回答的问题：<b>"哪个方案在哪个指标上更好？"</b>
+  —— 需要逐格比对数值，所以去掉竖线与斑马纹，只留三条线。
+  多级表头用 <code>scope</code> 标明层级。
+</p>
+
+<div class="table table--academic">
+  <table>
+    <caption class="table__cap">表 1 · 三种干燥工艺的成品性能对比（示例数据）</caption>
+    <thead>
+      <tr>
+        <th scope="col" rowspan="2">工艺</th>
+        <th scope="colgroup" colspan="2">含水率</th>
+        <th scope="colgroup" colspan="2">机械强度</th>
+      </tr>
+      <tr>
+        <th scope="col">均值 <span class="table__unit">%</span></th>
+        <th scope="col">极差 <span class="table__unit">%</span></th>
+        <th scope="col">抗压 <span class="table__unit">MPa</span></th>
+        <th scope="col">抗折 <span class="table__unit">MPa</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th scope="row">热风干燥</th>
+        <td class="num">4.2</td><td class="num">1.8</td>
+        <td class="num">38.4</td><td class="num">7.1</td>
+      </tr>
+      <tr>
+        <th scope="row">微波干燥</th>
+        <td class="num">2.7</td><td class="num">0.9</td>
+        <td class="num">41.2</td><td class="num">7.6</td>
+      </tr>
+      <tr>
+        <th scope="row">真空冷冻干燥</th>
+        <td class="num">1.4</td><td class="num">0.3</td>
+        <td class="num">35.8</td><td class="num">6.9</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<p class="table__foot">注：每组 n = 5；含水率为干燥结束时的质量分数。示例数据。</p>
+
+<!-- ================================================================= -->
+<h2 class="rule-top">4 · 统计结果表</h2>
+<p class="when">
+  回答的问题：<b>"这个效应有多大？有多确定？"</b>
+  —— 估计值、标准误、置信区间、p 值各有书写惯例，
+  不能用同一个数字格式化函数打发。<strong>本表不推断显著性，也不计算统计量。</strong>
+</p>
+
+<div class="table table--stats">
+  <table>
+    <caption class="table__cap">表 2 · 干燥工艺对含水率的影响（OLS 估计，示例数据，n = 60）</caption>
+    <thead>
+      <tr>
+        <th scope="col">变量</th>
+        <th scope="col">估计值 <span class="table__unit">(标准误)</span></th>
+        <th scope="col">95% 置信区间</th>
+        <th scope="col">p 值</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th scope="row">截距</th>
+        <td class="num">4.186 <span class="stat__se">(0.214)</span></td>
+        <td class="num stat__ci">[3.757, 4.615]</td>
+        <td class="num stat__p stat__p--sig">&lt; .001</td>
+      </tr>
+      <tr>
+        <th scope="row">微波干燥</th>
+        <td class="num">−1.492 <span class="stat__se">(0.301)</span></td>
+        <td class="num stat__ci">[−2.095, −0.889]</td>
+        <td class="num stat__p stat__p--sig">&lt; .001</td>
+      </tr>
+      <tr>
+        <th scope="row">真空冷冻干燥</th>
+        <td class="num">−2.774 <span class="stat__se">(0.301)</span></td>
+        <td class="num stat__ci">[−3.377, −2.171]</td>
+        <td class="num stat__p stat__p--sig">&lt; .001</td>
+      </tr>
+      <tr>
+        <th scope="row">初始含水率</th>
+        <td class="num">0.041 <span class="stat__se">(0.058)</span></td>
+        <td class="num stat__ci">[−0.075, 0.157]</td>
+        <td class="num stat__p">.482</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<p class="table__foot">
+  注：参照组为「热风干燥」；括号内为标准误。
+  置信区间与 p 值由调用方计算并提供，本表只负责呈现。
+  示例数据，非真实研究结果。
+</p>
+
+<!-- ================================================================= -->
+<h2 class="rule-top">5 · 它们的分工</h2>
+<div class="table">
+  <table>
+    <caption class="table__cap">表 3 · 四种表达方式各自回答什么问题</caption>
+    <thead>
+      <tr>
+        <th scope="col">表达方式</th>
+        <th scope="col">回答的问题</th>
+        <th scope="col">不负责</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><th scope="row">迷你趋势</th><td>指标是涨还是跌</td><td>精确数值、单位、不确定性</td></tr>
+      <tr><th scope="row">科学坐标图</th><td>值落在哪、误差多大</td><td>统计推断、显著性</td></tr>
+      <tr><th scope="row">学术表格</th><td>哪个方案在哪个指标上更好</td><td>趋势形状、时间序列</td></tr>
+      <tr><th scope="row">统计结果表</th><td>效应大小与确定程度</td><td>原始测值的分布</td></tr>
+    </tbody>
+  </table>
+</div>
+
+</main>
+
+<script src="../../09-assets/sparkline/sparkline.js"></script>
+<script src="../../09-assets/scientific-plot/scientific-plot.js"></script>
+<script>
+(function () {
+  'use strict';
+  if (!window.ScientificPlot) return;
+
+  /* 温度 – 转化率：均值 + ±1 标准差 */
+  var data = [
+    [300, 12.4, 2.1], [320, 21.7, 2.6], [340, 33.2, 3.0],
+    [360, 41.5, 2.8], [380, 47.3, 3.4], [400, 51.8, 3.1]
+  ];
+
+  window.ScientificPlot.render(document.getElementById('scatter'), {
+    width: 700, height: 340,
+    title: '反应温度与转化率的关系',
+    desc: '误差棒为 ±1 标准差',
+    x: { label: '反应温度', unit: 'K', scale: 'linear', domain: [290, 410] },
+    y: { label: '转化率', unit: '%', scale: 'linear', domain: [0, 60] },
+    series: [
+      { type: 'errorbar', data: data },
+      { type: 'scatter', data: data.map(function (p) { return [p[0], p[1]]; }) }
+    ]
+  });
+})();
+</script>
+</body>
+</html>

@@ -145,7 +145,116 @@
 .table--compact tbody td { padding: var(--sp-1) var(--sp-2); }
 
 
+.table__cap {
+  caption-side: top;
+  text-align: start;
+  padding: var(--sp-2) var(--sp-3);
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+}
+
+.table__foot {
+  margin: var(--sp-2) 0 0;
+  padding: 0 var(--sp-1);
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  line-height: 1.6;
+}
+.table__foot ol { margin: 0; padding-inline-start: var(--sp-4); }
+
+
+.table thead tr + tr th {
+  
+  top: 2.4em;                        
+  font-weight: 500;
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  border-bottom: 1px solid var(--border-decor);
+}
+
+
+.table thead th[colspan] {
+  text-align: center;
+  border-inline-start: 1px solid var(--border-decor);
+}
+.table thead th[colspan]:first-child { border-inline-start: 0; }
+
+
+.table--financial thead th { white-space: nowrap; }
+
+.table--financial tbody th { white-space: nowrap; }
+
+
+.table__unit {
+  font-weight: 400;
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+}
+
+
+.table .num--na,
+.table .cell--na {
+  color: var(--text-tertiary);
+  text-align: center;
+}
+
+
+.table--academic {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  max-height: none;                  
+}
+.table--academic table { background: transparent; }
+
+.table--academic thead th {
+  background: transparent;
+  color: var(--text-primary);
+  font-weight: 600;
+  border-top: 2px solid var(--border-decor-str);
+  border-bottom: 1px solid var(--border-decor);
+  position: static;                  
+}
+.table--academic thead tr + tr th {
+  font-weight: 400;
+  border-top: 0;
+  border-bottom: 1px solid var(--border-decor);
+}
+.table--academic tbody td,
+.table--academic tbody th {
+  border-bottom: 0;                  
+}
+.table--academic tbody tr:last-child td,
+.table--academic tbody tr:last-child th {
+  border-bottom: 1px solid var(--border-decor);   
+}
+@media (hover: hover) and (pointer: fine) {
+  .table--academic tbody tr:hover { background: transparent; }
+}
+
+
+.table--stats .stat__se {            
+  color: var(--text-tertiary);
+  font-size: var(--fs-xs);
+}
+.table--stats .stat__p {             
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+.table--stats .stat__p--sig {        
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.table--stats .stat__ci {            
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+
+
 @media print {
   .table { max-height: none; overflow: visible; }
   .table thead th { position: static; }
+  .table--academic thead th { border-top: 2px solid var(--text-primary); }
 }

@@ -101,6 +101,11 @@ PAGES = [
     ('04-recipes/table',          'demo.html', '表格'),
     ('09-assets/bar',             'demo.html', '柱状图'),
     ('10-review/composition',     'demo.html', '组合页'),
+    # ⭐ 2026-10-10 新增（FL-NEXT-01 / VIZ-02 交付物接入现有机制，不另建截图框架）：
+    #    原则不变 —— 有 CSS 且有 demo 的一律纳入。
+    ('04-recipes/analysis-report', 'demo.html', '组合型研究报告'),
+    ('04-recipes/data-showcase',   'demo.html', '数据展示对照'),
+    ('09-assets/scientific-plot',  'demo.html', '科学绘图'),
 ]
 
 VIEWPORT = (393, 852)      # iPhone 尺寸：移动端是这个尺寸
@@ -207,7 +212,42 @@ const TASKS = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
        *      networkidle0 的 500ms 静默期在这里纯属浪费。 */
       await p.goto(t.url, { waitUntil: 'domcontentloaded' });
       T.goto += _m() - _t0; _t0 = _m();
-      await new Promise((r) => setTimeout(r, t.wait || 300));
+
+      /* 🔴 0.8.0：把"猜一个 300ms"换成"等一个确定条件"（原本是 t.wait || 300）
+         ----------------------------------------------------------------
+         实测踩到：视觉门禁**偶发假红**。刚跑完别的浏览器任务、机器忙的时候，
+         300ms 可能不够字体与图片解码完 ⇒ 同一个页面截出全页 0.135% 差异、
+         21 个块超阈 ⇒ 报"观感不一致"。立刻重跑就绿。
+
+         ⇒ 这是典型的**时序竞态**，而竞态型假红最伤信任：
+           它看起来像真回归，实际什么都没坏。连跑 3 次全绿才敢说它是噪声。
+
+         新判据不依赖"机器有多快"：
+           ① `document.fonts.ready` —— 字体就位（字体一变，所有文字宽度都变）
+           ② 等所有 `<img>` 的 load/error —— 不靠"大概加载完了"
+           ③ 再等**两帧** —— 确保字体就位后的重排与绘制已经提交
+         比固定 sleep 更快，而且不可能截到半成品。
+         ⚠️ 保留总超时兜底：某张图 404 不能把门禁挂死（goto 的 timeout 管这里）。 */
+      await p.evaluate(async () => {
+        var jobs = [];
+        if (document.fonts && document.fonts.ready) jobs.push(document.fonts.ready);
+        var imgs = [].slice.call(document.images || []);
+        imgs.forEach(function (im) {
+          if (im.complete) return;
+          jobs.push(new Promise(function (res) {
+            im.onload = res; im.onerror = res;
+          }));
+        });
+        if (jobs.length) {
+          await Promise.race([
+            Promise.all(jobs),
+            new Promise(function (r) { setTimeout(r, 3000); }),
+          ]);
+        }
+        await new Promise(function (r) {
+          requestAnimationFrame(function () { requestAnimationFrame(r); });
+        });
+      });
       T.settle += _m() - _t0; _t0 = _m();
 
       /* 🔴 冻结所有动画再截图（原来就有这条，务必保留）

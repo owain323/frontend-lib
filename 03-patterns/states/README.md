@@ -104,12 +104,38 @@ fetch(...).then(r => { clearTimeout(t); showResult(r); });
 
 | 类 | 作用 | 谁来加 |
 |---|---|---|
-| `.state--delayed` + `[data-state="shown"]` | 延迟 300ms 再显示骨架屏，避免快速返回时"闪一下" | **你**：定时器到点加 `data-state="shown"` |
 | `.field__input[data-state="valid"]` | 输入框"校验通过"态 | **你**：校验通过时加 `data-state="valid"` |
 
 ⚠️ 状态一律写 `data-state` 属性，**不写状态类名**。理由见 `docs/INVARIANT.md` I-8：
 类名消失时 CSS 规则还在 ⇒ 静默错乱且无报错；属性是有限枚举，可被查询和校验。
 
-⚠️ **本库不提供 JS 实现** —— 这两个是留给复用者的钩子。
-CSS 侧已经备好，JS 侧要自己写。写错了不会报错（类没加就是默认态），
+⚠️ **本库不提供 JS 实现** —— 这是留给复用者的钩子。
+CSS 侧已经备好，JS 侧要自己写。写错了不会报错（属性没加就是默认态），
 所以**要自己验**。
+
+## 移除记录：`.state--delayed`（0.7.7 登记，0.8.0 移除）
+
+它承诺了一个「延迟显现」机制，但全库**没有任何 JS** 会去设置它依赖的
+`data-state="shown"` ⇒ 使用者必须自己接，而文档当时没写明。
+它读起来像本库已经实现了 —— 这类名字最危险，因为**误会发生在读者脑子里，代码不会报错**。
+
+**没有替代品**。想要"延迟 300ms 再显示骨架屏"，自己写两行就是全部实现：
+
+```html
+<div class="state state--loading js-delayed"><!-- 骨架屏 --></div>
+```
+
+```css
+/* 自己加：默认藏着，到点才显 */
+.js-delayed { visibility: hidden; }
+.js-delayed[data-state="shown"] { visibility: visible; }
+```
+
+```js
+setTimeout(function () {
+  el.setAttribute('data-state', 'shown');
+}, 300);
+```
+
+⚠️ 注意：这么做在**请求永远不返回**时会一直空白。要么配一个兜底超时，
+要么只在"已知 300ms 内能返回"的场景用。

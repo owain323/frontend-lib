@@ -1,0 +1,168 @@
+/* ============================================================================
+   analysis-report/analysis-report.css — 研究报告 recipe 的局部样式
+   ============================================================================
+   依赖：01-tokens/tokens.css（只消费令牌，不写死颜色/间距）
+         01-tokens/page.css（提供 .page / .wrap / .lede / .note 骨架）
+
+   🔴 这个 recipe 存在的意义：证明本库能组合出**不只是单栏长文**的页面。
+      longform 证明的是长文排版；这里要证明：
+        · 正文 + 辅助栏的**并排**布局（窄屏自然退回单栏，不是缩小桌面版）
+        · 关键发现区、数据区、引用区的**信息层级**
+        · 表格 / 图表 / 代码块在同一页里**协调**而不是各说各话
+   ============================================================================ */
+
+/* 报告比普通长文宽：正文列 + 15rem 辅助栏 */
+.report { max-width: calc(var(--measure-page) + 16rem); }
+
+/* ---------- 页头 ---------- */
+.report__kicker {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-xs);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.report__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1) var(--sp-4);
+  margin: var(--sp-4) 0 0;
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--border-decor);
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+}
+.report__meta b { font-weight: 500; color: var(--text-secondary); }
+
+/* ---------- 主体：桌面并排，窄屏单栏 ---------- */
+.report__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);       /* 默认单栏 —— 窄屏天然成立 */
+  gap: var(--sp-6);
+  margin-top: var(--sp-6);
+}
+
+/* 🔴 断点写不了 var()：--bp-lg = 64rem = 1024px（见 tokens.css）
+   并排是"内容有位置放"之后才发生的事，不是把所有东西缩小塞进去 */
+@media (min-width: 64rem) {
+  .report__body {
+    grid-template-columns: minmax(0, 1fr) 15rem;
+    gap: var(--sp-7);
+  }
+  .report__aside {
+    position: sticky;
+    top: var(--sp-4);
+    align-self: start;            /* sticky 要在 grid 里生效必须写这句 */
+    max-height: calc(100vh - var(--sp-8));
+    overflow: auto;
+  }
+}
+
+/* ---------- 正文节奏 ---------- */
+.report__main > section + section { margin-top: var(--sp-6); }
+.report__main h2 { margin-top: 0; }
+.report__main p { margin: var(--sp-3) 0; }
+.report__main ul,
+.report__main ol { margin: var(--sp-3) 0; padding-inline-start: var(--sp-5); }
+.report__main li + li { margin-top: var(--sp-1); }
+
+/* ---------- 关键发现区 ---------- */
+.kf {
+  margin: var(--sp-4) 0;
+  padding: var(--sp-4);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-decor);
+  border-inline-start: 3px solid var(--accent);
+  border-radius: var(--r-md);
+}
+.kf__title {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.kf ol { margin: 0; padding-inline-start: var(--sp-5); }
+.kf li { margin-top: var(--sp-2); }
+.kf strong { color: var(--text-primary); }
+
+/* ---------- 引用块 ---------- */
+.report__quote {
+  margin: var(--sp-4) 0;
+  padding: var(--sp-3) var(--sp-4);
+  border-inline-start: 3px solid var(--border-decor-str);
+  color: var(--text-secondary);
+  font-style: italic;
+}
+.report__quote cite {
+  display: block;
+  margin-top: var(--sp-2);
+  font-size: var(--fs-xs);
+  font-style: normal;
+  color: var(--text-tertiary);
+}
+
+/* ---------- 代码块：承载"实验参数"这类结构化信息 ---------- */
+.report__code {
+  margin: var(--sp-4) 0;
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-decor);
+  border-radius: var(--r-md);
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: var(--fs-xs);
+  line-height: var(--lh-loose);
+  color: var(--text-secondary);
+  white-space: pre;
+}
+
+/* ---------- 辅助栏 ----------
+   🔴 用现有 card 组件（02-primitives/card），不另造一个"侧栏卡片" ——
+      重复造会在换主题时多一个不一致的源头。
+      这里只补排布与紧凑排版。 */
+.report__aside .card + .card { margin-top: var(--sp-3); }
+.report__aside .card__title {
+  font-size: var(--fs-xs);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.report__aside dl { margin: var(--sp-2) 0 0; font-size: var(--fs-sm); }
+.report__aside dt {
+  margin-top: var(--sp-2);
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+}
+.report__aside dd { margin: 0; color: var(--text-primary); }
+
+/* ---------- 图表容器 ---------- */
+.report__fig {
+  margin: var(--sp-5) 0;
+  padding: var(--sp-3);
+  background: var(--surface);
+  border: 1px solid var(--border-decor);
+  border-radius: var(--r-md);
+  overflow-x: auto;
+}
+.report__fig figcaption {
+  margin-top: var(--sp-2);
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+}
+
+/* ---------- 页脚来源 ---------- */
+.report__foot {
+  margin-top: var(--sp-8);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--border-decor);
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+}
+.report__foot ol { padding-inline-start: var(--sp-5); }
+.report__foot li + li { margin-top: var(--sp-1); }
+
+/* ---------- 打印：辅助栏不再粘住，避免整页错位 ---------- */
+@media print {
+  .report__aside { position: static; max-height: none; overflow: visible; }
+  .report__body { grid-template-columns: 1fr; }
+}

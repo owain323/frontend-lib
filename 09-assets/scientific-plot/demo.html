@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>scientific-plot · 二维科学绘图 · frontend-lib</title>
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/page.css">
+<link rel="stylesheet" href="scientific-plot.css">
+<style>
+/* 示例页自己的排布；不属于组件样式 */
+.fig { margin: 0 0 var(--sp-6); }
+.fig__cap { font-size: var(--fs-sm); color: var(--text-secondary); margin: var(--sp-2) 0 0; }
+.fig__box { border: 1px solid var(--border-decor); border-radius: var(--r-md);
+            padding: var(--sp-3); background: var(--surface); overflow-x: auto; }
+.data-sum { font-size: var(--fs-xs); color: var(--text-tertiary); margin: var(--sp-2) 0 0; }
+.data-sum table { border-collapse: collapse; }
+.data-sum th, .data-sum td { padding: 2px var(--sp-3) 2px 0; text-align: start; }
+.data-sum td.num { font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body class="page">
+<main class="wrap">
+
+<h1>scientific-plot · 二维科学绘图</h1>
+<p class="lede">
+  坐标轴、单位、刻度、误差棒、置信区间带 —— 用原生 SVG 画，
+  零第三方运行时依赖。<strong>本模块不计算任何统计量</strong>，
+  它只把调用方给的数画在正确的位置上。
+</p>
+
+<!-- ==================================================================== -->
+<h2 class="rule-top">1 · 函数曲线与坐标轴</h2>
+<p class="note">
+  阻尼振荡 <code>y(t) = A·e^(−λt)·cos(2πft)</code>。
+  曲线是<strong>采样</strong>出来的数据点 —— 调用方传的是函数，不是字符串表达式，
+  本模块<strong>不做表达式求值</strong>。
+</p>
+<figure class="fig">
+  <div class="fig__box" id="fig1"></div>
+  <figcaption class="fig__cap">
+    图 1 · 阻尼振荡位移随时间的变化。A = 1.00 m，λ = 0.35 s⁻¹，f = 1.20 Hz。
+  </figcaption>
+</figure>
+
+<!-- ==================================================================== -->
+<h2 class="rule-top">2 · 离散测量 + 误差棒</h2>
+<p class="note">
+  误差棒画的是<strong>调用方给的</strong>误差边界。本模块不判断它表示标准差还是标准误，
+  也不据此推断显著性 —— 这两件事必须由测量者说清楚。
+</p>
+<figure class="fig">
+  <div class="fig__box" id="fig2"></div>
+  <figcaption class="fig__cap">
+    图 2 · 五种催化剂在不同温度下的转化率（示例数据，误差棒为 ±1 个测量标准差）。
+  </figcaption>
+</figure>
+
+<!-- ==================================================================== -->
+<h2 class="rule-top">3 · 折线 + 置信区间带 + 参考线</h2>
+<p class="note">
+  区间带是<strong>调用方算好的上下边界</strong>。图上的水平虚线是工艺控制下限。
+</p>
+<figure class="fig">
+  <div class="fig__box" id="fig3"></div>
+  <figcaption class="fig__cap">
+    图 3 · 反应收率随生产批号的走势与 95% 置信区间（示例数据）。
+  </figcaption>
+</figure>
+
+<!-- ==================================================================== -->
+<h2 class="rule-top">4 · 对数坐标</h2>
+<p class="note">
+  对数轴<strong>必须显式声明</strong>。跨度跨 6 个数量级时自动只保留 10 的幂做刻度，
+  避免标签挤成一团。若给对数轴一个 ≤ 0 的边界，模块会<strong>直接报错</strong>而不是悄悄修正。
+</p>
+<figure class="fig">
+  <div class="fig__box" id="fig4"></div>
+  <figcaption class="fig__cap">
+    图 4 · 细菌培养液浓度随时间变化（对数纵轴，示例数据）。
+  </figcaption>
+</figure>
+
+<!-- ==================================================================== -->
+<h2 class="rule-top">5 · 缺失值 ≠ 零（这一节是反例自证）</h2>
+<p class="note">
+  两个序列的<strong>非缺失数据完全相同</strong>，只有缺失的处理方式不同：
+  左边把 <code>null</code> 当缺失 ⇒ 曲线<strong>断开</strong>；
+  右边把缺失当 <code>0</code> ⇒ 曲线<strong>掉到零再爬回来</strong>。
+  后者画出的是一段<strong>不存在的趋势</strong>。
+</p>
+<figure class="fig">
+  <div class="fig__box" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:var(--sp-3)">
+    <div id="figGap"></div>
+    <div id="figZero"></div>
+  </div>
+  <figcaption class="fig__cap">
+    图 5 · 同一组数据，两种缺失处理。左：缺失断开（正确）。右：缺失当 0（错误，仅用于对照）。
+  </figcaption>
+</figure>
+
+<div class="data-sum" id="textEquiv"></div>
+
+</main>
+
+<script src="scientific-plot.js"></script>
+<script>
+(function () {
+  'use strict';
+  var P = window.ScientificPlot;
+
+  /* ---------------------------------------------------- 图 1：阻尼振荡 */
+  function damped(t) {
+    return 1.00 * Math.exp(-0.35 * t) * Math.cos(2 * Math.PI * 1.20 * t);
+  }
+  P.render(document.getElementById('fig1'), {
+    width: 680, height: 340,
+    title: '阻尼振荡位移',
+    desc: '采样 400 点',
+    x: { label: '时间', unit: 's', scale: 'linear', domain: [0, 4] },
+    y: { label: '位移', unit: 'm', scale: 'linear', domain: [-1.1, 1.1] },
+    series: [{ type: 'function', fn: damped, domain: [0, 4], samples: 400 }],
+    refs: [{ axis: 'y', value: 0 }]
+  });
+
+  /* --------------------------------------- 图 2：离散测量 + 误差棒 */
+  var T = [300, 320, 340, 360, 380, 400];
+  var catA = [[300, 12, 3], [320, 21, 4], [340, 33, 5], [360, 41, 4], [380, 47, 6], [400, 52, 5]];
+  var catB = [[300, 8, 2], [320, 15, 3], [340, 24, 3], [360, 35, 4], [380, 44, 5], [400, 50, 6]];
+  void T;
+  P.render(document.getElementById('fig2'), {
+    width: 680, height: 340,
+    title: '催化剂转化率',
+    desc: '误差棒为 ±1 标准差',
+    x: { label: '温度', unit: 'K', scale: 'linear', domain: [290, 410] },
+    y: { label: '转化率', unit: '%', scale: 'linear', domain: [0, 60] },
+    series: [
+      { type: 'errorbar', data: catA },
+      { type: 'line', data: catA },
+      { type: 'errorbar', data: catB },
+      { type: 'line', data: catB }
+    ]
+  });
+
+  /* ------------------------- 图 3：折线 + 置信区间带 + 参考线 */
+  var batches = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+  var yieldMid = [71.2, 73.5, 72.8, 75.1, 76.4, 74.9, 77.2, 78.1, 77.6, 79.3, 80.1, 79.8];
+  var yieldBand = yieldMid.map(function (v, i) {
+    var hw = 2.6 - i * 0.09;           /* 样本越多、估计越稳 —— 这是**调用方**给的半宽 */
+    return [batches[i], v - hw, v + hw];
+  });
+  P.render(document.getElementById('fig3'), {
+    width: 680, height: 340,
+    title: '反应收率走势',
+    desc: '阴影为 95% 置信区间',
+    x: { label: '批号', scale: 'linear', domain: [1, 12] },
+    y: { label: '收率', unit: '%', scale: 'linear', domain: [66, 84] },
+    series: [
+      { type: 'band', data: yieldBand },
+      { type: 'line', data: batches.map(function (b, i) { return [b, yieldMid[i]]; }) },
+      { type: 'scatter', data: batches.map(function (b, i) { return [b, yieldMid[i]]; }) }
+    ],
+    refs: [{ axis: 'y', value: 72, label: '控制下限 72%' }]
+  });
+
+  /* ------------------------------------------------------ 图 4：对数坐标 */
+  var hours = [0, 2, 4, 6, 8, 10, 12, 14, 16];
+  var cfu = [1.2e2, 3.4e2, 9.8e2, 2.9e3, 8.6e3, 2.5e4, 7.4e4, 2.1e5, 6.0e5];
+  P.render(document.getElementById('fig4'), {
+    width: 680, height: 340,
+    title: '菌液浓度增长',
+    desc: '对数纵轴，跨度跨 4 个数量级',
+    x: { label: '培养时间', unit: 'h', scale: 'linear', domain: [0, 16] },
+    y: { label: '浓度', unit: 'CFU/mL', scale: 'log', domain: [1e2, 1e6] },
+    series: [{ type: 'line', data: hours.map(function (h, i) { return [h, cfu[i]]; }) },
+             { type: 'scatter', data: hours.map(function (h, i) { return [h, cfu[i]]; }) }]
+  });
+
+  /* --------------------------------- 图 5：缺失值断开 vs 当零（反例对照） */
+  var signal = [[0, 12], [1, 14], [2, null], [3, null], [4, 21], [5, 24], [6, 22]];
+  var asZero = signal.map(function (p) { return [p[0], p[1] === null ? 0 : p[1]]; });
+
+  P.render(document.getElementById('figGap'), {
+    width: 460, height: 300,
+    title: '缺失断开（正确）',
+    x: { label: '采样点', scale: 'linear', domain: [0, 6] },
+    y: { label: '读数', scale: 'linear', domain: [0, 30] },
+    series: [{ type: 'line', data: signal }, { type: 'scatter', data: signal }]
+  });
+  P.render(document.getElementById('figZero'), {
+    width: 460, height: 300,
+    title: '缺失当 0（错误，仅对照）',
+    x: { label: '采样点', scale: 'linear', domain: [0, 6] },
+    y: { label: '读数', scale: 'linear', domain: [0, 30] },
+    series: [{ type: 'line', data: asZero }, { type: 'scatter', data: asZero }]
+  });
+
+  /* --------------------------- 文本等价信息（原则⑤：结论不能只在图里） */
+  document.getElementById('textEquiv').innerHTML =
+    '<strong>图 5 的文本等价说明：</strong>' +
+    '采样点 2、3 处没有读数（缺失）。左图把这两点之间<strong>断开</strong>，' +
+    '读者看到的是"中间没有数据"；右图把它们画成 0，' +
+    '读者看到的是"信号掉到零又回升"—— 后者是一个<strong>不存在的事件</strong>。' +
+    '两张图用的是同一组非缺失数据。';
+})();
+</script>
+</body>
+</html>

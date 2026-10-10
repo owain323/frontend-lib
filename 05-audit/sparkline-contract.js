@@ -249,6 +249,77 @@ const AXE = require.resolve('axe-core');
   add('🔴 末点缺失时不画 last 圆点（不假装知道末值）',
       miss.lastCircles === 0);
 
+  // ── 🔴🔴 「关掉动画之后，图还在吗」（0.8.0 新增）
+  //
+  // 起因（实测，不是推演）：`.spark-anim` 的基态一度写成
+  //     stroke-dashoffset: var(--spark-len, 1000);      ← 基态：整条推出可见区
+  //     animation: spark-draw … forwards;               ← 靠它才变可见
+  // 于是 **取消动画 ⇒ 线整条消失**。这条性质在两个地方咬人：
+  //
+  //   ① 视觉门禁 `shot-baseline.py` 为了"冻结动画再截图"注入
+  //      `animation:none !important` ⇒ sparkline 的线整条不见
+  //      ⇒ 基线把「线不见了」录了进去 ⇒ **门禁从此对 sparkline 是盲的**
+  //         （任何把 sparkline 画丢的回归它都发现不了）。
+  //   ② 任何第三方 CSS 重置把动画关掉，线都会消失。
+  //
+  // ⇒ 不变量：**动画是"锦上添花"，不是"可见性的来源"**。
+  //    在动画被关掉的条件下，图必须仍然是完整的图。
+  //
+  // ⚠️ 判据用**自己造的新实例**，不用页面上现成的 —— 页面上的会被
+  //    ResizeObserver 重绘（重绘不加动画类），拿到的态取决于时序。
+  const animProbe = await p.evaluate(() => {
+    function fresh() {
+      const host = document.createElement('div');
+      host.style.cssText = 'position:absolute;left:-9999px;top:0;width:200px';
+      host.innerHTML = '<span class="sparkline" data-spark="1,2,3,4,5,6,7,8"' +
+                       ' data-spark-height="28"></span>';
+      document.body.appendChild(host);
+      window.Chart.update(host);
+      return host;
+    }
+    const out = {};
+
+    /* ① 默认（有动画）：动画必须真的在，否则下面那条就失去意义 ——
+          把 animation 删掉也能"通过关掉动画后可见"，那是骗自己。 */
+    const h1 = fresh();
+    const ln1 = h1.querySelector('path.spark-line');
+    out.animName = ln1 ? getComputedStyle(ln1).animationName : '(无 path)';
+    h1.remove();
+
+    /* ② 与视觉门禁**逐字相同**的冻结条件 */
+    const h2 = fresh();
+    const st = document.createElement('style');
+    st.textContent = '*,*::before,*::after{animation:none !important;' +
+                     'transition:none !important;caret-color:transparent !important}';
+    document.head.appendChild(st);
+    const paths = [...h2.querySelectorAll('path.spark-line')];
+    out.count = paths.length;
+    out.rows = paths.map((e) => {
+      const cs = getComputedStyle(e);
+      return {
+        off: cs.strokeDashoffset,
+        dash: cs.strokeDasharray,
+        len: Math.round(e.getTotalLength ? e.getTotalLength() : -1),
+        anim: cs.animationName,
+      };
+    });
+    st.remove();
+    h2.remove();
+    return out;
+  });
+
+  add('对照：默认下 sparkline 的入场动画确实在（' + animProbe.animName + '）',
+      animProbe.animName === 'spark-draw');
+  add('冻结动画后仍有折线可查（判据有对象）', animProbe.count > 0);
+  const hiddenLines = animProbe.rows.filter((r) => parseFloat(r.off) !== 0);
+  add('🔴🔴 冻结动画后折线仍可见（offset=0，不是被推出可见区）',
+      animProbe.count > 0 && hiddenLines.length === 0);
+  if (hiddenLines.length) {
+    console.log('       被推出的首个：offset=' + hiddenLines[0].off +
+                ' · 路径长≈' + hiddenLines[0].len + 'px' +
+                ' ⇒ 线在截图里整条不见，视觉基线会把"不见了"录成正常');
+  }
+
   // ── axe
   await p.addScriptTag({ path: AXE });
   const a = await p.evaluate(async () => {

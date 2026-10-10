@@ -202,6 +202,48 @@ const REPO = path.resolve(__dirname, '..');
         });
         return r;
       },
+
+      /* ⑧ 单位在两处都写了 ⇒ 必须写的是同一个（0.8.0 新增）
+         🔴 起因：财务表**同时**在表题里写「金额单位：万元」、又在列头写 `unit: '万元'`。
+            两处都是人写的 ⇒ 它们会漂移。实测踩到的还不是漂移，而是
+            「两处都写万元、但数值量级是十万元」——那种**机器查不出来**（见下）。
+
+         ⚠️ 诚实边界：**数值量级与单位是否相符，本判据查不出来**。
+            那需要外部真值（真实财报），本库没有也不该有。
+            所以这里只钉死能钉的：**声明单位的两处写法必须一致**，
+            并且"一处都没声明"要判红（否则把 `unit` 删了就假绿）。
+
+            量级那一半只能靠人核对 —— 上面那条真事故是人工核对时发现的，
+            不是门禁发现的。不要因为门禁绿了就以为单位一定对。 */
+      '声明了金额单位的表：表题与列头写法一致': async (p) => {
+        const r = await p.evaluate(() => {
+          const tables = [...document.querySelectorAll('.table table')];
+          const found = [];
+          for (const t of tables) {
+            const cap = t.querySelector('caption');
+            if (!cap) continue;
+            const m = cap.textContent.match(/金额单位\s*[：:]\s*([^\s·,，]+)/);
+            if (!m) continue;
+            const declared = m[1];
+            const units = [...t.querySelectorAll('thead .table__unit')]
+              .map((e) => e.textContent.trim()).filter(Boolean);
+            const money = units.filter((u) => /元/.test(u));
+            found.push({ declared: declared, money: money });
+          }
+          if (!found.length) {
+            return { ok: false,
+                     note: '🔴 页面上没有"声明了金额单位"的表 ⇒ 判据无从生效' +
+                           '（多半是表题被改掉了）。跳过等于假绿，所以判红。' };
+          }
+          const bad = found.filter((o) =>
+            o.money.length === 0 || o.money.some((u) => u !== o.declared));
+          return { ok: bad.length === 0,
+                   note: found.map((o) => '表题「' + o.declared + '」/ 列头 ' +
+                         JSON.stringify(o.money)).join(' · ') +
+                         (bad.length ? ' ⇒ 🔴 两处不一致' : ' ⇒ 一致') };
+        });
+        return r;
+      },
     },
   });
   process.exit(kit.report(r));

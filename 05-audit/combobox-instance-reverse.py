@@ -83,6 +83,36 @@ MUTANTS = [
 ]
 
 
+def detect_newline(text):
+    """探测文件的换行风格（CRLF / CR / LF）。"""
+    if '\r\n' in text:
+        return '\r\n'
+    if '\r' in text:
+        return '\r'
+    return '\n'
+
+
+def adapt_newline(s, nl):
+    """把变异串的换行改成源文件的换行风格。
+
+    🔴 为什么必须有这一步（2026-10-10 实测）
+      读写用 `newline=''` 是为了**不改动文件换行风格** ——
+      默认文本模式会把 CRLF 统一成 LF，写回后内容一字未变、git 却看到一整片红。
+
+      但代价是：`MUTANTS` 里写的是 `\\n`，而 Windows 签出的 `combobox.js` 是
+      **纯 CRLF**（实测 393 个 CRLF、0 个裸 LF）⇒ 目标串永远匹配不上
+      ⇒ `old not in orig` 恒成立 ⇒ 变异**静默失效**，而门禁照样打印那一行"已失效"。
+      现象：3/9 个变异体报"目标串找不到"，反向控制名存实亡。
+
+      ⇒ 这正是 INVARIANT I-15 实证 A 的同类：**判据绑在了字节（换行符）上，
+        而不是内容上**。修法与那边一致：先把换行归一，再比对。
+      区别是这里**归一的是变异串**，文件本身一个字节都不动。
+    """
+    if nl == '\n' or not s:
+        return s
+    return s.replace('\r\n', '\n').replace('\r', '\n').replace('\n', nl)
+
+
 def run_gate():
     p = subprocess.run(GATE, capture_output=True, text=True,
                        encoding='utf-8', errors='replace')
@@ -101,6 +131,7 @@ def main():
 
     orig = io.open(SRC, encoding='utf-8', newline='').read()
     io.open(BAK, 'w', encoding='utf-8', newline='').write(orig)
+    nl = detect_newline(orig)
 
     bad = 0
     try:
@@ -115,13 +146,15 @@ def main():
             bad += 1
 
         for why, old, new, tag in MUTANTS:
-            if old not in orig:
+            old_a = adapt_newline(old, nl)
+            new_a = adapt_newline(new, nl)
+            if old_a not in orig:
                 print('  🔴 %s：目标串在 %s 里找不到 ⇒ 变异没生效'
                       '（判据形状变了，这条反向控制已失效）' % (why, SRC))
                 bad += 1
                 continue
             io.open(SRC, 'w', encoding='utf-8', newline='') \
-                .write(orig.replace(old, new, 1))
+                .write(orig.replace(old_a, new_a, 1))
             code, fails = run_gate()
             if code == 0:
                 print('  🔴 %s ⇒ 门禁还是绿的（判据 %s 没牙）' % (why, tag))

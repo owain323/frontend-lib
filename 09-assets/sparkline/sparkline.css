@@ -97,15 +97,45 @@ td > .sparkline,
 .spark { margin: 0; }
 
 /* 🔴 动画独立成 `.spark-anim`（原来复用 .spark-line，
-   重写外观后那个判断就失效了 —— 动画会无视设置照播） */
+   重写外观后那个判断就失效了 —— 动画会无视设置照播）。
+
+   🔴 0.8.0 修：**基态必须是"看得见"，动画负责"从不可见到可见"**
+   ----------------------------------------------------------------------------
+   原来写反了：
+     .spark-anim { stroke-dashoffset: var(--spark-len, 1000);   ← 基态：整条推出可见区
+                   animation: spark-draw … forwards }           ← 靠它才变可见
+     @keyframes spark-draw { to { stroke-dashoffset: 0 } }
+
+   这个写法有个致命性质：**动画一旦被取消，线就整条消失**
+   （取消 ⇒ 回落到基态 = 完全偏移 ⇒ 没有可见线段）。
+   实测踩到两处，都不是理论推演：
+
+     ① **视觉门禁假红**。`shot-baseline.py` 为了"冻结动画再截图"会注入
+        `animation:none !important` ⇒ sparkline 的线整条不见 ⇒
+        报"21 个块变化、观感不一致"，重跑又绿 —— 表现为**偶发假红**。
+        （为什么偶发：`.spark-anim` 只在**首绘**时加；ResizeObserver 会紧接着
+          再绘一次且**不加**这个类 ⇒ 截到"首绘态"就看不见、截到"重绘态"就正常。
+          ⇒ 每次截图落在哪个态，取决于 RO 回调与截图的先后 —— 纯竞态。）
+     ② **任何第三方 CSS 重置 / 用户样式**把动画关掉，线都会消失。
+        这不是假设：`@media print` 与 `prefers-reduced-motion` 都得自己
+        再补一行 `stroke-dashoffset: 0` 才不出错 —— 那正是"写反了"的味道。
+
+   ⇒ 正确写法：基态 `0`（可见），动画的 `from` 才是"完全偏移"。
+     取消动画最多是"少一次动效"，绝不会变成"少一张图"。
+
+   ⚠️ `--spark-len` 兜底 1000 是**承重的**：dasharray 必须 ≥ 路径长度，
+      否则"偏移 1000"落不到可见区之外，入场效果会变形。
+      目前全库没有任何 JS 去写这个变量（早先的注释说 JS 会写，是错的），
+      所以 1000 就是实际生效值。超过 1000px 宽的 sparkline 不在本库场景内。 */
 .spark-anim {
   stroke-dasharray: var(--spark-len, 1000);
-  stroke-dashoffset: var(--spark-len, 1000);
+  stroke-dashoffset: 0;
   animation: spark-draw var(--dur-slow, 600ms) var(--ease-out) forwards;
 }
 
 @keyframes spark-draw {
-  to { stroke-dashoffset: 0; }
+  from { stroke-dashoffset: var(--spark-len, 1000); }
+  to   { stroke-dashoffset: 0; }
 }
 
 /* 🔴 关掉动画的三种情况（缺一不可）：

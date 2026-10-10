@@ -293,6 +293,40 @@ def selftest():
     def run(d, b=None, c=None):
         return check(d, b or base, c or cur, V)[0]
 
+    def pick_subject():
+        """挑突变对象：**当下真实存在**于公开面、且**基线里也有**的名字。
+
+        🔴 为什么不能直接拿 planned[0] 当突变对象（0.8.0 实测踩到）
+        -------------------------------------------------------------
+        planned[0] 曾经是 `state--delayed`。0.8.0 兑现承诺把它移除之后，
+        它就**不在公开面里了** ⇒ ③④⑤ 三个突变体同时失效，而且坏得很隐蔽：
+
+          · ③ 连带触发 ⑤⑦ ⇒ 隔离断言报"实际 3 条"（看着像判据写错）
+          · ④ 变成 **0 条** ⇒ 该红的没红，这是最坏的一种：门禁默默变宽
+          · ⑤ `list.remove` 直接抛 ValueError ⇒ 自检崩在半路，
+            后面 4 项**根本没跑**，而报告只显示到崩溃处
+
+        ⇒ 突变对象必须满足两个条件，缺一不可：
+          ① 在 cur 里（③④ 要靠它"还在"造反例）
+          ② 在 base 里（⑤⑦ 要靠它"消失"造反例，且 remove 不能抛）
+          ③ 不在登记册的任何名字 / replacement 里（否则会连带触发 ⑥⑨，
+             隔离断言就分不清到底是谁红的）
+        """
+        raw = json.loads(depr_raw)
+        taken = set()
+        for e in list(raw.get('planned', [])) + list(raw.get('retroactive', [])):
+            if e.get('name'):
+                taken.add(e['name'])
+            rep = e.get('replacement')
+            if rep:
+                taken.update(rep if isinstance(rep, list) else [rep])
+        for kind in KINDS:
+            cand = [n for n in sorted(set(cur[kind]) & set(base[kind]))
+                    if n not in taken]
+            if cand:
+                return kind, cand[0]
+        raise SystemExit('自检造不出突变对象：公开面 ∩ 基线 是空的')
+
     # 🔴 突变体的版本号必须**从当前版本推导**，不能写死。
     #    实测踩过（0.7.8 收口时）：写死的 removeIn='0.7.8' 在 0.7.7 时是"未来"，
     #    升到 0.7.8 就变成"已到期" ⇒ ④ 连带触发 ⇒ 隔离断言报"实际 2 条"。
@@ -316,39 +350,47 @@ def selftest():
     def past_minor2():         # 上两个次版本 ⇒ 与 past_minor() 搭配时 ③ 仍成立
         return '%d.%d.0' % (Vk[0], Vk[1] - 2)
 
+    # 🔴 突变一律用 **append 合成条目**，不去改 planned[0]。
+    #    改 planned[0] 会同时动到库里那条真实登记 ⇒ 它的 ④⑤⑦ 状态跟着变，
+    #    隔离断言就分不清红的是"合成的那个反例"还是"真实登记出问题了"。
+    SKIND, SNAME = pick_subject()
+
+    def syn(**kw):
+        e = {'id': 'syn', 'kind': SKIND, 'name': SNAME,
+             'reason': '合成样本（只在自检内存里，不写回文件）'}
+        e.update(kw)
+        return e
+
+    def with_syn(**kw):
+        return clone(lambda d: d['planned'].append(syn(**kw)))
+
     # ② 预告未来
-    expect('deprecatedIn 写成未来版本 ⇒ 必须红',
-           run(clone(lambda d: d['planned'][0].update(
-               deprecatedIn='9.9.9', removeIn='9.10.0'))),
-           '不许预告未来')
+    only('deprecatedIn 写成未来版本 ⇒ 必须红',
+         run(with_syn(deprecatedIn='9.9.9', removeIn='9.10.0')),
+         '不许预告未来')
     # ③ 没跨次版本
     only('removeIn 与 deprecatedIn 同一个次版本 ⇒ 没给迁移窗口 ⇒ 必须红',
-         run(clone(lambda d: d['planned'][0].update(
-             deprecatedIn=this_minor(), removeIn=same_minor_future()))),
+         run(with_syn(deprecatedIn=this_minor(), removeIn=same_minor_future())),
          '没跨一个次版本')
     # ④ 到期不删
     only('已到期却还留在公开面里 ⇒ 承诺了没删 ⇒ 必须红',
-         run(clone(lambda d: d['planned'][0].update(
-             deprecatedIn=past_minor2(), removeIn=past_minor()))),
+         run(with_syn(deprecatedIn=past_minor2(), removeIn=past_minor())),
          '承诺了却没删')
-    # ⑤ 提前删（连基线一起改 ⇒ 排除 ⑦ ⑨，孤立出 ⑤）
-    name = json.loads(depr_raw)['planned'][0]['name']
-    kind = json.loads(depr_raw)['planned'][0]['kind']
+    # ⑤ 提前删（连基线一起改 ⇒ 排除 ⑦，孤立出 ⑤）
     only('还没到期却已从公开面消失（提前删）⇒ 必须红',
-         run(clone(lambda d: d['planned'][0].update(
-             deprecatedIn=this_minor(), removeIn=next_minor())),
-             clone_base(lambda b: b[kind].remove(name)),
-             clone_cur(lambda c: c[kind].remove(name))),
+         run(with_syn(deprecatedIn=this_minor(), removeIn=next_minor()),
+             clone_base(lambda b: b[SKIND].remove(SNAME)),
+             clone_cur(lambda c: c[SKIND].remove(SNAME))),
          '提前删了')
     # ⑥ replacement 指向不存在的东西
-    expect('replacement 指向公开面里没有的名字 ⇒ 必须红',
-           run(clone(lambda d: d['retroactive'][0].update(
-               replacement=['--measure-page', '--no-such-token']))),
-           'replacement 指向')
+    only('replacement 指向公开面里没有的名字 ⇒ 必须红',
+         run(clone(lambda d: d['retroactive'][0].update(
+             replacement=['--measure-page', '--no-such-token']))),
+         'replacement 指向')
     # ⑦ 未登记的移除
     only('基线里有、现在没了，而登记册里没有条目 ⇒ 无流程移除 ⇒ 必须红',
          run(json.loads(depr_raw), base,
-             clone_cur(lambda c: c['token'].remove('--paper'))),
+             clone_cur(lambda c: c[SKIND].remove(SNAME))),
          '没走流程的移除')
     # ⑧ 历史欠账棘轮
     only('retroactive 再加一条（超出预算）⇒ 棘轮必须红',

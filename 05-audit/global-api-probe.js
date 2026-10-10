@@ -42,6 +42,10 @@ const TARGETS = {
   Chart: '/09-assets/sparkline/demo.html',
   ChartAdapter: '/09-assets/echarts-adapter/demo.html',
   ModelViewer: '/09-assets/model-viewer/demo.html',
+  /* 二维科学绘图（0.8.0 新增）。它只有 render（direct 形态），
+     没有 create / attach —— 按 create 写会直接 TypeError，
+     所以必须进这张表，让 api-form 门禁比对"文档写的形态"与"实测形态"。 */
+  ScientificPlot: '/09-assets/scientific-plot/demo.html',
   // Theme 在 01-tokens，用加载它的页面当宿主
   Theme: '/10-review/ios/index.html',
 };

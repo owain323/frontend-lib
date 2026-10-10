@@ -1,0 +1,112 @@
+/* ============================================================================
+   scientific-plot.css — 二维科学绘图样式（零依赖 · 纯令牌驱动）
+   ============================================================================
+   依赖：01-tokens/tokens.css
+   🔴 全部颜色走令牌：
+      - 换主题（明/暗）时图表跟着变，不需要重画
+      - 本文件的色值一处都不写死（hardcode-gate 会拦）
+
+   🔴 分类色只有 5 个（--splot-s0..s4），超出的曲线靠**线型**区分，
+      不循环用色 —— 第 6 条和第 1 条同色，读者分不清谁是谁。
+      这与 09-assets/echarts-adapter 的 seriesColors 是同一条规则。
+   ============================================================================ */
+
+.splot {
+  display: block;
+  max-width: 100%;
+  height: auto;                      /* 窄屏时按比例缩，不横向溢出 */
+  font-family: var(--sans);
+}
+
+/* ---------- 分类色：一个系列一个变量，各元素消费它 ---------- */
+.splot__s0 { --splot-c: var(--accent); }
+.splot__s1 { --splot-c: var(--danger); }
+.splot__s2 { --splot-c: var(--success); }
+.splot__s3 { --splot-c: var(--warning); }
+.splot__s4 { --splot-c: var(--info); }
+
+/* ---------- 网格与轴 ---------- */
+.splot__grid {
+  stroke: var(--border-decor);
+  stroke-width: 1;
+}
+.splot__axis {
+  stroke: var(--border-decor-str);
+  stroke-width: 1;
+}
+.splot__tick {
+  stroke: var(--border-decor-str);
+  stroke-width: 1;
+}
+
+/* ---------- 文字：刻度 / 轴名 ---------- */
+.splot__tick-label {
+  fill: var(--text-tertiary);
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+}
+.splot__axis-label {
+  fill: var(--text-secondary);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+}
+
+/* ---------- 数据：线 / 点 / 误差棒 / 区间带 ---------- */
+.splot__line {
+  fill: none;
+  stroke: var(--splot-c, var(--accent));
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.splot__pt {
+  fill: var(--splot-c, var(--accent));
+  stroke: var(--surface);            /* 点压在线上时留一圈底，避免和线糊在一起 */
+  stroke-width: 1;
+}
+.splot__err {
+  stroke: var(--splot-c, var(--accent));
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+.splot__band {
+  fill: var(--splot-c, var(--accent));
+  fill-opacity: .14;                 /* 区间带要能被下面的网格透出来 */
+  stroke: none;
+}
+
+/* ---------- 参考线 / 标注 / 备注 ---------- */
+.splot__ref {
+  stroke: var(--text-tertiary);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+.splot__ref-label {
+  fill: var(--text-tertiary);
+  font-size: var(--fs-xs);
+}
+.splot__anno-dot {
+  fill: var(--text-primary);
+}
+.splot__anno {
+  fill: var(--text-primary);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+.splot__note {
+  fill: var(--warning);
+  font-size: var(--fs-xs);
+}
+
+/* ---------- 高对比度模式：加粗轴与线，避免糊在一起 ---------- */
+@media (prefers-contrast: more) {
+  .splot__axis,
+  .splot__tick { stroke: var(--text-primary); }
+  .splot__line { stroke-width: 3; }
+}
+
+/* ---------- 打印：网格退到更浅，线保持清晰 ---------- */
+@media print {
+  .splot__grid { stroke: var(--border-decor); }
+  .splot__band { fill-opacity: .22; }
+}

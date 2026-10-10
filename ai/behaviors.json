@@ -50,7 +50,8 @@
       "bar": ["n/a", "图表：canvas 绘制，没有浮层"],
       "echarts-adapter": ["n/a", "图表适配器：只做数据转换，没有浮层"],
       "model-viewer": ["n/a", "三维查看器：canvas 交互，没有浮层"],
-      "sparkline": ["n/a", "迷你图：SVG 绘制，没有浮层"]
+      "sparkline": ["n/a", "迷你图：SVG 绘制，没有浮层"],
+      "scientific-plot": ["n/a", "科学绘图：SVG 绘制，没有浮层"]
     },
     "focus-return": {
       "combobox": ["n/a", "焦点从未离开输入框，无所谓归位"],
@@ -70,7 +71,8 @@
       "bar": ["n/a", "图表不涉及焦点"],
       "echarts-adapter": ["n/a", "图表适配器不涉及焦点"],
       "model-viewer": ["n/a", "三维查看器：canvas 交互，不涉及这组浮层焦点"],
-      "sparkline": ["n/a", "迷你图不涉及焦点"]
+      "sparkline": ["n/a", "迷你图不涉及焦点"],
+      "scientific-plot": ["n/a", "科学绘图不涉及焦点"]
     },
     "roving": {
       "combobox": ["n/a", "aria-activedescendant 模式：焦点常驻 input，核靠 e.target 判断当前项 ⇒ 收不到"],
@@ -90,7 +92,8 @@
       "bar": ["n/a", "图表没有可聚焦的项集合"],
       "echarts-adapter": ["n/a", "图表适配器没有项集合"],
       "model-viewer": ["n/a", "方向键是**相机平移**（OrbitControls），不是 UI 项游走"],
-      "sparkline": ["n/a", "迷你图没有项集合"]
+      "sparkline": ["n/a", "迷你图没有项集合"],
+      "scientific-plot": ["n/a", "科学绘图的坐标轴/刻度不是可游走的 UI 项集合"]
     },
     "typeahead": {
       "combobox": ["n/a", "有输入框，**打字即过滤**；用 typeahead 会每打一个字就把焦点拽走"],
@@ -110,7 +113,8 @@
       "bar": ["n/a", "图表没有候选项集合"],
       "echarts-adapter": ["n/a", "图表适配器没有候选项集合"],
       "model-viewer": ["n/a", "没有候选项集合"],
-      "sparkline": ["n/a", "迷你图没有候选项集合"]
+      "sparkline": ["n/a", "迷你图没有候选项集合"],
+      "scientific-plot": ["n/a", "科学绘图没有候选项集合"]
     }
   }
 }
