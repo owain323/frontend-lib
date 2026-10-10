@@ -7,9 +7,9 @@
     "manifesto 里的 sourceSha256 变了而 dist 没重建 ⇒ dist-parity/dist-fresh 门禁会红"
   ],
   "totals": {
-    "sourceFiles": 55,
-    "sourceBytes": 539663,
-    "distGzip": 97126
+    "sourceFiles": 56,
+    "sourceBytes": 554151,
+    "distGzip": 99538
   },
   "files": [
     {
@@ -968,22 +968,42 @@
       ]
     },
     {
+      "source": "04-recipes/report/report.css",
+      "sourceSha256": "d47af7823cf364386b25f34e901610ed67dc8becb5b75dd8a45385437f822dfd",
+      "sourceBytes": 13314,
+      "sourceGzip": 5191,
+      "outputs": [
+        {
+          "path": "dist/04-recipes/report/report.css",
+          "kind": "stripped",
+          "bytes": 4737,
+          "gzip": 1267
+        },
+        {
+          "path": "dist/04-recipes/report/report.min.css",
+          "kind": "minified",
+          "bytes": 3917,
+          "gzip": 1122
+        }
+      ]
+    },
+    {
       "source": "04-recipes/table/table.css",
-      "sourceSha256": "fec89783e6e5f5af4dba1f9a76980a72eb929da8f511e72bee6910c9994d55d3",
-      "sourceBytes": 11823,
-      "sourceGzip": 4331,
+      "sourceSha256": "f00d4d6821e4d04043d909d3b915826316116f6914b9c08a03501bf4594f440f",
+      "sourceBytes": 12997,
+      "sourceGzip": 4910,
       "outputs": [
         {
           "path": "dist/04-recipes/table/table.css",
           "kind": "stripped",
-          "bytes": 5640,
-          "gzip": 1510
+          "bytes": 5757,
+          "gzip": 1519
         },
         {
           "path": "dist/04-recipes/table/table.min.css",
           "kind": "minified",
-          "bytes": 4712,
-          "gzip": 1341
+          "bytes": 4821,
+          "gzip": 1355
         }
       ]
     },

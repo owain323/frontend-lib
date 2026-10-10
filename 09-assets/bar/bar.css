@@ -51,21 +51,56 @@
 }
 
 /* ---------- 柱子 ---------- */
+/* 🔴 系列身份：一个类给一套颜色变量，rect 与图例色块**共用同一份**声明。
+   ⇒ 图例画的色，和读者在柱子上看到的色，不可能是两个东西。
+   （旧的 --stack-N 写法做不到这一点，图例是后加的，那时也没有图例。） */
+.bar__s0 { --bar-c: var(--accent); }
+.bar__s1 { --bar-c: var(--text-tertiary); }
+.bar__s2 { --bar-c: var(--success); }
+.bar__s3 { --bar-c: var(--warning); }
+.bar__s4 { --bar-c: var(--info); }
+
 .bar__bar {
-  fill: var(--accent);
+  fill: var(--bar-c, var(--accent));
   /* 悬停变深（只对真能悬停的设备生效，见下方 @media） */
   transition: fill 120ms var(--ease-out, ease);
 }
 
-.bar__bar--stack-1 { fill: var(--text-tertiary); }
-.bar__bar--stack-2 { fill: var(--accent); opacity: 0.55; }
-
-/* 🔴 被截断的那一根：加一道顶线，明确"这是被裁的" */
+/* 🔴 被截断的那一根：加一道顶线，明确"这是被裁的"
+   （放在系列色之后 ⇒ 特异性更高，能盖住 series 给的 fill） */
 .bar__bar[data-clipped="1"] {
   fill: var(--danger, #c0392b);
   stroke: var(--danger, #c0392b);
   stroke-width: 1;
   stroke-dasharray: 2 2;
+}
+
+/* ---------- 图例 ---------- */
+.bar__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-4, 1rem);
+  margin: var(--sp-2) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-xs, 12px);
+  color: var(--text-secondary);
+}
+
+.bar__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+/* 色块与系列共用 --bar-c ⇒ 颜色不会对不上 */
+.bar__legend-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--bar-c, var(--accent));
+  flex: 0 0 auto;
 }
 
 /* ---------- 阈值线 ---------- */
@@ -110,7 +145,13 @@
    （移动端根本没有"移开鼠标"这个动作）。
    ⇒ 只对**真能悬停的设备**（鼠标 / 触控板）生效。 */
 @media (hover: hover) and (pointer: fine) {
-  .bar__bar:hover { fill: var(--accent-strong, var(--accent)); }
+  /* 🔴 悬停**不改系列色**：把柱子整块染成强调色 ⇒ 读者会把它读成另一个系列
+     （图例还在旁边写着本来的颜色，两者直接打架）。
+     ⇒ 改成加一道描边：位置不变、归属颜色不变。 */
+  .bar__bar:hover {
+    stroke: var(--text-primary);
+    stroke-width: 1.5;
+  }
 }
 
 /* ---------- 暗色下容器要跟着换 ---------- */

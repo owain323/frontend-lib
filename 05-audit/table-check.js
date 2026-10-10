@@ -203,6 +203,97 @@ const REPO = path.resolve(__dirname, '..');
         return r;
       },
 
+      /* ⑨ 🔴 排序：**箭头必须跟实际数据顺序一致**（VIZ-REPORT-01 · P1-1）
+         -------------------------------------------------------------
+         这一pts：旧门禁只查"aria-sort 在不在 th 上"（结构）⇒ 全绿；
+         而浏览器里箭头永远是"↕"（结果），数据排好了也看不出来。
+         ⇒ 这里的判据是：点一下，读出**表里真的顺序**，
+            再点一下，顺序必须反过来，且箭头两次都不一样
+            才叫"数据看完无事"。 */
+      '⑨ 排序箭头与实际数据顺序同步（不只是 aria-sort 写对了）': async (p) => {
+        const read = () => p.evaluate(() => {
+          const th = [...document.querySelectorAll('.table--financial thead th')]
+            .find((t) => (t.querySelector('.table__sort') || {}).dataset &&
+                         t.querySelector('.table__sort').dataset.key === 'rev');
+          const btn = th.querySelector('.table__sort');
+          return {
+            arrow: getComputedStyle(btn, '::after').content,
+            aria: th.getAttribute('aria-sort'),
+            vals: [...document.querySelectorAll('.table--financial tbody tr')]
+              .map((tr) => {
+                const td = tr.children[1];
+                return td ? Number(String(td.textContent).replace(/[,，\s]/g, '')) : NaN;
+              }),
+          };
+        });
+        await p.evaluate(() => {
+          const b = document.querySelector('.table--financial .table__sort[data-key="rev"]');
+          if (b) b.click();
+        });
+        await new Promise((r) => setTimeout(r, 150));
+        const asc = await read();
+        await p.evaluate(() => {
+          const b = document.querySelector('.table--financial .table__sort[data-key="rev"]');
+          if (b) b.click();
+        });
+        await new Promise((r) => setTimeout(r, 150));
+        const desc = await read();
+
+        const finite = asc.vals.filter((v) => isFinite(v));
+        const isAsc = finite.every((v, i) => i === 0 || finite[i - 1] <= v);
+        const dfin = desc.vals.filter((v) => isFinite(v));
+        const isDesc = dfin.every((v, i) => i === 0 || dfin[i - 1] >= v);
+        const arrowsDiffer = asc.arrow !== desc.arrow && /↑|↓/.test(asc.arrow);
+        const ok = finite.length > 1 && isAsc && isDesc && arrowsDiffer;
+        return { ok,
+                 note: '箭头 ' + asc.arrow + '→' + desc.arrow +
+                       ' · 第一次是否升序=' + isAsc + ' · 第二次是否降序=' + isDesc +
+                       ' · aria=' + asc.aria + '→' + desc.aria +
+                       (ok ? '' : '  🔴 排序是假的（箭头或顺序没跟着变）') };
+      },
+
+      /* ⑩ 🔴 动态文本不许被当成 HTML（VIZ-REPORT-01 · P1-2）
+         demo 是给人**照抄**的 ⇒ 它必须示范正确的做法：
+           数据里的 <b> / <a> / 带引号的属性 都要**原样显示**。
+         判据看的是**结果**：真的有没有生成这些元素。 */
+      '⑩ 动态文本按文本渲染，不生成 HTML 元素': async (p) => {
+        const r = await p.evaluate(() => {
+          const box = document.getElementById('escproof');
+          if (!box) return { missing: true };
+          const tbl = box.querySelector('table');
+          if (!tbl) return { missing: true };
+          const all = [tbl, ...tbl.querySelectorAll('*')];
+          return {
+            missing: false,
+            b: tbl.querySelectorAll('b').length,
+            a: tbl.querySelectorAll('a').length,
+            handlers: all.filter((e) => [...e.attributes]
+              .some((at) => /^on/i.test(at.name))).length,
+            /* 尖括号必须**原样出现在文本里** —— 转义对了才看得到字面的 <b> */
+            literal: (tbl.textContent || '').indexOf('<b>') >= 0,
+            rows: tbl.querySelectorAll('tbody tr').length,
+          };
+        });
+        if (r.missing) {
+          return { ok: false, note: '🔴 找不到转义自证区（#escproof）⇒ 判据无从生效' };
+        }
+        const ok = r.rows > 0 && r.b === 0 && r.a === 0 && r.handlers === 0 && r.literal;
+        return { ok,
+                 note: r.rows + ' 行 · 生成了 <b> ' + r.b + ' 个 / <a> ' + r.a +
+                       ' 个 / 事件属性 ' + r.handlers + ' 个 · 字面含 <b> =' + r.literal };
+      },
+
+      /* ⑪ 三种用途预设**不能合并**（合并会把财务表的规则套到三线表上） */
+      '⑪ 三种预设各自独立存在（财务 / 三线表 / 统计）': async (p) => {
+        const r = await p.evaluate(() => ({
+          fin: document.querySelectorAll('.table--financial').length,
+          acad: document.querySelectorAll('.table--academic').length,
+          stats: document.querySelectorAll('.table--stats').length,
+        }));
+        return { ok: r.fin >= 1 && r.acad >= 1 && r.stats >= 1,
+                 note: '财务 ' + r.fin + ' · 三线表 ' + r.acad + ' · 统计 ' + r.stats };
+      },
+
       /* ⑧ 单位在两处都写了 ⇒ 必须写的是同一个（0.8.0 新增）
          🔴 起因：财务表**同时**在表题里写「金额单位：万元」、又在列头写 `unit: '万元'`。
             两处都是人写的 ⇒ 它们会漂移。实测踩到的还不是漂移，而是

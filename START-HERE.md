@@ -97,6 +97,7 @@
 | `analysis-report/` | `04-recipes/analysis-report/` | 组合型研究报告：正文 + 辅助栏并排，窄屏退回单栏 |
 | `data-showcase/` | `04-recipes/data-showcase/` | 四种数据表达方式对照：我到底该用哪个 |
 | `longform/` | `04-recipes/longform/` | 单栏长文排版与阅读节奏 |
+| `report/` | `04-recipes/report/` | 报告版式系统 v1：共享基础 + 三种版式取舍（杂志 / 科研技术 / 金融研究） |
 | `table/` | `04-recipes/table/` | 专业数据表格：列级格式与单位，三种用途预设 |
 
 ## 抄完先做这三件事

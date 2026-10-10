@@ -6,7 +6,11 @@
 #    门禁的价值在于"每次都跑"，跑不全等于没有。
 set -u
 cd "$(dirname "$0")/.." || exit 2
-PY="python"
+# ⭐ 允许外部指定解释器：`PY=/path/to/python bash 05-audit/check-all.sh`
+#   为什么必须能覆盖：写死 `python` 时，若默认那个没装 Pillow，
+#   `visual`（视觉回归）会**永远 SKIP** —— 跳过不是通过，
+#   而外人根本看不出自己少跑了一道（见 ERRORS「无法实测的必须保留为未验证」）。
+PY="${PY:-python}"
 # ⭐ 优先用环境变量；否则在常见位置里探测（只用相对位置，不写死绝路径）。
 if [ -z "${NODE_DIR:-}" ]; then
   for _c in "$HOME/.local/share/frontend-lib-tools/node"            "$PWD/.toolchain/node"; do
@@ -310,8 +314,10 @@ run "overlay" node 05-audit/overlay-check.js
 # 弹层对**宿主页面**的影响（补偿叠加 / 引用计数 / 焦点归位 / 不横向跳 / 宽度公开）
 run "overlay-host" node 05-audit/overlay-host-check.js
 run "table" node 05-audit/table-check.js
-# 04-recipes 的两个页面级示例：版式在两档宽度下不塌、拼装结果语义正确
+# 04-recipes 页面级示例：版式在两档宽度下不塌、拼装结果语义正确
 run "analysis-report" node 05-audit/analysis-report-check.js
+# 报告版式系统 v1：三套 profile 的**取舍**真的落在计算值上（不是文案差异）
+run "report" node 05-audit/report-check.js
 run "data-showcase" node 05-audit/data-showcase-check.js
 run "tooltip" node 05-audit/tooltip-check.js
 run "dropdown" node 05-audit/dropdown-check.js

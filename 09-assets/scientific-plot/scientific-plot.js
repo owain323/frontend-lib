@@ -43,6 +43,9 @@
   var DEFAULT_MARGIN = { top: 18, right: 22, bottom: 56, left: 68 };
   var SERIES_CLASSES = 5;          /* 分类色 5 个，与 echarts-adapter 的 ramp 对齐 */
   var DASHES = [[], [7, 4], [2, 3], [10, 4, 2, 4], [1, 3]];  /* 超出 5 条用线型区分 */
+  /* 每张图的 clipPath 需要**全局唯一**的 id：
+     同一页两张图共用一个 id ⇒ 后渲染的那张会被前一张的裁剪矩形裁掉 */
+  var plotUid = 0;
 
   /* ------------------------------------------------------------------ 工具 */
 
@@ -209,6 +212,36 @@
     return out;
   }
 
+  /**
+   * 把一段数据切成"坐标都有效"的连续子段。
+   *
+   * 🔴 为什么不能直接 `xs.to(x) + ',' + ys.to(y)` 拼字符串：
+   *     `makeScale.to()` 对**对数轴上的非正数返回 null**（它在那条轴上没有位置），
+   *     直接拼 ⇒ 产出 `128,null` ⇒ 浏览器把**整条** polyline 判为非法而丢弃，
+   *     读者看到的是"这条曲线不存在"，而不是"这里有几个点画不出来"。
+   *     ⇒ 必须**在点级别**断，而且要把断掉的点**计数**告诉调用方。
+   *
+   * @param {Array} seg  [[x,y],…]，不含缺失值
+   * @param {Object} tally  { n: number } —— 被跳过的点数累加器（可为 null）
+   * @returns {Array} 若干段 [[[px,py],…],…]，每段 ≥1 个点
+   */
+  function toRuns(seg, xs, ys, tally) {
+    var runs = [], cur = [];
+    (seg || []).forEach(function (q) {
+      var px = xs.to(q[0]), py = ys.to(q[1]);
+      /* 对数轴 ≤0 ⇒ null；非有限值 ⇒ NaN/Infinity。**两者都不能进 graphics */
+      if (px == null || py == null || !isFinite(px) || !isFinite(py)) {
+        if (tally) tally.n++;
+        if (cur.length) runs.push(cur);
+        cur = [];
+        return;
+      }
+      cur.push([px, py]);
+    });
+    if (cur.length) runs.push(cur);
+    return runs;
+  }
+
   /* ------------------------------------------------------------- 主渲染 */
 
   function render(el, spec) {
@@ -290,32 +323,76 @@
 
     /* ---------- 数据序列 ---------- */
     var series = spec.series || [];
-    var colorIdx = 0;
-    var drawn = 0;
+    var dparts = [];            /* 数据层单独收集 ⇒ 统一挂裁剪。见下方 clipId */
+    var tally = { n: 0 };       /* 画不出来的点数（对数轴非正 / 非有限值） */
+
+    /* 🔴🔴 系列样式身份（外部评审 VIZ-REPORT-01 · P0-2）
+       ------------------------------------------------------------------
+       修复前每个系列都拿 `'splot__s' + (colorIdx % 5)`，而 `colorIdx` 从头到尾
+       是 0 ⇒ 六条 series 全是 s0，同色同线型，读者分不出哪条是哪条材料。
+
+       ⚠️ 修法**不能**是"在循环末尾加一行 colorIdx++"：
+          那样每条 *记录* 都会吃掉一个色号，同一材料的「区间带」和「曲线」
+          会变成两个颜色 —— 错得更隐蔽（读者会以为是两种材料）。
+
+       ⇒ 正确做法是给**逻辑系列**发身份：
+           · 有 `id`（或 `name`）⇒ 身份就是它，**带和线共用同一个色号**
+           · 没有 ⇒ 这条记录自成一个系列（至少彼此能分辨）
+        这条规则同时也决定了图例怎么排（同一身份只出现一次）。 */
+    var styleIds = {};          /* 身份 → 色号 */
+    var styleSeq = 0;           /* 已发出的最大色号 +1 */
+    function styleIndexOf(s) {
+      var key = (s.id != null && s.id !== '') ? s.id : s.name;
+      if (key == null || key === '') return styleSeq++;
+      var k = String(key);
+      if (!Object.prototype.hasOwnProperty.call(styleIds, k)) styleIds[k] = styleSeq++;
+      return styleIds[k];
+    }
+    var legendOrder = [];       /* [{ key, index }] 按首次出现顺序 */
+    var drawn = 0;              /* 画出来的系列条数（给 aria-label 与门禁用） */
+    /* 像素坐标是否可用：null（对数轴非正）与 NaN/Infinity 都不许进图形 */
+    function okPx(v) { return v != null && isFinite(v); }
 
     series.forEach(function (s) {
-      var cls = 'splot__s' + (colorIdx % SERIES_CLASSES);
+      var st = styleIndexOf(s);
+      var cls = 'splot__s' + (st % SERIES_CLASSES);
+      if (s.name != null && s.name !== '') {
+        var key = String(s.id != null && s.id !== '' ? s.id : s.name);
+        var seen = legendOrder.some(function (o) { return o.key === key; });
+        if (!seen) legendOrder.push({ key: key, name: String(s.name), index: st });
+      }
       var dMin = s.samples || 200;
       var data = s.type === 'function'
         ? sampleFunction(s.fn, (s.domain || xs.domain)[0], (s.domain || xs.domain)[1], dMin)
         : (s.data || []);
 
       if (s.type === 'band') {
-        /* 置信区间带：上下两条边 + 中间填充 */
-        var up = [], dn = [];
+        /* 置信区间带：上下两条边 + 中间填充
+           🔴 与折线同一条纪律：**不能跨过画不出来的点**。
+              一路 push 到同一个 polygon ⇒ 遇到对数轴上 ≤0 的边界时，
+              这段"根本没有数据"的区间会被**连成一块完整的色带**，
+              等于向读者宣称那里有观测支撑。 ⇒ 按连续可用段切开。 */
+        var bRuns = [], bCur = [];
         data.forEach(function (p) {
-          var px = xs.to(p[0]);
-          if (px == null) return;
-          var hi = ys.to(p[2]), lo = ys.to(p[1]);
-          if (hi == null || lo == null) return;
-          up.push(px + ',' + hi);
-          dn.push(px + ',' + lo);
+          var px = xs.to(p[0]), hi = ys.to(p[2]), lo = ys.to(p[1]);
+          if (!okPx(px) || !okPx(hi) || !okPx(lo)) {
+            tally.n++;
+            if (bCur.length >= 2) bRuns.push(bCur);
+            bCur = [];
+            return;
+          }
+          bCur.push([px, hi, lo]);
         });
-        if (up.length >= 2) {
-          parts.push('<polygon class="splot__band ' + cls + '" points="' +
-                     up.join(' ') + ' ' + dn.reverse().join(' ') + '"/>');
-          drawn++;
-        }
+        if (bCur.length >= 2) bRuns.push(bCur);
+
+        bRuns.forEach(function (run) {
+          var up = [], dn = [];
+          run.forEach(function (c) { up.push(c[0] + ',' + c[1]); });
+          for (var j = run.length - 1; j >= 0; j--) dn.push(run[j][0] + ',' + run[j][2]);
+          dparts.push('<polygon class="splot__band ' + cls + '" points="' +
+                      up.join(' ') + ' ' + dn.join(' ') + '"/>');
+        });
+        if (bRuns.length) drawn++;
         return;
       }
 
@@ -323,8 +400,8 @@
         /* 误差棒：只画调用方给的误差，**不计算** */
         data.forEach(function (p) {
           var px = xs.to(p[0]);
-          if (px == null || !isNum(p[1])) return;
-          var py = ys.to(p[1]); if (py == null) return;
+          if (!okPx(px) || !isNum(p[1])) { tally.n++; return; }
+          var py = ys.to(p[1]); if (!okPx(py)) { tally.n++; return; }
           /* 两种写法都支持：
                [x, y, yerr]      —— 对称误差，上下各延 yerr
                [x, y, lo, hi]    —— 非对称区间（调用方自己算好的边界）
@@ -332,37 +409,34 @@
           var yLo = p.length > 3 ? p[2] : p[1] - (p[2] || 0);
           var yHi = p.length > 3 ? p[3] : p[1] + (p[2] || 0);
           var pa = ys.to(yLo), pb = ys.to(yHi);
-          if (pa == null || pb == null) return;
-          parts.push('<line class="splot__err ' + cls + '" x1="' + px + '" y1="' + pa +
+          if (!okPx(pa) || !okPx(pb)) { tally.n++; return; }
+          dparts.push('<line class="splot__err ' + cls + '" x1="' + px + '" y1="' + pa +
                      '" x2="' + px + '" y2="' + pb + '"/>');
-          parts.push('<line class="splot__err ' + cls + '" x1="' + (px - 4) + '" y1="' + pa +
+          dparts.push('<line class="splot__err ' + cls + '" x1="' + (px - 4) + '" y1="' + pa +
                      '" x2="' + (px + 4) + '" y2="' + pa + '"/>');
-          parts.push('<line class="splot__err ' + cls + '" x1="' + (px - 4) + '" y1="' + pb +
+          dparts.push('<line class="splot__err ' + cls + '" x1="' + (px - 4) + '" y1="' + pb +
                      '" x2="' + (px + 4) + '" y2="' + pb + '"/>');
-          drawn++;
         });
+        drawn++;
         return;
       }
 
       if (s.type === 'line' || s.type === 'function') {
-        /* 🔴 按缺失分段，**不跨 null 连线**（原则②） */
+        /* 🔴 ① 按缺失分段，**不跨 null 连线**（原则②）
+               ② 段内再按"坐标算不算得出来"切开（对数轴 ≤0 / 非有限值） */
         var segs = splitByGaps(data, function (p) { return p[0]; }, function (p) { return p[1]; });
         segs.forEach(function (seg) {
-          if (seg.length < 2) {
-            /* 单个孤立点也要能看见，否则它就从图上消失了 */
-            var q = seg[0];
-            var qx = xs.to(q[0]), qy = ys.to(q[1]);
-            if (qx != null && qy != null) {
-              parts.push('<circle class="splot__pt ' + cls + '" cx="' + qx +
-                         '" cy="' + qy + '" r="2.5"/>');
+          toRuns(seg, xs, ys, tally).forEach(function (run) {
+            if (run.length < 2) {
+              /* 单个孤立点也要能看见，否则它就从图上消失了 */
+              dparts.push('<circle class="splot__pt ' + cls + '" cx="' + run[0][0] +
+                          '" cy="' + run[0][1] + '" r="2.5"/>');
+              return;
             }
-            return;
-          }
-          var pts = seg.map(function (q) {
-            return xs.to(q[0]) + ',' + ys.to(q[1]);
-          }).join(' ');
-          parts.push('<polyline class="splot__line ' + cls + '" points="' + pts +
-                     '"' + dashAttr(colorIdx) + '/>');
+            var pts = run.map(function (c) { return c[0] + ',' + c[1]; }).join(' ');
+            dparts.push('<polyline class="splot__line ' + cls + '" points="' + pts +
+                        '"' + dashAttr(st) + '/>');
+          });
         });
         drawn++;
         return;
@@ -370,15 +444,27 @@
 
       if (s.type === 'scatter') {
         data.forEach(function (p) {
-          var px = xs.to(p[0]); if (px == null || !isNum(p[1])) return;
-          var py = ys.to(p[1]); if (py == null) return;
-          parts.push('<circle class="splot__pt ' + cls + '" cx="' + px + '" cy="' + py +
+          var px = xs.to(p[0]);
+          if (!okPx(px) || !isNum(p[1])) { tally.n++; return; }
+          var py = ys.to(p[1]); if (!okPx(py)) { tally.n++; return; }
+          dparts.push('<circle class="splot__pt ' + cls + '" cx="' + px + '" cy="' + py +
                      '" r="3"/>');
         });
         drawn++;
         return;
       }
     });
+
+    /* ---------- 🔴 裁剪：数据不许画到坐标域之外 ----------
+       SVG 的 `overflow` 默认是 visible：一个超出 domain 的散点会直接落到
+       轴外侧、甚至压到相邻的卡片上（09-assets/bar 真机踩过同一个坑）。
+       ⇒ 用 clipPath 把**数据层**锁在坐标矩形内；网格与轴不参与（它们本来就在边上）。
+       ⚠️ id 必须每次渲染都换新的：同一页多张图共用 id ⇒ 后面的图会被前面的裁掉。 */
+    var clipId = 'splot-clip-' + (++plotUid);
+    parts.push('<defs><clipPath id="' + clipId + '"><rect x="' + x0 + '" y="' + yTop +
+               '" width="' + (x1 - x0) + '" height="' + (yBot - yTop) +
+               '"/></clipPath></defs>');
+    parts.push('<g clip-path="url(#' + clipId + ')">' + dparts.join('') + '</g>');
 
     /* ---------- 参考线 ---------- */
     (spec.refs || []).forEach(function (r) {
@@ -417,19 +503,63 @@
                  '" text-anchor="end">⚠ 轴已截断，非从零起</text>');
     }
 
+    /* 🔴 有画不出来的点就**明说**（对数轴 ≤0 / 非有限值）
+       —— 静默丢弃会让读者以为"这条曲线整个就是这个形状" */
+    if (tally.n > 0) {
+      parts.push('<text class="splot__note" x="' + x0 + '" y="' + (yTop - 4) + '">⚠ ' +
+                 tally.n + ' 个点不在数轴范围内，未绘制</text>');
+    }
+
     /* ---------- 文本等价信息（原则⑤） ---------- */
     label.push(spec.title || '科学绘图');
     if (xl) label.push('横轴：' + xl);
     if (yl) label.push('纵轴：' + yl);
     label.push('共 ' + drawn + ' 个数据系列');
+    /* 系列名要进 aria-label：只用颜色区分 ⇔ 读屏用户完全无从分辨 */
+    if (legendOrder.length) {
+      label.push('系列：' + legendOrder.map(function (o) { return o.name; }).join('、'));
+    }
+    if (tally.n > 0) label.push('有 ' + tally.n + ' 个点不在轴范围内未绘制');
     if (spec.desc) label.push(spec.desc);
 
     var svg = '<svg class="splot ' + esc(spec.className || '') + '" viewBox="0 0 ' + W + ' ' + H +
       '" width="' + W + '" height="' + H + '" role="img" aria-label="' +
       esc(label.join('。')) + '">' + parts.join('') + '</svg>';
 
-    el.innerHTML = svg;
-    return { svg: el.firstChild, x: xs, y: ys, ticks: { x: xt, y: yt }, series: drawn };
+    /* ---------- 图例（B7：颜色之外必须有名字） ---------- *
+     * 🔴 什么时候出：**有两个以上有名字的系列**时自动出。
+     *   三条曲线的颜色不同、但没有任何文字告诉你谁是谁 ⇒ 这张图回答不了问题。
+     *   ⇒ 想关就显式传 `legend: false`。
+     * ⚠️ 同一身份（带 + 线）只出现**一次**，并且色块取的就是它自己那条线的色号。 */
+    var legendHtml = '';
+    var wantLegend = spec.legend === undefined
+      ? legendOrder.length >= 2
+      : !!spec.legend;
+    if (wantLegend && legendOrder.length) {
+      var items = legendOrder.map(function (o) {
+        var c = 'splot__s' + (o.index % SERIES_CLASSES);
+        /* 用一小段**真的线**做色标，`--splot-c` 由上面的系列类给
+           ⇒ 图例的色和曲线/色带的色来自同一份声明，不可能对不上 */
+        return '<li class="splot__legend-item">' +
+               '<svg class="splot__legend-mark ' + c + '" width="20" height="10" ' +
+               'viewBox="0 0 20 10" aria-hidden="true" focusable="false">' +
+               '<line x1="1" y1="5" x2="19" y2="5" stroke-width="2" stroke-linecap="round"' +
+               dashAttr(o.index) + '/></svg>' +
+               '<span>' + esc(o.name) + '</span></li>';
+      });
+      legendHtml = '<ul class="splot__legend">' + items.join('') + '</ul>';
+    }
+
+    el.innerHTML = svg + legendHtml;
+    return {
+      svg: el.firstChild,
+      x: xs, y: ys,
+      ticks: { x: xt, y: yt },
+      series: drawn,
+      dropped: tally.n,
+      legend: el.querySelector('.splot__legend'),
+      styles: legendOrder.map(function (o) { return o.index; }),
+    };
   }
 
   /* ------------------------------------------------------------- 小助手 */
@@ -471,6 +601,7 @@
       linearTicks: linearTicks,
       logTicks: logTicks,
       splitByGaps: splitByGaps,
+      toRuns: toRuns,
       sampleFunction: sampleFunction,
       SERIES_CLASSES: SERIES_CLASSES
     }

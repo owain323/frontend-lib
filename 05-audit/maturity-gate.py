@@ -24,7 +24,7 @@ maturity-gate.py — 组件成熟度阶梯门禁（M8）
      不读 gen-ai-contract.py 的结论 —— 那等于让生成器给自己判卷）
   ② 档位必须在 ladder 里（alpha / beta / stable）
   ③ 🔴 **ladder 必须有鉴别力**：不得所有组件都落在同一档
-     ⇒ 这条正是本工单存在的理由。哪天又变成"全 stable"，这里会红。
+     ⇒ 这条正是本检查存在的理由。哪天又变成"全 stable"，这里会红。
   ④ 契约的 `maturityReasons.behaviorDebt` 必须与 `ai/behaviors.json` 实测一致（双向）
   ⑤ 契约的 `maturityReasons` 里四条判据字段必须与**独立重算**一致（双向）
 
@@ -214,7 +214,7 @@ def selftest():
                        ['maturityReasons'].__setitem__('hasDemo', False)))[0],
            'maturityReasons.hasDemo')
 
-    # 🔴 本工单存在的理由：行为欠账被"洗白"（矩阵里 manual / gap 全改成 core）
+    # 🔴 本检查存在的理由：行为欠账被"洗白"（矩阵里 manual / gap 全改成 core）
     #    ⇒ 全库重算都会变成 stable ⇒ ladder 归零 ⇒ ③ 必须红
     def wash(cs):
         for c in cs:

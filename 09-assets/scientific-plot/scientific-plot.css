@@ -75,6 +75,35 @@
   stroke: none;
 }
 
+/* ---------- 图例 ---------- *
+   🔴 为什么要有：颜色**不是**自解释的。三条不同颜色的曲线但没有名字，
+      这张图就答不出"哪条是哪个"。色号由系列类提供 ⇒ 不可能与图上的线不一致。 */
+.splot__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-4, 1rem);
+  margin: var(--sp-2) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+}
+
+.splot__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+.splot__legend-mark {
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
+.splot__legend-mark line {
+  stroke: var(--splot-c, var(--accent));
+}
+
 /* ---------- 参考线 / 标注 / 备注 ---------- */
 .splot__ref {
   stroke: var(--text-tertiary);

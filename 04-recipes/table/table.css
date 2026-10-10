@@ -72,15 +72,38 @@
   outline-offset: var(--focus-ring-offset);
 }
 
-/* 排序指示符：三态必须**同时**用形状 + 颜色表达（WCAG 1.4.1）*/
 .table__sort::after {
   content: "↕";                      /* 未排序：上下双向箭头 */
   opacity: .45;
   font-size: .9em;
 }
 
-.table__sort[aria-sort="ascending"]::after  { content: "↑"; opacity: 1; }
-.table__sort[aria-sort="descending"]::after { content: "↓"; opacity: 1; }
+/* 🔴🔴 排序指示符：三态必须**同时**用形状 + 颜色表达（WCAG 1.4.1）
+   --------------------------------------------------------------------
+   外部评审 VIZ-REPORT-01 · P1-1 实测到的缺陷：
+     demo 把 `aria-sort` 放在**外围 <th>** 上（这是符合 ARIA 规范的写法），
+     而这里的旧选择器要求它长在**按钮自己**身上 ⇒ 选择器永远匹配不上
+     ⇒ 数据明明排好了，箭头一直是"↕"。
+     更糟的是当时的门禁 table-check.js 只检查了"aria-sort 在不在 th 上"，
+     ⇒ 结构对了、结果错了，门禁还是绿的。**只看结构不看结果，就是这么翻车的。**
+
+   ⇒ 修法是把选择器改成"从 th 往下找按钮"，而不是把 aria-sort 搬到按钮上
+     （那会违反 ARIA：`aria-sort` 属于 columnheader / rowheader 角色）。
+
+   ⚠️ 为什么**两种位置都支持**：本库是给别人抄的，外部集成方完全可能写在
+     按钮上（写错一次不值得付出"整列失去排序线索"的代价）。
+     ⇒ 两条选择器并存，任何一种写法都能把箭头点亮。 */
+.table th[aria-sort="ascending"] .table__sort::after,
+.table__sort[aria-sort="ascending"]::after {
+  content: "↑";
+  opacity: 1;
+}
+
+.table th[aria-sort="descending"] .table__sort::after,
+.table__sort[aria-sort="descending"]::after {
+  content: "↓";
+  opacity: 1;
+}
 
 /* ---------- 行 ---------- */
 .table tbody td,

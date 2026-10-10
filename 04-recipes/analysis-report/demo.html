@@ -253,13 +253,19 @@
     desc: '三组包覆方案，阴影为平行样极差',
     x: { label: '循环次数', unit: '周', scale: 'linear', domain: [0, 300] },
     y: { label: '容量保持率', unit: '%', scale: 'linear', domain: [50, 102] },
+    /* 🔴 **每条 series 都要给 `name`** —— 这是"逻辑系列"的身份。
+       同一材料的「区间带」和「曲线」必须写**同一个名字**：
+       · 写了 ⇒ 它们共用一个色号，读者一看就知道这个带属于这条线
+       · 不写 ⇒ 每条记录各吃一个色号 ⇒ 带是红的、线是绿的，看着像两种材料
+       （评审 VIZ-REPORT-01 · P0-2 抓的正是"不写 ⇒ 六条同色"，
+          而"每条一个色"是另一个反方向的错误 —— 两边都不能要。） */
     series: [
-      { type: 'band', data: band(BARE) },
-      { type: 'band', data: band(AL2O) },
-      { type: 'band', data: band(LPO4) },
-      { type: 'line', data: pts(BARE) },
-      { type: 'line', data: pts(AL2O) },
-      { type: 'line', data: pts(LPO4) }
+      { type: 'band', data: band(BARE), name: '未包覆' },
+      { type: 'band', data: band(AL2O), name: 'Al₂O₃ 包覆' },
+      { type: 'band', data: band(LPO4), name: 'Li₃PO₄ 包覆' },
+      { type: 'line', data: pts(BARE),  name: '未包覆' },
+      { type: 'line', data: pts(AL2O),  name: 'Al₂O₃ 包覆' },
+      { type: 'line', data: pts(LPO4),  name: 'Li₃PO₄ 包覆' }
     ]
   });
 })();

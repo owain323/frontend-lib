@@ -1,0 +1,321 @@
+/* ============================================================================
+   report.css — 报告版式系统 v1（Report Design System）
+   ============================================================================
+
+   🔴 它**不是**什么（边界写清楚，免得被当成万能模板）
+   ---------------------------------------------------------------------------
+     不是 CMS / 不是出版引擎 / 不是「传个 Markdown 就出 PDF」的黑箱。
+     它只负责**一件**事：把"有结论、有数据、有出处"的内容排成能读、
+     且能被人逐条核对的样子。
+
+   🔴 它**是**什么
+   ---------------------------------------------------------------------------
+     ① 一份**共享基础**：字体角色、正文行长、页面网格、间距层级、
+        图表/表格说明、来源脚注 —— 六种东西，六种写法，一次定好
+     ② 一个**科研 / 技术报告 profile**：图与表自动编号、章节可编号
+     ③ 三套**版式**：杂志编辑 / 科研技术 / 金融研究
+        每套都有自己的取舍，README.md 里逐条写明"它放弃了什么"
+
+   🔴🔴 本轮**明确不做**（不要当成"还没实现"）
+   ---------------------------------------------------------------------------
+     · 分页 PDF / 印刷分页（页眉页脚、页边距、跨页不断行、孤行寡行控制）
+       ⇒ 那是**独立目标**：它需要 @page / 实物打样 / PDF 引擎验证，
+          本文件一行都没有写，也不假装支持。
+     · 自动目录、脚注尾注、交叉引用、参考文献样式（BibTeX 之类）
+     ⇒ 现在能给的只有 @media print 的**最小可读保障**
+       （去掉屏幕专属装饰、表格与图表不跨撕裂），那是"不更糟"，不是"能出版"。
+
+   依赖：01-tokens/tokens.css（颜色、间距、字号、行长全部走令牌）
+   用法：ES3 级 CSS，零运行时依赖，纯样式
+   ========================================================================== */
+
+/* ==========================================================================
+   一 · 共享基础（三套版式共用，profile 只改变量与少数特性）
+   ========================================================================== */
+
+.rep {
+  /* --------- 六个可变量：改这六个就能换一套版式 --------- */
+  --rep-measure: var(--measure-prose);   /* ① 正文行长：整套系统最关键的一个数 */
+  --rep-body-fs: var(--fs-base);         /* ② 正文字号（金融版会往下压） */
+  --rep-title-fs: var(--fs-2xl);         /* ③ 标题字号 */
+  --rep-lead-fs: var(--fs-lg);           /* ④ 导语字号 */
+  --rep-body-lh: var(--lh-base);         /* ⑤ 行距 */
+  --rep-sec-num: '';                     /* ⑥ 章节是否编号（''= 不编号） */
+
+  font-family: var(--sans);
+  color: var(--text-primary);
+  font-size: var(--rep-body-fs);
+  line-height: var(--rep-body-lh);
+  max-width: 100%;
+
+  /* 🔴 边注列宽必须**在这里就地**收窄，不能沿用 --measure-aside（32em）。
+     把账算给自己看：库的标准页宽 `--measure-page` = 832px，
+     而正文 + 边注 + 间距 **共享这 832px**。取 32em(=576px) 当边注时，
+     正文只剩 832 − 576 − 36 = **220px ≈ 12em**（一行 12 个字，读不了）。
+     ↑ 这是实测值不是推测：门禁里有一条判据专门盯这个数。
+     ⇒ 边注定为 **14em**：832 − 252 − 36 = 544px ≈ **30em**，正文这一档才立得住。
+     代价：**14em 装不下大图表** ⇒ 大图请放进正文流里出血，别塞进边注。 */
+  --measure-aside: 14em;
+}
+
+/* --------- 字体角色：六种，不多不少 ---------
+   ⭐ 为什么钉死六种：报告里每多一种"自创角色"，读者的解读负担就多一分。
+      发现自己在写第七种时，应该回头用**结构**（列表、表格、引用）而不是字号表达。 */
+.rep__kicker,          /* 眉题 / 栏目名 */
+.rep__meta,            /* 作者 · 日期 · 版本 */
+.rep__cap,             /* 图表说明 */
+.rep__source,          /* 来源脚注 */
+.rep__note,            /* 编者注 / 译者注 */
+.rep__risk {           /* 风险 / 合规披露 */
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+  line-height: var(--lh-base);
+}
+
+/* 🔴🔴 专门写成 `.rep .rep__title`（0,2,0）而不是 `.rep__title`（0,1,0）：
+      下面是一个世纪的坑 —— 后文的 `.rep h2` / `.rep h3` 是 (0,1,1)，
+      **单类名选择器会被它们压过去**。写成一层类是不够的，必须靠 descendant 提权，
+      否则 `--rep-title-fs` 这个「换版式的关键变量」会静默失效，标题被钉死在 fs-lg。
+      （实测取证：三套 profile 的标题都变成同一个 24px，变量一个都没生效。） */
+.rep .rep__title {
+  font-size: var(--rep-title-fs);
+  line-height: var(--lh-tight);
+  letter-spacing: -0.01em;
+  max-width: var(--measure-title);       /* 标题比正文窄：大字长时间扫视会累 */
+  margin: var(--sp-2) 0 0;
+  font-weight: 700;
+}
+
+.rep__kicker {
+  margin: 0;
+  color: var(--text-tertiary);
+  font-weight: 600;
+  letter-spacing: .06em;
+}
+
+.rep__standfirst,                        /* 导语 / 摘要首段 */
+.rep__lede {
+  font-size: var(--rep-lead-fs);
+  line-height: var(--lh-loose);
+  max-width: var(--measure-lede);
+  color: var(--text-secondary);
+  margin: var(--sp-3) 0 0;
+}
+
+.rep__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1) var(--sp-3);
+  margin: var(--sp-3) 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-tertiary);
+}
+
+/* --------- 页面网格：正文 + 边注 ---------
+   🔴 `minmax(0, 1fr)` 不是笔误：`1fr` 的最小值是 `auto`，
+      遇到宽表格会把整页撑出横向滚动条（本库踩过，analysis-report 里写明了）。 */
+.rep__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-4);
+  margin-top: var(--sp-5);
+}
+
+@media (min-width: 62rem) {
+  .rep__grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, var(--measure-aside));
+    gap: var(--sp-6);
+    align-items: start;
+  }
+}
+
+.rep__body { max-width: var(--rep-measure); }
+.rep__aside { color: var(--text-secondary); }
+
+/* --------- 间距层级：五级，全部走令牌 ---------
+   section > figure > paragraph。**层级之间用间距表达**，不靠加分割线。 */
+.rep__sec { margin-top: var(--sp-7); }
+.rep__sec > :first-child { margin-top: 0; }
+
+/* --------- 小节标题：只支持两级（h2 用作文章标题，h3 用作小节）---------
+   🔴 为什么钉死两级：报告里出现第四级标题，通常意味着该拆的是**文档**，
+      而不是再给一级字号。这里刻意**不给 h4 及更深层级写任何规则** ——
+      没定义就是没定义，不要靠浏览器默认值蒙混过去。 */
+.rep h2 {
+  font-size: var(--fs-xl);
+  line-height: var(--lh-tight);
+  margin: 0 0 var(--sp-3);
+  max-width: var(--measure-title);
+}
+
+.rep h3 {
+  font-size: var(--fs-lg);
+  line-height: var(--lh-tight);
+  margin: var(--sp-5) 0 var(--sp-2);
+}
+
+.rep__body p { margin: 0 0 var(--sp-3); }
+.rep__body p:last-child { margin-bottom: 0; }
+
+/* --------- 图表与表格的说明：说明不是装饰，是**可核对性** ---------
+   ⭐ 一条说明必须回答三件事：这是什么、数从哪来、有没有被处理过。
+      三件事少一件，这张图就没法被别人复核。 */
+.rep__fig {
+  margin: var(--sp-5) 0;
+  padding: 0;
+}
+
+.rep__cap {
+  margin: var(--sp-2) 0 0;
+  /* 🔴 technical profile 会在这里加"图 N ·"前缀（见下） */
+}
+
+.rep__source {
+  margin: var(--sp-2) 0 0;
+  padding: var(--sp-2) 0 0;
+  border-top: 1px solid var(--border-decor);
+  color: var(--text-tertiary);
+}
+
+.rep__source ol,
+.rep__source ul { margin: var(--sp-1) 0 0; padding-inline-start: 1.4em; }
+.rep__source li { margin-bottom: var(--sp-1); }
+
+/* --------- 来源脚注（整篇）：列编号，方便别人按号去查 --------- */
+.rep__sources { margin-top: var(--sp-7); }
+
+/* ==========================================================================
+   二 · profile：科研 / 技术报告
+   --------------------------------------------------------------------------
+   启用的两件事：**图/表自动编号** + **章节编号**。
+   代价：正文行长被压到最窄、行距最松 —— 这是故意的，
+   技术报告的正确读法是被逐段核对，不是被快速通读。
+   ========================================================================== */
+
+.rep--technical {
+  --rep-measure: var(--measure-prose);
+  --rep-body-lh: var(--lh-loose);
+  --rep-sec-num: counter(rep-sec, decimal) ' · ';
+  counter-reset: rep-sec rep-fig rep-tab;
+}
+
+/* 🔴 只对**正文小节**编号，不编号文章标题（`h2.rep__title`）、也不编号
+      边注与来源区。写成 `.rep__sec > h3` 而不是 `h3`：前者表达的是
+      「属于正文的一个小节」，后者会把边注里的「关键读数」也算成第几节。 */
+.rep--technical .rep__sec > h3::before {
+  content: var(--rep-sec-num);
+  counter-increment: rep-sec;
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.rep--technical .rep__cap::before {
+  content: '图 ' counter(rep-fig) ' · ';
+  counter-increment: rep-fig;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 表格说明单独一路计数：图 3 和表 3 不是同一个东西 */
+.rep--technical .rep__cap--table::before {
+  content: '表 ' counter(rep-tab) ' · ';
+  counter-increment: rep-tab;
+}
+
+/* ==========================================================================
+   三 · profile：杂志 / 编辑向
+   --------------------------------------------------------------------------
+   取舍：行长放宽（读起来快）、标题最大、允许跨栏出血的宽图与引语块。
+   **不给图编号**（编号是技术文档的语法，放在这里只会打断阅读节奏）。
+   ⇒ 代价：不适合承担审计级追溯。要追溯请换 technical。
+   ========================================================================== */
+
+.rep--magazine {
+  --rep-measure: 42em;
+  /* 刻意**不改** --rep-title-fs：基础值（fs-2xl）已经是三套里最大的一档，
+     杂志版的气口在「行长放宽 + 导语放大 + 出血图」三处，不在标题字号。
+     🟡 上一版这里把 fs-2xl 抄了一遍 = 与基础值重复，删掉：重复的声明
+        会让人误以为「杂志版专门调过标题」，实际调是没调。 */
+  --rep-lead-fs: var(--fs-xl);
+}
+
+.rep--magazine .rep__fig--wide {
+  max-width: none;                        /* 出血：图可以比正文宽 */
+}
+
+.rep__pull {
+  margin: var(--sp-5) 0;
+  padding-inline-start: var(--sp-4);
+  border-inline-start: 3px solid var(--accent);
+  font-size: var(--fs-xl);
+  line-height: var(--lh-tight);
+  color: var(--text-primary);
+  max-width: var(--measure-pull);
+}
+
+/* ==========================================================================
+   四 · profile：金融研究
+   --------------------------------------------------------------------------
+   取舍：字号与行距往下压 ⇒ 一屏塞得下更多数字；
+        正文列更窄 ⇒ 读者能在数字和文字之间快速来回。
+   **必须有风险披露区** —— 没有它的研究报告是不完整的作品。
+   ⇒ 代价：不适合长论证。超过两屏的推理在这里会被读者跳过。
+   ========================================================================== */
+
+.rep--finance {
+  --rep-measure: 30em;
+  --rep-body-fs: var(--fs-sm);
+  --rep-body-lh: var(--lh-base);
+  --rep-title-fs: var(--fs-xl);
+}
+
+/* 关键数字条：整篇的结论先摆在前面（AI 和人都先看这行） */
+.rep__keyline {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--sp-3);
+  margin: var(--sp-4) 0;
+  padding: var(--sp-3);
+  background: var(--surface-sunken);
+  border-radius: var(--r-md);
+}
+
+.rep__keyline dt {
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  margin: 0;
+}
+
+.rep__keyline dd {
+  margin: var(--sp-1) 0 0;
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;   /* 数字要能竖着比 */
+}
+
+.rep__risk {
+  margin-top: var(--sp-5);
+  padding: var(--sp-3);
+  border: 1px solid var(--border-decor);
+  border-radius: var(--r-md);
+  color: var(--text-secondary);
+}
+
+.rep__risk strong { color: var(--text-primary); }
+
+/* ==========================================================================
+   五 · 打印：只做"不更糟"，**不做分页**
+   --------------------------------------------------------------------------
+   ⚠️ 这是本轮对打印的全部承诺：**去掉屏幕专属装饰**、
+      **图表与表格不跨撕裂**。关于 @page / 页眉页脚 / 页码 / 跨页控制，
+      本版本一律不管 —— 那是独立的"分页 PDF"目标。
+   ========================================================================== */
+@media print {
+  .rep__aside { display: none; }          /* 屏幕边注在纸上没地方放 */
+  .rep__grid { display: block; }
+  .rep__fig,
+  .rep table { break-inside: avoid; }
+  .rep__pull { border-inline-start-width: 2px; }
+}

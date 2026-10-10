@@ -83,6 +83,19 @@
   </figcaption>
 </figure>
 
+<h2 class="rule-top">4b · 对数轴上的无效数据（≤ 0）必须明说</h2>
+<p class="note">
+  对数轴上 <code>0</code> 和负数<strong>没有位置</strong>。这里的做法不是"悄悄当成一个很小的正数"
+  （那会画出一条看起来正常、实际是假的线），也不是"静默丢掉"（读者会以为那里本来就没测）：
+  曲线<strong>断在这两个点两侧</strong>，并且图上明写"有几个点未绘制"。
+</p>
+<figure class="fig">
+  <div class="fig__box" id="figLogBad"></div>
+  <figcaption class="fig__cap">
+    图 4b · 测值含 0 与负值的情形（示例数据）。第 4 点为 0、第 7 点为负，两者都不在 log 轴上。
+  </figcaption>
+</figure>
+
 <!-- ==================================================================== -->
 <h2 class="rule-top">5 · 缺失值 ≠ 零（这一节是反例自证）</h2>
 <p class="note">
@@ -136,11 +149,13 @@
     desc: '误差棒为 ±1 标准差',
     x: { label: '温度', unit: 'K', scale: 'linear', domain: [290, 410] },
     y: { label: '转化率', unit: '%', scale: 'linear', domain: [0, 60] },
+    /* 🔴 errorbar 与 line 是**同一个系列**（同一种催化剂的测量值 + 走势）
+       ⇒ 名字必须一样，它们才会共用一个色号 */
     series: [
-      { type: 'errorbar', data: catA },
-      { type: 'line', data: catA },
-      { type: 'errorbar', data: catB },
-      { type: 'line', data: catB }
+      { type: 'errorbar', data: catA, name: '催化剂 A' },
+      { type: 'line', data: catA, name: '催化剂 A' },
+      { type: 'errorbar', data: catB, name: '催化剂 B' },
+      { type: 'line', data: catB, name: '催化剂 B' }
     ]
   });
 
@@ -157,10 +172,13 @@
     desc: '阴影为 95% 置信区间',
     x: { label: '批号', scale: 'linear', domain: [1, 12] },
     y: { label: '收率', unit: '%', scale: 'linear', domain: [66, 84] },
+    /* 带 / 线 / 点属于**同一个**系列 ⇒ 同一份名字 ⇒ 同一支色 */
     series: [
-      { type: 'band', data: yieldBand },
-      { type: 'line', data: batches.map(function (b, i) { return [b, yieldMid[i]]; }) },
-      { type: 'scatter', data: batches.map(function (b, i) { return [b, yieldMid[i]]; }) }
+      { type: 'band', data: yieldBand, name: '批次收率' },
+      { type: 'line', data: batches.map(function (b, i) { return [b, yieldMid[i]]; }),
+        name: '批次收率' },
+      { type: 'scatter', data: batches.map(function (b, i) { return [b, yieldMid[i]]; }),
+        name: '批次收率' }
     ],
     refs: [{ axis: 'y', value: 72, label: '控制下限 72%' }]
   });
@@ -174,8 +192,32 @@
     desc: '对数纵轴，跨度跨 4 个数量级',
     x: { label: '培养时间', unit: 'h', scale: 'linear', domain: [0, 16] },
     y: { label: '浓度', unit: 'CFU/mL', scale: 'log', domain: [1e2, 1e6] },
-    series: [{ type: 'line', data: hours.map(function (h, i) { return [h, cfu[i]]; }) },
-             { type: 'scatter', data: hours.map(function (h, i) { return [h, cfu[i]]; }) }]
+    series: [{ type: 'line', data: hours.map(function (h, i) { return [h, cfu[i]]; }),
+               name: '实测值' },
+             { type: 'scatter', data: hours.map(function (h, i) { return [h, cfu[i]]; }),
+               name: '实测值' }]
+  });
+
+  /* --------------------- 图 4b：对数轴上的无效数据必须**明说**
+     ------------------------------------------------------------------
+     对数轴上 ≤0 的值**没有位置**（log(0) 没有定义）。三种做法的差别：
+       · 悄悄把它当成一个很小的正数 ⇒ 画出一条看起来正常、**实际是假**的线
+       · 直接扔掉 ⇒ 读者以为"这里本来就没有点"
+       · 【本图采用】断在这两点两侧，并在图上写出"有几个点未绘制"
+      ⇒ 这也是"异常数据不变成误导图形"的验收点。 */
+  var badY = [[1, 3.2e2], [2, 5.6e2], [3, 9.1e2],
+              [4, 0],                                  /* ← 0：对数轴上没有位置 */
+              [5, 2.7e3], [6, 4.4e3],
+              [7, -5],                                 /* ← 负数：同样没有位置 */
+              [8, 1.9e4], [9, 5.8e4]];
+  P.render(document.getElementById('figLogBad'), {
+    width: 680, height: 300,
+    title: '对数轴遇到 ≤0：断开 + 明确提示',
+    desc: '第 4 点测值为 0、第 7 点为负，均无法在 log 轴上定位',
+    x: { label: '培养时间', unit: 'h', scale: 'linear', domain: [0, 10] },
+    y: { label: '计数', unit: 'CFU/mL', scale: 'log', domain: [1e2, 1e5] },
+    series: [{ type: 'line', data: badY, name: '实测值' },
+             { type: 'scatter', data: badY, name: '实测值' }]
   });
 
   /* --------------------------------- 图 5：缺失值断开 vs 当零（反例对照） */

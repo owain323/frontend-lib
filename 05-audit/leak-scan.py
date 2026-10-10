@@ -43,35 +43,9 @@ _OK_PREFIX = (
 _REPO_FIELD_KEYS = ('repository', 'homepage', 'bugs', 'url', 'directory')
 
 
-def _outside_repo_field(text, token):
-    """token 是否有至少一次命中落在 package.json 的仓库身份字段之外。
-
-    ⚠️ 不能只看「同一行有没有 key」——
-    package.json 的 repository 是嵌套对象：
-        "repository": {
-          "type": "git",
-          "url": "git+https://github.com/xxx/yyy.git"← key 在上一行
-        }
-    ⇒ 必须按 **JSON 结构**判断，而不是按行。
-    做法：直接查这些字段的取值范围。
-    """
-    try:
-        data = json.loads(text)
-    except Exception:
-        return True   # 解析不了就当有问题，宁可误报
-    allowed = []
-    for key in ('repository', 'homepage', 'bugs'):
-        v = data.get(key)
-        if isinstance(v, str):
-            allowed.append(v)
-        elif isinstance(v, dict):
-            for vv in v.values():
-                if isinstance(vv, str):
-                    allowed.append(vv)
-    for a in allowed:
-        if token in a:
-            return False
-    return True
+# ⭐ 仓库身份字段的判定见 terms.outside_repo_field ——
+#    单一来源：leak-scan 与 outsider-audit 共用同一份，
+#    不再各写一份（口径不一致会让同一份内容一边干净一边脏，见 ERRORS E19）。
 
 PATTERNS = [
     ('用户名', re.compile(terms.USER_RE, re.I)),
@@ -93,8 +67,8 @@ PATTERNS = [
     ('仓库绝对路径', re.compile(r'E:[/' + re.escape(chr(92)) + r']frontend-lib|'
                                  r'(?<![\w:/])/e/frontend', re.I)),
     ('内部代号', re.compile('|'.join(re.escape(w) for w in terms.HARD_BAN), re.I)),
-    ('自有域名', re.compile(terms.DOMAIN, re.I)),
-    ('内部流程', re.compile('|'.join(re.escape(w) for w in terms.PROCESS_WORDS), re.I)),
+    ('自有域名', terms.domain_pat()),
+    ('内部流程', terms.process_pat()),
     # 回环与通配地址不是泄漏（本地测试的正常写法）
     ('私网 IP', re.compile(
         r'\b(?:10\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])|192\.168)\.\d{1,3}\.\d{1,3}\b')),
@@ -194,12 +168,13 @@ def main():
             if name.startswith('盘符'):
                 found = [m for m in found
                          if not m.startswith(_OK_PREFIX)]
-            if name == '自有域名' and rel == 'package.json':
-                # ⭐ package.json 里的 repository/homepage/bugs
-                #    **必须**是真实仓库地址 —— 否则 npm 页面点不开、
-                #    依赖扫描器定位不到源码。
-                #    域名本身就是仓库身份的一部分，不算泄漏。
-                found = []
+            if name == '自有域名':
+                # ⭐ repository / homepage / bugs 里的账号名是**仓库身份**
+                #    （npm 页面靠它定位源码），不算泄漏。
+                #    ⚠️ 按**出现位置**判（terms.hits_outside_repo_field），
+                #       不是「package.json 整份文件豁免」——
+                #       整份豁免会让同文件里别的字段也漏过去。
+                found = terms.hits_outside_repo_field(t, pat)
             n = len(found)
             if n:
                 hits.setdefault(name, []).append((rel, n))
@@ -211,11 +186,11 @@ def main():
                 continue
             if name == '内部协作痕迹':
                 # 用区分大小写的严格版，避开 CLASS_OWNER / owners 这类变量名
-                found = COLLAB_RE_STRICT.findall(t)
-                # ⭐ package.json 例外：repository / homepage / bugs 里出现的
-                #   账号名是**仓库身份**（npm 页面靠它定位源码），不算痕迹。
-                if rel == 'package.json':
-                    found = [m for m in found if _outside_repo_field(t, m)]
+                # ⭐ repository / homepage / bugs 里的账号名是**仓库身份**
+                #    （npm 页面靠它定位源码），不算痕迹。
+                #    按**出现位置**判，不再限定 rel == 'package.json'
+                #    —— 限定文件会让别的 JSON 里的同类字段漏过去。
+                found = terms.hits_outside_repo_field(t, COLLAB_RE_STRICT)
                 n = len(found)
                 if n:
                     hits.setdefault(name, []).append((rel, n))

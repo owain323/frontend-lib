@@ -21,6 +21,13 @@ import urllib.parse
 import urllib.request
 import os
 
+# 🔴 判据**单一来源**：本文件曾自带一套比词表更宽的判据，
+#    结果同一份内容在 leak-scan 是干净的、在这里是 6 处泄漏
+#    （裸「批次」「默认尺寸」「Tier A」+ 仓库地址里的域名 + 报错样本里的占位用户名）。
+#    两道门禁口径不一致 ⇒ 修一处漏一处。现在统一走 terms。
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import terms  # noqa: E402
+
 OWNER = 'owain323'
 REPO = 'frontend-lib'
 
@@ -42,24 +49,55 @@ PATTERNS = [
     # ⚠️ 不要写 `[/\]` —— 字符类里的 `\]` 会**提前闭合字符类**，
     #    正则直接抛 "unterminated character set"。
     #    ⇒ 分成两个 alternation，各自只匹配正斜杠或"反斜杠+反斜杠"。
-    ('用户目录', re.compile(r'[A-Za-z]:/Users/|[A-Za-z]:\\\\Users\\\\')),
+    #
+    # 🔴🔴 2026-10-10：这两条判据整体加上「排除自证样本」。
+    #    起因：`engine-gate.js` 里的 `C:\\Users\\someone\\AppData\\...` 与
+    #    `/home/alice/.cache/ms-playwright` 是**故意写的假路径** ——
+    #    它们是「引擎探测失败时要解析的报错样本」，本机用户名根本不在里面。
+    #    同理 `gate-selfcheck-fixtures.py` 里的 `C:/Users/probe-user/x`
+    #    是**判别力夹具**（用来证明"这道门禁抓得到用户名路径"）。
+    #    把这四类当成泄漏，等于要求"门禁不许有测试样本" ⇒ 自相矛盾。
+    #    ⇒ 判据保留，但对**这些占位形态**放行：
+    #       someone / alice / probe-user / <占位符> 之类明确非真名的词。
+    #    ⚠️ 这不是给文件开豁免（那是另一回事）：同一个文件里若写了**真**用户名，
+    #       仍然照抓 —— 白名单只针对词形，不针对文件。
+    ('用户目录', re.compile(r'[A-Za-z]:/Users/(?!someone|probe-user|<)' +
+                            r'|[A-Za-z]:' + re.escape(chr(92) * 2) +
+                            r'Users' + re.escape(chr(92) * 2) + r'(?!someone)')),
     ('仓库绝对路径', re.compile(r'E:[/\\]frontend-lib|(?<![\w/])/e/frontend', re.I)),
     ('内部代号', re.compile(r'ESP32|SpendLatch|CostPilot|CHRONOS', re.I)),
     ('内部场景', re.compile(r'录视频|做网站|做小程序')),
-    ('自有域名', re.compile(r'owain\d*', re.I)),
+    # ⚠️ 自带域名判据收窄（2026-10-10）：
+    #    原来是裸 `owain\d*` ⇒ 把 `package.json` 里 repository/homepage/bugs
+    #    的 **GitHub 仓库地址**判成泄漏 3 处。那不是泄漏，那是仓库身份：
+    #    npm 页面靠它定位源码，删了 npm 就点不开。
+    #    同一处判定 leak-scan.py 里早就写明了（"域名本身就是仓库身份的一部分"），
+    #    两道门禁在此**口径不一致** —— 本轮统一。
+    #  ⇒ 判据与 leak-scan 共用同一份（terms.domain_pat），
+    #    「仓库身份字段」的判定也共用 terms.outside_repo_field：
+    #    按**取值**放过 repository / homepage / bugs，不是按文件整份豁免
+    #    （整份豁免会让同一文件里别的字段也漏过去，见 ERRORS E8 / E14）。
+    ('自有域名', terms.domain_pat()),
     # ⚠️ 判据收窄：「我们」在技术说明里是**正常表述**
     #    （例："让我们有几个断点有唯一答案"）⇒ 整词匹配会全库假红。
     #    ⇒ 只查**对话口吻**（对读者说话）与**自夸式团队叙述**。
     ('对话口吻', re.compile(r'按你的|你要做|你也可以|咱们|我方|我司')),
-    ('内部流程', re.compile(r'工单|批次|默认尺寸|降级到|版本 ?[ABC]|Tier ?[ABC][^a-z]')),
+    # ⚠️ 自带流程判据与词表口径不一致（2026-10-10 统一）：
+    #    这里裸写「批次」「默认尺寸」「Tier A」⇒
+    #      · 「批次」把业务语义（样品批次 / 电解液批次 / 批次收率）打成泄漏
+    #      · 「默认尺寸」把 `button.css` 里那句**正常技术说明**打成泄漏
+    #      · 「Tier A」是 `05-audit/` 门禁自己的档位术语，且 05-audit 已在下文豁免
+    #    ⇒ 统一走 `terms.process_pat()`（与 leak-scan 同一份判据，只写一份）。
+    ('内部流程', terms.process_pat()),
     # ⚠️ `/tmp` 与 `$HOME` 是**通用路径与变量**，不含身份信息
     #    （每个 Linux 用户都有 /tmp，每台机器都有 $HOME）。
     #    ⇒ 只有**具体用户名**与**具体盘符目录**才算泄漏。
+    #    ⚠️ 同上：`/home/alice/` 是引擎报错样本里的占位名，不是真用户名。
     ('本地路径痕迹', re.compile(
-        r'[A-Za-z]:/Users/|'                       # C:/Users/<某人>
-        r'/home/[A-Za-z0-9_.-]+/|'                # /home/<某人>/
-        r'/Users/[A-Za-z0-9_.-]+/'                # macOS 的 /Users/<某人>/
-        r'[Dd]:/[A-Za-z0-9_.-]+/',                # 其他盘符下的具体目录
+        r'[A-Za-z]:/Users/(?!someone|probe-user|<)|'   # C:/Users/<某人>
+        r'/home/(?!alice/|user/)[A-Za-z0-9_.-]+/|'     # /home/<某人>/
+        r'/Users/(?!someone/|probe-user/)[A-Za-z0-9_.-]+/|'  # macOS
+        r'[Dd]:/[A-Za-z0-9_.-]+/',                     # 其他盘符下的具体目录
         re.I)),
 ]
 
@@ -111,7 +149,12 @@ def main():
             continue
         checked += 1
         for name, pat in PATTERNS:
-            n = len(pat.findall(t))
+            found = pat.findall(t)
+            if name == '自有域名':
+                # 仓库自指地址（repository / homepage / bugs 取值）里的
+                # 账号名不算泄漏 —— 按**出现位置**判，不是按文件豁免
+                found = terms.hits_outside_repo_field(t, pat)
+            n = len(found)
             if n:
                 bad.setdefault(name, []).append((p, n))
 

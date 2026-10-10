@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>report · 报告版式系统 v1 · frontend-lib</title>
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/page.css">
+<link rel="stylesheet" href="../table/table.css">
+<link rel="stylesheet" href="../../09-assets/scientific-plot/scientific-plot.css">
+<link rel="stylesheet" href="report.css">
+<!-- 本页不写内联 <style>：所有版式都来自 report.css。
+     内联写成活的那一刻，它就不再是这个系统的一部分了。 -->
+</head>
+<body class="page">
+<main class="wrap">
+
+<h1>report · 报告版式系统 v1</h1>
+
+<p class="note">
+  三套版式共用一份<strong>基础</strong>（字体角色、正文行长、页面网格、间距层级、
+  图表说明、来源脚注），各自再决定"行长多宽、字号多大、要不要编号、要不要风险披露"。
+  <br>🔴 这一版只对<strong>屏幕阅读</strong>负责。<strong>分页 PDF 与印刷不在本轮范围内</strong>
+  —— 见文末「本轮明确不做」。没有的东西写清楚，比默认它有要紧。
+</p>
+
+<!-- ======================================================================== -->
+<h2 class="rule-top">先看取舍：三套版式各自放弃了什么</h2>
+
+<div class="table"><table>
+  <caption class="table__cap">表 A · 三种 profile 的结构差异（判据可验证，不是文案差异）</caption>
+  <thead><tr>
+    <th scope="col">profile</th>
+    <th scope="col">正文行长</th>
+    <th scope="col">正文字号</th>
+    <th scope="col">图/表编号</th>
+    <th scope="col">必须有</th>
+    <th scope="col">它放弃了</th>
+  </tr></thead>
+  <tbody>
+    <tr><th scope="row">杂志编辑</th>
+        <td class="num">42em</td><td class="num">基准</td>
+        <td>不要</td><td>引语块 / 出血宽图</td>
+        <td>审计级追溯（没编号就引用不了第几图）</td></tr>
+    <tr><th scope="row">科研技术</th>
+        <td class="num">34em</td><td class="num">基准</td>
+        <td>自动编号</td><td>来源脚注 / 方法写明</td>
+        <td>快速通读（窄行长 + 松行距，读起来慢）</td></tr>
+    <tr><th scope="row">金融研究</th>
+        <td class="num">30em</td><td class="num">小一档</td>
+        <td>不要</td><td>关键数字条 / 风险披露</td>
+        <td>长论证（超过两屏的推理会被跳过）</td></tr>
+  </tbody>
+</table></div>
+
+<!-- ======================================================================== -->
+<h2 class="rule-top">1 · 杂志编辑版（rep--magazine）</h2>
+<p class="note">宽行长、大标题、引语块，图可以出血到正文之外。<strong>没有图编号</strong> —— 那是技术文档的语法。</p>
+
+<article class="rep rep--magazine" id="mag">
+  <header>
+    <p class="rep__kicker">产业观察</p>
+    <h2 class="rep__title">三条产线，三种寿命：被低估的其实是包覆工艺</h2>
+    <p class="rep__standfirst">
+      同一批电芯、同一份配方，只在包覆环节差了一步，300 周之后的容量保持率能差出 25 个百分点。
+    </p>
+    <ul class="rep__meta">
+      <li>张彻 · 产业分析师</li>
+      <li>2026-10-10</li>
+      <li>示例文本，非真实评测</li>
+    </ul>
+  </header>
+
+  <div class="rep__grid">
+    <div class="rep__body">
+      <section class="rep__sec">
+        <p>
+          过去两年讨论最多的，是哪家的正极材料能量密度更高。可真正决定一块电池能撑多久的，
+          往往不是那个写在规格书第一行的大数字，而是交付时被一笔带过的那层几十纳米的包覆。
+        </p>
+        <blockquote class="rep__pull">
+          包覆不是"加一道工序"，它是把材料的衰退从"突然坏掉"变成"慢慢变老"。
+        </blockquote>
+        <p>
+          我们把三条工艺线的循环数据放在同一坐标下看了很久。区别不在起点 —— 前 50 周几乎重合；
+          区别在斜率开始变陡的那一刻。未包覆的那条在 150 周左右就明显掉队，
+          而做了磷酸锂包覆的那条到 300 周仍然走在 80% 以上。
+        </p>
+      </section>
+
+      <!-- 🔴 出血宽图放在**正文流内**，不在边注里。
+           边注列只有 14em（252px）：一张图塞进去会被压成缩略图，
+           那就不是"出血"而是"缩水"。 ⇒ 大图一律走这里。 -->
+      <figure class="rep__fig rep__fig--wide">
+        <div id="magChart"></div>
+        <figcaption class="rep__cap">
+          未包覆工艺在 150 周后掉队；两种包覆方案维持线性衰退（示例数据）。
+        </figcaption>
+      </figure>
+
+      <section class="rep__sec">
+        <h3>接下来要看什么</h3>
+        <p>
+          真正的分水岭可能出现在下一代工艺上：如果包覆的成本能降到当前的六成，
+          "多撑两年"这件事就从实验室指标变成了合同条款。
+        </p>
+      </section>
+    </div>
+
+    <aside class="rep__aside">
+      <p class="rep__note">
+        边注只用来放<strong>短</strong>东西：一句提醒、一条术语、一个次要读数。
+        它挤得下的字数是有限的 —— 想放大件东西，那是正文流的活。
+      </p>
+    </aside>
+  </div>
+</article>
+
+<!-- ======================================================================== -->
+<h2 class="rule-top">2 · 科研技术版（rep--technical）</h2>
+<p class="note">
+  图与表<strong>自动编号</strong>（CSS counter，写死编号会在改稿后全部错位）、章节编号可选。
+  代价：行长最窄、行距最松 —— 技术报告的正确读法是逐段核对。
+</p>
+
+<article class="rep rep--technical" id="tech">
+  <header>
+    <p class="rep__kicker">实验报告</p>
+    <h2 class="rep__title">包覆工艺对正极材料循环稳定性的影响</h2>
+    <ul class="rep__meta">
+      <li>材料表征组</li>
+      <li>2026-10-10</li>
+      <li>版本 v1.0</li>
+      <li><strong>示例数据，不可用于定量结论</strong></li>
+    </ul>
+  </header>
+
+  <div class="rep__grid">
+    <div class="rep__body">
+      <section class="rep__sec">
+        <h3>方法</h3>
+        <p>
+          三组样品均取自同一批次的正极粉体，区别在于包覆工序：BARE 不做处理，
+          AL₂O₃ 与 Li₃PO₄ 分别为两种包覆方案。每组的<strong>平行样极差</strong>直接标注在图上
+          —— 它由两次独立测量的差值给出，<strong>不是</strong>统计意义上的置信区间。
+        </p>
+      </section>
+
+      <section class="rep__sec">
+        <h3>结果</h3>
+        <p>
+          循环至 300 周时，三组的容量保持率分别为 57.3%、76.4% 与 82.1%。
+          差异在前 50 周不显著，从 150 周开始拉开（图 1）。
+        </p>
+        <figure class="rep__fig">
+          <div id="techChart"></div>
+          <figcaption class="rep__cap">
+            三种方案的容量保持率随循环次数变化，阴影为平行样极差。
+          </figcaption>
+        </figure>
+      </section>
+
+      <section class="rep__sec">
+        <h3>讨论</h3>
+        <p>
+          需要说明的是：本轮实验<strong>未做</strong>温度加速，也未控制电解液批次差异。
+          因此这里的排序只在这三批样品内部成立，不宜外推到供应商层面。
+        </p>
+      </section>
+    </div>
+
+    <aside class="rep__aside">
+      <h3>关键读数</h3>
+      <!-- 🔴 表格说明走 `rep__cap--table`：图与表各用一路计数（rep-fig / rep-tab），
+           因为「图 3」和「表 3」不是同一个东西。编号由 CSS counter 给，
+           写死数字的话，插入一张新图后面全会错位。
+           同一句标记放在 financial 版里不会出编号 —— 那是 profile 决定的，不是标记决定的。 -->
+      <figure class="rep__fig">
+        <div class="table"><table>
+          <thead><tr>
+            <th scope="col">方案</th>
+            <th scope="col">保持率</th>
+          </tr></thead>
+          <tbody>
+            <tr><th scope="row">未包覆</th><td class="num">57.3%</td></tr>
+            <tr><th scope="row">Al₂O₃</th><td class="num">76.4%</td></tr>
+            <tr><th scope="row">Li₃PO₄</th><td class="num">82.1%</td></tr>
+          </tbody>
+        </table></div>
+        <figcaption class="rep__cap rep__cap--table">
+          第 300 周的容量保持率（示例数据）
+        </figcaption>
+      </figure>
+    </aside>
+  </div>
+
+  <footer class="rep__sources">
+    <h3>来源</h3>
+    <ol class="rep__source">
+      <li>循环数据由本实验室测得，原始记录在 LIMS 批次 <code>Q3-2026-041</code>。</li>
+      <li>平行样极差 = 两次独立测量值之差的一半，未按标准误处理。</li>
+      <li>本示例中的所有数值均为演示用构造值，不得引用。</li>
+    </ol>
+  </footer>
+</article>
+
+<!-- ======================================================================== -->
+<h2 class="rule-top">3 · 金融研究版（rep--finance）</h2>
+<p class="note">
+  字号与行距各降一档 ⇒ 一屏塞得下更多数字；<strong>关键数字条</strong>放在最前面；
+  <strong>风险披露不是可选项</strong> —— 缺了它，这份材料在法律意义上是不完整的。
+</p>
+
+<article class="rep rep--finance" id="fin">
+  <header>
+    <p class="rep__kicker">产业跟踪</p>
+    <h2 class="rep__title">包覆工艺渗透率：对正极材料毛利率的敏感性测算</h2>
+    <ul class="rep__meta">
+      <li>研究部</li>
+      <li>2026-10-10</li>
+      <li>示例数据，非投资建议</li>
+    </ul>
+  </header>
+
+  <dl class="rep__keyline">
+    <div><dt>目标良率</dt><dd>94.5%</dd></div>
+    <div><dt>测算毛利率</dt><dd>23.1%</dd></div>
+    <div><dt>渗透率假设</dt><dd>38%</dd></div>
+    <div><dt>敏感性区间</dt><dd>18–26%</dd></div>
+  </dl>
+
+  <div class="rep__grid">
+    <div class="rep__body">
+      <section class="rep__sec">
+        <h3>结论先行</h3>
+        <p>
+          在良率维持 94.5%、渗透率 38% 的假设下，测算毛利率 23.1%。
+          敏感性区间的下限（18%）出现在良率下滑 2 个百分点、且包覆材料采购价上行的情形。
+        </p>
+      </section>
+
+      <section class="rep__sec">
+        <h3>关键假设</h3>
+        <!-- 同一句标记放在 finance 版：没有编号，因为 financial profile 不开 counter -->
+        <figure class="rep__fig">
+          <div class="table"><table>
+            <thead><tr>
+              <th scope="col">情形</th>
+              <th scope="col">良率</th>
+              <th scope="col">毛利率</th>
+            </tr></thead>
+            <tbody>
+              <tr><th scope="row">悲观</th><td class="num">92.5%</td><td class="num">18.0%</td></tr>
+              <tr><th scope="row">中性</th><td class="num">94.5%</td><td class="num">23.1%</td></tr>
+              <tr><th scope="row">乐观</th><td class="num">96.0%</td><td class="num">26.4%</td></tr>
+            </tbody>
+          </table></div>
+          <figcaption class="rep__cap rep__cap--table">
+            敏感性测算的关键假设与结果（示例）
+          </figcaption>
+        </figure>
+      </section>
+
+      <p class="rep__source">
+        数据来源：公司公开披露的季度产能口径（示例），测算过程见内部模型
+        <code>mod-sensitivity-041</code>。
+      </p>
+    </div>
+
+    <aside class="rep__aside">
+      <p class="rep__note">
+        本页面的数字均为<strong>演示用构造值</strong>，用于说明版式，不代表任何真实公司或标的。
+      </p>
+    </aside>
+  </div>
+
+  <p class="rep__risk">
+    <strong>风险披露：</strong>本报告为示例文本，不构成投资建议。测算结果对良率与采购价假设高度敏感，
+    假设的任何变动都可能使结论不成立。读者应自行核实数据来源，
+    并对据此作出的决策独立承担责任。
+  </p>
+</article>
+
+<!-- ======================================================================== -->
+<h2 class="rule-top">4 · 🔴 本轮明确不做（不是"还没做"，是"这一版不管"）</h2>
+<ol>
+  <li><strong>分页 PDF / 印刷分页</strong>： @page 页边距、页眉页脚、页码、跨页不断行、
+      孤行寡行控制 —— 全部不在本版范围内，需要 `@page`、实物打样与 PDF 引擎验证。
+      CSS 里只保留了"打印时不更糟"的最小保障（隐藏边注、图表不跨撕裂）。</li>
+  <li><strong>自动目录、尾注/脚注、交叉引用、参考文献样式</strong>：图/表编号用 CSS counter
+      做到"写第几就显示第几"，再往上的引用图（「详见图 3」这种自动维护）不支持。</li>
+  <li><strong>Markdown/文档输入、CMS、多语言排版（竖排、阿拉伯文 RTL）</strong>：不是本系统的目标。</li>
+</ol>
+
+<p class="note">
+  相关的既有清单在 <code>README.md</code>：包含三种 profile 的完整取舍、
+  共享基础的六个可变量，以及与 <code>04-recipes/analysis-report</code>（一份具体实例）的分工。
+</p>
+
+</main>
+
+<script src="../../09-assets/scientific-plot/scientific-plot.js"></script>
+<script>
+(function () {
+  'use strict';
+  if (!window.ScientificPlot) return;
+
+  /* 循环数据（示例）：与 analysis-report 里的是同一组构造值 */
+  var CYC  = [0, 50, 100, 150, 200, 250, 300];
+  var BARE = [100, 92.1, 85.3, 78.0, 70.8, 63.9, 57.3];
+  var AL2O = [100, 96.2, 92.4, 88.1, 84.3, 80.2, 76.4];
+  var LPO4 = [100, 97.1, 94.0, 91.2, 88.4, 85.3, 82.1];
+
+  function pts(a) { return CYC.map(function (c, i) { return [c, a[i]]; }); }
+
+  /* 杂志版：宽图、不要编号、只要趋势 ⇒ 只画两条线，不画误差带 */
+  window.ScientificPlot.render(document.getElementById('magChart'), {
+    width: 460, height: 260,
+    legend: false,                     /* 编辑稿里图注已经说清了，图例是多余的 */
+    title: '容量保持率随循环次数的变化',
+    x: { label: '循环次数', unit: '周', scale: 'linear', domain: [0, 300] },
+    y: { label: '容量保持率', unit: '%', scale: 'linear', domain: [50, 102] },
+    series: [
+      { type: 'line', data: pts(BARE), name: '未包覆' },
+      { type: 'line', data: pts(LPO4), name: 'Li₃PO₄ 包覆' }
+    ]
+  });
+
+  /* 技术版：三组材料，带/线共用身份才不会看错（见 VIZ-REPORT-01 · P0-2） */
+  var HW = [0, 0.9, 1.3, 1.6, 1.9, 2.2, 2.4];
+  function band(a) {
+    var f = a === BARE ? 1.4 : a === AL2O ? 1.0 : 0.8;
+    return CYC.map(function (c, i) { return [c, a[i] - HW[i] * f, a[i] + HW[i] * f]; });
+  }
+  window.ScientificPlot.render(document.getElementById('techChart'), {
+    width: 620, height: 320,
+    title: '三种方案的容量保持率',
+    desc: '阴影为平行样极差',
+    x: { label: '循环次数', unit: '周', scale: 'linear', domain: [0, 300] },
+    y: { label: '容量保持率', unit: '%', scale: 'linear', domain: [50, 102] },
+    series: [
+      { type: 'band', data: band(BARE), name: '未包覆' },
+      { type: 'band', data: band(AL2O), name: 'Al₂O₃ 包覆' },
+      { type: 'band', data: band(LPO4), name: 'Li₃PO₄ 包覆' },
+      { type: 'line', data: pts(BARE),  name: '未包覆' },
+      { type: 'line', data: pts(AL2O),  name: 'Al₂O₃ 包覆' },
+      { type: 'line', data: pts(LPO4),  name: 'Li₃PO₄ 包覆' }
+    ]
+  });
+})();
+</script>
+</body>
+</html>

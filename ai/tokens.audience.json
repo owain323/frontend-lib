@@ -47,7 +47,7 @@
   "tokens": {},
 
   "budget": {
-    "orphan": 5,
-    "$comment": "棘轮：孤儿令牌总数只能降。降了就把这个数字一起改小，不许偷偷升。2026-10-10：--lh-loose / --fs-xl 被新增 recipe 引用，7→5。"
+    "orphan": 4,
+    "$comment": "棘轮：孤儿令牌总数只能降。降了就把这个数字一起改小，不许偷偷升。2026-10-10：--lh-loose / --fs-xl 被新增 recipe 引用，7→5；同日 04-recipes/report 改在自身层内重定义边注宽 ⇒ --measure-aside 由『被引用』回到『无引用』，5→5→再核为 4。"
   }
 }

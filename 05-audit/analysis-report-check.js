@@ -177,10 +177,19 @@ const DIR = REPO + '/04-recipes/analysis-report';
           if (!figs.length) return { ok: false, note: '🔴 没有 figure' };
           const noCap = figs.filter((f) => !f.querySelector('figcaption'));
           const svg = [...document.querySelectorAll('.report figure svg')];
-          const noLabel = svg.filter((s) => !s.getAttribute('aria-label'));
+          /* 🔴 判据修正（2026-10-10）：`aria-hidden="true"` 的装饰 SVG
+             不该要求 aria-label —— 它本来就不进无障碍树。
+             实测踩到：scientific-plot 加了**图例**之后，图例里每个色标是
+             一小段真 `<line>`（有 class、有 `aria-hidden="true"`），
+             旧判据把它们全算成"缺 aria-label 的图" ⇒ 3 处假红。
+             正解：只查**可见的图**（未标 aria-hidden 的根 svg）。 */
+          const meaningful = svg.filter((s) => s.getAttribute('aria-hidden') !== 'true');
+          const noLabel = meaningful.filter((s) => !s.getAttribute('aria-label'));
           return { ok: noCap.length === 0 && noLabel.length === 0,
                    note: figs.length + ' 张图 · 缺图注 ' + noCap.length +
-                         ' · SVG 缺 aria-label ' + noLabel.length };
+                         ' · 有语义的 SVG ' + meaningful.length + ' 个' +
+                         '（另 ' + (svg.length - meaningful.length) + ' 个是装饰，已排除）' +
+                         ' · 缺 aria-label ' + noLabel.length };
         });
         return r;
       },
