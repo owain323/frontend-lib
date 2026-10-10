@@ -106,8 +106,6 @@
 .skeleton--text:last-child { width: 70%; }
 
 
-.state--delayed { visibility: hidden; }
-.state--delayed[data-state="shown"] { visibility: visible; }
 
 
 .state--error .state__icon {

@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
   "generatedBy": "05-audit/gen-ai-contract.py",
-  "libraryVersion": "0.7.12",
+  "libraryVersion": "0.8.0",
   "$comment": "机器可读的组件契约。slots = BEM 元素名（在本库里元素名就是插槽名），states.enum = 组件会在 DOM 上写出的 data-* 取值，states.legacyClass = 仍未收敛到 data 属性的历史状态类（INVARIANT I-8 未达标）。",
   "maturityCriteria": {
     "alpha": "缺 demo.html 或缺 05-audit 下的专属门禁 ⇒ 还没被机器验证过，不要用",
@@ -12,15 +12,15 @@
     "$strictImpact": "⚠️ strict 档位只放行 stable ⇒ 这 7 个组件在 strict 下不可用（accordion / combobox / drawer / dropdown / overlay / select / tooltip）。这是**有意的**：它们的行为还有手写副本或缺一个该有的行为。要用就切 standard 档。"
   },
   "summary": {
-    "total": 27,
+    "total": 28,
     "byMaturity": {
       "beta": 7,
-      "stable": 20
+      "stable": 21
     },
     "byTier": {
       "primitive": 13,
       "pattern": 13,
-      "recipe": 1
+      "recipe": 2
     }
   },
   "components": [
@@ -530,17 +530,12 @@
         "state__title"
       ],
       "variants": [
-        "state--delayed",
         "state--empty",
         "state--error",
         "state--loading"
       ],
       "states": {
-        "enum": {
-          "state": [
-            "shown"
-          ]
-        },
+        "enum": {},
         "boolean": [],
         "legacyClass": []
       },
@@ -1393,9 +1388,57 @@
       "behaviorRef": "API.md#switch"
     },
     {
+      "id": "analysis-report",
+      "tier": "recipe",
+      "purpose": "组合型研究报告页面：正文与辅助栏并排，窄屏自然退回单栏",
+      "rootClass": "report",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true,
+        "behaviorDebt": []
+      },
+      "gates": [
+        "analysis-report-check.js"
+      ],
+      "files": {
+        "css": "04-recipes/analysis-report/analysis-report.css",
+        "js": null,
+        "demo": "04-recipes/analysis-report/demo.html"
+      },
+      "slots": [
+        "report__aside",
+        "report__body",
+        "report__code",
+        "report__fig",
+        "report__foot",
+        "report__kicker",
+        "report__main",
+        "report__meta",
+        "report__quote"
+      ],
+      "variants": [],
+      "states": {
+        "enum": {},
+        "boolean": [],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [],
+        "attrs": []
+      },
+      "usesOtherNamespaces": [
+        "card__title",
+        "kf__title"
+      ],
+      "global": null,
+      "behaviorRef": "API.md#analysis-report"
+    },
+    {
       "id": "table",
       "tier": "recipe",
-      "purpose": "数据表格：排序/加载/空/错误四态",
+      "purpose": "数据表格：排序/加载/空/错误四态；三种用途预设（财务/学术/统计）",
       "rootClass": "table",
       "maturity": "stable",
       "maturityReasons": {
@@ -1414,13 +1457,19 @@
       },
       "slots": [
         "table__bar",
+        "table__cap",
         "table__empty",
         "table__error",
+        "table__foot",
         "table__loading",
-        "table__sort"
+        "table__sort",
+        "table__unit"
       ],
       "variants": [
-        "table--compact"
+        "table--academic",
+        "table--compact",
+        "table--financial",
+        "table--stats"
       ],
       "states": {
         "enum": {},
@@ -1438,7 +1487,12 @@
           "sort"
         ]
       },
-      "usesOtherNamespaces": [],
+      "usesOtherNamespaces": [
+        "stat__ci",
+        "stat__p",
+        "stat__p--sig",
+        "stat__se"
+      ],
       "global": null,
       "behaviorRef": "API.md#table"
     }

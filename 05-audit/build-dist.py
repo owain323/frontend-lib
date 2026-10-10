@@ -343,8 +343,43 @@ def write_out(rel, text):
         fh.write(text)
 
 
+# dist 里**不是产物**的文件（它们由别的脚本写，不算孤儿）
+DIST_NON_OUTPUT = {'dist/manifest.json', 'dist/COSTS.md'}
+
+
+def orphans(man):
+    """dist 里**没有任何源码对应**的产物（孤儿）。
+
+    🔴 为什么会需要这条（0.8.0 实测踩到）
+    --------------------------------------
+    把 `04-recipes/analysis-report/report.css` 重命名为 `analysis-report.css`
+    之后，重建 dist 会**产出**新名字，但**不会删**旧名字
+    ⇒ dist 里同时躺着 `report.css` 与 `analysis-report.css`，内容一模一样。
+
+    ⇒ 危害：下载 dist 的人看到两个文件，不知道用哪个；
+      而且 `report.css` 对应的源码**已经不存在** —— 它是纯幽灵。
+
+    ⇒ 而"新鲜度"判据查不出来：它只看「manifest 记录的源码散列变没变」，
+      删掉源码会让 manifest 重新生成，旧的产物从此**没人再管**。
+      两个方向必须都堵：源码→产物（漏建）、产物→源码（漏删）。
+    """
+    declared = set()
+    for e in man.get('files', []):
+        for o in e.get('outputs', []):
+            declared.add(o['path'].replace('\\', '/'))
+    live = set()
+    for root, dirs, files in os.walk(DIST):
+        for f in files:
+            rel = os.path.relpath(os.path.join(root, f), ROOT).replace('\\', '/')
+            if rel in DIST_NON_OUTPUT:
+                continue
+            live.add(rel)
+    return sorted(live - declared)
+
+
 def check_freshness():
-    """源码 sha256 与 manifest 记录不一致 ⇒ 忘了重建 ⇒ 红。"""
+    """源码 sha256 与 manifest 记录不一致 ⇒ 忘了重建 ⇒ 红。
+    另：dist 里有没人认领的产物 ⇒ 孤儿（通常是重命名后没清干净）⇒ 红。"""
     if not os.path.isfile(MANIFEST):
         return ['dist/manifest.json 不存在 ⇒ 先跑一次 python 05-audit/build-dist.py']
     man = json.loads(io.open(MANIFEST, encoding='utf-8').read())
@@ -359,6 +394,9 @@ def check_freshness():
         for o in e['outputs']:
             if not os.path.isfile(os.path.join(ROOT, o['path'])):
                 bad.append('产物缺失：' + o['path'])
+    for rel in orphans(man):
+        bad.append('孤儿产物（没有任何源码产出它）：' + rel
+                   + ' ⇒ 多半是重命名后没删干净，直接删文件')
     return bad
 
 
@@ -413,7 +451,24 @@ def selftest():
         ok = False
     del fake
 
-    # ④ 🔴 换行符不变性（2026-10-08 克隆事故后的**常驻**反向控制）
+    # ④ 孤儿判据必须能红：往 dist 里塞一个没人认领的文件 ⇒ 必须报孤儿。
+    #    （不塞真文件，直接改内存里的 manifest 造"缺失声明"更省事，
+    #     但那测的是 orphans() 的数学，不是"真的扫目录" ⇒ 这里塞真文件。）
+    probe_orphan = os.path.join(DIST, '_orphan_probe.tmp')
+    try:
+        io.open(probe_orphan, 'w', encoding='utf-8').write('x')
+        bad = check_freshness()
+        hit = any('孤儿产物' in b and '_orphan_probe.tmp' in b for b in bad)
+    finally:
+        if os.path.isfile(probe_orphan):
+            os.remove(probe_orphan)
+    if not hit:
+        print('  [FAIL] 反向控制失效：dist 里多了没人认领的文件却没报')
+        ok = False
+    else:
+        print('  [OK]   dist 里出现无主产物 ⇒ 报「孤儿产物」')
+
+    # ⑤ 🔴 换行符不变性（2026-10-08 克隆事故后的**常驻**反向控制）
     #    事故：源码 17 个文件是 LF、32 个是 CRLF（混合状态）。
     #          别人 clone 后 core.autocrlf=true 把 LF 签出成 CRLF
     #          ⇒ 内容没变，17 个散列全对不上 ⇒ dist-fresh 只在陌生人机器上红。
@@ -426,7 +481,10 @@ def selftest():
             else raw.replace(b'\n', b'\r\n')
         try:
             io.open(p, 'wb').write(flipped)
-            bad = check_freshness()
+            # 🔴 只关心"散列"那部分：孤儿是另一条判据的事，
+            #    不滤掉的话，有人留了个孤儿 ⇒ 这条自检会假红，
+            #    看起来像"散列又按字节算了"，其实是串台。
+            bad = [b for b in check_freshness() if '孤儿' not in b]
         finally:
             io.open(p, 'wb').write(raw)
         if bad:

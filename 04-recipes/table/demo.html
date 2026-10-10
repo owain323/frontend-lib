@@ -4,28 +4,36 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="data:,">
-<title>table · 数据表格 · frontend-lib</title>
+<title>table · 专业数据表格 · frontend-lib</title>
 <link rel="stylesheet" href="../../01-tokens/tokens.css">
 <link rel="stylesheet" href="../../01-tokens/typography.css">
-<link rel="stylesheet" href="../../02-primitives/button/button.css">
 <link rel="stylesheet" href="../../01-tokens/focus-ring.css">
 <link rel="stylesheet" href="../../01-tokens/page.css">
+<link rel="stylesheet" href="../../02-primitives/button/button.css">
 <link rel="stylesheet" href="table.css">
 <style>
 .toolbar { display: flex; gap: var(--sp-2); margin: 0 0 var(--sp-3); flex-wrap: wrap; }
+.section-note { margin: 0 0 var(--sp-3); }
 </style>
 </head>
-<body class="page page">
+<body class="page">
 <main class="wrap">
 
-<h1>table · 数据表格</h1>
-<p class="note">
-  三条硬要求：<strong>粘性表头</strong>（横向滚动也知道列名）·
-  <strong>数字列右对齐 + 等宽数字</strong>（能竖着比大小）·
-  <strong>空 / 加载 / 出错三态齐全</strong>。
+<h1>table · 专业数据表格</h1>
+<p class="lede">
+  同一套表格基础，三种用途预设。数字怎么显示由<strong>列定义</strong>决定，
+  不由"这个数看起来有多大"决定。
 </p>
 
-<h2>1 · 常规（排序 + 粘性表头 + 数字列）</h2>
+<!-- ========================================================================
+     预设一：业务 / 财务
+     ===================================================================== -->
+<h2 class="rule-top">1 · 业务 / 财务数据表</h2>
+<p class="note">
+  金额、比率、同比变化放在一张表里 —— 它们需要的格式<strong>各不相同</strong>：
+  营收不带正负号，同比必须带。单位写在列头，不在每个格子里重复。
+</p>
+
 <div class="toolbar">
   <button class="btn btn--sm" data-demo="ready">常规</button>
   <button class="btn btn--sm" data-demo="loading">加载态</button>
@@ -35,50 +43,137 @@
 </div>
 <div id="host"></div>
 
-<h2>2 · 窄屏（横向滚动，表头仍固定）</h2>
-<div class="table" id="wide"></div>
+<!-- ========================================================================
+     预设二：学术出版
+     ===================================================================== -->
+<h2 class="rule-top">2 · 学术出版表格（三线表 + 多级表头）</h2>
+<p class="note">
+  论文表格的读者要逐格比对数值，竖线和斑马纹会干扰视线 ⇒ 只留三条线。
+  多级表头用 <code>scope</code> 标明层级，读屏才知道"这一格属于哪一列"。
+</p>
+<div id="academic"></div>
+
+<!-- ========================================================================
+     预设三：统计 / 实验结果
+     ===================================================================== -->
+<h2 class="rule-top">3 · 统计与实验结果表</h2>
+<p class="note">
+  估计值、标准误、置信区间、p 值各自有书写惯例，不能用同一个数字格式化函数打发。
+  <strong>本表不计算、也不宣称显著性</strong> —— 区间与 p 值由调用方提供。
+</p>
+<div id="stats"></div>
+
+<!-- ========================================================================
+     自证：格式不再靠猜
+     ===================================================================== -->
+<h2 class="rule-top">4 · 格式自证（这几行就是反例）</h2>
+<p class="note">
+  下面两列<strong>数值完全相同</strong>（都是 <code>0.25</code>），
+  只有列定义的 <code>format</code> 不同。旧实现会把两者都显示成
+  <code>25.0%</code> —— 因为它按"小于 1 就当比例"来猜。
+</p>
+<div id="proof"></div>
 
 </main>
 
 <script>
 (function () {
-  var COLS = [
-    { key: 'name',  label: '公司',   type: 'text' },
-    { key: 'rev',   label: '营收',   type: 'num'  },
-    { key: 'cost',  label: '成本',   type: 'num'  },
-    { key: 'margin',label: '毛利率', type: 'num'  },
-    { key: 'yoy',   label: '同比',   type: 'num'  },
-    { key: 'src',   label: '数据源', type: 'text' },
+  'use strict';
+
+  /* ======================================================================
+     列定义：格式与单位由这里声明，不做任何"看数值猜语义"的事
+     ----------------------------------------------------------------------
+     format 取值：
+       text            原样输出
+       integer         整数 + 千分位
+       decimal         定长小数（输入即显示值，不乘 100）
+       currency        千分位 + 定长小数（金额，正数不加 +）
+       percent         输入是**比例** ⇒ 乘 100 加 %（正数不加 +）
+       signed-percent  同上，但正数加 + 、负数加 −（用于"同比/变化"）
+     ====================================================================== */
+
+  function fixed(v, p) {
+    var n = Number(v);
+    if (!isFinite(n)) return '—';
+    return p === undefined || p === null ? String(n) : n.toFixed(p);
+  }
+
+  function grouped(v, p) {
+    var n = Number(v);
+    if (!isFinite(n)) return '—';
+    var s = (p === undefined || p === null) ? String(n) : n.toFixed(p);
+    var parts = s.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return parts.join('.');
+  }
+
+  /**
+   * 渲染一个单元格。
+   * 🔴 两条硬规则：
+   *   ① 缺失值既不是 0 也不是空 —— 显示占位符，且不带任何符号
+   *   ② 正负号只由 format 决定：只有 signed-* 的正数才加 +
+   *      （营收、成本、毛利率这类"量"，正数没有 + 号）
+   */
+  function cell(v, col) {
+    var f = col.format || 'text';
+
+    if (v === null || v === undefined || v === '') {
+      return { text: '—', cls: (f === 'text' ? '' : 'num num--na') };
+    }
+    if (f === 'text') return { text: String(v), cls: '' };
+
+    var abs = Math.abs(Number(v));
+    var text;
+    if (f === 'currency' || f === 'integer') text = grouped(abs, col.precision);
+    else if (f === 'percent' || f === 'signed-percent') text = fixed(abs * 100, col.precision) + '%';
+    else text = fixed(abs, col.precision);
+
+    /* 符号：负数总是有 −（数值语义 + 无障碍第二线索）；
+       正数只有 signed-* 才带 + —— 这就是"按列语义处理" */
+    var cls = 'num';
+    if (Number(v) < 0) cls += ' num--neg';
+    else if (f === 'signed-percent' || f === 'signed-decimal') cls += ' num--pos';
+
+    return { text: text, cls: cls };
+  }
+
+  function headLabel(c) {
+    var u = c.unit ? ' <span class="table__unit">' + c.unit + '</span>' : '';
+    return c.label + u;
+  }
+
+  /* ---------------------------------------------------------------- 数据 */
+
+  var FIN_COLS = [
+    { key: 'name',   label: '公司',     format: 'text' },
+    { key: 'rev',    label: '营业收入', format: 'currency', precision: 0, unit: '万元' },
+    { key: 'cost',   label: '营业成本', format: 'currency', precision: 0, unit: '万元' },
+    { key: 'margin', label: '毛利率',   format: 'percent',  precision: 1 },
+    { key: 'yoy',    label: '同比',     format: 'signed-percent', precision: 1 },
+    { key: 'roe',    label: 'ROE',      format: 'percent',  precision: 1 },
+    { key: 'src',    label: '数据源',   format: 'text' }
   ];
 
-  var DATA = [
-    { name: '贵州茅台', rev: 150560, cost:  21980, margin: 0.854, yoy: 0.163, src: '年报' },
-    { name: '宁德时代', rev: 400900, cost: 305400, margin: 0.238, yoy: 0.104, src: '年报' },
-    { name: '比亚迪',   rev: 602315, cost: 481852, margin: 0.200, yoy: 0.243, src: '年报' },
-    { name: '招商银行', rev: 339123, cost:  96320, margin: 0.716, yoy: 0.008, src: '季报' },
-    { name: '美的集团', rev: 373700, cost: 289000, margin: 0.227, yoy: 0.093, src: '年报' },
-    { name: '五粮液',   rev:  83272, cost:  18620, margin: 0.776, yoy: 0.129, src: '年报' },
+  /* 🔴 单位与量级必须自洽（0.8.0 修）：
+     此前这些数写成 1,505,600 而列头声明「万元」⇒ 那等于 150.6 亿元，
+     和一个千亿级公司的量级差了 10 倍。**样例数据也必须单位诚实** ——
+     读者会照着列头换算，算错了不会报错，只会记错。
+     ⇒ 现值以公开年报的「亿元」口径 ×10⁸ 换算回万元，量级与列头一致。
+     ⚠️ 毛利率 / 同比 / ROE 是**示意值**，请勿当真实财务数据引用。 */
+  var FIN_DATA = [
+    { name: '贵州茅台', rev: 15056000, cost:  2198000, margin: 0.854, yoy:  0.163, roe: 0.347, src: '年报' },
+    { name: '宁德时代', rev: 40090000, cost: 30540000, margin: 0.238, yoy:  0.104, roe: 0.241, src: '年报' },
+    { name: '比亚迪',   rev: 60231500, cost: 48185200, margin: 0.200, yoy:  0.243, roe: 0.225, src: '年报' },
+    { name: '招商银行', rev: 33912300, cost:  9632000, margin: 0.716, yoy: -0.008, roe: 0.152, src: '季报' },
+    { name: '美的集团', rev: 37370000, cost: 28900000, margin: 0.227, yoy:  0.093, roe: 0.221, src: '年报' },
+    { name: '五粮液',   rev:  8327200, cost:  1862000, margin: 0.776, yoy:  0.129,   roe: null, src: '年报' }
   ];
 
+  /* ------------------------------------------------- 预设一：渲染财务表 */
   var host = document.getElementById('host');
   var sortKey = null, sortDir = 1;
 
-  function fmt(v, t) {
-    if (t === 'num') {
-      if (Math.abs(v) < 1) return (v * 100).toFixed(1) + '%';
-      return v.toLocaleString('zh-CN');
-    }
-    return v;
-  }
-
-  function cls(v, t) {
-    if (t !== 'num') return '';
-    if (v > 0) return 'num num--pos';
-    if (v < 0) return 'num num--neg';
-    return 'num';
-  }
-
-  function render(state) {
+  function renderFinance(state) {
     if (state === 'loading') {
       host.innerHTML = '<div class="table"><div class="table__loading" role="status" ' +
         'aria-live="polite" aria-label="正在加载数据">' +
@@ -99,78 +194,184 @@
       return;
     }
 
-    var rows = DATA.slice();
+    var rows = FIN_DATA.slice();
     if (sortKey) {
-      rows.sort(function (a, b) { return (a[sortKey] - b[sortKey]) * sortDir; });
+      rows.sort(function (a, b) {
+        var x = a[sortKey], y = b[sortKey];
+        if (x === null) return 1;          /* 缺失值始终排最后，不当 0 */
+        if (y === null) return -1;
+        return (x - y) * sortDir;
+      });
     }
 
-    var h = '<div class="table"><table><caption class="table__cap" ' +
-      'style="caption-side:top;text-align:left;padding:var(--sp-2) var(--sp-3);' +
-      'font-size:var(--fs-xs);color:var(--text-tertiary)">A 股样例数据 · 单位：万元</caption>' +
+    var h = '<div class="table table--financial"><table>' +
+      '<caption class="table__cap">A 股样例数据（非真实财报，量级参照公开年报）· ' +
+        '金额单位：万元 · 比率为比例值</caption>' +
       '<thead><tr>';
-    COLS.forEach(function (c) {
+    FIN_COLS.forEach(function (c) {
       var ariaSort = '';
       if (sortKey === c.key) {
         ariaSort = ' aria-sort="' + (sortDir === 1 ? 'ascending' : 'descending') + '"';
       }
       h += '<th scope="col"' + ariaSort + '>' +
-           '<button class="table__sort" data-key="' + c.key + '">' + c.label + '</button></th>';
+           '<button class="table__sort" data-key="' + c.key + '">' +
+           headLabel(c) + '</button></th>';
     });
     h += '</tr></thead><tbody>';
 
     rows.forEach(function (r) {
       h += '<tr>';
-      COLS.forEach(function (c) {
-        if (c.type === 'num') {
-          h += '<td class="' + cls(r[c.key], 'num') + '">' + fmt(r[c.key], 'num') + '</td>';
+      FIN_COLS.forEach(function (c) {
+        var v = cell(r[c.key], c);
+        if (c.format === 'text' && c.key === 'name') {
+          h += '<th scope="row">' + v.text + '</th>';   /* 行表头：读屏知道是谁的行 */
+        } else if (v.cls) {
+          h += '<td class="' + v.cls + '">' + v.text + '</td>';
         } else {
-          h += '<td>' + r[c.key] + '</td>';
+          h += '<td>' + v.text + '</td>';
         }
       });
       h += '</tr>';
     });
-    h += '</tbody></table></div>';
+    h += '</tbody></table></div>' +
+      '<p class="table__foot">注：ROE 缺失表示该期未披露；缺失显示为「—」，不作为 0 参与任何计算。</p>';
     host.innerHTML = h;
 
     host.querySelectorAll('.table__sort').forEach(function (b) {
       b.addEventListener('click', function () {
         var k = b.getAttribute('data-key');
-        if (sortKey === k) { sortDir = -sortDir; }
-        else { sortKey = k; sortDir = 1; }
-        render('ready');
+        if (sortKey === k) { sortDir = -sortDir; } else { sortKey = k; sortDir = 1; }
+        renderFinance('ready');
       });
     });
   }
 
   document.querySelectorAll('[data-demo]').forEach(function (b) {
-    b.addEventListener('click', function () { render(b.getAttribute('data-demo')); });
+    b.addEventListener('click', function () {
+      renderFinance(b.getAttribute('data-demo'));
+    });
   });
   document.getElementById('sortBtn').addEventListener('click', function () {
-    sortKey = 'rev'; sortDir = -sortDir; render('ready');
+    sortKey = 'rev'; sortDir = -sortDir; renderFinance('ready');
   });
+  renderFinance('ready');
 
-  render('ready');
+  /* ------------------------------------------- 预设二：学术三线表（多级表头） */
+  /* 多级表头的语义：
+     第一层 th 带 colspan ⇒ scope="colgroup"（它管一组列）
+     第二层 th ⇒ scope="col"（它管自己那一列）
+     行表头 ⇒ scope="row"                                                   */
+  var ACAD = [
+    { alloy: '6061-T6',  rt: [312, 18.4], h100: [286, 15.1], h150: [241, 12.7] },
+    { alloy: '6061-T651',rt: [324, 17.9], h100: [298, 14.6], h150: [252, 11.9] },
+    { alloy: '7075-T6',  rt: [572, 21.3], h100: [498, 17.2], h150: [403, 13.4] },
+    { alloy: '2024-T3',  rt: [483, 19.8], h100: [421, 16.1], h150: [347, 12.2] }
+  ];
+  var GROUPS = [
+    { label: '室温（25 °C）', key: 'rt' },
+    { label: '时效 100 °C',   key: 'h100' },
+    { label: '时效 150 °C',   key: 'h150' }
+  ];
 
-  /* 第二张：列更多，演示横向滚动 + 表头仍固定 */
-  var many = ['公司','代码','营收','成本','毛利率','同比','环比','ROE','负债率','数据源'];
-  var w = '<div class="table table--compact"><table><thead><tr>';
-  many.forEach(function (m) {
-    w += '<th scope="col">' + m + '</th>';
+  var a = '<div class="table table--academic"><table>' +
+    '<caption class="table__cap">表 1 · 不同时效温度下铝合金的拉伸性能（示例数据）</caption>' +
+    '<thead><tr><th scope="col" rowspan="2">合金牌号</th>';
+  GROUPS.forEach(function (g) {
+    /* colspan=2：每个温度组下有"抗拉强度"和"断后伸长率"两列 */
+    a += '<th scope="colgroup" colspan="2">' + g.label + '</th>';
   });
-  w += '</tr></thead><tbody>';
-  DATA.forEach(function (r) {
-    w += '<tr><td>' + r.name + '</td><td>' + r.name.slice(0,2) + '</td>' +
-         '<td class="num">' + r.rev.toLocaleString('zh-CN') + '</td>' +
-         '<td class="num">' + r.cost.toLocaleString('zh-CN') + '</td>' +
-         '<td class="num">' + (r.margin*100).toFixed(1) + '%</td>' +
-         '<td class="num num--pos">' + (r.yoy*100).toFixed(1) + '%</td>' +
-         '<td class="num num--neg">-1.2%</td>' +
-         '<td class="num">31.4%</td>' +
-         '<td class="num">19.8%</td>' +
-         '<td>' + r.src + '</td></tr>';
+  a += '</tr><tr>';
+  GROUPS.forEach(function () {
+    a += '<th scope="col">抗拉强度 <span class="table__unit">MPa</span></th>' +
+         '<th scope="col">伸长率 <span class="table__unit">%</span></th>';
   });
-  w += '</tbody></table></div>';
-  document.getElementById('wide').innerHTML = w;
+  a += '</tr></thead><tbody>';
+
+  ACAD.forEach(function (r) {
+    a += '<tr><th scope="row">' + r.alloy + '</th>';
+    GROUPS.forEach(function (g) {
+      var pair = r[g.key];
+      a += '<td class="num">' + grouped(pair[0], 0) + '</td>' +
+           '<td class="num">' + fixed(pair[1], 1) + '</td>';
+    });
+    a += '</tr>';
+  });
+  a += '</tbody></table></div>' +
+    '<div class="table__foot"><ol>' +
+    '<li>示例数据，用于演示三线表与多级表头的结构，<strong>非真实实验测量结果</strong>。</li>' +
+    '<li>每组为 2 个测值的算术平均；原始测值未提供，故不给出标准差。</li>' +
+    '</ol></div>';
+  document.getElementById('academic').innerHTML = a;
+
+  /* --------------------------------------- 预设三：统计 / 实验结果表 */
+  var STATS = [
+    { term: '截距',        est: 2.413, se: 0.182, ci: [2.056, 2.770], p: 0.0001 },
+    { term: '处理效应',     est: 0.487, se: 0.196, ci: [0.103, 0.871], p: 0.013  },
+    { term: '基线得分',     est: 0.312, se: 0.074, ci: [0.167, 0.457], p: 0.0001 },
+    { term: '年龄',        est: -0.021, se: 0.018, ci: [-0.056, 0.014], p: 0.241 },
+    { term: '性别（男=1）', est:  0.094, se: 0.121, ci: [-0.143, 0.331], p: 0.437 }
+  ];
+
+  function pText(p) {
+    /* p 值有自己的书写惯例：< .001 不写成 0.000 */
+    if (p < 0.001) return '&lt; .001';
+    return fixed(p, 3).replace(/^0\./, '.');
+  }
+
+  var s = '<div class="table table--stats"><table>' +
+    '<caption class="table__cap">表 2 · 处理效应的 OLS 估计（示例数据，n = 412）</caption>' +
+    '<thead><tr>' +
+    '<th scope="col">项</th>' +
+    '<th scope="col">估计值 <span class="table__unit">(标准误)</span></th>' +
+    '<th scope="col">95% 置信区间</th>' +
+    '<th scope="col">p 值</th>' +
+    '</tr></thead><tbody>';
+
+  STATS.forEach(function (r) {
+    /* 🔴 标准误不是"小数点后更多位"，它是**另一个数** —— 放在次级位置并弱化 */
+    var estCell = '<td class="num">' + fixed(r.est, 3) +
+      ' <span class="stat__se">(' + fixed(r.se, 3) + ')</span></td>';
+    var ciCell = '<td class="num stat__ci">[' + fixed(r.ci[0], 3) + ', ' +
+      fixed(r.ci[1], 3) + ']</td>';
+    var sig = r.p < 0.05 ? ' stat__p--sig' : '';
+    var pCell = '<td class="num stat__p' + sig + '">' + pText(r.p) + '</td>';
+    s += '<tr><th scope="row">' + r.term + '</th>' + estCell + ciCell + pCell + '</tr>';
+  });
+  s += '</tbody></table></div>' +
+    '<p class="table__foot">注：括号内为标准误；置信区间与 p 值由调用方计算并提供，' +
+    '本表只负责呈现，<strong>不推断显著性</strong>。示例数据，非真实研究结果。</p>';
+  document.getElementById('stats').innerHTML = s;
+
+  /* ------------------------------------------------- 自证区：同数不同义 */
+  var PROOF = [
+    { label: '比例（percent）', value: 0.25, format: 'percent', precision: 1,
+      why: '列定义说它是比例 ⇒ 显示 25.0%' },
+    { label: '测量值（decimal）', value: 0.25, format: 'decimal', precision: 2,
+      why: '列定义说它是普通测量值 ⇒ 显示 0.25，绝不乘 100' },
+    { label: '金额（currency）', value: 1505600, format: 'currency', precision: 0,
+      why: '金额正数 ⇒ 有千分位，没有 + 号' },
+    { label: '同比（signed-percent）', value: 0.163, format: 'signed-percent', precision: 1,
+      why: '变化量 ⇒ 正数带 +（颜色之外的第二线索）' },
+    { label: '同比为负（signed-percent）', value: -0.008, format: 'signed-percent', precision: 1,
+      why: '负数用真正的减号 −，不是连字符' },
+    { label: '缺失（null）', value: null, format: 'currency', precision: 0,
+      why: '缺失 ⇒ 显示 —，不是 0，也不带符号' }
+  ];
+
+  var p = '<div class="table"><table>' +
+    '<caption class="table__cap">同一个数、不同的列定义 ⇒ 不同的显示</caption>' +
+    '<thead><tr><th scope="col">列定义</th><th scope="col">输入</th>' +
+    '<th scope="col">渲染结果</th><th scope="col">为什么</th></tr></thead><tbody>';
+  PROOF.forEach(function (r) {
+    var v = cell(r.value, { format: r.format, precision: r.precision });
+    var rawIn = r.value === null ? 'null' : String(r.value);
+    p += '<tr><th scope="row">' + r.label + '</th>' +
+         '<td class="num">' + rawIn + '</td>' +
+         '<td class="' + (v.cls || '') + '">' + v.text + '</td>' +
+         '<td>' + r.why + '</td></tr>';
+  });
+  p += '</tbody></table></div>';
+  document.getElementById('proof').innerHTML = p;
 })();
 </script>
 </body>

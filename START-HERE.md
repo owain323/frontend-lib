@@ -47,7 +47,7 @@
 | 列表增删 | `03-patterns/list/list.css` | 162 | 可选 201 (`flip.js`，FLIP 增删动画，纯增强) | 列表会动态增删就要 |
 | 导航/抽屉 | `03-patterns/nav/nav.css` | 299 | 可选 111 (`toc.js`，自动生成目录，纯增强) | 内容长要目录就要 |
 | 弹窗/toast | `03-patterns/overlay/overlay.css` | 319 | **必需 375** (`overlay.js`) | 需要弹层就要 |
-| 状态（空/错/加载） | `03-patterns/states/states.css` | 259 | — | **凡是会异步取数就要** |
+| 状态（空/错/加载） | `03-patterns/states/states.css` | 252 | — | **凡是会异步取数就要** |
 | 长文排版 | `03-patterns/content/content.css` | 270 | — | 写文档/长文就要 |
 
 ### 🔴 三个组件的 JS 是**必需的**（不是增强）

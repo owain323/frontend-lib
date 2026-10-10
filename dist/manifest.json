@@ -7,9 +7,9 @@
     "manifesto 里的 sourceSha256 变了而 dist 没重建 ⇒ dist-parity/dist-fresh 门禁会红"
   ],
   "totals": {
-    "sourceFiles": 54,
-    "sourceBytes": 528210,
-    "distGzip": 94748
+    "sourceFiles": 55,
+    "sourceBytes": 539378,
+    "distGzip": 97107
   },
   "files": [
     {
@@ -824,21 +824,21 @@
     },
     {
       "source": "03-patterns/states/states.css",
-      "sourceSha256": "7c75b04628807cd81589cdbed8ac5b37fe1078e0f49744a06b38db36d6924876",
-      "sourceBytes": 10698,
-      "sourceGzip": 4271,
+      "sourceSha256": "c8e813d58c4a58d9d9788469c4dde08165a4fd7fd87dd98acbaa3c5db5fb2bf0",
+      "sourceBytes": 10379,
+      "sourceGzip": 4125,
       "outputs": [
         {
           "path": "dist/03-patterns/states/states.css",
           "kind": "stripped",
-          "bytes": 2813,
-          "gzip": 988
+          "bytes": 2712,
+          "gzip": 946
         },
         {
           "path": "dist/03-patterns/states/states.min.css",
           "kind": "minified",
-          "bytes": 2340,
-          "gzip": 905
+          "bytes": 2247,
+          "gzip": 865
         }
       ]
     },
@@ -948,22 +948,42 @@
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
     },
     {
+      "source": "04-recipes/analysis-report/analysis-report.css",
+      "sourceSha256": "d07ff589778f5c5c4c7f6a3b618b0996e32c7e2d1dc57a61c87d358462bb4d5b",
+      "sourceBytes": 5504,
+      "sourceGzip": 1953,
+      "outputs": [
+        {
+          "path": "dist/04-recipes/analysis-report/analysis-report.css",
+          "kind": "stripped",
+          "bytes": 3585,
+          "gzip": 900
+        },
+        {
+          "path": "dist/04-recipes/analysis-report/analysis-report.min.css",
+          "kind": "minified",
+          "bytes": 3095,
+          "gzip": 820
+        }
+      ]
+    },
+    {
       "source": "04-recipes/table/table.css",
-      "sourceSha256": "5ec906bbfb39cd11b428a29bc8f54660dfdd00264f484b79ddb101941ed42b6d",
-      "sourceBytes": 5840,
-      "sourceGzip": 2593,
+      "sourceSha256": "fec89783e6e5f5af4dba1f9a76980a72eb929da8f511e72bee6910c9994d55d3",
+      "sourceBytes": 11823,
+      "sourceGzip": 4331,
       "outputs": [
         {
           "path": "dist/04-recipes/table/table.css",
           "kind": "stripped",
-          "bytes": 3225,
-          "gzip": 1123
+          "bytes": 5640,
+          "gzip": 1510
         },
         {
           "path": "dist/04-recipes/table/table.min.css",
           "kind": "minified",
-          "bytes": 2698,
-          "gzip": 1007
+          "bytes": 4712,
+          "gzip": 1341
         }
       ]
     },

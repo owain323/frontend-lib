@@ -267,6 +267,8 @@ run "tabs"       node 05-audit/tabs-contract.js
 run "accordion"  node 05-audit/accordion-contract.js
 run "chart"      node 05-audit/chart-check.js
 run "sparkline"  node 05-audit/sparkline-contract.js
+# 科学绘图（09-assets）：判据与 BI 图表不同 —— 缺失去零、对数轴、单位、不算统计量
+run "scientific-plot" node 05-audit/scientific-plot-check.js
 run "a11y-scan"   node 05-audit/a11y-scan.js
 run "clicktest"   node 05-audit/clicktest.js
 run "button"       node 05-audit/button-check.js
@@ -308,6 +310,9 @@ run "overlay" node 05-audit/overlay-check.js
 # 弹层对**宿主页面**的影响（补偿叠加 / 引用计数 / 焦点归位 / 不横向跳 / 宽度公开）
 run "overlay-host" node 05-audit/overlay-host-check.js
 run "table" node 05-audit/table-check.js
+# 04-recipes 的两个页面级示例：版式在两档宽度下不塌、拼装结果语义正确
+run "analysis-report" node 05-audit/analysis-report-check.js
+run "data-showcase" node 05-audit/data-showcase-check.js
 run "tooltip" node 05-audit/tooltip-check.js
 run "dropdown" node 05-audit/dropdown-check.js
 run "tree" node 05-audit/tree-check.js

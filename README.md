@@ -16,6 +16,19 @@
 - ❌ **不是构建工具** —— 不需要打包器，复制文件就能用
 - ❌ **不是零依赖的 JS 框架** —— 交互组件是**可选**的，纯样式场景不用加载任何 JS
 
+## 怎么用它 —— 有选择地用
+
+**这是一个可选的工具箱，不是所有页面都必须遵守的规范。**
+
+- 挑组件时看**实际实现、demo 和适用场景**，不要只看组件名和成熟度字段。
+- 本库不覆盖你的场景时，**直接用别的做法** —— 不要为了迁就本库而把任务做坏。
+- 改一个**已有网站**时，先看它原有的框架、组件和样式体系，能沿用就沿用；
+  本库只在你确实缺一块时补上去。
+- 输出形态不是网页（PPT / 文档 / 邮件）时，本库的网页布局规则**不适用**。
+
+`ai/START-HERE.md` 是给 AI 用的短入口（约 90 行），`START-HERE.md`（根目录）是给
+人类复用者的三步清单（组件表由脚本生成，不会漂移）。
+
 ## 安装
 
 ```bash
@@ -130,13 +143,46 @@ import 'frontend-lib/dist/02-primitives/button/button.min.css';
 | `01-tokens/` | 设计令牌（颜色 / 间距 / 字号 / 圆角）、排版基线、页面骨架（`page.css`，选配）、`behavior/` 微行为核 |
 | `02-primitives/` | 基础组件：button / input / select / combobox / date-range 等 |
 | `03-patterns/` | 复合模式：nav / tabs / overlay / list / tree / table 等 |
-| `04-recipes/` | 页面级示例 |
-| `09-assets/` | 图表 |
+| `04-recipes/` | 页面级示例：`longform`（长文排版）· `analysis-report`（组合型研究报告）· `table`（专业数据表格）· `data-showcase`（数据展示能力对照） |
+| `09-assets/` | 图表资产：`sparkline`（迷你趋势线）· `scientific-plot`（二维科学绘图：坐标轴/误差棒/置信区间带/对数轴）· `echarts-adapter`（把令牌喂给 ECharts，按需，本库不含 ECharts） |
 | `ai/` | **机器可读契约**：`components.json` / `tokens.json` / schema / 校验器 / 命令行 |
 | `adapters/` | 场景适配层（如演示文稿），**不进核心** |
 | `benchmark/` | 兼容性基准（10 类编辑意图，当前无模型实测记录） |
 | `docs/` | `INVARIANT.md`（不变式）· `GUIDANCE.md`（建议）· `BENCHMARK.md`（对标） |
 | `types/` | TypeScript 类型定义（描述 `window` 上的全局对象） |
+
+## 示例与验证状态
+
+### 怎么跑示例
+
+```bash
+npm ci
+python -m http.server 8000          # 在仓库根起静态服务
+```
+
+| 示例 | 地址 | 展示什么 |
+|---|---|---|
+| 长文排版 | `/04-recipes/longform/longform.html` | 单栏长文的阅读节奏 |
+| 组合型报告 | `/04-recipes/analysis-report/demo.html` | 正文 + 辅助栏并排，窄屏自然退回单栏 |
+| 专业数据表格 | `/04-recipes/table/demo.html` | 列级格式与单位、三种预设、多级表头 |
+| 数据展示对照 | `/04-recipes/data-showcase/demo.html` | 四种数据表达方式各自回答什么问题 |
+| 科学绘图 | `/09-assets/scientific-plot/demo.html` | 坐标轴、误差棒、置信区间带、对数轴 |
+
+### 经过实际验证的
+
+- 桌面 Chrome / Edge / Firefox，跑过全量门禁（含真浏览器渲染与无障碍扫描）。
+- 视觉基线在 `10-review/shots/_baseline/`，由 `shot-baseline` 门禁逐张比对。
+- 每个组件的键盘路径 / ARIA / 对比度都有契约守着（`05-audit/` 下百余道检查）。
+- 数据语义有机械断言：例如科学绘图的「缺失值不被当作零」、
+  表格的「不按数值大小猜百分比」，都有**反例对照**证明判据有效。
+
+### 明确不承诺的
+
+- **未在 iOS / Android 真机 WebView 上验证**（见下一节）。
+- 不做虚拟滚动：大表格的行数上限交给调用方判断。
+- 不提供 React / Vue 组件，只提供 CSS 类与可选的行为脚本。
+- `scientific-plot` 不做插值、回归或任何统计计算，也不宣称显著性。
+- 示例页里的数据**全部是演示数据**，不是真实实验结果或业务数据。
 
 ## 浏览器支持
 
@@ -188,9 +234,13 @@ import 'frontend-lib/dist/02-primitives/button/button.min.css';
 ```bash
 node ai/cli.js components --maturity=stable   # 列出达到 stable 的组件
 node ai/cli.js tokens --mode=dark             # 列出暗色令牌
-node ai/cli.js check  page.html               # 校验一份文档
-node ai/cli.js diff   a.html b.html           # 两份文档的差异
+node ai/cli.js check  doc.json                # 校验一份**契约文档**（读 JSON）
+node ai/cli.js diff   a.json b.json           # 两份契约文档按语义 id 比对
 ```
+
+> ⚠️ `check` / `diff` 吃的是 **JSON 契约文档**，**不解析原始 HTML**。
+> 想校验一个真实页面，请先用契约格式描述它，或直接跑 `npm run gate`
+> （那里有真浏览器，能验的是渲染结果而不是源文件文本）。
 
 - `ai/components.json` / `ai/tokens.json` 由源码**生成**（`--check` 已接门禁）
   ⇒ 改了源码忘记重新生成就红。真值只有一份，不靠"记得同步"。
@@ -226,7 +276,7 @@ npm test               # 单元测试（约 100ms）
 npm run test:types     # 类型契约：正例必过 + 反例必挂
 npm run gate:fast      # 静态检查（约 45 秒）
 npm run gate           # 全量检查（含浏览器）
-npm run ai -- check path/to/page.html    # 机器可读契约的命令行
+npm run ai -- check path/to/doc.json     # 机器可读契约的命令行（读 JSON 文档）
 npm run benchmark                        # 兼容性基准
 ```
 

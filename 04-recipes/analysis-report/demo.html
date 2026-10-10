@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>analysis-report · 组合型研究报告 · frontend-lib</title>
+
+<!-- 骨架必须在组件之前：组件靠"后来者同特异性胜出"覆盖骨架，不用 !important -->
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/focus-ring.css">
+<link rel="stylesheet" href="../../01-tokens/page.css">
+
+<link rel="stylesheet" href="../../02-primitives/card/card.css">
+<link rel="stylesheet" href="../../02-primitives/badge/badge.css">
+<link rel="stylesheet" href="../../04-recipes/table/table.css">
+<link rel="stylesheet" href="../../09-assets/scientific-plot/scientific-plot.css">
+
+<link rel="stylesheet" href="analysis-report.css">
+</head>
+<body class="page">
+<main class="wrap report">
+
+  <!-- ============================================================ 页头 -->
+  <header>
+    <p class="report__kicker">材料科学 · 实验报告</p>
+    <h1>高镍正极材料在高电压下的循环衰减与表面包覆效果</h1>
+    <p class="lede">
+      对比三种表面处理方案在 4.4&nbsp;V 截止电压下的 300 周容量保持表现，
+      并给出可复现的实验条件。
+    </p>
+    <p class="report__meta">
+      <span><b>报告编号</b> MR-2026-0417</span>
+      <span><b>版本</b> v1.2</span>
+      <span><b>状态</b> <span class="badge badge--warning">待同行评议</span></span>
+      <span><b>数据截止</b> 2026-04-10</span>
+    </p>
+  </header>
+
+  <div class="report__body">
+
+    <!-- ======================================================== 正文 -->
+    <article class="report__main">
+
+      <section>
+        <h2>1 · 摘要</h2>
+        <p>
+          高镍层状氧化物（LiNi<sub>0.8</sub>Co<sub>0.1</sub>Mn<sub>0.1</sub>O<sub>2</sub>，下称 NCM811）
+          在提升能量密度的同时，其高电压循环下的界面副反应会加速容量衰减。
+          本报告比较未包覆、Al<sub>2</sub>O<sub>3</sub> 包覆与
+          Li<sub>3</sub>PO<sub>4</sub> 包覆三种方案，在相同电解液体系与截止电压下的循环表现。
+        </p>
+
+        <div class="kf">
+          <p class="kf__title">关键发现</p>
+          <ol>
+            <li>
+              300 周后容量保持率：未包覆 <strong>57.3%</strong>、
+              Al<sub>2</sub>O<sub>3</sub> <strong>76.4%</strong>、
+              Li<sub>3</sub>PO<sub>4</sub> <strong>82.1%</strong>。
+            </li>
+            <li>
+              两种包覆方案在 <strong>前 50 周</strong>差异不显著（&lt; 1 个百分点），
+              分化主要发生在 100 周之后。
+            </li>
+            <li>
+              首次库仑效率的差异（87.2% / 88.1% / 89.3%）<strong>不足以</strong>
+              单独解释 300 周时的容量差距 —— 包覆主要影响的是<strong>衰减速率</strong>，不是起始容量。
+            </li>
+            <li>
+              本报告<strong>不主张</strong>任何方案具备统计显著性：
+              每组仅 2 个平行电池，样本量不足以做显著性检验。
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <section>
+        <h2>2 · 方法与实验条件</h2>
+        <p>
+          所有样品采用同一来源前驱体，包覆在流化床中进行。电化学测试使用扣式电池，
+          每组成 2 个平行样，取算术平均。
+        </p>
+
+        <pre class="report__code">电解液     1 M LiPF6 in EC:EMC:DMC = 3:5:2 (v/v) + 2 wt% VC
+截止电压   3.0 – 4.4 V (vs. Li/Li+)
+倍率       0.5C 充电 / 1.0C 放电
+温度       25 ± 1 °C
+包覆量     Al2O3 0.8 wt% · Li3PO4 1.0 wt%（以正极活性物质计）</pre>
+
+        <p>三种样品的基础电化学参数如下：</p>
+
+        <div class="table table--financial">
+          <table>
+            <caption class="table__cap">表 1 · 三种样品的基础电化学参数（每组 n = 2，取算术平均）</caption>
+            <thead>
+              <tr>
+                <th scope="col">样品</th>
+                <th scope="col">首次放电容量 <span class="table__unit">mAh/g</span></th>
+                <th scope="col">首次库仑效率 <span class="table__unit">%</span></th>
+                <th scope="col">300 周容量保持率 <span class="table__unit">%</span></th>
+                <th scope="col">平均粒径 <span class="table__unit">µm</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">未包覆</th>
+                <td class="num">208</td><td class="num">87.2</td>
+                <td class="num">57.3</td><td class="num">11.2</td>
+              </tr>
+              <tr>
+                <th scope="row">Al<sub>2</sub>O<sub>3</sub> 包覆</th>
+                <td class="num">204</td><td class="num">88.1</td>
+                <td class="num">76.4</td><td class="num">11.5</td>
+              </tr>
+              <tr>
+                <th scope="row">Li<sub>3</sub>PO<sub>4</sub> 包覆</th>
+                <td class="num">206</td><td class="num">89.3</td>
+                <td class="num">82.1</td><td class="num">11.3</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="table__foot">
+          注：容量保持率以第 1 周放电容量为基准归一化。粒径为激光粒度仪 D50。
+        </p>
+      </section>
+
+      <section>
+        <h2>3 · 结果</h2>
+        <p>
+          下图给出三种方案的容量保持率随循环次数的变化。阴影带为两个平行样之间的
+          极差范围 —— 它是<strong>两个测量值之间的实际差异</strong>，不是置信区间。
+        </p>
+
+        <figure class="report__fig">
+          <div id="cycleChart"></div>
+          <figcaption>
+            图 1 · 300 周循环容量保持率。阴影为两个平行样之间的极差（n = 2）。
+            数据为示例，用于演示本库的组合排版。
+          </figcaption>
+        </figure>
+
+        <p>
+          值得注意的不是三条曲线的<strong>位置</strong>，而是它们的<strong>斜率</strong>：
+          未包覆样品在 100 周后开始出现明显加速衰减，而两种包覆样品的衰减速率在
+          150–300 周区间基本保持线性。
+        </p>
+      </section>
+
+      <section>
+        <h2>4 · 讨论</h2>
+        <p>
+          界面包覆的常见解释是抑制电解液与高活性表面的直接接触，从而减缓
+          Ni<sup>2+</sup>/Ni<sup>4+</sup> 的可逆性损失。本报告的数据与这一机制方向一致，
+          但<strong>不足以证明</strong>因果 —— 缺少表面成分与阻抗谱的对照数据。
+        </p>
+
+        <blockquote class="report__quote">
+          「包覆层的核心作用是延缓界面副反应的累积，而不是提高材料的本征容量。
+          因此评估包覆效果时，循环后期的衰减速率比首周容量更具信息量。」
+          <cite>— 引自内部技术备忘录 TM-2026-003</cite>
+        </blockquote>
+
+        <p>
+          本次未测量交流阻抗与表面 XPS，因此无法把衰减速率差异归因到具体的界面反应路径。
+          后续计划补充这两项表征。
+        </p>
+      </section>
+
+    </article>
+
+    <!-- ======================================================== 辅助栏 -->
+    <aside class="report__aside">
+      <section class="card card--compact">
+        <div class="card__body">
+          <h3 class="card__title">数据速览</h3>
+          <dl>
+            <dt>样品数</dt><dd>3 组 × 2 平行样</dd>
+            <dt>循环周数</dt><dd>300</dd>
+            <dt>截止电压</dt><dd>4.4 V</dd>
+            <dt>最高保持率</dt><dd>82.1%（Li<sub>3</sub>PO<sub>4</sub>）</dd>
+            <dt>最低保持率</dt><dd>57.3%（未包覆）</dd>
+          </dl>
+        </div>
+      </section>
+
+      <section class="card card--compact">
+        <div class="card__body">
+          <h3 class="card__title">术语</h3>
+          <dl>
+            <dt>NCM811</dt><dd>LiNi<sub>0.8</sub>Co<sub>0.1</sub>Mn<sub>0.1</sub>O<sub>2</sub></dd>
+            <dt>首效</dt><dd>首次库仑效率</dd>
+            <dt>D50</dt><dd>体积分布中位径</dd>
+            <dt>极差</dt><dd>最大值与最小值之差</dd>
+          </dl>
+        </div>
+      </section>
+
+      <section class="card card--compact">
+        <div class="card__body">
+          <h3 class="card__title">本报告不承诺</h3>
+          <p style="font-size:var(--fs-sm);color:var(--text-secondary);margin:0">
+            不做统计显著性判断（n = 2 不足）；
+            不外推至其他截止电压或电解液体系；
+            不给出循环寿命预测。
+          </p>
+        </div>
+      </section>
+    </aside>
+
+  </div>
+
+  <!-- ============================================================ 页脚 -->
+  <footer class="report__foot">
+    <p><strong>数据来源与限制</strong></p>
+    <ol>
+      <li>全部数值为演示用示例数据，<strong>不是真实实验结果</strong>。</li>
+      <li>每组样本量 n = 2，不足以支持任何统计推断。</li>
+      <li>本页同时演示本库的表格、图表、并排布局与辅助栏，不代表任何材料学结论。</li>
+    </ol>
+  </footer>
+
+</main>
+
+<script src="../../09-assets/scientific-plot/scientific-plot.js"></script>
+<script>
+(function () {
+  'use strict';
+  if (!window.ScientificPlot) return;
+
+  /* 循环数据：容量保持率（%） */
+  var CYC  = [0, 50, 100, 150, 200, 250, 300];
+  var BARE = [100, 92.1, 85.3, 78.0, 70.8, 63.9, 57.3];
+  var AL2O = [100, 96.2, 92.4, 88.1, 84.3, 80.2, 76.4];
+  var LPO4 = [100, 97.1, 94.0, 91.2, 88.4, 85.3, 82.1];
+
+  /* 极差半宽（两个平行样之间的实际差异 / 2）—— 是**测量值**，不是统计区间 */
+  var HW = [0, 0.9, 1.3, 1.6, 1.9, 2.2, 2.4];
+
+  function pts(arr) { return CYC.map(function (c, i) { return [c, arr[i]]; }); }
+  function band(arr) {
+    return CYC.map(function (c, i) {
+      var hw = HW[i] * (arr === BARE ? 1.4 : arr === AL2O ? 1.0 : 0.8);
+      return [c, arr[i] - hw, arr[i] + hw];
+    });
+  }
+
+  window.ScientificPlot.render(document.getElementById('cycleChart'), {
+    width: 700, height: 360,
+    title: '容量保持率随循环次数的变化',
+    desc: '三组包覆方案，阴影为平行样极差',
+    x: { label: '循环次数', unit: '周', scale: 'linear', domain: [0, 300] },
+    y: { label: '容量保持率', unit: '%', scale: 'linear', domain: [50, 102] },
+    series: [
+      { type: 'band', data: band(BARE) },
+      { type: 'band', data: band(AL2O) },
+      { type: 'band', data: band(LPO4) },
+      { type: 'line', data: pts(BARE) },
+      { type: 'line', data: pts(AL2O) },
+      { type: 'line', data: pts(LPO4) }
+    ]
+  });
+})();
+</script>
+</body>
+</html>

@@ -58,6 +58,7 @@
 | `FLIP` | ✅ | direct | `flip` `remove`（过渡工具） |
 | `ChartAdapter` | ✅ | create | `create` `refresh` `palette` `theme` `cssVar` `defaults` `seriesColors` |
 | `ModelViewer` | ✅ | direct | `update` `refresh` |
+| `ScientificPlot` | ✅ | direct | `render`（`__internals` 只给门禁/单测直调，不是公开 API）|
 | `Theme` | ✅ | direct | `get` `isDark` `set` `toggle` `cycle`（在 `01-tokens/theme-toggle.js`）|
 
 ```js
@@ -71,6 +72,14 @@ acc.toggle(acc.itemOf(root.querySelector('.accordion__trigger')));
 
 // direct 形态
 window.Overlay.dialog({ title: '确认', actions: [...] });
+
+// 科学绘图：只画调用方给的数，模块本身不算任何统计量
+window.ScientificPlot.render(el, {
+  width: 680, height: 340,
+  x: { label: '时间', unit: 's', scale: 'linear', domain: [0, 4] },
+  y: { label: '位移', unit: 'm', scale: 'linear', domain: [-1.1, 1.1] },
+  series: [{ type: 'function', fn: f, domain: [0, 4], samples: 400 }]
+});
 ```
 
 ### 关于主题
@@ -174,7 +183,7 @@ document.body.addEventListener('fl-change', function (e) {
 | `body.is-locked` | `body[data-scroll-locked]` |
 | `.btn.is-success` | `.btn[data-state="success"]` |
 | `.field__input.is-valid` | `.field__input[data-state="valid"]` |
-| `.state--delayed.is-shown` | `.state--delayed[data-state="shown"]` |
+| `.state--delayed.is-shown` | `.state--delayed[data-state="shown"]`（⚠️ 该类已于 **0.8.0 移除**，见 CHANGELOG）|
 | `.field.is-dirty` | `.field[data-dirty]` |
 
 ⛔ **内部实现（别依赖）**：
