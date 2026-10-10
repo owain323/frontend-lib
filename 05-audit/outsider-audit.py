@@ -88,14 +88,14 @@ PATTERNS = [
                             r'|[A-Za-z]:' + re.escape(chr(92) * 2) +
                             r'Users' + re.escape(chr(92) * 2) + r'(?!someone)')),
     # 🔴 判据：**其他盘符**下的具体目录（D:/xxx/ 之类）。
-    #   原来写的是 `E:[/\\]frontend-lib|/e/frontend` —— 把本仓库自己的
+    #   原来把**本仓库自己的开发盘符路径**写死在判据里 —— 把本仓库自己的
     #   开发路径硬编码进判据里，等于门禁自身携带一处路径痕迹
     #   （见 ERRORS E26）。现在只保留"这是别人的机器上的目录"这个**形状**。
     ('仓库绝对路径', re.compile(r'(?<![A-Za-z0-9_])[A-Z]:[/\\][A-Za-z0-9_.-]+[/\\]', re.I)),
     ('内部代号', re.compile(r'ESP32|SpendLatch|CostPilot|CHRONOS', re.I)),
     ('内部场景', re.compile(r'录视频|做网站|做小程序')),
     # ⚠️ 自带域名判据收窄（2026-10-10）：
-    #    原来是裸 `owain\d*` ⇒ 把 `package.json` 里 repository/homepage/bugs
+    #    原来是裸写账号名正则 ⇒ 把 `package.json` 里 repository/homepage/bugs
     #    的 **GitHub 仓库地址**判成泄漏 3 处。那不是泄漏，那是仓库身份：
     #    npm 页面靠它定位源码，删了 npm 就点不开。
     #    同一处判定 leak-scan.py 里早就写明了（"域名本身就是仓库身份的一部分"），
