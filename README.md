@@ -168,6 +168,26 @@ python -m http.server 8000          # 在仓库根起静态服务
 | 数据展示对照 | `/04-recipes/data-showcase/demo.html` | 四种数据表达方式各自回答什么问题 |
 | 科学绘图 | `/09-assets/scientific-plot/demo.html` | 坐标轴、误差棒、置信区间带、对数轴 |
 
+### 怎么自己验证（不想只信我们的话）
+
+```bash
+python -m http.server 8000 &     # 🔴 必须先起静态服务：一部分门禁要真浏览器渲染
+bash 05-audit/check-all.sh       # 全量门禁约 130 项，本机约 8 分钟
+```
+
+每一项的输出是 `PASS` / `FAIL` / `SKIP`，末尾给出失败条数与退出码（全绿为 0）。
+
+- **`SKIP` 是真话，不是通过。** 缺依赖的项会明确写"装了才会跑"，
+  例如 `visual`（逐张比对视觉基线）需要 Pillow：`pip install pillow`。
+  真浏览器类门禁需要 `npm ci`。
+- **环境不全时它不会给你假绿。** 忘了起静态服务，真浏览器类门禁会直接报：
+  「基线跑不起来（一条 FAIL 都没有）：多半是崩了或 8000 端口没有静态服务」。
+  —— 这正是本库对"门禁报通过却什么也没查"的处置：**宁可红，不假装绿。**
+- 只跑一项：`python 05-audit/deprecation-gate.py`、`node 05-audit/table-check.js`、
+  `node 05-audit/scientific-plot-check.js`。
+- 想看每道门禁**自己有没有牙**：`bash 05-audit/behavior-reverse.sh`
+  （对门禁做突变，验证它会红、且只红该红的那一条）。
+
 ### 经过实际验证的
 
 - 桌面 Chrome / Edge / Firefox，跑过全量门禁（含真浏览器渲染与无障碍扫描）。
