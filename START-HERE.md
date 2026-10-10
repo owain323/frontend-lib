@@ -35,31 +35,69 @@
 | 组件 | 文件 | 行数 | JS | 什么时候要 |
 |---|---|---|---|---|
 | 按钮 | `02-primitives/button/button.css` | 353 | — | 几乎总要 |
-| 标签/徽章 | `02-primitives/badge/badge.css` | 146 | — | 有状态标记就要（"已披露""停牌"） |
-| 分隔线 | `02-primitives/separator/separator.css` | 73 | — | 要分开内容块就要 |
-| 开关 | `02-primitives/switch/switch.css` | 370 | — | 有"立即生效的设置"就要 |
 | 输入框 | `02-primitives/input/input.css` | 238 | — | 有表单就要 |
-| 单选/复选/下拉 | `02-primitives/choice/choice.css` | 395 | — | 有选择就要 |
+| 标签 / 徽章 | `02-primitives/badge/badge.css` | 146 | — | 有状态标记就要（"已披露""停牌"） |
 | 卡片 | `02-primitives/card/card.css` | 246 | — | 有分组内容就要 |
+| 单选 / 多选 | `02-primitives/choice/choice.css` | 395 | — | 单选 / 多选就要 |
+| 下拉选择（beta） | `02-primitives/select/select.css` | 151 | **必需 422** (`select.js`) | 原生 select 的外观或交互不够用就要 |
+| 可搜索选择（beta） | `02-primitives/combobox/combobox.css` | 223 | **必需 393** (`combobox.js`) | 选项多到要搜索，或要选多个并留成标签就要 |
+| 开关 | `02-primitives/switch/switch.css` | 370 | — | 有"立即生效的设置"就要 |
+| 分隔线 | `02-primitives/separator/separator.css` | 73 | — | 要分开内容块就要 |
+| 加载骨架 | `02-primitives/skeleton/skeleton.css` | 96 | — | 数据还没到、先把版式占住就要 |
+| 进度条 / 环 | `02-primitives/progress/progress.css` | 172 | — | 有耗时过程要给进度就要 |
+| 浮层气泡 | `02-primitives/popover/popover.css` | 187 | **必需 317** (`popover.js`) | 要一段信息贴着触发元素浮出来就要 |
+| 日期区间 | `02-primitives/date-range/date-range.css` | 196 | **必需 301** (`date-range.js`) | 要选起止日期就要 |
 | 标签页 | `03-patterns/tabs/tabs.css` | 159 | **必需 306** (`tabs.js`) | 同层级内容切换就要 |
-| 折叠面板 | `03-patterns/accordion/accordion.css` | 452 | **必需 368** (`accordion.js`) | 长表单分段就要 |
+| 折叠面板（beta） | `03-patterns/accordion/accordion.css` | 452 | **必需 368** (`accordion.js`) | 长表单分段就要 |
+| 动作菜单（beta） | `03-patterns/dropdown/dropdown.css` | 135 | **必需 396** (`dropdown.js`) | 要一组动作（新建 / 导出 / 删除）就要 |
+| 文字提示（beta） | `03-patterns/tooltip/tooltip.css` | 98 | **必需 152** (`tooltip.js`) | 图标按钮或缩写需要一句话解释就要 |
+| 分页 | `03-patterns/pagination/pagination.css` | 195 | **必需 366** (`pagination.js`) | 数据多到要翻页就要 |
+| 树形 | `03-patterns/tree/tree.css` | 113 | **必需 456** (`tree.js`) | 层级数据（文件 / 组织 / 分类）要展开就要 |
+| 侧边抽屉（beta） | `03-patterns/drawer/drawer.css` | 129 | **必需 258** (`drawer.js`) | 要从侧边滑出面板就要 |
+| 弹窗 / 吐司（beta） | `03-patterns/overlay/overlay.css` | 319 | **必需 375** (`overlay.js`) | 需要弹层（吐司 / 模态）就要 |
+| 状态（空 / 加载 / 错 / 成功） | `03-patterns/states/states.css` | 252 | — | **凡是会异步取数就要** |
 | 表单校验 | `03-patterns/form-validation/form-validation.css` | 263 | — | 提交前要校验就要 |
 | 列表增删 | `03-patterns/list/list.css` | 162 | 可选 201 (`flip.js`，FLIP 增删动画，纯增强) | 列表会动态增删就要 |
-| 导航/抽屉 | `03-patterns/nav/nav.css` | 299 | 可选 111 (`toc.js`，自动生成目录，纯增强) | 内容长要目录就要 |
-| 弹窗/toast | `03-patterns/overlay/overlay.css` | 319 | **必需 375** (`overlay.js`) | 需要弹层就要 |
-| 状态（空/错/加载） | `03-patterns/states/states.css` | 252 | — | **凡是会异步取数就要** |
-| 长文排版 | `03-patterns/content/content.css` | 270 | — | 写文档/长文就要 |
+| 导航 / 目录 | `03-patterns/nav/nav.css` | 299 | 可选 111 (`toc.js`，自动生成目录，纯增强) | 顶部要导航，或长文要目录就要 |
+| 长文排版 | `03-patterns/content/content.css` | 270 | — | 写文档 / 长文就要 |
 
-### 🔴 三个组件的 JS 是**必需的**（不是增强）
+### 🔴 这些组件的 JS 是**必需的**（不是增强）
 
-| 组件 | JS | 只抄 CSS 会怎样 |
+它们的 JS 承担**行为契约**：键盘、ARIA、焦点。只抄 CSS 会得到"看起来能用其实不能用"的组件。
+
+| 组件 | JS | JS 里实测承担的机制 |
 |---|---|---|
-| 标签页 | `tabs.js` | 方向键不切面板 · Tab 会逐个穿过所有 tab |
-| 折叠面板 | `accordion.js` | Enter/Space 不响应 · 面板的 `role="region"` 缺失 |
-| 弹窗/toast | `overlay.js` | **没有焦点陷阱** · Esc 不关 · 读屏不播报 |
+| 下拉选择 | `select.js` | 键盘 ✓ · ARIA ✓ · 焦点 ✓ |
+| 可搜索选择 | `combobox.js` | 键盘 ✓ · ARIA ✓ · 焦点 ✓ |
+| 浮层气泡 | `popover.js` | 键盘 ✓ · ARIA ✓ · 焦点 ✓ |
+| 日期区间 | `date-range.js` | 键盘 — · ARIA ✓ · 焦点 ✓ |
+| 标签页 | `tabs.js` | 键盘 ✓ · ARIA ✓ · 焦点 ✓ |
+| 折叠面板 | `accordion.js` | 键盘 ✓ · ARIA ✓ · 焦点 — |
+| 动作菜单 | `dropdown.js` | 键盘 ✓ · ARIA ✓ · 焦点 ✓ |
+| 文字提示 | `tooltip.js` | 键盘 ✓ · ARIA ✓ · 焦点 ✓ |
+| 分页 | `pagination.js` | 键盘 ✓ · ARIA ✓ · 焦点 ✓ |
+| 树形 | `tree.js` | 键盘 ✓ · ARIA ✓ · 焦点 ✓ |
+| 侧边抽屉 | `drawer.js` | 键盘 ✓ · ARIA ✓ · 焦点 ✓ |
+| 弹窗 / 吐司 | `overlay.js` | 键盘 ✓ · ARIA ✓ · 焦点 ✓ |
+
+**已经人工验证过后果的三条**（其余的按上表推断，不要凭印象写后果）：
+
+- 标签页只抄 CSS：方向键不切面板 · Tab 会逐个穿过所有 tab
+- 折叠面板只抄 CSS：Enter / Space 不响应 · 面板的 `role="region"` 缺失
+- 弹窗 / 吐司只抄 CSS：**没有焦点陷阱** · Esc 不关 · 读屏不播报
 
 > `flip.js` / `toc.js` 是**可选增强**（动画、目录生成），
 > 它们的 CSS 本身是纯 CSS —— 不抄那两个 JS，组件照样能用。
+
+
+### 现成页面（整页抄，不是零件）
+
+| 示例 | 目录 | 它示范什么 |
+|---|---|---|
+| `analysis-report/` | `04-recipes/analysis-report/` | 组合型研究报告：正文 + 辅助栏并排，窄屏退回单栏 |
+| `data-showcase/` | `04-recipes/data-showcase/` | 四种数据表达方式对照：我到底该用哪个 |
+| `longform/` | `04-recipes/longform/` | 单栏长文排版与阅读节奏 |
+| `table/` | `04-recipes/table/` | 专业数据表格：列级格式与单位，三种用途预设 |
 
 ## 抄完先做这三件事
 
@@ -87,14 +125,24 @@ CSS 类跨框架通用，React 组件会绑死框架。
 
 ---
 
-## 这份清单里没有的东西（别找）
+## 你可能还想找的（有 / 没有，一次说清）
+
+> 🔴 这一节以前写过「徽章 ❌ 还没做」，而同一份文件的第 39 行就列着徽章 ——
+> 自己跟自己打架，比"漏写一项"更误导人。
+> 现在：**凡是上面组件表里有的，这里一律不再说没有。**
 
 | 你可能想要 | 有没有 |
 |---|---|
-| 图标 | ❌ 一个都没有（`09-assets/icons/` 是空的）|
-| React / Vue 组件 | ❌ 只有 CSS 类 |
-| 数据表格 / 指标块 / 徽章 | ❌ 还没做 |
+| 徽章 | ✅ 有 —— `02-primitives/badge/`，见上面组件表 |
+| 数据表格 | ⚠️ 有现成页面，不是库级组件 —— 抄 `04-recipes/table/`（三种用途预设：财务 / 学术 / 统计）|
+| 指标块 / KPI 卡 | ❌ 没有专门组件 —— 用 `card` + 排版令牌自己搭，几分钟的事 |
+| 图标 | ❌ 本库不内置任何图标（`09-assets/` 下没有图标目录）—— 需要就自己内联 SVG，规格见 `09-assets/README.md` |
+| React / Vue 组件 | ❌ 只有 CSS 类（原因见上面「C 档」）|
 | 暗色模式 | ✅ 有，抄令牌就自带 |
 | 中文排版（i18n）| ✅ 有度量令牌，四语言实测过 |
 
 **没有就是没有。** 早知道比晚知道省时间。
+
+> 每一行的「有 / 没有」都是对着目录与契约数出来的。
+> 新增组件后请跑 `python 05-audit/fix-start-here.py` 重生成上面的表，
+> 再人工对一遍这一节 —— 脚本只管表，管不了散文。
