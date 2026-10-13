@@ -213,10 +213,17 @@ def selftest():
     expect('档位写成 ladder 外的名字（gold）⇒ 必须红',
            check(clone(lambda cs: [c for c in cs if c['id'] == 'button'][0]
                        .__setitem__('maturity', 'gold')))[0], '不在 ladder')
-    expect('behaviorDebt 与矩阵不一致（dropdown 少报一条）⇒ 必须红',
-           check(clone(lambda cs: [c for c in cs if c['id'] == 'dropdown'][0]
+    # 🔴 这条突变体原本用「dropdown 的 debt 少报一条（只留 typeahead:gap）」。
+    #    0.8.6 收编后 dropdown 的 debt **正好只剩** typeahead:gap
+    #    ⇒ 这个突变变成了"没突变" ⇒ 自测永远失败，而判据并没有变瞎。
+    #    换成 combobox：它的 debt 里真有一条 dismissable:manual，手工清空才是真突变。
+    #    （⚠️ 写这条时我一度在注释里说它有 focus-return 债 —— 核实矩阵后并没有，
+    #      combobox 的 focus-return 是 n/a。断言本身有效，注释里的理由是错的。）
+    #    教训同 E39：反向控制突变体必须与当前真实状态解耦。
+    expect('behaviorDebt 与矩阵不一致（combobox 少报一条）⇒ 必须红',
+           check(clone(lambda cs: [c for c in cs if c['id'] == 'combobox'][0]
                        ['maturityReasons'].__setitem__('behaviorDebt',
-                                                       ['typeahead:gap'])))[0],
+                                                       [])))[0],
            'behaviorDebt 与行为矩阵不一致')
     expect('maturityReasons 与重算不符（button 的 hasDemo 写成 false）⇒ 必须红',
            check(clone(lambda cs: [c for c in cs if c['id'] == 'button'][0]

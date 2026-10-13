@@ -157,8 +157,15 @@ def selftest():
         fn(d)
         cases.append((why, d))
 
-    mk('声明 core 但源码没有（tooltip 的 dismissable 改成 core）',
-       lambda d: d['matrix']['dismissable'].__setitem__('tooltip', ['core', '']))
+    # 🔴 这条突变体原本用「tooltip 的 dismissable 改成 core」。
+    #    0.8.6 把 tooltip **真的**收编成 core 了 ⇒ 「改成 core」不再是突变
+    #    ⇒ 这条自测会**永远失败**，而门禁本身并没有变瞎（是自测的前提失效）。
+    #⇒ 换成一条**与真实状态无关**的：combobox 的 dismissable 至今仍是 manual，
+    #    把它谎报成 core 必然抓得到。
+    #    教训：反向控制的突变体必须**与当前真实状态解耦**，
+    #    否则「把代码改好」会让自测自己失效（ERRORS E39）。
+    mk('声明 core 但源码没有（combobox 的 dismissable 谎报成 core）',
+       lambda d: d['matrix']['dismissable'].__setitem__('combobox', ['core', '']))
     mk('删掉一个组件的登记（pagination 的 roving）',
        lambda d: d['matrix']['roving'].pop('pagination'))
     mk('n/a 不写理由',
