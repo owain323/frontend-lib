@@ -297,6 +297,14 @@ function main() {
               if (t === 'click' && typeof f === 'function') removed.push(f);
               return origRem.call(document, t, f, o);
             };
+            /* 🔴 记下造实例**之前** document 上已有哪些 click 监听。
+               核的 shared.bound 守卫会让「第一个实例之后的实例」一个都不注册
+               ⇒「本次注册了几个」不是判据关心的事；
+               真正要保证的是：**destroy 之后回到基线状态**。 */
+            var baseline = added.length;
+            /* 核的共享栈深度（组件层泄漏的探针） */
+            var stackBaseline = (window.__flDismiss &&
+              window.__flDismiss.stack.length) || 0;
             var h;
             try {
               h = window.__mk({ options: [{ value: 'a', label: '甲' }] });
@@ -343,9 +351,50 @@ function main() {
             /* 现在才还原 remove */
             document.removeEventListener = origRem;
 
+            /* ⭐ 核心口径：destroy 之后，document 上还剩几个**没被摘掉的**监听
+               （相对造实例之前的基线 baseline）。
+               与「共享一个还是每实例一个」无关 ⇒ 换架构也不会失效。 */
+            var live = added.filter(function (f) {
+              return removed.indexOf(f) < 0;
+            });
+
+            /* 🔴 功能性探针：destroy 之后组件对外部事件还有没有反应。
+               用「focus 后输入 → 列表是否被打开」当信号：
+               destroy 之前 focus 会触发 onFocus 开列表，destroy 之后不该。 */
+            var respondsAfterDestroy = false;
+            try {
+              list.hidden = true;
+              inp.dispatchEvent(new Event('focus', { bubbles: true }));
+              inp.value = 'probe';
+              inp.dispatchEvent(new Event('input', { bubbles: true }));
+              respondsAfterDestroy = !list.hidden;
+              list.hidden = true;
+            } catch (e) { respondsAfterDestroy = false; }
+
             h.root.parentNode.removeChild(h.root);
             return {
               hasDestroy: hasDestroy, destroyed: destroyed,
+              /* 🔴 「有没有接上核」必须**独立验证**，不能靠本次劫持的 added.length：
+                 核是「全库共享一个 + 只注册一次」（shared.bound 守卫），
+                 而 demo 页在脚本跑之前就创建过实例 ⇒ 核早已注册完
+                 ⇒ added.length === 0 是**正常**的，不是"没接上"。
+
+                 ⇒ 判据改成**功能性的**：destroy 之后，
+                 在 document 上点一下，**组件不许再响应**。
+                 这与"核有没有接上"无关（destroy 本来就该让它失效），
+                 但能抓住「destroy 忘了摘、监听还在」这个真问题。
+                 ⚠️ 我一度想写 everRegistered: true 来"让它过"——
+                    那是**自己制造门禁假绿**，比判红更糟，已去掉。
+                    现在这条只断言「回到基线」与「destroy 后无反应」两件事，
+                    两者都能真抓住泄漏。 */
+              everRegistered: null,   /* 不可测：核只注册一次且早于本次劫持 */
+              stackBaseline: stackBaseline,
+              stackAfter: (window.__flDismiss &&
+                window.__flDismiss.stack.length) || 0,
+              coreStackLeak: ((window.__flDismiss &&
+                window.__flDismiss.stack.length) || 0) - stackBaseline,
+              respondsAfterDestroy: respondsAfterDestroy,
+              leftoverAfterDestroy: live.length - baseline,
               registered: registeredDuringCreate.length,
               removedMine: removedMine.length,
               openedAfterDestroy: openedAfterDestroy,
@@ -366,10 +415,40 @@ function main() {
             pass(false, '③ destroy() 必须幂等', '🔴 没有 destroy ⇒ 无从验证');
             return null;
           }
-          pass(r.registered > 0 && r.removedMine === r.registered,
-            '③ destroy() 必须摘除 document 级 click 监听（按函数引用核对）',
-            '造实例时注册 ' + r.registered + ' 个，destroy 摘掉同引用 ' +
-            r.removedMine + ' 个');
+          /* 🔴 0.8.8 改判据（收编 dismissable 核之后，原判据不再成立）：
+             document click 监听现在是**全库共享一个**（核里有 shared.bound
+             守卫，只注册一次）⇒ 原判据「造实例时注册 > 0」从第二个实例起
+             必然失败（本轮实测 registered=0），但**监听确实被摘掉了**
+             ⇒ 那是判据过时，不是产品漏摘。
+
+             ⇒ 改为核对真正要保证的事，且**与「共享一个还是每实例一个」无关**：
+               造实例时有人注册过 document click（否则核根本没接上）
+               && destroy 之后**一个都没留下**。 */
+          pass(r.leftoverAfterDestroy === 0,
+            '③ destroy() 后 document 上不残留 click 监听（共享/独享都要成立）',
+            '相对造实例前的基线，destroy 后残留 ' +
+            r.leftoverAfterDestroy + ' 个未摘监听');
+          /* ⭐ 真正能抓住「监听没摘」的一条：destroy 之后在 document 上
+             派发 click + focus，看组件**还有没有反应**。
+             —— 这比数监听器可靠：不依赖劫持时机、不依赖共享还是独享。 */
+          pass(r.respondsAfterDestroy === false,
+            '③ destroy() 之后组件对外部事件不再有反应（含残留监听）',
+            'destroy 后派发 focus/click ⇒ 组件' +
+            (r.respondsAfterDestroy ? '还有反应（可能残留监听）' : '已无反应'));
+
+          /* 🔴 0.8.8 加：组件层的栈泄漏判据。
+             起因：收编时漏了 dismiss.destroy() ⇒ 核的共享栈里那条记录
+             （连着组件的 root）永远不释放。
+             而上面几条都抓不到：
+               · 「不残留 document click」—— 组件其它监听也摘了，监听确实干净
+               · 「destroy 后无反应」   —— 组件真的不响应了
+               · 核自己的单测         —— 它只测核，不测组件接线
+             ⇒ 只能在**组件层**核对「核的栈回到基线」。 */
+          pass(r.coreStackLeak === 0,
+            '③ destroy() 后微行为核的共享栈必须回到基线（组件层泄漏）',
+            '造实例前栈深' + r.stackBaseline + '，destroy 后栈深' +
+            r.stackAfter + ' ⇒ 泄漏 ' + r.coreStackLeak + ' 条记录');
+
           pass(r.openedAfterDestroy === false,
             '③ destroy() 后组件必须失效（输入不再开列表）',
             'destroy 后派发 input ⇒ 列表被打开=' + r.openedAfterDestroy);

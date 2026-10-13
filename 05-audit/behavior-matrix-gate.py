@@ -164,8 +164,12 @@ def selftest():
     #    把它谎报成 core 必然抓得到。
     #    教训：反向控制的突变体必须**与当前真实状态解耦**，
     #    否则「把代码改好」会让自测自己失效（ERRORS E39）。
-    mk('声明 core 但源码没有（combobox 的 dismissable 谎报成 core）',
-       lambda d: d['matrix']['dismissable'].__setitem__('combobox', ['core', '']))
+    # ⚠️ 突变体必须选**不会被收编**的组合。0.8.8 又踩了一次：
+    #   这条原本用 combobox，0.8.6 收编后它真的成了 core ⇒ 突变失效。
+    #   ⇒ 改用 drawer/dismissable：它是**模态弹层**，「点外部不该关闭」
+    #      ⇒ 明确不该收编 ⇒ 这个组合永远不会被真的改成 core。
+    mk('声明 core 但源码没有（drawer 的 dismissable 谎报成 core）',
+       lambda d: d['matrix']['dismissable'].__setitem__('drawer', ['core', '']))
     mk('删掉一个组件的登记（pagination 的 roving）',
        lambda d: d['matrix']['roving'].pop('pagination'))
     mk('n/a 不写理由',
