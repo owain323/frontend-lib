@@ -245,6 +245,11 @@
   max-width: none;                        /* 出血：图可以比正文宽 */
 }
 
+/* 🔴 为什么这里保留彩色竖条（0.8.4 · 全库竖条政策）
+   本库整体立场是去掉纯装饰竖条（见 typography.css 的删除记录）。
+   引语块是**例外**，因为竖条在这里是**内容标记**：
+   "这是摘出来的原话"，与 `.prose > blockquote`（content.css）同一个惯例。
+   去掉它，引语就只是"字号大一点的正文"，读者要靠缩进猜它是引的。 */
 .rep__pull {
   margin: var(--sp-5) 0;
   padding-inline-start: var(--sp-4);
