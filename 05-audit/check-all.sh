@@ -418,6 +418,10 @@ run "api-form-rev"   $PY 05-audit/api-form-gate.py --selftest
 run "api-doc"      $PY 05-audit/api-doc-gate.py
 run "legacy-api"  $PY 05-audit/legacy-api-gate.py
 run "release"     $PY 05-audit/release-gate.py
+# 版本四处一致（VERSION / package.json / package-lock ×2 / CHANGELOG）。
+# 与 release-gate 判据重叠但**入口不同**：这个给的是"哪一处不一致"的定位，
+# 而 release-gate 给的是"发布前还缺什么"。两者都要，不是重复。
+run "version-sync" $PY 05-audit/bump-version.py --check
 run "gate-self"   $PY 05-audit/gate-selfcheck.py
 run "gate-fixture" $PY 05-audit/gate-selfcheck-fixtures.py
 exit $fail

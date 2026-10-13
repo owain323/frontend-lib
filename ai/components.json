@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
   "generatedBy": "05-audit/gen-ai-contract.py",
-  "libraryVersion": "0.8.7",
+  "libraryVersion": "0.8.8",
   "$comment": "机器可读的组件契约。slots = BEM 元素名（在本库里元素名就是插槽名），states.enum = 组件会在 DOM 上写出的 data-* 取值，states.legacyClass = 仍未收敛到 data 属性的历史状态类（INVARIANT I-8 未达标）。",
   "maturityCriteria": {
     "alpha": "缺 demo.html 或缺 05-audit 下的专属门禁 ⇒ 还没被机器验证过，不要用",
@@ -14,8 +14,8 @@
   "summary": {
     "total": 33,
     "byMaturity": {
-      "stable": 28,
-      "beta": 5
+      "stable": 29,
+      "beta": 4
     },
     "byTier": {
       "primitive": 13,
@@ -1119,14 +1119,12 @@
       "tier": "primitive",
       "purpose": "可搜索 + 可多选标签的输入控件",
       "rootClass": "combo",
-      "maturity": "beta",
+      "maturity": "stable",
       "maturityReasons": {
         "hasDemo": true,
         "hasDedicatedGate": true,
         "statesOnDomAttributes": true,
-        "behaviorDebt": [
-          "dismissable:manual"
-        ]
+        "behaviorDebt": []
       },
       "gates": [
         "combobox-check.js",

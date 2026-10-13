@@ -296,6 +296,79 @@ test('dismissable · Esc 调用了 stopPropagation（只关最内层的前提）
     '必须 stopPropagation，否则内层 Esc 会把外层一起关掉');
 });
 
+/* 🔴 0.8.8 新增：分级 Esc。onDismiss 返回 false ⇒ 核**不干预**默认行为。*/
+test('dismissable · onDismiss 返回 false ⇒ 不 preventDefault（分级 Esc 的钩子）', () => {
+  const { ctx, document } = loadCore('dismissable');
+  const E = (t) => bel(t, document);
+  const box = E('div');
+  ctx.flDismissable({
+    escOn: [box], inside: [box], when: () => true,
+    onDismiss: () => false,          /* 我这次没关 */
+  });
+  const ev = key('Escape');
+  box.dispatchEvent(ev);
+  assert.equal(ev.defaultPrevented, false,
+    '组件说"没关" ⇒ 核不该抢走 preventDefault');
+  assert.equal(ev._stopped, false,
+    '组件说"没关" ⇒ 不该 stopPropagation（Esc 要能继续传给外层）');
+});
+
+test('dismissable · onDismiss 返回 true ⇒ 照旧 preventDefault + stopPropagation', () => {
+  const { ctx, document } = loadCore('dismissable');
+  const E = (t) => bel(t, document);
+  const box = E('div');
+  ctx.flDismissable({
+    escOn: [box], inside: [box], when: () => true,
+    onDismiss: () => true,
+  });
+  const ev = key('Escape');
+  box.dispatchEvent(ev);
+  assert.equal(ev.defaultPrevented, true);
+  assert.equal(ev._stopped, true);
+});
+
+test('dismissable · onDismiss 无返回值（undefined）⇒ 等同 true（向后兼容）', () => {
+  const { ctx, document } = loadCore('dismissable');
+  const E = (t) => bel(t, document);
+  const box = E('div');
+  let n = 0;
+  ctx.flDismissable({
+    escOn: [box], inside: [box], when: () => true,
+    onDismiss: () => { n += 1; },   /* 没有 return */
+  });
+  const ev = key('Escape');
+  box.dispatchEvent(ev);
+  assert.equal(n, 1);
+  assert.equal(ev.defaultPrevented, true,
+    '现有一律 onDismiss（无返回值）的组件行为不能变');
+  assert.equal(ev._stopped, true);
+});
+
+test('dismissable · 分级 Esc：三级里只有前两级被核接管', () => {
+  const { ctx, document } = loadCore('dismissable');
+  const E = (t) => bel(t, document);
+  const box = E('div');
+  const log = [];
+  ctx.flDismissable({
+    escOn: [box], inside: [box], when: () => true,
+    onDismiss: () => {
+      log.push('call');
+      /* 模拟 combobox：第一级关、第二级清、第三级放弃 */
+      return log.length < 3;
+    },
+  });
+
+  const e1 = key('Escape'); box.dispatchEvent(e1);
+  const e2 = key('Escape'); box.dispatchEvent(e2);
+  const e3 = key('Escape'); box.dispatchEvent(e3);
+
+  assert.equal(log.length, 3, 'onDismiss 三次都被调用');
+  assert.equal(e1.defaultPrevented, true, '第一级：核接管');
+  assert.equal(e2.defaultPrevented, true, '第二级：核接管');
+  assert.equal(e3.defaultPrevented, false, '第三级：组件放弃 ⇒ 核不干预');
+  assert.equal(e3._stopped, false, '第三级不该 stopPropagation');
+});
+
 test('dismissable · 其它键不触发', () => {
   const { ctx, document } = loadCore('dismissable');
   const E = (t) => bel(t, document);

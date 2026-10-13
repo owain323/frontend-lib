@@ -19,6 +19,80 @@
  */
 (function (global) {
   'use strict';
+  /* ==== BEHAVIOR INJECT BEGIN: dismissable ==== */
+  var flDismissable = function (opts) {
+    var opt = opts || {};
+    var escOn = opt.escOn || [];
+    var inside = opt.inside || [];
+    var when = opt.when || function () { return true; };
+    var onDismiss = opt.onDismiss || function () {};
+
+    var shared = window.__flDismiss || (window.__flDismiss = { stack: [], bound: false });
+
+    function isInside(node) {
+      if (!node) return false;
+      for (var i = 0; i < inside.length; i++) {
+        var el = inside[i];
+        if (!el || !el.contains) continue;
+        if (el === node || el.contains(node)) return true;
+      }
+      return false;
+    }
+
+    function onKey(e) {
+      if (!when()) return;
+      var k = e.key;
+      if (k !== 'Escape' && k !== 'Esc' && e.keyCode !== 27) return;
+      /* 🔴 为什么 onDismiss 在前、preventDefault/stopPropagation 在后
+         （0.8.8 改）：**分级 Esc** 需要核让组件有机会说"这次我没关"。
+         combobox 的 Esc 是三级的：
+           ① 列表开着 → 关列表
+           ② 列表关了、输入有字 → 清空输入
+           ③ 都没了 → 什么都不做（此时**不该**阻止默认行为，
+              让 Esc 能继续传给外层浮层）
+         而原实现是「无条件 preventDefault + stopPropagation，再调 onDismiss」
+         ⇒ 组件根本无法表达"这次我没关"。
+         ⇒ 改成：先问onDismiss，它返回 false 就**不干预**默认行为。
+         ⚠️ 顺序安全性：stopPropagation 只需在**本次监听器执行期间**被调用即可
+            阻止冒泡到外层，放在 onDismiss 之后仍然有效。
+      */
+      var closed = onDismiss(e, 'esc');
+      if (closed === false) return;
+      if (e.preventDefault) e.preventDefault();
+      if (e.stopPropagation) e.stopPropagation();
+    }
+
+    function onDocClick(e) {
+      var top = null;
+      for (var i = shared.stack.length - 1; i >= 0; i--) {
+        if (shared.stack[i].when()) { top = shared.stack[i]; break; }
+      }
+      if (!top || top.isInside(e.target)) return;
+      top.onDismiss(e, 'outside');
+    }
+
+    var rec = { when: when, isInside: isInside, onDismiss: onDismiss };
+
+    for (var j = 0; j < escOn.length; j++) {
+      if (escOn[j]) escOn[j].addEventListener('keydown', onKey);
+    }
+    shared.stack.push(rec);
+    if (!shared.bound) {
+      shared.bound = true;
+      document.addEventListener('click', onDocClick, true);
+    }
+
+    return {
+      destroy: function () {
+        for (var j = 0; j < escOn.length; j++) {
+          if (escOn[j]) escOn[j].removeEventListener('keydown', onKey);
+        }
+        var k = shared.stack.indexOf(rec);
+        if (k >= 0) shared.stack.splice(k, 1);
+      },
+    };
+  };
+  /* ==== BEHAVIOR INJECT END: dismissable ==== */
   /* ==== BEHAVIOR INJECT BEGIN: emit ==== */
   var flEmit = function (el, name, detail) {
     if (!el || !el.dispatchEvent) return null;
@@ -84,6 +158,26 @@
     var list = root.querySelector('[data-combo-list]');
     var tagBox = root.querySelector('[data-combo-tags]');
     if (!input || !list) throw new Error('Combobox: 缺少 [data-combo-input] 或 [data-combo-list]');
+
+    /* 「关得掉」核（0.8.8 收编）。
+       🔴 本组件的 Esc 是**分级**的，核原，表达不了（见 onDismiss）：
+         ① 列表开着 → 关列表（核接管）
+         ② 列表已关、输入有字 → 清空输入（核接管）
+         ③ 都没了 → **不关**，返回 false 让核不干预默认行为
+            （此时 Esc 该继续传给外层浮层，而不是被吃掉）
+       ⇒ 0.8.8 给核加了返回值语义：onDismiss 返回 false ⇒ 核不抢preventDefault。 */
+    var dismiss = flDismissable({
+      escOn: [input],
+      inside: [root],
+      when: function () { return true; },   /* 三级 Esc 都要响应，见下 */
+      onDismiss: function (ev, reason) {
+        if (reason === 'outside') { close(); return true; }
+        /* Esc：按「列表 → 输入 → 放弃」的顺序处理 */
+        if (!list.hidden) { close(); return true; }
+        if (input.value) { input.value = ''; paintList(); return true; }
+        return false;/* ③ 什么都不做 ⇒ 核不干预，Esc 继续往外传 */
+      }
+    });
     if (!list.id) list.id = 'combo-list-' + (++uid);
 
     /* 🔴 每个实例进来就领一个序号：
@@ -288,12 +382,9 @@
         if (hit) { addTag(hit.value); input.value = ''; paintList(); }
         return;
       }
-      /* Esc：先关列表；列表已关则清空输入 */
-      if (k === 'Escape' || k === 'Esc') {
-        if (!list.hidden) { e.preventDefault(); e.stopPropagation(); close(); return; }
-        if (input.value) { e.preventDefault(); input.value = ''; paintList(); }
-        return;
-      }
+      /* Esc 已由 dismissable 核接管（见 create 里的 flDismissable）。
+         核按onDismiss 的返回值决定要不要 preventDefault/stopPropagation，
+         所以三级 Esc（关列表 / 清输入 / 放弃）能正确区分。 */
       /* ② Backspace：空输入时删最后一个标签 */
       if (k === 'Backspace' && !input.value && tags.length) {
         e.preventDefault();
@@ -337,18 +428,13 @@
       paintList();
       input.focus();
     }
-    /* 🔴 document 级监听：实例销毁后必须摘掉，否则每个死实例都握着 DOM 引用。 */
-    function onDocClick(e) {
-      if (!root.contains(e.target)) close();
-    }
-
     input.addEventListener('keydown', onKeydown);
     input.addEventListener('input', onInput);
     input.addEventListener('focus', onFocus);
     input.addEventListener('click', onClick);
     if (tagBox) tagBox.addEventListener('click', onTagClick);
     list.addEventListener('click', onListClick);
-    document.addEventListener('click', onDocClick);
+    /* 点外部关闭已由 dismissable 核接管（document 捕获阶段判定 + 自动摘除）。 */
 
     /* 🔴 禁用态同步：CSS 不用 :has()（ES6+ 兼容问题，见 combobox.css 注释）
        ⇒ 由这里根据 input.disabled 给容器加 class。 */

@@ -71,6 +71,12 @@ export function el(tag = 'div', opts = {}) {
     dispatchEvent(ev) {
       const e = ev || {};
       e.target = e.target || node;
+      /* 🔴 这两个标志必须**预先初始化为 false**：
+         真浏览器里 `ev.defaultPrevented` 初始就是 false，
+         而"没被 preventDefault"和"字段不存在"是两回事。
+         不初始化 ⇒ 测试断言 `=== false` 会失败，并被误读成"核没生效"。 */
+      if (typeof e.defaultPrevented === 'undefined') e.defaultPrevented = false;
+      if (typeof e._stopped === 'undefined') e._stopped = false;
       e.preventDefault = e.preventDefault || function () { e.defaultPrevented = true; };
       e.stopPropagation = e.stopPropagation ||
         function () { e._stopped = true; };
@@ -125,6 +131,8 @@ export function makeDoc() {
   doc.dispatchEvent = function (ev) {
     const e = ev || {};
     e.target = e.target || doc.body;
+    if (typeof e.defaultPrevented === 'undefined') e.defaultPrevented = false;
+    if (typeof e._stopped === 'undefined') e._stopped = false;
     e.preventDefault = e.preventDefault || function () { e.defaultPrevented = true; };
     e.stopPropagation = e.stopPropagation ||
       function () { e._stopped = true; };

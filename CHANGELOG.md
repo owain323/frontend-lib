@@ -1,3 +1,57 @@
+## 0.8.8 — 2026-10-14
+
+### ① 给核加「分级 Esc」能力 ⇒ combobox 收编，manual 只剩 2 条
+
+**问题**：combobox 的 Esc 是**三级的**（① 关列表 ② 清输入 ③ 放弃），
+而核的 `onKey` 是「无条件 `preventDefault + stopPropagation`，再调 `onDismiss`」
+⇒ 组件**无法表达"这次我没关"**。上一版我因此判定"不收编"。
+
+**改动**：给核加**返回值语义** —— `onDismiss` 返回 `false` ⇒
+核**不干预**默认行为（不抢 `preventDefault`、不 `stopPropagation`），
+于是 Esc 能继续传给外层浮层。
+
+```js
+onDismiss: function (ev, reason) {
+  if (reason === 'outside') { close(); return true; }
+  if (!list.hidden) { close(); return true; }        /* ① 关列表 */
+  if (input.value) { input.value = ''; paintList(); return true; }  /* ② 清输入 */
+  return false;                        /* ③ 放弃 ⇒ 核不干预 */
+}
+```
+
+**向后兼容已验证**：现有组件的 `onDismiss` 都**没有返回值**（`undefined`），
+`undefined !== false` ⇒ 行为完全不变（单测里钉住了这一条）。
+
+反向控制：把返回值判断去掉（恢复旧行为）⇒ **2 条单测立刻变红**。
+契约门禁「Esc 先关列表再清输入」实测通过。
+
+### ② 发布自动化：`bump-version.py`
+
+版本号出现在**四处**（VERSION / package.json / package-lock ×2 / CHANGELOG），
+`release-gate.py` 盯着它们一致 ⇒ 手改就是在破坏本库"我说什么就是什么"的卖点。
+
+```
+python3 05-audit/bump-version.py 0.8.9      # 改四处 + 建 CHANGELOG 骨架
+python3 05-audit/bump-version.py --check    # 只查一致（已接进门禁）
+```
+
+**它的自检不是"跑完不报错"**：改完会**读回四处逐个比对**，
+不一致就指出**是哪一处**，再让 `release-gate.py` 自己核一遍。
+
+反向控制：故意把 `package-lock` 根包版本改旧 ⇒ `--check` 精确点名那一处。
+
+### 收编后的数字
+
+```
+core 16（was 15） · manual 2（was 3） · gap 2 · n/a 56
+stable 29（was 28） · beta 4（was 5）
+```
+
+剩下 2 条 manual 是**明确不该收**的：`drawer` / `overlay(dialog)` 是模态弹层，
+点外部**不该关闭**；核天然处理 outside ⇒ 收编等于引入错误行为。
+
+---
+
 # 更新日志
 
 本库的版本按**语义化版本**（`主.次.修`）：

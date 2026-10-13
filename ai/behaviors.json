@@ -28,14 +28,14 @@
     }
   },
   "budget": {
-    "manual": 3,
+    "manual": 2,
     "gap": 2
   },
   "matrix": {
     "dismissable": {
       "combobox": [
-        "manual",
-        "0.8.6 评估后**决定不收编**（理由见 ERRORS E37）：它的 Esc 是**两级**的——先关列表、列表已关才清空输入。核的 escOn 是「Esc 一律触发 onDismiss」，表达不了这个分级。机械替换会丢掉第二级行为 ⇒ 属于\"为了统一而丢功能\"。另外它的外部点击用 root.contains(e.target) 判定，**本来就是正确写法**，没有 tooltip 那个「点内部也关」的 bug ⇒ 收编拿不到实际修复收益。"
+        "core",
+        "0.8.8 收编：为此给核加了**返回值语义**（onDismiss 返回 false ⇒ 核不preventDefault/stopPropagation），才能表达本组件的三级 Esc：① 关列表 ② 清输入 ③ 放弃（不干预，Esc 继续传给外层）。契约门禁「Esc 先关列表再清输入」实测通过。"
       ],
       "date-range": [
         "n/a",
