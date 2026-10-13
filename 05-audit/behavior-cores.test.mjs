@@ -492,6 +492,46 @@ test('dismissable · destroy 后既不响应 Esc 也不占栈', () => {
   assert.equal(n, 1, 'destroy 之后必须彻底不响应');
 });
 
+/* 🔴 0.8.8 补：destroy 必须把自己从**共享栈**里移除。
+   起因：combobox 收编时我漏了 dismiss.destroy()，而门禁
+   「document 不残留监听」抓不到 —— 因为组件其它监听器也被摘了、
+   组件确实不再响应，**只有核的栈里那条记录还留着**（真内存泄漏）。
+   ⇒ 这条门禁在**栈的层面**才抓得到。 */
+test('dismissable · destroy 后从共享栈里移除（否则闭包泄漏）', () => {
+  const { ctx, document, window } = loadCore('dismissable');
+  const E = (t) => bel(t, document);
+  const box = E('div');
+  /* 🔴 shared 是**懒创建**的（首次 flDismissable 才建）⇒ 不能假设它已存在。*/
+  const stackLen = () => (window.__flDismiss ? window.__flDismiss.stack.length : 0);
+
+  const before = stackLen();
+  const d = ctx.flDismissable({
+    escOn: [box], inside: [box], when: () => true, onDismiss: () => {},
+  });
+  assert.equal(stackLen(), before + 1, '创建时应入栈');
+
+  d.destroy();
+  assert.equal(stackLen(), before,
+    'destroy 后必须出栈，否则 rec 闭包（连着组件的 root）永远不释放');
+});
+
+test('dismissable · destroy 之后 onDocClick 不再回调该实例', () => {
+  const { ctx, document, window } = loadCore('dismissable');
+  const E = (t) => bel(t, document);
+  const box = E('div');
+  const other = E('div');
+  let n = 0;
+
+  const d = ctx.flDismissable({
+    escOn: [box], inside: [box], when: () => true,
+    onDismiss: (ev, r) => { if (r === 'outside') n += 1; },
+  });
+  d.destroy();
+
+  document.dispatchEvent({ type: 'click', target: other });
+  assert.equal(n, 0, '已destroy 的实例不该再收到 outside 通知');
+});
+
 test('dismissable · 空参数不崩（组件只传一半的情况是真实的）', () => {
   const { ctx, document } = loadCore('dismissable');
   const E = (t) => bel(t, document);

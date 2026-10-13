@@ -37,9 +37,23 @@
       if (!when()) return;
       var k = e.key;
       if (k !== 'Escape' && k !== 'Esc' && e.keyCode !== 27) return;
+      /* 🔴 为什么 onDismiss 在前、preventDefault/stopPropagation 在后
+         （0.8.8 改）：**分级 Esc** 需要核让组件有机会说"这次我没关"。
+         combobox 的 Esc 是三级的：
+           ① 列表开着 → 关列表
+           ② 列表关了、输入有字 → 清空输入
+           ③ 都没了 → 什么都不做（此时**不该**阻止默认行为，
+              让 Esc 能继续传给外层浮层）
+         而原实现是「无条件 preventDefault + stopPropagation，再调 onDismiss」
+         ⇒ 组件根本无法表达"这次我没关"。
+         ⇒ 改成：先问onDismiss，它返回 false 就**不干预**默认行为。
+         ⚠️ 顺序安全性：stopPropagation 只需在**本次监听器执行期间**被调用即可
+            阻止冒泡到外层，放在 onDismiss 之后仍然有效。
+      */
+      var closed = onDismiss(e, 'esc');
+      if (closed === false) return;
       if (e.preventDefault) e.preventDefault();
       if (e.stopPropagation) e.stopPropagation();
-      onDismiss(e, 'esc');
     }
 
     function onDocClick(e) {

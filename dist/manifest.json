@@ -8,8 +8,8 @@
   ],
   "totals": {
     "sourceFiles": 56,
-    "sourceBytes": 580099,
-    "distGzip": 101908
+    "sourceBytes": 580499,
+    "distGzip": 102120
   },
   "files": [
     {
@@ -319,15 +319,15 @@
     },
     {
       "source": "02-primitives/combobox/combobox.js",
-      "sourceSha256": "46e056dac14747a56354952fd7eb5a569fd121a75b1149789c34dcbba657edec",
-      "sourceBytes": 19328,
-      "sourceGzip": 6797,
+      "sourceSha256": "a01f5e6486200943e02499ce59527d62725313af5c4330f5f4f13cb8f9145262",
+      "sourceBytes": 19728,
+      "sourceGzip": 6996,
       "outputs": [
         {
           "path": "dist/02-primitives/combobox/combobox.js",
           "kind": "stripped",
-          "bytes": 15251,
-          "gzip": 5274
+          "bytes": 15651,
+          "gzip": 5486
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"

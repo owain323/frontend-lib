@@ -69,8 +69,8 @@
       "raw": 7391
     },
     "02-primitives/combobox/combobox.js": {
-      "gzip": 6797,
-      "raw": 19328
+      "gzip": 6996,
+      "raw": 19728
     },
     "02-primitives/date-range/date-range.css": {
       "gzip": 2260,
@@ -226,6 +226,6 @@
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 227777,
-  "total_raw": 591602
+  "total_gzip": 227976,
+  "total_raw": 592002
 }

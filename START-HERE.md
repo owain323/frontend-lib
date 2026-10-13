@@ -40,7 +40,7 @@
 | 卡片 | `02-primitives/card/card.css` | 246 | — | 有分组内容就要 |
 | 单选 / 多选 | `02-primitives/choice/choice.css` | 395 | — | 单选 / 多选就要 |
 | 下拉选择 | `02-primitives/select/select.css` | 151 | **必需 549** (`select.js`) | 原生 select 的外观或交互不够用就要 |
-| 可搜索选择 | `02-primitives/combobox/combobox.css` | 223 | **必需 479** (`combobox.js`) | 选项多到要搜索，或要选多个并留成标签就要 |
+| 可搜索选择 | `02-primitives/combobox/combobox.css` | 223 | **必需 485** (`combobox.js`) | 选项多到要搜索，或要选多个并留成标签就要 |
 | 开关 | `02-primitives/switch/switch.css` | 370 | — | 有"立即生效的设置"就要 |
 | 分隔线 | `02-primitives/separator/separator.css` | 73 | — | 要分开内容块就要 |
 | 加载骨架 | `02-primitives/skeleton/skeleton.css` | 96 | — | 数据还没到、先把版式占住就要 |

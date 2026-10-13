@@ -220,10 +220,13 @@ def selftest():
     #    （⚠️ 写这条时我一度在注释里说它有 focus-return 债 —— 核实矩阵后并没有，
     #      combobox 的 focus-return 是 n/a。断言本身有效，注释里的理由是错的。）
     #    教训同 E39：反向控制突变体必须与当前真实状态解耦。
-    expect('behaviorDebt 与矩阵不一致（combobox 少报一条）⇒ 必须红',
-           check(clone(lambda cs: [c for c in cs if c['id'] == 'combobox'][0]
+    # ⚠️ 同样是"突变体被真改动追上"的坑（0.8.8）：原用 combobox 清空 debt，
+    #   而 0.8.6 收编后 combobox 的 debt **正好就是空** ⇒ 不再是突变。
+    #   ⇒ 改用 drawer：给它硬塞一条**它没有**的债（typeahead:gap）⇒ 必红。
+    expect('behaviorDebt 与矩阵不一致（drawer 被塞了一条不存在的债）⇒ 必须红',
+           check(clone(lambda cs: [c for c in cs if c['id'] == 'drawer'][0]
                        ['maturityReasons'].__setitem__('behaviorDebt',
-                                                       [])))[0],
+                                                       ['typeahead:gap'])))[0],
            'behaviorDebt 与行为矩阵不一致')
     expect('maturityReasons 与重算不符（button 的 hasDemo 写成 false）⇒ 必须红',
            check(clone(lambda cs: [c for c in cs if c['id'] == 'button'][0]

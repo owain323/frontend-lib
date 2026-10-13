@@ -415,8 +415,14 @@ return String(s).replace(/[&<>"]/g, function (c) {
       input.removeEventListener('click', onClick);
       input.removeEventListener('change', syncDisabled);
       if (tagBox) tagBox.removeEventListener('click', onTagClick);
-      list.removeEventListener('click', onListClick);
-      document.removeEventListener('click', onDocClick);
+   list.removeEventListener('click', onListClick);
+      /* 🔴 0.8.8 修一个真 bug（门禁 combobox-inst 当场抓到）：
+         收编 dismissable 核时我把 `onDocClick` 的**定义**删了，
+         却漏了这里的手动摘除 ⇒ `destroy()` 一调就抛
+         「onDocClick is not defined」⇒ 实例销毁路径直接崩。
+      ⇒ 正确做法是调**核的** destroy()，它自己会摘 document 监听
+         并且把自己从共享栈里移除。 */
+      dismiss.destroy();
       close();
     }
 
