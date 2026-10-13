@@ -156,9 +156,11 @@ function onKey(e) {
 if (!when()) return;
 var k = e.key;
 if (k !== 'Escape' && k !== 'Esc' && e.keyCode !== 27) return;
+
+var closed = onDismiss(e, 'esc');
+if (closed === false) return;
 if (e.preventDefault) e.preventDefault();
 if (e.stopPropagation) e.stopPropagation();
-onDismiss(e, 'esc');
 }
 
 function onDocClick(e) {

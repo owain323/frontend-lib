@@ -83,6 +83,8 @@ jobs:
           python3 05-audit/hype-scan.py
           python3 05-audit/leak-scan.py
           python3 05-audit/es5-gate.py .
+          # 版本四处一致（0.8.8 加）：手改版本号是本库最常见的自相矛盾来源
+          python3 05-audit/bump-version.py --check
 
       - name: 打包实装冒烟（npm pack → 装进空项目 → 核对）
         run: bash 05-audit/pack-smoke.sh
