@@ -344,7 +344,7 @@ if command -v node >/dev/null 2>&1; then
   # 🔴 N15：`FAILED` 是**另一个变量**，而结尾只判 `fail`
   #    ⇒ 单元测试挂了，整套门禁照样 `exit 0`（实测取证：unit FAIL 而 EXIT=0）。
   #    ⇒ 统一用 `fail`。（改用 run() 后这一行由 run() 自己加，不会再分叉。）
-  run "unit"       node --test 05-audit/unit.test.mjs
+  run "unit"       node --test 05-audit/unit.test.mjs 05-audit/behavior-cores.test.mjs
   run "responsive"  node 05-audit/responsive-check.js
   # H3：Firefox（官方构建，非 Juggler）—— 单实例串行，控内存
   PW_PATH="${NODE_MODULES:-node_modules}/playwright" run "firefox" node 05-audit/multi-browser-check.js
