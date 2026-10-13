@@ -30,6 +30,7 @@ admission-gate.py — 新组件准入机械检查（总 G3）
 import sys
 import os
 import io
+import json
 import re
 import glob
 
@@ -208,6 +209,66 @@ def chk_charter_exists():
             'what': '准入清单含8 条纪律 + 元规则'}
 
 
+def chk_missing_readme():
+    """🔴 每个组件必须有 README.md（0.8.3 新增）
+
+    为什么要这条：⑧ 只要求 demo.html，于是 10 个组件长期「有 demo 无 README」——
+    `select` / `date-range` / `combobox` / `popover` / `drawer` / `dropdown` /
+    `pagination` / `tooltip` / `tree` / `bar`，合计 96 个顶层公开类
+    没有人向陌生人解释过。demo 让人看见「能跑」，README 才让人知道「怎么用对」。
+
+    ⚠️ 为什么用**数量**而不是「内容好不好」：内容质量无法机械判定，
+       判据只保证「不会缺席」，不保证「写得烂」—— 后者靠 review 与 doc-facts。
+    """
+    missing = []
+    total = 0
+    for d in COMPONENT_DIRS:
+        for sub in sorted(glob.glob(os.path.join(ROOT, d, '*'))):
+            if not os.path.isdir(sub):
+                continue
+            if not glob.glob(os.path.join(sub, '*.css')):
+                continue        # 没有 CSS 的目录不是组件
+            total += 1
+            if not os.path.exists(os.path.join(sub, 'README.md')):
+                missing.append('%s/%s' % (d, os.path.basename(sub)))
+    return {'ok': not missing, 'n': total, 'missing': missing,
+            'what': '每个组件都有 README.md（⑨）'}
+
+
+def chk_in_contract():
+    """🔴 每个组件目录必须在契约里登记（0.8.3 新增）
+
+    这是本条的价值所在：0.8.1 漏 11 个组件、0.8.3 漏掉整个 09-assets 层，
+    三次都是同一个病 —— **目录里有、契约里没有**，于是 AI 入口与人类入口
+    都在宣称「这库没有」。
+
+    判据方向是「目录 → 契约」而不是反过来：
+    契约多出来的（已删组件的残留）由 gen-ai-contract.py 自己管，
+    这里只抓「目录里有、契约里漏了」这一种，方向单一、不会两头报错。
+    """
+    try:
+        comps = json.load(io.open(os.path.join(ROOT, 'ai', 'components.json'),
+                                  encoding='utf-8')).get('components') or []
+    except Exception as e:
+        return {'ok': False, 'what': '读不到 ai/components.json（%s）' % e,
+                'n': 0, 'missing': []}
+    known = set(c.get('id') for c in comps)
+    missing = []
+    total = 0
+    for d in COMPONENT_DIRS:
+        for sub in sorted(glob.glob(os.path.join(ROOT, d, '*'))):
+            if not os.path.isdir(sub):
+                continue
+            if not glob.glob(os.path.join(sub, '*.css')):
+                continue
+            name = os.path.basename(sub)
+            total += 1
+            if name not in known:
+                missing.append('%s/%s' % (d, name))
+    return {'ok': not missing, 'n': total, 'missing': missing,
+            'what': '每个组件都在契约里登记（⑩）'}
+
+
 CHECKS = [
     chk_charter_exists,
     chk_missing_demo,
@@ -215,6 +276,8 @@ CHECKS = [
     chk_composition_exists,
     chk_focus_documented,
     chk_no_stopprop_missing,
+    chk_missing_readme,
+    chk_in_contract,
 ]
 
 
