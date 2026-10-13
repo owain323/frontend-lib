@@ -62,7 +62,7 @@
 | 长文排版 | `03-patterns/content/content.css` | 280 | — | 写文档 / 长文就要 |
 | analysis-report | `04-recipes/analysis-report/analysis-report.css` | 187 | — |  |
 | report | `04-recipes/report/report.css` | 326 | — |  |
-| table | `04-recipes/table/table.css` | 333 | — |  |
+| table | `04-recipes/table/table.css` | 366 | — |  |
 | bar | `09-assets/bar/bar.css` | 166 | **必需 309** (`bar.js`) |  |
 | model-viewer | `09-assets/model-viewer/model-viewer.css` | 143 | **必需 422** (`model-viewer.js`) |  |
 | scientific-plot | `09-assets/scientific-plot/scientific-plot.css` | 141 | **必需 610** (`scientific-plot.js`) |  |

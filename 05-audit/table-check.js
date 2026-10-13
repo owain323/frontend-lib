@@ -326,12 +326,44 @@ const REPO = path.resolve(__dirname, '..');
                      note: '🔴 页面上没有"声明了金额单位"的表 ⇒ 判据无从生效' +
                            '（多半是表题被改掉了）。跳过等于假绿，所以判红。' };
           }
+          /* 🔴 比的是**单位本身**，不是整段字符串。
+             列头按规范写成 `(万元)`（⑨ 要求带括号），表题写「金额单位：万元」，
+             逐字比会永远判红 —— 而"两处说的是同一个单位"才是这条的本意。
+             ⇒ 先剥掉括号再比。 */
+          const strip = (u) => u.trim().replace(/^\(|\)$/g, '');
           const bad = found.filter((o) =>
-            o.money.length === 0 || o.money.some((u) => u !== o.declared));
+            o.money.length === 0 ||
+            o.money.some((u) => strip(u) !== o.declared));
           return { ok: bad.length === 0,
                    note: found.map((o) => '表题「' + o.declared + '」/ 列头 ' +
                          JSON.stringify(o.money)).join(' · ') +
                          (bad.length ? ' ⇒ 🔴 两处不一致' : ' ⇒ 一致') };
+        });
+        return r;
+      },
+
+      /* ⑨ 单位必须带括号（0.8.5 新增）
+         🔴 为什么加这条：原来的做法是「列名 + 小一号灰字单位」，裸写 `抗拉强度 MPa`。
+            而规范要求的是「量的名称(单位)」——
+              GB/T 7713.2-2022 / CY/T 170—2019：「量的名称或符号/单位符号」
+              Science Author Guidelines：unit of measure **in parentheses**
+              IEEE 14.3.1：provided **in parentheses** or preceded by a solidus
+            ⇒ 括号不是审美选择，是学科规范要求。
+         ⚠️ 判据只查「单位有没有被括号包住」，
+            **查不出量级对不对**（MPa 配抗拉强度对不对）—— 那要靠人看数据。 */
+      '列头的单位用括号包住（规范：量的名称(单位)）': async (p) => {
+        const r = await p.evaluate(() => {
+          const units = [...document.querySelectorAll(
+            '.table thead .table__unit')].map((e) => e.textContent.trim());
+          if (!units.length) {
+            return { ok: false,
+                     note: '页面上一个列头单位都没有 ⇒ 判据无从生效（跳过=假绿）' };
+          }
+          const bad = units.filter((u) => u && !/^\(.*\)$/.test(u));
+          return { ok: bad.length === 0,
+                   note: bad.length
+                     ? '🔴 未加括号：' + bad.map((u) => JSON.stringify(u)).join('、')
+                     : units.length + ' 个单位全部带括号' };
         });
         return r;
       },
