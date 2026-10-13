@@ -29,7 +29,7 @@
       "required": ["id", "tier", "rootClass", "maturity", "slots", "states"],
       "properties": {
         "id": { "type": "string" },
-        "tier": { "type": "string", "enum": ["primitive", "pattern", "recipe"] },
+        "tier": { "type": "string", "enum": ["primitive", "pattern", "recipe", "asset"] },
         "purpose": { "type": "string" },
         "rootClass": { "type": "string" },
         "maturity": { "type": "string", "enum": ["alpha", "beta", "stable"] },
