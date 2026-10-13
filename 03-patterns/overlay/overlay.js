@@ -208,13 +208,55 @@
   }
 
   /* ================================================================ Dialog */
+  /* ==== BEHAVIOR INJECT BEGIN: focus-return ==== */
+  var flFocusReturn = function (opts) {
+    var opt = opts || {};
+    var saved = null;
+
+    return {
+      save: function () {
+        var a = document.activeElement;
+        saved = (a && a !== document.body && a.focus) ? a : null;
+        return saved;
+      },
+
+      restore: function () {
+        var target = saved;
+        /* ⚠️ 见文档 ②：不判 contains 的话，元素被移除后 focus() 不报错
+           但焦点不动 ⇒ 用户以为还回去了，其实掉在 body 上。 */
+        if (!target || !document.contains(target)) target = opt.fallback || null;
+        if (!target) { saved = null; return false; }
+        try {
+          target.focus();
+        } catch (e) {
+          saved = null;
+          return false;
+        }
+        var ok = document.activeElement === target;
+        saved = null;   /* 见文档 ③ */
+        return ok;
+      },
+
+      target: function () { return saved; },
+      clear: function () { saved = null; },
+    };
+  };
+  /* ==== BEHAVIOR INJECT END: focus-return ==== */
   function dialog(opts) {
     opts = opts || {};
 
     /* ⭐ 焦点归还**绑到这个实例**，不进全局栈。
        全局栈 + pop() 在非 LIFO 关闭时会还错人
        （先关外层会把焦点从内层手里抢走）。 */
-    var myTrigger = document.activeElement;
+    /* 焦点归还：走 focus-return 核（0.8.6 收编）。
+       🔴 收编修掉一个**真 bug**：原来这里是
+           if (focusIsMine && myTrigger && document.contains(myTrigger))
+           ——`focusIsMine` 这个变量**在本文件里根本不存在** ⇒ 条件恒假
+           ⇒ **焦点从来没还过**。而 dialog 是模态、不点外部关闭，
+           所以这条唯一的出路就是 Esc/按钮关闭时归位 ⇒ 键盘用户必迷路。
+       核的 save() 记的就是 document.activeElement，语义正好对上。 */
+    var fr = flFocusReturn();
+    fr.save();
 
     var backdrop = document.createElement('div');
     backdrop.className = 'dialog-backdrop';
@@ -360,9 +402,7 @@
 
       /* 🔴 焦点必须回到**触发它的那个元素**。
          不还的话，键盘用户要重新 Tab 一遍才能回到原处。 */
-      if (focusIsMine && myTrigger && document.contains(myTrigger)) {
-        myTrigger.focus();
-      }
+      fr.restore();
       /* ⚠️ 不写 `document.body.focus()`：body 默认不可聚焦，
          那行从来没起过作用，只会让人以为"有兜底"。 */
     }

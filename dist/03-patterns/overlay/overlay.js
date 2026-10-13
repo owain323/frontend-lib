@@ -145,10 +145,43 @@ var timerId = auto > 0 ? setTimeout(close, auto) : null;
 return { el: el, close: close };
 }
 
+var flFocusReturn = function (opts) {
+var opt = opts || {};
+var saved = null;
+
+return {
+save: function () {
+var a = document.activeElement;
+saved = (a && a !== document.body && a.focus) ? a : null;
+return saved;
+},
+
+restore: function () {
+var target = saved;
+
+if (!target || !document.contains(target)) target = opt.fallback || null;
+if (!target) { saved = null; return false; }
+try {
+target.focus();
+} catch (e) {
+saved = null;
+return false;
+}
+var ok = document.activeElement === target;
+saved = null;
+return ok;
+},
+
+target: function () { return saved; },
+clear: function () { saved = null; },
+};
+};
+
 function dialog(opts) {
 opts = opts || {};
 
-var myTrigger = document.activeElement;
+var fr = flFocusReturn();
+fr.save();
 
 var backdrop = document.createElement('div');
 backdrop.className = 'dialog-backdrop';
@@ -262,9 +295,7 @@ if (backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
 inerted.forEach(inertRelease);
 unlockScroll();
 
-if (focusIsMine && myTrigger && document.contains(myTrigger)) {
-myTrigger.focus();
-}
+fr.restore();
 
 }
 

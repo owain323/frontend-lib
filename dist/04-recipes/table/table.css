@@ -196,8 +196,13 @@
 
 .table__unit {
   font-weight: 400;
-  font-size: var(--fs-xs);
-  color: var(--text-tertiary);
+  
+  font-size: inherit;
+  color: var(--text-secondary);
+  
+  margin-inline-start: 0.35em;
+  
+  white-space: nowrap;
 }
 
 

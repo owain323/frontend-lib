@@ -8,6 +8,51 @@
 
 ---
 
+## 0.8.6 — 2026-10-14
+
+### 行为债收编：manual 9 → 3，`tooltip` / `select` 升 stable
+
+`behaviors.json` 的 budget 棘轮是「只能降不能升」，本轮把 4 条 manual 收进微行为核：
+
+| 组件 | 收编内容 |
+|---|---|
+| `tooltip` | dismissable + focus-return |
+| `select` | focus-return + dismissable |
+| `dropdown` | focus-return |
+| `overlay` | focus-return —— **顺带修掉一个真 bug** |
+
+### 🔴 收编顺带修掉的真 bug（E38）
+
+`overlay` 的 dialog 关闭时**焦点从来没还过**，而门禁「关闭后焦点归位」一直显示 OK：
+
+```js
+if (focusIsMine && myTrigger && document.contains(myTrigger)) { … }
+//  ↑ focusIsMine 在这个文件里根本不存在 ⇒ 条件恒假 ⇒ 永不执行
+```
+
+JS 没有编译期检查，拼错的变量名静默为 `undefined`。门禁那条判据量的是
+「关掉后焦点在不在触发器」——它**本该红**，实际绿是因为那条路径压根没跑到。
+反向控制确认判据有牙：去掉 `restore()` 后门禁确实报红（焦点停在 BODY）。
+
+### 🔴 剩下的 3 条 manual：**决定不收**，并写明理由
+
+| 组件 | 不收的理由 |
+|---|---|
+| `combobox` | Esc 是**两级**的（先关列表、再清输入），核的 `escOn` 表达不了；且它用 `root.contains` 判定外部，本来就是正确写法 ⇒ 收编收益为 0 |
+| `drawer` | 模态弹层，只需 Esc；要核支持"忽略 outside"得**改核**而不是接线 |
+| `overlay` | dialog 是模态，**点外部不该关闭**；核天然处理 outside ⇒ 收编等于引入错误行为 |
+
+⇒ **「收编率」不是 KPI，行为正确才是**（ERRORS E37）。
+
+### 收编后的数字
+
+```
+core 15（was 9） · manual 3（was 9） · gap 2 · n/a 56
+stable 28（was 26） · beta 5（was 7）
+```
+
+---
+
 ## 0.8.5 — 2026-10-14
 
 ### 🔴 列头的单位写法跟着学科规范改（用户指出）

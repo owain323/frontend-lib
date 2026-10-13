@@ -1,6 +1,97 @@
 (function (global) {
 'use strict';
 
+var flDismissable = function (opts) {
+var opt = opts || {};
+var escOn = opt.escOn || [];
+var inside = opt.inside || [];
+var when = opt.when || function () { return true; };
+var onDismiss = opt.onDismiss || function () {};
+
+var shared = window.__flDismiss || (window.__flDismiss = { stack: [], bound: false });
+
+function isInside(node) {
+if (!node) return false;
+for (var i = 0; i < inside.length; i++) {
+var el = inside[i];
+if (!el || !el.contains) continue;
+if (el === node || el.contains(node)) return true;
+}
+return false;
+}
+
+function onKey(e) {
+if (!when()) return;
+var k = e.key;
+if (k !== 'Escape' && k !== 'Esc' && e.keyCode !== 27) return;
+if (e.preventDefault) e.preventDefault();
+if (e.stopPropagation) e.stopPropagation();
+onDismiss(e, 'esc');
+}
+
+function onDocClick(e) {
+var top = null;
+for (var i = shared.stack.length - 1; i >= 0; i--) {
+if (shared.stack[i].when()) { top = shared.stack[i]; break; }
+}
+if (!top || top.isInside(e.target)) return;
+top.onDismiss(e, 'outside');
+}
+
+var rec = { when: when, isInside: isInside, onDismiss: onDismiss };
+
+for (var j = 0; j < escOn.length; j++) {
+if (escOn[j]) escOn[j].addEventListener('keydown', onKey);
+}
+shared.stack.push(rec);
+if (!shared.bound) {
+shared.bound = true;
+document.addEventListener('click', onDocClick, true);
+}
+
+return {
+destroy: function () {
+for (var j = 0; j < escOn.length; j++) {
+if (escOn[j]) escOn[j].removeEventListener('keydown', onKey);
+}
+var k = shared.stack.indexOf(rec);
+if (k >= 0) shared.stack.splice(k, 1);
+},
+};
+};
+
+var flFocusReturn = function (opts) {
+var opt = opts || {};
+var saved = null;
+
+return {
+save: function () {
+var a = document.activeElement;
+saved = (a && a !== document.body && a.focus) ? a : null;
+return saved;
+},
+
+restore: function () {
+var target = saved;
+
+if (!target || !document.contains(target)) target = opt.fallback || null;
+if (!target) { saved = null; return false; }
+try {
+target.focus();
+} catch (e) {
+saved = null;
+return false;
+}
+var ok = document.activeElement === target;
+saved = null;
+return ok;
+},
+
+target: function () { return saved; },
+clear: function () { saved = null; },
+};
+};
+
 var flTypeahead = function (opts) {
 var opt = opts || {};
 var items = opt.items || function () { return []; };
@@ -122,6 +213,17 @@ opt = opt || {};
 var btn = root.querySelector('[data-select-btn]');
 var list = root.querySelector('[data-select-list]');
 if (!btn || !list) throw new Error('Select: 缺少 [data-select-btn] 或 [data-select-list]');
+
+var fr = flFocusReturn({ fallback: btn });
+
+var dismiss = flDismissable({
+escOn: [btn],
+inside: [root],
+when: function () { return !list.hidden; },
+onDismiss: function (ev, reason) {
+close(reason === 'esc');
+}
+});
 if (!list.id) list.id = 'select-list-' + (++uid);
 
 var options = [].slice.call(list.querySelectorAll('[role="option"]'));
@@ -225,6 +327,8 @@ return e2.length ? options.indexOf(e2[0]) : 0;
 }
 
 function open() {
+
+fr.save();
 list.hidden = false;
 btn.setAttribute('aria-expanded', 'true');
 
@@ -242,7 +346,7 @@ options.forEach(function (o) { o.removeAttribute('data-state'); });
 activeIdx = -1;
 typeahead.clear();
 
-if (restoreFocus !== false) btn.focus();
+if (restoreFocus !== false) fr.restore();
 flEmit(root, 'fl-close', null);
 if (opt.onClose) opt.onClose();
 }
@@ -293,12 +397,6 @@ if (k === 'ArrowUp')   { e.preventDefault(); setActive(activeIndex() - 1, -1); r
 if (k === 'Home')      { e.preventDefault(); setActive(0, 1); return; }
 if (k === 'End')       { e.preventDefault(); setActive(options.length - 1, -1); return; }
 
-if (k === 'Escape' || k === 'Esc') {
-e.preventDefault();
-e.stopPropagation();
-close(true);
-return;
-}
 if (k === 'Tab') { close(false); return; }
 if (k === 'Enter' || k === ' ' || k === 'Spacebar') {
 e.preventDefault();
@@ -335,9 +433,6 @@ list.addEventListener('click', function (e) {
 var o = e.target.closest ? closest(e.target, '[role="option"]') : null;
 if (!o) return;
 commit(options.indexOf(o));
-});
-document.addEventListener('click', function (e) {
-if (!root.contains(e.target) && !list.hidden) close(false);
 });
 
 paint();
