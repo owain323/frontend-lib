@@ -68,6 +68,14 @@ BEHAVIORS = os.path.join(AI, 'behaviors.json')
 META = os.path.join(AI, 'components.meta.json')
 GATE_DIR = os.path.join(ROOT, '05-audit')
 
+# 🔴 探测逻辑的**单一来源**（见 ERRORS E28）
+import importlib.util as _ilu
+_spec = _ilu.spec_from_file_location(
+    '_gen_ai_contract', os.path.join(GATE_DIR, 'gen-ai-contract.py'))
+_mod = _ilu.module_from_spec(_spec)
+_spec.loader.exec_module(_mod)
+_dedicated_gates = _mod.dedicated_gates
+
 LADDER = ('alpha', 'beta', 'stable')
 RE_ISCLASS = re.compile(r'\.is-([a-z0-9-]+)')
 
@@ -111,12 +119,13 @@ def recompute(c):
     cdir = os.path.dirname(css_path) if css_path else None
 
     has_demo = bool(cdir) and os.path.isfile(os.path.join(cdir, 'demo.html'))
-    stem = c['id'].replace('-', '')
-    has_gate = bool(cdir) and any(
-        (f.startswith(c['id']) or f.startswith(stem))
-        and f.endswith(('.js', '.py'))
-        and ('check' in f or 'contract' in f or 'geometry' in f)
-        for f in (os.listdir(GATE_DIR) if os.path.isdir(GATE_DIR) else []))
+    # 🔴 门禁探测复用 gen-ai-contract 的**同一份实现**，不各写一份。
+    #    原来这里另写了一份「脚本文件名以组件名开头」的探测 ⇒ 两份逻辑漂移：
+    #    实测认不出 `chart-check.js` 覆盖 `bar`，于是同一组件在契约里是 stable、
+    #    在这里重算是 alpha ⇒ 两道门禁互相打架（ERRORS E28）。
+    css_parts = css_rel.split('/') if css_rel else []
+    layer_dir = css_parts[0] if css_parts else ''
+    has_gate = bool(cdir) and bool(_dedicated_gates(c['id'], layer_dir))
     legacy = sorted(set(RE_ISCLASS.findall(
         io.open(css_path, encoding='utf-8', errors='ignore').read()))) if css_path else []
     i8_ok = not legacy

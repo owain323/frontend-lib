@@ -162,6 +162,57 @@ def first(d, *names):
     return None
 
 
+def dedicated_gates(cid, layer_dir):
+    """专属门禁探测 —— **单一来源**（maturity-gate.py 也用它）。
+
+    🔴 为什么必须是单一来源：原来 gen-ai-contract 与 maturity-gate 各写一份
+       「脚本文件名以组件名开头」的探测，两份逻辑必然漂移 ——
+       实测：maturity-gate 那份认不出 `chart-check.js` 覆盖 `bar`，
+       于是同一组件在契约里是 stable、在重算里是 alpha，两道门禁互相打架。
+
+    两种认法都要有（见 E28）：
+      ① 脚本文件名以组件名开头（`bar-check.js`）
+      ② 脚本用**清单变量**声明覆盖谁（`const CHART_DIRS = ['09-assets/bar', ...]`）
+    ⚠️ ② 只认清单变量，不认"文件里任何位置出现过该路径"——
+       `const BAR_URL = '.../09-assets/bar/demo.html'` 这类**用到的地址**
+       会让判据永久为真、门禁被架空（见 E29）。
+    """
+    gate_dir = os.path.join(ROOT, '05-audit')
+    if not os.path.isdir(gate_dir):
+        return []
+    stem = cid.replace('-', '')
+    named = [f for f in os.listdir(gate_dir)
+             if (f.startswith(cid) or f.startswith(stem))
+             and f.endswith(('.js', '.py'))
+             and ('check' in f or 'contract' in f or 'geometry' in f)]
+    declared = []
+    self_name = os.path.basename(os.path.abspath(__file__))
+    needle = "'%s/%s'" % (layer_dir, cid)
+    # ⚠️ 这里**故意不用词边界**：heredoc 逐层转义会把它变成退格符 0x08，
+    #   正则永不匹配而文件看着完全正常（本轮真踩过，排查了很久）。
+    #   改用「左括号 + 空白 + 引号路径」的形状，字符更少、更不容易被转义。
+    pat = re.compile(
+        r'(?<![A-Za-z0-9_])[A-Z][A-Z0-9_]*'
+        r'(?:_DIRS|_COMPONENTS|_COVERED|_LIST)'
+        r'[ 	]*=[ 	]*\[[^\]]*?' + re.escape(needle) + r'(?=[,\s\]])',
+        re.S)
+    for f in sorted(os.listdir(gate_dir)):
+        if f == self_name or f in named:
+            continue
+        if not f.endswith(('.js', '.py')):
+            continue
+        if 'check' not in f and 'contract' not in f and 'geometry' not in f:
+            continue
+        try:
+            src = io.open(os.path.join(gate_dir, f), encoding='utf-8',
+                          errors='replace').read()
+        except Exception:
+            continue
+        if pat.search(src):
+            declared.append(f)
+    return sorted(set(named) | set(declared))
+
+
 def scan_component(cid, cdir, tier, meta, layer_dir):
     css_path = first(cdir, cid + '.css')
     if css_path is None:
@@ -219,56 +270,7 @@ def scan_component(cid, cdir, tier, meta, layer_dir):
         if m:
             global_name = m.group(1)
 
-    # 专属门禁：05-audit 下有没有针对这个组件的检查脚本
-    gate_dir = os.path.join(ROOT, '05-audit')
-    stem = cid.replace('-', '')
-    # 🔴 一个脚本可能**同时覆盖多个组件**（`chart-check.js` 覆盖
-    #    sparkline / bar / model-viewer 三个）。所以除了「按组件名命名」，
-    #    还要认「脚本自己声明了它覆盖谁」—— 两种写法都要认，否则：
-    #      · 只认命名 ⇒ bar 被记成"没有专属门禁" ⇒ 成熟度掉到 alpha
-    #        （实测踩过：明明有 chart-check.js 在管它）
-    #      · 只认声明 ⇒ 改名时漏改声明，门禁静默失效
-    dedicated = sorted([
-        f for f in os.listdir(gate_dir)
-        if (f.startswith(cid) or f.startswith(stem))
-        and f.endswith(('.js', '.py'))
-        and ('check' in f or 'contract' in f or 'geometry' in f)
-    ]) if os.path.isdir(gate_dir) else []
-
-    # ---- 第二种认法：脚本用**显式清单变量**声明了它覆盖谁 ----
-    #🔴 认的是 `const XXX_DIRS = ['09-assets/bar', ...]` 这种**清单**，
-    #   不认"文件里任何位置出现过这个路径"。
-    #   为什么不认后者：`const BAR_URL = '.../09-assets/bar/demo.html'`
-    #   这类**用到的地址**会让判据永久为真 ⇒ 探测失效、门禁被架空。
-    #   实测踩过两次：
-    #     ① 任意位置匹配 ⇒ 把清单里的 bar 删了，判据仍认它有门禁（门禁被架空）
-    #     ② 只认「后面跟引号或斜杠」⇒ BAR_URL 里的 /demo.html 也命中 ⇒
-    #        基线就掉回 alpha（门禁形同虚设）
-    #   ⇒ 只有"清单变量里出现独立项"才算声明。
-    if not dedicated and os.path.isdir(gate_dir):
-        # ⚠️ 必须排除**本脚本自己**：它的注释里就写着 `'09-assets/bar'` 这个样例，
-        #   而它文件名含 "contract" ⇒ 会被当成一道门禁挂到组件上（实测踩过）。
-        SELF = os.path.basename(os.path.abspath(__file__))
-        needle = "'%s/%s'" % (layer_dir, cid)
-        pat = re.compile(
-            r'\b[A-Z][A-Z0-9_]*(?:_DIRS|_COMPONENTS|_COVERED|_LIST)\b'
-            r'\s*=\s*\[[^\]]*?' + re.escape(needle) + r'(?=[,\s\]])',
-            re.S)
-        for f in sorted(os.listdir(gate_dir)):
-            if f == SELF:
-                continue
-            if not f.endswith(('.js', '.py')):
-                continue
-            if 'check' not in f and 'contract' not in f and 'geometry' not in f:
-                continue
-            try:
-                src = io.open(os.path.join(gate_dir, f),
-                              encoding='utf-8', errors='replace').read()
-            except Exception:
-                continue
-            if pat.search(src):
-                dedicated.append(f)
-        dedicated = sorted(set(dedicated))
+    dedicated = dedicated_gates(cid, layer_dir)
 
     has_demo = demo_path is not None
     has_gate = len(dedicated) > 0

@@ -209,8 +209,8 @@
       "raw": 17277
     },
     "04-recipes/analysis-report/analysis-report.css": {
-      "gzip": 2101,
-      "raw": 5789
+      "gzip": 2109,
+      "raw": 5960
     },
     "04-recipes/report/report.css": {
       "gzip": 5210,
@@ -226,6 +226,6 @@
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 217115,
-  "total_raw": 567444
+  "total_gzip": 217123,
+  "total_raw": 567615
 }
