@@ -8,8 +8,8 @@
   ],
   "totals": {
     "sourceFiles": 56,
-    "sourceBytes": 554151,
-    "distGzip": 99538
+    "sourceBytes": 560375,
+    "distGzip": 99555
   },
   "files": [
     {
@@ -334,15 +334,15 @@
     },
     {
       "source": "02-primitives/date-range/date-range.css",
-      "sourceSha256": "057df7f56ccfb750590348c5cb5d843c2359182bd128fdcc6c5ca41a831915da",
-      "sourceBytes": 5416,
-      "sourceGzip": 1775,
+      "sourceSha256": "30a745e44aaafbcfa50f23e0b7c9551101ff3402da3a04ab7b96ecafbd933f48",
+      "sourceBytes": 6188,
+      "sourceGzip": 2248,
       "outputs": [
         {
           "path": "dist/02-primitives/date-range/date-range.css",
           "kind": "stripped",
-          "bytes": 3996,
-          "gzip": 924
+          "bytes": 3997,
+          "gzip": 925
         },
         {
           "path": "dist/02-primitives/date-range/date-range.min.css",
@@ -574,14 +574,14 @@
     },
     {
       "source": "03-patterns/content/content.css",
-      "sourceSha256": "28a8cd79e0dee194ab57498284c99000a2659e9bc42a399ebcd3368dd5fdb8fc",
-      "sourceBytes": 10089,
-      "sourceGzip": 4018,
+      "sourceSha256": "6d15ef37e109532e2e25672e430037ba2eca3556f0d77a207a191e87463ceba7",
+      "sourceBytes": 10949,
+      "sourceGzip": 4468,
       "outputs": [
         {
           "path": "dist/03-patterns/content/content.css",
           "kind": "stripped",
-          "bytes": 3824,
+          "bytes": 3826,
           "gzip": 1129
         },
         {
@@ -719,15 +719,15 @@
     },
     {
       "source": "03-patterns/nav/nav.css",
-      "sourceSha256": "ab9f2272daabd794f5cce9e4b2594765da0c3b8ef9716d73c82e4b6f131c6e81",
-      "sourceBytes": 11253,
-      "sourceGzip": 4032,
+      "sourceSha256": "f39a75aff6398b73c97e843e0086dad461014fc1638a7e77d1a50a0dad05b4b6",
+      "sourceBytes": 11763,
+      "sourceGzip": 4315,
       "outputs": [
         {
           "path": "dist/03-patterns/nav/nav.css",
           "kind": "stripped",
-          "bytes": 5664,
-          "gzip": 1427
+          "bytes": 5665,
+          "gzip": 1428
         },
         {
           "path": "dist/03-patterns/nav/nav.min.css",
@@ -949,35 +949,35 @@
     },
     {
       "source": "04-recipes/analysis-report/analysis-report.css",
-      "sourceSha256": "21f9cda13f39f7fcf200476e2c2cd8f61cf17aad417311c8d947bb3a97ae6aee",
-      "sourceBytes": 5789,
-      "sourceGzip": 2101,
+      "sourceSha256": "6e3fb31fb0f6afb1aa468f126e702ee24c66e74da135cb048034e7e7d6c5cd55",
+      "sourceBytes": 7150,
+      "sourceGzip": 2884,
       "outputs": [
         {
           "path": "dist/04-recipes/analysis-report/analysis-report.css",
           "kind": "stripped",
-          "bytes": 3673,
-          "gzip": 908
+          "bytes": 3575,
+          "gzip": 901
         },
         {
           "path": "dist/04-recipes/analysis-report/analysis-report.min.css",
           "kind": "minified",
-          "bytes": 3174,
-          "gzip": 831
+          "bytes": 3082,
+          "gzip": 818
         }
       ]
     },
     {
       "source": "04-recipes/report/report.css",
-      "sourceSha256": "d47af7823cf364386b25f34e901610ed67dc8becb5b75dd8a45385437f822dfd",
-      "sourceBytes": 13314,
-      "sourceGzip": 5191,
+      "sourceSha256": "1e4c3886a82fedd8fa8bf90759232f4af8c85c733496d6e9fd0bd835207a1c7e",
+      "sourceBytes": 13742,
+      "sourceGzip": 5419,
       "outputs": [
         {
           "path": "dist/04-recipes/report/report.css",
           "kind": "stripped",
-          "bytes": 4737,
-          "gzip": 1267
+          "bytes": 4738,
+          "gzip": 1268
         },
         {
           "path": "dist/04-recipes/report/report.min.css",
@@ -989,21 +989,21 @@
     },
     {
       "source": "04-recipes/table/table.css",
-      "sourceSha256": "f00d4d6821e4d04043d909d3b915826316116f6914b9c08a03501bf4594f440f",
-      "sourceBytes": 12997,
-      "sourceGzip": 4910,
+      "sourceSha256": "d428c8eaf3c9ad18a0d1ed8c2da054ac378ed0ef29ce445b4bece4a8a3b4e5a5",
+      "sourceBytes": 15290,
+      "sourceGzip": 5927,
       "outputs": [
         {
           "path": "dist/04-recipes/table/table.css",
           "kind": "stripped",
-          "bytes": 5757,
-          "gzip": 1519
+          "bytes": 5816,
+          "gzip": 1538
         },
         {
           "path": "dist/04-recipes/table/table.min.css",
           "kind": "minified",
-          "bytes": 4821,
-          "gzip": 1355
+          "bytes": 4863,
+          "gzip": 1370
         }
       ]
     },
