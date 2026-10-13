@@ -164,8 +164,17 @@
   }
 
   function headLabel(c) {
-    /* 标签与单位都来自列定义（外部数据）⇒ 都要 esc */
-    var u = c.unit ? ' <span class="table__unit">' + esc(c.unit) + '</span>' : '';
+    /* 标签与单位都来自列定义（外部数据）⇒ 都要 esc
+       🔴 括号由组件加，不要求调用方记得写（GB/T 7713.2 要求「名称(单位)」，
+          但让每个调用方自己记得加括号 = 迟早漏一处）。
+          已经带括号的（如「(标准误)」这类注记）不再套，避免双括号。 */
+    var u = '';
+    if (c.unit) {
+      var raw = String(c.unit);
+      var has = /^\(.*\)$/.test(raw.trim());
+      u = ' <span class="table__unit">'
+        + esc(has ? raw : '(' + raw + ')') + '</span>';
+    }
     return esc(c.label) + u;
   }
 
@@ -295,9 +304,12 @@
     { alloy: '2024-T3',  rt: [483, 19.8], h100: [421, 16.1], h150: [347, 12.2] }
   ];
   var GROUPS = [
-    { label: '室温（25 °C）', key: 'rt' },
-    { label: '时效 100 °C',   key: 'h100' },
-    { label: '时效 150 °C',   key: 'h150' }
+    /* 🔴 分组表头也是"量 + 温度条件"，按GB/T 7713.2「量的名称/单位符号」
+       统一成 `时效 (100 °C)`：原来三个写法三种样（全角括号 / 无括号 / 空格），
+       且 `white-space: nowrap` 之前让 `时效 100 °C` 在窄屏被折成两行。 */
+    { label: '室温 (25 °C)',   key: 'rt' },
+    { label: '时效 (100 °C)',  key: 'h100' },
+    { label: '时效 (150 °C)',  key: 'h150' }
   ];
 
   var a = '<div class="table table--academic"><table>' +
@@ -309,8 +321,8 @@
   });
   a += '</tr><tr>';
   GROUPS.forEach(function () {
-    a += '<th scope="col">抗拉强度 <span class="table__unit">MPa</span></th>' +
-         '<th scope="col">伸长率 <span class="table__unit">%</span></th>';
+    a += '<th scope="col">抗拉强度 <span class="table__unit">(MPa)</span></th>' +
+         '<th scope="col">伸长率 <span class="table__unit">(%)</span></th>';
   });
   a += '</tr></thead><tbody>';
 
