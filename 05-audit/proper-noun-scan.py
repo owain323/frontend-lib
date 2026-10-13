@@ -41,6 +41,11 @@ WHITELIST = {
     #   SubprocessError = TimeoutExpired / CalledProcessError 的基类
     'RuntimeError', 'ValueError', 'TypeError', 'KeyError', 'OSError',
     'SubprocessError', 'CalledProcessError', 'FileNotFoundError',
+    # Windows 公开 API / 错误码（2026-10-14补）
+    #   起因：修 shot-baseline.py 的 node 路径时在注释里写了
+    #   「直接丢给 CreateProcess 会 WinError 5」⇒ 被当成内部代号报红。
+    #   核实：两者都是 Windows 公开 API（进程创建 / 系统错误码），与内部代号无关。
+    'CreateProcess', 'WinError',
     # 协议 / 规范
     'HTTP', 'HTTPS', 'URL', 'URI', 'ARIA', 'WAI', 'APG', 'WCAG', 'CSS', 'HTML',
     'DOM', 'SVG', 'XML', 'JSON', 'YAML', 'TOML', 'API', 'REST', 'GraphQL',
