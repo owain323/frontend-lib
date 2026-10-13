@@ -67,12 +67,20 @@
 .report__main li + li { margin-top: var(--sp-1); }
 
 /* ---------- 关键发现区 ---------- */
+/* 🔴 关键发现：竖条 → 淡色底 + 圆角（0.8.4 · 统一竖条政策）
+   原来这里是 `border-inline-start: 3px solid var(--accent)`，
+   而全库另外三处（typography / form-validation / overlay）**都已经删掉竖条**，
+   理由写在各自的注释里：
+     ① 竖条在页面上拉出一条**与内容无关的硬边**，视觉噪声大于信息量
+     ② 真实产品（GitHub callout / Vercel / Stripe）都是纯底色 + 圆角
+   ⇒ 这个组件是"该次清理漏掉的原始设计"，不是有意为之的特例。
+   颜色没有被丢掉，只是**从竖条转移进底色**（info-bg），语义强度不变。
+   ⚠️ 顺带修一个性质差异：原来用的 `border-inline-start`（逻辑属性，RTL 自动镜像）
+      已不需要—— 因为不再有竖条。 */
 .kf {
   margin: var(--sp-4) 0;
   padding: var(--sp-4);
-  background: var(--surface-raised);
-  border: 1px solid var(--border-decor);
-  border-inline-start: 3px solid var(--accent);
+  background: var(--info-bg);
   border-radius: var(--r-md);
 }
 .kf__title {
@@ -86,10 +94,18 @@
 .kf strong { color: var(--text-primary); }
 
 /* ---------- 引用块 ---------- */
+/* 🔴 引语块：竖条保留但降级（0.8.4 · 统一竖条政策）
+   引语块是**唯一**竖条有语义的地方 —— 竖条标记"这是别人说的话"，
+   是内容属性不是装饰（学术排版里这个惯例也很稳）。
+   但它原来用 `var(--border-decor-str)`，对比度太弱、存在感太轻，
+   读者会以为这是普通段落的缩进。
+   ⇒ 改用`--border-decor`（明确的分隔线色）+ 保留逻辑属性（RTL 自动镜像）。
+   ⚠️ 这条是**本库唯一保留的竖条**，理由已写在这里；
+      以后新增竖条必须同样写明"为什么它不是装饰"。 */
 .report__quote {
   margin: var(--sp-4) 0;
   padding: var(--sp-3) var(--sp-4);
-  border-inline-start: 3px solid var(--border-decor-str);
+  border-inline-start: 3px solid var(--border-decor);
   color: var(--text-secondary);
   font-style: italic;
 }

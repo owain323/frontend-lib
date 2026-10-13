@@ -113,11 +113,22 @@ VIEWPORT = (393, 852)      # iPhone 尺寸：移动端是这个尺寸
 
 def _which_node():
     """找 managed node（与其它门禁同一套）"""
+    # 🔴 原来这里写的是字面量 '${HOME}/.toolchain/...'（**没做变量展开**）
+    #    ⇒ 这个候选永远不存在，直接掉到系统 node；
+    #    而系统 node 上没有 puppeteer ⇒ 一张截图都截不出来 ⇒
+    #    视觉回归「未执行」但看不出是环境问题（E35）。
+    #⇒ 用 os.path.expanduser 真正展开，并额外认 NODE_DIR 环境变量。
+    home = os.path.expanduser('~')
+    nd = os.environ.get('NODE_DIR', '')
     cands = [
-        r'${HOME}/.toolchain\binaries\node\versions\22.17.0\node.exe',
+        # ⚠️ NODE_DIR 可能是**目录**（check-all.sh 里就是这么传的），
+        #    直接丢给 CreateProcess 会 WinError 5 ⇒ 这里补上 node.exe
+        os.path.join(nd, 'node.exe') if nd else '',
+        os.path.join(home, '.toolchain', 'binaries', 'node',
+                     'versions', '22.17.0', 'node.exe'),
     ]
     for c in cands:
-        if os.path.exists(c):
+        if c and os.path.exists(c):
             return c
     return shutil.which('node') or shutil.which('node.exe')
 
@@ -384,8 +395,13 @@ def shoot(outdir):
         env = dict(os.environ)
         # 🔴 并把browser.js 的绝对路径传进去，避免子进程 CWD 不确定
         env['FL_BROWSER'] = os.path.join(ROOT, '05-audit', 'browser.js')
-        env['NODE_PATH'] = os.path.join(ROOT, 'node_modules') + \
-            os.pathsep + env.get('NODE_PATH', '')
+        # ⚠️ 必须把 NODE_MODULES 也接上：check-all.sh 用**它**传受管目录，
+        #    而本脚本原先只认本地 node_modules ⇒ 受管环境下 puppeteer 找不到
+        #    ⇒ 截 0 张却只报「未执行」，看不出是路径问题（E35）。
+        env['NODE_PATH'] = os.pathsep.join(
+            [p for p in (env.get('NODE_MODULES', ''),
+                         os.path.join(ROOT, 'node_modules'),
+                         env.get('NODE_PATH', '')) if p])
         r = subprocess.run([node, tmp_js, tmp_jsn], capture_output=True,
                            timeout=300, env=env, cwd=ROOT)
         os.remove(tmp_js)

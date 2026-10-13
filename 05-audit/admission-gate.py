@@ -269,6 +269,74 @@ def chk_in_contract():
             'what': '每个组件都在契约里登记（⑩）'}
 
 
+def chk_accent_bar_justified():
+    """🔴 每个竖条都必须写明「为什么它不是装饰」（0.8.4 新增）
+
+    背景：本库在 0.4.x 前后删过三处竖条（`.note` / `.form__summary` /
+    `.overlay`），理由统一是「竖条是与内容无关的硬边，视觉噪声大于信息量」，
+    而真实产品（GitHub callout / Vercel / Stripe）都是纯底色 + 圆角。
+    但 `.kf`（关键发现）**漏掉了**，一直到 0.8.4 才被补上——
+    于是同一个库里同时存在「竖条政策」和「没遵守政策的地方」。
+
+    ⇒ 这条判据防的就是"又长出一根没经过论证的竖条"。
+
+    ⚠️ 扫的是**逻辑属性别名**（border-inline-start等），
+       不是只扫 border-left —— 只扫后者会得出「库里没有竖条」的**错误结论**
+       （本轮真踩过，见 ERRORS E34）。
+
+    判据：竖条所在行的**往上 12 行内**必须出现「为什么」的说明
+    （理由类词汇）。没有 ⇒ 报红。
+    """
+    BARS = ('border-inline-start', 'border-inline-end',
+            'border-left', 'border-right')
+    NEWLINE = chr(10)          # 🔴 不用 '\n' 字面量：写经shell 时会被吃掉
+    WHY = ('唯一', '语义', '内容属性', '不是装饰', '标记', '引语', '引用',
+           '为什么', '理由', '保留')
+    undoc, total = [], 0
+    for d in COMPONENT_DIRS:
+        for sub in sorted(glob.glob(os.path.join(ROOT, d, '*'))):
+            if not os.path.isdir(sub):
+                continue
+            for f in sorted(glob.glob(os.path.join(sub, '*.css'))):
+                try:
+                    lines = io.open(f, encoding='utf-8',
+                                    errors='replace').read().splitlines()
+                except Exception:
+                    continue
+                for i, ln in enumerate(lines):
+                    s = ln.strip()
+                    if not s.startswith('border-'):
+                        continue
+                    if not any(s.startswith(b + ':') for b in BARS):
+                        continue
+                    if 'solid' not in s and 'dashed' not in s:
+                        continue
+                    # 🔴 只管**强调竖条**，不管这三类：
+                    #   · 1px 的普通分隔线（drawer / nav 那些是分隔线，不是强调竖条）
+                    #   · transparent（占位，防抖动用的空边框）
+                    #   · 没有明确 px 宽度
+                    if 'transparent' in s or 'none' in s:
+                        continue
+                    #🔴 排除**旋转成箭头**的写法：某个元素用两条边 + rotate
+                    #   拼出箭头（accordion 的 marker 就是 `border-inline-end` +
+                    #   `border-bottom` + rotate(45deg)）。
+                    #   那不是竖条，是图形的一部分 —— 本轮真误报过一次。
+                    if re.search(r'transform:\s*rotate',NEWLINE.join(
+                            lines[i:min(len(lines), i + 6)])):
+                        continue
+                    m_w = re.search(r':\s*(\d+)px', s)
+                    if not m_w or int(m_w.group(1)) < 2:
+                        continue
+                    total += 1
+                    ctx = NEWLINE.join(lines[max(0, i - 12):i + 1])
+                    if not any(w in ctx for w in WHY):
+                        undoc.append('%s:%d%s' % (
+                            os.path.relpath(f, ROOT).replace(os.sep, '/'),
+                            i + 1, s))
+    return {'ok': not undoc, 'n': total, 'missing': undoc,
+            'what': '每根竖条都写明了「为什么它不是装饰」（⑪）'}
+
+
 CHECKS = [
     chk_charter_exists,
     chk_missing_demo,
@@ -278,6 +346,7 @@ CHECKS = [
     chk_no_stopprop_missing,
     chk_missing_readme,
     chk_in_contract,
+    chk_accent_bar_justified,
 ]
 
 
