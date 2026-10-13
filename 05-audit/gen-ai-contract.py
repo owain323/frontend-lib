@@ -80,7 +80,15 @@ SCAN = [
     ('02-primitives', 'primitive'),
     ('03-patterns', 'pattern'),
     ('04-recipes', 'recipe'),
+    # 🔴 09-assets 整层原先不在契约里（0.8.3 补）
+    #   ⇒ AI 入口看不到这一层，问"这库有没有图表"得到的答案是"没有"。
+    #   与 0.8.1 那次「根 START-HERE 漏 11 个组件」是同一类病，只是漏了整整一层。
+    ('09-assets', 'asset'),
 ]
+
+# 🔴 契约里出现的 tier 必须都在这里登记 —— byTier 统计只认这张表。
+#   少一个 ⇒ 契约里那一档计数恒为 0，且没人会发现（这正是本条存在的意义）。
+ALL_TIERS = ('primitive', 'pattern', 'recipe', 'asset')
 
 # ---------------------------------------------------------------- 抽取正则
 RE_ELEMENT = re.compile(r'\.([A-Za-z][A-Za-z0-9-]*)__([A-Za-z0-9-]+)')
@@ -154,7 +162,7 @@ def first(d, *names):
     return None
 
 
-def scan_component(cid, cdir, tier, meta):
+def scan_component(cid, cdir, tier, meta, layer_dir):
     css_path = first(cdir, cid + '.css')
     if css_path is None:
         cands = [f for f in os.listdir(cdir) if f.endswith('.css')]
@@ -214,12 +222,53 @@ def scan_component(cid, cdir, tier, meta):
     # 专属门禁：05-audit 下有没有针对这个组件的检查脚本
     gate_dir = os.path.join(ROOT, '05-audit')
     stem = cid.replace('-', '')
+    # 🔴 一个脚本可能**同时覆盖多个组件**（`chart-check.js` 覆盖
+    #    sparkline / bar / model-viewer 三个）。所以除了「按组件名命名」，
+    #    还要认「脚本自己声明了它覆盖谁」—— 两种写法都要认，否则：
+    #      · 只认命名 ⇒ bar 被记成"没有专属门禁" ⇒ 成熟度掉到 alpha
+    #        （实测踩过：明明有 chart-check.js 在管它）
+    #      · 只认声明 ⇒ 改名时漏改声明，门禁静默失效
     dedicated = sorted([
         f for f in os.listdir(gate_dir)
         if (f.startswith(cid) or f.startswith(stem))
         and f.endswith(('.js', '.py'))
         and ('check' in f or 'contract' in f or 'geometry' in f)
     ]) if os.path.isdir(gate_dir) else []
+
+    # ---- 第二种认法：脚本用**显式清单变量**声明了它覆盖谁 ----
+    #🔴 认的是 `const XXX_DIRS = ['09-assets/bar', ...]` 这种**清单**，
+    #   不认"文件里任何位置出现过这个路径"。
+    #   为什么不认后者：`const BAR_URL = '.../09-assets/bar/demo.html'`
+    #   这类**用到的地址**会让判据永久为真 ⇒ 探测失效、门禁被架空。
+    #   实测踩过两次：
+    #     ① 任意位置匹配 ⇒ 把清单里的 bar 删了，判据仍认它有门禁（门禁被架空）
+    #     ② 只认「后面跟引号或斜杠」⇒ BAR_URL 里的 /demo.html 也命中 ⇒
+    #        基线就掉回 alpha（门禁形同虚设）
+    #   ⇒ 只有"清单变量里出现独立项"才算声明。
+    if not dedicated and os.path.isdir(gate_dir):
+        # ⚠️ 必须排除**本脚本自己**：它的注释里就写着 `'09-assets/bar'` 这个样例，
+        #   而它文件名含 "contract" ⇒ 会被当成一道门禁挂到组件上（实测踩过）。
+        SELF = os.path.basename(os.path.abspath(__file__))
+        needle = "'%s/%s'" % (layer_dir, cid)
+        pat = re.compile(
+            r'\b[A-Z][A-Z0-9_]*(?:_DIRS|_COMPONENTS|_COVERED|_LIST)\b'
+            r'\s*=\s*\[[^\]]*?' + re.escape(needle) + r'(?=[,\s\]])',
+            re.S)
+        for f in sorted(os.listdir(gate_dir)):
+            if f == SELF:
+                continue
+            if not f.endswith(('.js', '.py')):
+                continue
+            if 'check' not in f and 'contract' not in f and 'geometry' not in f:
+                continue
+            try:
+                src = io.open(os.path.join(gate_dir, f),
+                              encoding='utf-8', errors='replace').read()
+            except Exception:
+                continue
+            if pat.search(src):
+                dedicated.append(f)
+        dedicated = sorted(set(dedicated))
 
     has_demo = demo_path is not None
     has_gate = len(dedicated) > 0
@@ -454,7 +503,7 @@ def build():
                 raise SystemExit(
                     '[FAIL] 目录 %s/%s 有 CSS，但 components.meta.json 里没有它 —— '
                     '新组件必须先登记' % (rel, cid))
-            comps.append(scan_component(cid, d, tier, metas[cid]))
+            comps.append(scan_component(cid, d, tier, metas[cid], rel))
 
     extra = sorted(set(metas) - seen)
     if extra:
@@ -481,7 +530,7 @@ def build():
             'total': len(comps),
             'byMaturity': summary,
             'byTier': {t: sum(1 for c in comps if c['tier'] == t)
-                       for t in ('primitive', 'pattern', 'recipe')},
+                       for t in ALL_TIERS},
         },
         'components': comps,
     }

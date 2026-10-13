@@ -12,18 +12,221 @@
     "$strictImpact": "⚠️ strict 档位只放行 stable ⇒ 这 7 个组件在 strict 下不可用（accordion / combobox / drawer / dropdown / overlay / select / tooltip）。这是**有意的**：它们的行为还有手写副本或缺一个该有的行为。要用就切 standard 档。"
   },
   "summary": {
-    "total": 29,
+    "total": 33,
     "byMaturity": {
-      "beta": 7,
-      "stable": 22
+      "stable": 26,
+      "beta": 7
     },
     "byTier": {
       "primitive": 13,
       "pattern": 13,
-      "recipe": 3
+      "recipe": 3,
+      "asset": 4
     }
   },
   "components": [
+    {
+      "id": "bar",
+      "tier": "asset",
+      "purpose": "柱状图（charter 13 图表规范）：堆叠/分组两种语义、超量程裁剪、图例",
+      "rootClass": "bar",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true,
+        "behaviorDebt": []
+      },
+      "gates": [
+        "chart-check.js"
+      ],
+      "files": {
+        "css": "09-assets/bar/bar.css",
+        "js": "09-assets/bar/bar.js",
+        "demo": "09-assets/bar/demo.html"
+      },
+      "slots": [
+        "bar__bar",
+        "bar__grid",
+        "bar__label",
+        "bar__label--clip",
+        "bar__label--max",
+        "bar__legend",
+        "bar__legend-item",
+        "bar__legend-swatch",
+        "bar__note",
+        "bar__s0",
+        "bar__s1",
+        "bar__s2",
+        "bar__s3",
+        "bar__s4",
+        "bar__svg",
+        "bar__threshold",
+        "bar__xlabel",
+        "bar__ytick"
+      ],
+      "variants": [],
+      "states": {
+        "enum": {
+          "clipped": [
+            "1"
+          ]
+        },
+        "boolean": [],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [],
+        "attrs": []
+      },
+      "usesOtherNamespaces": [],
+      "global": "Bar",
+      "behaviorRef": "API.md#bar"
+    },
+    {
+      "id": "model-viewer",
+      "tier": "asset",
+      "purpose": "3D 模型查看器：令牌驱动样式，不含渲染库本体",
+      "rootClass": "mv",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true,
+        "behaviorDebt": []
+      },
+      "gates": [
+        "model-viewer-contract.js"
+      ],
+      "files": {
+        "css": "09-assets/model-viewer/model-viewer.css",
+        "js": "09-assets/model-viewer/model-viewer.js",
+        "demo": "09-assets/model-viewer/demo.html"
+      },
+      "slots": [
+        "mv__btn",
+        "mv__cap",
+        "mv__err",
+        "mv__hint",
+        "mv__ph",
+        "mv__stage",
+        "mv__stage--err",
+        "mv__status"
+      ],
+      "variants": [],
+      "states": {
+        "enum": {},
+        "boolean": [],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [],
+        "attrs": []
+      },
+      "usesOtherNamespaces": [],
+      "global": "ModelViewer",
+      "behaviorRef": "API.md#model-viewer"
+    },
+    {
+      "id": "scientific-plot",
+      "tier": "asset",
+      "purpose": "二维科学绘图：折线/区间带/对数轴，纯令牌驱动、零依赖",
+      "rootClass": "splot",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true,
+        "behaviorDebt": []
+      },
+      "gates": [
+        "scientific-plot-check.js"
+      ],
+      "files": {
+        "css": "09-assets/scientific-plot/scientific-plot.css",
+        "js": "09-assets/scientific-plot/scientific-plot.js",
+        "demo": "09-assets/scientific-plot/demo.html"
+      },
+      "slots": [
+        "splot__anno",
+        "splot__anno-dot",
+        "splot__axis",
+        "splot__axis-label",
+        "splot__band",
+        "splot__err",
+        "splot__grid",
+        "splot__legend",
+        "splot__legend-item",
+        "splot__legend-mark",
+        "splot__line",
+        "splot__note",
+        "splot__pt",
+        "splot__ref",
+        "splot__ref-label",
+        "splot__s0",
+        "splot__s1",
+        "splot__s2",
+        "splot__s3",
+        "splot__s4",
+        "splot__tick",
+        "splot__tick-label"
+      ],
+      "variants": [],
+      "states": {
+        "enum": {},
+        "boolean": [],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [
+          "img"
+        ],
+        "attrs": [
+          "hidden",
+          "label"
+        ]
+      },
+      "usesOtherNamespaces": [],
+      "global": "ScientificPlot",
+      "behaviorRef": "API.md#scientific-plot"
+    },
+    {
+      "id": "sparkline",
+      "tier": "asset",
+      "purpose": "迷你趋势图：无坐标轴、纯形状，适合表格内嵌的一行走势",
+      "rootClass": "sparkline",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true,
+        "behaviorDebt": []
+      },
+      "gates": [
+        "sparkline-contract.js"
+      ],
+      "files": {
+        "css": "09-assets/sparkline/sparkline.css",
+        "js": "09-assets/sparkline/sparkline.js",
+        "demo": "09-assets/sparkline/demo.html"
+      },
+      "slots": [],
+      "variants": [],
+      "states": {
+        "enum": {},
+        "boolean": [],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [
+          "img"
+        ],
+        "attrs": []
+      },
+      "usesOtherNamespaces": [],
+      "global": "Chart",
+      "behaviorRef": "API.md#sparkline"
+    },
     {
       "id": "accordion",
       "tier": "pattern",

@@ -60,6 +60,13 @@
 | 列表增删 | `03-patterns/list/list.css` | 162 | 可选 201 (`flip.js`，FLIP 增删动画，纯增强) | 列表会动态增删就要 |
 | 导航 / 目录 | `03-patterns/nav/nav.css` | 299 | 可选 111 (`toc.js`，自动生成目录，纯增强) | 顶部要导航，或长文要目录就要 |
 | 长文排版 | `03-patterns/content/content.css` | 270 | — | 写文档 / 长文就要 |
+| analysis-report | `04-recipes/analysis-report/analysis-report.css` | 171 | — |  |
+| report | `04-recipes/report/report.css` | 321 | — |  |
+| table | `04-recipes/table/table.css` | 333 | — |  |
+| bar | `09-assets/bar/bar.css` | 166 | **必需 309** (`bar.js`) |  |
+| model-viewer | `09-assets/model-viewer/model-viewer.css` | 143 | **必需 422** (`model-viewer.js`) |  |
+| scientific-plot | `09-assets/scientific-plot/scientific-plot.css` | 141 | **必需 610** (`scientific-plot.js`) |  |
+| sparkline | `09-assets/sparkline/sparkline.css` | 158 | **必需 507** (`sparkline.js`) |  |
 
 ### 🔴 这些组件的 JS 是**必需的**（不是增强）
 
@@ -79,6 +86,10 @@
 | 树形 | `tree.js` | 键盘 ✓ · ARIA ✓ · 焦点 ✓ |
 | 侧边抽屉 | `drawer.js` | 键盘 ✓ · ARIA ✓ · 焦点 ✓ |
 | 弹窗 / 吐司 | `overlay.js` | 键盘 ✓ · ARIA ✓ · 焦点 ✓ |
+| bar | `bar.js` | 键盘 — · ARIA ✓ · 焦点 — |
+| model-viewer | `model-viewer.js` | 键盘 — · ARIA — · 焦点 — |
+| scientific-plot | `scientific-plot.js` | 键盘 — · ARIA ✓ · 焦点 — |
+| sparkline | `sparkline.js` | 键盘 — · ARIA ✓ · 焦点 — |
 
 **已经人工验证过后果的三条**（其余的按上表推断，不要凭印象写后果）：
 
