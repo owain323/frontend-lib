@@ -1,6 +1,6 @@
 {
   "name": "frontend-lib",
-  "version": "0.8.6",
+  "version": "0.8.7",
   "description": "移动 Web 组件库：CSS + 可选行为脚本，零第三方运行时依赖。样式用 bundler 引入，交互行为用 script 标签引入。",
   "keywords": [
     "css",
@@ -48,7 +48,7 @@
     "*.js"
   ],
   "scripts": {
-    "test": "node --test 05-audit/unit.test.mjs",
+    "test": "node --test 05-audit/unit.test.mjs 05-audit/behavior-cores.test.mjs",
     "gate": "bash 05-audit/check-all.sh",
     "gate:fast": "MODE=fast bash 05-audit/check-all.sh",
     "gate:timing": "TIMING=/tmp/gate-timing.txt bash 05-audit/check-all.sh",
