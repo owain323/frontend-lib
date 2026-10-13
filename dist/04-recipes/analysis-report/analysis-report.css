@@ -55,12 +55,11 @@
 .report__main li + li { margin-top: var(--sp-1); }
 
 
+
 .kf {
   margin: var(--sp-4) 0;
   padding: var(--sp-4);
-  background: var(--surface-raised);
-  border: 1px solid var(--border-decor);
-  border-inline-start: 3px solid var(--accent);
+  background: var(--info-bg);
   border-radius: var(--r-md);
 }
 .kf__title {
@@ -74,10 +73,11 @@
 .kf strong { color: var(--text-primary); }
 
 
+
 .report__quote {
   margin: var(--sp-4) 0;
   padding: var(--sp-3) var(--sp-4);
-  border-inline-start: 3px solid var(--border-decor-str);
+  border-inline-start: 3px solid var(--border-decor);
   color: var(--text-secondary);
   font-style: italic;
 }

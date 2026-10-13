@@ -14,8 +14,8 @@
   "summary": {
     "total": 33,
     "byMaturity": {
-      "stable": 26,
-      "beta": 7
+      "stable": 28,
+      "beta": 5
     },
     "byTier": {
       "primitive": 13,
@@ -388,7 +388,6 @@
         "hasDedicatedGate": true,
         "statesOnDomAttributes": true,
         "behaviorDebt": [
-          "focus-return:manual",
           "typeahead:gap"
         ]
       },
@@ -605,8 +604,7 @@
         "hasDedicatedGate": true,
         "statesOnDomAttributes": true,
         "behaviorDebt": [
-          "dismissable:manual",
-          "focus-return:manual"
+          "dismissable:manual"
         ]
       },
       "gates": [
@@ -821,15 +819,12 @@
       "tier": "pattern",
       "purpose": "悬停/聚焦提示",
       "rootClass": "tooltip",
-      "maturity": "beta",
+      "maturity": "stable",
       "maturityReasons": {
         "hasDemo": true,
         "hasDedicatedGate": true,
         "statesOnDomAttributes": true,
-        "behaviorDebt": [
-          "dismissable:manual",
-          "focus-return:manual"
-        ]
+        "behaviorDebt": []
       },
       "gates": [
         "tooltip-check.js"
@@ -1402,15 +1397,12 @@
       "tier": "primitive",
       "purpose": "自定义下拉选择（非原生）",
       "rootClass": "select",
-      "maturity": "beta",
+      "maturity": "stable",
       "maturityReasons": {
         "hasDemo": true,
         "hasDedicatedGate": true,
         "statesOnDomAttributes": true,
-        "behaviorDebt": [
-          "dismissable:manual",
-          "focus-return:manual"
-        ]
+        "behaviorDebt": []
       },
       "gates": [
         "select-check.js"

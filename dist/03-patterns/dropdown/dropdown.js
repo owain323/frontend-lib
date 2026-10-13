@@ -101,6 +101,38 @@ if (container) container.removeEventListener('keydown', onKey);
 };
 };
 
+var flFocusReturn = function (opts) {
+var opt = opts || {};
+var saved = null;
+
+return {
+save: function () {
+var a = document.activeElement;
+saved = (a && a !== document.body && a.focus) ? a : null;
+return saved;
+},
+
+restore: function () {
+var target = saved;
+
+if (!target || !document.contains(target)) target = opt.fallback || null;
+if (!target) { saved = null; return false; }
+try {
+target.focus();
+} catch (e) {
+saved = null;
+return false;
+}
+var ok = document.activeElement === target;
+saved = null;
+return ok;
+},
+
+target: function () { return saved; },
+clear: function () { saved = null; },
+};
+};
+
 var flDismissable = function (opts) {
 var opt = opts || {};
 var escOn = opt.escOn || [];
@@ -201,6 +233,8 @@ opt = opt || {};
 var btn = root.querySelector('[data-dd-btn]') || root.querySelector('button');
 var menu = root.querySelector('[data-dd-menu]');
 if (!btn || !menu) throw new Error('dropdown: 缺少 [data-dd-btn] 或 [data-dd-menu]');
+
+var fr = flFocusReturn({ fallback: btn });
 var active = -1;
 
 menu.setAttribute('role', 'menu');
@@ -224,6 +258,8 @@ li.setAttribute('tabindex', '-1');
 });
 
 function open() {
+
+fr.save();
 menu.hidden = false;
 btn.setAttribute('aria-expanded', 'true');
 active = -1;
@@ -236,7 +272,7 @@ function close(restoreFocus) {
 menu.hidden = true;
 btn.setAttribute('aria-expanded', 'false');
 active = -1;
-if (restoreFocus !== false && document.contains(btn)) btn.focus();
+if (restoreFocus !== false) fr.restore();
 flEmit(root, 'fl-close', null);
 if (opt.onClose) opt.onClose();
 }

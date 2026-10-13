@@ -21,6 +21,100 @@
 (function (global) {
   'use strict';
 
+  /* ==== BEHAVIOR INJECT BEGIN: dismissable ==== */
+  var flDismissable = function (opts) {
+    var opt = opts || {};
+    var escOn = opt.escOn || [];
+    var inside = opt.inside || [];
+    var when = opt.when || function () { return true; };
+    var onDismiss = opt.onDismiss || function () {};
+
+    var shared = window.__flDismiss || (window.__flDismiss = { stack: [], bound: false });
+
+    function isInside(node) {
+      if (!node) return false;
+      for (var i = 0; i < inside.length; i++) {
+        var el = inside[i];
+        if (!el || !el.contains) continue;
+        if (el === node || el.contains(node)) return true;
+      }
+      return false;
+    }
+
+    function onKey(e) {
+      if (!when()) return;
+      var k = e.key;
+      if (k !== 'Escape' && k !== 'Esc' && e.keyCode !== 27) return;
+      if (e.preventDefault) e.preventDefault();
+      if (e.stopPropagation) e.stopPropagation();
+      onDismiss(e, 'esc');
+    }
+
+    function onDocClick(e) {
+      var top = null;
+      for (var i = shared.stack.length - 1; i >= 0; i--) {
+        if (shared.stack[i].when()) { top = shared.stack[i]; break; }
+      }
+      if (!top || top.isInside(e.target)) return;
+      top.onDismiss(e, 'outside');
+    }
+
+    var rec = { when: when, isInside: isInside, onDismiss: onDismiss };
+
+    for (var j = 0; j < escOn.length; j++) {
+      if (escOn[j]) escOn[j].addEventListener('keydown', onKey);
+    }
+    shared.stack.push(rec);
+    if (!shared.bound) {
+      shared.bound = true;
+      document.addEventListener('click', onDocClick, true);
+    }
+
+    return {
+      destroy: function () {
+        for (var j = 0; j < escOn.length; j++) {
+          if (escOn[j]) escOn[j].removeEventListener('keydown', onKey);
+        }
+        var k = shared.stack.indexOf(rec);
+        if (k >= 0) shared.stack.splice(k, 1);
+      },
+    };
+  };
+  /* ==== BEHAVIOR INJECT END: dismissable ==== */
+  /* ==== BEHAVIOR INJECT BEGIN: focus-return ==== */
+  var flFocusReturn = function (opts) {
+    var opt = opts || {};
+    var saved = null;
+
+    return {
+      save: function () {
+        var a = document.activeElement;
+        saved = (a && a !== document.body && a.focus) ? a : null;
+        return saved;
+      },
+
+      restore: function () {
+        var target = saved;
+        /* ⚠️ 见文档 ②：不判 contains 的话，元素被移除后 focus() 不报错
+           但焦点不动 ⇒ 用户以为还回去了，其实掉在 body 上。 */
+        if (!target || !document.contains(target)) target = opt.fallback || null;
+        if (!target) { saved = null; return false; }
+        try {
+          target.focus();
+        } catch (e) {
+          saved = null;
+          return false;
+        }
+        var ok = document.activeElement === target;
+        saved = null;   /* 见文档 ③ */
+        return ok;
+      },
+
+      target: function () { return saved; },
+      clear: function () { saved = null; },
+    };
+  };
+  /* ==== BEHAVIOR INJECT END: focus-return ==== */
   /* ==== BEHAVIOR INJECT BEGIN: typeahead ==== */
   var flTypeahead = function (opts) {
     var opt = opts || {};
@@ -150,6 +244,28 @@
     var btn = root.querySelector('[data-select-btn]');
     var list = root.querySelector('[data-select-list]');
     if (!btn || !list) throw new Error('Select: 缺少 [data-select-btn] 或 [data-select-list]');
+
+    /* 焦点归位核：open() 时save() 记住焦点、close() 时按参数 restore()。
+       原先是 close() 里直接 btn.focus() —— 那是**无条件**归位，
+       而 close(false) 的调用场景（选完就走的场景）本意就是不夺焦点。
+       核的语义是「记了才还」，正好把「打开时记、关闭时还」讲清楚。 */
+    var fr = flFocusReturn({ fallback: btn });
+
+    /* 「关得掉」核：Esc + 点外部。收编解决两个实际问题：
+       ① 原来的 document click 是**冒泡阶段**判定 ⇒ 点在按钮上但事件仍会
+          继续冒泡，容易出现「刚打开就被自己那一下点关掉」；
+       ② Esc 的 stopPropagation（只关本层、不带崩外层）由核统一承担，
+          组件里不再各写一份。
+       ⚠️ close(false) 的场景（Tab 走开）**不夺焦点**，
+          所以 onDismiss 用 close(false)、Esc 那条单独 close(true)。 */
+    var dismiss = flDismissable({
+      escOn: [btn],
+      inside: [root],
+      when: function () { return !list.hidden; },
+      onDismiss: function (ev, reason) {
+        close(reason === 'esc');
+      }
+    });
     if (!list.id) list.id = 'select-list-' + (++uid);
 
     var options = [].slice.call(list.querySelectorAll('[role="option"]'));
@@ -274,6 +390,8 @@
     }
 
     function open() {
+      /* 打开这一刻先记焦点，close() 才能还回去（要在改焦点之前做）。 */
+      fr.save();
       list.hidden = false;
       btn.setAttribute('aria-expanded', 'true');
       /* 🔴 修：必须**先把焦点放到按钮上**。
@@ -297,7 +415,7 @@
       activeIdx = -1;
       typeahead.clear();   /* 关闭即清空缓冲：下次打开不该接着上次的半个词 */
       /* ③ Esc 关闭时焦点**还给按钮**（不是选中项）*/
-      if (restoreFocus !== false) btn.focus();
+      if (restoreFocus !== false) fr.restore();
       flEmit(root, 'fl-close', null);
       if (opt.onClose) opt.onClose();
     }
@@ -360,12 +478,9 @@
             所以必须有"组合契约"这种真嵌套的测试。
          ⇒ 正解：内层弹层"吃掉"这个键时必须 stopPropagation。
          层级弹层的 Esc 语义本来就是"只关最上面那层"。 */
-      if (k === 'Escape' || k === 'Esc') {
-        e.preventDefault();
-        e.stopPropagation();   /* 🔴 只关本层，不让外层跟着关 */
-        close(true);
-        return;
-      }
+      /* Esc 已由 dismissable 核接管（见上面的 flDismissable）：
+         核把它挂在 btn 上冒泡、并 stopPropagation ⇒ 只关最内层，
+         组件里不再各写一份（原先手写 10 处、分布 7 个文件）。 */
       if (k === 'Tab') { close(false); return; }
       if (k === 'Enter' || k === ' ' || k === 'Spacebar') {
         e.preventDefault();
@@ -406,9 +521,7 @@
       if (!o) return;
       commit(options.indexOf(o));
     });
-    document.addEventListener('click', function (e) {
-      if (!root.contains(e.target) && !list.hidden) close(false);
-    });
+    /* 点外部关闭已由 dismissable 核接管（document 捕获阶段判定）。 */
 
     paint();
     return {

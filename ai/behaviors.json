@@ -28,93 +28,321 @@
     }
   },
   "budget": {
-    "manual": 9,
+    "manual": 3,
     "gap": 2
   },
   "matrix": {
     "dismissable": {
-      "combobox": ["manual", "手写 Esc + document click 各一处，未收编"],
-      "date-range": ["n/a", "不是浮层：内联表单（两个日期输入 + 预设 + 错误提示），没有打开/关闭状态"],
-      "popover": ["core", ""],
-      "select": ["manual", "手写 Esc（onListKey）+ document click，未收编"],
-      "accordion": ["n/a", "展开/收起是内容显隐，没有'关闭'语义；Esc 不参与"],
-      "drawer": ["manual", "手写 Esc 一处；遮罩点击关闭未实现"],
-      "dropdown": ["core", ""],
-      "flip": ["n/a", "纯过渡工具（FLIP 动画），没有浮层"],
-      "toc": ["n/a", "目录导航，纯链接跳转，没有浮层"],
-      "overlay": ["manual", "dialog 手写 Esc（toast 自动消失，不适用）"],
-      "pagination": ["n/a", "分页控件常驻页面，没有浮层"],
-      "tabs": ["n/a", "面板切换不是浮层；Esc 无语义"],
-      "tooltip": ["manual", "手写 Esc + document click，未收编"],
-      "tree": ["n/a", "常驻结构，没有'打开'状态；Esc 无语义"],
-      "bar": ["n/a", "图表：canvas 绘制，没有浮层"],
-      "echarts-adapter": ["n/a", "图表适配器：只做数据转换，没有浮层"],
-      "model-viewer": ["n/a", "三维查看器：canvas 交互，没有浮层"],
-      "sparkline": ["n/a", "迷你图：SVG 绘制，没有浮层"],
-      "scientific-plot": ["n/a", "科学绘图：SVG 绘制，没有浮层"]
+      "combobox": [
+        "manual",
+        "0.8.6 评估后**决定不收编**（理由见 ERRORS E37）：它的 Esc 是**两级**的——先关列表、列表已关才清空输入。核的 escOn 是「Esc 一律触发 onDismiss」，表达不了这个分级。机械替换会丢掉第二级行为 ⇒ 属于\"为了统一而丢功能\"。另外它的外部点击用 root.contains(e.target) 判定，**本来就是正确写法**，没有 tooltip 那个「点内部也关」的 bug ⇒ 收编拿不到实际修复收益。"
+      ],
+      "date-range": [
+        "n/a",
+        "不是浮层：内联表单（两个日期输入 + 预设 + 错误提示），没有打开/关闭状态"
+      ],
+      "popover": [
+        "core",
+        ""
+      ],
+      "select": [
+        "core",
+        "0.8.6 收编：删掉手写的 document click（冒泡阶段判定）与 keydown 里的 Esc 分支；Esc 的 stopPropagation（只关最内层）由核统一承担"
+      ],
+      "accordion": [
+        "n/a",
+        "展开/收起是内容显隐，没有'关闭'语义；Esc 不参与"
+      ],
+      "drawer": [
+        "manual",
+        "0.8.6 评估后**决定不收编**：drawer 已经是**模态**弹层，它的 dismissable 只含 Esc；点遮罩关闭是它自己的语义（overlay 负责遮罩）。核的 onDocClick 会把「点遮罩」当成 outside 触发，而 drawer 想忽略非Esc 的关闭原因 ⇒ 需要给核加\"忽略 outside\"的开关，属于改核而不是接线。暂不做。"
+      ],
+      "dropdown": [
+        "core",
+        ""
+      ],
+      "flip": [
+        "n/a",
+        "纯过渡工具（FLIP 动画），没有浮层"
+      ],
+      "toc": [
+        "n/a",
+        "目录导航，纯链接跳转，没有浮层"
+      ],
+      "overlay": [
+        "manual",
+        "0.8.6 评估后**决定不收编**：dialog 是模态，**点外部不该关闭**（那是 modal 的定义）。核的 onDocClick 天然会处理 outside ⇒ 收编等于给 dialog 引入错误行为。overlay 只需 Esc 那一半，Esc 已在组件内正确实现（不依赖全局栈）。"
+      ],
+      "pagination": [
+        "n/a",
+        "分页控件常驻页面，没有浮层"
+      ],
+      "tabs": [
+        "n/a",
+        "面板切换不是浮层；Esc 无语义"
+      ],
+      "tooltip": [
+        "core",
+        "0.8.6 收编：手写的 document click（冒泡阶段）换成核的捕获阶段判定，顺带修掉\"点浮层内部也会关\""
+      ],
+      "tree": [
+        "n/a",
+        "常驻结构，没有'打开'状态；Esc 无语义"
+      ],
+      "bar": [
+        "n/a",
+        "图表：canvas 绘制，没有浮层"
+      ],
+      "echarts-adapter": [
+        "n/a",
+        "图表适配器：只做数据转换，没有浮层"
+      ],
+      "model-viewer": [
+        "n/a",
+        "三维查看器：canvas 交互，没有浮层"
+      ],
+      "sparkline": [
+        "n/a",
+        "迷你图：SVG 绘制，没有浮层"
+      ],
+      "scientific-plot": [
+        "n/a",
+        "科学绘图：SVG 绘制，没有浮层"
+      ]
     },
     "focus-return": {
-      "combobox": ["n/a", "焦点从未离开输入框，无所谓归位"],
-      "date-range": ["n/a", "焦点一直在日期输入上"],
-      "popover": ["core", ""],
-      "select": ["manual", "close() 里 btn.focus()，未收编"],
-      "accordion": ["n/a", "焦点一直在标题按钮上"],
-      "drawer": ["core", ""],
-      "dropdown": ["manual", "close() 里 btn.focus()，未收编"],
-      "flip": ["n/a", "动画工具，不涉及焦点"],
-      "toc": ["n/a", "链接跳转，焦点随链接走"],
-      "overlay": ["manual", "dialog 关闭时 trigger.focus()，未收编"],
-      "pagination": ["n/a", "焦点常驻页码按钮"],
-      "tabs": ["n/a", "焦点一直在 tab 组内"],
-      "tooltip": ["manual", "Esc 时 el.focus() 还给触发器，未收编"],
-      "tree": ["n/a", "焦点一直在树内"],
-      "bar": ["n/a", "图表不涉及焦点"],
-      "echarts-adapter": ["n/a", "图表适配器不涉及焦点"],
-      "model-viewer": ["n/a", "三维查看器：canvas 交互，不涉及这组浮层焦点"],
-      "sparkline": ["n/a", "迷你图不涉及焦点"],
-      "scientific-plot": ["n/a", "科学绘图不涉及焦点"]
+      "combobox": [
+        "n/a",
+        "焦点从未离开输入框，无所谓归位"
+      ],
+      "date-range": [
+        "n/a",
+        "焦点一直在日期输入上"
+      ],
+      "popover": [
+        "core",
+        ""
+      ],
+      "select": [
+        "core",
+        "0.8.6 收编：open() 里 fr.save()、close() 里 fr.restore()（close(false) 的 Tab 场景不夺焦点，语义正好对上核的「记了才还」）"
+      ],
+      "accordion": [
+        "n/a",
+        "焦点一直在标题按钮上"
+      ],
+      "drawer": [
+        "core",
+        ""
+      ],
+      "dropdown": [
+        "core",
+        "0.8.6 收编：open() 里 fr.save()、close() 里 fr.restore()，替掉手写的 btn.focus() + document.contains 判存活"
+      ],
+      "flip": [
+        "n/a",
+        "动画工具，不涉及焦点"
+      ],
+      "toc": [
+        "n/a",
+        "链接跳转，焦点随链接走"
+      ],
+      "overlay": [
+        "core",
+        "0.8.6 收编并修掉真 bug：原来条件是 focusIsMine && ...，而 focusIsMine 在本文件里不存在 ⇒ 恒假 ⇒ 焦点从来没还过（门禁「关闭后焦点归位」一直靠这条假绿过关，反向控制确认判据有牙）"
+      ],
+      "pagination": [
+        "n/a",
+        "焦点常驻页码按钮"
+      ],
+      "tabs": [
+        "n/a",
+        "焦点一直在 tab 组内"
+      ],
+      "tooltip": [
+        "core",
+        "0.8.6 收编：show() 里fr.save() 记焦点、Esc 关闭时 restore()，不再手写 el.focus()（手写版在触发元素已被移除时 focus 一个不存在的元素）"
+      ],
+      "tree": [
+        "n/a",
+        "焦点一直在树内"
+      ],
+      "bar": [
+        "n/a",
+        "图表不涉及焦点"
+      ],
+      "echarts-adapter": [
+        "n/a",
+        "图表适配器不涉及焦点"
+      ],
+      "model-viewer": [
+        "n/a",
+        "三维查看器：canvas 交互，不涉及这组浮层焦点"
+      ],
+      "sparkline": [
+        "n/a",
+        "迷你图不涉及焦点"
+      ],
+      "scientific-plot": [
+        "n/a",
+        "科学绘图不涉及焦点"
+      ]
     },
     "roving": {
-      "combobox": ["n/a", "aria-activedescendant 模式：焦点常驻 input，核靠 e.target 判断当前项 ⇒ 收不到"],
-      "date-range": ["n/a", "没有'一组项'"],
-      "popover": ["n/a", "浮层里没有项的集合"],
-      "select": ["n/a", "aria-activedescendant 模式：焦点常驻按钮"],
-      "accordion": ["gap", "APG 把方向键列为**可选**增强，本库未实现；要做就应走 roving 核，不该再手写一份"],
-      "drawer": ["n/a", "焦点陷阱（Tab 在首尾间循环）不是方向键游走"],
-      "dropdown": ["core", "tabindex:false —— APG 菜单的菜单项按规范全部 -1，核只接管步进"],
-      "flip": ["n/a", "动画工具，没有项集合"],
-      "toc": ["n/a", "目录是链接列表，按 Tab 逐个走是正确行为"],
-      "overlay": ["n/a", "焦点陷阱，不是方向键游走"],
-      "pagination": ["n/a", "←→/Home·End 是**翻页命令**，不是在一组项里移动焦点"],
-      "tabs": ["core", ""],
-      "tooltip": ["n/a", "没有项集合"],
-      "tree": ["core", ""],
-      "bar": ["n/a", "图表没有可聚焦的项集合"],
-      "echarts-adapter": ["n/a", "图表适配器没有项集合"],
-      "model-viewer": ["n/a", "方向键是**相机平移**（OrbitControls），不是 UI 项游走"],
-      "sparkline": ["n/a", "迷你图没有项集合"],
-      "scientific-plot": ["n/a", "科学绘图的坐标轴/刻度不是可游走的 UI 项集合"]
+      "combobox": [
+        "n/a",
+        "aria-activedescendant 模式：焦点常驻 input，核靠 e.target 判断当前项 ⇒ 收不到"
+      ],
+      "date-range": [
+        "n/a",
+        "没有'一组项'"
+      ],
+      "popover": [
+        "n/a",
+        "浮层里没有项的集合"
+      ],
+      "select": [
+        "n/a",
+        "aria-activedescendant 模式：焦点常驻按钮"
+      ],
+      "accordion": [
+        "gap",
+        "APG 把方向键列为**可选**增强，本库未实现；要做就应走 roving 核，不该再手写一份"
+      ],
+      "drawer": [
+        "n/a",
+        "焦点陷阱（Tab 在首尾间循环）不是方向键游走"
+      ],
+      "dropdown": [
+        "core",
+        "tabindex:false —— APG 菜单的菜单项按规范全部 -1，核只接管步进"
+      ],
+      "flip": [
+        "n/a",
+        "动画工具，没有项集合"
+      ],
+      "toc": [
+        "n/a",
+        "目录是链接列表，按 Tab 逐个走是正确行为"
+      ],
+      "overlay": [
+        "n/a",
+        "焦点陷阱，不是方向键游走"
+      ],
+      "pagination": [
+        "n/a",
+        "←→/Home·End 是**翻页命令**，不是在一组项里移动焦点"
+      ],
+      "tabs": [
+        "core",
+        ""
+      ],
+      "tooltip": [
+        "n/a",
+        "没有项集合"
+      ],
+      "tree": [
+        "core",
+        ""
+      ],
+      "bar": [
+        "n/a",
+        "图表没有可聚焦的项集合"
+      ],
+      "echarts-adapter": [
+        "n/a",
+        "图表适配器没有项集合"
+      ],
+      "model-viewer": [
+        "n/a",
+        "方向键是**相机平移**（OrbitControls），不是 UI 项游走"
+      ],
+      "sparkline": [
+        "n/a",
+        "迷你图没有项集合"
+      ],
+      "scientific-plot": [
+        "n/a",
+        "科学绘图的坐标轴/刻度不是可游走的 UI 项集合"
+      ]
     },
     "typeahead": {
-      "combobox": ["n/a", "有输入框，**打字即过滤**；用 typeahead 会每打一个字就把焦点拽走"],
-      "date-range": ["n/a", "没有候选项集合"],
-      "popover": ["n/a", "没有候选项集合"],
-      "select": ["core", ""],
-      "accordion": ["n/a", "标题数量少，APG 未要求"],
-      "drawer": ["n/a", "没有候选项集合"],
-      "dropdown": ["gap", "APG 菜单支持'按首字母跳到菜单项'（可选增强），本库未实现；要做就走 typeahead 核"],
-      "flip": ["n/a", "动画工具"],
-      "toc": ["n/a", "目录是链接列表，浏览器自带链接查找"],
-      "overlay": ["n/a", "没有候选项集合"],
-      "pagination": ["n/a", "页码是数字，不适用首字母跳转"],
-      "tabs": ["n/a", "APG Tabs 未要求 typeahead"],
-      "tooltip": ["n/a", "没有候选项集合"],
-      "tree": ["core", ""],
-      "bar": ["n/a", "图表没有候选项集合"],
-      "echarts-adapter": ["n/a", "图表适配器没有候选项集合"],
-      "model-viewer": ["n/a", "没有候选项集合"],
-      "sparkline": ["n/a", "迷你图没有候选项集合"],
-      "scientific-plot": ["n/a", "科学绘图没有候选项集合"]
+      "combobox": [
+        "n/a",
+        "有输入框，**打字即过滤**；用 typeahead 会每打一个字就把焦点拽走"
+      ],
+      "date-range": [
+        "n/a",
+        "没有候选项集合"
+      ],
+      "popover": [
+        "n/a",
+        "没有候选项集合"
+      ],
+      "select": [
+        "core",
+        ""
+      ],
+      "accordion": [
+        "n/a",
+        "标题数量少，APG 未要求"
+      ],
+      "drawer": [
+        "n/a",
+        "没有候选项集合"
+      ],
+      "dropdown": [
+        "gap",
+        "APG 菜单支持'按首字母跳到菜单项'（可选增强），本库未实现；要做就走 typeahead 核"
+      ],
+      "flip": [
+        "n/a",
+        "动画工具"
+      ],
+      "toc": [
+        "n/a",
+        "目录是链接列表，浏览器自带链接查找"
+      ],
+      "overlay": [
+        "n/a",
+        "没有候选项集合"
+      ],
+      "pagination": [
+        "n/a",
+        "页码是数字，不适用首字母跳转"
+      ],
+      "tabs": [
+        "n/a",
+        "APG Tabs 未要求 typeahead"
+      ],
+      "tooltip": [
+        "n/a",
+        "没有候选项集合"
+      ],
+      "tree": [
+        "core",
+        ""
+      ],
+      "bar": [
+        "n/a",
+        "图表没有候选项集合"
+      ],
+      "echarts-adapter": [
+        "n/a",
+        "图表适配器没有候选项集合"
+      ],
+      "model-viewer": [
+        "n/a",
+        "没有候选项集合"
+      ],
+      "sparkline": [
+        "n/a",
+        "迷你图没有候选项集合"
+      ],
+      "scientific-plot": [
+        "n/a",
+        "科学绘图没有候选项集合"
+      ]
     }
   }
 }

@@ -20,6 +20,101 @@
  *      ⇒ top 方位与锚点完全重叠（实测 tip.top == anchor.top），左右上下偏半身。
  */
 (function (global) {
+
+/* ==== BEHAVIOR INJECT BEGIN: focus-return ==== */
+var flFocusReturn = function (opts) {
+  var opt = opts || {};
+  var saved = null;
+
+  return {
+    save: function () {
+      var a = document.activeElement;
+      saved = (a && a !== document.body && a.focus) ? a : null;
+      return saved;
+    },
+
+    restore: function () {
+      var target = saved;
+      /* ⚠️ 见文档 ②：不判 contains 的话，元素被移除后 focus() 不报错
+         但焦点不动 ⇒ 用户以为还回去了，其实掉在 body 上。 */
+      if (!target || !document.contains(target)) target = opt.fallback || null;
+      if (!target) { saved = null; return false; }
+      try {
+        target.focus();
+      } catch (e) {
+        saved = null;
+        return false;
+      }
+      var ok = document.activeElement === target;
+      saved = null;   /* 见文档 ③ */
+      return ok;
+    },
+
+    target: function () { return saved; },
+    clear: function () { saved = null; },
+  };
+};
+/* ==== BEHAVIOR INJECT END: focus-return ==== */
+/* ==== BEHAVIOR INJECT BEGIN: dismissable ==== */
+var flDismissable = function (opts) {
+  var opt = opts || {};
+  var escOn = opt.escOn || [];
+  var inside = opt.inside || [];
+  var when = opt.when || function () { return true; };
+  var onDismiss = opt.onDismiss || function () {};
+
+  var shared = window.__flDismiss || (window.__flDismiss = { stack: [], bound: false });
+
+  function isInside(node) {
+    if (!node) return false;
+    for (var i = 0; i < inside.length; i++) {
+      var el = inside[i];
+      if (!el || !el.contains) continue;
+      if (el === node || el.contains(node)) return true;
+    }
+    return false;
+  }
+
+  function onKey(e) {
+    if (!when()) return;
+    var k = e.key;
+    if (k !== 'Escape' && k !== 'Esc' && e.keyCode !== 27) return;
+    if (e.preventDefault) e.preventDefault();
+    if (e.stopPropagation) e.stopPropagation();
+    onDismiss(e, 'esc');
+  }
+
+  function onDocClick(e) {
+    var top = null;
+    for (var i = shared.stack.length - 1; i >= 0; i--) {
+      if (shared.stack[i].when()) { top = shared.stack[i]; break; }
+    }
+    if (!top || top.isInside(e.target)) return;
+    top.onDismiss(e, 'outside');
+  }
+
+  var rec = { when: when, isInside: isInside, onDismiss: onDismiss };
+
+  for (var j = 0; j < escOn.length; j++) {
+    if (escOn[j]) escOn[j].addEventListener('keydown', onKey);
+  }
+  shared.stack.push(rec);
+  if (!shared.bound) {
+    shared.bound = true;
+    document.addEventListener('click', onDocClick, true);
+  }
+
+  return {
+    destroy: function () {
+      for (var j = 0; j < escOn.length; j++) {
+        if (escOn[j]) escOn[j].removeEventListener('keydown', onKey);
+      }
+      var k = shared.stack.indexOf(rec);
+      if (k >= 0) shared.stack.splice(k, 1);
+    },
+  };
+};
+/* ==== BEHAVIOR INJECT END: dismissable ==== */
   'use strict';
 
   var uid = 0;
@@ -76,6 +171,9 @@
    *                 left / right 也接受（物理方位，RTL 下按方向换算类名）
    */
   function attach(el, text, place) {
+    /* 焦点归位核：在 show() 之前声明，避免读代码时误以为fr 还没定义。
+       声明写在 attach 开头 ⇒ show()/hide() 用到时它一定已赋值。 */
+    var fr = flFocusReturn({ fallback: el });
     if (!el || !text) return;
     ensureStyle();
 
@@ -90,6 +188,9 @@
     var live = ensureLiveRegion();
 
     function show() {
+      /* 🔴 打开的**这一刻**先记住焦点，关闭时才能还回去。
+         必须在任何可能改变焦点的操作**之前**做（否则记到的是新元素）。 */
+      fr.save();
       /* 🔴 定位前**必须先入 DOM**：游离元素的 getBoundingClientRect() 全是 0
          （实测：top 方位的气泡与锚点完全重叠，就是这么来的）。
          先挂上去、藏起来量，量完再显示。 */
@@ -135,11 +236,24 @@
       if (tip.getAttribute('data-state') === 'open') hide(); else show();
     });
 
-    /* ② Esc 能关（WCAG 1.4.13）*/
-    el.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' || e.key === 'Esc') { hide(); el.focus(); }
+    /* ② Esc 能关（WCAG 1.4.13）+ 点击外部关闭
+      🔴 0.8.6 收编到 dismissable 核（原先是手写的）：
+      手写版是 `document.addEventListener('click', hide)` ——
+      **冒泡阶段**判定"是不是外部"，于是点在浮层**内部**也会关掉气泡
+      （点击应该能选中提示里的文字）。核把判定挂在 **document 捕获阶段**，
+      并且把触发元素算进 `inside`，解决"点触发器刚打开就被关"的老坑。
+      核同时负责"一次 Esc 只关最内层"（Esc 挂在元素上冒泡，不挂 document 捕获）。
+      ⚠️ Esc 关闭后的焦点归位走 focus-return 核，不再手写 `el.focus()`：
+         手写版在触发元素已被移除时会focus 一个不存在的元素。 */
+    var dismiss = flDismissable({
+      escOn: [el],
+      inside: [el, tip],
+      when: function () { return tip.getAttribute('data-state') === 'open'; },
+      onDismiss: function (ev, reason) {
+        hide();
+        if (reason === 'esc') fr.restore();
+      }
     });
-    document.addEventListener('click', hide);
 
     /* ③ 关联：aria-describedby（不是 aria-label ——
        label 是名字，describedby 是补充说明，语义不同）*/

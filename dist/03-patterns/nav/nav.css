@@ -188,6 +188,7 @@
   font-weight: 500;
 }
 .toc__list { list-style: none; margin: 0; padding: 0; }
+
 .toc__link {
   display: block;
   padding: var(--sp-1) 0 var(--sp-1) var(--sp-3);

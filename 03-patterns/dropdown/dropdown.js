@@ -122,6 +122,40 @@
   };
   /* ==== BEHAVIOR INJECT END: roving ==== */
 
+  /* ==== BEHAVIOR INJECT BEGIN: focus-return ==== */
+  var flFocusReturn = function (opts) {
+    var opt = opts || {};
+    var saved = null;
+
+    return {
+      save: function () {
+        var a = document.activeElement;
+        saved = (a && a !== document.body && a.focus) ? a : null;
+        return saved;
+      },
+
+      restore: function () {
+        var target = saved;
+        /* ⚠️ 见文档 ②：不判 contains 的话，元素被移除后 focus() 不报错
+           但焦点不动 ⇒ 用户以为还回去了，其实掉在 body 上。 */
+        if (!target || !document.contains(target)) target = opt.fallback || null;
+        if (!target) { saved = null; return false; }
+        try {
+          target.focus();
+        } catch (e) {
+          saved = null;
+          return false;
+        }
+        var ok = document.activeElement === target;
+        saved = null;   /* 见文档 ③ */
+        return ok;
+      },
+
+      target: function () { return saved; },
+      clear: function () { saved = null; },
+    };
+  };
+  /* ==== BEHAVIOR INJECT END: focus-return ==== */
   /* ==== BEHAVIOR INJECT BEGIN: dismissable ==== */
   var flDismissable = function (opts) {
     var opt = opts || {};
@@ -228,6 +262,11 @@
     var btn = root.querySelector('[data-dd-btn]') || root.querySelector('button');
     var menu = root.querySelector('[data-dd-menu]');
     if (!btn || !menu) throw new Error('dropdown: 缺少 [data-dd-btn] 或 [data-dd-menu]');
+
+    /* 焦点归位核：open() 时 save()、close() 时 restore()。
+       原先是 `btn.focus()` + `document.contains(btn)` 手写判存活，
+       核内部做的就是这件事（元素被移除 ⇒ 退到 fallback）。 */
+    var fr = flFocusReturn({ fallback: btn });
     var active = -1;
 
     /* APG：菜单要么全 aria-hidden，要么全不设 —— 不能半吊子 */
@@ -259,6 +298,8 @@
     });
 
     function open() {
+      /* 打开这一刻先记焦点，close() 才能还回去。 */
+      fr.save();
       menu.hidden = false;
       btn.setAttribute('aria-expanded', 'true');
       active = -1;
@@ -271,7 +312,7 @@
       menu.hidden = true;
       btn.setAttribute('aria-expanded', 'false');
       active = -1;
-      if (restoreFocus !== false && document.contains(btn)) btn.focus();
+      if (restoreFocus !== false) fr.restore();
       flEmit(root, 'fl-close', null);
       if (opt.onClose) opt.onClose();
     }
