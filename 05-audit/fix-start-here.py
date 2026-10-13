@@ -75,6 +75,65 @@ CN = {
     'form-validation': '表单校验', 'list': '列表增删', 'content': '长文排版',
 }
 # 表里的顺序（按"最常被要"排，不是字母序 —— 复用者是照着找的）
+# 🔴 层目录清单：**从契约读**，不写死。
+#   契约 `files.css` 里有每一层的真实路径 ⇒ 这是唯一不会漂移的来源。
+#   ⚠️ 契约读不到时必须**报错**，不能静默退回空/旧清单 ——
+#   静默退回正是「漏掉整整一层」那类事故的温床（见 ERRORS E27）。
+def _load_comps():
+    try:
+        with io.open(os.path.join(ROOT, 'ai', 'components.json'),
+                     encoding='utf-8') as f:
+            comps = json.load(f).get('components') or []
+    except Exception as e:
+        raise SystemExit(
+            '[FAIL] 读不到 ai/components.json（%s）—— 组件表的层清单不再写死，'
+            '请先跑 gen-ai-contract.py' % e)
+    if not comps:
+        raise SystemExit('[FAIL] ai/components.json 里组件数为 0 —— 生成物坏了')
+    return comps
+
+
+_comps = _load_comps()
+
+
+def _scan_layers():
+    comps = _comps
+    layers = []
+    for c in comps:
+        css = (c.get('files') or {}).get('css') or ''
+        top = css.split('/')[0]
+        if top and top not in layers:
+            layers.append(top)
+    return sorted(layers)
+
+
+SCAN_LAYERS = _scan_layers()
+
+def _all_components():
+    """契约里登记的全部组件 id（按 tier 分层、层内按 id 排）。
+
+    🔴 为什么要改成契约驱动：ORDER 原来只有 26 个，两层之外的
+       `table` / `analysis-report` / `report`（3 个 recipe）与
+       `sparkline` / `bar` / `scientific-plot` / `model-viewer`（4 个 asset）
+       **一个都不在里面** ⇒ 人类入口等于在宣称"这库没有图表、没有报告"。
+       （与 0.8.1「漏 11 个组件」、0.8.3「漏整层」同一个病根：清单手写。）
+    ORDER 只保留"同层内怎么排"的意义。
+    """
+    order = set(ORDER)
+    by_tier = {}
+    for c in _comps:
+        by_tier.setdefault(c.get('tier') or '', []).append(c.get('id'))
+    ids = []
+    for tier in ('primitive', 'pattern', 'recipe', 'asset'):
+        for cid in by_tier.get(tier, []):
+            if cid:
+                ids.append(cid)
+    # ORDER 里已排好序的按原顺序优先，其余追加
+    head = [x for x in ORDER if x in set(ids)]
+    tail = [x for x in ids if x not in order]
+    return head + tail
+
+
 ORDER = ['button', 'input', 'badge', 'card', 'choice', 'select', 'combobox',
          'switch', 'separator', 'skeleton', 'progress', 'popover', 'date-range',
          'tabs', 'accordion', 'dropdown', 'tooltip', 'pagination', 'tree',
@@ -89,14 +148,29 @@ END = '## 抄完先做这三件事'
 
 def measure():
     rows = []
-    for name in ORDER:
+    for name in _all_components():
         rel = None
-        for base in ('02-primitives', '03-patterns'):
+        # 🔴 层目录**从契约读**，不写死。
+        #   原来写死 ('02-primitives', '03-patterns') ⇒ 09-assets 整层被漏掉
+        #   （与 0.8.1「漏 11 个组件」、0.8.3「漏整层」是同一个病根：
+        #     清单一手写 ⇒ 目录一变就漂移）。
+        for base in SCAN_LAYERS:
             p = os.path.join(ROOT, base, name, name + '.css')
             if os.path.isfile(p):
                 rel = '%s/%s/%s.css' % (base, name, name)
                 css = p
                 break
+        if not rel:
+            # 文件名与目录名不同名的组件（如 scientific-plot 用 splot 开头）
+            # ⇒ 退回「该层里有没有同名目录」
+            for base in SCAN_LAYERS:
+                d = os.path.join(ROOT, base, name)
+                if os.path.isdir(d):
+                    csss = [f for f in os.listdir(d) if f.endswith('.css')]
+                    if csss:
+                        rel = '%s/%s/%s' % (base, name, sorted(csss)[0])
+                        css = os.path.join(d, sorted(csss)[0])
+                        break
         if not rel:
             continue
         n_css = sum(1 for _ in io.open(css, encoding='utf-8'))
@@ -158,16 +232,30 @@ def check_js_classification(rows, required, optional):
 
     任何一条不符就退出 —— 分类表自己不会说话，只能靠这个替它说话。
     """
+    # 🔴 图表类组件（09-assets）**不适用** aria 计数判据：
+    #   那条判据数的是键盘/ARIA 行为契约，是为**交互组件**设计的；
+    #   图表的 JS 是「把数据画出来」，它理应没有那些（实测 0/2/0/0）。
+    #   ⇒ 对这类组件，判据只证明它能证明的事：**登记的 JS 文件真的存在**。
+    #   分类本身是**显式声明**（连理由一起写进 REQUIRED_JS 上方的注释）。
+    ASSET_TIER = '09-assets'
     bad = []
     for name, rel, n_css, n_js, js_name in rows:
         if not js_name:
             continue
-        n = len(PAT_BEHAVIOR.findall(
-            io.open(_js_path(rel, js_name), encoding='utf-8').read()))
         if name not in required and name not in optional:
             bad.append('%s：有 %s，但没登记进 REQUIRED_JS / OPTIONAL_JS'
                        % (name, js_name))
-        elif name in required and n < ARIA_MIN:
+            continue
+        declared = (required.get(name) or (optional[name][0]))[:]
+        if js_name not in declared:
+            bad.append('%s：登记的是 %s，目录里实际是 %s ⇒ 改名后没同步'
+                       % (name, declared, js_name))
+            continue
+        if rel.startswith(ASSET_TIER + '/'):
+            continue          # 图表类：跳过 aria 计数，只查文件存在（上面已查）
+        n = len(PAT_BEHAVIOR.findall(
+            io.open(_js_path(rel, js_name), encoding='utf-8').read()))
+        if name in required and n < ARIA_MIN:
             bad.append('%s：标了「必需」，但 %s 里行为契约只有 %d 处（< %d）'
                        ' ⇒ 它是纯增强，不该标必需' % (name, js_name, n, ARIA_MIN))
         elif name in optional and n >= ARIA_MIN:
@@ -215,6 +303,17 @@ def build_table(rows, comps):
         'pagination': 'pagination.js',
         'tooltip': 'tooltip.js',
         'tree': 'tree.js',
+        # 🔴 09-assets 四个（0.8.3 补）：它们的 JS 是**必需**的 ——
+        #    没有 JS 就没有图形本身（不是「给静态标记加行为」的增强层）。
+        #    ⚠️ 它们**通不过**下面的 aria 计数判据（0/2/0/0，远低于 ARIA_MIN=5），
+        #    因为那条判据是为**交互组件**设计的（数键盘/ARIA 行为契约），
+        #    图表类组件本来就不该有那些。
+        #    ⇒ 因此分类改为**显式声明 + 理由**，不由计数推断；
+        #      判据只负责「你声明的必须是 JS 真的存在」。
+        'sparkline': 'sparkline.js',
+        'bar': 'bar.js',
+        'scientific-plot': 'scientific-plot.js',
+        'model-viewer': 'model-viewer.js',
     }
     OPTIONAL_JS = {'list': ('flip.js', 'FLIP 增删动画，纯增强'),
                    'nav': ('toc.js', '自动生成目录，纯增强')}

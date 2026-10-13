@@ -16,9 +16,23 @@
     "$strictImpact": "⚠️ strict 档位只放行 stable ⇒ 这 7 个组件在 strict 下不可用（accordion / combobox / drawer / dropdown / overlay / select / tooltip）。这是**有意的**：它们的行为还有手写副本或缺一个该有的行为。要用就切 standard 档。"
   },
   "components": {
+    "accordion": {
+      "rootClass": "accordion",
+      "purpose": "可折叠分组"
+    },
+    "analysis-report": {
+      "rootClass": "report",
+      "tier": "recipe",
+      "purpose": "组合型研究报告页面：正文与辅助栏并排，窄屏自然退回单栏"
+    },
     "badge": {
       "rootClass": "badge",
       "purpose": "状态标签：计数、分类、结果标记"
+    },
+    "bar": {
+      "rootClass": "bar",
+      "tier": "asset",
+      "purpose": "柱状图（charter 13 图表规范）：堆叠/分组两种语义、超量程裁剪、图例"
     },
     "button": {
       "rootClass": "btn",
@@ -36,45 +50,13 @@
       "rootClass": "combo",
       "purpose": "可搜索 + 可多选标签的输入控件"
     },
-    "date-range": {
-      "rootClass": "drange",
-      "purpose": "日期区间选择，含预设快捷范围"
-    },
-    "input": {
-      "rootClass": "field",
-      "purpose": "文本输入及其标签/帮助/错误三件套"
-    },
-    "popover": {
-      "rootClass": "popover",
-      "purpose": "锚定到触发元素的浮层"
-    },
-    "progress": {
-      "rootClass": "progress",
-      "purpose": "进度条与进度环"
-    },
-    "select": {
-      "rootClass": "select",
-      "purpose": "自定义下拉选择（非原生）"
-    },
-    "separator": {
-      "rootClass": "separator",
-      "purpose": "分隔线，可带中间文字"
-    },
-    "skeleton": {
-      "rootClass": "skeleton",
-      "purpose": "加载占位骨架"
-    },
-    "switch": {
-      "rootClass": "switch",
-      "purpose": "开关切换"
-    },
-    "accordion": {
-      "rootClass": "accordion",
-      "purpose": "可折叠分组"
-    },
     "content": {
       "rootClass": "prose",
       "purpose": "长文排版容器（标题/段落/列表/引用/代码）"
+    },
+    "date-range": {
+      "rootClass": "drange",
+      "purpose": "日期区间选择，含预设快捷范围"
     },
     "drawer": {
       "rootClass": "drawer",
@@ -88,9 +70,18 @@
       "rootClass": "form",
       "purpose": "表单校验反馈与错误汇总"
     },
+    "input": {
+      "rootClass": "field",
+      "purpose": "文本输入及其标签/帮助/错误三件套"
+    },
     "list": {
       "rootClass": "list",
       "purpose": "键值列表/条目列表"
+    },
+    "model-viewer": {
+      "rootClass": "mv",
+      "tier": "asset",
+      "purpose": "3D 模型查看器：令牌驱动样式，不含渲染库本体"
     },
     "nav": {
       "rootClass": "nav",
@@ -104,9 +95,53 @@
       "rootClass": "pagination",
       "purpose": "分页控件"
     },
+    "popover": {
+      "rootClass": "popover",
+      "purpose": "锚定到触发元素的浮层"
+    },
+    "progress": {
+      "rootClass": "progress",
+      "purpose": "进度条与进度环"
+    },
+    "report": {
+      "rootClass": "rep",
+      "tier": "recipe",
+      "purpose": "报告版式系统 v1：共享基础 + 三套版式（杂志/科研技术/金融研究），只换一个 rep--* 类即可切换取舍"
+    },
+    "scientific-plot": {
+      "rootClass": "splot",
+      "tier": "asset",
+      "purpose": "二维科学绘图：折线/区间带/对数轴，纯令牌驱动、零依赖"
+    },
+    "select": {
+      "rootClass": "select",
+      "purpose": "自定义下拉选择（非原生）"
+    },
+    "separator": {
+      "rootClass": "separator",
+      "purpose": "分隔线，可带中间文字"
+    },
+    "skeleton": {
+      "rootClass": "skeleton",
+      "purpose": "加载占位骨架"
+    },
+    "sparkline": {
+      "rootClass": "sparkline",
+      "tier": "asset",
+      "purpose": "迷你趋势图：无坐标轴、纯形状，适合表格内嵌的一行走势"
+    },
     "states": {
       "rootClass": "state",
       "purpose": "空/加载/错误/成功四种整块状态"
+    },
+    "switch": {
+      "rootClass": "switch",
+      "purpose": "开关切换"
+    },
+    "table": {
+      "rootClass": "table",
+      "tier": "recipe",
+      "purpose": "数据表格：排序/加载/空/错误四态；三种用途预设（财务/学术/统计）"
     },
     "tabs": {
       "rootClass": "tabs",
@@ -119,21 +154,6 @@
     "tree": {
       "rootClass": "tree",
       "purpose": "可展开树形结构"
-    },
-    "table": {
-      "rootClass": "table",
-      "tier": "recipe",
-      "purpose": "数据表格：排序/加载/空/错误四态；三种用途预设（财务/学术/统计）"
-    },
-    "analysis-report": {
-      "rootClass": "report",
-      "tier": "recipe",
-      "purpose": "组合型研究报告页面：正文与辅助栏并排，窄屏自然退回单栏"
-    },
-    "report": {
-      "rootClass": "rep",
-      "tier": "recipe",
-      "purpose": "报告版式系统 v1：共享基础 + 三套版式（杂志/科研技术/金融研究），只换一个 rep--* 类即可切换取舍"
     }
   }
 }
