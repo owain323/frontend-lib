@@ -336,11 +336,28 @@ function main() {
               openedAfterDestroy = !list.hidden;
             }
 
-            /* 幂等：再 destroy 一次不许抛 */
-            var idempotent = false;
+            /* 幂等：再 destroy 一次不许抛，**也不许重复调核的 destroy**。
+               🔴 0.8.8 两次修正的教训（都实测过）：
+                  ① 只测「不抛」⇒ 没牙 —— 核的 destroy 自身幂等，不抛
+                  ② 改成测「不重复摘 document 监听」⇒ 也没牙 ——
+                     二次 removeEventListener 走的是**元素监听**，
+                     而我的劫持只记 document 上的 click ⇒ 记不到
+               ⇒ 真正能测的是：**二次 destroy 时核的 destroy 被调了几次**。
+                  给核的 destroy 打一个计数哨兵（不改产品代码，
+                  靠 shared 栈的长度变化 + 显式计数函数）。 */
+            var idempotent = false, secondDestroyRemoved = null;
             if (hasDestroy) {
+              var removedBefore2nd = removed.length;
+              var stackBefore2nd = (window.__flDismiss &&
+                window.__flDismiss.stack.length) || 0;
               idempotent = true;
               try { h.cb.destroy(); } catch (e) { idempotent = false; }
+              secondDestroyRemoved = removed.length - removedBefore2nd;
+              /* 栈长度变化才是"二次 destroy 真的又动了一次"的信号：
+                 若守卫生效，栈已回到基线，二次调用不该再变。 */
+              secondDestroyRemoved += Math.abs(
+                ((window.__flDismiss && window.__flDismiss.stack.length) || 0)
+                - stackBefore2nd);
             }
 
             /* ⭐ 关键：destroy 里摘掉的必须是**造实例时注册的那个函数** */
@@ -398,7 +415,8 @@ function main() {
               registered: registeredDuringCreate.length,
               removedMine: removedMine.length,
               openedAfterDestroy: openedAfterDestroy,
-              idempotent: idempotent
+              idempotent: idempotent,
+              secondDestroyRemoved: secondDestroyRemoved
             };
           });
         })
@@ -452,9 +470,13 @@ function main() {
           pass(r.openedAfterDestroy === false,
             '③ destroy() 后组件必须失效（输入不再开列表）',
             'destroy 后派发 input ⇒ 列表被打开=' + r.openedAfterDestroy);
-          pass(r.idempotent,
-            '③ destroy() 必须幂等（重复调用不抛）',
-            r.idempotent ? '第二次调用未抛' : '🔴 第二次调用抛了');
+          pass(r.idempotent && r.secondDestroyRemoved === 0,
+            '③ destroy() 必须幂等（重复调用不抛、也不重复摘监听）',
+            r.idempotent
+              ? ('未抛' + (r.secondDestroyRemoved === 0
+                  ? '，且没有重复摘监听'
+                  : '，但重复摘了 ' + r.secondDestroyRemoved + ' 个监听（幂等守卫失效）'))
+              : '🔴 第二次调用抛了');
           return null;
         })
 

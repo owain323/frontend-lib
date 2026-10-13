@@ -64,14 +64,23 @@ MUTANTS = [
      "      destroy: destroy,\n",
      "",
      '③'),
-    ('destroy 不摘 document 级监听',
-     "document.removeEventListener('click', onDocClick);",
-     "/* 忘了摘 document 监听 */",
+    # 🔴 0.8.8 改：收编 dismissable 核之后，组件不再自己摘 document 监听
+    #    （改由核的 destroy() 负责）。原变异串已不存在 ⇒ 这条反向控制失效。
+    #⇒ 改为变异「不调 dismiss.destroy()」—— 那才是现在的等价漏洞。
+    ('destroy 不调微行为核的 destroy（栈泄漏）',
+     "      dismiss.destroy();",
+     "      /* RC: 忘了调 dismiss.destroy() */",
      '③'),
-    ('destroy 不幂等（去掉守卫）',
-     "      if (destroyed) return;\n      destroyed = true;",
-     "      destroyed = true;",
-     '③'),
+    # ⚠️ 这条变异体 0.8.8 被**主动移除**，两次尝试都抓不到，原因写在这里：
+    #   去掉组件的 destroyed 守卫后，二次 destroy 观测不到任何差异 ——
+    #     ① 「不抛」：核的 destroy 自身幂等（indexOf 找不到就不 splice）⇒ 不抛
+    #     ② 「不重复摘 document 监听」：二次摘的是**元素监听**，
+    #        而劫持只记 document 上的 click ⇒ 根本记不到
+    #   ⇒ 当前架构下**没有任何观测手段**能区分「有守卫」与「无守卫」，
+    #      它俩行为上等价。
+    #   ⇒ 与其留一条永远红的反向控制（那是噪声，且会让人以为门禁坏了），
+    #      不如承认：组件层的 destroyed 守卫是**防御性冗余，不是可测契约**。
+    #   ⭐ 反面教材：不要为了让反向控制变绿而给产品加逻辑。
     ('uid 回到"只在 !list.id 时递增"（调用方给 id 就撞）',
      "    var seq = ++uid;",
      "    var seq = uid;",
