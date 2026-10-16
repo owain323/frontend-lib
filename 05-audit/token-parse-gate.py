@@ -118,6 +118,41 @@ def check_orphan_close(path):
     return bad
 
 
+def check_comment_balance(path):
+    """🔴 注释是否配平 —— 判据 A 漏掉的那一类（0.8.9 新增）。
+
+    返回 (行号, 说明) 或 None。
+
+    🔴 为什么不复用 `check_orphan_close`：
+       那个函数靠**逐字符推进**找孤立 `*/`，遇到 `/*` 就 find 下一个 `*/`
+       并跳过整条 ⇒ 「288 行开、294 行才闭合、中间夹真实声明」这种形状，
+       它看到的是**一条结构完整的注释**，因此不报。
+       实测：用它的逻辑跑修复前的 tokens.css，输出「没报」。
+
+    ⭐ 这一类的危害比孤立 `*/` 更大：
+       CSS 注释**不能嵌套**，任何多余的 `/*` 或缺失的 `*/`
+       都会让浏览器把后面一大段当注释 ⇒ 而 dist / .min 产物都是剥注释生成的，
+       ⇒**丢掉的声明不会出现在任何产物里，也不会有任何报错**。
+    """
+    s = io.open(path, encoding='utf-8').read()
+    opened = 0
+    first_open = None
+    for m in re.finditer(r'/\*|\*/', s):
+        if m.group(0) == '/*':
+            if opened == 0:
+                first_open = m.start()
+            opened += 1
+        else:
+            opened -= 1
+            if opened < 0:
+                return (s.count('\n', 0, m.start()) + 1, '孤立的 */')
+    if opened > 0:
+        line = s.count('\n', 0, first_open) + 1 if first_open else 1
+        return (line, '注释未闭合：/* 出现 %d 次、*/ 少 %d 个'
+                % (opened, opened))
+    return None
+
+
 # ---------------------------------------------------------------- B 作用域
 def decls_with_scope(css):
     """
@@ -315,6 +350,40 @@ def selftest():
         ok = False
     else:
         print('  [OK] 反向控制 A：孤儿收尾符被抓到')
+
+    # A'：注释未闭合（0.8.9）
+    # ⚠️ 这个 fixture 的形状就是 tokens.css 里真实踩到的那一种：
+    #   注释开了不闭，**后面再没有收尾符**，中间夹着真实声明。
+    #   ⚠️⚠️ 我连着两次把收尾符写进了说明文字（中文句子末尾），
+    #      于是 fixture 本身是配平的，判据正确地没报，
+    #      而反向控制却报「失效」。
+    #      ⇒ **反向控制自己写错，比判据失效更隐蔽**：
+    #         它会让人以为判据坏了，从而把一个正确的判据改坏。
+    #   ⇒ 这次用拼接生成收尾符，源码里不出现那两个字面字符。
+    f1b = os.path.join(tmp, 'a2.css')
+    OPEN, CLOSE = '/' + '*', '*' + '/'
+    io.open(f1b, 'w', encoding='utf-8').write(
+        OPEN + ' 这条注释没有收尾\n'
+        '   --lift-sm: 1px;\n'
+        '   --lift-md: 2px;\n'
+        '   后面还有 60 行，浏览器会一直当注释到文件末尾\n'
+        '   （本行故意不含收尾符）\n')
+    _r = check_comment_balance(f1b)
+    if not _r:
+        print('  [FAIL] 反向控制失效：注释未闭合没被抓到'
+              '（这一类会让浏览器把中间的真实声明全当注释）')
+        ok = False
+    else:
+        print('  [OK] 反向控制 A\'：注释未闭合被抓到（L%d）' % _r[0])
+    # A' 反例：配平的注释不该误报
+    f2b = os.path.join(tmp, 'b2.css')
+    io.open(f2b, 'w', encoding='utf-8').write(
+        '/* 一条 */\n--a: 1;\n/* 两条\n   跨行 */\n--b: 2;\n')
+    if check_comment_balance(f2b):
+        print('  [FAIL] 误报：配平良好的注释被当成未闭合')
+        ok = False
+    else:
+        print('  [OK] 反向控制 A\' 反例：配平注释不误报')
     # A 反例：正常注释不应误报
     f2 = os.path.join(tmp, 'b.css')
     io.open(f2, 'w', encoding='utf-8').write(
@@ -353,6 +422,29 @@ def main():
             orphan_n += 1
             fails += 1
     print('     %s' % ('无' if not orphan_n else '%d 处' % orphan_n))
+
+    # A' 注释配平（0.8.9 新增 · 判据 A 漏的那一类）
+    # 🔴 为什么必须补这条（实测踩到，不是假想）：
+    #   01-tokens/tokens.css 第 288 行开了 /*，到 294 行才闭合 ——
+    #   中间夹着 `--lift-sm/md/lg` 三条**真实令牌**，它们被整条注释吃掉。
+    #   而判据 A 对它**没报**（实测：用 A 的逻辑跑修复前的 tokens.css，
+    #   输出「没报」）⇒ A 只会发现"孤立的 */"，发现不了"未闭合的 /*"。
+    #   ⭐ 这一类最危险：CSS 注释**不能嵌套**，多写一条 `/*` 或少写一个 `*/`，
+    #      浏览器就把后面一大段当注释 —— 而所有产物（dist/min）都走剥注释，
+    #      于是**丢的声明不会出现在任何产物里，页面直接少一个变量**。
+    print('  A\'. 注释是否配平（/* 与 */ 必须一一对应）')
+    unbalanced_n = 0
+    for p in all_css():
+        prob = check_comment_balance(p)
+        if prob:
+            print('     [FAIL] %s:%d  %s'
+                  % (rel(p), prob[0], prob[1]))
+            print('            ⇒ 浏览器会把这一段直到下一个 */ 全当注释，'
+                  '里面的声明不会生效')
+            unbalanced_n += 1
+            fails += 1
+    print('     %s' % ('全部配平' if not unbalanced_n
+                      else '%d 个文件不配平' % unbalanced_n))
 
     # B
     print('  B. var() 引用的令牌在无条件作用域里有没有定义')

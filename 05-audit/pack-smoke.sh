@@ -60,6 +60,30 @@ if [ -n "$(echo "$LEAK" | tr -d ' ')" ]; then
 fi
 echo "  OK    tarball 内无内部文档"
 
+# ---------- 3b. 内部判据产物 / 负向 fixture 不该进包 ----------
+# 🔴 0.8.9 新增。为什么单独一条：
+#   `files` 白名单是**目录级**的（"ai/" "dist/" 整目录进包），
+#   所以目录里的**内部判据产物**会跟着一起进去 ——
+#   上一轮 npm pack 实测 tarball 里就有：
+#     ai/surface.baseline.json         （运行时 API 快照基线，门禁自己比对用）
+#     adapters/presentation/fixtures/（故意做坏的负向 fixture）
+#     dist/manifest.json              （构建元数据，29 KB）
+#   ⇒ 这三样对**使用者**零价值，只是让包变大、让内部实现细节外泄。
+#
+# ⚠️ 为什么不改 files 改成显式排除：白名单目录已经很长，
+#    再加一串 `!` 排除会让"包里该有什么"更难读。
+#    ⇒ 保持白名单简洁，用**判据**守住。
+JUNK=$(cd "$PKG" && find . \( -name '*baseline*.json' -o -name 'manifest.json' \
+        -o -path '*/fixtures/*' -o -name '*selfcheck*' \) 2>/dev/null \
+        | tr '\n' ' ')
+if [ -n "$(echo "$JUNK" | tr -d ' ')" ]; then
+  echo "  FAIL  🔴 tarball 里出现了内部判据产物 / 负向 fixture："
+  echo "$JUNK" | tr ' ' '\n' | grep -v '^$' | sed 's/^/          /'
+  echo "        ⇒ 这些是门禁自己比对用的，给使用者零价值"
+  exit 1
+fi
+echo "  OK    tarball 内无内部判据产物 / 负向 fixture"
+
 # ---------- 4. exports 声明的每个入口都必须真实存在 ----------
 #⚠️ 必须按**通配语义**判，不能逐条- [ -e ]：
 #    `./patterns/*` 这种通配导出对应的目标 `03-patterns/*` 本身带*，

@@ -291,6 +291,15 @@ run "sparkline"  node 05-audit/sparkline-contract.js
 # 科学绘图（09-assets）：判据与 BI 图表不同 —— 缺失去零、对数轴、单位、不算统计量
 run "scientific-plot" node 05-audit/scientific-plot-check.js
 run "a11y-scan"   node 05-audit/a11y-scan.js
+# 🔴 a11y 的反向控制（0.8.9 接上 · 审计 P1-8）：
+#   `_a11y-reverse-control.js` 早就写好了 —— 注入 5 类典型违规
+#   （img 无 alt / input 无 label / id 重复 / tabindex 乱序 / 对比度过浅），
+#   验证 axe 是否**真的抓得到**。
+#   但它零引用，从没被任何门禁调用过 ⇒ 按本库自己的口号
+#   「没有反向控制的门禁不算门禁」，**a11y 扫描此前一直不算门禁**。
+#   ⇒ 现在接进来：先证明 axe 有牙，再看真实页面。
+run "a11y-reverse" node 05-audit/_a11y-reverse-control.js
+
 run "clicktest"   node 05-audit/clicktest.js
 run "button"       node 05-audit/button-check.js
 run "input"       node 05-audit/input-check.js

@@ -26,6 +26,11 @@
 </style>
 </head>
 <body class="page page">
+<main class="wrap">
+  <!-- 🔴 0.8.9：axe 报 landmark-one-main（moderate）—— 本页原本没有任何 landmark 容器。
+     加 <main> 是语义正确且不改布局的做法（<main> 默认不产生 box）。
+     ⚠️ 试过给 <body> 加 role="main"：axe 明确报 aria-allowed-role（该 role 对 <body>
+        是禁止的），而且也没解决 landmark 违规 ⇒ 已回退。 -->
 
 <h1>进度条 · progress</h1>
 <p class="lede">进度<strong>已知</strong>时用它；进度<strong>不知道</strong>时用 <code>skeleton</code>。混用是常见错误。</p>
@@ -144,5 +149,6 @@ document.querySelectorAll('.progress, .progress-ring, .progress-steps').forEach(
   }
 });
 </script>
+</main>
 </body>
 </html>

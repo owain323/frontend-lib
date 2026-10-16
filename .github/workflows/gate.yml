@@ -72,19 +72,28 @@ jobs:
         run: python3 05-audit/tsc-gate.py
 
       - name: 静态门禁
-        run: |
-          set -e
-          python3 05-audit/mojibake-check.py .
-          python3 05-audit/comment-balance.py
-          python3 05-audit/perf-gate.py
-          python3 05-audit/coverage-gate.py
-          python3 05-audit/doc-facts-gate.py
-          python3 05-audit/proper-noun-scan.py
-          python3 05-audit/hype-scan.py
-          python3 05-audit/leak-scan.py
-          python3 05-audit/es5-gate.py .
-          # 版本四处一致（0.8.8 加）：手改版本号是本库最常见的自相矛盾来源
-          python3 05-audit/bump-version.py --check
+        # 🔴🔴 0.8.9 改：不再手挑门禁清单，改为调用 `MODE=fast bash 05-audit/check-all.sh`。
+        #
+        #   为什么必须改（这是 P0-1 的**同源病根**，只是长在 CI 上）：
+        #     原来这里手挑了 10 道门禁，而 check-all.sh 里注册了 **135 道**。
+        #     ⇒ 上面每一轮修的门禁 —— 包括 P0-1 修好的七道假绿门禁
+        #       （hardcode / icon / measure / license / numeric / tierA / reuse-check）
+        #       与新增的 rewrite-residue-gate —— **在 CI 上一次都没跑过**。
+        #     ⇒ 「本地全绿、CI 也全绿」这个判断在 125 道上从来没成立过。
+        #
+        #   为什么手挑必然漏：清单是**另一份**「哪些门禁重要」的表述，
+        #     而门禁清单本身就在 check-all.sh 里 —— 两份清单必然漂移。
+        #     这与 05-audit 的重复判定（E31）是同一个病：
+        #     **同一个决定写两遍 ⇒ 迟早打架。**
+        #
+        #   MODE=fast 会跳过浏览器类门禁（需 Chromium），那是 `browsers` job 的事；
+        #   静态部分与本地跑的**完全同一份代码**，不再有「CI 少跑了哪些」这个问题。
+        run: MODE=fast bash 05-audit/check-all.sh
+
+      # ⚠️ 上面那个 run 的环境是 ubuntu，check-all.sh 里的 python3 就是系统 python3。
+      #   Windows 上 `PY` 指向托管 python —— 两边脚本同源，只是解释器不同。
+      - name: 版本四处一致（手改版本号是最常见的自相矛盾来源）
+        run: python3 05-audit/bump-version.py --check
 
       - name: 打包实装冒烟（npm pack → 装进空项目 → 核对）
         run: bash 05-audit/pack-smoke.sh

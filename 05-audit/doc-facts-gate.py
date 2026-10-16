@@ -154,6 +154,52 @@ def real_components():
     return out
 
 
+def real_css_size():
+    """🔴 源码 CSS 的真实体积与注释占比（0.8.9 · 审计 P2-1）。
+
+    ⭐ 口径（**写在函数里，不靠默契**）：
+      · 范围：01-tokens ~ 09-assets 下的 .css，**不含** dist / node_modules /
+        05-audit / 10-review（那些是产物与工具，不是源码）
+      · 原始体积：文件的 UTF-8 字节数
+      · 注释体积：`/* … */` 的字节数之和（按 CSS 规则，`/*` 到**下一个** `*/`，
+        注释不可嵌套）
+
+    ⚠️ 第一版我试图 `import dist_cost_gate` 复用它的实现，结果报了
+      `ModuleNotFoundError`（它的接口是 load/index/src_gzip，与我猜的名字
+      完全不同）⇒ **事实取不到 ⇒ 判据整条空转 ⇒ 又一次「因为没跑所以通过」**。
+      ⇒ 宁可自己写一份**口径写明**的，也不要依赖一个不存在的接口。
+      这与 E41 是同一个病：门禁看起来在工作，实际什么都没测。
+    """
+    import re as _re
+    raw = com = 0
+    n_files = 0
+    for d in ('01-tokens', '02-primitives', '03-patterns',
+              '04-recipes', '09-assets'):
+        base = os.path.join(ROOT, d)
+        if not os.path.isdir(base):
+            continue
+        for dp, dn, fn in os.walk(base):
+            if 'dist' in dp.replace(os.sep, '/').split('/'):
+                continue
+            for f in fn:
+                if not f.endswith('.css'):
+                    continue
+                p = os.path.join(dp, f)
+                try:
+                    data = io.open(p, 'rb').read()
+                except OSError:
+                    continue
+                n_files += 1
+                raw += len(data)
+                txt = data.decode('utf-8', 'replace')
+                for m in _re.finditer(r'/\*.*?\*/', txt, _re.S):
+                    com += len(m.group(0).encode('utf-8'))
+    return {'raw_kb': raw / 1024.0,
+            'comment_kb': com / 1024.0,
+            'comment_ratio': (com / raw * 100) if raw else 0.0,
+            'n_files': n_files}
+
+
 def real_gates():
     """check-all.sh 里注册的门禁**名单**（不是数字）。
 
@@ -302,6 +348,31 @@ PAT_COMPONENTS = [
     r'(\d+)\s*个组件成熟度',
 ]
 PAT_GATES = [r'(\d+)\s*道门禁']
+
+# 🔴 0.8.9 新增：源码 CSS 的体积与注释占比（审计 P2-1 复现）
+#
+#   事故形态：README 写「全库 CSS 有 64% 是注释（323.9 KB 原始里 207.5 KB）」，
+#   那是某一天的快照。源码改一轮，数字就变了，**但没人会记得回来改**
+#   ⇒ 与「门禁数」「组件数」完全同类的问题，只是此前没被这条门禁覆盖。
+#
+#   为什么这类数字必须进门禁（而不是靠人记得）：
+#     ERRORS.md 里已经登记过两次同类漂移 ——
+#     ① tokens 同一个令牌在文件里定义两次
+#     ② CHANGELOG 顶部的 H1 夹在版本小节之后
+#     两次的共同点：**都是「不由生成器产出」的文字/数字**。
+#
+#   ⚠️ 只查 README 与对外文档；**CHANGELOG 里的历史数字不改**
+#     （那是当时的事实记录，改它就是篡改历史）。
+#   ⚠️ 只收「全库」口径的一种写法。**不要**把
+#     「page.css 12.6 KB 里 10.8 KB 是注释」也纳入 ——
+#     那是**单个文件**的数字，拿它跟全库 371.7 KB 比必然误报
+#     （我第一版就踩了这个：门禁报了 README L88 一条假的）。
+#     ⇒ 单文件体积不属于本判据；它属于 dist-cost 的职责范围。
+PAT_SIZE = [
+    r'全库[^\n]{0,20}?(\d+\.?\d*)\s*KB 原始里\s*(\d+\.?\d*)\s*KB',
+    r'(\d+\.?\d*)\s*KB 原始里\s*(\d+\.?\d*)\s*KB（[^）]*全库[^）]*）',
+]
+PAT_COMMENT_RATIO = [r'(\d+(?:\.\d+)?)%\s*是注释']
 PAT_ALL_STABLE = [
     r'全部(?:升到|是)?\s*stable',
     r'全是\s*stable',
@@ -316,6 +387,7 @@ def main():
 
     conf = contract()
     gates, gate_problems = real_gates()
+    size = real_css_size()
     comps = real_components()
     all_names = set()
     for v in comps.values():
@@ -399,6 +471,37 @@ def main():
                 problems.append((f, '门禁数量与实际不符',
                                  '第 %d 行写 %d 道，check-all.sh 注册 %d 道'
                                  ' ⇒ %s' % (no, claim, len(gates), line[:60])))
+
+        # 🔴 零文件守卫：扫到 0 个 CSS ⇒ 整条判据空转 ⇒ 必须报红
+        if not size.get('n_files'):
+            problems.append((
+                '源码 CSS', '体积事实无从核对',
+                '一个 .css 都没扫到 ⇒ 「体积数字」这条判据是**空转**的，'
+                '不应判通过'))
+
+        # F2b 源码 CSS 的体积与注释占比（0.8.9 新增 · 审计 P2-1）
+        if size and size.get('raw_kb') and size.get('n_files'):
+            raw_kb = size['raw_kb']
+            com_kb = size['comment_kb']
+            ratio = size['comment_ratio']
+            for pat in PAT_SIZE:
+                for m in re.finditer(pat, text):
+                    d_raw, d_com = float(m.group(1)), float(m.group(2))
+                    # 容差 0.6 KB：注释占比四舍五入后回算会有零点几的偏差
+                    if abs(d_raw - raw_kb) > 0.6 or abs(d_com - com_kb) > 0.6:
+                        problems.append((
+                            f, '源码体积数字与实际不符',
+                            '写 %s KB / %s KB，实际 %.1f KB / %.1f KB'
+                            ' ⇒ %s' % (d_raw, d_com, raw_kb, com_kb,
+                                       m.group(0)[:50])))
+            for pat in PAT_COMMENT_RATIO:
+                for m in re.finditer(pat, text):
+                    d = float(m.group(1))
+                    if abs(d - ratio) > 1.0:
+                        problems.append((
+                            f, '注释占比与实际不符',
+                            '写 %.1f%%，实测 %.1f%% ⇒ %s'
+                            % (d, ratio, m.group(0)[:40])))
 
         # F3 成熟度：有 beta 就不许说"全部 stable"
         if (maturity.get('beta') or 0) > 0:

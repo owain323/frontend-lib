@@ -8,8 +8,8 @@
     "beta": "有 demo + 专属门禁，但**下面至少有一条没过**：① 状态仍用 .is-* class 表达（违反 INVARIANT I-8）；② 该收编到微行为核的行为还是**手写副本**（manual）或**根本没做**（gap） ⇒ 改一处不会全库跟着变（I-14 的病）",
     "stable": "以上四条全过：有 demo + 专属门禁 + 状态全在 data-* 属性上 + 行为零欠账",
     "$note": "成熟度是【计算出来的】，不是拍的。手写把某个组件改成 stable 而它还有 manual / gap ⇒ 门禁会红。",
-    "$whyFourth": "🔴 为什么 M8 要加第四条（0.7.6）：只用前三条时 27 个组件**全是 stable** ⇒ ladder 没有任何鉴别力（对标 Primer 六档阶梯，每档都有硬判据）。补上行为欠账这一条后：stable 20 / beta 7。",
-    "$strictImpact": "⚠️ strict 档位只放行 stable ⇒ 这 7 个组件在 strict 下不可用（accordion / combobox / drawer / dropdown / overlay / select / tooltip）。这是**有意的**：它们的行为还有手写副本或缺一个该有的行为。要用就切 standard 档。"
+    "$whyFourth": "🔴 为什么第四条判据不能省：用前三条时多数组件会**全是 stable** ⇒ ladder 没有任何鉴别力（对标 Primer 六档阶梯，每档都有硬判据）。补上「行为欠账」这一条后：**stable 29 / beta 4**（本行由生成器算出，不要手改）。",
+    "$strictImpact": "⚠️ strict 档位只放行 stable ⇒ 4 个组件在 strict 下不可用：accordion / drawer / dropdown / overlay。放宽 strict 会让「未收编的手写行为」进入生产路径。（本行由生成器算出，不要手改）"
   },
   "summary": {
     "total": 33,
@@ -853,7 +853,9 @@
         "legacyClass": []
       },
       "aria": {
-        "roles": [],
+        "roles": [
+          "tooltip"
+        ],
         "attrs": []
       },
       "usesOtherNamespaces": [],
@@ -1323,7 +1325,9 @@
         "legacyClass": []
       },
       "aria": {
-        "roles": [],
+        "roles": [
+          "main"
+        ],
         "attrs": [
           "hidden"
         ]
@@ -1370,6 +1374,7 @@
       },
       "aria": {
         "roles": [
+          "main",
           "progressbar"
         ],
         "attrs": [
@@ -1523,7 +1528,9 @@
         "legacyClass": []
       },
       "aria": {
-        "roles": [],
+        "roles": [
+          "main"
+        ],
         "attrs": [
           "busy",
           "hidden"
@@ -1620,8 +1627,12 @@
         "legacyClass": []
       },
       "aria": {
-        "roles": [],
-        "attrs": []
+        "roles": [
+          "region"
+        ],
+        "attrs": [
+          "label"
+        ]
       },
       "usesOtherNamespaces": [
         "card__title",
