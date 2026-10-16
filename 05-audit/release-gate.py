@@ -31,6 +31,11 @@ import os
 import io
 import json
 import re
+import subprocess
+
+# CHANGELOG 版本标题解析 —— 与 bump-version / doc-facts **共用同一份**（E31）
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _changelog                                     # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -73,8 +78,13 @@ def main():
     else:
         print('      VERSION        = %s' % ver)
         print('      package.json   = %s' % pkg.get('version'))
-        m = re.search(r'##\s*\[?v?(\d+\.\d+\.\d+)\]?', cl)
-        cl_ver = m.group(1) if m else '(未找到)'
+        # 🔴 用共享解析器（0.8.9 修 · E31 的**第三次**）：
+        #   这里原来是第三份本地正则 `##\s*\[?v?(\d+\.\d+\.\d+)\]?` ——
+        #   它**不要求日期**，于是会匹配到正文里任何 `## x.y.z` 字样。
+        #   实测被自己人坑：CHANGELOG 的条目里写了
+        #   「往下扫到了正文里的 ## 0.4.0 的第二部分…」⇒ 本判据读出 0.4.0。
+        #   ⇒ 三处（bump-version / doc-facts / 这里）现在共用 `_changelog.py`。
+        cl_ver = _changelog.latest_version(cl) or '(未找到)'
         print('      CHANGELOG      = %s' % cl_ver)
         if pkg.get('version') != ver:
             print('      X package.json 与 VERSION 不一致')
@@ -278,6 +288,112 @@ def main():
         bad += 1
     else:
         print('      OK 根级 .md 与 docs/ 都在包里')
+    print('')
+
+    # ---------- ⑩ git tag 锚点（0.8.9 加 · 外部审计 P1-3）----------
+    #  事故：本库此前 **0 个 tag**，于是「0.8.8 发布了什么」无法与某个
+    #  提交点对应 —— 外部使用者按版本回溯不了。
+    #  判据：当前版本必须有 **annotated** tag `v<版本>`，
+    #        且该 tag 指向的提交里 VERSION 文件就是这个版本。
+    #  ⚠️ 为什么要求"该提交的 VERSION 一致"：只查 tag 存在的话，
+    #    给任意提交打个 v0.8.8 也能过 —— 那等于没有锚点。
+    print('  [10] git tag 锚点')
+    ver_now = read_text('VERSION').strip() if os.path.isfile(
+        os.path.join(ROOT, 'VERSION')) else None
+    tag = 'v%s' % ver_now if ver_now else None
+
+    def _git(*args):
+        """→ str（成功）/ None（**git 本身跑不起来**）。
+
+        🔴 必须区分这两种失败（0.8.9 实测踩到）：
+          第一版这里把异常吞成 ''，于是 `git cat-file` 因为
+          **subprocess 没 import** 而抛错 ⇒ 判据说「没有 v0.8.8 这个 tag」，
+          而 tag 明明在（`git tag -l` 打得出来）。
+          ⇒ 「工具坏了」被报成「事实不满足」，是最难查的一类假红。
+        """
+        try:
+            return subprocess.run(
+                ('git',) + args, cwd=ROOT, capture_output=True, text=True,
+                timeout=20).stdout.strip()
+        except Exception:
+            return None
+
+    _probe = _git('rev-parse', '--git-dir')
+    if _probe is None or _probe == '':
+        print('      X git 不可用 ⇒ 「tag 锚点」这条判据**视野已空**，'
+              '不许判通过（也不能判"没有 tag"）')
+        bad += 1
+        _git_ok = False
+    else:
+        _git_ok = True
+    tag_type = _git('cat-file', '-t', tag) if (tag and _git_ok) else ''
+    if not _git_ok:
+        pass
+    elif not tag_type:
+        print('      X 没有 `%s` 这个 tag ⇒ 版本与提交点之间没有锚点'
+              % tag)
+        print('        打一个：git tag -a %s <版本对应的提交>' % tag)
+        bad += 1
+    elif tag_type != 'tag':
+        print('      X `%s` 是 lightweight tag（%s）'
+              ' ⇒ 没有 tag message，回溯时看不到"这一版是什么"'
+              % (tag, tag_type))
+        bad += 1
+    else:
+        at_ver = _git('show', '%s:VERSION' % tag).strip()
+        if at_ver != ver_now:
+            print('      X `%s` 指向的提交里 VERSION=%r，而当前是 %r'
+                  ' ⇒ 锚点指错了地方' % (tag, at_ver, ver_now))
+            bad += 1
+        else:
+            print('      OK %s（annotated）指向的提交 VERSION 也是 %s'
+                  % (tag, ver_now))
+    print('')
+
+    # ---------- ⑪ CHANGELOG 结构（0.8.9 加 · 外部审计 P1-3）----------
+    #  之前是"自创格式"：版本标题 `## 0.8.8 — 2026-10-14`、文件里两个 H1、
+    #  无 `[Unreleased]`。工具链解析不了（Keep a Changelog 的形状是
+    #  `## [x.y.z] - YYYY-MM-DD`）。
+    #  判据四条，全部机械可判：
+    #    ① 恰有一个 H1，且在最前
+    #    ② 有 `## [Unreleased]`
+    #    ③ 每个版本标题都带日期（由 `_changelog.HEADING` 保证）
+    #    ④ 版本条目严格降序（旧在上还是新在上要一致 —— 本库取新在上）
+    print('  [11] CHANGELOG 结构')
+    cl_path = os.path.join(ROOT, 'CHANGELOG.md')
+    if not os.path.isfile(cl_path):
+        print('      X 找不到 CHANGELOG.md')
+        bad += 1
+    else:
+        cl = io.open(cl_path, encoding='utf-8').read()
+        h1 = [i for i, l in enumerate(cl.split('\n'))
+              if l.startswith('# ') and not l.startswith('## ')]
+        if len(h1) != 1 or h1[0] != 0:
+            print('      X 应**恰有一个** H1 且在第 1 行；实测 %d 个，'
+                  '行号 %s' % (len(h1), [i + 1 for i in h1][:4]))
+            bad += 1
+        if not _changelog.UNRELEASED.search(cl):
+            print('      X 缺 `## [Unreleased]` 段'
+                  '（Keep a Changelog 的第一段）')
+            bad += 1
+        hs = _changelog.headings(cl)
+        if not hs:
+            print('      X 一个版本条目都没认出来 ⇒ 这条判据视野已空')
+            bad += 1
+        else:
+            vers = [tuple(int(x) for x in h[0].split('.')) for h in hs]
+            if vers != sorted(vers, reverse=True):
+                print('      X 版本条目不是降序（新在上）：%s'
+                      % [h[0] for h in hs][:6])
+                bad += 1
+            elif hs[0][0] != ver_now:
+                print('      X 最新版本条目是 %s，而 VERSION 是 %s'
+                      ' ⇒ 改了版本号却没在 CHANGELOG 加条目'
+                      % (hs[0][0], ver_now))
+                bad += 1
+            else:
+                print('      OK 单 H1 + [Unreleased] + %d 个版本条目降序'
+                      '（最新 %s = VERSION）' % (len(hs), hs[0][0]))
     print('')
     if bad:
         print('  => 有 %d 项发布契约未闭环' % bad)

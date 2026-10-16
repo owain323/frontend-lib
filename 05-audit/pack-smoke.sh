@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
+# LAYER: component
 # ============================================================================
 # pack-smoke.sh — 打包实装冒烟
+#
+# 🔴 LAYER: component（0.8.9 加）—— 本脚本要 `npm pack` + 在临时目录真装一次，
+#   属重型外部工具（慢、且依赖网络/磁盘）。命令文本是
+#   `bash 05-audit/pack-smoke.sh`，不含 node ⇒ 之前 MODE=fast 会照跑它
+#   （外部审计 P2-6 点的另一处）。
 #
 # ⭐ 为什么需要这道（2026-10-06）
 #   release-gate 检查的是**源码仓库状态**（version/exports/files 是否存在）。

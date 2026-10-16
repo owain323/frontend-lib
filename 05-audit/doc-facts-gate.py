@@ -41,7 +41,7 @@ doc-facts-gate.py — 文档事实门禁（任务 W4，2026-10-09 加固）
   F2 门禁总数        ← check-all.sh 的**注册名单**（run / run_report，名字去重）
   F3 成熟度          ← summary.byMaturity；有 beta 时文档不许说"全部 stable"
   F4 组件清单        ← 目录下真实存在的组件（说"还没做"但实际有 ⇒ 红）
-  F5 发布记录        ← CHANGELOG 的 `## X.Y.Z — ` 后面必须是日期
+  F5 发布记录        ← CHANGELOG 的 `## [X.Y.Z] - ` 后面必须是 YYYY-MM-DD
 
   视野声明：会打印扫了多少份文档。**扫到 0 份 ⇒ 判失败**（视野已空不许通过）。
 
@@ -67,6 +67,11 @@ import re
 import subprocess
 import sys
 
+# CHANGELOG 版本标题的解析器 —— 与 `bump-version.py` **共用同一份**
+# （E31：同一个判定不要写两遍；实测它俩曾经各写一份正则并因此漂移）
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _changelog                                    # noqa: E402
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 COMPONENT_DIRS = ('02-primitives', '03-patterns', '04-recipes', '09-assets')
 
@@ -81,7 +86,13 @@ EXCLUDE_FILES = ('CHANGELOG.md',)      # 单独处理（历史段要豁免）
 #   skip              这台机器跑不了（缺 node / Pillow / typescript）
 #   ⇒ 以前 skip 是裸 `echo`，不在名单里 ⇒ 门禁总数随机器变（有 node 的机器多 3 条）
 RUN_RE = r'^\s*(?:\w+=\S+\s+)*run(?:_report)?\s+"([^"]+)"'
-SKIP_RE = r'^\s*skip\s+"([^"]+)"'
+# 🔴 SKIP_RE 的 `[^"$]` 是必需的（0.8.9 修）：
+#   0.8.9 给 `run()` / `run_report()` 加了「按层跳过就打印 SKIP」，
+#   那两个函数体里各有一行 `skip "$name" "..."`。
+#   它们的名字是**变量**，不是注册项 —— 但原来的 `([^"]+)` 会把它算成
+#   一道叫 `$name` 的门禁 ⇒ 门禁总数从 140 变成 141（多出来的那 1 道不存在）。
+#   ⇒ 名字里带 `$` 的一律不算注册（真正的注册项都写字面量名字）。
+SKIP_RE = r'^\s*skip\s+"([^"$]+)"'
 
 
 # ===========================================================================
@@ -310,9 +321,18 @@ def strip_inline(s):
 
 
 def version_at(text, pos):
-    """pos 之前最近的 `## X.Y.Z` 标题的版本号（没有则 None）。"""
+    """pos 之前最近的**版本条目**的版本号（没有则 None）。
+
+    🔴 0.8.9 改：解析交给 `_changelog.py`（唯一来源）。
+      原来是本地正则 `^##\\s+(\\d+\\.\\d+\\.\\d+)`，有两个洞：
+        ① 不认 Keep a Changelog 的 `## [x.y.z] - date` ⇒ 改格式后**一个都认不出**
+        ② 会认正文里的 `## 0.4.0 的第二部分：…`
+      洞 ① 的后果特别隐蔽：`ver` 恒为 None ⇒ 调用处
+      `if cur and ver != cur: continue` 对**每一行**都成立
+      ⇒ 整段 CHANGELOG 检查**静默空转**（判据还在跑，什么都没查）。
+    """
     vm = None
-    for m in re.finditer(r'^##\s+(\d+\.\d+\.\d+)', text[:pos], re.M):
+    for m in _changelog.HEADING.finditer(text[:pos]):
         vm = m.group(1)
     return vm
 
@@ -347,7 +367,17 @@ PAT_COMPONENTS = [
     r'(?:本版|当前|本库|全库|总共|一共|共)\s*(?:有\s*)?(\d+)\s*个组件',
     r'(\d+)\s*个组件成熟度',
 ]
-PAT_GATES = [r'(\d+)\s*道门禁']
+PAT_GATES = [
+    # 🔴 只在**声明总数**时才比对（0.8.9 修）：
+    #   原来的 `(\d+)\s*道门禁` 会把随口一提的数量也当总数 ——
+    #   实测被自己人坑：ERRORS.md 里写「结论行后面还有约 20 道门禁」
+    #   ⇒ 判据报「第 794 行写 20 道，注册 142 道」。
+    #   ⇒ 句子里必须出现"总数"语汇（共 / 全量 / 本库 / 总计 / 合计 / 一共 / 注册）。
+    #   ⇒ 本库现在只有 CONTRIBUTING 一处这样写（「全量是 **142 道门禁**」）。
+    r'(?:共|全量|本库|总计|合计|一共|注册)[^\n]*?(\d+)\s*道门禁',
+    # 「全量门禁：N 道」这种不带"门禁"后缀的写法（CONTRIBUTING 早先用过）
+    r'(?:全量|本库|共|总计|合计|一共)门禁[：:]\s*(\d+)\s*道',
+]
 
 # 🔴 0.8.9 新增：源码 CSS 的体积与注释占比（审计 P2-1 复现）
 #
@@ -563,17 +593,36 @@ def main():
         for l in lines:
             offsets.append(offsets[-1] + len(l) + 1)
         fences = code_ranges(raw)
+        # 🔴 零视野守卫（0.8.9 加）——
+        #   `ver`（下面的 `version_at`）靠 `_changelog.headings` 得出。
+        #   若一个版本条目都认不出，`if cur and ver != cur: continue`
+        #   会对**每一行**都成立 ⇒ 整段 CHANGELOG 检查「静默空转」，
+        #   而输出依旧是「OK 文档里的事实与仓库一致」。
+        #   这正是本文件自己在头部写的原则：**扫到 0 份 ⇒ 判失败**。
+        _n_ver = len(_changelog.headings(raw))
+        if not _n_ver:
+            problems.append((
+                'CHANGELOG.md', '一个版本条目都没认出来',
+                '文件里没有任何 `## [x.y.z] - YYYY-MM-DD` 形状的标题'
+                ' ⇒ 「版本段事实」这条判据的视野已空，不许判通过'))
         for i, l in enumerate(lines):
             if any(a <= i <= b for a, b in fences):
                 continue
             line = strip_inline(l)
             ver = version_at(raw, offsets[i])
             # ③/⑤ 顺带：版本条目必须带日期
-            mh = re.match(r'^##\s+(\d+\.\d+\.\d+)\s*—[ \t]*(.*)$', line)
-            if mh and not re.match(r'\d{4}-\d{2}-\d{2}', mh.group(2).strip()):
+            #   🔴 0.8.9 改：原来要求"破折号必须是 `—`"（自创格式）。
+            #      改成 Keep a Changelog 后那些行一个都不匹配 ⇒ 这条检查
+            #      也静默失效。现在只要求"版本标题后面必须能解析出日期"。
+            #   ⚠️ 形状用 `_changelog.LOOSE`，**不在这里再写一份正则**：
+            #      语法知识只有一处（否则会被 gate-selfcheck 的判据 ④ 拦下，
+            #      见 ERRORS.md E43）。
+            mh = _changelog.LOOSE.match(line)
+            if mh and not _changelog.HEADING.match(line):
                 problems.append(('CHANGELOG.md', '版本条目缺日期',
-                                 '## %s — 后面是 %r（应为 YYYY-MM-DD）'
-                                 % (mh.group(1), mh.group(2).strip()[:20])))
+                                 '第 %d 行 `%s` ⇒ 应为 '
+                                 '`## [%s] - YYYY-MM-DD`（Keep a Changelog）'
+                                 % (i + 1, line.strip()[:36], mh.group(1))))
                 continue
             if cur and ver != cur:
                 continue                      # 历史段：豁免

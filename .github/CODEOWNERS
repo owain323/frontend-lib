@@ -1,0 +1,15 @@
+# 默认负责的人。
+#
+# 本库没有 GitHub Team 订阅，所以这里只能写个人用户名（写 team 需要订阅）。
+# 作用：PR 与 issue 自动指派到这里列出的 owner。
+# ⚠️ 它**不是**分支保护 —— 那项功能同样需要订阅，本库现在没有。
+
+*       @owain323
+
+# 门禁与发布契约最敏感的那几处，单独点出来：
+# 改动这些地方时，请尤其注意「新门禁必须带反向控制」与
+# 「同一个判定不要写两遍」（见 CONTRIBUTING.md）。
+/05-audit/         @owain323
+/package.json      @owain323
+/CHANGELOG.md      @owain323
+/SECURITY.md       @owain323

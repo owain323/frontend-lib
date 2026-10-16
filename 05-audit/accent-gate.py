@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
+# LAYER: component
 # -*- coding: utf-8 -*-
 r"""
 accent-gate.py — 强调色必须稀缺
+
+🔴 LAYER: component（0.8.9 加）—— 它连 `http://127.0.0.1:8000` 取真渲染结果
+   （见下方 BASE）。命令文本里没有 `node` ⇒ 分层器认不出它 ⇒
+   MODE=fast（纯静态、不起服务）会照跑它 ⇒ 一路 FAIL。
+   实测就是这么发现它的：把 :8000 停掉跑 fast，它红了。
 
 背景
 ------------------------------------------------
