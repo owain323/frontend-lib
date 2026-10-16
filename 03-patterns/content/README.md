@@ -5,7 +5,7 @@
 | **来源** | 依据 CommonMark 0.31.2 与 GFM 扩展，**不发明任何结构** |
 | **实测** | 由 `05-audit/md-render.py` 渲染 `04-recipes/longform/content.md` 验证 |
 | **适用** | 精简档 / B / C，纯 CSS |
-| **依赖** | `01-tokens/tokens.css` |
+| **依赖** | `01-tokens/tokens.css` + `01-tokens/page.css`（页面骨架：`.wrap` / `.lede` / `.note`） + `01-tokens/typography.css` |
 | **规范** | 见本文件「内容渲染约定」一节|
 
 ---

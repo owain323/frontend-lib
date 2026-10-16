@@ -77,7 +77,27 @@ RGB = re.compile(r'\brgba?\s*\(')
 
 
 def main():
-    root = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 else ROOT
+    # 🔴 参数约定（0.8.9 · 外部审计 P0-1）：`--` 开头的当 flag，不当路径。
+    # 🔴 事故：check-all.sh 传 `--dir <目录列表>`，旧写法把 argv[1]
+    #   （字面量 "--dir"）当 root ⇒ root=<cwd>/--dir 不存在
+    #   ⇒ glob 到 0 个文件 ⇒ issues 为空 ⇒「无硬编码颜色：全部走令牌」判 PASS。
+    # ⭐ 本脚本扫的目录**固定是组件 CSS**（02-primitives / 03-patterns），
+    #   root 恒为库根；位置参数只用来校验调用方是否真的想扫这一块。
+    # 🔴 曾经试过"root = 第一个位置参数"，结果 root 变成 01-tokens
+    #   ⇒ 去 01-tokens 下面找 02-primitives ⇒ 同样扫 0 个文件 ⇒ 同样假绿。
+    raw = [a for a in sys.argv[1:] if not a.startswith('-')]
+    args = [a for a in raw if os.path.isdir(a)]
+    if raw and not args:
+        print('❌ 传入的路径都不存在：%s' % raw)
+        print('   这是**假绿**：不是"无硬编码颜色"，是"什么都没检查"。')
+        return 1
+    if args and not any(a.rstrip('/').split('/')[-1] in ('02-primitives', '03-patterns')
+                        for a in args):
+        print('❌ 传入的目录里没有组件目录：%s' % args)
+        print('   本门禁只检查组件 CSS，它们位于 02-primitives/ 与 03-patterns/。')
+        print('   （若只想全量检查，直接不带参数运行即可）')
+        return 1
+    root = ROOT
     issues = []
     # 🔴 判据收窄（第一版报 56 处，其中 50 处误报）：
     #   · `04-recipes/**` 是**精简档 自包含单文件** —— 它**必须**内联色板副本
@@ -107,6 +127,13 @@ def main():
     for rel, ln, txt in issues:
         print('  [hardcode-gate] %-38s L%-4d %s' % (rel, ln, txt))
     print('')
+    print('（扫了 %d 个组件 CSS）' % len(files))
+    # 🔴 零文件守卫：扫到 0 个文件必须判红。
+    #   这是本门禁被假绿吞掉的那一层 —— 路径传错 ⇒ issues 为空
+    #   ⇒ 报「无硬编码颜色：全部走令牌」⇒ 与真的全通过**输出完全一样**。
+    if not files:
+        print('❌ 一个组件 CSS 都没扫到 —— 这是**假绿**，本门禁不接受空扫描。')
+        return 1
     if issues:
         print('%d 处硬编码颜色 —— 主题切换时会失效。' % len(issues))
         print('  改法：换成 tokens 里的语义令牌；确需写死就加进脚本的 LINE_EXEMPT 并写明理由。')

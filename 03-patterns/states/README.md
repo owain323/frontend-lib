@@ -5,7 +5,7 @@
 | **来源** | 原创 |
 | **实测** | 演示见 `demo.html`（含 300ms 延迟的真实效果）；色值对比度沿用 tokens 已测值 |
 | **适用** | 精简档 / B / C，纯 CSS（延迟显示需 ~10 行 JS） |
-| **依赖** | `01-tokens/tokens.css` `02-primitives/button/button.css`（分段控件用 `.btn`）|
+| **依赖** | `01-tokens/tokens.css` `02-primitives/button/button.css`（分段控件用 `.btn`） + `01-tokens/page.css`（页面骨架：`.wrap` / `.lede` / `.note`） + `01-tokens/typography.css` |
 | **门禁** | ⚠️ **无自动门禁** —— 见下方"验收清单" |
 
 ---

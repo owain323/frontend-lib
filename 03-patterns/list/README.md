@@ -5,7 +5,7 @@
 | **来源** | 原创。FLIP 原理是公开技术，无第三方代码 |
 | **实测** | `demo.html` 四种交互可实际操作；JS 语法经 `node --check` 验证 |
 | **适用** | 精简档 / B / C，`flip.js` 为 ES5 |
-| **依赖** | `01-tokens/tokens.css` + `02-primitives/button/button.css` `03-patterns/states/states.css`（空状态用 `.state--empty`） + `01-tokens/typography.css`（`.note` 提示框）|
+| **依赖** | `01-tokens/tokens.css` + `02-primitives/button/button.css` `03-patterns/states/states.css`（空状态用 `.state--empty`） + `01-tokens/typography.css`（`.note` 提示框） + `01-tokens/page.css`（页面骨架：`.wrap` / `.lede` / `.note`） |
 
 ---
 

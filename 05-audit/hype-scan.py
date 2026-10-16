@@ -54,7 +54,7 @@ HYPE = [
 import terms  # noqa: E402
 
 SELF = {'terms.py', 'leak-scan.py', 'leak-clean.py', 'outsider-audit.py',
-        'publish-guard.py', 'proper-noun-scan.py', 'leak-fix-paths.py',
+        'publish-guard.py', 'proper-noun-scan.py',
         'hype-scan.py', '_common.py', 'repo-hygiene.py'}
 
 EXTS = ('.md', '.html', '.css', '.js', '.py', '.json', '.sh', '.yml', '.mjs')

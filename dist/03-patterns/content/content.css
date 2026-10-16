@@ -2,7 +2,7 @@
 
 .prose {
   
-  max-width: 68ch;
+  max-width: var(--measure-prose);
   color: var(--text-primary);
 }
 

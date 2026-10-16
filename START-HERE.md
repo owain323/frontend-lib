@@ -48,7 +48,7 @@
 | 浮层气泡 | `02-primitives/popover/popover.css` | 187 | **必需 331** (`popover.js`) | 要一段信息贴着触发元素浮出来就要 |
 | 日期区间 | `02-primitives/date-range/date-range.css` | 206 | **必需 301** (`date-range.js`) | 要选起止日期就要 |
 | 标签页 | `03-patterns/tabs/tabs.css` | 159 | **必需 306** (`tabs.js`) | 同层级内容切换就要 |
-| 折叠面板（beta） | `03-patterns/accordion/accordion.css` | 452 | **必需 368** (`accordion.js`) | 长表单分段就要 |
+| 折叠面板（beta） | `03-patterns/accordion/accordion.css` | 453 | **必需 368** (`accordion.js`) | 长表单分段就要 |
 | 动作菜单（beta） | `03-patterns/dropdown/dropdown.css` | 135 | **必需 451** (`dropdown.js`) | 要一组动作（新建 / 导出 / 删除）就要 |
 | 文字提示 | `03-patterns/tooltip/tooltip.css` | 98 | **必需 280** (`tooltip.js`) | 图标按钮或缩写需要一句话解释就要 |
 | 分页 | `03-patterns/pagination/pagination.css` | 195 | **必需 366** (`pagination.js`) | 数据多到要翻页就要 |
@@ -59,7 +59,7 @@
 | 表单校验 | `03-patterns/form-validation/form-validation.css` | 263 | — | 提交前要校验就要 |
 | 列表增删 | `03-patterns/list/list.css` | 162 | 可选 201 (`flip.js`，FLIP 增删动画，纯增强) | 列表会动态增删就要 |
 | 导航 / 目录 | `03-patterns/nav/nav.css` | 305 | 可选 111 (`toc.js`，自动生成目录，纯增强) | 顶部要导航，或长文要目录就要 |
-| 长文排版 | `03-patterns/content/content.css` | 280 | — | 写文档 / 长文就要 |
+| 长文排版 | `03-patterns/content/content.css` | 286 | — | 写文档 / 长文就要 |
 | analysis-report | `04-recipes/analysis-report/analysis-report.css` | 187 | — |  |
 | report | `04-recipes/report/report.css` | 326 | — |  |
 | table | `04-recipes/table/table.css` | 366 | — |  |

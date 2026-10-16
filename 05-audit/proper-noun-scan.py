@@ -41,6 +41,10 @@ WHITELIST = {
     #   SubprocessError = TimeoutExpired / CalledProcessError 的基类
     'RuntimeError', 'ValueError', 'TypeError', 'KeyError', 'OSError',
     'SubprocessError', 'CalledProcessError', 'FileNotFoundError',
+    # NameError（2026-08-16 补）
+    #   起因：ERRORS.md E41 记「批量插零文件守卫时守卫插到 return 之后
+    #   ⇒ NameError: total」，那是我自己踩的真实报错，不是内部代号。
+    'NameError',
     # Windows 公开 API / 错误码（2026-10-14补）
     #   起因：修 shot-baseline.py 的 node 路径时在注释里写了
     #   「直接丢给 CreateProcess 会 WinError 5」⇒ 被当成内部代号报红。
@@ -107,7 +111,7 @@ WHITELIST = {
 
 PAT = re.compile(r'\b[A-Z][a-z]+(?:[A-Z][a-z]+)+\b')
 SELF = {'terms.py', 'leak-scan.py', 'leak-clean.py', 'outsider-audit.py',
-        'publish-guard.py', 'leak-fix-paths.py', 'proper-noun-scan.py'}
+        'publish-guard.py', 'proper-noun-scan.py'}
 EXTS = ('.md', '.html', '.js', '.css', '.py', '.json', '.sh', '.mjs')
 
 

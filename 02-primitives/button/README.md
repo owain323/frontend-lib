@@ -5,7 +5,7 @@
 | **来源** | 原创（依据 WCAG 2.1 + 实测诊断） |
 | **实测** | 对比度见下，全部由 `05-audit/contrast.py` 得出；44px 依据 WCAG 2.5.5 |
 | **适用** | 精简档 / B / C，纯 CSS，可整段复制 |
-| **依赖** | `01-tokens/tokens.css`  + `01-tokens/typography.css`（`.note` 提示框）|
+| **依赖** | `01-tokens/tokens.css`  + `01-tokens/typography.css`（`.note` 提示框） + `01-tokens/page.css`（页面骨架：`.wrap` / `.lede` / `.note`） |
 
 ---
 

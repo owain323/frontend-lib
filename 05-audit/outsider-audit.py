@@ -139,7 +139,7 @@ TEXT_EXT = ('.md', '.html', '.css', '.js', '.mjs', '.py', '.json',
 # ⭐ 门禁自身的文件：它们**必须**含被禁词才能扫描 ⇒ 豁免。
 #    ⚠️ 门禁本身是可审计的公开工具，"它检查哪些词"属于规则说明，不是内部机密。
 SELF_FILES = {
-    'terms.py', 'leak-scan.py', 'leak-clean.py', 'leak-fix-paths.py',
+    'terms.py', 'leak-scan.py', 'leak-clean.py',
     'outsider-audit.py', 'publish-guard.py', 'proper-noun-scan.py',
     'repo-hygiene.py', '_common.py',
 }

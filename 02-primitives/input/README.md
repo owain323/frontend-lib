@@ -5,7 +5,7 @@
 | **来源** | 原创（依据 WCAG 2.1 + 移动端实测约束） |
 | **实测** | 占位符 5.16 AA、错误文字 6.26 AA、边框 3.56（UI 边界）；16px 依据 iOS Safari 行为 |
 | **适用** | 精简档 / B / C，纯 CSS，可整段复制 |
-| **依赖** | `01-tokens/tokens.css` · demo 另需 `02-primitives/button/button.css`（校验按钮）与 `01-tokens/typography.css`（`.small`）|
+| **依赖** | `01-tokens/tokens.css` · demo 另需 `02-primitives/button/button.css`（校验按钮）与 `01-tokens/typography.css`（`.small`） + `01-tokens/page.css`（页面骨架：`.wrap` / `.lede` / `.note`） |
 
 ---
 

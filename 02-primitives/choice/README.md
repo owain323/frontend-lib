@@ -5,7 +5,7 @@
 | **来源** | 原创 |
 | **实测** | `demo.html` 顶部面板**实时显示原生键盘事件**（观测，不是模拟）；门禁零 HIGH |
 | **适用** | 精简档 / B / C，纯 CSS |
-| **依赖** | `01-tokens/tokens.css` `02-primitives/input/input.css`（select 段落用它的 `.field__label` / `.field__hint`） + `01-tokens/typography.css`（`.note` 提示框）|
+| **依赖** | `01-tokens/tokens.css` `02-primitives/input/input.css`（select 段落用它的 `.field__label` / `.field__hint`） + `01-tokens/typography.css`（`.note` 提示框） + `01-tokens/page.css`（页面骨架：`.wrap` / `.lede` / `.note`） |
 
 ---
 

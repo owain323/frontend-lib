@@ -5,7 +5,7 @@
 | **来源** | 原创（依据 WCAG 3.3.1 / 3.3.3） |
 | **实测** | `demo.html` 里两种校验时机并排可直接对比 |
 | **适用** | 精简档 / B / C（延迟/实时校验需 ~40 行 JS） |
-| **依赖** | `01-tokens/tokens.css` + `02-primitives/input/input.css`  + `01-tokens/typography.css`（`.note` 提示框）|
+| **依赖** | `01-tokens/tokens.css` + `02-primitives/input/input.css`  + `01-tokens/typography.css`（`.note` 提示框） + `02-primitives/button/button.css` + `01-tokens/page.css`（页面骨架：`.wrap` / `.lede` / `.note`） |
 | **门禁** | ✅ `states.py` 零 HIGH |
 
 ---
