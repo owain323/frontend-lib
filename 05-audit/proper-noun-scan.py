@@ -45,6 +45,16 @@ WHITELIST = {
     #   起因：ERRORS.md E41 记「批量插零文件守卫时守卫插到 return 之后
     #   ⇒ NameError: total」，那是我自己踩的真实报错，不是内部代号。
     'NameError',
+    # 2026-10-17 补三个（起因：审计收口那轮新增的门禁代码里引用了它们）
+    #   · AttributeError   —— release-gate 处理 exports 条件导出时，
+    #                         原判据对 dict 调 .endswith ⇒ 真抛过这个错
+    #   · ModuleNotFoundError —— doc-facts 第一版 import 了不存在的模块
+    #                             ⇒ 真抛过（判据因此空转）
+    #   · SecurityError    —— purge-css 走 file:// 时 styleSheets 全抛
+    #                          （实测 9/9 张表）
+    #   ⇒ 三个都是**语言/浏览器标准异常名**，是"我们真踩过的报错"，
+    #     按本库的判据（是不是内部代号）它们必须进白名单。
+    'AttributeError', 'ModuleNotFoundError', 'SecurityError',
     # Windows 公开 API / 错误码（2026-10-14补）
     #   起因：修 shot-baseline.py 的 node 路径时在注释里写了
     #   「直接丢给 CreateProcess 会 WinError 5」⇒ 被当成内部代号报红。

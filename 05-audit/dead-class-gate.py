@@ -100,16 +100,58 @@ def collect_used(root):
     return used, tmpl_prefixes
 
 
+def documented_classes(root):
+    """在组件 README 的类名表里出现过的 class。
+
+    🔴 0.8.9 新增（审计 P3「真死类候选」人工判定的结论，落成机械判据）：
+
+      报告要求人工判定 `field__input--sm` 是真死还是有意保留。判定结论：
+        · `02-primitives/input/input.css:83` 有定义
+        · `02-primitives/input/README.md:106` 的**类名表里明确列了它**
+          （「小尺寸（表格 / 紧凑栏）| 表格行内、侧栏等密度高的场景」）
+        · 它是 `--sm` 尺寸变体，与 `--lg` 成对
+      ⇒ **是"有意留出且已文档化的能力"，不是死代码** ⇒ 保留。
+
+      ⭐ 但"我人工判定一次"不是解法 —— 下一个人还得再判一遍。
+        把判据机械化：**README 类名表里出现过 ⇒ 它是对外承诺的一部分**，
+        删它等于让文档与实现不一致。这是客观判据，不依赖注释怎么措辞。
+
+    ⚠️ 只认 README 里**反引号包着的类名**（`` `.foo` ``），
+      不认正文里随口提到的词 —— 否则会把叙述性文字也算成承诺。
+    """
+    out = set()
+    for f in glob.glob(os.path.join(root, '0*', '**', 'README.md'), recursive=True):
+        s = open(f, encoding='utf-8', errors='replace').read()
+        # 只看类名表所在的行（含 `|` 的表格行），避免把叙述文字算进来
+        for line in s.split('\n'):
+            if '|' not in line:
+                continue
+            for m in re.finditer(r'`\.([a-zA-Z][\w-]*)`', line):
+                out.add(m.group(1))
+    return out
+
+
 def main():
-    root = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 else ROOT
+    # 🔴 0.8.9 修：原来写 `sys.argv[1]`，而 `--selftest` / `--strict`
+    #   恰好也在 argv[1] 的位置 ⇒ `os.path.abspath('--selftest')`
+    #   ⇒ root 指向一个不存在的目录 ⇒ **什么都没扫到 ⇒ 判「没有真死类」**。
+    #   实测：selftest 场景① 因此报「没报红（没牙）」——
+    #   我差点以为是判据没鉴别力，实际是**参数解析把选项当成了路径**。
+    #   ⭐ 这类"参数解析 bug 伪装成判据失效"很常见，也会伪装成假绿：
+    #      正常运行时如果谁顺手传了个选项，门禁就静默空转了。
+    args = [a for a in sys.argv[1:] if not a.startswith('-')]
+    root = os.path.abspath(args[0]) if args else ROOT
     defined = collect_defined(root)
     used, tmpl_prefixes = collect_used(root)
+    documented = documented_classes(root)
     dead = sorted(c for c in defined if c not in used)
     # 模板生成的（如 'toast--' + variant）—— 静态扫不到字面量，
     # 浏览器实测却真的在渲染。分开列，不混进"真死"里。
     dead_tmpl = [c for c in dead
                  if any(c.startswith(p) for p in tmpl_prefixes)]
-    dead_real = [c for c in dead if c not in dead_tmpl]
+    # 已文档化的能力（README 类名表里有）—— 也不是死代码
+    dead_doc = [c for c in dead if c not in dead_tmpl and c in documented]
+    dead_real = [c for c in dead if c not in dead_tmpl and c not in dead_doc]
 
     # 逐个找它的注释，看它自称是什么
     notes = {}
@@ -125,13 +167,19 @@ def main():
                 break
 
     print('组件 CSS 定义的状态/变体类：%d 个' % len(defined))
-    print('其中静态扫不到用法的：%d 个（真死 %d + 模板生成 %d）'
-          % (len(dead), len(dead_real), len(dead_tmpl)))
+    print('其中静态扫不到用法的：%d 个（真死 %d + 模板生成 %d + 已文档化 %d）'
+          % (len(dead), len(dead_real), len(dead_tmpl), len(dead_doc)))
     print('')
     if dead_tmpl:
         print('  【模板生成，浏览器实测在用】—— 不是死类：')
         for c in dead_tmpl:
             print('    · %-22s 由 `前缀--` + 变量 拼出来' % c)
+        print('')
+    if dead_doc:
+        print('  【已文档化的能力】—— README 类名表里列着它，不是死代码：')
+        for c in dead_doc:
+            print('    · %-22s 见该组件 README 的类名表' % c)
+        print('      ⇒ 删它会让文档与实现不一致；保留是有意的' )
         print('')
     if dead_real:
         print('  【真死类候选】—— 需要人工判定：')
@@ -140,15 +188,78 @@ def main():
         print('')
     if not dead_real:
         print('  ✅ 没有真死类。')
+        print('     （"模板生成"与"已文档化"两类都是**有意的**，'
+              '不构成死代码）')
         return 0
     print('  人工判定的三种处置：')
     print('    ① 真死代码（组件已删）⇒ 删')
     print('    ② 有意留白（注释写明"备好的能力"）⇒ 保留并标注')
     print('    ③ 注释说 JS 会用、实际没人用 ⇒ 最危险，改成诚实注释')
-    if '--strict' in sys.argv:
-        return 1
-    return 0
+    print('')
+    print('  🔴 0.8.9 起默认**按退出码判失败**（原来要加 --strict 才判）：')
+    print('    理由是分类判据已经机械化了 —— '
+          '模板生成（前缀拼接）与已文档化（README 类名表）')
+    print('    都由客观判据识别，落到 dead_real 的就是真需要人看的。')
+    print('    在此之前它是 run_report（永远 PASS），'
+          '而"永远 PASS 的门禁等于没有门禁"（I-10）。')
+    return 1
+
+
+def selftest():
+    """反向控制：证明它能抓到真死类，且不误报两类有意的保留。
+
+    ⚠️ fixture 建在**临时目录**，不碰真仓库（P0-1 的教训）。
+    """
+    import shutil
+    import tempfile
+
+    global ROOT, LIB
+    real = (ROOT, LIB)
+    tmp = tempfile.mkdtemp(prefix='deadcls-')
+    bad = 0
+    try:
+        os.makedirs(os.path.join(tmp, '02-primitives', 'zzz'))
+        css = os.path.join(tmp, '02-primitives', 'zzz', 'zzz.css')
+        readme = os.path.join(tmp, '02-primitives', 'zzz', 'README.md')
+
+        # ① 真死：定义了状态类，没人用，README 里也没有 ⇒ 必须报
+        with open(css, 'w', encoding='utf-8') as f:
+            f.write('.zzz.is-dead { color: red; }\n')
+        with open(readme, 'w', encoding='utf-8') as f:
+            f.write('# zzz\n')
+        ROOT = tmp
+        LIB = ('02-primitives',)
+        rc = main()
+        ok = (rc == 1)
+        print('')
+        print('  %s ① 真死类 ⇒ %s'
+              % ('OK ' if ok else '🔴 ', '正确报红' if ok else '没报红（没牙）'))
+        if not ok:
+            bad += 1
+
+        # ② 已文档化：README 类名表里列了它 ⇒ 不许报
+        with open(readme, 'w', encoding='utf-8') as f:
+            f.write('# zzz\n\n| 类 | 用途 |\n|---|---|\n'
+                    '| `.zzz--dead` | 小尺寸 |\n')
+        with open(css, 'w', encoding='utf-8') as f:
+            f.write('.zzz--dead { color: red; }\n')
+        rc2 = main()
+        ok2 = (rc2 == 0)
+        print('  %s ② README 类名表里列了 ⇒ %s'
+              % ('OK ' if ok2 else '🔴 ', '不误报' if ok2 else '误报'))
+        if not ok2:
+            bad += 1
+    finally:
+        ROOT, LIB = real
+        shutil.rmtree(tmp, ignore_errors=True)
+
+    print('')
+    print('  %s' % ('反向控制全部通过 ⇒ 这道门禁有鉴别力' if not bad
+                    else '🔴 %d 条反向控制没通过' % bad))
+    return 1 if bad else 0
 
 
 if __name__ == '__main__':
+    if '--selftest' in sys.argv:
+        sys.exit(selftest())
     sys.exit(main())

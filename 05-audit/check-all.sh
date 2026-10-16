@@ -80,7 +80,7 @@ run() {  # run <名字> <命令...>
       echo "$out" | grep -E "Cannot find module|MODULE_NOT_FOUND|ECONNREFUSED|找不到|Error:|\.js:[0-9]+" \
         | head -3 | sed 's/^/          /'
       echo "       ⇒ 先把环境修好（装依赖 / 起静态服务），否则这一批的结果没有意义。"
-    elif ! echo "$out" | grep -qE '^\s*\[|不达标|不符|未定义|未门控|需人工|超'; then
+    elif ! echo "$out" | grep -qE '^\s*\[|^\s*!|^\s*=+>|不达标|不符|未定义|未门控|需人工|超|驼峰词不在白名单'; then
       # 连判词都没有 ⇒ 多半是崩了
       echo "       🔴 无判词输出（门禁可能崩溃），原始输出前 3 行："
       echo "$out" | head -3 | sed 's/^/          /'
@@ -92,6 +92,14 @@ run() {  # run <名字> <命令...>
 # 🔴 run_report <名字> <命令...> —— **报告模式**（N16）
 #  与 run() 的区别只有一条：脚本**发现问题时**不判失败（误报率偏高，见 css-imports 头），
 #  但：① 脚本**自身出错**仍然判失败；② 报告**必须打出来**。
+#
+#  ⚠️ 0.8.9 状态：**当前没有使用者**。
+#     它的两个原使用者（css-imports / dead-class）都已升为真门禁 `run`——
+#     因为判据收紧后误报降到 0，而"永远 PASS 的门禁等于没有门禁"（I-10）。
+#     ⇒ 保留这个机制本身（它是一种**正当的过渡态**：
+#       新写的门禁误报率高时，先挂在这里报告、积累样本、再升 run），
+#       但**不要**把它当成"可以长期不判失败"的许可证。
+#     判据：任何挂在这里超过一个版本的门禁，要么升 run、要么说明为什么升不了。
 #
 #  为什么必须单独有一个：以前 css-imports 写成
 #     `$PY css-imports.py >/dev/null 2>&1 && echo PASS || true`
@@ -295,6 +303,12 @@ run "a11y-scan"   node 05-audit/a11y-scan.js
 #   证明 purge-css 真的在读 DOM（注入一条被删的规则 ⇒ 它必须变回保留），
 #   而不是在查表或扫空 DOM —— 那两种错都会给出漂亮的省体积数字。
 run "purge-selftest" node 05-audit/purge-css-selftest.js
+# 🔴 变异串泄漏检测（0.8.9 · 从 P0-1 事故反推出来的门禁）：
+#   反向控制的机制是「原地改写源码 → 跑门禁 → 还原」。
+#   中断时源码留在**被变异的状态** ⇒ 没有报错、门禁照样绿、
+#   下一次 git add -A 就提交了（P0-1 就是这样进 HEAD 的）。
+#   ⇒ 每轮都核一遍：变异串不许出现在目标源码里。
+run "mutation-leak" $PY 05-audit/mutation-leak-gate.py
 # 🔴 a11y 的反向控制（0.8.9 接上 · 审计 P1-8）：
 #   `_a11y-reverse-control.js` 早就写好了 —— 注入 5 类典型违规
 #   （img 无 alt / input 无 label / id 重复 / tabindex 乱序 / 对比度过浅），
@@ -362,7 +376,11 @@ run "date-range" node 05-audit/date-range-check.js
 run "composition" node 05-audit/composition-check.js
 
 # CSS 引用完整性（发现项只报告不 fail：class 名跨组件复用，误报率偏高）
-run_report "css-imports" $PY 05-audit/css-imports.py
+# 🔴 0.8.9：从 run_report 升为 run（真门禁）。
+#   理由：误报三次收紧后实测 **36 页 / 0 个疑似**，并补了 3 条反向控制。
+#   一道"永远 PASS"的门禁等于没有门禁（I-10）——
+#   它抓到过 form-validation 那类真问题（暗色 2.45:1），必须让它能拦住。
+run "css-imports"   $PY 05-audit/css-imports.py
 run "comment-bal" $PY 05-audit/comment-balance.py
 run "dark-cont"   node 05-audit/dark-contrast.js
 run "admission"   $PY 05-audit/admission-gate.py
@@ -395,7 +413,11 @@ fi
 
 echo ""
 # 🔴 与 css-imports 同类：只报告不判失败，但**必须把报告打出来**且计入注册数（N16）
-run_report "dead-class" $PY 05-audit/dead-class-gate.py
+# 🔴 0.8.9：从 run_report 升为 run（真门禁）。
+#   分类判据已机械化：模板生成（前缀拼接）+ 已文档化（README 类名表）
+#   都由客观判据识别 ⇒ 落到 dead_real 的就是真需要人看的。
+#   实测真仓库：真死 **0** 个。
+run "dead-class"    $PY 05-audit/dead-class-gate.py
 
 echo ""
 if [ "$MODE" != "full" ]; then

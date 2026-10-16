@@ -8,7 +8,7 @@
   ],
   "totals": {
     "sourceFiles": 65,
-    "sourceBytes": 697092,
+    "sourceBytes": 697197,
     "distGzip": 126223
   },
   "files": [
@@ -369,9 +369,9 @@
     },
     {
       "source": "02-primitives/input/input.css",
-      "sourceSha256": "9b6425c070ba9862725141f7b8e1c2893aacf34cf5074a29114a885c133a4c94",
-      "sourceBytes": 10036,
-      "sourceGzip": 3640,
+      "sourceSha256": "880731bf6878893d67c70c8698832494669feb7f4d1e8a63d39ce631dd8d9865",
+      "sourceBytes": 10141,
+      "sourceGzip": 3716,
       "outputs": [
         {
           "path": "dist/02-primitives/input/input.css",

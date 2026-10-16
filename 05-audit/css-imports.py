@@ -100,6 +100,31 @@ def page_classes(html):
     return out
 
 
+def inline_defined(html):
+    """本页**内联 `<style>` 块里自己定义**的 class 名。
+
+    🔴 0.8.9 新增（第三次收紧判据，起因是两个**误报**）：
+      · `02-primitives/switch/demo.html` 报了「缺 states.css」
+        —— 但它第 15 行自己写了 `.state { font-family: var(--mono); … }`
+      · `03-patterns/list/demo.html` 报了「缺 bar.css」（那是 09-assets 的图表）
+        —— 但它第 19 行自己写了 `.bar { display: flex; … }`
+      ⇒ 两次都是「demo 自己定义了同名 class」⇒ 报出来必然是误报。
+
+    ⭐ 这条判据的价值不只是少几个误报：**误报率高是这道门禁至今
+      "只报告不判失败"的原因**。降不下误报，它永远升不成 FAIL，
+      也就永远挡不住它抓到过的那类真问题
+      （form-validation 用 `.btn--primary` 没引 button.css ⇒
+        暗色下 2.45:1，实测值）。
+    """
+    out = set()
+    for m in re.finditer(r'<style[^>]*>(.*?)</style>', html, re.S):
+        css = m.group(1)
+        # 只取**类选择器**：`.foo` 后跟 { , : 空格 > 或行尾
+        for mm in re.finditer(r'\.([A-Za-z][\w-]*)\s*(?=[,:{>+~\s]|$)', css):
+            out.add(mm.group(1))
+    return out
+
+
 def main():
     build_map()
     pages = (glob.glob(os.path.join(ROOT, '0*', '*', 'demo.html')) +
@@ -112,6 +137,8 @@ def main():
         html = io.open(f, encoding='utf-8').read()
         linked = page_css(html, os.path.dirname(f))
         used = page_classes(html)
+        # 🔴 本页自己定义的 class 不算"用了别人的"（0.8.9）
+        used -= inline_defined(html)
         need = set()
         for c in used:
             # 🔴 两次收紧判据（都是因为误报）：
@@ -146,23 +173,102 @@ def main():
     print('  扫了 %d 个 demo 页面，%d 个可能有缺失引用' % (len(pages), bad))
     if bad:
         print('')
-        print('  ⚠️ **本门禁只报告，不 fail**：')
+        print('  ⚠️ **本门禁报的是「可能」缺失**，请人工确认再修：')
         print('')
         print('  它抓到过一个**真问题**（值了）：')
         print('    form-validation 页用了 .btn--primary 却没引 button.css')
         print('    ⇒ 按钮拿不到 color: var(--text-on-accent)')
         print('    ⇒ 实测暗色下白字 on 浅蓝底 = 2.45:1（需 4.5）')
         print('')
-        print('  但它的**误报率偏高**，因为 class 名在组件间复用：')
-        print('    · `btn`  同时被 button.css / table.css / overlay.css 定义')
-        print('    · `row` 同时是 sparkline.css 与 demo 自己的东西')
-        print('    ⇒ 我已两次收紧判据（唯一归属 + 组件前缀），仍有误报。')
-        print('')
-        print('  ⇒ 结论：这类问题**最可靠的抓法是 `dark-contrast.js` + 人工逐个查**')
-        print('    （按主题实测对比度，不确定度远低于静态推断）。')
-        print('    本脚本作为**辅助线索**保留，等积累更多样本再考虑升为 fail。')
-    return 0
+        print('  🔴 0.8.9 起它**不再是"只报告"**：')
+        print('    · 判据三次收紧后的实测误报：**36 页 / 0 个疑似**')
+        print('      （第三次收紧 = 「本页内联 <style> 里自己定义的 class 不算缺引用」）')
+        print('    · 补了 --selftest 的 3 条反向控制（会红 / 两类不误报）')
+        print('    ⇒ 一道"永远 PASS"的门禁等于没有门禁（INVARIANT I-10）。')
+        print('      误报降下来了，它就有资格按退出码判失败。')
+    return 1 if bad else 0
+
+
+def selftest():
+    """反向控制：证明这道门禁**真的会红**（0.8.9）。
+
+    🔴 为什么要做（它此前一直是"只报告不判失败"）：
+      报告里写着「本脚本作为**辅助线索**保留，等积累更多样本再考虑升为 fail」。
+      而**误报率高**正是它升不上去的原因 —— 一道天天误报的门禁，
+      升成 FAIL 只会让人习惯性忽略它。
+
+      本次做了两件事：
+        ① 收紧判据（本页自已定义的 class 不算缺引用）⇒ 实测误报 2 → **0**
+        ② 补反向控制 ⇒ 才有资格谈"升为 FAIL"
+
+    ⚠️ fixture 建在**临时目录**里，绝不碰真仓库
+      （P0-1 的教训：反向控制有副作用，中断就污染源码）。
+    """
+    import shutil
+    import tempfile
+
+    global ROOT
+    real_root = ROOT
+    tmp = tempfile.mkdtemp(prefix='cssimp-')
+    bad = 0
+    try:
+        os.makedirs(os.path.join(tmp, '02-primitives', 'btn'))
+        # ⚠️ 必须用 `with` 显式关闭：第一版写 `io.open(...).write(...)`
+        #    —— 没关闭 ⇒ fixture 内容可能还没落盘 ⇒ build_map 读到空文件
+        #    ⇒ 判据**正确地**没报，而反向控制报「没牙」。
+        #    差一点就把「自己写坏了 fixture」当成「门禁没鉴别力」去改判据。
+        #    ⇒ 与今天 purg-css-selftest 那次是同一类错：
+        #      **自检写错比判据失效更隐蔽。**
+        with io.open(os.path.join(tmp, '02-primitives', 'btn', 'btn.css'),
+                     'w', encoding='utf-8') as _f:
+            _f.write('.btn-x { color: red; }\n')
+
+        # ① 用了 .btn-x 却不引 btn.css ⇒ 必须报
+        demo = os.path.join(tmp, '02-primitives', 'btn', 'demo.html')
+        with io.open(demo, 'w', encoding='utf-8') as _f:
+            _f.write('<html><body><button class="btn-x">x</button></body></html>\n')
+        ROOT = tmp
+        rc = main()
+        ok = (rc == 1)
+        print('  %s ① 用了 .btn-x 不引 btn.css ⇒ %s'
+              % ('OK ' if ok else '🔴 ', '正确报红' if ok else '没报红（没牙）'))
+        if not ok:
+            bad += 1
+
+        # ② 本页**自己定义**了 .btn-x ⇒ 不许报（这正是本轮修掉的那类误报）
+        with io.open(demo, 'w', encoding='utf-8') as _f:
+            _f.write('<html><head><style>.btn-x { color: blue; }</style></head>'
+                     '<body><button class="btn-x">x</button></body></html>\n')
+        ROOT = tmp
+        rc2 = main()
+        ok2 = (rc2 == 0)
+        print('  %s ② 本页自已定义 .btn-x ⇒ %s'
+              % ('OK ' if ok2 else '🔴 ', '不误报' if ok2 else '误报'))
+        if not ok2:
+            bad += 1
+
+        # ③ 引对了 ⇒ 不许报
+        with io.open(demo, 'w', encoding='utf-8') as _f:
+            _f.write('<html><head><link rel="stylesheet" href="btn.css"></head>'
+                     '<body><button class="btn-x">x</button></body></html>\n')
+        ROOT = tmp
+        rc3 = main()
+        ok3 = (rc3 == 0)
+        print('  %s ③ 正常引了 btn.css ⇒ %s'
+              % ('OK ' if ok3 else '🔴 ', '不误报' if ok3 else '误报'))
+        if not ok3:
+            bad += 1
+    finally:
+        ROOT = real_root
+        shutil.rmtree(tmp, ignore_errors=True)
+
+    print('')
+    print('  %s' % ('反向控制全部通过 ⇒ 这道门禁有鉴别力'
+                    if not bad else '🔴 %d 条反向控制没通过' % bad))
+    return 1 if bad else 0
 
 
 if __name__ == '__main__':
+    if '--selftest' in sys.argv:
+        sys.exit(selftest())
     sys.exit(main())
