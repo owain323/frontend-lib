@@ -57,3 +57,14 @@ node_modules/
 
 # 静态服务的 PID 文件是**运行时产物**（每次启动都变，且带本机信息）
 05-audit/.serve.pid
+
+# 🔴 门禁反向控制的临时备份（0.8.9 加）
+#   `overlay-host-reverse.py` / `combobox-instance-reverse.py` 会先把原文件
+#   备份成 `X.js.__reverse.bak`，跑完再还原并删除。
+#   **实测它被提交进了库** —— 进程被杀（用户中断 / CI 超时）时 finally 来不及跑
+#   ⇒ 备份留在源码树里。
+#   ⇒ 两道防线：① 不入库（本行）② 不进包（pack-smoke 的 fixture/baseline 判据）
+**/__reverse.bak
+*.__reverse.bak
+*.bak
+*.orig
