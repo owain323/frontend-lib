@@ -28,10 +28,19 @@ combobox-instance-reverse.py — `combobox-instance-check.js` 的**常驻反向�
 ===========================================================================
 用法：python 05-audit/combobox-instance-reverse.py   （需要 127.0.0.1:8000）
 """
+import hashlib
 import io
 import os
 import subprocess
 import sys
+
+
+def _sha(text):
+    """内容指纹，用于**还原校验**。
+
+    ⚠️ 不能只看长度：变异串与原串**可能等长**（那样长度校验就漏了）。
+    """
+    return hashlib.sha256(text.encode('utf-8')).hexdigest()
 
 SRC = os.path.join('02-primitives', 'combobox', 'combobox.js')
 BAK = SRC + '.__reverse.bak'
@@ -182,6 +191,33 @@ def main():
         io.open(SRC, 'w', encoding='utf-8', newline='').write(orig)
         if os.path.exists(BAK):
             os.remove(BAK)
+
+        # 🔴 还原校验（0.8.9 新增 · 从 P0-1 事故反推）
+        # ------------------------------------------------------------------
+        # P0-1 就是「变异串留在了源码里并被提交」：
+        # 在"改写"与"还原"之间被中断 ⇒ finally 没跑完 ⇒ 源码留在变异态，
+        # 而且**没有任何报错**（门禁照样绿、下一次 git add -A 就提交了）。
+        # ⇒ 写完立刻比对 sha256，不一致就当场喊、再写一次。
+        #   （check-all 里的 mutation-leak-gate 是**下一轮**才兜住，
+        #     这个是**就地**发现。两道都要有。）
+        # ⚠️ 用 sha256 不用 len()：变异串与原串**可能等长**。
+        try:
+            now = io.open(SRC, encoding='utf-8', newline='').read()
+            if _sha(now) != _sha(orig):
+                print('')
+                print('  🔴 还原校验失败：%s 与原始内容不一致！' % SRC)
+                print('     ⇒ 变异体可能还留在源码里。已再写一次并复验。')
+                io.open(SRC, 'w', encoding='utf-8', newline='').write(orig)
+                again = io.open(SRC, encoding='utf-8', newline='').read()
+                if _sha(again) == _sha(orig):
+                    print('     ✅ 第二次写入后已一致')
+                else:
+                    print('     🔴🔴 第二次仍不一致 ⇒ **请手工检查该文件**，不要提交')
+                bad += 1
+        except Exception as e:
+            print('  🔴 还原校验自身出错（%s）⇒ 请手工确认 %s'
+                  % (type(e).__name__, SRC))
+            bad += 1
 
     if bad:
         print('\n  ❌ combobox-instance 反向控制：%d 项不合格' % bad)
