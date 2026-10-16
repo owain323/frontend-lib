@@ -2,6 +2,13 @@
 
 移动 Web 组件库。CSS 样式 + 可选行为脚本，**零第三方运行时依赖**。
 
+> **npm 包名是 `agentcss`**（`npm install agentcss`）。
+> 仓库名沿用 `frontend-lib`。两者不是一回事：包名是安装标识，仓库名是主页地址。
+
+**它同时是给 AI 读的**：`ai/components.json` 里每个组件都有机器可解析的契约
+——可用的类名、状态怎么表达、哪些行为不能漏、成熟度到哪一步。
+人可以直接复制 CSS 用；AI 可以读契约避免凭空猜组件怎么写。
+
 ## 它解决什么问题
 
 移动端页面的三个反复出现的问题：
@@ -34,7 +41,7 @@
 ## 安装
 
 ```bash
-npm install frontend-lib
+npm install agentcss
 ```
 
 ## 用法
@@ -42,9 +49,9 @@ npm install frontend-lib
 **1 · 引入样式**（用你的打包器）
 
 ```js
-import 'frontend-lib/tokens.css';
-import 'frontend-lib/typography.css';
-import 'frontend-lib/primitives/button/button.css';
+import 'agentcss/tokens.css';
+import 'agentcss/typography.css';
+import 'agentcss/primitives/button/button.css';
 ```
 
 **2 · 需要交互组件时**，引入行为脚本
@@ -54,18 +61,18 @@ import 'frontend-lib/primitives/button/button.css';
 用打包器：
 
 ```js
-import 'frontend-lib/patterns/overlay/overlay.js';
+import 'agentcss/patterns/overlay/overlay.js';
 ```
 
 用 `<script>` 标签（**注意路径是包内的真实目录**）：
 
 ```html
 <!-- npm 不会把 patterns/ 建成目录，必须按 03-patterns/ 写 -->
-<script src="node_modules/frontend-lib/03-patterns/overlay/overlay.js"></script>
+<script src="node_modules/agentcss/03-patterns/overlay/overlay.js"></script>
 ```
 
 包内的目录结构与仓库一致：`01-tokens` `02-primitives` `03-patterns`
-`04-recipes` `09-assets`。上例等价于 `import 'frontend-lib/patterns/overlay/overlay.js'`。
+`04-recipes` `09-assets`。上例等价于 `import 'agentcss/patterns/overlay/overlay.js'`。
 
 **3 · 直接复制**（不想装依赖）
 
@@ -87,8 +94,8 @@ import 'frontend-lib/patterns/overlay/overlay.js';
 | `dist/**/*.js` | 只去注释，**不压缩** | 生产（JS 不压缩的理由见下） |
 
 ```js
-import 'frontend-lib/dist/01-tokens/tokens.min.css';
-import 'frontend-lib/dist/02-primitives/button/button.min.css';
+import 'agentcss/dist/01-tokens/tokens.min.css';
+import 'agentcss/dist/02-primitives/button/button.min.css';
 ```
 
 - **`dist/` 是导出物**，可以整个删掉重建（`npm run dist`）。真值永远是源码目录。
