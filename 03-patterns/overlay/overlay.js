@@ -97,7 +97,7 @@
     if (--lockCount > 0) return;
     document.body.removeAttribute('data-scroll-locked');
     if (scrollLock.varSet) {
-      void 0;
+      document.documentElement.style.removeProperty('--overlay-scrollbar-width');
       scrollLock.varSet = false;
     }
     /* 🔴 只恢复**自己真的改过**的。没碰过就一个字节都不许写回 ——

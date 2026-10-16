@@ -291,6 +291,10 @@ run "sparkline"  node 05-audit/sparkline-contract.js
 # 科学绘图（09-assets）：判据与 BI 图表不同 —— 缺失去零、对数轴、单位、不算统计量
 run "scientific-plot" node 05-audit/scientific-plot-check.js
 run "a11y-scan"   node 05-audit/a11y-scan.js
+# 🔴 「按用到生成」出口的自检（0.8.9 · 审计 P2-1）：
+#   证明 purge-css 真的在读 DOM（注入一条被删的规则 ⇒ 它必须变回保留），
+#   而不是在查表或扫空 DOM —— 那两种错都会给出漂亮的省体积数字。
+run "purge-selftest" node 05-audit/purge-css-selftest.js
 # 🔴 a11y 的反向控制（0.8.9 接上 · 审计 P1-8）：
 #   `_a11y-reverse-control.js` 早就写好了 —— 注入 5 类典型违规
 #   （img 无 alt / input 无 label / id 重复 / tabindex 乱序 / 对比度过浅），

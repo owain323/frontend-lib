@@ -472,8 +472,17 @@ def main():
                                  '第 %d 行写 %d 道，check-all.sh 注册 %d 道'
                                  ' ⇒ %s' % (no, claim, len(gates), line[:60])))
 
-        # 🔴 零文件守卫：扫到 0 个 CSS ⇒ 整条判据空转 ⇒ 必须报红
-        if not size.get('n_files'):
+        # 🔴 零文件守卫：扫到 0 个 CSS ⇒ 这条判据空转 ⇒ 必须报红。
+        #
+        # ⚠️ 但这道守卫**只在真仓库**上成立，必须在 selftest 的 fixture 环境里让路。
+        #   为什么：selftest 会把 ROOT 指向一个只含 VERSION / 契约 / check-all.sh
+        #   的临时目录（**故意不建任何 .css**）来验证别的判据
+        #   ⇒ 我第一版没加判断，守卫在 fixture 里报红
+        #   ⇒ **selftest 自己的两条反向控制因此失败**（实测 `--selftest` EXIT=1）。
+        #   ⇒ 判据用在**真仓库**时才守零文件；fixture 环境（ROOT 已换）跳过。
+        #   ⭐ 这是「新增判据必须跑一遍 --selftest」的活教材：
+        #      判据本身没错，错在它假设了「ROOT 是真仓库」。
+        if not size.get('n_files') and not os.environ.get('FL_SELFTEST'):
             problems.append((
                 '源码 CSS', '体积事实无从核对',
                 '一个 .css 都没扫到 ⇒ 「体积数字」这条判据是**空转**的，'
@@ -617,6 +626,13 @@ def selftest():
 
     base = tempfile.mkdtemp(prefix='docfacts-')
     bad = 0
+    # 🔴 告诉判据「现在是 fixture 环境，ROOT 里故意没有源码文件」。
+    #   为什么需要：新增的「源码 CSS 零文件守卫」在真仓库上是必须的，
+    #   但 selftest 的 fixture 里**故意不建任何 .css**（那批变异体验的是别的判据）
+    #   ⇒ 守卫会误报 ⇒ selftest 自己红。
+    #   ⚠️ 我第一版漏了这一步，实测 `--selftest` EXIT=1。
+    #   ⭐ 教训已写进判据注释：新增判据后必须跑一次 --selftest。
+    os.environ['FL_SELFTEST'] = '1'
     try:
         def build(files):
             for rel, content in files.items():
@@ -699,6 +715,8 @@ def selftest():
         bad += 0 if ok else 1
     finally:
         shutil.rmtree(base, ignore_errors=True)
+        # 🔴 必须清掉：否则同进程内后续的真仓库核对也会跳过零文件守卫
+        os.environ.pop('FL_SELFTEST', None)
 
     print('')
     print('  %s' % ('反向控制全部通过。' if bad == 0

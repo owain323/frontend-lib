@@ -41,6 +41,40 @@ TIERS = (('02-primitives', 'primitive'), ('03-patterns', 'pattern'))
 TOKENS_KEY = '01-tokens/tokens.css'
 
 
+def comment_ratio_of_sources():
+    """🔴 全库源码 CSS 的**注释字节占比**（0.8.9 · 审计 P2-4）。
+
+    ⭐ 口径（必须写清，因为同一件事有两个相差 12 个百分点的算法）：
+      · 注释占比 = 注释字节 / 源码字节（**UTF-8 字节**，不是字符数）
+      · 不是 (源码-min)/源码 —— 那是「压缩率」，含空白与换行，
+        本库实测 75.3%，与「注释占比」不是同一个量
+      · 中文一字 3 字节，用 len() 会系统性低报（本库实测差 11.7 个百分点：
+        字节 64.3% vs 字符 52.6%）
+
+    ⚠️ 第一版这里写的是**字面量 `64%`**（第 116/145 行），
+      源码一改它就漂 —— 与「门禁数」「体积」是同一类病。
+    """
+    import re as _re
+    raw = com = 0
+    for d in ('01-tokens', '02-primitives', '03-patterns',
+              '04-recipes', '09-assets'):
+        base = os.path.join(ROOT, d)
+        if not os.path.isdir(base):
+            continue
+        for dp, dn, fn in os.walk(base):
+            if 'dist' in dp.replace(os.sep, '/').split('/'):
+                continue
+            for f in fn:
+                if not f.endswith('.css'):
+                    continue
+                data = io.open(os.path.join(dp, f), 'rb').read()
+                raw += len(data)
+                for m in _re.finditer(r'/\*.*?\*/',
+                                      data.decode('utf-8', 'replace'), _re.S):
+                    com += len(m.group(0).encode('utf-8'))
+    return (com / raw * 100) if raw else 0.0
+
+
 def load():
     return json.loads(io.open(MANIFEST, encoding='utf-8').read())
 
@@ -113,8 +147,9 @@ def table(manifest, perturb=None):
     lines.append('- `tokens` 源码版 gzip **%s** → min 版 **%s**（省 %.0f%%）——'
                  % (kb(tg_src or 0), kb(tg),
                     (100.0 * (1 - tg / float(tg_src))) if tg_src else 0))
-    lines.append('  源码多的那部分**全是注释**（全库 CSS 有 64% 是注释），'
-                 '而注释是给我们的，不是给使用者浏览器的。')
+    lines.append('  源码多的那部分**全是注释**（全库 CSS 有 %.0f%% 是注释'
+                 '，字节口径），而注释是给我们的，不是给使用者浏览器的。'
+                 % comment_ratio_of_sources())
     lines.append('- tokens 的 min 版 %s **比任何一个组件自己都贵** ⇒'
                  % kb(tg))
     lines.append('  "只用一个组件"的真实起步价就是它。不公开这张表，等于让人盲买。')
@@ -142,7 +177,9 @@ def table(manifest, perturb=None):
                       sum(src_gzip(manifest, f['source']) or 0
                           for f in manifest['files'])))
     lines.append('')
-    lines.append('> ⚠️ 源码版那个数字**不是**要付的钱：它包含我们的注释（全库 CSS 有 64% 是注释）。')
+    lines.append('> ⚠️ 源码版那个数字**不是**要付的钱：它包含我们的注释'
+                 '（全库 CSS 有 %.0f%% 是注释，字节口径）。'
+                 % comment_ratio_of_sources())
     lines.append('> 它的用途只有一个 —— 让人看清"dist 到底省了多少"。')
     lines.append('')
     return '\n'.join(lines) + '\n'

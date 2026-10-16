@@ -1,0 +1,68 @@
+
+
+
+.sparkline {
+  display: block;
+  
+  min-width: 0;
+  width: 100%;
+  height: var(--spark-h, 32px);
+  overflow: hidden;
+  
+  margin: var(--sp-1) 0;
+}
+
+.sparkline svg {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+}
+
+
+
+.spark-line {
+  stroke: var(--spark-c, var(--accent));
+  fill: none;
+}
+.spark-area {
+  stroke: none;
+  fill: var(--spark-c, var(--accent));
+}
+.spark-bar {
+  stroke: none;
+  fill: var(--spark-c, var(--accent));
+}
+.spark-dot {
+  stroke: none;
+  fill: var(--spark-c, var(--accent));
+}
+
+
+.row > .sparkline,
+td > .sparkline,
+.spark { margin: 0; }
+
+
+.spark-anim {
+  stroke-dasharray: var(--spark-len, 1000);
+  stroke-dashoffset: 0;
+  animation: spark-draw var(--dur-slow, 600ms) var(--ease-out) forwards;
+}
+
+@keyframes spark-draw {
+  from { stroke-dashoffset: var(--spark-len, 1000); }
+  to   { stroke-dashoffset: 0; }
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .spark-anim {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
+
+
+@media print {
+  .spark-anim { animation: none; stroke-dashoffset: 0; }
+}

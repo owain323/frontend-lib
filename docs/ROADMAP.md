@@ -112,6 +112,27 @@
 | W12 | **`@layer` 的 WebView 基线实测** | 实测数据落 `docs/LAYER-BASELINE.md`；落档后才有资格讨论切换 |
 | W13 | Compatibility Benchmark 的**真模型实测** | 当前 `benchmark/` 只有 10 类意图的骨架，**零条模型记录** —— 骨架不等于成果 |
 
+### 🟡 P2·决策项 —— 已论证，**不要擅自实施**
+
+这三项看起来像"机会"，实际是**取舍**。记在这里是为了避免下次重开同一个争论。
+
+| # | 事项 | 为什么不做（实测依据） | 什么时候能重开 |
+|---|---|---|---|
+| D1 | **包内同一批 CSS 出现三次**（源码 350.7 kB + dist stripped 122.0 kB + dist min 91.7 kB = 564.4 kB，占解包 19.3%） | `exports` 指向的是 **stripped 版**，删它会破坏全部公开导入路径。改指 `*.min.css` 是**破坏性改动**（使用者要写 `card.min.css`），0.8.x 内不该做 | 1.0 的 `exports` 契约定稿时一起动 |
+| D2 | **dist 的 JS 只去注释不压缩**（esbuild 实测 raw −33.7% / gzip −13.6%） | 撞 `build-dist.py` 约束 ②「零依赖、零构建链：不引入任何 npm 包」。为绕开它而**手写** minifier，就回到约束 ③ 明确拒绝的风险上。（已实测：`--target=es5` 与 `--target=es2017` 输出逐字节相同 ⇒ 源码本就是纯 ES5，风险比预想低，但未归零） | 先决定「要不要为体积破一次零依赖」 |
+| D3 | **拆 `table-core` + `table-variants`**（`table.min.css` 4,863 B 里 81.4% 用不上） | 拆完要同步 `ai/components.json` **与** `docs/API.md`（`doc-facts-gate` 会查），而 `04-recipes` 是配方级、被 `doc-facts` 与 `api-form` 双向约束 ⇒ 风险高于收益 | 若 D1 的重构先做，可顺路一起 |
+
+### 🟢 P2·已完成（0.8.9）
+
+| # | 事项 | 结果 |
+|---|---|---|
+| W14 | **「按用到生成」出口** | `05-audit/purge-css.js` + 自检 `purge-css-selftest.js`（已接进 check-all）。实测 analysis-report 页删掉 8,797 B 未命中规则。⚠️ 保留「命中 + 动态 + @规则」是**有意的保守策略**：`:hover`/`:focus` 这类判不了、但交互时必须留着 |
+| W15 | **09-assets 进了构建** | `SRC_DIRS` 原来漏了 `09-assets` ⇒ 四支资产 CSS **从来没进过 dist**。补上后 min/stripped 各 39 支（原 35），`exports` 的 `./assets/*` 也随之改指 dist |
+| W16 | **`visual` 实跑了** | 此前一直 SKIP（缺 Pillow）。实测：**34/34 页观感一致**，RC=0 |
+| W17 | **`09-assets/model-viewer/vendor` 与 `.glb` 不进包** | 与 README 自述「three.js 由主项目负责」对齐。包体 **899.1 → 631.3 kB（−29.8%）** |
+| W18 | **注释占比不再硬编码** | `dist-cost-gate.py` 里两处字面量 `64%` 改为实算，并标注**字节口径**（字符口径会低报 12 个百分点） |
+
+
 ## 四、执行纪律（本轮血泪）
 
 1. **每条门禁都要反向控制** —— 注入坏样本，确认它会红。

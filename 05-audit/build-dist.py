@@ -49,7 +49,15 @@ DIST = os.path.join(ROOT, 'dist')
 MANIFEST = os.path.join(DIST, 'manifest.json')
 
 # 与 size-baseline.py 保持同一口径（vendor 是第三方，不算我们自己的产物）
-SRC_DIRS = ('01-tokens', '02-primitives', '03-patterns', '04-recipes')
+SRC_DIRS = ('01-tokens', '02-primitives', '03-patterns', '04-recipes',
+            # 🔴 0.8.9 补（审计 P2-3）：这里原来漏了 09-assets
+            #   ⇒ 整个 09-assets（bar / model-viewer / scientific-plot /
+            #     sparkline 四支 CSS + 它们的 JS）**从来没进过 dist**
+            #   ⇒ package.json 的 exports 只能把 ./assets/* 指向源码目录，
+            #     而源码带 64% 的注释 ⇒ 用 assets 的人拿到的是没剥注释的版本。
+            #   ⚠️ vendor/ 由 SKIP_DIR_NAMES 排除（three.js 等第三方整包不该重建），
+            #      .glb 由 EXTS 排除（只处理 .css/.js）。
+            '09-assets')
 EXTS = ('.css', '.js')
 SKIP_DIR_NAMES = ('vendor',)
 
