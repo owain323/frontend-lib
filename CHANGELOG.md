@@ -8,8 +8,74 @@
 
 ### Fixed
 
+- **反向控制的变异串泄漏进了正式源码** ——
+  `03-patterns/overlay/overlay.js` 里 `unlockScroll()` 的
+  `removeProperty('--overlay-scrollbar-width')` 被换成了 `void 0;`
+  （那正是 `overlay-host-reverse.py` 里 MUTANTS[3] 的变异串）。
+  ⇒ 弹层关闭后 `<html>` 上残留 `--overlay-scrollbar-width`，
+  宿主写成 `right: var(--overlay-scrollbar-width, 0px)` 的 `position: fixed`
+  元素会**首次开弹层后永久偏移一个滚动条宽度**，不复位、不报错。
+  ⇒ 已修，并新增 `mutation-leak-gate.py` 防止复发（见 Added）。
+
 - **`tokens.css` 有一条注释没闭合**（第 288 行开、294 行才闭）
   ⇒ `--lift-sm/md/lg` 三条令牌与它后面 60 多行注释被浏览器整段当注释吃掉。
+
+### Added
+
+- **`mutation-leak-gate.py`** —— 变异串泄漏检测。
+  反向控制的机制是「原地改写源码 → 跑门禁 → 还原」，
+  中断时源码会留在被变异的状态，而**没有任何报错**、门禁照样绿、
+  下一次 `git add -A` 就提交了。这道门禁每轮核对一遍。
+  配 3 条反向控制（会红 / 不误报）。
+
+- **`purge-css.js` + `purge-css-selftest.js`** —— 「按用到生成」出口。
+  扫页面 DOM，只输出命中的 CSS 规则。只删**确定未命中**的；
+  `unknown`（querySelector 抛错）/ `dynamic`（伪类）/ `@keyframes` 一律保留。
+
+- **`09-assets` 进了 `dist` 构建** —— `build-dist.py` 的 `SRC_DIRS` 漏了它，
+  四支资产 CSS 从来没有过产物，于是 `exports` 的 `./assets/*` 只能指向
+  带 64% 注释的源码目录。现在 min/stripped 各 39 支（原 35）。
+
+### Changed
+
+- **包体 −29.8%**：`09-assets/model-viewer/vendor/`（589.3 kB 的 `three.min.js`
+  等第三方整包）与 `models/*.glb` 不再进包。
+  该组件 README 自己就写着「**不把 three.js 打包成本库依赖**…
+  three.js 本身由主项目负责」——之前与自述冲突。
+  实测 tarball 899.1 → 631.3 kB、unpacked 2917.0 → 2015.1 kB。
+
+- **`css-imports` 与 `dead-class` 从「只报告」升为真门禁**。
+  两者此前挂在 `run_report` 下 ⇒ **永远 PASS**（退出码恒为 0），
+  而 `css-imports` 抓到过真问题（某页用 `.btn--primary` 却没引
+  `button.css` ⇒ 暗色下 **2.45:1**，实测值）。一道"永远 PASS"的门禁等于没有门禁。
+  升级前提是误报降到 0：
+  - `css-imports`：新增判据「本页内联 `<style>` 里自己定义的 class
+    不算缺引用」⇒ 实测误报 2 → **0**（36 页）
+  - `dead-class`：新增判据「README 类名表里出现过的 class
+    是已文档化的能力，不是死类」⇒ 实测真死 **0** 个
+
+- **`doc-facts-gate` 新增「源码体积 / 注释占比」判据** + 零文件守卫。
+  同一件事有两个相差 11.7 个百分点的口径（字节 64.3% vs 字符 52.6%），
+  现在输出里写明是**字节口径**。
+
+- **`dist-cost-gate` 里两处硬编码的 `64%` 改为实算**。
+
+### Fixed（门禁自身）
+
+- **`doc-facts-gate --selftest`**：新增的零文件守卫在 selftest 的 fixture
+  环境（故意不建 `.css`）里误报 ⇒ 两条反向控制失败。
+  ⇒ 加 `FL_SELFTEST` 让路并在 `finally` 清掉。
+  **教训：新增判据后必须跑一次 `--selftest`。**
+
+- **`dead-class-gate` 的参数解析**：原来读 `sys.argv[1]` 当路径，
+  而 `--selftest` / `--strict` 恰好在那个位置 ⇒ `os.path.abspath('--selftest')`
+  ⇒ root 指向不存在的目录 ⇒ **什么都没扫到 ⇒ 判「没有真死类」**。
+  这类"参数解析 bug 伪装成判据失效"也会伪装成假绿。
+
+- **`release-gate` 的 `files` 判据**原来没区分**包含项**与**排除项**，
+  会把 `!path` 也算进"必须存在"⇒ 惩罚一个正确的排除项。
+  现在排除项检查的是「它指向的东西确实存在」（否则这条排除毫无意义）。
+
   本次补上闭合符，并给 `token-parse-gate` 加判据 A'
   （判据 A 只查「孤立的 `*/`」，查不出「未闭合的 `/*`」—— 已实测确认它对原文件不报）。
 

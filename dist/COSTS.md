@@ -24,7 +24,7 @@
 | primitive | `choice` | 2.1 KB | 1.1 KB | — | **3.2 KB** | 21.4 KB | −18.2 KB |
 | primitive | `combobox` | 2.1 KB | 1.0 KB | 5.4 KB | **8.5 KB** | 25.7 KB | −17.2 KB |
 | primitive | `date-range` | 2.1 KB | 0.8 KB | 2.5 KB | **5.5 KB** | 22.5 KB | −17.0 KB |
-| primitive | `input` | 2.1 KB | 1.0 KB | — | **3.2 KB** | 19.5 KB | −16.4 KB |
+| primitive | `input` | 2.1 KB | 1.0 KB | — | **3.2 KB** | 19.6 KB | −16.5 KB |
 | primitive | `popover` | 2.1 KB | 0.8 KB | 2.1 KB | **5.1 KB** | 23.5 KB | −18.4 KB |
 | primitive | `progress` | 2.1 KB | 0.7 KB | — | **2.8 KB** | 18.9 KB | −16.0 KB |
 | primitive | `select` | 2.1 KB | 0.8 KB | 3.5 KB | **6.5 KB** | 25.8 KB | −19.3 KB |
@@ -48,7 +48,7 @@
 ## 三、全库
 
 - 全部组件都用上（min，含 tokens 一份）：**55.0 KB**
-- 源码版（带注释）全库 gzip：268.3 KB
+- 源码版（带注释）全库 gzip：268.4 KB
 
 > ⚠️ 源码版那个数字**不是**要付的钱：它包含我们的注释（全库 CSS 有 64% 是注释，字节口径）。
 > 它的用途只有一个 —— 让人看清"dist 到底省了多少"。

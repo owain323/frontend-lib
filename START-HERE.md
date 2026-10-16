@@ -35,7 +35,7 @@
 | 组件 | 文件 | 行数 | JS | 什么时候要 |
 |---|---|---|---|---|
 | 按钮 | `02-primitives/button/button.css` | 353 | — | 几乎总要 |
-| 输入框 | `02-primitives/input/input.css` | 238 | — | 有表单就要 |
+| 输入框 | `02-primitives/input/input.css` | 239 | — | 有表单就要 |
 | 标签 / 徽章 | `02-primitives/badge/badge.css` | 146 | — | 有状态标记就要（"已披露""停牌"） |
 | 卡片 | `02-primitives/card/card.css` | 246 | — | 有分组内容就要 |
 | 单选 / 多选 | `02-primitives/choice/choice.css` | 395 | — | 单选 / 多选就要 |
