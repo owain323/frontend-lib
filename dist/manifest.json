@@ -8,8 +8,8 @@
   ],
   "totals": {
     "sourceFiles": 56,
-    "sourceBytes": 580499,
-    "distGzip": 102120
+    "sourceBytes": 580954,
+    "distGzip": 102123
   },
   "files": [
     {
@@ -539,9 +539,9 @@
     },
     {
       "source": "03-patterns/accordion/accordion.css",
-      "sourceSha256": "4de260aca845fc8b7623729d080e449cc7ca23dbf4d4666ae1753098bd38e49f",
-      "sourceBytes": 18418,
-      "sourceGzip": 7160,
+      "sourceSha256": "758df204dac364e70b5ed49c16ddc563e62ac537f17b2aacf1ef1e7cffdc522f",
+      "sourceBytes": 18445,
+      "sourceGzip": 7171,
       "outputs": [
         {
           "path": "dist/03-patterns/accordion/accordion.css",
@@ -574,21 +574,21 @@
     },
     {
       "source": "03-patterns/content/content.css",
-      "sourceSha256": "6d15ef37e109532e2e25672e430037ba2eca3556f0d77a207a191e87463ceba7",
-      "sourceBytes": 10949,
-      "sourceGzip": 4468,
+      "sourceSha256": "20e714e3d5b5388ef7bd7f68f00217405725227b11f2a8604512dfe603339a45",
+      "sourceBytes": 11377,
+      "sourceGzip": 4675,
       "outputs": [
         {
           "path": "dist/03-patterns/content/content.css",
           "kind": "stripped",
-          "bytes": 3826,
-          "gzip": 1129
+          "bytes": 3842,
+          "gzip": 1130
         },
         {
           "path": "dist/03-patterns/content/content.min.css",
           "kind": "minified",
-          "bytes": 3323,
-          "gzip": 1037
+          "bytes": 3339,
+          "gzip": 1039
         }
       ]
     },

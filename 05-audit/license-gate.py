@@ -46,11 +46,31 @@ ALLOW_FILE = ('01-入库门槛.md', '协议台账.md', '外部方法论来源.md
 ALLOW_LINE = re.compile(r'(WCAG|MIT|Apache|SPDX|协议|台账|警示|禁商用|风险|引用|转述|不逐字|自己的话)')
 
 
-def scan(root=None):
-    root = root or ROOT
-    files = sorted(glob.glob(os.path.join(root, '**', '*.*'), recursive=True))
+def scan(roots=None):
+    """🔴 参数约定（0.8.9 · 外部审计 P0-1）—— roots 是目录列表。
+
+    事故：check-all.sh 用 `--dir <目录列表>` 调用本脚本，
+    而旧写法把 `sys.argv[1]`（字面量 "--dir"）当 root
+    ⇒ root = <cwd>/--dir（不存在）⇒ glob 到 0 个文件
+    ⇒ issues 为空 ⇒「无逐字复制、无外链资产」判 PASS。
+    """
+    roots = roots or [ROOT]
+    files = []
+    for root in roots:
+        files += glob.glob(os.path.join(root, '**', '*.*'), recursive=True)
+    files = sorted(set(files))
     files = [f for f in files if f.endswith(('.md', '.css', '.html', '.js', '.py'))]
     files = [f for f in files if os.path.sep + '05-audit' + os.path.sep not in f]
+    files = [f for f in files if os.path.sep + 'dist' + os.path.sep not in f]
+    # 🔴 豁免：第三方库的原样文件（0.8.9 修，外部审计把本门禁的假绿修好后暴露）。
+    #   `09-assets/model-viewer/vendor/` 下是 three / GLTFLoader / OrbitControls，
+    #   它们的英文注释是**上游源码**，一个字都不能改
+    #   （改了就不是"引入"而是"分发改过的第三方代码"，协议上更危险）。
+    #   这些库已在 `06-vendor/协议台账.md` 登记。
+    # ⭐ 豁免的是「逐字英文/版权声明」这类**改不得**的检查，
+    #   不是"第三方可以随便带进来"—— 「外链资产」那类仍照查。
+    files = [f for f in files
+             if os.path.sep + 'vendor' + os.path.sep not in f]
     # 门禁自己与"讲门禁怎么用"的文档必然含有这些关键词
     files = [f for f in files
              if os.path.basename(f) not in ('license-gate.py', '外部方法论来源.md')]
@@ -74,18 +94,32 @@ def scan(root=None):
             m2 = NOTICE.search(line)
             if m2 and name not in ALLOW_FILE and not ALLOW_LINE.search(line):
                 issues.append(('版权声明文本', name, i, line.strip()[:60]))
-    return issues
+    return issues, len(files)
 
 
 def main():
-    # 🔴 修：原来 ROOT 是模块级常量且 glob 写死 '0*'，
-    #    传别的目录做判别力验证时**一个文件都扫不到** ⇒ 门禁永远"全绿"。
-    #    这和 measure-gate 那次是同一个病根。
-    root = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 else ROOT
-    issues = scan(root)
+    # 🔴 参数约定（0.8.9 · 外部审计 P0-1）：`--` 开头的当 flag，不当路径。
+    # 🔴 事故：check-all.sh 传 `--dir <目录列表>`，旧写法把 argv[1]
+    #   （字面量 "--dir"）当 root ⇒ root=<cwd>/--dir 不存在
+    #   ⇒ glob 到 0 个文件 ⇒ issues 为空 ⇒ 判 PASS。
+    raw = [a for a in sys.argv[1:] if not a.startswith('-')]
+    roots = [a for a in raw if os.path.isdir(a)]
+    # 🔴 传了路径但一个都不存在 ⇒ 明确报红
+    #（不能用 `or [ROOT]` 兜底：那是把"调用方传错了"当成"没传参数"）
+    if raw and not roots:
+        print('❌ 传入的路径都不存在：%s' % raw)
+        print('   这是**假绿**：不是"版权合规"，是"什么都没检查"。')
+        return 1
+    roots = roots or [ROOT]
+    issues, n_files = scan(roots)
     for kind, name, ln, txt in issues:
         print('  [license-gate] %-14s %s:L%-4d %s' % (kind, name, ln, txt))
     print('')
+    print('（扫了 %d 个文件）' % n_files)
+    # 🔴 零文件守卫
+    if n_files == 0:
+        print('❌ 一个文件都没扫到 —— 这是**假绿**，本门禁不接受空扫描。')
+        return 1
     if issues:
         print('%d 项需要人工判断。' % len(issues))
         print('  · 逐字英文 → 改用自己的话，或在 06-vendor/外部方法论来源.md 登记来源')

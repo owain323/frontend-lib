@@ -33,6 +33,23 @@ def read(p):
         return f.read()
 
 
+def strip_html_comments(html):
+    """🔴 剥掉 HTML 注释（0.8.9 修 · 外部审计把本门禁的假绿修好后暴露）。
+
+    实测踩到的：`09-assets/model-viewer/demo.html` 里有这么一段**注释**——
+        <!-- 🔴 注意：这里**没有** <script src="three.min.js">
+             3D 引擎是**点击后才加载**的 … -->
+    而原来的正则 `<(?:link|script)[^>]*(?:href|src)="…"` 不看上下文，
+    把注释里那句当成了真引用⇒ 报「引用的 three.min.js 不存在」。
+
+    ⇒ 这是一个**判据错**，不是产品错：那个 script 确实不存在，正如注释所说。
+
+    ⭐ 与我在 CSS 扫描上栽过的同一类：
+       **扫代码必须先剥注释**，否则注释里的示例会变成"违规"。
+    """
+    return re.sub(r'<!--.*?-->', '\n', html, flags=re.S)
+
+
 def css_classes(css):
     return set(re.findall(r'\.([a-zA-Z_][\w-]*)', css))
 
@@ -57,7 +74,8 @@ def check_module(mod_dir):
     if not os.path.isfile(demo):
         return problems
 
-    html = read(demo)
+    # 🔴 剥注释再扫 —— 见 strip_html_comments 的说明（注释里的示例不是真引用）
+    html = strip_html_comments(read(demo))
     md = read(readme) if os.path.isfile(readme) else ''
 
     # ---- 1. link/script 路径是否存在 ----
@@ -117,7 +135,25 @@ def check_module(mod_dir):
     defined = set()
     for c in linked_css:
         defined |= css_classes(c)
+    # 🔴 0.8.9 修：README **代码块里自己定义**的类也算已定义。
+    #   实测踩到：`03-patterns/states/README.md` 的"移除记录"一节里，
+    #   文档明确说 `.js-delayed` 本库已移除、要使用者自己写，并给出实现：
+    #       ```html
+    #       <div class="state state--loading js-delayed">…
+    #       ```css
+    #       .js-delayed { visibility: hidden; }
+    #   而判据只把 demo 里 `<link>` 的 CSS 算进 defined
+    #   ⇒ 报「README 代码块用了未定义的 class」，是**误报**。
+    #   ⚠️ 两次踩坑的记录：
+    #      ① 第一版用 `<style>…</style>` 匹配 —— 这里的样式在 ```css 围栏里，
+    #         不是 <style> 标签 ⇒ 没生效。
+    #      ② 第二版图省事直接 `css_classes(md)` 把整篇 README 的 `.xxx`
+    #         都算成"已定义" ⇒ **反向控制立刻失效**（注入一个真未定义的类也不报）。
+    #         ⭐ 这就是"判据被削弱"的典型：修一个误报，顺手放过了真问题。
+    #   ⇒ 正确做法：**只取代码块**，且只取有 CSS 形态的块。
     if md:
+        for blk in re.findall(r'```(?:css|html)\n(.*?)```', md, re.S):
+            defined |= css_classes(blk)
         for blk in md_code_blocks(md):
             if '<html' not in blk and '<div' not in blk and '<button' not in blk:
                 continue
@@ -129,8 +165,17 @@ def check_module(mod_dir):
                     'README 代码块用了未定义的 class：%s'
                     % ', '.join(sorted(missing))))
 
-    # ---- 4. 精简档 自包含检查（04-recipes 下的单文件必须自包含）----
-    if '/04-recipes/' in mod_dir.replace('\\', '/'):
+    # ---- 4. 精简档 自包含检查 ----
+    # 🔴 范围与 tierA-gate 对齐（0.8.9 · 外部审计把假绿修好后暴露的判据打架）
+    #   原来判据是 `'/04-recipes/' in mod_dir` ⇒ 把 analysis-report /
+    #   data-showcase / report 的 **demo 页**也当成"精简档"，
+    #   于是报出 3 处「精简档应内联 CSS」+ 3 处「外链了 JS」。
+    #   ⇒ 但那些页面按设计就该外链库里的组件（改了库还要同步改 demo），
+    #      本库真正承诺"零外链、可单文件拷走"的只有 `04-recipes/longform/`。
+    #   ⚠️ 这是 E31「同一个判定逻辑写两份」的另一例：
+    #      两个门禁对"谁是精简档"的口径必须一致，否则一个绿一个红互相打架。
+    _mod_rel = os.path.relpath(mod_dir, ROOT).replace(os.sep, '/')
+    if _mod_rel.startswith('04-recipes/longform'):
         inline = re.search(r'<style[^>]*>(.*?)</style>', html, re.S)
         ext_css = re.findall(r'<link[^>]*href="([^"]+\.css)"', html)
         ext_js = re.findall(r'<script[^>]*src="([^"]+\.js)"', html)
@@ -173,7 +218,27 @@ def check_start_here():
 
 
 def main():
-    root = ROOT if len(sys.argv) < 2 else os.path.abspath(sys.argv[1])
+    # 🔴 参数约定（0.8.9 · 外部审计 P0-1）：`--` 开头的当 flag，不当路径。
+    # 🔴 事故：check-all.sh 传 `--dir <目录列表>`，旧写法把 argv[1]
+    #   （字面量 "--dir"）当 root ⇒ root=<cwd>/--dir 不存在
+    #   ⇒ glob('0*/*') 扫到 0 个模块 ⇒ total=0 ⇒「无复用风险」判 PASS。
+    raw = [a for a in sys.argv[1:] if not a.startswith('-')]
+    roots = [a for a in raw if os.path.isdir(a)]
+    # 🔴 传了路径但一个都不存在 ⇒ 明确报红
+    if raw and not roots:
+        print('❌ 传入的路径都不存在：%s' % raw)
+        print('   这是**假绿**：不是"无复用风险"，是"什么都没检查"。')
+        return 1
+    # ⭐ 本脚本扫的是「带 demo.html 的模块目录」，它们按定义在 0*/ 之下，
+    #   所以 root 恒为库根；位置参数只用来校验调用方是否真的想扫这一块。
+    if roots and not any(
+            any(seg.startswith('0') for seg in a.rstrip('/').replace('\\', '/').split('/'))
+            for a in roots):
+        print('❌ 传入的目录里没有组件/模式目录（0*）：%s' % roots)
+        print('   本门禁只检查带 demo.html 的模块目录。')
+        print('   （若只想全量检查，直接不带参数运行即可）')
+        return 1
+    root = ROOT
     mods = []
     for d in glob.glob(os.path.join(root, '0*', '*')) + \
              glob.glob(os.path.join(root, '0*', '*', '*')):
@@ -194,6 +259,13 @@ def main():
             print('       [%s] %s' % (kind, msg))
 
     print()
+    print('（扫了 %d 个模块）' % len(mods))
+    # 🔴 零文件守卫：扫到 0 个模块必须判红。
+    #   这是本门禁被假绿吞掉的那一层—— 路径传错 ⇒ mods 为空
+    #   ⇒「无复用风险」与真的全通过**输出完全一样**。
+    if not mods:
+        print('❌ 一个模块都没扫到 —— 这是**假绿**，本门禁不接受空扫描。')
+        return 1
     if total:
         print('复用风险 %d 项 —— 别人照抄会踩' % total)
         return 1

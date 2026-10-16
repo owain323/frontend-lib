@@ -5,7 +5,7 @@
 | **来源** | 原创。`toc.js` 是从 `04-recipes/longform` 内联脚本**提取并加固**的 |
 | **实测** | demo 三件事都能真机验证（页头/目录/抽屉） |
 | **适用** | 精简档 / B / C，`toc.js` 为 ES5 |
-| **依赖** | `01-tokens/tokens.css` + `02-primitives/button/button.css` |
+| **依赖** | `01-tokens/tokens.css` + `02-primitives/button/button.css` + `01-tokens/page.css`（页面骨架：`.wrap` / `.lede` / `.note`） + `01-tokens/typography.css` |
 | **规范** | 见本文件「状态切换」一节|
 
 ---

@@ -39,7 +39,7 @@ TIER_RE = re.compile(
     r'[（(]?\s*(?:默认尺寸|默认尺寸|降级到\s*[ABC]|Tier\s+[ABC])'
     r'\s*[：:]?[^)）\n]{0,20}[）)]?')
 
-SELF = {'leak-scan.py', 'leak-clean.py', 'leak-fix-paths.py', 'terms.py',
+SELF = {'leak-scan.py', 'leak-clean.py', 'terms.py',
         'outsider-audit.py', 'publish-guard.py'}
 EXTS = ('.js', '.py', '.html', '.css', '.md', '.json',
         '.sh', '.mjs', '.yml', '.yaml', '.txt', '.tpl')

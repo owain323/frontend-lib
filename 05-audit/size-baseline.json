@@ -69,8 +69,8 @@
       "raw": 7391
     },
     "02-primitives/combobox/combobox.js": {
-      "gzip": 6996,
-      "raw": 19728
+      "gzip": 7024,
+      "raw": 20213
     },
     "02-primitives/date-range/date-range.css": {
       "gzip": 2260,
@@ -125,8 +125,8 @@
       "raw": 17085
     },
     "03-patterns/content/content.css": {
-      "gzip": 4485,
-      "raw": 11229
+      "gzip": 4695,
+      "raw": 11663
     },
     "03-patterns/drawer/drawer.css": {
       "gzip": 2032,
@@ -226,6 +226,6 @@
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 227976,
-  "total_raw": 592002
+  "total_gzip": 228214,
+  "total_raw": 592921
 }

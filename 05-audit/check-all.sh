@@ -68,6 +68,23 @@ run() {  # run <名字> <命令...>
     printf '  %-16s FAIL  %3ds\n' "$name" "$dt"
     [ -n "$TIMING" ] && echo "$dt $name" >> "$TIMING"
     echo "$out" | grep -E '^\s*\[|不达标|不符|未定义|未门控|需人工|超' | head -6 | sed 's/^/       /'
+    # 🔴 环境类失败要说清（0.8.9 修 · 外部审计修复过程中撞到）：
+    #   上面那行grep 只显示**门禁自己的判词**，于是
+    #   「Cannot find module 'puppeteer-core'」这类**环境问题**
+    #   一个字都不显示 ⇒ 只剩 60 多个光秃秃的 FAIL，
+    #   看起来像"产品坏了 60 处"，实际是"依赖没装"。
+    #   ⚠️ 这与 P0-1 是同一个病根的另一面：
+    #      **门禁失败时必须说清是"检查没过"还是"根本没跑起来"。**
+    if echo "$out" | grep -qE "Cannot find module|MODULE_NOT_FOUND|ECONNREFUSED|找不到浏览器|找不到 Chrome|Traceback \(most recent call last\)"; then
+      echo "       🔴 环境问题（不是检查不通过）："
+      echo "$out" | grep -E "Cannot find module|MODULE_NOT_FOUND|ECONNREFUSED|找不到|Error:|\.js:[0-9]+" \
+        | head -3 | sed 's/^/          /'
+      echo "       ⇒ 先把环境修好（装依赖 / 起静态服务），否则这一批的结果没有意义。"
+    elif ! echo "$out" | grep -qE '^\s*\[|不达标|不符|未定义|未门控|需人工|超'; then
+      # 连判词都没有 ⇒ 多半是崩了
+      echo "       🔴 无判词输出（门禁可能崩溃），原始输出前 3 行："
+      echo "$out" | head -3 | sed 's/^/          /'
+    fi
     fail=$((fail+1))
   fi
 }
@@ -397,6 +414,13 @@ if [ -n "$TIMING" ] && [ -s "$TIMING" ]; then
 fi
 
 run "bleed"         $PY 05-audit/bleed-gate.py
+# 🔴 rewrite-residue（2026-08-16 新增）：抓「批量替换脚本留下的拼接痕迹」。
+#  起因：`leak-fix-paths.py` 的 `RE_SLASH` 正则匹配任意引号字符串，
+#   一次运行污染了 80 个文件（含所有浏览器门禁的入口），
+#   而当时门禁失败**不显示错误原因** ⇒ 60 多个 FAIL 一个字都看不出所以然。
+#   那是一次性迁移脚本，按 ROADMAP 执行纪律已删除；
+#   但「这类痕迹没有守卫」这件事本身要留下守卫。
+run "rewrite-residue" $PY 05-audit/rewrite-residue-gate.py
 # ⚠️ typescript 没装时**必须显式 SKIP**，不能让它报 FAIL ——
 #    陌生人 clone 出来的副本按设计没有 node_modules，报 FAIL 会被读成
 #    "类型契约坏了"。与 visual 缺 Pillow 同一个约定（环境问题不冒充失败）。

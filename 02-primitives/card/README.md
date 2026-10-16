@@ -5,7 +5,7 @@
 | **来源** | 原创。2px 抬起一条来自对 `animal-island-ui` 的观察（那套设计里最认同的一条） |
 | **实测** | `states.py` 零缺失（card 形态：focus HIGH / hover LOW） |
 | **适用** | 精简档 / B / C，纯 CSS |
-| **依赖** | `01-tokens/tokens.css`  + `01-tokens/typography.css`（`.note` 提示框）|
+| **依赖** | `01-tokens/tokens.css`  + `01-tokens/typography.css`（`.note` 提示框） + `01-tokens/page.css`（页面骨架：`.wrap` / `.lede` / `.note`） |
 
 ---
 

@@ -5,7 +5,7 @@
 | **来源** | 原创。判据部分来自 WCAG 2.1 与原生 `<dialog>` 行为 |
 | **实测** | `demo.html` 顶部面板**实时显示焦点位置**，可直接验证 focus trap |
 | **适用** | 精简档 / B / C（JS 用 ES5 写，见下） |
-| **依赖** | `01-tokens/tokens.css` + `02-primitives/button/button.css`  + `01-tokens/typography.css`（`.note` 提示框）|
+| **依赖** | `01-tokens/tokens.css` + `02-primitives/button/button.css`  + `01-tokens/typography.css`（`.note` 提示框） + `01-tokens/page.css`（页面骨架：`.wrap` / `.lede` / `.note`） |
 
 ---
 
