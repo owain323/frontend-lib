@@ -7,9 +7,9 @@
     "manifesto 里的 sourceSha256 变了而 dist 没重建 ⇒ dist-parity/dist-fresh 门禁会红"
   ],
   "totals": {
-    "sourceFiles": 56,
-    "sourceBytes": 582988,
-    "distGzip": 102224
+    "sourceFiles": 65,
+    "sourceBytes": 697092,
+    "distGzip": 126223
   },
   "files": [
     {
@@ -1026,6 +1026,161 @@
           "gzip": 1285
         }
       ]
+    },
+    {
+      "source": "09-assets/bar/bar.css",
+      "sourceSha256": "f875f2e04175cd42a607d907a1ae2d97216793c039aa01f0f4b4fd0d392272ee",
+      "sourceBytes": 5426,
+      "sourceGzip": 2504,
+      "outputs": [
+        {
+          "path": "dist/09-assets/bar/bar.css",
+          "kind": "stripped",
+          "bytes": 2418,
+          "gzip": 825
+        },
+        {
+          "path": "dist/09-assets/bar/bar.min.css",
+          "kind": "minified",
+          "bytes": 2011,
+          "gzip": 741
+        }
+      ]
+    },
+    {
+      "source": "09-assets/bar/bar.js",
+      "sourceSha256": "24d4830c6c9ee1f6355356959f6f761e726c11b2b837421b290cc897485df181",
+      "sourceBytes": 14125,
+      "sourceGzip": 5977,
+      "outputs": [
+        {
+          "path": "dist/09-assets/bar/bar.js",
+          "kind": "stripped",
+          "bytes": 5564,
+          "gzip": 2329
+        }
+      ],
+      "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
+    },
+    {
+      "source": "09-assets/echarts-adapter/echarts-adapter.js",
+      "sourceSha256": "cfe8a6dc7e25692e81233faa6c45c5fac3e5548a72de1f8ba90f680749305e87",
+      "sourceBytes": 10430,
+      "sourceGzip": 4148,
+      "outputs": [
+        {
+          "path": "dist/09-assets/echarts-adapter/echarts-adapter.js",
+          "kind": "stripped",
+          "bytes": 4642,
+          "gzip": 1890
+        }
+      ],
+      "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
+    },
+    {
+      "source": "09-assets/model-viewer/model-viewer.css",
+      "sourceSha256": "91b6f1d8bd939c423af46328209351309d4c830c0f4a6ec20d0db0f748f354ff",
+      "sourceBytes": 4110,
+      "sourceGzip": 1767,
+      "outputs": [
+        {
+          "path": "dist/09-assets/model-viewer/model-viewer.css",
+          "kind": "stripped",
+          "bytes": 2487,
+          "gzip": 852
+        },
+        {
+          "path": "dist/09-assets/model-viewer/model-viewer.min.css",
+          "kind": "minified",
+          "bytes": 2098,
+          "gzip": 796
+        }
+      ]
+    },
+    {
+      "source": "09-assets/model-viewer/model-viewer.js",
+      "sourceSha256": "19ed98660523d91df4fa1ad678caa64f24ad60da4fb60136f7275c46111142c4",
+      "sourceBytes": 17645,
+      "sourceGzip": 7038,
+      "outputs": [
+        {
+          "path": "dist/09-assets/model-viewer/model-viewer.js",
+          "kind": "stripped",
+          "bytes": 9444,
+          "gzip": 3676
+        }
+      ],
+      "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
+    },
+    {
+      "source": "09-assets/scientific-plot/scientific-plot.css",
+      "sourceSha256": "8bde50ffe24aaf920f6260f940266458b1459e413417f8b26776a209fc774623",
+      "sourceBytes": 3948,
+      "sourceGzip": 1611,
+      "outputs": [
+        {
+          "path": "dist/09-assets/scientific-plot/scientific-plot.css",
+          "kind": "stripped",
+          "bytes": 2292,
+          "gzip": 657
+        },
+        {
+          "path": "dist/09-assets/scientific-plot/scientific-plot.min.css",
+          "kind": "minified",
+          "bytes": 1912,
+          "gzip": 591
+        }
+      ]
+    },
+    {
+      "source": "09-assets/scientific-plot/scientific-plot.js",
+      "sourceSha256": "9cbf8283bdcdaf16c71f3dc7f0bcd494bf74c16bdf1dbc2c8245300c7a8398c4",
+      "sourceBytes": 27040,
+      "sourceGzip": 9844,
+      "outputs": [
+        {
+          "path": "dist/09-assets/scientific-plot/scientific-plot.js",
+          "kind": "stripped",
+          "bytes": 24013,
+          "gzip": 8589
+        }
+      ],
+      "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
+    },
+    {
+      "source": "09-assets/sparkline/sparkline.css",
+      "sourceSha256": "01fc6efcf1cc3ed34bb4c7060054a03178226c2757f7e7fb678c84d75f878e3e",
+      "sourceBytes": 7422,
+      "sourceGzip": 3575,
+      "outputs": [
+        {
+          "path": "dist/09-assets/sparkline/sparkline.css",
+          "kind": "stripped",
+          "bytes": 1030,
+          "gzip": 374
+        },
+        {
+          "path": "dist/09-assets/sparkline/sparkline.min.css",
+          "kind": "minified",
+          "bytes": 864,
+          "gzip": 335
+        }
+      ]
+    },
+    {
+      "source": "09-assets/sparkline/sparkline.js",
+      "sourceSha256": "e339ce86bf51a6c72efeba88df4634bc791eacdb32e692c5677d26596c336563",
+      "sourceBytes": 23958,
+      "sourceGzip": 10031,
+      "outputs": [
+        {
+          "path": "dist/09-assets/sparkline/sparkline.js",
+          "kind": "stripped",
+          "bytes": 6583,
+          "gzip": 2344
+        }
+      ],
+      "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
     }
   ]
 }
