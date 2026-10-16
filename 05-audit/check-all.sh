@@ -322,7 +322,7 @@ run "gate-verdict"  $PY 05-audit/gate-verdict-gate.py
 #   ⇒ 「dist 与源码一致」这条对外承诺，对 JS 部分此前**没有任何机械证据**。
 #   做法：在**同源空白页**上分别加载源码 JS 与 dist JS，
 #        比对"新增的 window 全局"与"抛的错"。配反向控制。
-run "dist-js-parity" $NODE 05-audit/dist-js-parity-gate.js
+run "dist-js-parity" node 05-audit/dist-js-parity-gate.js
 # 🔴 a11y 的反向控制（0.8.9 接上 · 审计 P1-8）：
 #   `_a11y-reverse-control.js` 早就写好了 —— 注入 5 类典型违规
 #   （img 无 alt / input 无 label / id 重复 / tabindex 乱序 / 对比度过浅），
