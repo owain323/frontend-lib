@@ -1,3 +1,38 @@
+# Changelog
+
+本文件记录本库每个版本的变化。格式遵循
+[Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
+版本号遵循[语义化版本](https://semver.org/lang/zh-CN/)。
+
+## [Unreleased]
+
+### Fixed
+
+- **`tokens.css` 有一条注释没闭合**（第 288 行开、294 行才闭）
+  ⇒ `--lift-sm/md/lg` 三条令牌与它后面 60 多行注释被浏览器整段当注释吃掉。
+  本次补上闭合符，并给 `token-parse-gate` 加判据 A'
+  （判据 A 只查「孤立的 `*/`」，查不出「未闭合的 `/*`」—— 已实测确认它对原文件不报）。
+
+### Changed
+
+- **`exports` 默认指向去注释后的产物**。原来 `import 'agentcss/tokens.css'`
+  拿到的是源码版（39.6 KB，其中 31.6 KB 是注释）⇒ 打包工具会把这些字节原样传下去。
+  现在默认给 `dist/` 版（8.0 KB），源码版走 `agentcss/src/*`。
+- **`exports` 补上 `"."` 与 types 条件**。已用真实 `tsc`（`moduleResolution: nodenext`）
+  实测：补之前 `import type {} from 'agentcss'` 报 TS2307 找不到模块，
+  补之后通过。
+- **CI 的「静态门禁」不再手挑清单**，改为调用 `MODE=fast bash 05-audit/check-all.sh`。
+  原来那里手挑了 10 道，而 check-all.sh 注册了 135 道
+  ⇒ 上一轮修好的 7 道假绿门禁与新增的 `rewrite-residue-gate` **在 CI 上一道都没跑过**。
+
+### Added
+
+- `rewrite-residue-gate.py`：抓「批量替换脚本留下的拼接痕迹」
+  （`REPO + REPO +` / `X + 'a' + 'b'` 这类只可能来自坏正则的写法），带反向控制。
+- `SECURITY.md` 与 `CONTRIBUTING.md`。
+
+---
+
 ## 0.8.8 — 2026-10-14
 
 ### ① 给核加「分级 Esc」能力 ⇒ combobox 收编，manual 只剩 2 条

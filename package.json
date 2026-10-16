@@ -15,20 +15,29 @@
   "type": "commonjs",
   "types": "./types/index.d.ts",
   "exports": {
-    "./tokens.css": "./01-tokens/tokens.css",
-    "./typography.css": "./01-tokens/typography.css",
-    "./primitives/*": "./02-primitives/*",
-    "./patterns/*": "./03-patterns/*",
-    "./recipes/*": "./04-recipes/*",
+    ".": {
+      "types": "./types/index.d.ts",
+      "default": "./index.html"
+    },
+    "./tokens.css": "./dist/01-tokens/tokens.css",
+    "./typography.css": "./dist/01-tokens/typography.css",
+    "./primitives/*": "./dist/02-primitives/*",
+    "./patterns/*": "./dist/03-patterns/*",
+    "./recipes/*": "./dist/04-recipes/*",
     "./assets/*": "./09-assets/*",
     "./dist/*": "./dist/*",
+    "./src/*": "./*",
+    "./types": "./types/index.d.ts",
     "./package.json": "./package.json"
   },
   "files": [
     "ai/",
+    "!ai/surface.baseline.json",
     "adapters/",
+    "!adapters/presentation/fixtures",
     "types/",
     "dist/",
+    "!dist/manifest.json",
     "01-tokens/",
     "02-primitives/",
     "03-patterns/",
@@ -40,6 +49,8 @@
     "API.md",
     "ERRORS.md",
     "SUPPORT.md",
+    "SECURITY.md",
+    "CONTRIBUTING.md",
     "CHANGELOG.md",
     "LICENSE"
   ],

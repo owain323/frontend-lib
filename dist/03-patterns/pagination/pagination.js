@@ -123,6 +123,18 @@ this.render();
 
 Pagination.prototype.pages = 1;
 
+Pagination.prototype.destroy = function () {
+if (this._destroyed) return;
+this._destroyed = true;
+document.removeEventListener('keydown', this._onKey);
+
+if (this.node && document.activeElement &&
+this.node.contains &&
+this.node.contains(document.activeElement)) {
+document.activeElement.blur();
+}
+};
+
 Pagination.prototype.go = function (n, opts) {
 opts = opts || {};
 n = Math.max(1, Math.min(this.pages, n));

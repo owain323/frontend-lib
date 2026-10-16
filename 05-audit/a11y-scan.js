@@ -49,19 +49,39 @@ const BASE = 'http://127.0.0.1:8000';
 //    11/11 页面通过，axe 294 条规则 0 违规。
 //    ⇒ 从这里移除，让门禁重新盯住这两条。
 const KNOWN_OK = new Set();   // 目前为空 —— 没有"已知且暂不做"的规则
-const PAGES = [
-  ['index', 'index.html'],
-  ['button', '02-primitives/button/demo.html'],
-  ['card', '02-primitives/card/demo.html'],
-  ['choice', '02-primitives/choice/demo.html'],
-  ['input', '02-primitives/input/demo.html'],
-  ['form-validation', '03-patterns/form-validation/demo.html'],
-  ['list', '03-patterns/list/demo.html'],
-  ['nav', '03-patterns/nav/demo.html'],
-  ['overlay', '03-patterns/overlay/demo.html'],
-  ['states', '03-patterns/states/demo.html'],
-  ['longform', '04-recipes/longform/longform.html'],
+
+// 🔴 0.8.9：PAGES 不再手写。
+//   原来这里硬编码了 11 个页面，而组件有 33 个 ⇒ axe 只覆盖了三分之一的组件面，
+//   而 README:199 写的是「每个组件的键盘路径 / ARIA / 对比度都有契约守着」
+//   ⇒ 读成「每个组件都过了 axe」是错的（审计 P1-5 复现过）。
+//
+//   为什么必须改成从契约生成（而不只是"把 33 个补齐"）：
+//     手写清单是**第二份**「哪些组件需要扫无障碍」的表述，
+//     而契约 `ai/components.json` 里 33 个组件**全都有 demo 路径**
+//     ⇒ 两份清单必然漂移，这正是 P0-3（CI 手挑 10 道 / 注册 135 道）同一个病。
+//   ⇒ 单一来源：契约里的 demo 就是该扫的页面。
+const EXTRA_PAGES = [
+  // 非组件页面（没有对应契约条目），单独列出来并说明为什么要扫
+  ['index', 'index.html'],              // 演示索引页
+  ['longform', '04-recipes/longform/longform.html'],  // 唯一的精简档自包含页
 ];
+
+function pagesFromContract() {
+  const cj = JSON.parse(fs.readFileSync(
+    path.join(ROOT, 'ai', 'components.json'), 'utf-8'));
+  return cj.components
+    .filter((c) => c.files && c.files.demo)
+    .map((c) => [c.id, c.files.demo]);
+}
+
+const PAGES = pagesFromContract().concat(EXTRA_PAGES);
+
+// 🔴 零覆盖守卫：契约里一个 demo 都没有时判红，
+//   否则"扫 0 页、0 违规"会被读成"无障碍没问题"。
+if (PAGES.length === 0) {
+  console.error('❌ 一个页面都没扫到 —— 这是**假绿**，不是无障碍达标。');
+  process.exit(1);
+}
 
 (async () => {
   const only = process.argv[2];

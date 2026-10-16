@@ -146,13 +146,33 @@ def main():
     # ---------- ④ files 路径都存在 ----------
     print('  [4] package.json files')
     files = pkg.get('files') or []
-    missing = [f for f in files
+    # 🔴 0.8.9：必须区分**包含项**与**排除项**。
+    #   npm 的 files 数组支持 `!路径` 语法表示"排除"（0.8.9 起用它把
+    #   `ai/surface.baseline.json`、`*/fixtures`、`dist/manifest.json`
+    #   这三样内部产物挡在包外）。
+    #   ⇒ 原来的判据「files 里列的都必须存在」会把 `!x` 也算进去，
+    #      然后报「files 里列了但实际不存在」—— **判据本身错了**，
+    #      它在惩罚一个正确的排除项。
+    #   ⇒ 排除项的正确检查是：**它指向的东西确实存在**（否则这条排除毫无意义）。
+    includes = [f for f in files if not f.startswith('!')]
+    excludes = [f[1:] for f in files if f.startswith('!')]
+    missing = [f for f in includes
                if not os.path.exists(os.path.join(ROOT, f.rstrip('/')))]
     if missing:
         print('      X files 里列了但**实际不存在**：%s' % ', '.join(missing))
+    dead_excludes = [f for f in excludes
+                     if not os.path.exists(os.path.join(ROOT, f.rstrip('/')))]
+    if dead_excludes:
+        print('      X files 里的**排除项指向的东西不存在**（这条排除毫无意义）：%s'
+              % ', '.join(dead_excludes))
+        missing = missing + dead_excludes
+    if missing:
+        print('      X files 路径有问题（详见上一行）')
         bad += 1
     else:
-        print('      OK %d 项全部存在' % len(files))
+        print('      OK 包含项 %d 个、排除项 %d 个，路径都存在'
+              % (len(includes), len(excludes)))
+
 
     # ---------- ⑤ 描述里没有会漂移的数字 ----------
     print('  [5] 描述不含漂移数字')
@@ -185,16 +205,39 @@ def main():
     # ---------- ⑦ exports 里的路径都真实存在 ----------
     ex = pkg.get('exports') or {}
     ex_bad = []
+
+    def _walk_targets(v):
+        """🔴 0.8.9：exports 的值有两种形态，都要处理。
+
+        ① 字符串：`"./tokens.css": "./dist/01-tokens/tokens.css"`
+        ② **条件导出对象**（0.8.9 为让现代 TS 能拿到类型才加的）：
+             `".": { "types": "./types/index.d.ts", "default": "./index.html" }`
+           ⇒ 原来的判据直接 `v.endswith('*')`，遇到 dict 会抛
+             `AttributeError: 'dict' object has no attribute 'endswith'`。
+           ⚠️ 这不是判据太宽，是它**没跟上 P1-1 的修复** ——
+              加了条件导出就得让判据认识它，否则门禁自己崩。
+        """
+        if isinstance(v, str):
+            return [v]
+        if isinstance(v, dict):
+            return [x for x in v.values() if isinstance(x, str)]
+        return []
+
+    n_cond = 0
     for k, v in ex.items():
-        if v.endswith('*') or k.endswith('.json'):
-            continue          # 通配与元数据跳过
-        if not os.path.isfile(os.path.join(ROOT, v.lstrip('./'))):
-            ex_bad.append('%s -> %s' % (k, v))
+        for t in _walk_targets(v):
+            if isinstance(v, dict):
+                n_cond += 1
+            if t.endswith('*') or k.endswith('.json'):
+                continue          # 通配与元数据跳过
+            if not os.path.isfile(os.path.join(ROOT, t.lstrip('./'))):
+                ex_bad.append('%s -> %s' % (k, t))
     if ex_bad:
         print('      X exports 指向不存在的文件：%s' % ', '.join(ex_bad[:3]))
         bad += 1
     else:
-        print('      OK exports %d 条路径有效' % len(ex))
+        print('      OK exports %d 条（含 %d 个条件导出目标）路径有效'
+              % (len(ex), n_cond))
 
     # ---------- ⑧ devDependencies 存在（可复现）----------
     dev = pkg.get('devDependencies') or {}

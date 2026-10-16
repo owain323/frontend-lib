@@ -150,6 +150,14 @@ var flDismissable = function (opts) {
        （否则键盘用户看到的提示，盲用户听不到） */
     r.setAttribute('aria-live', 'polite');
     r.setAttribute('aria-atomic', 'true');
+    /* 🔴 aria-label（0.8.9 补）：`role="tooltip"` 的元素**必须有可访问名**
+       —— 实测 axe 报 serious：
+         `aria-tooltip-name: ARIA tooltip nodes must have an accessible name`
+       这个 live region 里的文字是**运行时塞进去的提示内容**，
+       而在读屏用户"到达"它之前它通常是空的
+       ⇒ 光靠内容拿不到名字 ⇒ 必须显式给 aria-label。
+       label 用通用措辞，具体内容由 aria-live 负责播报。 */
+    r.setAttribute('aria-label', '组件提示');
     r.style.cssText =
       'position:absolute;width:1px;height:1px;padding:0;margin:-1px;' +
       'overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0';

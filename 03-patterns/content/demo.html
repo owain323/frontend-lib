@@ -21,6 +21,7 @@
 </head>
 <body class="page page">
 
+<main>
 <p class="demo-note">
   <strong>content</strong> 接管 Markdown 渲染出来的元素：<b>结构用标准</b>（CommonMark/GFF 决定），
   <b>样式用令牌</b>（颜色/字号/间距全部来自 tokens.css）。
@@ -30,7 +31,7 @@
 <!-- 🔴 新建：此前本组件只有 content.css + README.md，**没有 demo.html**，
      ⇒ 契约脚本拿不到页面、量不到任何东西（等于契约在空跑）。
      这份 demo 同时作为「标题层级不跳级」的活样本。 -->
-<main class="prose">
+<div class="prose">
   <h1>季度经营分析</h1>
   <p class="lede">
     本节演示正文容器接管 <code>&lt;h1&gt;</code>～<code>&lt;h3&gt;</code>、
@@ -79,7 +80,7 @@
   <h2>4 · 代码与链接</h2>
   <pre><code>const f = (x) =&gt; x * 2;   // 纯 ES5 时代写法</code></pre>
   <p>详细口径见 <a href="#main">内部数据字典</a>。</p>
-</main>
+</div>
 
 </body>
 </html>

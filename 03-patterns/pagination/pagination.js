@@ -208,6 +208,34 @@
 
   Pagination.prototype.pages = 1;
 
+  /* 🔴 destroy（0.8.9 补）——
+   * 构造函数里注册了 `document.addEventListener('keydown', this._onKey)`
+   * （上面 render() 之前那处），而 `document` 是全局对象：
+   * **元素被移除时浏览器不会自动摘它**。
+   * ⇒ 宿主用框架做条件渲染时（列表项删掉、路由切换），
+   *   每挂一次就多一个 keydown 监听，页面上放 N 个分页器就有 N 个。
+   *
+   * ⭐ 摘除必须用**同一个函数引用**：`this._onKey` 是具名的（定义在构造函数里），
+   *    所以 removeEventListener 能对上；写成匿名函数就永远摘不掉
+   *    （combobox.js:358 那条注释说的就是这件事）。
+   *
+   * 幂等：重复调 destroy() 不会报错 —— 因为 removeEventListener 对
+   * 「没注册过的引用」是静默 no-op，但下面的 _destroyed 标志让第二次直接返回，
+   * 避免重复做清理。
+   */
+  Pagination.prototype.destroy = function () {
+    if (this._destroyed) return;
+    this._destroyed = true;
+    document.removeEventListener('keydown', this._onKey);
+    // 若焦点还在被移除的分页器里，顺手交还出去，避免焦点丢到不可见处
+    // ⚠️ 字段名是 `node`（构造函数第 141 行 `this.node = node`），不是 `root`
+    if (this.node && document.activeElement &&
+        this.node.contains &&
+        this.node.contains(document.activeElement)) {
+      document.activeElement.blur();
+    }
+  };
+
   Pagination.prototype.go = function (n, opts) {
     opts = opts || {};
     n = Math.max(1, Math.min(this.pages, n));

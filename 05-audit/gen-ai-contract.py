@@ -527,7 +527,7 @@ def build():
             'states.enum = 组件会在 DOM 上写出的 data-* 取值，'
             'states.legacyClass = 仍未收敛到 data 属性的历史状态类（INVARIANT I-8 未达标）。'
         ),
-        'maturityCriteria': meta_all['maturityCriteria'],
+        'maturityCriteria': maturity_criteria(comps, meta_all['maturityCriteria']),
         'summary': {
             'total': len(comps),
             'byMaturity': summary,
@@ -537,6 +537,44 @@ def build():
         'components': comps,
     }
     return doc, scan_tokens()
+
+
+def maturity_criteria(comps, base):
+    """🔴 把 maturityCriteria 里**描述数字**的两句改成算出来的（0.8.9）。
+
+    为什么必须改（审计 P2-4 复现）：
+      那两句（`$whyFourth` / `$strictImpact`）是**手写常量**，
+      写于 0.7.6，那时是 stable 20 / beta 7、strict 下有 7 个组件不可用。
+      而现在实测是 stable 29 / beta 4
+      ⇒ **同一份文件里，「算出来的数」是对的、「手写的数」是 0.7.x 的快照**。
+      ⚠️ 手工搜过：**没有任何脚本生成这两个字段** ⇒ 它们就是无人维护的死文字。
+
+      这正是本库自己的原则「凡是不由生成器产出的数字，最终都会漂」
+      （tokens 双份定义、README 体积数字都是同一个病）。
+
+    ⇒ 改成：从 `comps` 现场算出 stable / beta 数与 strict 不可用清单。
+       以后组件升档，这两句自动跟着变，不需要有人记得回来改。
+    """
+    mc = dict(base)
+    n_stable = sum(1 for c in comps if c['maturity'] == 'stable')
+    n_beta = sum(1 for c in comps if c['maturity'] == 'beta')
+    # strict 档位只放行 stable ⇒ 非 stable 的组件在 strict 下不可用
+    blocked = sorted(c['id'] for c in comps if c['maturity'] != 'stable')
+
+    mc['$whyFourth'] = (
+        '🔴 为什么第四条判据不能省：用前三条时多数组件会**全是 stable** '
+        '⇒ ladder 没有任何鉴别力（对标 Primer 六档阶梯，每档都有硬判据）。'
+        '补上「行为欠账」这一条后：'
+        '**stable %d / beta %d**（本行由生成器算出，不要手改）。'
+        % (n_stable, n_beta)
+    )
+    mc['$strictImpact'] = (
+        '⚠️ strict 档位只放行 stable ⇒ %d 个组件在 strict 下不可用：'
+        '%s。放宽 strict 会让「未收编的手写行为」进入生产路径。'
+        '（本行由生成器算出，不要手改）'
+        % (len(blocked), ' / '.join(blocked) if blocked else '（无）')
+    )
+    return mc
 
 
 def main():

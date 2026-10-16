@@ -8,8 +8,8 @@
   ],
   "totals": {
     "sourceFiles": 56,
-    "sourceBytes": 580954,
-    "distGzip": 102123
+    "sourceBytes": 582988,
+    "distGzip": 102224
   },
   "files": [
     {
@@ -179,15 +179,15 @@
     },
     {
       "source": "01-tokens/tokens.css",
-      "sourceSha256": "e6ba48f3bc3be09ad3fd4bda1c3cb03adb50fb67237fd027fcbf8f76a70290f7",
-      "sourceBytes": 40590,
+      "sourceSha256": "38f4617ef415a454b956e7a4d59b098f352b389f0af0d834254480692d9306a6",
+      "sourceBytes": 40593,
       "sourceGzip": 16378,
       "outputs": [
         {
           "path": "dist/01-tokens/tokens.css",
           "kind": "stripped",
-          "bytes": 8202,
-          "gzip": 2635
+          "bytes": 8206,
+          "gzip": 2637
         },
         {
           "path": "dist/01-tokens/tokens.min.css",
@@ -809,15 +809,15 @@
     },
     {
       "source": "03-patterns/pagination/pagination.js",
-      "sourceSha256": "f22cae6d22cb151e1e090ae7d481de16b7fb6af3af2fd8de02350b87cd727432",
-      "sourceBytes": 16156,
-      "sourceGzip": 6410,
+      "sourceSha256": "d837b54973c30d1a900893701ef49835b6125049c2625b7e72c1d827d94fd14b",
+      "sourceBytes": 17632,
+      "sourceGzip": 7047,
       "outputs": [
         {
           "path": "dist/03-patterns/pagination/pagination.js",
           "kind": "stripped",
-          "bytes": 7254,
-          "gzip": 2560
+          "bytes": 7555,
+          "gzip": 2619
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
@@ -899,15 +899,15 @@
     },
     {
       "source": "03-patterns/tooltip/tooltip.js",
-      "sourceSha256": "14042264e730c7bfb1ff6f10e715118b34e3b1acafb6bbdd7e943cabbaca596e",
-      "sourceBytes": 11200,
-      "sourceGzip": 4746,
+      "sourceSha256": "7c17d6230b4357934b6d74f5804d2b21182647473b8b02343f5876d03395f563",
+      "sourceBytes": 11752,
+      "sourceGzip": 5006,
       "outputs": [
         {
           "path": "dist/03-patterns/tooltip/tooltip.js",
           "kind": "stripped",
-          "bytes": 5215,
-          "gzip": 1870
+          "bytes": 5262,
+          "gzip": 1910
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
@@ -1009,14 +1009,14 @@
     },
     {
       "source": "04-recipes/tierA-tokens.css",
-      "sourceSha256": "0e6247efa0be2ec8f617f50f44a472652483c712c29f044abea07c7eb3aab1db",
-      "sourceBytes": 17661,
-      "sourceGzip": 2603,
+      "sourceSha256": "a306f233414b348a6a4c29c922d7f8b239ef8394d31ba58e627e9eaed73838ae",
+      "sourceBytes": 17664,
+      "sourceGzip": 2601,
       "outputs": [
         {
           "path": "dist/04-recipes/tierA-tokens.css",
           "kind": "stripped",
-          "bytes": 16862,
+          "bytes": 16865,
           "gzip": 2058
         },
         {
