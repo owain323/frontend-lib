@@ -309,6 +309,13 @@ run "purge-selftest" node 05-audit/purge-css-selftest.js
 #   下一次 git add -A 就提交了（P0-1 就是这样进 HEAD 的）。
 #   ⇒ 每轮都核一遍：变异串不许出现在目标源码里。
 run "mutation-leak" $PY 05-audit/mutation-leak-gate.py
+# 🔴 门禁判红路径检测（0.8.9 · 防「输出说失败、退出码说成功」）：
+#   本库已发生过两次同类事故 ——
+#     ① css-imports / dead-class 挂在 run_report 下 ⇒ 退出码恒为 0
+#        ⇒ 在 check-all 里**永远 PASS**，而 css-imports 抓到过真问题
+#     ② dead-class 参数解析出错后什么都扫不到，却判「没有真死类」
+#   ⇒ 每轮核对：每道注册的门禁，代码里都要有"判红并返回非 0"的路径。
+run "gate-verdict"  $PY 05-audit/gate-verdict-gate.py
 # 🔴 a11y 的反向控制（0.8.9 接上 · 审计 P1-8）：
 #   `_a11y-reverse-control.js` 早就写好了 —— 注入 5 类典型违规
 #   （img 无 alt / input 无 label / id 重复 / tabindex 乱序 / 对比度过浅），
