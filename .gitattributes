@@ -1,0 +1,30 @@
+# 统一行尾与二进制判定
+#
+# 为什么需要它：本仓库的判据大量做**字节比对**
+#   （`dist-parity` 比 CSSOM、`pack-smoke` 比 tarball、
+#    `visual` 比截图、`doc-facts` 比文档事实）。
+#   而 Windows 上 `core.autocrlf=true` 会让同一份内容在磁盘上
+#   是 CRLF、在索引里是 LF ⇒
+#     · 跨机器比对时差出「行数」个字节（不是内容差异）
+#     · 门禁报的"不一致"可能纯粹来自行尾
+#   实测背景见 `ERRORS.md` 与外部审计报告附录（"换行符"一节）。
+#
+# 策略：文本一律 LF。`.md` / `.js` / `.css` / `.html` / `.py` / `.sh` / `.json` / `.yml`
+#
+* text=auto eol=lf
+
+# 二进制（不许做行尾转换，也不许被 diff 工具当文本处理）
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.webp binary
+*.woff  binary
+*.woff2 binary
+*.ttf  binary
+*.glb  binary
+*.zip  binary
+
+# 生成产物：不参与 GitHub 的语言统计与 diff 折叠
+dist/** linguist-generated=true

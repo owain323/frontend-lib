@@ -39,24 +39,80 @@ TIMING="${TIMING:-}"
 # =========================================================
 # 分层：按改动范围决定要跑哪些检查（ J12）
 # ---------------------------------------------------------
-# 动机：全量 60+ 道要 6 分钟。改一个按钮就等 6 分钟，
+# 动机：全量 142 道要几分钟。改一个按钮就等几分钟，
 #       等于**开发流程在替我承担不必要的等待**。
 # 分层：
-#   MODE=fast      只跑静态检查（秒级）
-#   MODE=component 只跑浏览器相关（分钟级）
+#   MODE=fast      只跑静态检查（秒级）—— 跳过「组件层」
+#   MODE=component 只跑「组件层」（需浏览器 / 重型外部工具，分钟级）
 #   MODE=full      全量（收尾、发版前）
+#
+# 🔴 层怎么判（0.8.9 改 · 外部审计 P2-6）：
+#   按优先级三级判定，都是**机械可判**的，没有硬编码名单：
+#     ① 命令行带标记          `run "tok-b" @component $PY x.py`
+#        ⇒ 同一个脚本分两种层时用它（token-parse 的静态半 / 浏览器半）
+#     ② 命令文本含 node / puppeteer / playwright / with-server
+#     ③ **脚本自己声明**：文件头 40 行内有 `# LAYER: component`
+#   ⚠️ 之前只有 ② ⇒ 两个重型门禁漏网（`beh-reverse`、`pack-smoke`
+#      的命令文本里没有 `node`，但内部起浏览器 / 跑 npm）
+#      ⇒ fast 照样跑它们，各几十秒。
+#
+# 🔴 跳过必须**打出来**（0.8.9 改）：
+#   之前是静默 `return 0` ⇒ 日志里 0 行 SKIP，「跑了多少 / 跳了多少」不可见。
+#   这与本文件自己的原则冲突（「跳过不是通过，它是一条**真话**」）。
 # =========================================================
 MODE="${MODE:-full}"
+# ---------- 分层判定（0.8.9）------------------------------------------------
+_ran=0        # 本轮**真的执行了**的门禁数
+_skipped=0    # 本轮**按层跳过**的门禁数
+_layer_of() { # _layer_of <命令...>  → 回显 static / component
+  local a
+  for a in "$@"; do
+    [ "$a" = "@component" ] && { echo component; return; }
+    [ "$a" = "@static" ]    && { echo static;    return; }
+  done
+  case "$*" in
+    *node*|*puppeteer*|*playwright*|*with-server*) echo component; return ;;
+  esac
+  # 脚本自声明（只读文件头 40 行，够快）
+  local tok
+  for tok in "$@"; do
+    case "$tok" in
+      *.py|*.js|*.mjs|*.sh)
+        if [ -f "$tok" ] && head -40 "$tok" 2>/dev/null \
+             | grep -qE '^# *LAYER: *component'; then
+          echo component; return
+        fi
+        ;;
+    esac
+  done
+  echo static
+}
+_should_skip() { # _should_skip <层>  → 0 表示本轮该跳过
+  case "$MODE" in
+    fast)      [ "$1" = component ] && return 0 ;;
+    component) [ "$1" = static ]    && return 0 ;;
+  esac
+  return 1
+}
+_exec_args() { # 去掉命令行里的层标记，回显真正的命令
+  local out=() a
+  for a in "$@"; do
+    case "$a" in @component|@static) ;; *) out+=("$a") ;; esac
+  done
+  printf '%s\n' "${out[*]}"
+}
+
 run() {  # run <名字> <命令...>
   local name="$1"; shift
-  # ---------- 分层：按「需不需要浏览器」自动判定，而不是硬编码名单 ----------
-  # ⭐ 之前是硬编码一个跳过名单 ⇒ 新增浏览器门禁时会**漏掉**（我今天就漏过）。
-  # ⇒ 改成从命令本身判断：跑 node / puppeteer 的一律归「浏览器类」。
-  if [ "$MODE" = "fast" ]; then
-    case "$*" in
-      *node*|*puppeteer*|*playwright*|*with-server*) return 0 ;;
-    esac
+  # ---------- 分层 ----------
+  local _layer
+  _layer=$(_layer_of "$@")
+  if _should_skip "$_layer"; then
+    skip "$name" "$_layer 层 —— MODE=$MODE 不跑"   # 计数在 skip() 里
+    return 0
   fi
+  set -- $(_exec_args "$@")      # 去掉 @component / @static 标记
+  _ran=$((_ran+1))
   local t0 t1 dt
   t0=$(date +%s)
   if out=$("$@" 2>&1); then
@@ -114,16 +170,24 @@ run() {  # run <名字> <命令...>
 #  ⇒ 文档里写"共 N 道"就必须跟机器绑定，否则必有一条是错的。
 #  ⇒ 改成显式登记：**注册数在任何机器上都是同一个数**，变的只是"执行了几条"。
 skip() {
+  # 🔴 计数放在这里（0.8.9）：跳过有两种来源，都要算进"本轮跳过 M 道"：
+  #     ① 分层跳过（MODE=fast 不跑组件层）
+  #     ② 环境缺失（缺 Pillow / typescript）
+  #   放在 skip() 里就一处覆盖两种；分散在各调用点必然漏（实测漏过 17 道）。
+  _skipped=$((_skipped+1))
   printf '  %-16s SKIP  （%s）\n' "$1" "$2"
 }
 
 run_report() {
   local name="$1"; shift
-  if [ "$MODE" = "fast" ]; then
-    case "$*" in
-      *node*|*puppeteer*|*playwright*|*with-server*) return 0 ;;
-    esac
+  local _layer
+  _layer=$(_layer_of "$@")
+  if _should_skip "$_layer"; then
+    skip "$name" "$_layer 层 —— MODE=$MODE 不跑"   # 计数在 skip() 里
+    return 0
   fi
+  set -- $(_exec_args "$@")
+  _ran=$((_ran+1))
   local out
   if out=$("$@" 2>&1); then
     printf '  %-16s 报告（发现项不判失败）\n' "$name"
@@ -180,6 +244,26 @@ run "content-hygiene" $PY 05-audit/hygiene.py
 run "shot-path"  $PY 05-audit/shot-path.py
 run "mojibake"   $PY 05-audit/mojibake-check.py .
 run "repo-hygiene"  $PY 05-audit/repo-hygiene.py
+# 🔴 HTML 标签配平（0.8.9 接进来 · 外部审计 P1-8 点名的孤儿门禁）：
+#   它抓的是 **axe 与静态类名门禁都抓不到** 的一类 —— 未闭合 / 串位的标签。
+#   浏览器会自动纠正，所以页面"看起来正常"，不留任何痕迹。
+#   实测它一接进来就抓到 3 个真问题（`<main>` 串成 `</div>`、
+#   一个 `<main class="wrap">">` 多出的 `">` 会当文本渲染出来）。
+#   ⚠️ 接进来之前先修了它自己的两个洞（都在文件头留档）：
+#     ① 报的行号是"剥离后文本"的坐标 ⇒ 人定位不到 ⇒ 改成保留换行
+#     ② 注释与挖空的顺序反了 ⇒ 注释里的 `<script src=…>` 会把后面
+#        几十行的真标签一起吞掉 ⇒ 报出指向错误位置的假红
+run "tag-balance"   $PY 05-audit/tag-balance.py
+# 🔴 组件「接线」检查（0.8.9 接进来 · 外部审计 P1-8 点名的孤儿门禁）：
+#   属性用了、配套的类名 / 脚本引了吗？引的文件真的在吗？
+#   实测抓过真问题：sparkline 的 JS 找 `.sparkline[data-spark]`，
+#   而 demo 写的是 `class="spark"` ⇒ 9 个图一个都没画出来，且**不报错**。
+#   ⚠️ 接进来之前先修了它的两个洞：
+#     ① 扫描范围是 `**/*.html` ⇒ 把 node_modules/ 里的第三方页面
+#        也扫进来，报出一堆 `/assets/index-xxx.js 不存在`（那是别人包的产物）
+#     ② 属性提取用的是全文本正则 ⇒ 把 `<code>&lt;script src="…"&gt;</code>`
+#        这种**转义示例**当成真引用 ⇒ 假红。改成只在**真标签**内取属性。
+run "wiring"        $PY 05-audit/wiring-check.py
 run "deps"      $PY 05-audit/deps.py --missing
 run "behavior"  $PY 05-audit/gen-behavior.py --check
 # 行为覆盖矩阵：哪些组件必须有哪种行为（不许靠省略跳过）
@@ -189,6 +273,13 @@ run "maturity"  $PY 05-audit/maturity-gate.py
 # 废弃治理：移除公开名字必须走流程（登记 → 迁移窗口 → 兑现）；基线只增不减
 run "deprecation" $PY 05-audit/deprecation-gate.py
 echo ""
+# 🔴 0.8.9：fast 是**纯静态**层，它不需要 :8000
+#   （需要服务的门禁都已被判为 component 层并跳过）。
+#   ⇒ 不再无条件起服务：否则 fast 也会占 8000 端口，
+#     与用户本地的 dev server 抢端口、且让"秒级"档多花约 1 秒。
+if [ "$MODE" = "fast" ]; then
+  echo "=== 跳过本地静态服务（MODE=fast 是纯静态层）==="
+else
 echo "=== 启动本地静态服务（Python 与浏览器门禁都要用）==="
 # 🔴 修：门禁脚本**自己保证**服务在跑。
 #    之前只写了一句"需要 8000 端口"却既不检查也不启动
@@ -233,6 +324,9 @@ else
   fi
 fi
 
+fi
+# ---------- /静态服务 ----------
+
 # 🔴🔴 扫描目录必须**显式列举**，不能用 `.`
 # ---------------------------------------------------------------------------
 #   起因（2026-10-06 装 typescript 之后暴露）：
@@ -270,9 +364,10 @@ done
 echo ""
 echo "=== 浏览器门禁（需要 127.0.0.1:8000）==="
 echo ""
-echo "=== 浏览器门禁 ==="
 # 令牌在真浏览器里的计算值复核（fast 模式只跑静态的一半，这里补全）
-run "token-parse-b" $PY 05-audit/token-parse-gate.py
+# @component：同一个脚本的**浏览器那一半**
+#   （静态半在 line 150 用 `--no-browser`；这里跑完整版，需要 :8000）
+run "token-parse-b" @component $PY 05-audit/token-parse-gate.py
 # dist 产物与源码必须被浏览器解析成同一份规则集（M1：手写压缩器的唯一可信判据）
 run "dist-parity" node 05-audit/dist-parity-check.js
 # 骨架杠杆：改一处全局令牌，**每一页**真的跟着变（改前实测 36 处不跟随）
@@ -433,17 +528,6 @@ echo ""
 #   实测真仓库：真死 **0** 个。
 run "dead-class"    $PY 05-audit/dead-class-gate.py
 
-echo ""
-if [ "$MODE" != "full" ]; then
-  echo ""
-  echo "（分层模式：$MODE —— 收尾前请跑 MODE=full）"
-fi
-if [ "$fail" -eq 0 ]; then
-  echo "全部通过。"
-else
-  echo "$fail 道门禁失败。"
-fi
-
 # ----------------------------------------------------------------------------
 # 耗时 Top 10（按反馈加的：门禁跑起来花的时间偏长）
 # ----------------------------------------------------------------------------
@@ -497,4 +581,26 @@ run "release"     $PY 05-audit/release-gate.py
 run "version-sync" $PY 05-audit/bump-version.py --check
 run "gate-self"   $PY 05-audit/gate-selfcheck.py
 run "gate-fixture" $PY 05-audit/gate-selfcheck-fixtures.py
+# ---------------------------------------------------------------------------
+# 🔴 结论必须放在**最后**（0.8.9 修）
+#   原先它在中段（后面还有约 20 道门禁），于是日志里会先打「全部通过。」
+#   再接着出现 FAIL 行 —— 读到的人不会往下看。这是最坏的一种报告错位。
+# ---------------------------------------------------------------------------
+if [ "$MODE" != "full" ]; then
+  echo ""
+  echo "（分层模式：$MODE —— 收尾前请跑 MODE=full）"
+fi
+if [ "$fail" -eq 0 ]; then
+  echo "全部通过。"
+else
+  echo "$fail 道门禁失败。"
+fi
+# 🔴 0.8.9：把"跑了多少 / 跳了多少"打出来。
+#   之前 fast 静默丢弃约一半门禁、日志里 0 行 SKIP ⇒
+#   看到"全部通过"会误以为**全部**都跑过了（跳过不是通过 —— 它是一条真话）。
+echo "本轮：执行 $_ran 道 · 按层跳过 $_skipped 道（MODE=$MODE）"
+if [ "$MODE" != "full" ]; then
+  echo "       收尾与发版前请跑 MODE=full（$_ran + $_skipped 道全部执行）。"
+fi
+
 exit $fail

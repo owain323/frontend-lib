@@ -11,7 +11,8 @@ bump-version.py — 一处改版本，四处同步（0.8.8 新增）
      ① VERSION
      ② package.json         .version
      ③ package-lock.json    .version（根包，lock 里有两处）
-     ④ CHANGELOG.md         最新一个 `## X.Y.Z` 标题
+     ④ CHANGELOG.md         最新一个 `## [X.Y.Z] - YYYY-MM-DD` 标题
+                              （旧写法 `## X.Y.Z — YYYY-MM-DD` 也认，见 `_changelog.py`）
 
    本库把「我说什么、系统就是什么」当核心卖点 ⇒ **手改这四处就是
    在破坏自己的卖点**。而手改的真实失效模式是：
@@ -39,6 +40,9 @@ import re
 import subprocess
 import sys
 
+# `_changelog.py` 与本文件同目录 —— 跑法与 import 法都要能找到它
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FILES = {
     'VERSION': os.path.join(ROOT, 'VERSION'),
@@ -65,8 +69,16 @@ def current_version():
 
 
 def changelog_latest():
-    m = re.search(r'^##\s+(\d+\.\d+\.\d+)\b', read(FILES['changelog']), re.M)
-    return m.group(1) if m else None
+    """最新版本条目 —— 解析交给 `_changelog.py`（唯一来源）。
+
+    🔴 0.8.9 修：这里原来是本地正则 `^##\\s+(\\d+\\.\\d+\\.\\d+)`。
+      CHANGELOG 改成 Keep a Changelog 格式（`## [0.8.8] - 2026-10-14`）后
+      它匹配不到真版本标题，**往下扫到了正文里的**
+      `## 0.4.0 的第二部分：规范分层…` ⇒ 读出 0.4.0 ⇒ `version-sync` 红。
+      ⇒ 改用共享解析器（同时修掉那个"正文 H2 被当版本标题"的老洞）。
+    """
+    import _changelog
+    return _changelog.latest_version(read(FILES['changelog']))
 
 
 def collect():
@@ -134,17 +146,35 @@ def bump(new):
     write(FILES['lock'], raw)
     lock_hits_n = lock_hits[0]
 
-    # ④ CHANGELOG：若新版本还没有条目，就在文件顶部插入骨架
+    # ④ CHANGELOG：若新版本还没有条目，就在**第一个已有版本条目前**插骨架
     cl = read(FILES['changelog'])
     if changelog_latest() != new:
+        import _changelog as CL
         import datetime
         today = datetime.date.today().isoformat()
-        head = ('## %s — %s\n\n'
+        # 🔴 标题格式 = Keep a Changelog（0.8.9 改）：
+        #     `## [x.y.z] - YYYY-MM-DD`。原来是自创的 `## x.y.z — date`，
+        #     工具链解析不了（审计 P1-3）。
+        head = ('## [%s] - %s\n\n'
                 '### TODO · 这一版改了什么\n\n'
                 '（写清楚「改了什么 / 为什么」，有反向控制就写上）\n\n'
                 '---\n\n') % (new, today)
-        # 插到文件开头，跳过可能的 front-matter
-        cl = head + cl
+        # 🔴 位置（0.8.9 修）：插到**第一个已有版本条目前** =
+        #    `## [Unreleased]` 段之后。
+        #    之前是"插到文件开头" ⇒ 新条目会跑到 `# Changelog` 与
+        #    `## [Unreleased]` **之前**，同时破坏两条 Keep a Changelog 约定
+        #    （单一 H1 在最前 / Unreleased 在最上）。
+        _m = CL.HEADING.search(cl)
+        if _m:
+            cl = cl[:_m.start()] + head + cl[_m.start():]
+        else:
+            _u = CL.UNRELEASED.search(cl)
+            if _u:
+                _nxt = re.search(r'^## ', cl[_u.end():], re.M)
+                _pos = _u.end() + (_nxt.start() if _nxt else 0)
+                cl = cl[:_pos] + '\n' + head + cl[_pos:]
+            else:
+                cl = cl.rstrip('\n') + '\n\n' + head
         write(FILES['changelog'], cl)
 
     print('✅ 已改：%s → %s' % (old, new))
