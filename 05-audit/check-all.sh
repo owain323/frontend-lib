@@ -316,6 +316,13 @@ run "mutation-leak" $PY 05-audit/mutation-leak-gate.py
 #     ② dead-class 参数解析出错后什么都扫不到，却判「没有真死类」
 #   ⇒ 每轮核对：每道注册的门禁，代码里都要有"判红并返回非 0"的路径。
 run "gate-verdict"  $PY 05-audit/gate-verdict-gate.py
+# 🔴 dist 的 JS 与源码**语义等价**（0.8.9 · 审计 P1-2）：
+#   dist-parity 只对 CSS 做 CSSOM 双向比对，JS 被一行 continue **整体跳过**；
+#   对 JS 的唯一把关是 node --check（只查语法）。
+#   ⇒ 「dist 与源码一致」这条对外承诺，对 JS 部分此前**没有任何机械证据**。
+#   做法：在**同源空白页**上分别加载源码 JS 与 dist JS，
+#        比对"新增的 window 全局"与"抛的错"。配反向控制。
+run "dist-js-parity" $NODE 05-audit/dist-js-parity-gate.js
 # 🔴 a11y 的反向控制（0.8.9 接上 · 审计 P1-8）：
 #   `_a11y-reverse-control.js` 早就写好了 —— 注入 5 类典型违规
 #   （img 无 alt / input 无 label / id 重复 / tabindex 乱序 / 对比度过浅），
