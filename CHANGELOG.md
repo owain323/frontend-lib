@@ -15,6 +15,44 @@
 ## [Unreleased]
 
 ### Added
+- **`05-audit/token-resolved-gate.js` —— 暗色的「解析值」门禁**（W19）。
+  此前明暗有四道判据（`theme-sync` 比文本、`theme-css` 比渲染但只探 2 个令牌、
+  `token-tree` 比声明文本），仍漏一类：
+  **声明合法、两条路径文本一致，但浏览器根本没让它生效。**
+  本库实测撞过两次（`--lift-*` 被未闭合注释吞掉；裸声明写在 `@media { }` 体内被丢弃
+  ⇒ 暗色静默回落浅色）。门禁取 107 个令牌 × 4 种明暗组合的 `getComputedStyle` 结果，
+  判五条：暗色两条路径等价 / 浅色两条路径等价 / **声明即生效** / 无空值 / 与基线逐条一致。
+  4 条反向控制，其中「声明全在但两条路径都不生效」那条刻意**不能**靠删声明来模拟 ——
+  那会让判据的输入集合变空，不红只是因为没东西可查。
+
+- **`10-review/webview/capability-probe.html` —— 真机能力探针**（W10 / W12）。
+  自包含单文件（不引本库 CSS、不引外部资源）：拷到手机上直接打开就能用。
+  15 项能力**全部来自源码实际用法**（`:has()` / `clamp()` / `popover` / `flex gap` …），
+  其中 4 项是**行为实测**而不是 `CSS.supports()` 的声明式回答 ——
+  `@layer` 用"塞一张样式表看 CSSOM 里还剩几条规则 + 层内颜色是否真的应用"来判。
+  结果以 JSON 输出，直接贴进 `docs/LAYER-BASELINE.md`。
+
+- **`docs/LAYER-BASELINE.md`** —— 切 `@layer` 之前的基线落档处。
+  含测试方法（三条路径）、判定规则（"每一台都 15/15 才能无条件切"）、
+  以及一张 8 列记录表。**当前 0 行数据 —— 状态是 UNVERIFIED，不是通过。**
+  刻意不写任何引擎版本号：没实测过的版本号会被下一个人当成事实引用。
+
+- **`05-audit/webview-probe-gate.py`** —— 探针与源码用法的**双向**漂移门禁。
+  库新增 `:has()` 而探针没加 ⇒ 红（"基线全绿"覆盖不到它）；
+  探针测了库里已不用的能力 ⇒ 也红（每台真机都填不满，人就会开始挑着填）。
+  另查：探针必须自包含、基线表不许有 `TBD` / `?` 这类占位符、
+  标 `VERIFIED` 的行必须带**完整 UA**（"iPhone 15"不是 UA，别人复核不了）。
+
+- **`05-audit/webview-probe-check.js`** —— 探针页在 Chromium 里真跑一次。
+  静态判据只能证明"清单写全了"，证明不了探测函数没写坏；
+  探测器集体失灵时静态判据会全绿，而每台真机都会得到"全不支持"。
+  反向控制：把所有 `supports()` 改成恒 `false` ⇒ 5 秒内被抓。
+
+- **`benchmark/records.js` + `benchmark/models/reference.json`** —— 跑批记录校验（W21）。
+  记录 v2 格式（`schemaVersion` / `modelVersion` / `recordedAt` / `attemptsPerTask` /
+  `attempt` 编号），八条判据。参考记录由 `--write-reference` 从 TASKS 生成，
+  `--check-records` 要求它 **10/10** —— 它验的是"记录 → 评分"这条管线本身。
+
 - **`mutation-leak-gate.py`** —— 变异串泄漏检测。
   反向控制的机制是「原地改写源码 → 跑门禁 → 还原」，
   中断时源码会留在被变异的状态，而**没有任何报错**、门禁照样绿、
@@ -33,6 +71,28 @@
 - `rewrite-residue-gate.py`：抓「批量替换脚本留下的拼接痕迹」
   （`REPO + REPO +` / `X + 'a' + 'b'` 这类只可能来自坏正则的写法），带反向控制。
 - `SECURITY.md` 与 `CONTRIBUTING.md`。
+
+### Fixed
+- **`--record <名字>` 指向不存在的文件时只 WARN 就 RC=0** ——
+  等于"声称跑了批，其实没跑"。现在 RC=2，并明说这是 UNVERIFIED。
+- **空记录算出"通过率 0/0"仍 RC=0** —— `runs || []` 的后果。现在判据 ③ 直接判红。
+- **模型的坏补丁会让整份跑批崩掉** —— 给 T03 喂空 `ops`，`expect()` 读
+  `nodes.b.children` 抛 `TypeError`。`patch.apply` 与 `expect` 已包 try/catch，
+  异常计为"这次没过"（外部输入必须容忍乱写）。
+- **`selftest-all.py` 只扫 `.py`** —— JS 门禁的自检从来没被它发现过。
+  改成按扩展名认解释器；判据落在**调用点**（`argv.indexOf('--selftest')`），
+  不是文档里出现过这个词就算。26 → 37 个自检。
+- **`cascade-layer-gate` 的「切层必须有基线档」只判文件存在** ——
+  基线文档一被创建就变绿，而里面一行实测都没有。
+  已收紧成"至少一行 `VERIFIED`"，并把自检的前提改成**显式注入**而不是读磁盘。
+- **`benchmark` 三条门禁被误判成 component 层**（命令含 `node` 就判组件层）
+  —— 快跑时全被跳过。它们是纯 Node，已标 `@static`。
+
+### Changed
+- 门禁 **143 → 149 道**（`token-resolved` / `webview-probe` / `webview-probe-run` /
+  `benchmark-records` / `benchmark-records-rev` / `dist-js-parity-rev`）。
+- `benchmark/results/` 不入库：`models/` 是证据，`results/` 是它的重算产物。
+
 
 ---
 

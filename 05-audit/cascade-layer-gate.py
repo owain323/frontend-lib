@@ -212,8 +212,34 @@ def scan():
     return layers, hits
 
 
-def check(layers, hits):
-    """判据。返回 (问题列表, 分类结果)。"""
+def baseline_ready():
+    """基线是不是**真的**落档了。
+
+    🔴 只判"文件存在"是不够的 —— 那条判据可以用一个空文档骗绿。
+       本库刚在 W12 上踩到：`docs/LAYER-BASELINE.md` 一被创建，
+       判据 ⑦ 就从红变绿，而文件里一行实测数据都没有。
+       ⇒ 要求：文件存在 **且** 表里至少有一行标成 `VERIFIED`。
+       （逐行填写质量由 `webview-probe-gate.py` 管，这里只问"有没有真数据"。）
+    """
+    if not os.path.isfile(BASELINE_DOC):
+        return False
+    with io.open(BASELINE_DOC, encoding='utf-8', errors='replace') as f:
+        md = f.read()
+    for line in md.split('\n'):
+        s = line.strip()
+        if s.startswith('|') and s.rstrip().endswith('VERIFIED |'):
+            return True
+    return False
+
+
+def check(layers, hits, ready=None):
+    """判据。返回 (问题列表, 分类结果)。
+
+    `ready` 显式传入时不再读文件系统 —— 反向控制必须能**自己决定**前提。
+    否则它验的是"今天这台机器的磁盘状态"，不是判据：
+    实测踩过 —— 基线文档一创建，⑦ 那条自检就从"期望红"变成"实际绿"，
+    而判据本身一个字都没改。
+    """
     problems = []
     kinds = {}
     for h in hits:
@@ -224,18 +250,22 @@ def check(layers, hits):
                 '      上下文：%s\n'
                 '      ⇒ 分层后它的层序会反转并压过使用者的 `!important`。'
                 '      要么归到一个已批准理由（无障碍偏好 / `[hidden]` 正确性），'
-                '要么改用特异性解决。'
+                '      要么改用特异性解决。'
                 % (h['file'], h['line'], h['decl'][:60],
                    ' › '.join(c.strip()[:40] for c in h['ctx'][-2:]) or '(顶层)'))
         else:
             kinds.setdefault(why, []).append(h)
 
     if layers:
-        if not os.path.isfile(BASELINE_DOC):
+        if ready is None:
+            ready = baseline_ready()
+        if not ready:
             problems.append(
-                '已出现 %d 处 `@layer`（首处：%s:%d），但 `%s` 不存在。\n'
+                '已出现 %d 处 `@layer`（首处：%s:%d），但 `%s` 没有落档\n'
+                '      （文件不存在，或里面**一行 VERIFIED 都没有**）。\n'
                 '      ⇒ 分层前必须先落档：① WebView 基线实测 ② 全量视觉回归记录。\n'
-                '      这两条没落档就切分层，等于拿使用者的线上页面去赌。'
+                '      没落档就切分层，等于拿使用者的线上页面去赌。\n'
+                '      空文档不算落档 —— 那只是把这条判据骗绿。'
                 % (len(layers), layers[0]['file'], layers[0]['line'],
                    os.path.relpath(BASELINE_DOC, ROOT)))
     return problems, kinds
@@ -285,12 +315,25 @@ def selftest():
             ok = False
 
     # ⑦ 出现 @layer 但没有基线档 ⇒ 红
-    probs, _ = check([{'file': 'a.css', 'line': 1, 'text': '@layer fl-base'}], [])
+    #    ⚠️ 前提必须**显式注入**（ready=False / True），不能读磁盘：
+    #       第一版就是读磁盘的，于是基线文档一被创建，这条自检从红变绿而判据没改。
+    probs, _ = check([{'file': 'a.css', 'line': 1, 'text': '@layer fl-base'}],
+                     [], ready=False)
     good = bool(probs)
     if not good:
         ok = False
     print('  [%s] %-22s 期望红 ⇒ 实际%s'
           % ('OK ' if good else 'FAIL', '切层但无基线档', '红' if good else '绿'))
+
+    # ⑦b 对偶：基线档**已落** ⇒ 必须绿。
+    #     没有这一条，⑦ 可能只是因为"这条分支永远报错"而通过（假的有牙）。
+    probs, _ = check([{'file': 'a.css', 'line': 1, 'text': '@layer fl-base'}],
+                     [], ready=True)
+    good = not probs
+    if not good:
+        ok = False
+    print('  [%s] %-22s 期望绿 ⇒ 实际%s'
+          % ('OK ' if good else 'FAIL', '切层且已落档', '绿' if good else '红'))
     return 0 if ok else 1
 
 

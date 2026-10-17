@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>WebView 能力探测 · 本库依赖清单</title>
+<!--
+  ============================================================================
+  这页是干什么的（W10 / W12）
+  ----------------------------------------------------------------------------
+  `docs/LAYER-BASELINE.md` 里那张表**需要有人拿真机填**。填之前必须先有
+  "到底要测什么"的清单 —— 这页就是那份清单的执行体。
+
+  🔴 关键设计：**清单不是拍脑袋列的，是从本库源码里 grep 出来的。**
+     每一条都写着"库里有几个文件在用"。没用到的能力不测 ——
+     测了也只是给人一堆看不懂的红叉。
+
+  🔴 第二个设计：**每一项都标注判定方式**。
+     `CSS.supports()` 是**声明式**探测（问浏览器"你支持吗"），
+     而 `gap` 在 flex、`@layer` 是否真被解析、`popover` 是否真能打开，
+     只有**实测行为**才算数 —— 声明支持但行为不对，是 WebView 上的常态。
+     两类混在一张表里而不标注，读的人会以为它们是同一种证据。
+  ============================================================================
+-->
+<style>
+  /* 刻意不引本库任何 CSS：本页要在"库还没被兼容的浏览器"里也能看 */
+  :root {
+    --bg: #ffffff; --fg: #15181c; --muted: #5a6068; --line: #d8dce1;
+    --ok: #1a7f3c; --bad: #b3261e; --warn: #8a5a00; --card: #f6f7f8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171a; --fg: #e4e7ea; --muted: #a9b1ba; --line: #2e343c;
+      --ok: #6faa7a; --bad: #e07a6e; --warn: #c99a3f; --card: #1c2024;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 16px 14px 40px;
+    background: var(--bg); color: var(--fg);
+    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  h1 { font-size: 19px; margin: 0 0 4px; }
+  p.lead { margin: 0 0 14px; color: var(--muted); font-size: 14px; }
+  .env {
+    background: var(--card); border: 1px solid var(--line); border-radius: 8px;
+    padding: 10px 12px; font-size: 13px; word-break: break-all;
+    margin-bottom: 14px;
+  }
+  .env b { color: var(--muted); font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line);
+           vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; }
+  td.r { white-space: nowrap; font-weight: 600; }
+  .y { color: var(--ok); }
+  .n { color: var(--bad); }
+  .m { display: block; color: var(--muted); font-weight: 400; font-size: 11px; }
+  .use { color: var(--muted); font-size: 12px; }
+  .sum { margin: 16px 0 10px; font-size: 15px; }
+  button {
+    display: block; width: 100%; min-height: 48px; margin: 12px 0;
+    font: inherit; font-weight: 600; color: var(--bg); background: var(--fg);
+    border: 0; border-radius: 8px; padding: 12px;
+  }
+  pre {
+    background: var(--card); border: 1px solid var(--line); border-radius: 8px;
+    padding: 10px; overflow: auto; font-size: 11px; line-height: 1.45;
+    white-space: pre-wrap; word-break: break-all;
+  }
+  .hint { color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<h1>WebView 能力探测</h1>
+<p class="lead">
+  清单来自本库源码的实际用法（括号里是“有几个文件在用”）。
+  把结果贴进 <code>docs/LAYER-BASELINE.md</code> 的对应机型行。
+</p>
+
+<div class="env" id="env"></div>
+
+<table>
+  <thead>
+    <tr><th>能力</th><th>结果</th><th>库里的用法</th></tr>
+  </thead>
+  <tbody id="rows"></tbody>
+</table>
+
+<div class="sum" id="sum"></div>
+
+<button id="copy" type="button">复制结果（JSON）</button>
+<pre id="out">…</pre>
+<p class="hint">
+  ⚠️ 「声明」= <code>CSS.supports()</code> 的回答；「实测」= 真的建了元素量出来的。
+  WebView 上「声明支持但行为不对」很常见，两者不能混着读。
+</p>
+
+<script>
+(function () {
+  'use strict';
+
+  // ---------------------------------------------------------------- 探测工具
+  function supports(prop, val) {
+    try { return CSS.supports(prop, val); } catch (e) { return false; }
+  }
+  function selectorSupports(sel) {
+    try {
+      return CSS.supports('selector(' + sel + ')') ||
+             CSS.supports('selector(:is(' + sel + '))');
+    } catch (e) { return false; }
+  }
+
+  /* flex + gap 只能实测：老 WebKit 的 CSS.supports('gap','1px') 对 grid 为真、
+     对 flex 为假，而 supports 分不出用在哪个上下文。⇒ 真建两个盒子量距离。 */
+  function flexGapWorks() {
+    var box = document.createElement('div');
+    box.style.cssText = 'position:absolute;left:-9999px;top:0;display:flex;' +
+      'gap:20px;width:auto;';
+    var a = document.createElement('i');
+    var b = document.createElement('i');
+    a.style.cssText = b.style.cssText = 'display:block;width:10px;height:10px;';
+    box.appendChild(a); box.appendChild(b);
+    document.body.appendChild(box);
+    var d = b.getBoundingClientRect().left - a.getBoundingClientRect().right;
+    document.body.removeChild(box);
+    return d >= 19;   // 允许 1px 的亚像素误差
+  }
+
+  /* @layer 只能实测：`CSS.supports('at-rule','@layer')` 在多数引擎里不支持这种问法。
+     做法：塞一张带 @layer 的样式表，看 CSSOM 里**还剩几条规则** ——
+     解析器认它才会留下规则。 */
+  function layerWorks() {
+    var s = document.createElement('style');
+    s.textContent = '@layer fl-probe { .fl-probe-x { color: rgb(1, 2, 3); } }' +
+      '.fl-probe-y { color: rgb(4, 5, 6); }';
+    document.head.appendChild(s);
+    var n = 0;
+    try { n = s.sheet ? s.sheet.cssRules.length : 0; } catch (e) { n = 0; }
+    var got = 0;
+    try {
+      var el = document.createElement('div');
+      el.className = 'fl-probe-x';
+      document.body.appendChild(el);
+      got = getComputedStyle(el).color;
+      document.body.removeChild(el);
+    } catch (e) { got = ''; }
+    document.head.removeChild(s);
+    // 两条规则都留下 + 层内规则真的应用了颜色，才算支持
+    return n === 2 && got.replace(/\s/g, '') === 'rgb(1,2,3)';
+  }
+
+  /* popover 属性：有属性还不够，得真的能打开 */
+  function popoverWorks() {
+    if (!('popover' in HTMLElement.prototype)) return false;
+    try {
+      var el = document.createElement('div');
+      el.setAttribute('popover', 'manual');
+      el.textContent = 'x';
+      document.body.appendChild(el);
+      el.showPopover();
+      var shown = el.matches(':popover-open');
+      el.hidePopover();
+      document.body.removeChild(el);
+      return shown;
+    } catch (e) { return false; }
+  }
+
+  /* accent-color 声明支持 + 真的影响渲染（复选框） */
+  function accentColorWorks() {
+    if (!supports('accent-color', 'rgb(1, 2, 3)')) return false;
+    var cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.style.accentColor = 'rgb(1, 2, 3)';
+    document.body.appendChild(cb);
+    var v = getComputedStyle(cb).accentColor;
+    document.body.removeChild(cb);
+    return /rgb\(1,\s*2,\s*3\)/.test(v);
+  }
+
+  // ---------------------------------------------------------------- 清单
+  // 每一条：能力名 / 判定函数 / 判定方式 / 库里的用法
+  var ITEMS = [
+    ['自定义属性（CSS 变量）', function () { return supports('--x', '0'); }, '声明',
+      '全部令牌（01-tokens）'],
+    [':focus-visible', function () { return selectorSupports(':focus-visible'); }, '声明',
+      '36 个文件（焦点环）'],
+    [':is() / :where()', function () { return selectorSupports(':is(a, b)'); }, '声明',
+      '2 个文件（选择器简化）'],
+    [':has()', function () { return selectorSupports(':has(a)'); }, '声明',
+      '8 个文件（父子联动态）'],
+    ['clamp()', function () { return supports('width', 'clamp(1px, 2vw, 3px)'); }, '声明',
+      '7 个文件（流式字号/间距）'],
+    ['flex + gap', flexGapWorks, '实测',
+      '56 个文件（组件间距）'],
+    ['aspect-ratio', function () { return supports('aspect-ratio', '1'); }, '声明',
+      '1 个文件（媒体容器）'],
+    ['dvh 单位', function () { return supports('height', '100dvh'); }, '声明',
+      '1 个文件（全屏面板）'],
+    ['scrollbar-width', function () { return supports('scrollbar-width', 'thin'); }, '声明',
+      '6 个文件（滚动条令牌）'],
+    ['accent-color', accentColorWorks, '实测',
+      '2 个文件（原生控件着色）'],
+    ['color-scheme', function () { return supports('color-scheme', 'dark'); }, '声明',
+      '15 个文件（暗色）'],
+    ['backdrop-filter', function () {
+      return supports('backdrop-filter', 'blur(1px)') ||
+             supports('-webkit-backdrop-filter', 'blur(1px)');
+    }, '声明', '3 个文件（毛玻璃浮层）'],
+    ['<dialog> + ::backdrop', function () {
+      return typeof HTMLDialogElement === 'function' &&
+             selectorSupports('::backdrop');
+    }, '声明', '2 个文件（模态）'],
+    ['Popover API', popoverWorks, '实测',
+      '9 个文件（气泡/下拉）'],
+    ['@layer（尚未使用，切层的前提）', layerWorks, '实测',
+      '0 个文件 —— 见 docs/LAYER-BASELINE.md']
+  ];
+
+  // ---------------------------------------------------------------- 渲染
+  var ua = navigator.userAgent;
+  var vp = window.innerWidth + '×' + window.innerHeight +
+    ' @' + (window.devicePixelRatio || 1) + 'x';
+  document.getElementById('env').innerHTML =
+    '<b>UA</b><br>' + esc(ua) + '<br><b>视口</b> ' + vp +
+    '<br><b>prefers-color-scheme: dark</b> ' +
+    (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches
+      ? '当前为暗' : '当前为亮');
+
+  var results = {};
+  var rows = document.getElementById('rows');
+  ITEMS.forEach(function (it) {
+    var name = it[0], fn = it[1], how = it[2], use = it[3];
+    var ok;
+    try { ok = !!fn(); } catch (e) { ok = false; }
+    results[name] = { ok: ok, method: how };
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td>' + esc(name) +
+      '</td><td class="r ' + (ok ? 'y' : 'n') + '">' + (ok ? '✅ 支持' : '❌ 不支持') +
+      '<span class="m">' + esc(how) + '</span></td>' +
+      '<td class="use">' + esc(use) + '</td>';
+    rows.appendChild(tr);
+  });
+
+  var yes = Object.keys(results).filter(function (k) { return results[k].ok; }).length;
+  var total = Object.keys(results).length;
+  var missing = Object.keys(results).filter(function (k) { return !results[k].ok; });
+
+  document.getElementById('sum').textContent = missing.length
+    ? '支持 ' + yes + ' / ' + total + ' —— 缺：' + missing.join('、')
+    : '支持 ' + yes + ' / ' + total + ' —— 全部支持，可以谈切 @layer';
+
+  var payload = {
+    ua: ua,
+    viewport: vp,
+    prefersDark: !!(window.matchMedia &&
+      matchMedia('(prefers-color-scheme: dark)').matches),
+    scannedAt: new Date().toISOString(),
+    supported: yes,
+    total: total,
+    missing: missing,
+    items: results
+  };
+  document.getElementById('out').textContent = JSON.stringify(payload, null, 2);
+
+  document.getElementById('copy').addEventListener('click', function () {
+    var txt = JSON.stringify(payload, null, 2);
+    var btn = this;
+    function done(okCopy) {
+      btn.textContent = okCopy ? '已复制 ✓' : '复制失败，请手动长按上面的文本';
+      setTimeout(function () { btn.textContent = '复制结果（JSON）'; }, 2000);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(function () { done(true); },
+        function () { done(false); });
+    } else {
+      done(false);
+    }
+  });
+
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+})();
+</script>
+</body>
+</html>

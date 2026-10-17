@@ -107,10 +107,10 @@
 
 | # | 事项 | 判据 |
 |---|---|---|
-| W10 | 真机 WebView 验证（iOS WKWebView + Android WebView各一个最小demo） | 需要真机或云真机 |
+| W10 | 真机 WebView 验证（iOS WKWebView + Android WebView 各一个） | 🟡 **产物已就绪，真机数据仍缺**：自包含探针 `10-review/webview/capability-probe.html`（15 项能力，其中 4 项是**行为实测**）+ `webview-probe-gate.py`（探测清单与源码用法**双向**一致、基线表不许占位符、VERIFIED 必须带完整 UA）+ `webview-probe-check.js`（探针在 Chromium 里真跑，防"探测器集体失灵"）。缺的只剩**有人拿手机跑一次** |
 | ~~W11~~ | ~~删掉失效的 api-snapshot（被 W3 取代后）~~ | ✅ **已完成**（0.8.9 核对）：`api-snapshot.py` 已不在仓库里，只剩三处**历史说明**（`api-contract-gate.py` / `api-contract.js` / `tsc-gate.py` 的文件头，讲的是它为什么被取代 —— 那些要留着）。⚠️ 这一项在表里躺了好几轮没人划掉，正是 `ERRORS.md` E13「文档里的待办没人回来划」的又一次 |
-| W12 | **`@layer` 的 WebView 基线实测** | 实测数据落 `docs/LAYER-BASELINE.md`；落档后才有资格讨论切换 |
-| W13 | Compatibility Benchmark 的**真模型实测** | 当前 `benchmark/` 只有 10 类意图的骨架，**零条模型记录** —— 骨架不等于成果 |
+| W12 | **`@layer` 的 WebView 基线实测** | 🟡 **同 W10**：探测项里已含 `@layer`，而且用的是**实测**（塞一张带 `@layer` 的样式表，看 CSSOM 里还剩几条规则 + 层内颜色是否真的应用），不是 `CSS.supports` 那种"问浏览器你支持吗"的声明式——后者在多数引擎里根本没有 `at-rule` 这种问法。`docs/LAYER-BASELINE.md` 已有判据与表，但 **0 行 VERIFIED**。⚠️ 顺带收紧了一处：`cascade-layer-gate` 原来只判"文档存在"，我一建这个文件它就绿了 ⇒ 判据已改成**至少一行 VERIFIED**，空文档骗不绿 |
+| W13 | Compatibility Benchmark 的**真模型实测** | ✅ 工具链已封闭：记录 v2 格式 / 八条判据 / `--check-records` / 参考记录必须满分（管线自洽）。❌ **真模型跑批仍是 0 条** —— 缺的是 API 访问权，不是代码。状态是 `UNVERIFIED`，不是 `PASS` |
 
 ### 🟡 P2·决策项 —— 已论证，**不要擅自实施**
 
@@ -122,7 +122,7 @@
 | D2 | **dist 的 JS 只去注释不压缩**（esbuild 实测 raw −33.7% / gzip −13.6%） | 撞 `build-dist.py` 约束 ②「零依赖、零构建链：不引入任何 npm 包」。为绕开它而**手写** minifier，就回到约束 ③ 明确拒绝的风险上。（已实测：`--target=es5` 与 `--target=es2017` 输出逐字节相同 ⇒ 源码本就是纯 ES5，风险比预想低，但未归零） | 先决定「要不要为体积破一次零依赖」 |
 | D3 | **拆 `table-core` + `table-variants`**（`table.min.css` 4,863 B 里 81.4% 用不上） | 拆完要同步 `ai/components.json` **与** `docs/API.md`（`doc-facts-gate` 会查），而 `04-recipes` 是配方级、被 `doc-facts` 与 `api-form` 双向约束 ⇒ 风险高于收益 | 若 D1 的重构先做，可顺路一起 |
 | D4 | **全仓行尾统一到 LF**（现在实测 300 个文件 CRLF / 80 个 LF） | `dist/manifest.json` 存了每源文件的 `sourceSha256`，`05-audit/size-baseline.json` 存了每源文件的 raw/gzip 字节数 —— 这两份基线**按当前混合行尾录的**。直接加 `.gitattributes eol=lf` 会让 clone 出来的树全变 LF ⇒ 那 300 个文件的两份基线**全部对不上** ⇒ `dist-fresh` 与 `size-budget` 在**新克隆里假红**（这正是"clone 能不能跑绿"被搞坏的方式）。⇒ **两步必须一起做**：① 先让判据不再依赖行尾（读文本时把 CRLF 归一成 LF 再算哈希/量字节，且只写一份读取器 —— E31）② 再做全仓统一 + 重录两份基线 | 有人愿意同时完成 ① 与 ② 时（只做 ② 会更糟） |
-| D5 | **令牌分两层**（L1 原始值标尺 + L2 语义别名 ⇒ 可整套换肤） | 0.8.9 动手时撞到两个**结构性障碍**，遂回滚（不在最敏感的文件上半途而废）：① 把 `--raw-x: …` 直接写在 `@media (prefers-color-scheme: dark) { }` 体内是**无效 CSS** —— 自定义属性必须挂在选择器上，裸声明会被浏览器丢弃 ⇒ 暗色会静默回落到浅色值；② `theme-sync.py` **只同步语义令牌**（30 个），而它拥有 `[data-theme="dark"]` 段的生成权 ⇒ 原始值层放进去会被生成器漏掉，且 `theme-sync` 的判据看不出来（它不比原始值）。实测数据已齐：浅色 26 / 暗色 29 个不同色值，6 个族（neutral / accent / danger / success / warning / info） | 先扩 `theme-sync.py`：让它同步**整段声明**（含原始值），并加一条「两个暗色块的原始值必须逐条一致」；然后再分层。验收靠 `token-tree` 的浏览器计算值 + 暗色人工核对（`visual` 只拍浅色，抓不到暗色回归） |
+| D5 | **令牌分两层**（L1 原始值标尺 + L2 语义别名 ⇒ 可整套换肤） | 两次动手前都先量连锁面，现在共四个**结构性障碍**（①② 是 0.8.9 回滚时记的，③④ 是本轮新量的）：① `--raw-x: …` 直接写在 `@media { }` 体内是**无效 CSS** —— 自定义属性必须挂在选择器上，裸声明被丢弃 ⇒ 暗色静默回落到浅色；② `theme-sync.py` 只同步语义令牌（30 个），却拥有 `[data-theme="dark"]` 段的生成权 ⇒ 原始值层会被漏掉；③ **令牌树生成器按值定型**：实测 `guess_type('var(--raw-paper)')` 返回 `alias`，而 `ALLOWED['color']` 只允许 `color` ⇒ 30 个色令牌改成 `var()` 后 `gen-tokens-tree` 直接判类型不合法；`path_of('--raw-paper')` 也抛 `KeyError`。这不是改一行：`ai/tokens.tree.json` 是给 Style Dictionary / Figma 吃的**对外格式**，改成 alias 引用是**契约变更**；④ 30 个新令牌要同步 `ai/tokens.audience.json`（受众门禁①要求每个令牌都解析得出 audience）、`01-tokens/README` 清单、`API.md` 与两份体积基线。⇒ 四条合起来，"分层"实际是**换一套配色契约**，不是搬几行。0.8.9 量的"浅 26 / 暗 29 个不同色值、6 个族"仍然有效 | ① 先扩 `theme-sync.py` 让整段声明（含原始值）都进生成；② 给 `_css.py` 加**唯一一个** `var()` 解析器，让 `contrast` / `dark-gate` / `cmp-contrast` 三处共用（E31）；③ 定 `ai/tokens.tree.json` 的 alias 表达方式；④ 受众与文档清单一次补齐。**验收网已就位**：本轮新增的 `token-resolved-gate`（107 个令牌 × 4 种明暗组合的**解析值**基线）能在分层前后逐条比对 —— 它替代的正是原来只能靠"人眼看暗色"的那一步 |
 
 ### 🟢 P2·已完成（0.8.9）
 
@@ -133,6 +133,15 @@
 | W16 | **`visual` 实跑了** | 此前一直 SKIP（缺 Pillow）。实测：**34/34 页观感一致**，RC=0 |
 | W17 | **`09-assets/model-viewer/vendor` 与 `.glb` 不进包** | 与 README 自述「three.js 由主项目负责」对齐。包体 **899.1 → 631.3 kB（−29.8%）** |
 | W18 | **注释占比不再硬编码** | `dist-cost-gate.py` 里两处字面量 `64%` 改为实算，并标注**字节口径**（字符口径会低报 12 个百分点） |
+
+### 🟢 P2·已完成（Unreleased —— 尚未发版，见 CHANGELOG `[Unreleased]`）
+
+| # | 事项 | 结果 |
+|---|---|---|
+| W19 | **暗色回归终于有了门禁** | `token-resolved-gate.js`：107 个令牌 × 4 种明暗组合的**浏览器解析值**。五条判据里最要紧的是 ③「声明即生效」——「声明合法、两条文本一致，但浏览器没让它生效」这一类此前**没有任何门禁能抓**（`--lift-*` 被注释吞掉、裸声明被丢弃，都是这类）。`theme-css` 只探 2 个令牌，恰好是没被吞的那两条。这替代了原来"只能人眼看暗色"的那一步 |
+| W20 | **`selftest-all` 此前只扫 `.py`** | JS 门禁的自检**从来没被这个清单发现过**。改成按扩展名认解释器，且只用**调用点**判定（`argv.indexOf('--selftest')`），不是文档里出现过这个词就算。发现的 26 个自检变成 37 个（36 跑通 + 1 条按理由登记跳过） |
+| W21 | **Benchmark 记录侧的三处假绿** | `--record` 指向不存在的文件只 WARN、RC=0；`runs \|\| []` 让空记录算出"0/0 通过"；扁平的 `runs` 让"≥20 次分布"这件事**工具根本表达不了**。现已：记录 v2 + 八条判据 + `--check-records` + 参考记录必须 10/10（管线自洽）。实测还抓到一个真缺陷：给 T03 喂空 `ops` 时 `expect()` 抛 `TypeError` 把整份跑批打断 |
+| W22 | **真机探针与基线表** | 自包含探针页（15 项，4 项行为实测）+ 静态门禁（清单与源码**双向**一致）+ 浏览器门禁（探针在 Chromium 里真跑）。⚠️ 数据仍是 **UNVERIFIED**：机器能做的都做了，剩下的必须有人在手机上按一次 |
 
 
 ## 四、执行纪律（本轮血泪）

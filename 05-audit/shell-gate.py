@@ -93,7 +93,12 @@ COMPONENT_DIRS = ('02-primitives', '03-patterns', '04-recipes', '09-assets')
 #    这是它存在的意义 —— 给它挂骨架等于把它改成不是它。
 #    ⇒ 骨架是"选配"，这类页面就是"不选配"的那一类。
 SELF_CONTAINED = ('04-recipes/longform/longform.html',
-                  '04-recipes/longform/content.html')
+                  '04-recipes/longform/content.html',
+                  # WebView 能力探针（W10 / W12）：它要在**还没支持本库所需特性**的
+                  # 引擎上把结果渲染出来 —— 引骨架等于让"被测对象"改变测试环境。
+                  # 而且它是拷到手机上单文件打开的，外链根本加载不到。
+                  # ⇒ 这一页必须自己写 body/h1/*，那正是它的职责。
+                  '10-review/webview/capability-probe.html')
 
 STYLE_RE = re.compile(r'<style[^>]*>(.*?)</style>', re.S | re.I)
 
