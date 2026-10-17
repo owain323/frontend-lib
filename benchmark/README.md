@@ -28,46 +28,81 @@
 |---|---|
 | 任务集 | ✅ 10 个，覆盖六类真实编辑意图 |
 | **参考解法的确定性断言** | ✅ 每次都能跑，已接 `npm run benchmark` |
-| **模型跑批** | ❌ **一次都还没跑** |
+| **跑批记录的形状校验** | ✅ `--check-records`，八条判据，已接门禁 |
+| **「记录 → 评分」管线** | ✅ `models/reference.json`（参考解法，非模型）必须 10/10，已接门禁 |
+| **真实模型跑批** | ❌ **一次都还没跑 —— 状态是 UNVERIFIED，不是 PASS** |
 
 ⚠️ 我没有模型 API 的访问权限，**所以这里没有任何模型跑分数据**。
 我不会编一个数字出来 —— 那样这份 Benchmark 就失去全部意义了。
 
-`benchmark/models/` 目录是空的，等着被填。
+`benchmark/models/` 里目前只有一份 `reference.json`，
+它是**参考解法自己的记录**（`model` 字段写的就是"参考解法（不是模型）"）。
+它存在的唯一目的：证明"记录 → 评分"这条管线是通的 ——
+管线自己都跑不满分时，任何模型的分数都不值得相信。
+
+⚠️ `--check-records` 在**零模型记录**时输出 `UNVERIFIED` 且 RC=0。
+这句话的意思是「没有坏记录」，**不是**「模型已验证」。
+两者混为一谈，就是本项目最常登记的那类假绿。
 
 ---
 
 ## 三、怎么跑
 
 ```bash
-npm run benchmark                     # 只跑参考解法的确定性断言
-node benchmark/run.js --json          # 输出 JSON
-node benchmark/run.js --record gpt-x  # 记录某个模型的跑批结果
+npm run benchmark                        # 只跑参考解法的确定性断言
+node benchmark/run.js --json             # 输出 JSON
+node benchmark/run.js --record gpt-x     # 记录某个模型的跑批 ⇒ 输出**分布**
+node benchmark/run.js --check-records    # 校验 models/ 下全部记录（门禁跑这条）
+node benchmark/run.js --selftest         # 校验器的反向控制（八条判据各注入一次）
+node benchmark/run.js --write-reference  # 由 TASKS 重新生成参考记录
 ```
+
+⚠️ `--record <名字>` 在 `benchmark/models/<名字>.json` 不存在时是 **RC=2**。
+旧版只打一行 `[WARN]` 就 RC=0 —— 那等于"声称跑了批，其实没跑"，
+是这套工具里最典型的一处假绿，已修。
 
 ---
 
 ## 四、怎么给一个模型跑批
 
-1. 建 `benchmark/models/<模型名>.json`：
+1. 建 `benchmark/models/<模型名>.json`（**v2 格式**）：
 
 ```json
 {
+  "schemaVersion": "2.0.0",
   "model": "示例模型",
+  "modelVersion": "2026-01",
+  "recordedAt": "2000-01-01",
+  "settings": { "temperature": 0.2, "structuredOutput": true },
   "declaredCapabilities": {
     "structuredOutput": true,
     "toolCalling": true,
     "visualInspection": false,
     "patchEditing": true
   },
+  "attemptsPerTask": 20,
   "runs": [
-    { "task": "T01", "patch": { "ops": [ ... ] } }
+    { "task": "T01", "attempt": 1, "patch": { "ops": [ ... ] } },
+    { "task": "T01", "attempt": 2, "patch": { "ops": [ ... ] } }
   ]
 }
 ```
 
 2. 跑 `node benchmark/run.js --record <模型名>`
-   ⇒ 结果写进 `benchmark/results/<模型名>.json`
+   ⇒ 打印**每个任务 通过次数/总次数**的分布，并写 `benchmark/results/<模型名>.json`
+
+### 为什么 v2 强制这些字段
+
+| 字段 | 缺了会怎样 |
+|---|---|
+| `schemaVersion` | 不知道记录是哪个判据版本跑的，没法与别的记录比 |
+| `modelVersion` | **不可复现**：同一个模型名的两个快照分数差很远，而记录说不清是哪个 |
+| `recordedAt` | 无法判断"这条约束是不是在模型升级后还必要" |
+| `attemptsPerTask` | 单次结果是抽样；缺了就只能拿抽样冒充分布 |
+| `attempt` 编号 | 缺了分不清"20 次里过了 18 次"和"记了 18 条" |
+
+`--check-records` 会逐条核对这八条判据（含 attempt 必须覆盖 1..N 不重不漏）。
+`--selftest` 逐条注入反例，证明每条判据都会红。
 
 ⚠️ **同一任务要跑多次**（建议 ≥ 20 次）。
 
