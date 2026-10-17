@@ -413,8 +413,8 @@ def shoot(outdir):
             })
         tmp_js = os.path.join(outdir, '_shoot.js')
         tmp_jsn = os.path.join(outdir, '_shoot.json')
-        io.open(tmp_js, 'w', encoding='utf-8').write(SHOOT_JS)
-        io.open(tmp_jsn, 'w', encoding='utf-8').write(_json.dumps(tasks))
+        io.open(tmp_js, 'w', encoding='utf-8', newline='\n').write(SHOOT_JS)
+        io.open(tmp_jsn, 'w', encoding='utf-8', newline='\n').write(_json.dumps(tasks))
         # 🔴 子进程必须继承 NODE_PATH：puppeteer-core 装在受管 workspace 里
         env = dict(os.environ)
         # 🔴 并把browser.js 的绝对路径传进去，避免子进程 CWD 不确定
@@ -691,7 +691,7 @@ def main():
         n = shoot(BASELINE)
         # 🔴 写指纹：下次报 diff 时能判断"是代码变了，还是基线录于旧代码"
         fp = css_fingerprint()
-        io.open(stamp_path(), 'w', encoding='utf-8').write(json.dumps(
+        io.open(stamp_path(), 'w', encoding='utf-8', newline='\n').write(json.dumps(
             {'fingerprint': fp, 'pages': n, 'head': head_sha()},
             ensure_ascii=False, indent=2))
         print('  已录基线：%d 个页面 → %s' % (n, os.path.relpath(BASELINE, ROOT)))

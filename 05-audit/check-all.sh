@@ -624,6 +624,12 @@ run "release"     $PY 05-audit/release-gate.py
 # 而 release-gate 给的是"发布前还缺什么"。两者都要，不是重复。
 run "version-sync" $PY 05-audit/bump-version.py --check
 run "gate-self"   $PY 05-audit/gate-selfcheck.py
+# 受版本控制的文本文件必须是 LF（D4 的**防守**，不只是搬运）。
+#   D4 当时做的是"把现有 CRLF 转成 LF"，但没堵住"生成器会翻回去"——
+#   实测撞到三次（theme-sync / make-tiersnippet / shot-baseline 写 _stamp.json）。
+#   反向控制用**伪造的** `git ls-files --eol` 输出，不依赖仓库里恰好有坏文件。
+run "eol"         $PY 05-audit/eol-gate.py
+run "eol-rev"     $PY 05-audit/eol-gate.py --selftest
 run "gate-fixture" $PY 05-audit/gate-selfcheck-fixtures.py
 # 🔴 所有门禁的反向控制，一次性跑（0.8.9 加 · 自查发现）：
 #   实测本库 **26 个脚本支持 --selftest，而 check-all 里只注册了 1 个**
