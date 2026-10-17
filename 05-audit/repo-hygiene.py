@@ -58,6 +58,26 @@ INTERNAL_PATTERNS = [
 #    ⭐ 教训：清洗脚本必须**跳过门禁自身的词表**（词表就是要含这些词的）。
 
 
+# 根目录白名单（0.8.9 加 · 判据③）
+#   新增根级目录/文件**必须显式登记**。理由见 main() 里判据③的注释：
+#   探针/夹具产物被 `git add -A` 顺手提交过一次，而且因为不在任何扫描范围里，
+#   在索引里躺了几轮都没人发现。
+ROOT_ALLOWED_DIRS = {
+    '.github',
+    '01-tokens', '02-primitives', '03-patterns', '04-recipes', '05-audit',
+    '06-vendor', '09-assets', '10-review',
+    'adapters', 'ai', 'benchmark', 'dist', 'docs', 'examples',
+    'type-tests', 'types',
+}
+ROOT_ALLOWED_FILES = {
+    '.gitattributes', '.gitignore',
+    'API.md', 'CHANGELOG.md', 'CODE_OF_CONDUCT.md', 'CONTRIBUTING.md',
+    'ERRORS.md', 'LICENSE', 'README.md', 'SECURITY.md',
+    'START-HERE.md', 'SUPPORT.md',
+    'VERSION', 'index.html', 'package-lock.json', 'package.json',
+}
+
+
 def git_ls_files():
     try:
         # 🔴🔴 修一个**让本门禁完全失效**的 bug：
@@ -86,9 +106,11 @@ def main():
 
     # ---------- ① 索引里不该有内部文档 ----------
     bad = []
+    roots = set()
     for f in files:
         norm = f.replace(chr(92), '/')
         top = norm.split('/')[0]
+        roots.add(top)
         if top in INTERNAL_DIRS:
             bad.append((norm, '内部目录 ' + top + '/'))
             continue
@@ -140,9 +162,38 @@ def main():
         print('  ✅ gitignore 规则实测生效（check-ignore 全部命中）')
 
     print('')
-    if bad or missing_rules:
-        print('  ⇒ 🔴 内部思考只留本地 workspace，绝不推 GitHub')
-        print('    修法：git rm --cached <路径>（保留本地文件）+ 补 .gitignore')
+
+    # ---------- ③ 根目录只允许白名单条目（0.8.9 加）----------
+    #  起因（真事故）：索引里有一个叫
+    #     `这个目录不存在-零文件守卫探针`（6.6 KB 的 HTML）
+    #  的文件，是某道门禁测「零文件守卫」时写出来的探针产物，
+    #  被 `git add -A` 一起提交了（`70897ec`）。
+    #  ⇒ 它不影响任何门禁（不在扫描范围里），所以**一直没被发现**：
+    #     这正是"没人看的地方会慢慢变脏"。
+    #  ⇒ 判据：根目录条目必须在白名单里。新增根级文件/目录**必须显式登记**，
+    #     于是探针产物不可能再被顺手提交进来。
+    stray = sorted(r for r in roots
+                   if r not in ROOT_ALLOWED_DIRS and r not in ROOT_ALLOWED_FILES)
+
+    if stray:
+        print('')
+        print('  🔴 根目录有 %d 个**未登记**的条目：' % len(stray))
+        for s in stray[:12]:
+            print('       %s' % s[:60])
+        print('     ⚠️ 探针/夹具产物被 `git add -A` 扫进来就是这样发生的')
+        print('        （实测过一次：一个叫「这个目录不存在-零文件守卫探针」的'
+              '6.6 KB HTML 在索引里躺了几轮没人发现）')
+        print('     ⇒ 如果这是**有意新增**的根级文件/目录，把它加进 '
+              '`repo-hygiene.py` 的 ROOT_ALLOWED_*；')
+        print('        如果是产物，`git rm --cached` 并加进 .gitignore。')
+    else:
+        print('  ✅ 根目录条目全部在白名单内（%d 个）' % len(roots))
+
+    print('')
+    if bad or missing_rules or stray:
+        print('  ⇒ 🔴 仓库卫生未达标')
+        print('    内部思考只留本地 workspace，绝不推 GitHub；'
+              '根级新增必须显式登记')
         return 1
     print('  ✅ 仓库卫生达标')
     return 0

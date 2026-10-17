@@ -16,8 +16,12 @@
 #      证据：把 310 个文件从 CRLF 转成 LF 之后，`size-baseline.json` 与
 #      `dist/manifest.json` **一个字节都没变**（不是"重新录了一遍刚好一样"，
 #      是转换前后 cmp 相同）。
-#   ② 全仓统一到 LF（单独一次提交，纯行尾；见 `.git-blame-ignore-revs`，
-#      让 `git blame` 跳过它，免得每一行都归到这次格式化）。
+#   ② 工作区统一到 LF。
+#      ⚠️ 实际做完发现：**索引里本来就存的是 LF** —— 那 310 个"modified"
+#         只是 stat 缓存过期造成的假象，转换后 `git add` 没有产生任何内容提交
+#         （`git ls-files --eol` 现在全是 `i/lf w/lf`）。
+#         所以**没有**出现"整仓重写"的提交，也就不需要 `.git-blame-ignore-revs`。
+#         （上一个提交 `77c941a` 的说明里提到过这一步，以此处为准。）
 #
 # 为什么要统一：本库大量判据做**内容比对**（dist-parity 比 CSSOM、
 # pack-smoke 比 tarball、visual 比截图）。行尾混着两套（实测 310 CRLF / 80 LF）
