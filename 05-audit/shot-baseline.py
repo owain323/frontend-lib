@@ -59,6 +59,14 @@ BASELINE = os.path.join(SHOTS, '_baseline')
 CURRENT = os.path.join(SHOTS, '_current')
 DIFFS = os.path.join(SHOTS, '_diff')
 
+# 🔴 明暗两套基线（0.9.0 加）。
+#   `visual` 此前**只拍浅色** —— 而 D1/D3/D5 三项改造都要动 CSS，
+#   暗色坏了没有任何门禁能发现（token-resolved 只覆盖令牌解析值，
+#   覆盖不了阴影叠加 / 渐变 / 伪元素 / 图片资源在暗色下的实际观感）。
+#   ⇒ 浅色仍是默认（目录名不带后缀，现有基线与路径**一个字节不变**），
+#     暗色走 `--scheme dark`，落到 `-dark` 后缀的目录。
+SCHEME = 'light'
+
 # ---------------------------------------------------------------------------
 # 受管页面（每个组件的 demo）
 # ⚠️ 刻意**不包含**：01-tokens/focus-ring-demo、responsive-demo 等基建页 ——
@@ -213,6 +221,10 @@ const TASKS = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
          ② 2× 会让基线从 2.7MB 涨到 7.2MB，代价换不来等价的判据提升。 */
       await p.setViewport({ width: t.w, height: t.h, deviceScaleFactor: 1 });
       T.boot += _m() - _t0; _t0 = _m();
+      /* 🔴 明暗两套基线：媒体特性**每页都要重设** —— page 是复用的，
+         上一页留下的 prefers-color-scheme 会带到下一页。 */
+      await p.emulateMediaFeatures([
+        { name: 'prefers-color-scheme', value: t.scheme === 'dark' ? 'dark' : 'light' }]);
       /* 🔴  I1 优化（**基于分项实测**，不是猜）：
        *   实测 goto(networkidle0) = 35.5s（60%）、固定 settle = 16.3s（28%）、
        *   截图只 6.6s（11%）⇒ **瓶颈全在"等"**。
@@ -223,6 +235,17 @@ const TASKS = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
        *      networkidle0 的 500ms 静默期在这里纯属浪费。 */
       await p.goto(t.url, { waitUntil: 'domcontentloaded' });
       T.goto += _m() - _t0; _t0 = _m();
+      /* 🔴 暗色要**两条路一起设**，缺一不可：
+           ① `emulateMediaFeatures` 走的是 `@media (prefers-color-scheme: dark)` 那段
+           ② `data-theme="dark"` 走的是 `[data-theme="dark"]` 那段
+         这两段是**两套规则**（theme-sync 保证它们逐条一致，但它们是两份代码）。
+         只设一个 ⇒ 只测了一半路径，另一半坏了照样绿。
+         必须在 goto **之后**设：页面加载前设会被它的脚本覆盖掉。 */
+      if (t.scheme === 'dark') {
+        await p.evaluate(() => {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        });
+      }
 
       /* 🔴 0.8.0：把"猜一个 300ms"换成"等一个确定条件"（原本是 t.wait || 300）
          ----------------------------------------------------------------
@@ -386,6 +409,7 @@ def shoot(outdir):
                 'out': os.path.join(outdir, shot_name(d, f)),
                 'w': VIEWPORT[0], 'h': VIEWPORT[1],
                 'label': label, 'wait': 300,
+                'scheme': SCHEME,
             })
         tmp_js = os.path.join(outdir, '_shoot.js')
         tmp_jsn = os.path.join(outdir, '_shoot.json')
@@ -553,6 +577,20 @@ def diff_all(threshold=1.0, tolerance=12):
 
 def main():
     argv = sys.argv[1:]
+    scheme = 'light'
+    if '--scheme' in argv:
+        i = argv.index('--scheme')
+        scheme = argv[i + 1] if i + 1 < len(argv) else ''
+        if scheme not in ('light', 'dark'):
+            print('  --scheme 只接受 light / dark')
+            return 2
+    global BASELINE, CURRENT, DIFFS, SCHEME
+    SCHEME = scheme
+    if scheme != 'light':
+        BASELINE = os.path.join(SHOTS, '_baseline-' + scheme)
+        CURRENT = os.path.join(SHOTS, '_current-' + scheme)
+        DIFFS = os.path.join(SHOTS, '_diff-' + scheme)
+
     if '--list' in argv:
         for d, f, label in PAGES:
             p = os.path.join(ROOT, d, f)
@@ -709,7 +747,8 @@ def main():
             print('        %s' % u)
     for name, pct, why in failed:
         print('  FAIL  %-34s %s' % (name, why))
-        print('        diff 图：%s' % os.path.join('10-review/shots/_diff', name))
+        print('        diff 图：%s' % os.path.relpath(
+            os.path.join(DIFFS, name), ROOT))
     if failed:
         print('')
         print('  ⇒ 如果这是**有意**的视觉改动，用：--update 重录基线')
