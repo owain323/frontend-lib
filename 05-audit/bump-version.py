@@ -49,6 +49,12 @@ FILES = {
     'package': os.path.join(ROOT, 'package.json'),
     'lock': os.path.join(ROOT, 'package-lock.json'),
     'changelog': os.path.join(ROOT, 'CHANGELOG.md'),
+    # 🔴 第五处（0.9.0 发布时才发现漏了）：`ai/components.json` 里有
+    #    `libraryVersion`，而 `ai-contract` 门禁会比对它。
+    #    漏掉的后果很具体：bump 之后 `ai-contract` **必然红**，
+    #    必须再手跑一次生成器才过 —— 而 bump-version.py 自己只跑 release-gate，
+    #    看不到这一项。发布当天就是被这个卡住的。
+    'contract': os.path.join(ROOT, 'ai', 'components.json'),
 }
 
 # 仓库自己的版本号形如 0.8.7 / 1.2.3
@@ -82,9 +88,10 @@ def changelog_latest():
 
 
 def collect():
-    """把四处的版本号都读出来 ⇒ 供比对"""
+    """把五处的版本号都读出来 ⇒ 供比对"""
     pkg = json.loads(read(FILES['package']))
     lock = json.loads(read(FILES['lock']))
+    contract = json.loads(read(FILES['contract']))
     return {
         'VERSION': current_version(),
         'package.json': pkg.get('version'),
@@ -93,12 +100,13 @@ def collect():
                               .get('', {})
                               .get('version')),
         'CHANGELOG': changelog_latest(),
+        'ai/components.json': contract.get('libraryVersion'),
     }
 
 
 def show(tag=''):
     got = collect()
-    print(('  ' if tag else '') + '四处版本号：')
+    print(('  ' if tag else '') + '五处版本号：')
     for k, v in got.items():
         print('%-22s %s' % (k, v))
     return got
@@ -108,9 +116,9 @@ def check():
     got = collect()
     vals = set(v for v in got.values() if v)
     if len(vals) <= 1:
-        print('✅ 四处版本一致：%s' % got['VERSION'])
+        print('✅ 五处版本一致：%s' % got['VERSION'])
         return 0
-    print('❌ 四处版本不一致（release-gate 也会红）：')
+    print('❌ 五处版本不一致（release-gate 也会红）：')
     ref = got['VERSION']
     for k, v in got.items():
         mark = '' if v == ref else'  ← 不一致'
@@ -145,6 +153,13 @@ def bump(new):
     raw = re.sub(r'("version"\s*:\s*)"[^"]+"', _repl, raw, count=2)
     write(FILES['lock'], raw)
     lock_hits_n = lock_hits[0]
+
+    # ③b ai/components.json 的 libraryVersion（0.9.0 补 · 第五处）
+    raw = read(FILES['contract'])
+    raw2, n_contract = re.subn(r'("libraryVersion"\s*:\s*)"[^"]+"',
+                               lambda m: m.group(1) + '"%s"' % new, raw, count=1)
+    if n_contract:
+        write(FILES['contract'], raw2)
 
     # ④ CHANGELOG：若新版本还没有条目，就在**第一个已有版本条目前**插骨架
     cl = read(FILES['changelog'])
@@ -188,7 +203,7 @@ def bump(new):
         for k, v in bad:
             print('   %-22s %s' % (k, v))
         return 1
-    print('   自检：四处都是 %s' % new)
+    print('   自检：五处都是 %s' % new)
 
     # 再让release-gate 自己核一遍（它管得比本脚本宽）
     r = subprocess.run([sys.executable,

@@ -71,6 +71,11 @@ ROOT_ALLOWED_DIRS = {
 }
 ROOT_ALLOWED_FILES = {
     '.gitattributes', '.gitignore',
+    # `.npmrc`（0.9.0 加）：把 registry 钉在官方源。
+    #   本机全局是 `registry.npmmirror.com`（淘宝镜像），而**镜像是只读的**
+    #   ⇒ `npm publish` 会得到 403，且错误信息看起来像权限问题。
+    #   文件里没有任何 token（凭据走 `npm login`，存用户主目录），leak-scan 也过。
+    '.npmrc',
     'API.md', 'CHANGELOG.md', 'CODE_OF_CONDUCT.md', 'CONTRIBUTING.md',
     'ERRORS.md', 'LICENSE', 'README.md', 'SECURITY.md',
     'START-HERE.md', 'SUPPORT.md',

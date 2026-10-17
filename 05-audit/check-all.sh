@@ -60,6 +60,31 @@ TIMING="${TIMING:-}"
 #   之前是静默 `return 0` ⇒ 日志里 0 行 SKIP，「跑了多少 / 跳了多少」不可见。
 #   这与本文件自己的原则冲突（「跳过不是通过，它是一条**真话**」）。
 # =========================================================
+# 🔴 两种传参方式**都要支持**（0.9.0 修 · 发布时才发现）：
+#
+#   MODE=fast bash 05-audit/check-all.sh     ← POSIX shell 语法
+#   bash 05-audit/check-all.sh --fast        ← 任何环境都能用
+#
+#   为什么必须加第二种：`MODE=fast cmd` 这种「变量前缀」只有 POSIX shell 认。
+#   而 **npm scripts 在 Windows 上走 `cmd.exe`**，`publish:check` 里写了
+#   `MODE=fast bash …` ⇒ 直接崩：
+#
+#       > MODE=fast bash 05-audit/check-all.sh
+#       无效参数 - =fast        （cmd 把 `MODE=fast` 当成了一个参数）
+#       npm error code 4294967295
+#
+#   后果不是"检查没跑"，而是 **`npm publish` 在 Windows 上必然失败** ——
+#   而 `prepublishOnly` 正是挂在它上面的。这条从来没被发现过，因为
+#   从来没有人真的跑过一次 `npm publish`。
+#
+#   ⇒ 命令行参数优先于环境变量，两者等价。
+for _arg in "$@"; do
+  case "$_arg" in
+    --fast)      MODE=fast ;;
+    --component) MODE=component ;;
+    --full)      MODE=full ;;
+  esac
+done
 MODE="${MODE:-full}"
 # ---------- 分层判定（0.8.9）------------------------------------------------
 _ran=0        # 本轮**真的执行了**的门禁数
