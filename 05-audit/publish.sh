@@ -31,8 +31,31 @@ echo "============================================="
 echo
 
 # ---------- ① 登录 ----------
-echo "① npm 登录"
-if npm whoami >/dev/null 2>&1; then
+echo "① npm 认证"
+
+# 两条路都支持：
+#   a) 你已经 `npm login` 过（凭据在 ~/.npmrc）—— 下面直接复用
+#   b) 仓库根有一个 `.npm-token` 文件（npm 的 Automation Token）
+#      —— 它已被 .gitignore 挡住，不会误提交；用完请删掉
+#
+# 为什么先看 b：某些环境里 `npm login` 要开浏览器，登不进去。
+# 但**无论哪条路，凭据都不进仓库、不进聊天记录**。
+TMPRC=""
+if [ -f .npm-token ]; then
+  echo "   发现 .npm-token（本地文件，不入库）"
+  TOKEN="$(tr -d '[:space:]' < .npm-token)"
+  if [ -z "$TOKEN" ]; then
+    echo "   ✗ .npm-token 是空的"
+    exit 1
+  fi
+  TMPRC="$(mktemp)"
+  chmod 600 "$TMPRC"
+  printf '//registry.npmjs.org/:_authToken=%s\n' "$TOKEN" > "$TMPRC"
+  # shellcheck disable=SC2064
+  trap 'rm -f "$TMPRC"' EXIT
+  export NPM_CONFIG_USERCONFIG="$TMPRC"
+  echo "   ✓ 用 .npm-token 认证（发布完请删掉这个文件）"
+elif npm whoami >/dev/null 2>&1; then
   echo "   已登录：$(npm whoami)"
 else
   echo "   还没登录。接下来 npm 会提示你登录（浏览器授权或输入一次性验证码）。"

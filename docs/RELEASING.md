@@ -101,6 +101,25 @@ tag 存在 + 是 annotated + **tag 指向的提交里 `VERSION` 就是这个版�
 
 ## 三、发布（这一步只能人做）
 
+### 一条命令
+
+```bash
+bash 05-audit/publish.sh
+```
+
+它做四件事：查认证 → 查 registry 不是镜像源 → 查版本五处一致 → `npm publish`。
+最后那一步会先跑 `prepublishOnly`，门禁红就什么都不发出去。
+
+**认证有两条路**，脚本都支持：
+
+| 路 | 怎么做 | 适用 |
+|---|---|---|
+| a | 先 `npm login`（浏览器授权 / 一次性验证码） | 常用 |
+| b | 把 npm 的 **Automation Token** 存进仓库根的 `.npm-token` | `npm login` 打不开浏览器时 |
+
+`.npm-token` 已被 `.gitignore` 挡住（`git check-ignore .npm-token` 可验证），
+**发布完请删掉它**。凭据不进仓库、也不该贴进任何聊天窗口。
+
 ### ⚠️ 先确认 registry 不是镜像源
 
 作者这台机器上 `npm config get registry` 返回 `https://registry.npmmirror.com/`
