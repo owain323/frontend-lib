@@ -310,9 +310,28 @@
       btn.textContent = '✓ 已发送';
       setStatus('✓ 电脑已收到，回聊天里说一声即可', 'ok');
     }).catch(function (e) {
+      // 第二选择：sendBeacon。
+      // 部分内置 WebView（尤其带内核代理的）对 fetch 有额外限制，
+      // 但 sendBeacon 走的是另一条投递路径，常常仍然通。
+      // ⚠️ 它返回 true 只代表"已交给浏览器"，不代表服务器收到了 ——
+      //    所以文案必须留余地，不能写成"已收到"。
+      var queued = false;
+      try {
+        if (navigator.sendBeacon) {
+          queued = navigator.sendBeacon('/report',
+            new Blob([TXT], { type: 'application/json' }));
+        }
+      } catch (e2) { queued = false; }
+
+      if (queued) {
+        btn.textContent = '✓ 已通过兼容通道发出';
+        setStatus('已通过兼容通道发出。如果我这边没反应，' +
+          '说明这个内核把两条路都拦了 —— 请用下面的「② 复制结果」。', 'ok');
+        return;
+      }
       btn.disabled = false;
       setStatus('发送失败（' + (e && e.message ? e.message : e) +
-        '）—— 多半是页面用 file:// 打开，或服务不支持 POST。' +
+        '）—— 多半是页面用 file:// 打开，或这个 WebView 把请求拦了。' +
         '请改用下面的「② 复制结果」。', 'bad');
     });
   });

@@ -60,6 +60,14 @@ WHITELIST = {
     #   「直接丢给 CreateProcess 会 WinError 5」⇒ 被当成内部代号报红。
     #   核实：两者都是 Windows 公开 API（进程创建 / 系统错误码），与内部代号无关。
     'CreateProcess', 'WinError',
+    # 浏览器 / WebView 的 UA 里必然出现的产品名（补于真机基线采集之后）
+    #   起因：`docs/LAYER-BASELINE.md` 记录实测 UA，那段字符串里有
+    #   MicroMessenger / WeChat / NetType 三个驼峰词 ⇒ 被判"疑似内部代号"。
+    #   核实：三个都是**第三方 UA 里的公开标识**，不是我们的内部命名。
+    #   ⚠️ 这一条不能靠"中性化 UA"来解决 —— UA 是证据，
+    #      改写它等于把证据变成摘要（那样别人就无法复核基线了）。
+    #      身份标识（如微信的 MMWEBID）另行脱敏，那是隐私，不是术语。
+    'MicroMessenger', 'WeChat', 'NetType',
     # 协议 / 规范
     'HTTP', 'HTTPS', 'URL', 'URI', 'ARIA', 'WAI', 'APG', 'WCAG', 'CSS', 'HTML',
     'DOM', 'SVG', 'XML', 'JSON', 'YAML', 'TOML', 'API', 'REST', 'GraphQL',
