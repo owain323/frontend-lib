@@ -34,6 +34,9 @@ import sys as _sys
 _sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _common  # 🔴 统一排除产物目录（见 _common.py）
 import re
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+from _css import declared_tokens, resolve_vars  # noqa: E402
 import json
 
 
@@ -101,8 +104,15 @@ def load_tokens(path, mode='light'):
         i = css.find('@media (prefers-color-scheme: dark)')
         if i >= 0:
             css = css[:i]
-    for m in re.finditer(r'(--[a-z0-9-]+)\s*:\s*(#[0-9a-fA-F]{3,6})\s*;', css):
-        out[m.group(1)] = m.group(2)
+    # 🔴 改成走 `_css` 的唯一解析器（D5 地基）。
+    #   旧实现只认字面 `#hex;`，两个后果：
+    #     ① 最后一条声明不带分号时**读不到**（CSS 允许）
+    #     ② D5 之后语义令牌写成 `var(--raw-x)` ⇒ 旧实现会把 30 个色令牌读成"不存在"，
+    #        而对比度报告照样出数字（少算几对，没人看得出来）
+    toks = resolve_vars(declared_tokens(css))
+    for k, v in toks.items():
+        if re.match(r'^#[0-9a-fA-F]{3,6}$', v.strip()):
+            out[k] = v.strip()
     return out
 
 
