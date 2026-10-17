@@ -15,6 +15,20 @@
 ## [Unreleased]
 
 ### Added
+- **`eol-gate.py`：行尾门禁（D4 的防守，不只是搬运）**。
+  D4 当时做的是"把现有 CRLF 转成 LF"，**没有堵住生成器会翻回去** ——
+  实测复发三次：`theme-sync` 写 tokens.css、`make-tiersnippet` 写 tierA、
+  `shot-baseline` 写 `_stamp.json`，根因都是 `open(..., "w")` 在 Windows 上
+  默认把换行写成 CRLF。
+  
+  判据两条：`git ls-files --eol` 的**索引侧**与**工作区侧**都不得是
+  `crlf` / `mixed`（二进制 `-text` 与空文件 `none` 不计）。
+  零视野、git 不可用一律 **fail-closed**。
+  
+  反向控制**不依赖"仓库里恰好有个坏文件"**（E50 记过：那种前提会随仓库
+  状态漂移）—— 用伪造的 `--eol` 输出测 9 种情况（索引侧脏／只有工作区脏／
+  mixed／二进制／空文件／混在正常文件里／带 attributes／多空格对齐／不可解析）。
+
 - **颜色令牌分两层（D5）+ `layer-tokens.py` 结构门禁**。`:root` 里 30 个颜色字面量
   搬进 L1 区块（`--raw-paper: #f6f7f8;`），语义令牌改成 `var(--raw-paper)`；
   **暗色段只覆盖 L1** —— 语义层是引用会自然跟随 ⇒「暗色段漏写某个语义令牌」
@@ -99,6 +113,11 @@
 - `SECURITY.md` 与 `CONTRIBUTING.md`。
 
 ### Fixed
+- **`shot-baseline.py` 写 `_stamp.json` 用 CRLF**（D4 第三次复发）。
+  截图基线录制器的三处 `io.open(..., "w")` 都没指定 `newline`，
+  `_stamp.json` 因此带 CRLF 进了库。已修，并把该文件转回 LF。
+  根本防止见 Added 里的 `eol-gate.py`。
+
 - **`theme-sync.py` 定位到了注释里举的 `@media` 例子 ⇒ 生成 0 个令牌却判"一致"**。
   `RE_MEDIA_DARK` 命中注释里那段（讲"为什么不用 `light-dark()`"的示例），
   再靠 `[^{]*` 吃到后面一个**空规则块** ⇒ `[data-theme="dark"]` 被生成成空块，
