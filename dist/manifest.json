@@ -9,7 +9,7 @@
   "totals": {
     "sourceFiles": 65,
     "sourceBytes": 697197,
-    "distGzip": 126223
+    "distGzip": 89436
   },
   "files": [
     {
@@ -95,12 +95,6 @@
       "outputs": [
         {
           "path": "dist/01-tokens/focus-ring.css",
-          "kind": "stripped",
-          "bytes": 1069,
-          "gzip": 404
-        },
-        {
-          "path": "dist/01-tokens/focus-ring.min.css",
           "kind": "minified",
           "bytes": 968,
           "gzip": 380
@@ -115,12 +109,6 @@
       "outputs": [
         {
           "path": "dist/01-tokens/page.css",
-          "kind": "stripped",
-          "bytes": 1649,
-          "gzip": 557
-        },
-        {
-          "path": "dist/01-tokens/page.min.css",
           "kind": "minified",
           "bytes": 1404,
           "gzip": 522
@@ -150,12 +138,6 @@
       "outputs": [
         {
           "path": "dist/01-tokens/scrollbar.css",
-          "kind": "stripped",
-          "bytes": 2751,
-          "gzip": 485
-        },
-        {
-          "path": "dist/01-tokens/scrollbar.min.css",
           "kind": "minified",
           "bytes": 2448,
           "gzip": 414
@@ -185,12 +167,6 @@
       "outputs": [
         {
           "path": "dist/01-tokens/tokens.css",
-          "kind": "stripped",
-          "bytes": 8206,
-          "gzip": 2637
-        },
-        {
-          "path": "dist/01-tokens/tokens.min.css",
           "kind": "minified",
           "bytes": 6179,
           "gzip": 2194
@@ -205,12 +181,6 @@
       "outputs": [
         {
           "path": "dist/01-tokens/typography.css",
-          "kind": "stripped",
-          "bytes": 1099,
-          "gzip": 412
-        },
-        {
-          "path": "dist/01-tokens/typography.min.css",
           "kind": "minified",
           "bytes": 909,
           "gzip": 377
@@ -225,12 +195,6 @@
       "outputs": [
         {
           "path": "dist/02-primitives/badge/badge.css",
-          "kind": "stripped",
-          "bytes": 2032,
-          "gzip": 590
-        },
-        {
-          "path": "dist/02-primitives/badge/badge.min.css",
           "kind": "minified",
           "bytes": 1745,
           "gzip": 515
@@ -245,12 +209,6 @@
       "outputs": [
         {
           "path": "dist/02-primitives/button/button.css",
-          "kind": "stripped",
-          "bytes": 3626,
-          "gzip": 1118
-        },
-        {
-          "path": "dist/02-primitives/button/button.min.css",
           "kind": "minified",
           "bytes": 3029,
           "gzip": 997
@@ -265,12 +223,6 @@
       "outputs": [
         {
           "path": "dist/02-primitives/card/card.css",
-          "kind": "stripped",
-          "bytes": 3185,
-          "gzip": 1049
-        },
-        {
-          "path": "dist/02-primitives/card/card.min.css",
           "kind": "minified",
           "bytes": 2703,
           "gzip": 946
@@ -285,12 +237,6 @@
       "outputs": [
         {
           "path": "dist/02-primitives/choice/choice.css",
-          "kind": "stripped",
-          "bytes": 4830,
-          "gzip": 1207
-        },
-        {
-          "path": "dist/02-primitives/choice/choice.min.css",
           "kind": "minified",
           "bytes": 4109,
           "gzip": 1101
@@ -305,12 +251,6 @@
       "outputs": [
         {
           "path": "dist/02-primitives/combobox/combobox.css",
-          "kind": "stripped",
-          "bytes": 3952,
-          "gzip": 1087
-        },
-        {
-          "path": "dist/02-primitives/combobox/combobox.min.css",
           "kind": "minified",
           "bytes": 3303,
           "gzip": 993
@@ -340,12 +280,6 @@
       "outputs": [
         {
           "path": "dist/02-primitives/date-range/date-range.css",
-          "kind": "stripped",
-          "bytes": 3997,
-          "gzip": 925
-        },
-        {
-          "path": "dist/02-primitives/date-range/date-range.min.css",
           "kind": "minified",
           "bytes": 3419,
           "gzip": 847
@@ -375,12 +309,6 @@
       "outputs": [
         {
           "path": "dist/02-primitives/input/input.css",
-          "kind": "stripped",
-          "bytes": 3782,
-          "gzip": 1147
-        },
-        {
-          "path": "dist/02-primitives/input/input.min.css",
           "kind": "minified",
           "bytes": 3268,
           "gzip": 1043
@@ -395,12 +323,6 @@
       "outputs": [
         {
           "path": "dist/02-primitives/popover/popover.css",
-          "kind": "stripped",
-          "bytes": 3261,
-          "gzip": 909
-        },
-        {
-          "path": "dist/02-primitives/popover/popover.min.css",
           "kind": "minified",
           "bytes": 2847,
           "gzip": 839
@@ -430,12 +352,6 @@
       "outputs": [
         {
           "path": "dist/02-primitives/progress/progress.css",
-          "kind": "stripped",
-          "bytes": 2726,
-          "gzip": 785
-        },
-        {
-          "path": "dist/02-primitives/progress/progress.min.css",
           "kind": "minified",
           "bytes": 2366,
           "gzip": 706
@@ -450,12 +366,6 @@
       "outputs": [
         {
           "path": "dist/02-primitives/select/select.css",
-          "kind": "stripped",
-          "bytes": 2754,
-          "gzip": 939
-        },
-        {
-          "path": "dist/02-primitives/select/select.min.css",
           "kind": "minified",
           "bytes": 2343,
           "gzip": 865
@@ -485,12 +395,6 @@
       "outputs": [
         {
           "path": "dist/02-primitives/separator/separator.css",
-          "kind": "stripped",
-          "bytes": 647,
-          "gzip": 273
-        },
-        {
-          "path": "dist/02-primitives/separator/separator.min.css",
           "kind": "minified",
           "bytes": 524,
           "gzip": 251
@@ -505,12 +409,6 @@
       "outputs": [
         {
           "path": "dist/02-primitives/skeleton/skeleton.css",
-          "kind": "stripped",
-          "bytes": 1276,
-          "gzip": 536
-        },
-        {
-          "path": "dist/02-primitives/skeleton/skeleton.min.css",
           "kind": "minified",
           "bytes": 1060,
           "gzip": 488
@@ -525,12 +423,6 @@
       "outputs": [
         {
           "path": "dist/02-primitives/switch/switch.css",
-          "kind": "stripped",
-          "bytes": 3186,
-          "gzip": 873
-        },
-        {
-          "path": "dist/02-primitives/switch/switch.min.css",
           "kind": "minified",
           "bytes": 2509,
           "gzip": 773
@@ -545,12 +437,6 @@
       "outputs": [
         {
           "path": "dist/03-patterns/accordion/accordion.css",
-          "kind": "stripped",
-          "bytes": 4975,
-          "gzip": 1449
-        },
-        {
-          "path": "dist/03-patterns/accordion/accordion.min.css",
           "kind": "minified",
           "bytes": 4239,
           "gzip": 1339
@@ -580,12 +466,6 @@
       "outputs": [
         {
           "path": "dist/03-patterns/content/content.css",
-          "kind": "stripped",
-          "bytes": 3842,
-          "gzip": 1130
-        },
-        {
-          "path": "dist/03-patterns/content/content.min.css",
           "kind": "minified",
           "bytes": 3339,
           "gzip": 1039
@@ -600,12 +480,6 @@
       "outputs": [
         {
           "path": "dist/03-patterns/drawer/drawer.css",
-          "kind": "stripped",
-          "bytes": 2763,
-          "gzip": 865
-        },
-        {
-          "path": "dist/03-patterns/drawer/drawer.min.css",
           "kind": "minified",
           "bytes": 2338,
           "gzip": 798
@@ -635,12 +509,6 @@
       "outputs": [
         {
           "path": "dist/03-patterns/dropdown/dropdown.css",
-          "kind": "stripped",
-          "bytes": 2297,
-          "gzip": 856
-        },
-        {
-          "path": "dist/03-patterns/dropdown/dropdown.min.css",
           "kind": "minified",
           "bytes": 1910,
           "gzip": 788
@@ -670,12 +538,6 @@
       "outputs": [
         {
           "path": "dist/03-patterns/form-validation/form-validation.css",
-          "kind": "stripped",
-          "bytes": 2886,
-          "gzip": 853
-        },
-        {
-          "path": "dist/03-patterns/form-validation/form-validation.min.css",
           "kind": "minified",
           "bytes": 2445,
           "gzip": 793
@@ -705,12 +567,6 @@
       "outputs": [
         {
           "path": "dist/03-patterns/list/list.css",
-          "kind": "stripped",
-          "bytes": 2068,
-          "gzip": 680
-        },
-        {
-          "path": "dist/03-patterns/list/list.min.css",
           "kind": "minified",
           "bytes": 1765,
           "gzip": 607
@@ -725,12 +581,6 @@
       "outputs": [
         {
           "path": "dist/03-patterns/nav/nav.css",
-          "kind": "stripped",
-          "bytes": 5665,
-          "gzip": 1428
-        },
-        {
-          "path": "dist/03-patterns/nav/nav.min.css",
           "kind": "minified",
           "bytes": 4707,
           "gzip": 1257
@@ -760,12 +610,6 @@
       "outputs": [
         {
           "path": "dist/03-patterns/overlay/overlay.css",
-          "kind": "stripped",
-          "bytes": 4034,
-          "gzip": 1295
-        },
-        {
-          "path": "dist/03-patterns/overlay/overlay.min.css",
           "kind": "minified",
           "bytes": 3415,
           "gzip": 1172
@@ -795,12 +639,6 @@
       "outputs": [
         {
           "path": "dist/03-patterns/pagination/pagination.css",
-          "kind": "stripped",
-          "bytes": 2840,
-          "gzip": 866
-        },
-        {
-          "path": "dist/03-patterns/pagination/pagination.min.css",
           "kind": "minified",
           "bytes": 2362,
           "gzip": 780
@@ -830,12 +668,6 @@
       "outputs": [
         {
           "path": "dist/03-patterns/states/states.css",
-          "kind": "stripped",
-          "bytes": 2712,
-          "gzip": 946
-        },
-        {
-          "path": "dist/03-patterns/states/states.min.css",
           "kind": "minified",
           "bytes": 2247,
           "gzip": 865
@@ -850,12 +682,6 @@
       "outputs": [
         {
           "path": "dist/03-patterns/tabs/tabs.css",
-          "kind": "stripped",
-          "bytes": 2156,
-          "gzip": 714
-        },
-        {
-          "path": "dist/03-patterns/tabs/tabs.min.css",
           "kind": "minified",
           "bytes": 1827,
           "gzip": 664
@@ -885,12 +711,6 @@
       "outputs": [
         {
           "path": "dist/03-patterns/tooltip/tooltip.css",
-          "kind": "stripped",
-          "bytes": 1954,
-          "gzip": 642
-        },
-        {
-          "path": "dist/03-patterns/tooltip/tooltip.min.css",
           "kind": "minified",
           "bytes": 1679,
           "gzip": 583
@@ -920,12 +740,6 @@
       "outputs": [
         {
           "path": "dist/03-patterns/tree/tree.css",
-          "kind": "stripped",
-          "bytes": 1759,
-          "gzip": 657
-        },
-        {
-          "path": "dist/03-patterns/tree/tree.min.css",
           "kind": "minified",
           "bytes": 1465,
           "gzip": 604
@@ -955,12 +769,6 @@
       "outputs": [
         {
           "path": "dist/04-recipes/analysis-report/analysis-report.css",
-          "kind": "stripped",
-          "bytes": 3575,
-          "gzip": 901
-        },
-        {
-          "path": "dist/04-recipes/analysis-report/analysis-report.min.css",
           "kind": "minified",
           "bytes": 3082,
           "gzip": 818
@@ -975,12 +783,6 @@
       "outputs": [
         {
           "path": "dist/04-recipes/report/report.css",
-          "kind": "stripped",
-          "bytes": 4738,
-          "gzip": 1268
-        },
-        {
-          "path": "dist/04-recipes/report/report.min.css",
           "kind": "minified",
           "bytes": 3917,
           "gzip": 1122
@@ -995,12 +797,6 @@
       "outputs": [
         {
           "path": "dist/04-recipes/table/table.css",
-          "kind": "stripped",
-          "bytes": 5816,
-          "gzip": 1538
-        },
-        {
-          "path": "dist/04-recipes/table/table.min.css",
           "kind": "minified",
           "bytes": 4863,
           "gzip": 1370
@@ -1015,12 +811,6 @@
       "outputs": [
         {
           "path": "dist/04-recipes/tierA-tokens.css",
-          "kind": "stripped",
-          "bytes": 16865,
-          "gzip": 2058
-        },
-        {
-          "path": "dist/04-recipes/tierA-tokens.min.css",
           "kind": "minified",
           "bytes": 3130,
           "gzip": 1285
@@ -1035,12 +825,6 @@
       "outputs": [
         {
           "path": "dist/09-assets/bar/bar.css",
-          "kind": "stripped",
-          "bytes": 2418,
-          "gzip": 825
-        },
-        {
-          "path": "dist/09-assets/bar/bar.min.css",
           "kind": "minified",
           "bytes": 2011,
           "gzip": 741
@@ -1085,12 +869,6 @@
       "outputs": [
         {
           "path": "dist/09-assets/model-viewer/model-viewer.css",
-          "kind": "stripped",
-          "bytes": 2487,
-          "gzip": 852
-        },
-        {
-          "path": "dist/09-assets/model-viewer/model-viewer.min.css",
           "kind": "minified",
           "bytes": 2098,
           "gzip": 796
@@ -1120,12 +898,6 @@
       "outputs": [
         {
           "path": "dist/09-assets/scientific-plot/scientific-plot.css",
-          "kind": "stripped",
-          "bytes": 2292,
-          "gzip": 657
-        },
-        {
-          "path": "dist/09-assets/scientific-plot/scientific-plot.min.css",
           "kind": "minified",
           "bytes": 1912,
           "gzip": 591
@@ -1155,12 +927,6 @@
       "outputs": [
         {
           "path": "dist/09-assets/sparkline/sparkline.css",
-          "kind": "stripped",
-          "bytes": 1030,
-          "gzip": 374
-        },
-        {
-          "path": "dist/09-assets/sparkline/sparkline.min.css",
           "kind": "minified",
           "bytes": 864,
           "gzip": 335

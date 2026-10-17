@@ -303,14 +303,20 @@ def build():
                 raise SystemExit(
                     '去注释版与压缩版语义不等价：%s\n'
                     '  （两者在忽略空白/尾分号后应完全一致 —— 不一致说明压缩器有 bug）' % rel)
+            # 🔴 D1：**只交付一份**。
+            #   此前同时写 `x.css`（去注释）与 `x.min.css`（压缩），
+            #   而源码目录也在包里 ⇒ 同一批 CSS 在包里出现**三次**
+            #   （实测 350.7 + 122.0 + 91.7 = 564.4 kB，占解包 19.3%）。
+            #   ⇒ 现在只写 `x.css`，内容是**压缩版**：
+            #     · 使用者的 import 路径**一行都不用改**（仍写 `card.css`）
+            #     · 可读版仍有 `./src/*`（指向源码，带完整注释）
+            #     · ⚠️ 旧路径 `card.min.css` 不再生成 —— 写死这个后缀的少数人
+            #       需要去掉 `.min`。这是一次**破坏性变更**，1.0 契约里要写明。
             item['outputs'] = [
-                {'path': 'dist/' + rel, 'kind': 'stripped',
-                 'bytes': len(stripped.encode('utf-8')), 'gzip': gz_size(stripped)},
-                {'path': 'dist/' + rel[:-4] + '.min.css', 'kind': 'minified',
+                {'path': 'dist/' + rel, 'kind': 'minified',
                  'bytes': len(mini.encode('utf-8')), 'gzip': gz_size(mini)},
             ]
-            write_out('dist/' + rel, stripped)
-            write_out('dist/' + rel[:-4] + '.min.css', mini)
+            write_out('dist/' + rel, mini)
         else:
             stripped = strip_js_comments(raw)
             # 🔴 JS 只去注释、**不压缩**（见文件头约束 ③）
@@ -339,6 +345,27 @@ def build():
     }
     write_out('dist/manifest.json',
               json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
+    # 🔴 产物形态一变（例如 D1 把 stripped 去掉），旧文件会**留在 dist 里**
+    #   而 build 只说"重建了 N 个产物" —— 残留文件照样被打进 tarball。
+    #   实测：切换产物形态后 `--check` 报 39 个孤儿 `*.min.css`，
+    #   而那时 tarball 里它们还在（"省了"其实是没省）。
+    #   ⇒ 由 build 自己清理：它**知道**这次应该有哪些产物，多出来的就是残留。
+    removed = []
+    keep = set(DIST_NON_OUTPUT)
+    for e in manifest['files']:
+        for o in e['outputs']:
+            keep.add(o['path'])
+    for dirpath, _dn, fns in os.walk(DIST):
+        for fn in fns:
+            ap = os.path.join(dirpath, fn)
+            rel = os.path.relpath(ap, ROOT).replace(os.sep, '/')
+            if rel not in keep:
+                os.remove(ap)
+                removed.append(rel)
+    if removed:
+        print('  清理孤儿产物 %d 个（产物形态变了，旧文件不能留在包里）' % len(removed))
+        for r in removed[:5]:
+            print('    - ' + r)
     return manifest
 
 

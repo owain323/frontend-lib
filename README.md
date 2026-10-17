@@ -123,18 +123,24 @@ dist/01-tokens/tokens.css          ← 拷这个
 
 **规则一句话**：默认拿干净的；想读"为什么这么定"就去 `src/`。
 
-### 更小的：压缩产物
+### 产物只有一份（压缩）+ 源码可读
 
 | 产物 | 内容 | 什么时候用 |
 |---|---|---|
-| `dist/**/*.min.css` | 去注释 + 压缩 | **生产**（比未压缩版再省 ~15%） |
-| `dist/**/*.css` | 只去注释，保留格式 | 默认。要 diff、要读格式 |
+| `dist/**/*.css` | **去注释 + 压缩** | 生产，默认就用这个 |
 | `dist/**/*.js` | 只去注释，**不压缩** | 生产（JS 不压缩的理由见下） |
+| `01-tokens/**` `02-primitives/**` … | 源码，注释齐全 | 想读"为什么这么定"、要 diff |
 
 ```js
-import 'agentcss/dist/01-tokens/tokens.min.css';
-import 'agentcss/dist/02-primitives/button/button.min.css';
+import 'agentcss/dist/01-tokens/tokens.css';         // 压缩版
+import 'agentcss/dist/02-primitives/button/button.css';
+// 要可读版：import 'agentcss/01-tokens/tokens.css';
 ```
+
+> ⚠️ **不再有 `*.min.css`**。此前 `dist/` 同时产出 `x.css`（去注释）与 `x.min.css`（压缩），
+> 而源码也在包里 ⇒ 同一批 CSS 出现三次（未压缩 564.4 kB，占解包 19.3%）。
+> 现在 `dist/x.css` **就是压缩版**，路径不变、内容更小；
+> 写死 `x.min.css` 的地方去掉 `.min` 即可。
 
 - **`dist/` 是导出物**，可以整个删掉重建（`npm run dist`）。真值永远是源码目录。
 - **JS 不做压缩**：手写压缩器会引入破坏 ES5 语义的风险，收益不抵风险 —— 这一点如实写在这里，
