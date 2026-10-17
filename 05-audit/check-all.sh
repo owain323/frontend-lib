@@ -226,21 +226,26 @@ run "engine"     node 05-audit/engine-gate.js
 # 规范三层分离：Invariant 层不许被 Contract / Guidance 污染
 run "invariant"  $PY 05-audit/invariant-gate.py
 # 兼容性 Benchmark：参考解法的十类编辑意图必须全部成立
-run "benchmark"  node benchmark/run.js
+run "benchmark"  @static node benchmark/run.js
 # 🔴 跑批记录（W13）：`--record` 指向不存在的文件时，旧版只打一行 WARN 就 RC=0
 #   —— 那等于"声称跑了批，其实没跑"。现在：文件不存在 ⇒ RC=2。
 #   另外逐份校验记录形状（八条判据），并让**参考解法记录**必须拿满分：
 #   它验证的是"记录 → 评分"这条管线本身；管线不自洽，任何模型分数都不可信。
 #   ⚠️ 零记录时本项输出 UNVERIFIED（RC=0）—— 它说明"没有坏记录"，
 #      不说明"模型已验证"。这个区别写在输出里，不许靠读者猜。
-run "benchmark-records" node benchmark/run.js --check-records
-run "benchmark-records-rev" node benchmark/run.js --selftest
+run "benchmark-records" @static node benchmark/run.js --check-records
+run "benchmark-records-rev" @static node benchmark/run.js --selftest
 # 核心不得混入呈现形态（slide/deck）语义 —— PPT 的事在 adapters/presentation/
 run "core-boundary" $PY 05-audit/core-boundary-gate.py
 # 呈现层自己的五条判据必须**真的会红**（0.4.2 补：它们此前一次都没被执行过）
 run "presentation" $PY 05-audit/presentation-gate.py
 # 级联分层就绪：`@layer` 计数 + 每处 !important 必须能归类（切层前的前提门控）
 run "cascade-layer" $PY 05-audit/cascade-layer-gate.py
+# 真机探针与基线表（W10 / W12）：探测清单必须与源码用法**双向**一致；
+#   基线表不许有占位符，VERIFIED 的必须带完整 UA。
+#   ⚠️ 基线表 0 行时本项 RC=0 但会打印 UNVERIFIED —— "表结构没问题"
+#      不等于"测过了"，这个区别写在输出里。
+run "webview-probe" @static $PY 05-audit/webview-probe-gate.py
 # 声明合法性：写了浏览器不认的属性（如 border-inset-inline-*）会**静默失效**，
 #   不报错、不影响解析、行为契约也抓不到 ⇒ 交给浏览器自己判定（CSS.supports）
 run "css-validity" node 05-audit/css-validity-gate.js
@@ -383,6 +388,8 @@ run "dist-parity" node 05-audit/dist-parity-check.js
 run "skel-lever"  node 05-audit/skeleton-lever-check.js
 # 明暗四种组合在真浏览器里成立，且**不加载 theme-toggle.js**
 run "theme-css"   node 05-audit/theme-css-gate.js
+# 探针页自身要能跑：静态判据只能证明"清单写全了"，证明不了探测函数没写坏
+run "webview-probe-run" node 05-audit/webview-probe-check.js
 # 全部令牌的**解析值**（107 个 × 4 种明暗组合）：
 #   ① 暗色三条路径等价 ② 浅色两条路径等价 ③ 声明即生效 ④ 无空值 ⑤ 与基线逐条一致
 #   🔴 它补的是「声明合法、文本一致，但浏览器根本没让它生效」这一类
