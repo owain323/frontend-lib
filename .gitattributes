@@ -1,25 +1,32 @@
-# 二进制判定与生成物标记
+# 行尾与二进制判定
 #
-# ⚠️ 这里**故意不加** `* text=auto eol=lf`（全仓统一 LF）。
+# ① 文本统一 LF（决策项 D4，0.8.9 完成）
 #
-# 为什么（0.8.9 实测，别反过来改）：
+# 为什么以前**不敢**加这一行（历史原因，留着以免有人再踩）：
 #   `dist/manifest.json` 存了每个源文件的 `sourceSha256`，
 #   `05-audit/size-baseline.json` 存了每个源文件的 raw/gzip 字节数。
-#   这两份基线是**按当前工作区的混合行尾**录下来的
-#   （实测：300 个文件 CRLF / 80 个 LF）。
-#   一旦在 `.gitattributes` 里声明 `eol=lf`，**clone 出来的树**会全部是 LF
-#   ⇒ 上面两份基线对 300 个文件全部对不上 ⇒
-#     `dist-fresh` 与 `size-budget` 在新克隆里会**假红**。
-#   ⇒ 也就是说：那条声明会把"clone 出来能不能跑绿"这件事搞坏。
+#   这两份基线一度是**按磁盘字节**录的 ⇒ 工作区行尾一换，310 个文件的基线
+#   全部对不上 ⇒ `dist-fresh` 与 `size-budget` 在**新克隆里假红**。
+#   ⇒ 只加 `eol=lf` 而不改判据，等于把"clone 能不能跑绿"这件事搞坏。
 #
-# ⇒ 正确的做法是**先让判据不再依赖行尾**（读文本时把 CRLF 归一成 LF
-#   再算哈希/量字节），然后才做"全仓统一到 LF"这一次性操作。
-#   两步都已登记为决策项 D4（见 `docs/ROADMAP.md`），
-#   **不要只做后半步**。
+# 0.8.9 做了两步，然后才加这一行：
+#   ① 让判据**不再依赖行尾**：统一走 `05-audit/_bytes.py` 的归一化读取
+#      （`build-dist` 早已如此；`size-baseline` / `doc-facts` 本轮补上；
+#        `shot-baseline` 的指纹本来就是归一的）。
+#      证据：把 310 个文件从 CRLF 转成 LF 之后，`size-baseline.json` 与
+#      `dist/manifest.json` **一个字节都没变**（不是"重新录了一遍刚好一样"，
+#      是转换前后 cmp 相同）。
+#   ② 全仓统一到 LF（单独一次提交，纯行尾；见 `.git-blame-ignore-revs`，
+#      让 `git blame` 跳过它，免得每一行都归到这次格式化）。
 #
-# 本文件当前只做两件与行尾无关的事：
+# 为什么要统一：本库大量判据做**内容比对**（dist-parity 比 CSSOM、
+# pack-smoke 比 tarball、visual 比截图）。行尾混着两套（实测 310 CRLF / 80 LF）
+# 时，任何"跨机器复跑"的结果都可能因为看不见的 `\r` 而不同，
+# 而 `git diff` 又是空的 —— 那是最难查的一类不一致。
+#
+* text=auto eol=lf
 
-# ① 二进制：不许做行尾转换，也不许被 diff/语言统计当文本处理
+# ② 二进制：不许做行尾转换，也不许被 diff/语言统计当文本处理
 *.png   binary
 *.jpg   binary
 *.jpeg  binary
@@ -32,5 +39,5 @@
 *.glb   binary
 *.zip   binary
 
-# ② 生成物标记：GitHub 上折叠 diff、不计入语言统计
+# ③ 生成物标记：GitHub 上折叠 diff、不计入语言统计
 dist/** linguist-generated=true
