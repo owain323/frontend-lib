@@ -116,13 +116,14 @@ def kb(n):
 def table(manifest, perturb=None):
     """生成 COSTS.md。perturb 只给 selftest 用（把 tokens 的数字改一笔，验证判据会红）。"""
     idx = index(manifest)
-    tg = idx['dist/01-tokens/tokens.min.css']['gzip']
+    # D1 之后产物只有一份（dist/x.css 即压缩版）⇒ 路径不再带 .min
+    tg = idx['dist/01-tokens/tokens.css']['gzip']
     tg_src = src_gzip(manifest, TOKENS_KEY)
     if perturb:
         tg += perturb
     rows = []
     for label, name, rel in components(manifest):
-        mini = idx.get('dist/' + rel[:-4] + '.min.css')
+        mini = idx.get('dist/' + rel)
         js = idx.get('dist/' + rel[:-4] + '.js')
         if not mini:
             continue
@@ -165,9 +166,9 @@ def table(manifest, perturb=None):
     lines.append('')
     lines.append('## 三、全库')
     lines.append('')
-    all_min = idx['dist/01-tokens/tokens.min.css']['gzip']
+    all_min = idx['dist/01-tokens/tokens.css']['gzip']
     for label, name, rel in components(manifest):
-        mini = idx.get('dist/' + rel[:-4] + '.min.css')
+        mini = idx.get('dist/' + rel)
         js = idx.get('dist/' + rel[:-4] + '.js')
         if mini:
             all_min += mini['gzip'] + (js['gzip'] if js else 0)

@@ -118,7 +118,7 @@
 
 | # | 事项 | 为什么不做（实测依据） | 什么时候能重开 |
 |---|---|---|---|
-| D1 | **包内同一批 CSS 出现三次**（源码 350.7 kB + dist stripped 122.0 kB + dist min 91.7 kB = 564.4 kB，占解包 19.3%） | `exports` 指向的是 **stripped 版**，删它会破坏全部公开导入路径。改指 `*.min.css` 是**破坏性改动**（使用者要写 `card.min.css`），0.8.x 内不该做 | 1.0 的 `exports` 契约定稿时一起动 |
+| D1 | ✅ **已完成（Unreleased）** —— 包内同一批 CSS 不再出现三次 | 做法：`dist/x.css` **内容改成压缩版**、不再产出 `x.min.css`。路径不变 ⇒ 使用者的 `import` 一行都不用改；写死 `.min.css` 的少数人去掉 `.min`。⚠️ **口径更正（重要）**：删掉的那 39 个 `*.min.css` 让**解包**从 632 → 427 KB（−205 KB，−32%），但 **tarball 只从 650.3 → 641.8 KB（−8.5 KB，−1.3%）** —— 因为 tar.gz 是单一压缩流，两份近乎相同的 CSS 会被高效压掉。⇒ 此前"占解包 19.3%"的说法没错，但它**不等于**下载体积能省 19%；两者差 24 倍。 | 已完成。验收：`dist-parity` 39 个产物 CSSOM 一致 / 明暗两套视觉回归 34-34 全一致 / `pack-smoke` 全绿 / 暗色对比度 1237 个文字 0 不足 |
 | D2 | **dist 的 JS 只去注释不压缩**（esbuild 实测 raw −33.7% / gzip −13.6%） | 撞 `build-dist.py` 约束 ②「零依赖、零构建链：不引入任何 npm 包」。为绕开它而**手写** minifier，就回到约束 ③ 明确拒绝的风险上。（已实测：`--target=es5` 与 `--target=es2017` 输出逐字节相同 ⇒ 源码本就是纯 ES5，风险比预想低，但未归零） | 先决定「要不要为体积破一次零依赖」 |
 | D3 | **拆 `table-core` + `table-variants`**（`table.min.css` 4,863 B 里 81.4% 用不上） | 拆完要同步 `ai/components.json` **与** `docs/API.md`（`doc-facts-gate` 会查），而 `04-recipes` 是配方级、被 `doc-facts` 与 `api-form` 双向约束 ⇒ 风险高于收益 | 若 D1 的重构先做，可顺路一起 |
 | D4 | **全仓行尾统一到 LF**（现在实测 300 个文件 CRLF / 80 个 LF） | `dist/manifest.json` 存了每源文件的 `sourceSha256`，`05-audit/size-baseline.json` 存了每源文件的 raw/gzip 字节数 —— 这两份基线**按当前混合行尾录的**。直接加 `.gitattributes eol=lf` 会让 clone 出来的树全变 LF ⇒ 那 300 个文件的两份基线**全部对不上** ⇒ `dist-fresh` 与 `size-budget` 在**新克隆里假红**（这正是"clone 能不能跑绿"被搞坏的方式）。⇒ **两步必须一起做**：① 先让判据不再依赖行尾（读文本时把 CRLF 归一成 LF 再算哈希/量字节，且只写一份读取器 —— E31）② 再做全仓统一 + 重录两份基线 | 有人愿意同时完成 ① 与 ② 时（只做 ② 会更糟） |

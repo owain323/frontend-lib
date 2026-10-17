@@ -110,8 +110,26 @@
   —— 快跑时全被跳过。它们是纯 Node，已标 `@static`。
 
 ### Changed
-- 门禁 **143 → 149 道**（`token-resolved` / `webview-probe` / `webview-probe-run` /
-  `benchmark-records` / `benchmark-records-rev` / `dist-js-parity-rev`）。
+- **`dist/` 的 CSS 只交付一份，且内容是压缩版**（D1）。
+  此前 `dist/` 同时产出 `x.css`（去注释）与 `x.min.css`（压缩），而源码目录也在包里
+  ⇒ 同一批 CSS 在包内出现**三次**（未压缩 564.4 kB，占解包 19.3%）。
+  现在 `dist/x.css` **就是压缩版**，`x.min.css` 不再产出。
+  - 路径不变：`import '…/button.css'` 照旧可用
+  - 写死 `…/button.min.css` 的地方，去掉 `.min` 即可
+  - 要可读版仍走 `./src/*`（源码，注释齐全）
+
+  ⚠️ **收益有两个口径，差 24 倍，如实写在这里**：
+  **解包** 632 → 427 KB（−205 KB，−32%）；**tarball** 650.3 → 641.8 KB（−8.5 KB，−1.3%）。
+  原因是 tar.gz 是单一压缩流，两份近乎相同的 CSS 会被高效压掉。
+  此前"占解包 19.3%"的说法没错，但它**不等于**下载体积能省 19%。
+
+  验收：`dist-parity` 39 个产物与源码 CSSOM 逐条一致；
+  明暗两套视觉回归 34 / 34 全一致（压缩后**连像素都没变**）；
+  `pack-smoke` 从 tarball 实装、`exports` 每个入口都真实存在；
+  暗色对比度 1237 个文字元素 0 个不足。
+
+- 门禁 **143 → 150 道**（`token-resolved` / `webview-probe` / `webview-probe-run` /
+  `benchmark-records` / `benchmark-records-rev` / `dist-js-parity-rev` / `visual-dark`）。
 - `benchmark/results/` 不入库：`models/` 是证据，`results/` 是它的重算产物。
 - **`docs/LAYER-BASELINE.md` 已有 5 行真机数据，结论是"不能无条件切层"**：
   iOS Safari 15/15 · iOS 微信 15/15 · iOS 企微 15/15 · Android 微信 XWEB 14/15 ·
