@@ -1025,3 +1025,43 @@ JSON 能解析"，**没有一条判据碰过按钮**。它验的是探针**测�
 3. **一次事故记一条规则不够，要记到"换掉通道"这一层**。
    E51 记的是"别用 heredoc 写转义"，但没写"**用什么替代**"，
    于是下一次仍然回到原通道 —— 这是本条存在的理由。
+
+## E53 · `npm publish --dry-run` 污染了子进程的环境变量 · 0.9.0 发布时
+
+**现象**：`npm publish --dry-run` 报
+
+    FAIL  npm pack 没产出 /tmp/tmp.xxxx/agentcss-0.9.0.tgz
+
+但同一条命令 `bash 05-audit/pack-smoke.sh` **单独跑是好的**。
+
+**根因**：`npm publish --dry-run` 把 `--dry-run` 写进了**环境变量**
+`npm_config_dry_run=true`，所有子进程继承它：
+
+    npm publish --dry-run
+      └─ prepublishOnly → npm run publish:check
+           └─ bash 05-audit/pack-smoke.sh
+                └─ npm pack …        ← 继承了 dry_run ⇒ 只打印，不产出文件
+
+⇒ `pack-smoke` 里"检查 tarball 存在"的那一条必然失败。
+
+**为什么这条特别值得记**
+
+它属于「**只在验证路径上失败**」的一类：
+
+- 真实 `npm publish` 不设这个变量 ⇒ 真跑没事
+- 只有 `--dry-run` 会撞上
+- 而 `--dry-run` 恰恰是**发布前唯一的全链路预演**
+
+结果就是：预演必红 ⇒ 人不再相信预演 ⇒ 干脆跳过预演直接发。
+**一个只在验证时失败的门禁，比没有门禁更危险** —— 它教人绕过验证。
+
+**纠正规则**
+
+1. **凡是调 `npm` / `git` / 其它会读 `npm_config_*` 的工具，进来先 `unset`
+   已知的污染变量**。`pack-smoke.sh` 现在开头 `unset npm_config_dry_run`。
+2. **验证一条命令时，要在"它将来真正被调用的那个上下文"里验证**。
+   我单独跑 `pack-smoke.sh` 是通过的，因为我在干净的 shell 里跑；
+   而它实际的调用者是 `npm run`（带着 `npm_config_dry_run`）。
+   —— 这和 E47（用安全上下文测非安全上下文）是同一个病：
+   **测的环境不等于跑的环境**。
+3. 判断方法很机械：`env | grep npm_config_` 看当前继承了哪些。
