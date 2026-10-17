@@ -62,14 +62,22 @@
   .use { color: var(--muted); font-size: 12px; }
   .sum { margin: 16px 0 10px; font-size: 15px; }
   button {
-    display: block; width: 100%; min-height: 48px; margin: 12px 0;
+    display: block; width: 100%; min-height: 48px; margin: 12px 0 0;
     font: inherit; font-weight: 600; color: var(--bg); background: var(--fg);
     border: 0; border-radius: 8px; padding: 12px;
   }
+  button.secondary { color: var(--fg); background: transparent;
+    border: 1px solid var(--line); }
+  button[disabled] { opacity: .55; }
+  .status { min-height: 1.4em; margin: 8px 0 0; font-size: 13px; color: var(--muted); }
+  .status.ok { color: var(--ok); }
+  .status.bad { color: var(--bad); }
   pre {
     background: var(--card); border: 1px solid var(--line); border-radius: 8px;
     padding: 10px; overflow: auto; font-size: 11px; line-height: 1.45;
     white-space: pre-wrap; word-break: break-all;
+    /* 兜底路径要能选中：iOS 上必须显式声明，否则长按只能选中一个词 */
+    -webkit-user-select: text; user-select: text;
   }
   .hint { color: var(--muted); font-size: 13px; }
 </style>
@@ -93,7 +101,14 @@
 
 <div class="sum" id="sum"></div>
 
-<button id="copy" type="button">复制结果（JSON）</button>
+<!-- 🔴 为什么第一个按钮是"发送"而不是"复制"
+     `navigator.clipboard` 只在**安全上下文**里存在：https、localhost、file://。
+     用手机访问 `http://192.168.x.x:8099` **不是**安全上下文 ⇒ 那个 API 根本不存在，
+     只能退回 document.execCommand（老接口），再不行就真的复制不了。
+     ⇒ 主路径改成同源 POST，把结果送回跑服务的电脑；剪贴板降为备用。 -->
+<button id="send" type="button">① 发送到电脑（推荐）</button>
+<button id="copy" type="button" class="secondary">② 复制结果（JSON）</button>
+<div class="status" id="status" role="status" aria-live="polite"></div>
 <pre id="out">…</pre>
 <p class="hint">
   ⚠️ 「声明」= <code>CSS.supports()</code> 的回答；「实测」= 真的建了元素量出来的。
@@ -265,21 +280,106 @@
     missing: missing,
     items: results
   };
-  document.getElementById('out').textContent = JSON.stringify(payload, null, 2);
+  var TXT = JSON.stringify(payload, null, 2);
+  document.getElementById('out').textContent = TXT;
+
+  var STATUS = document.getElementById('status');
+  function setStatus(msg, kind) {
+    STATUS.textContent = msg;
+    STATUS.className = 'status' + (kind ? ' ' + kind : '');
+  }
+
+  /* ---------------------------------------------------------------- 主路径
+   * 同源 POST：把结果直接送回跑服务的电脑。
+   * 不需要剪贴板、不需要安全上下文、不需要用户切 App 粘贴。
+   * ⚠️ 服务不支持 POST（比如直接用 `python -m http.server`）或页面是 file:// 打开时
+   *    会失败 —— 失败必须给出**可操作**的下一步，不能只说"失败了"。
+   */
+  document.getElementById('send').addEventListener('click', function () {
+    var btn = this;
+    btn.disabled = true;
+    setStatus('正在发送…');
+    fetch('/report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: TXT
+    }).then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.text();
+    }).then(function () {
+      btn.textContent = '✓ 已发送';
+      setStatus('✓ 电脑已收到，回聊天里说一声即可', 'ok');
+    }).catch(function (e) {
+      btn.disabled = false;
+      setStatus('发送失败（' + (e && e.message ? e.message : e) +
+        '）—— 多半是页面用 file:// 打开，或服务不支持 POST。' +
+        '请改用下面的「② 复制结果」。', 'bad');
+    });
+  });
+
+  /* ---------------------------------------------------------------- 备用路径
+   * 三级兜底，每一级都要真的能用（这是被实测打回来过一次的地方）：
+   *   ① navigator.clipboard  —— 只在 https / localhost / file:// 存在
+   *   ② document.execCommand —— 老接口，非安全上下文下仍然可用
+   *   ③ 全选可见文本         —— 前两级都不行时，**替他把文本选中**，
+   *                             而不是丢一句"请手动长按"（长按只会选中一个词）
+   */
+  function copyText(text, cb) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () {
+        cb(true, 'clipboard');
+      }, function () { legacy(); });
+      return;
+    }
+    legacy();
+
+    function legacy() {
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;' +
+          'opacity:0;padding:0;border:0;';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        ta.setSelectionRange(0, text.length);   // iOS 上必须显式给范围
+        var ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        if (ok) { cb(true, 'execCommand'); return; }
+      } catch (e) { /* 落到第三级 */ }
+      selectAllOutput();
+      cb(false, 'manual');
+    }
+  }
+
+  function selectAllOutput() {
+    try {
+      var pre = document.getElementById('out');
+      var range = document.createRange();
+      range.selectNodeContents(pre);
+      var sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      if (pre.scrollIntoView) pre.scrollIntoView({ block: 'center' });
+    } catch (e) { /* 选不上就只剩人工操作，下面提示里会说清楚 */ }
+  }
 
   document.getElementById('copy').addEventListener('click', function () {
-    var txt = JSON.stringify(payload, null, 2);
     var btn = this;
-    function done(okCopy) {
-      btn.textContent = okCopy ? '已复制 ✓' : '复制失败，请手动长按上面的文本';
-      setTimeout(function () { btn.textContent = '复制结果（JSON）'; }, 2000);
-    }
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(txt).then(function () { done(true); },
-        function () { done(false); });
-    } else {
-      done(false);
-    }
+    copyText(TXT, function (ok, how) {
+      if (ok) {
+        btn.textContent = how === 'clipboard' ? '已复制 ✓' : '已复制 ✓（兼容模式）';
+        setStatus('已复制，可以直接粘贴到聊天里', 'ok');
+        setTimeout(function () { btn.textContent = '② 复制结果（JSON）'; }, 2200);
+      } else {
+        // 🔴 关键：失败时**已经帮你全选了**，写清楚"已选中"
+        btn.textContent = '已全选，长按复制';
+        setStatus('这个浏览器不允许脚本写剪贴板。已经帮你把结果**全部选中**了 —— ' +
+          '在下面的灰框里长按，选「拷贝/复制」即可。', 'bad');
+        setTimeout(function () { btn.textContent = '② 复制结果（JSON）'; }, 4000);
+      }
+    });
   });
 
   function esc(s) {

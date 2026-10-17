@@ -21,7 +21,7 @@ webview-probe-gate.py — 真机能力探针与基线表的**一致性**门禁�
    它保证的是：**"测什么"这件事与源码不会漂移**，以及**"记了什么"必须能被检验**。
 
 ============================================================================
-判据（五条）
+判据（六条）
 ----------------------------------------------------------------------------
   ① 探针页自包含：不引任何外部资源（真机上没有网络是常态，
      更要紧的是：引了外部资源就等于"测的是另一份文件"）
@@ -35,6 +35,10 @@ webview-probe-gate.py — 真机能力探针与基线表的**一致性**门禁�
      （"iPhone 15"这种简称不是 UA —— 没有 UA 的基线无法复核）
   ⑤ 零视野守卫：③ 的源码扫描如果一条特征都没命中 ⇒ 红
      （扫 0 个文件却判 PASS，是本库最熟悉的那种假绿）
+  ⑥ 回传路径必须在**非安全上下文**下也能用：用了 `navigator.clipboard`
+     就必须同时有 `document.execCommand('copy')` 或同源 `fetch` 退路
+     —— 手机用 `http://<局域网 IP>` 打开时 `navigator.clipboard` 是 undefined
+     （这一条是被人用手机实测打回来之后加的，见文件内注释）
 
 ============================================================================
 用法
@@ -232,8 +236,59 @@ def check_drift(html):
     return problems
 
 
+def check_share_path(html):
+    """⑥ 回传路径必须在**非安全上下文**下也能用。
+
+    🔴 这条是被人用手机实测打回来才加的（0.8.9 之后）。
+       探针页原来的"复制结果"只调 `navigator.clipboard.writeText`，
+       而那个 API **只在安全上下文存在**：https / localhost / file://。
+       手机访问 `http://192.168.x.x:8099` 不是安全上下文 ⇒
+       `navigator.clipboard` 是 `undefined` ⇒ 按钮必然弹"复制失败"。
+
+       而我自己的验证用的是 `file://` 和 `http://127.0.0.1` —— **两个都是安全上下文**，
+       于是测出来"复制成功"，缺陷被量具的前提掩盖了。
+
+    ⇒ 判据：只要用了 `navigator.clipboard`，就必须同时存在一条不依赖安全上下文的退路
+       （`document.execCommand('copy')` 或同源 `fetch`）。否则就是"只在自己的测试环境里能用"。
+    """
+    problems = []
+    if 'navigator.clipboard' not in html:
+        return problems
+    has_exec = 'document.execCommand(' in html
+    has_post = "fetch('/report'" in html or 'fetch("/report"' in html
+    if not (has_exec or has_post):
+        problems.append(
+            '⑥ 页面只用 `navigator.clipboard` 写剪贴板 —— 该 API **只在安全上下文**'
+            '（https / localhost / file://）存在。手机用 `http://<局域网 IP>` 打开时'
+            '它是 undefined，按钮必然失败。'
+            '必须补一条退路：`document.execCommand(\'copy\')` 或同源 `fetch(\'/report\')`。')
+    return problems
+
+
 # ---------------------------------------------------------------- 判据 ④
 COLS = ['设备 / 系统', '入口', 'UA', '结果', '缺失能力', '测试日期', '记录人', '状态']
+
+
+def add_table_row(md, row):
+    """把 `row` 插到基线表**分隔行之后**（即数据区第一行）。
+
+    反向控制要用它造坏样本 —— 不能依赖"表里有一个全空模板行"：
+    那一行在第一次录入真机数据时就被替换掉了，`str.replace` 会**静默不生效**，
+    于是"期望红 ⇒ 实际绿"，而真正的原因藏在"样本没改到"里。
+    """
+    lines = md.split('\n')
+    for i, l in enumerate(lines):
+        cells = [c.strip() for c in l.strip().strip('|').split('|')]
+        if cells and cells[0] == COLS[0]:
+            sep = i + 1
+            if sep < len(lines) and set(''.join(
+                    [c.strip() for c in lines[sep].strip().strip('|').split('|')]
+            )) <= set('-: '):
+                lines.insert(sep + 1, row)
+            else:
+                lines.insert(sep, row)
+            return '\n'.join(lines)
+    return md
 
 
 def data_rows(md):
@@ -314,7 +369,7 @@ def run(probe=None, baseline=None):
     html = read(probe)
     md = read(baseline)
     return (check_self_contained(html) + check_items(html)
-            + check_drift(html) + check_baseline(md))
+            + check_drift(html) + check_share_path(html) + check_baseline(md))
 
 
 # ---------------------------------------------------------------- 反向控制
@@ -375,24 +430,41 @@ def selftest():
     chk('探针多了一条源码不用的能力', extra, base_md, True, '③')
 
     # ④ 基线表填了占位符
-    row_bad = base_md.replace(
-        '|  |  |  |  |  |  |  |  |',
+    #
+    # 🔴 坏样本必须**自己造位置**，不能指望"表里有一个全空模板行"。
+    #    第一版就是 replace('|  |  |  |  |  |  |  |  |', ...) —— 而那一行
+    #    在第一次录入真机数据时就被替换掉了 ⇒ replace 静默不生效 ⇒
+    #    "期望红 ⇒ 实际绿"。自检的前提不能被**数据**决定。
+    row_bad = add_table_row(
+        base_md,
         '| iPhone | Safari | TBD | 15/15 | 无 | 待填 | 我 | VERIFIED |')
     chk('基线表填了占位符', base_html, row_bad, True, '④')
 
     # ④ VERIFIED 但 UA 是简称
-    row_ua = base_md.replace(
-        '|  |  |  |  |  |  |  |  |',
+    row_ua = add_table_row(
+        base_md,
         '| iPhone 15 | Safari | iPhone 15 | 15/15 | 无 | 2000-01-01 | 我 | VERIFIED |')
     chk('VERIFIED 但 UA 是简称', base_html, row_ua, True, '④')
 
     # ④ 合法的一行（完整 UA）必须绿
     ua = ('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) '
           'AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1')
-    row_ok = base_md.replace(
-        '|  |  |  |  |  |  |  |  |',
+    row_ok = add_table_row(
+        base_md,
         '| iPhone 15 | Safari | %s | 15/15 | 无 | 2000-01-01 | 我 | VERIFIED |' % ua)
     chk('合法的一行（完整 UA）', base_html, row_ok, False)
+
+    # ⑥ 只依赖 navigator.clipboard（手机用局域网地址打开时它就是 undefined）⇒ 红
+    #    样本必须把**调用形式**也改掉：判据查的是 `document.execCommand(`，
+    #    如果只把标识符改名，子串仍然命中 ⇒ 自检会"期望红实际绿"而看不出原因。
+    no_fb = base_html.replace('document.execCommand(',
+                              'document.execCommandX(').replace(
+                                  "fetch('/report'", "fetchX('/report'")
+    if no_fb == base_html:
+        print('  [FAIL] 自检样本失效：找不到 execCommand / fetch 调用')
+        ok = False
+    else:
+        chk('复制只靠 navigator.clipboard', no_fb, base_md, True, '⑥')
 
     # ⑤ 源码目录全空 ⇒ 必须红而不是绿
     saved = list(SRC_DIRS)
@@ -403,7 +475,7 @@ def selftest():
         SRC_DIRS[:] = saved
 
     print('')
-    print('  ' + ('反向控制全部通过 ⇒ 五条判据都有牙' if ok
+    print('  ' + ('反向控制全部通过 ⇒ 六条判据都有牙' if ok
                   else '🔴 有反向控制未通过'))
     return 0 if ok else 1
 

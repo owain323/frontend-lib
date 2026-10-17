@@ -107,9 +107,9 @@
 
 | # | 事项 | 判据 |
 |---|---|---|
-| W10 | 真机 WebView 验证（iOS WKWebView + Android WebView 各一个） | 🟡 **产物已就绪，真机数据仍缺**：自包含探针 `10-review/webview/capability-probe.html`（15 项能力，其中 4 项是**行为实测**）+ `webview-probe-gate.py`（探测清单与源码用法**双向**一致、基线表不许占位符、VERIFIED 必须带完整 UA）+ `webview-probe-check.js`（探针在 Chromium 里真跑，防"探测器集体失灵"）。缺的只剩**有人拿手机跑一次** |
+| W10 | 真机 WebView 验证（iOS WKWebView + Android WebView 各一个） | 🟡 **产物已就绪，真机数据仍缺**：自包含探针 `10-review/webview/capability-probe.html`（15 项能力，其中 4 项是**行为实测**）+ `webview-probe-gate.py`（探测清单与源码用法**双向**一致、基线表不许占位符、VERIFIED 必须带完整 UA）+ `webview-probe-check.js`（探针在 Chromium 里真跑，防"探测器集体失灵"）。**iOS Safari 已于真机采集：15 / 15 全部支持**；Android 与 App 内置 WebView 仍缺 |
 | ~~W11~~ | ~~删掉失效的 api-snapshot（被 W3 取代后）~~ | ✅ **已完成**（0.8.9 核对）：`api-snapshot.py` 已不在仓库里，只剩三处**历史说明**（`api-contract-gate.py` / `api-contract.js` / `tsc-gate.py` 的文件头，讲的是它为什么被取代 —— 那些要留着）。⚠️ 这一项在表里躺了好几轮没人划掉，正是 `ERRORS.md` E13「文档里的待办没人回来划」的又一次 |
-| W12 | **`@layer` 的 WebView 基线实测** | 🟡 **同 W10**：探测项里已含 `@layer`，而且用的是**实测**（塞一张带 `@layer` 的样式表，看 CSSOM 里还剩几条规则 + 层内颜色是否真的应用），不是 `CSS.supports` 那种"问浏览器你支持吗"的声明式——后者在多数引擎里根本没有 `at-rule` 这种问法。`docs/LAYER-BASELINE.md` 已有判据与表，但 **0 行 VERIFIED**。⚠️ 顺带收紧了一处：`cascade-layer-gate` 原来只判"文档存在"，我一建这个文件它就绿了 ⇒ 判据已改成**至少一行 VERIFIED**，空文档骗不绿 |
+| W12 | **`@layer` 的 WebView 基线实测** | 🟡 **同 W10**：探测项里已含 `@layer`，而且用的是**实测**（塞一张带 `@layer` 的样式表，看 CSSOM 里还剩几条规则 + 层内颜色是否真的应用），不是 `CSS.supports` 那种"问浏览器你支持吗"的声明式——后者在多数引擎里根本没有 `at-rule` 这种问法。`docs/LAYER-BASELINE.md` 已有判据与表；**iOS Safari 实测 15 / 15、`@layer` 实测通过**，但 **Android / App 内置 WebView 仍 0 行** ⇒ 按判据**仍不能无条件切层**。⚠️ 顺带收紧了一处：`cascade-layer-gate` 原来只判"文档存在"，我一建这个文件它就绿了 ⇒ 判据已改成**至少一行 VERIFIED**，空文档骗不绿 |
 | W13 | Compatibility Benchmark 的**真模型实测** | ✅ 工具链已封闭：记录 v2 格式 / 八条判据 / `--check-records` / 参考记录必须满分（管线自洽）。❌ **真模型跑批仍是 0 条** —— 缺的是 API 访问权，不是代码。状态是 `UNVERIFIED`，不是 `PASS` |
 
 ### 🟡 P2·决策项 —— 已论证，**不要擅自实施**
