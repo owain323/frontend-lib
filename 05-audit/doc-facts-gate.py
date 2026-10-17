@@ -71,6 +71,7 @@ import sys
 # （E31：同一个判定不要写两遍；实测它俩曾经各写一份正则并因此漂移）
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _changelog                                    # noqa: E402
+import _bytes                                        # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 COMPONENT_DIRS = ('02-primitives', '03-patterns', '04-recipes', '09-assets')
@@ -197,7 +198,11 @@ def real_css_size():
                     continue
                 p = os.path.join(dp, f)
                 try:
-                    data = io.open(p, 'rb').read()
+                    # 🔴 归一化读取（0.8.9 · D4 第①步）：
+                    #   这里量出来的数字会写进 README（"全库 CSS X KB 原始里
+                    #   Y KB 是注释"）。用磁盘字节的话，同一份内容在行尾不同的
+                    #   机器上会得出不同数字 ⇒ 那条判据与那条对外声称都绑定了机器。
+                    data = _bytes.read_norm(p)
                 except OSError:
                     continue
                 n_files += 1

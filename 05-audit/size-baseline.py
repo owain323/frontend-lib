@@ -34,6 +34,10 @@ import io
 import json
 import gzip
 
+# 按**内容**读字节（行尾无关）—— 与 dist / doc-facts 共用同一份（决策项 D4 第①步）
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _bytes                                          # noqa: E402
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASELINE = os.path.join(ROOT, '05-audit', 'size-baseline.json')
 
@@ -62,7 +66,12 @@ def collect():
                 p = os.path.join(dirpath, f)
                 rel = os.path.relpath(p, ROOT).replace(os.sep, '/')
                 try:
-                    raw = open(p, 'rb').read()
+                    # 🔴 归一化读取（0.8.9 · D4 第①步）：
+                    #   原来 `open(p,'rb').read()` 量的是**磁盘字节**，
+                    #   而工作区行尾是混合的（实测 300 CRLF / 80 LF）
+                    #   ⇒ 这份基线一旦录下就绑定了这台机器：
+                    #     别人 clone 出来（行尾不同）字节数就变 ⇒ 假红。
+                    raw = _bytes.read_norm(p)
                 except Exception:
                     continue
                 out[rel] = {
