@@ -37,6 +37,15 @@ echo "  === 打包实装冒烟（$NAME@$VER）==="
 echo ""
 
 # ---------- 1. 打包 ----------
+# 🔴 必须清掉 `npm_config_dry_run`（0.9.0 发布时才发现）：
+#   `npm publish --dry-run` 会把 `npm_config_dry_run=true` 写进**环境变量**，
+#   子进程全部继承。于是本脚本里的 `npm pack` 也变成 dry-run ⇒ **不产出 tarball**
+#   ⇒ 这里报 "npm pack 没产出"。
+#
+#   后果比"一条误报"严重：`npm publish --dry-run` 是**发布前唯一的全链路预演**，
+#   它红了就没人敢发；而真实 `npm publish` 不会设这个变量，所以问题只在预演里出现
+#   —— 一个"只在验证时失败、真跑时没事"的门禁，比没有门禁更容易误导人。
+unset npm_config_dry_run
 (cd "$REPO_ROOT" && npm pack --pack-destination "$WORK" >/dev/null 2>&1)
 if [ ! -f "$TARBALL" ]; then
   echo "  FAIL  npm pack 没产出 $TARBALL"
