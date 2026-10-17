@@ -1,0 +1,511 @@
+{
+  "schemaVersion": "2.0.0",
+  "model": "参考解法（不是模型）",
+  "modelVersion": "benchmark/run.js 内联夹具",
+  "recordedAt": "1970-01-01",
+  "attemptsPerTask": 3,
+  "_note": "由 --write-reference 从 TASKS 生成。TASKS 的参考补丁一变就重跑；--check-records 会比对补丁并要求和为满分。recordedAt 固定为 1970-01-01：本文件不承载时间信息（重生成必须是**逐字节**相同的，否则每次生成都产生假 diff）。",
+  "runs": [
+    {
+      "task": "T01",
+      "attempt": 1,
+      "patch": {
+        "ops": [
+          {
+            "op": "update",
+            "id": "a",
+            "set": {
+              "text": "改过了"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "task": "T01",
+      "attempt": 2,
+      "patch": {
+        "ops": [
+          {
+            "op": "update",
+            "id": "a",
+            "set": {
+              "text": "改过了"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "task": "T01",
+      "attempt": 3,
+      "patch": {
+        "ops": [
+          {
+            "op": "update",
+            "id": "a",
+            "set": {
+              "text": "改过了"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "task": "T02",
+      "attempt": 1,
+      "patch": {
+        "ops": [
+          {
+            "op": "update",
+            "id": "h",
+            "set": {
+              "props": {
+                "role": "title",
+                "size": "lg"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "task": "T02",
+      "attempt": 2,
+      "patch": {
+        "ops": [
+          {
+            "op": "update",
+            "id": "h",
+            "set": {
+              "props": {
+                "role": "title",
+                "size": "lg"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "task": "T02",
+      "attempt": 3,
+      "patch": {
+        "ops": [
+          {
+            "op": "update",
+            "id": "h",
+            "set": {
+              "props": {
+                "role": "title",
+                "size": "lg"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "task": "T03",
+      "attempt": 1,
+      "patch": {
+        "ops": [
+          {
+            "op": "move",
+            "id": "x",
+            "parent": "b",
+            "index": 0
+          }
+        ]
+      }
+    },
+    {
+      "task": "T03",
+      "attempt": 2,
+      "patch": {
+        "ops": [
+          {
+            "op": "move",
+            "id": "x",
+            "parent": "b",
+            "index": 0
+          }
+        ]
+      }
+    },
+    {
+      "task": "T03",
+      "attempt": 3,
+      "patch": {
+        "ops": [
+          {
+            "op": "move",
+            "id": "x",
+            "parent": "b",
+            "index": 0
+          }
+        ]
+      }
+    },
+    {
+      "task": "T04",
+      "attempt": 1,
+      "patch": {
+        "ops": [
+          {
+            "op": "delete",
+            "id": "t"
+          }
+        ]
+      }
+    },
+    {
+      "task": "T04",
+      "attempt": 2,
+      "patch": {
+        "ops": [
+          {
+            "op": "delete",
+            "id": "t"
+          }
+        ]
+      }
+    },
+    {
+      "task": "T04",
+      "attempt": 3,
+      "patch": {
+        "ops": [
+          {
+            "op": "delete",
+            "id": "t"
+          }
+        ]
+      }
+    },
+    {
+      "task": "T05",
+      "attempt": 1,
+      "patch": {
+        "ops": [
+          {
+            "op": "update",
+            "id": "c",
+            "set": {
+              "props": {
+                "theme": "dark"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "task": "T05",
+      "attempt": 2,
+      "patch": {
+        "ops": [
+          {
+            "op": "update",
+            "id": "c",
+            "set": {
+              "props": {
+                "theme": "dark"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "task": "T05",
+      "attempt": 3,
+      "patch": {
+        "ops": [
+          {
+            "op": "update",
+            "id": "c",
+            "set": {
+              "props": {
+                "theme": "dark"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "task": "T06",
+      "attempt": 1,
+      "patch": {
+        "ops": [
+          {
+            "op": "create",
+            "node": {
+              "id": "n",
+              "kind": "text",
+              "text": "新"
+            },
+            "parent": "w",
+            "index": 0
+          }
+        ]
+      }
+    },
+    {
+      "task": "T06",
+      "attempt": 2,
+      "patch": {
+        "ops": [
+          {
+            "op": "create",
+            "node": {
+              "id": "n",
+              "kind": "text",
+              "text": "新"
+            },
+            "parent": "w",
+            "index": 0
+          }
+        ]
+      }
+    },
+    {
+      "task": "T06",
+      "attempt": 3,
+      "patch": {
+        "ops": [
+          {
+            "op": "create",
+            "node": {
+              "id": "n",
+              "kind": "text",
+              "text": "新"
+            },
+            "parent": "w",
+            "index": 0
+          }
+        ]
+      }
+    },
+    {
+      "task": "T07",
+      "attempt": 1,
+      "patch": {
+        "ops": [
+          {
+            "op": "update",
+            "id": "t1",
+            "set": {
+              "text": "改1"
+            }
+          },
+          {
+            "op": "update",
+            "id": "t2",
+            "set": {
+              "text": "改2"
+            }
+          },
+          {
+            "op": "update",
+            "id": "t3",
+            "set": {
+              "text": "改3"
+            }
+          },
+          {
+            "op": "update",
+            "id": "t4",
+            "set": {
+              "text": "改4"
+            }
+          },
+          {
+            "op": "update",
+            "id": "t5",
+            "set": {
+              "text": "改5"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "task": "T07",
+      "attempt": 2,
+      "patch": {
+        "ops": [
+          {
+            "op": "update",
+            "id": "t1",
+            "set": {
+              "text": "改1"
+            }
+          },
+          {
+            "op": "update",
+            "id": "t2",
+            "set": {
+              "text": "改2"
+            }
+          },
+          {
+            "op": "update",
+            "id": "t3",
+            "set": {
+              "text": "改3"
+            }
+          },
+          {
+            "op": "update",
+            "id": "t4",
+            "set": {
+              "text": "改4"
+            }
+          },
+          {
+            "op": "update",
+            "id": "t5",
+            "set": {
+              "text": "改5"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "task": "T07",
+      "attempt": 3,
+      "patch": {
+        "ops": [
+          {
+            "op": "update",
+            "id": "t1",
+            "set": {
+              "text": "改1"
+            }
+          },
+          {
+            "op": "update",
+            "id": "t2",
+            "set": {
+              "text": "改2"
+            }
+          },
+          {
+            "op": "update",
+            "id": "t3",
+            "set": {
+              "text": "改3"
+            }
+          },
+          {
+            "op": "update",
+            "id": "t4",
+            "set": {
+              "text": "改4"
+            }
+          },
+          {
+            "op": "update",
+            "id": "t5",
+            "set": {
+              "text": "改5"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "task": "T08",
+      "attempt": 1,
+      "patch": {
+        "ops": [
+          {
+            "op": "replace",
+            "id": "n",
+            "node": {
+              "id": "n",
+              "kind": "fx-stable"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "task": "T08",
+      "attempt": 2,
+      "patch": {
+        "ops": [
+          {
+            "op": "replace",
+            "id": "n",
+            "node": {
+              "id": "n",
+              "kind": "fx-stable"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "task": "T08",
+      "attempt": 3,
+      "patch": {
+        "ops": [
+          {
+            "op": "replace",
+            "id": "n",
+            "node": {
+              "id": "n",
+              "kind": "fx-stable"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "task": "T09",
+      "attempt": 1,
+      "patch": {
+        "ops": []
+      }
+    },
+    {
+      "task": "T09",
+      "attempt": 2,
+      "patch": {
+        "ops": []
+      }
+    },
+    {
+      "task": "T09",
+      "attempt": 3,
+      "patch": {
+        "ops": []
+      }
+    },
+    {
+      "task": "T10",
+      "attempt": 1,
+      "patch": {
+        "ops": []
+      }
+    },
+    {
+      "task": "T10",
+      "attempt": 2,
+      "patch": {
+        "ops": []
+      }
+    },
+    {
+      "task": "T10",
+      "attempt": 3,
+      "patch": {
+        "ops": []
+      }
+    }
+  ]
+}

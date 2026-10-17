@@ -227,6 +227,14 @@ run "engine"     node 05-audit/engine-gate.js
 run "invariant"  $PY 05-audit/invariant-gate.py
 # 兼容性 Benchmark：参考解法的十类编辑意图必须全部成立
 run "benchmark"  node benchmark/run.js
+# 🔴 跑批记录（W13）：`--record` 指向不存在的文件时，旧版只打一行 WARN 就 RC=0
+#   —— 那等于"声称跑了批，其实没跑"。现在：文件不存在 ⇒ RC=2。
+#   另外逐份校验记录形状（八条判据），并让**参考解法记录**必须拿满分：
+#   它验证的是"记录 → 评分"这条管线本身；管线不自洽，任何模型分数都不可信。
+#   ⚠️ 零记录时本项输出 UNVERIFIED（RC=0）—— 它说明"没有坏记录"，
+#      不说明"模型已验证"。这个区别写在输出里，不许靠读者猜。
+run "benchmark-records" node benchmark/run.js --check-records
+run "benchmark-records-rev" node benchmark/run.js --selftest
 # 核心不得混入呈现形态（slide/deck）语义 —— PPT 的事在 adapters/presentation/
 run "core-boundary" $PY 05-audit/core-boundary-gate.py
 # 呈现层自己的五条判据必须**真的会红**（0.4.2 补：它们此前一次都没被执行过）

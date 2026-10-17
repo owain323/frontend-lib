@@ -68,3 +68,8 @@ node_modules/
 *.__reverse.bak
 *.bak
 *.orig
+
+# --- Benchmark 的两类文件，待遇不同 ---
+#   models/  **入库**：它是证据（别人凭什么信"跑过 20 次"）。
+#   results/ 不入库：它是 models/ 的重算产物，进库只会产生"改了记录忘了重算"的分叉。
+benchmark/results/
