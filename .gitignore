@@ -40,6 +40,9 @@ node_modules/
 # 基线要进库（它是判据），current / diff 是每次跑出来的中间图，不进。
 10-review/shots/_current/
 10-review/shots/_diff/
+# 暗色那两套同理（`_baseline-dark/` 是判据，必须入库）
+10-review/shots/_current-dark/
+10-review/shots/_diff-dark/
 
 # --- 一次性验证截图（7MB+ 纯本地留档，对使用者没有价值）---
 #    需要时重跑对应门禁即可重新生成。
@@ -49,6 +52,11 @@ node_modules/
 10-review/progress-*.png
 10-review/shots/*.png
 !10-review/shots/_baseline/
+# 暗色基线同理要入库。⚠️ 必须显式写：上一条 `10-review/shots/*.png` 在
+#   **fnmatch 语义**下会跨目录匹配（`*` 能吃 `/`），不写这条否定规则，
+#   `_walk_all()` 的兜底视野就会漏掉整个 `_baseline-dark/`
+#   —— 而 git 的规则不跨目录 ⇒ 两种视野不一致 ⇒ gate-fixture 红。
+!10-review/shots/_baseline-dark/
 10-review/ios/shot-*.png
 
 # 引擎证据是**生成物**：每台机器上跑出来的引擎/版本都不一样，

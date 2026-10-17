@@ -15,6 +15,17 @@
 ## [Unreleased]
 
 ### Added
+- **`visual-dark`：暗色视觉回归**。此前 `visual` 34 页逐像素**只拍浅色** ——
+  暗色下"整页看不清 / 某块浮层糊掉"这类回归**没有任何门禁能抓**
+  （`token-resolved` 覆盖的是令牌解析值，覆盖不到阴影叠加、渐变、伪元素、
+  图片资源在暗色下的实际观感）。现在两套基线并列，暗色走 `--scheme dark`。
+  ⚠️ 截图时**两条暗色路径一起设**：`emulateMediaFeatures(prefers-color-scheme: dark)`
+  走 `@media` 那段，`data-theme="dark"` 走 `[data-theme]` 那段 ——
+  它们是两份代码，只设一个等于只测一半。
+  反向控制：把暗色 `--paper` 由 `#14171A` 改到 `#2F353C` ⇒ 暗色 34 页全红、浅色仍 34/34 绿。
+- 视觉门禁的解释器选择改为「`$PY` 没装 Pillow 时可用 `PY_PIL=<解释器>` 指定」，
+  并在输出里**写明**是哪个解释器在跑 —— 否则"这道门禁跳过了"只能靠猜。
+
 - **`05-audit/token-resolved-gate.js` —— 暗色的「解析值」门禁**（W19）。
   此前明暗有四道判据（`theme-sync` 比文本、`theme-css` 比渲染但只探 2 个令牌、
   `token-tree` 比声明文本），仍漏一类：

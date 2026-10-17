@@ -539,10 +539,26 @@ run "perf"         $PY 05-audit/perf-gate.py
 run "coverage"    $PY 05-audit/coverage-gate.py
 # ---------- 视觉回归（ G2 · 最慢，放最后）----------
 # ⚠️ 需要 Pillow；没装就跳过（不 fail-closed，理由见脚本头注释）
-if $PY -c "from PIL import Image" 2>/dev/null; then
-  run "visual"    $PY 05-audit/shot-baseline.py --check
+#
+# 🔴 明暗**两套**基线，两套都要跑（0.9.0 加）：
+#   在此之前只拍浅色 ⇒ 暗色下"整页看不清"这类回归**没有任何门禁能抓**，
+#   而 D1/D3/D5 三项改造都要动 CSS。
+#   浅色仍是默认（目录不带后缀），暗色走 `--scheme dark`。
+#
+# ⚠️ 解释器选择：`$PY` 没装 Pillow 时，允许用 `PY_PIL` 显式指定一个装了的：
+#      PY_PIL=/path/to/python bash 05-audit/check-all.sh
+#   这样"哪台机器上能跑视觉回归"是**写明**的，而不是靠碰运气。
+PY_VIS=""
+for _c in "${PY_PIL:-}" "$PY"; do
+  [ -z "$_c" ] && continue
+  if "$_c" -c "from PIL import Image" 2>/dev/null; then PY_VIS="$_c"; break; fi
+done
+if [ -n "$PY_VIS" ]; then
+  run "visual"      $PY_VIS 05-audit/shot-baseline.py --check
+  run "visual-dark" $PY_VIS 05-audit/shot-baseline.py --check --scheme dark
 else
-  skip "visual" "缺 Pillow，装了才会跑"
+  skip "visual" "缺 Pillow，装了才会跑（可用 PY_PIL=<解释器> 指定）"
+  skip "visual-dark" "同上（暗色基线需要 Pillow）"
 fi
 
 echo ""
