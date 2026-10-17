@@ -102,12 +102,19 @@
 - 门禁 **143 → 149 道**（`token-resolved` / `webview-probe` / `webview-probe-run` /
   `benchmark-records` / `benchmark-records-rev` / `dist-js-parity-rev`）。
 - `benchmark/results/` 不入库：`models/` 是证据，`results/` 是它的重算产物。
-- **`docs/LAYER-BASELINE.md` 已有 2 行真机数据**：iOS Safari（15/15）、
-  Android 微信 XWEB（14/15）。**切层判据被数据纠正了一次** ——
-  原来把"缺任何一项库在用的能力"都算成"不能切层"，于是微信缺一个
-  `scrollbar-width` 就会被判死，而那个缺失与层叠毫无关系（且本库有
-  `::-webkit-scrollbar` 私有回退）。现拆成「阻塞切层（只有 `@layer` 本身）」
-  与「不阻塞但需逐条判定有无回退」两类。
+- **`docs/LAYER-BASELINE.md` 已有 5 行真机数据，结论是"不能无条件切层"**：
+  iOS Safari 15/15 · iOS 微信 15/15 · iOS 企微 15/15 · Android 微信 XWEB 14/15 ·
+  **Android 百度浏览器 11/15 —— 缺 `@layer`（Chromium 97）**。
+  `@layer` 不支持时**整层规则会被丢弃**（不是"层序不对"，是"那一层的样式没了"），
+  ⇒ 只能 `@supports at-rule(@layer)` 双写，或者不切。
+  ⚠️ 基线表只回答"支不支持"，不替产品回答"值不值得为它放弃切层"。
+- 基线判据被数据纠正过一次：原来把"缺任何一项库在用的能力"都算成不能切层，
+  于是微信缺一个 `scrollbar-width` 就会被判死 —— 而那个缺失与层叠毫无关系。
+  现拆成「阻塞切层（只认 `@layer` 本身）」与「不阻塞但需逐条判定有无回退」。
+- **修正一处探针的误映射**：CAPS 表原来写 `("popover", "Popover API")`，
+  而 `popover` 在源码里命中的全是**自研类名 `.popover`**（配 `data-open`），
+  不是原生 Popover API —— 实测 grep `showPopover(` / `popover=` / `[popover]` 全无命中。
+  ⇒ 该项与"库能不能用"无关，已从 CAPS 移到 ALLOW 并写明理由。
 - 探针页的「发送到电脑」加了 `navigator.sendBeacon` 兼容通道 ——
   部分内置 WebView 对 `fetch` 有额外限制，`sendBeacon` 走另一条投递路径。
 
