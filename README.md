@@ -47,6 +47,9 @@
 ```bash
 # ① 从 git 装 —— 装出来的目录名仍是 agentcss，导入写法与将来发 npm 后完全一致
 npm install github:owain323/frontend-lib
+
+# ①b 想装**和我们验证过的那一份逐字节一致**的包（Release 里的 tarball）
+npm install https://github.com/owain323/frontend-lib/releases/download/v0.9.0/agentcss-0.9.0.tgz
 ```
 
 **② 源码复制**（不想装依赖）：把 `01-tokens/` 和需要的组件目录复制进你的项目。
