@@ -1,7 +1,7 @@
 # `@layer` 的 WebView 基线（W12）
 
-> **当前状态：部分验证（5 行），且已出现 1 个阻塞样本。**
-> 已有 5 行真机实测。**`@layer` 4 行通过、1 行不通过**：
+> **当前状态：部分验证（7 行），且已出现 1 个阻塞样本。**
+> 已有 7 行真机实测。**`@layer` 6 行通过、1 行不通过**：
 >
 > | 入口 | 结果 |
 > |---|---|
@@ -9,6 +9,8 @@
 > | Android 14 · 微信 8.0.47（XWEB / Chromium 146） | 14 / 15，缺 `scrollbar-width`（有私有回退） |
 > | iOS 26.6.2 · 微信 8.0.79（WKWebView） | 15 / 15 |
 > | iOS 18.7 · 企业微信 5.0.12（wxwork） | 15 / 15 |
+> | iPad · Safari 26.6.1（桌面版 UA） | 15 / 15 |
+> | iPhone · QQ 浏览器 20.6.6 | 15 / 15 |
 > | **Android 14 · 百度浏览器 13.51（Chromium 97）** | **11 / 15，缺 `@layer`** 🔴 |
 >
 > ⚠️ **百度浏览器那一行是决定性的**：它证明"国产 App 内置浏览器长期停在老内核"
@@ -93,7 +95,7 @@ Android 上 Chrome ≠ 系统 WebView ≠ 各家 App 内置 WebView。**入口�
 
 | 已有 | 缺 |
 |---|---|
-| iOS Safari、iOS 微信、iOS 企业微信、Android 微信（XWEB）、Android 百度浏览器（Chromium 97） | Android 系统 WebView（Chrome）、其它 App 内置内核（抖音 / 小红书 / 支付宝…） |
+| iPhone Safari、iPad Safari、iPad 微信、iPad 企微、iPhone QQ 浏览器、Android 微信（XWEB）、Android 百度浏览器（Chromium 97） | Android 系统 WebView（Chrome）、其它 App 内置内核（抖音 / 小红书 / 支付宝…） |
 
 另有一条**方法论**上的收获，值得单独记下来：
 
@@ -113,7 +115,7 @@ Android 上 Chrome ≠ 系统 WebView ≠ 各家 App 内置 WebView。**入口�
   · 「状态」只能是 `UNVERIFIED` 或 `VERIFIED`
   · 标成 `VERIFIED` 的行，UA 必须是**从页面 JSON 里复制出来的完整 UA**（不是"iPhone 15"这种简称）
   · 「结果」列写 `支持 N / 15`，缺失项写在「缺失能力」列
-  当前 4 行（iOS Safari / iOS 微信 / iOS 企微 / Android 微信 XWEB）。**Android 系统 WebView 与其它 App 内核一行都没有 —— 那是缺口，不是"没问题"。**
+  当前 7 行（iPhone Safari / iPad 微信 / iPad 企微 / iPad Safari / iPhone QQ 浏览器 / Android 微信 XWEB / Android 百度浏览器）。**Android 系统 WebView 仍没有 —— 那是缺口，不是"没问题"。**
   「测试日期」不写死年月日：这个文件在公开仓里，写死日期等于把内部时间线留在仓库里
   （`leak-scan` 的「工作日期戳」判据就是为了这个）。日期以**提交时间**为准，精确到秒且无法伪造。
   「UA」里凡是**身份标识**（如微信的 `MMWEBID`）一律脱敏成 `<已脱敏>` ——
@@ -122,11 +124,13 @@ Android 上 Chrome ≠ 系统 WebView ≠ 各家 App 内置 WebView。**入口�
 
 | 设备 / 系统 | 入口 | UA | 结果 | 缺失能力 | 测试日期 | 记录人 | 状态 |
 |---|---|---|---|---|---|---|---|
-| iPhone（iOS 18.7，视口 430×932 @3x） | Safari（系统浏览器） | `Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.1 Mobile/15E148 Safari/604.1` | 15 / 15 | 无 | 见采集所在提交（git log） | 项目所有者（真机） | VERIFIED |
+| iPhone · Safari（UA 自述；430×932 是 iPhone 15/16 Pro Max 逻辑尺寸） | Safari（系统浏览器） | `Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.1 Mobile/15E148 Safari/604.1` | 15 / 15 | 无 | 见采集所在提交（git log） | 项目所有者（真机） | VERIFIED |
 | Android 14（视口 400×787 @2.7x） | 微信 8.0.47 内置 WebView（XWEB 内核，Chromium 146） | `Mozilla/5.0 (Linux; Android 14; PHZ110 Build/UP1A.231005.007; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/146.0.7680.178 Mobile Safari/537.36 XWEB/1460249 MMWEBSDK/20231202 MMWEBID/<已脱敏> MicroMessenger/8.0.47.2560 WeChat/arm64 Weixin NetType/WIFI Language/zh_CN ABI/arm64` | 14 / 15 | `scrollbar-width` —— **标准 API 缺失，但本库有私有回退**：`01-tokens/scrollbar.css` 同时写了 `::-webkit-scrollbar` 伪元素族，XWEB 是 Chromium 内核，私有实现仍在 ⇒ 观感可接受降级，不是缺陷 | 见采集所在提交（git log） | 项目所有者（真机） | VERIFIED |
-| iPhone（iOS 26.6.2，视口 430×834 @3x） | 微信 8.0.79 内置 WebView（WKWebView） | `Mozilla/5.0 (iPhone; CPU iPhone OS 26_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.79(0x18004f2b) NetType/WIFI Language/zh_CN` | 15 / 15 | 无 | 见采集所在提交（git log） | 项目所有者（真机） | VERIFIED |
-| iPhone（iOS 18.7，视口 430×800 @3x） | 企业微信 5.0.12 内置 WebView（wxwork） | `Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko)  Mobile/15E148 wxwork/5.0.12 MicroMessenger/7.0.1 Language/zh ColorScheme/Light wwmver/3.26.511.377` | 15 / 15 | 无 | 见采集所在提交（git log） | 项目所有者（真机） | VERIFIED |
+| iPad · 微信（**用户口述为平板**；UA 与视口均为 iPhone ⇒ iPad 上以 iPhone 兼容模式运行） | 微信 8.0.79 内置 WebView（WKWebView） | `Mozilla/5.0 (iPhone; CPU iPhone OS 26_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.79(0x18004f2b) NetType/WIFI Language/zh_CN` | 15 / 15 | 无 | 见采集所在提交（git log） | 项目所有者（真机） | VERIFIED |
+| iPad · 企业微信（**用户口述为平板**；UA 与视口均为 iPhone ⇒ 兼容模式运行） | 企业微信 5.0.12 内置 WebView（wxwork） | `Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko)  Mobile/15E148 wxwork/5.0.12 MicroMessenger/7.0.1 Language/zh ColorScheme/Light wwmver/3.26.511.377` | 15 / 15 | 无 | 见采集所在提交（git log） | 项目所有者（真机） | VERIFIED |
 | Android 14（视口 360×672 @3x） | 百度浏览器 13.51（baiduboxapp，Chromium 97 内核） | `Mozilla/5.0 (Linux; Android 14; PHZ110 Build/UP1A.231005.007; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/97.0.4692.98 Mobile Safari/537.36 T7/13.51 SP-engine/2.89.0 baiduboxapp/13.51.0.10 (Baidu; P1 14) NABar/1.0` | 11 / 15 | 🔴 **`@layer` —— 阻塞项**：Chromium 97 太老，分层不可用 ⇒ **不能无条件切层**。另缺三项，均非阻塞：`dvh`（`page.css` 先写 `100vh` 再写 `100dvh`，老内核丢后者留前者）；`scrollbar-width`（有 `::-webkit-scrollbar` 私有回退）；原生 Popover 属性（**本库未使用**，只有自研类名 `.popover`，与本库无关） | 见采集所在提交（git log） | 项目所有者（真机） | VERIFIED |
+| iPad · Safari（**用户口述为平板**；UA 是桌面版 = iPad 请求桌面网站，视口 834×1210 与 iPad Pro 11" 一致） | Safari 26.6.1（桌面版 UA） | `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.1 Safari/605.1.15` | 15 / 15 | 无 | 见采集所在提交（git log） | 项目所有者（真机） | VERIFIED |
+| iPhone · QQ 浏览器（**用户口述为手机**；视口 430×736 @3x） | QQ 浏览器 20.6.6（MQQBrowser，WKWebView） | `Mozilla/5.0 (iPhone; CPU iPhone OS 26_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 MQQBrowser/20.6.6 Mobile/15E148 Safari/604.1 QBWebViewUA/2 QBWebViewType/1 WKType/1` | 15 / 15 | 无 | 见采集所在提交（git log） | 项目所有者（真机） | VERIFIED |
 
 ---
 
