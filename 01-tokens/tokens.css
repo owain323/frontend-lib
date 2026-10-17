@@ -13,19 +13,65 @@
    ========================================================================= */
 
 :root {
+  /* ================================================================ [L1] 原始值
+     ⚠️ **这一层不是给使用者用的**，它是"配色取值"本身。
+
+     换一套品牌配色 = 只改这一块的 30 个值，L2 一行都不用动；
+     暗色段也只覆盖这块（见文件末尾的 `@media (prefers-color-scheme: dark)`）。
+
+     🔴 命名带 `--raw-` 是**刻意的**：它在告诉读代码的人
+        「别在组件里 `var(--raw-*)`」—— 组件只该用 L2 的语义名。
+        `token-audience-gate` 把这一层登记为 internal。
+
+     ℹ️ 边界（别夸大它的能力）：这是"取值层"，**不是**与语义解耦的色阶标尺
+        （gray-50 / gray-100 那种）。真正的色阶标尺需要先做一次颜色聚类与命名
+        决策，是独立的后续工程，见 `docs/ROADMAP.md` 的 D5b。
+        本层解决的是"换肤只改一处 + 暗色不可能漏"这两件事。
+     ---------------------------------------------------------------- */
+  --raw-paper:                #f6f7f8;
+  --raw-surface:              #ffffff;
+  --raw-surface-sunken:       #f1f3f5;
+  --raw-surface-raised:       #ffffff;
+  --raw-scrollbar-thumb:      #7A808A;
+  --raw-scrollbar-thumb-hov:  #6E747E;
+  --raw-text-primary:         #15181c;
+  --raw-text-secondary:       #4f555e;
+  --raw-text-tertiary:        #606770;
+  --raw-text-on-accent:       #ffffff;
+  --raw-text-on-solid:        #ffffff;
+  --raw-skeleton-bg:          #e9ecef;
+  --raw-skeleton-shimmer:     rgba(255, 255, 255, 0.72);
+  --raw-border-control:       #868b94;
+  --raw-border-decor:         #e2e5e9;
+  --raw-border-decor-str:     #c8cdd4;
+  --raw-danger:               #c0392b;
+  --raw-danger-hover:         #8f1e17;
+  --raw-scrim:                rgba(21, 24, 28, 0.4);
+  --raw-success:              #2f6b3a;
+  --raw-warning:              #8a5a00;
+  --raw-info:                 #1d5f8a;
+  --raw-danger-bg:            #fdeeec;
+  --raw-success-bg:           #eaf2e6;
+  --raw-warning-bg:           #fbf1dd;
+  --raw-info-bg:              #e8f1f8;
+  --raw-accent:               #1b4d8f;
+  --raw-switch-on:            #1b4d8f;
+  --raw-accent-hover:         #163a6d;
+  --raw-accent-soft:          #e6eef7;
+
   /* ---------------------------------------------------------------- 基底
      paper  = 页面底（冷灰白）。🔴 不能更浅：与 --surface 的对比度要 >= 1.06:1，
              否则页面看着就是纯白，"表面浮在底上"的分层完全消失。
      surface= 卡片/面板底，比纸底亮一档，靠明度差而非描边来分层
      ---------------------------------------------------------------- */
-  --paper:            #f6f7f8;
-  --surface:          #ffffff;
-  --surface-sunken:   #f1f3f5;
+  --paper:            var(--raw-paper);
+  --surface:          var(--raw-surface);
+  --surface-sunken:   var(--raw-surface-sunken);
   /* 🔴 浮层底（下拉/气泡/抽屉面板）。
      这条**原本只在暗色段定义** ⇒ 浅色下 6 个组件（combobox/popover/select/
      dropdown/tooltip/table）的 `background` 整条失效 ⇒ 实测**完全透明**。
      浅色值 = --surface：浅色抬高靠阴影（--shadow-*），暗色才靠"面更亮"。 */
-  --surface-raised:   #ffffff;
+  --surface-raised:   var(--raw-surface-raised);
 /* ============================================================================
    🔴 滚动条令牌（判据：WCAG 2.5.5 Target Size）
    ----------------------------------------------------------------------------
@@ -48,8 +94,8 @@
      不是"看着差不多"挑的：
        #7a808a 对 #ffffff 3.98:1 · 对 #f6f7f8 3.71:1  ✅
      ⚠️ 第一版我随手挑的 #B4BAC4 只有 1.82:1 ⇒ 门禁直接判不合格。 */
-  --scrollbar-thumb:     #7A808A;   /* 中性**冷**灰（非品牌色，且保持蓝调）*/
-  --scrollbar-thumb-hov: #6E747E;   /* hover 更深一档 · 4.06:1 */
+  --scrollbar-thumb:     var(--raw-scrollbar-thumb);   /* 中性**冷**灰（非品牌色，且保持蓝调）*/
+  --scrollbar-thumb-hov: var(--raw-scrollbar-thumb-hov);   /* hover 更深一档 · 4.06:1 */
   --scrollbar-radius:    5px;       /* = size/2 ⇒ 胶囊形 */
    /* 内凹区：代码块、表格头、禁用底 */
 
@@ -58,16 +104,16 @@
      全部数字由 05-audit/contrast.py 从本文件实测得出，不是手写的。
      改任何颜色后必须重跑该脚本 —— 手写注释必然漂移（已发生过）。
      ---------------------------------------------------------------- */
-  --text-primary:     #15181c; /* 16.60 纸底 / 17.81 表面 · AAA */
-  --text-secondary:   #4f555e; /* 7.01 AAA */
+  --text-primary:     var(--raw-text-primary); /* 16.60 纸底 / 17.81 表面 · AAA */
+  --text-secondary:   var(--raw-text-secondary); /* 7.01 AAA */
   /* 🔴 由 #6b7280 调深到 #606770。
      axe-core 实测发现：#6b7280 压在**语义底色**上只有 4.13:1
      （4.5 是正文门槛）—— 它只在白底上勉强过线（4.83），
      一放到 --surface-sunken / --warning-bg 等底上就不达标。
      调深后最低 4.89（压在最亮的 --surface 上），留了 0.39 余量。
      梯度仍在：primary 17.8 / secondary 7.5 / tertiary 4.9 —— 明显分层。 */
-  --text-tertiary:    #606770;   /* 5.33 纸底 / 4.89 最亮底(surface) · AA */ /* 4.51 AA */
-  --text-on-accent:   #ffffff; /* 8.38 压在 accent 上（不是压纸底）· AAA */
+  --text-tertiary:    var(--raw-text-tertiary);   /* 5.33 纸底 / 4.89 最亮底(surface) · AA */ /* 4.51 AA */
+  --text-on-accent:   var(--raw-text-on-accent); /* 8.38 压在 accent 上（不是压纸底）· AAA */
 
   /* 🔴 新增（ H9 期间由暗色门禁逼出来）：
      「实心态」组件（filled badge 等）压在**语义色实底**上的文字色。
@@ -75,12 +121,12 @@
         暗色下 --success / --danger / --warning 都**变浅**了（为在深底上更醒目），
         实心态的底色也随之变浅 ⇒ 白字压上去只有 2.72:1。
         ⇒ 需要一个**独立令牌**，让暗色能把它换成深字。 */
-  --text-on-solid:    #ffffff; /* 亮色：实底（深色语义色）⇒ 白字 */
+  --text-on-solid:    var(--raw-text-on-solid); /* 亮色：实底（深色语义色）⇒ 白字 */
   /* ---------------------------------------------------------------- 骨架屏
      🔴 新增（对齐通行组件库的基础档位）
         加载态是移动端最高频的状态；没有它，每个业务方都会自己造一个。 */
-  --skeleton-bg:       #e9ecef;   /* 骨架底色：比纸面略深一档 */
-  --skeleton-shimmer:   rgba(255, 255, 255, 0.72);  /* 微光高光 */
+  --skeleton-bg:       var(--raw-skeleton-bg);   /* 骨架底色：比纸面略深一档 */
+  --skeleton-shimmer:   var(--raw-skeleton-shimmer);  /* 微光高光 */
   --skeleton-h:         1em;       /* 单行默认高度 */
   --skeleton-size:      40px;      /* circle 默认直径 */
   --skeleton-duration:  1.4s;      /* 微光扫过周期 */
@@ -121,39 +167,39 @@
      decor   = 纯装饰分隔（卡片内线、表格行线）。WCAG 不强制。
                对它强求 3.0 会把界面做得很重很难看 —— 那是误读规范。
      ---------------------------------------------------------------- */
-  --border-control:   #868b94; /* 3.19 / 3.42 AA Large */
-  --border-decor:     #e2e5e9; /* 1.18 纯装饰，WCAG 不强制 */
-  --border-decor-str: #c8cdd4; /* 1.49 装饰，需要更强分隔时用 */
+  --border-control:   var(--raw-border-control); /* 3.19 / 3.42 AA Large */
+  --border-decor:     var(--raw-border-decor); /* 1.18 纯装饰，WCAG 不强制 */
+  --border-decor-str: var(--raw-border-decor-str); /* 1.49 装饰，需要更强分隔时用 */
 
   /* ---------------------------------------------------------------- 语义色
      全部实测 >= 5.6 AA（vs 纸底）。可当文字用，也可当底色用。
      ---------------------------------------------------------------- */
-  --danger:           #c0392b;
-  --danger-hover:     #8f1e17;   /* 危险按钮 hover：加深（浅色下加深才对）*/
-  --scrim:            rgba(21, 24, 28, 0.4);   /* 抽屉/弹窗遮罩 */ /* 5.07 AA */
-  --success:          #2f6b3a; /* 5.96 vs 纸底 · AA */
-  --warning:          #8a5a00; /* 5.53 vs 纸底 · AA */
-  --info:             #1d5f8a; /* 6.41 vs 纸底 · AA */
+  --danger:           var(--raw-danger);
+  --danger-hover:     var(--raw-danger-hover);   /* 危险按钮 hover：加深（浅色下加深才对）*/
+  --scrim:            var(--raw-scrim);   /* 抽屉/弹窗遮罩 */ /* 5.07 AA */
+  --success:          var(--raw-success); /* 5.96 vs 纸底 · AA */
+  --warning:          var(--raw-warning); /* 5.53 vs 纸底 · AA */
+  --info:             var(--raw-info); /* 6.41 vs 纸底 · AA */
 
   /* 语义色的浅底（用于提示条背景，不放正文） */
-  --danger-bg:        #fdeeec;
-  --success-bg:       #eaf2e6;
-  --warning-bg:       #fbf1dd;
-  --info-bg:          #e8f1f8;
+  --danger-bg:        var(--raw-danger-bg);
+  --success-bg:       var(--raw-success-bg);
+  --warning-bg:       var(--raw-warning-bg);
+  --info-bg:          var(--raw-info-bg);
 
   /* ---------------------------------------------------------------- 强调色
      🔴 一源原则：一个项目只选一个 accent，不要混用。
      accent 决定"可点击"的语义，混用等于取消了这层语义。
      三选一，把另外两个删掉，别全留着。
      ---------------------------------------------------------------- */
-  --accent:           #1b4d8f;
+  --accent:           var(--raw-accent);
   /* 开关开态轨道色（浅色版）：与品牌色一致；暗色下换降彩度值（见 dark 段）。
      不用 var(--accent) —— 暗色下 accent 太亮，铺满一大块会发光。
      ⚠️ 这段注释原本**缺开头**，导致 --switch-on 被浏览器当成坏声明丢掉
         （实测浅色下取值为空）。已由 token-parse-gate.py 兜住。 */
-  --switch-on:         #1b4d8f; /* 7.82 AAA */
-  --accent-hover:     #163a6d; /* 11.29 白字压上 · AAA */
-  --accent-soft:      #e6eef7;   /* focus ring / 浅底，不要拿它放正文 */
+  --switch-on:         var(--raw-switch-on); /* 7.82 AAA */
+  --accent-hover:     var(--raw-accent-hover); /* 11.29 白字压上 · AAA */
+  --accent-soft:      var(--raw-accent-soft);   /* focus ring / 浅底，不要拿它放正文 */
   /* --accent:        #0f7a6c;   薄荷绿 5.00  —— 活泼/工具类 */
   /* --accent-hover:  #0c6459;   白字 7.04 AAA */
   /* --accent-soft:   #dff1ec; */
@@ -539,41 +585,41 @@
      ⇒ 使用者点了「亮」却还是暗的（三态开关里最容易被忽略的一条路径）。
      ⇒ 强制暗由下面生成的 `[data-theme="dark"]` 段负责，两边互不干扰。 */
 :root:not([data-theme="light"]) {
-  --paper:           #14171A;
-  --surface:         #1C2024;
-  --surface-raised:  #232830;
+  --raw-paper:           #14171A;
+  --raw-surface:         #1C2024;
+  --raw-surface-raised:  #232830;
   /* 凹陷面不再更黑，改为比 paper 略浅（层级靠变亮） */
-  --surface-sunken:  #1A1D21;
+  --raw-surface-sunken:  #1A1D21;
 
   /* 🔴滚动条（暗色）—— 见 charter 12
      ⚠️ 暗色下 thumb 要比浅色**更亮**（#4A515C）才看得见；
         用浅色那档会变成"黑里有黑"。 */
-  --scrollbar-thumb:     #6E747E;   /* 对 #14171a 3.82:1 · 对 #232830 3.15:1 ✅ */
-  --scrollbar-thumb-hov: #7D828A;   /* 4.24:1 */
+  --raw-scrollbar-thumb:     #6E747E;   /* 对 #14171a 3.82:1 · 对 #232830 3.15:1 ✅ */
+  --raw-scrollbar-thumb-hov: #7D828A;   /* 4.24:1 */
 
   /* 边框 -- 冷灰，靠变亮分层 */
-  --border-decor:     #2A3038;
-  --border-decor-str: #3A424C;
-  --border-control:   #8A9099;
+  --raw-border-decor:     #2A3038;
+  --raw-border-decor-str: #3A424C;
+  --raw-border-control:   #8A9099;
 
   /* 文本 -- 冷调白，非纯白（避免 halation） */
-  --text-primary:    #E4E7EA;
-  --text-secondary:  #AEB6C0;
+  --raw-text-primary:    #E4E7EA;
+  --raw-text-secondary:  #AEB6C0;
   /* 实算 原来的 #959ba3 对 paper 只有 4.14:1 不达 AA，提到这个值 */
-  --text-tertiary:   #9BA3AD;
-  --text-on-accent:  #0D1114;
-  --text-on-solid:   #0D1114;   /* 暗色：success/danger/warning 都变浅了 ⇒ 实心态换深字 */
+  --raw-text-tertiary:   #9BA3AD;
+  --raw-text-on-accent:  #0D1114;
+  --raw-text-on-solid:   #0D1114;   /* 暗色：success/danger/warning 都变浅了 ⇒ 实心态换深字 */
   /* 暗色：底色比纸面**略浅**（深底上"更亮"才看得出是占位） */
-  --skeleton-bg:       #2E343C;   /* 亮度差 0.032（契约要求 >0.02）*/
-  --skeleton-shimmer:   rgba(255, 255, 255, 0.06);
+  --raw-skeleton-bg:       #2E343C;   /* 亮度差 0.032（契约要求 >0.02）*/
+  --raw-skeleton-shimmer:   rgba(255, 255, 255, 0.06);
 
   /* 语义色 -- 沿用原有冷调 */
-  --danger:          #E07A6E;
-  --danger-hover:    #F09A90;
-  --danger-bg:       #341D1A;
-  --success:         #6FAA7A;
-  --success-bg:      #16241A;
-  --warning:         #C99A3F;
+  --raw-danger:          #E07A6E;
+  --raw-danger-hover:    #F09A90;
+  --raw-danger-bg:       #341D1A;
+  --raw-success:         #6FAA7A;
+  --raw-success-bg:      #16241A;
+  --raw-warning:         #C99A3F;
   /* 🔴 最终定的（第二次修正）：
        「本身**淡黄色的那些框**你就改成**暖灰色**，
          **在深色模式下的暖灰色**这个就很好啊」
@@ -585,22 +631,22 @@
      ⇒ 暗色下改成**暖灰**（保留一点暖调，与浅色的淡黄呼应，
         但**不再偏红褐**，与整体的冷灰底融合）。
      ⚠️ 只改这一个令牌，**底色/表面/文本一律不动**。 */
-  --warning-bg:      #242A31;
-  --info:            #5B9BC4;
-  --info-bg:         #13242F;
+  --raw-warning-bg:      #242A31;
+  --raw-info:            #5B9BC4;
+  --raw-info-bg:         #13242F;
 
   /* 品牌色 -- 沿用原有淡蓝 */
-  --accent:          #7AA9DE;
+  --raw-accent:          #7AA9DE;
   /* 🔴 开关开态的轨道色 -- 暗色版
      🔴 **降彩度**：#7AA9DE 太亮，铺满一大块会发光。
      实测：滑块是纯白 #FFF，轨道若也接近白 ⇒ 对比不足、边界糊。
      ⇒ 轨道取**中深蓝**（#3E6EA8 族），与白滑块有清晰对比，
         在 #1C2024 的深底上又不刺眼。 */
-  --switch-on:       #3E6EA8;
-  --accent-hover:    #8FB8E6;
-  --accent-soft:     #1C2C3D;
+  --raw-switch-on:       #3E6EA8;
+  --raw-accent-hover:    #8FB8E6;
+  --raw-accent-soft:     #1C2C3D;
 
-  --scrim:           rgba(0, 0, 0, 0.62);
+  --raw-scrim:           rgba(0, 0, 0, 0.62);
   /* ⚠️ 这里原本还抄了一份 --sans/--mono/--serif/--tracking-normal —— 是死代码：
      真正的字体栈定义在后面的 `:root`，同特异性且位置更靠后 ⇒ 无条件覆盖这里
      （实测暗色下 --tracking-normal = 0，不是这里的 0.01em）。
@@ -611,36 +657,36 @@
 
 /* === BEGIN: dark-via-attr（由 05-audit/theme-sync.py 生成，勿手改）=== */
 :root[data-theme="dark"] {
-  --accent: #7AA9DE;
-  --accent-hover: #8FB8E6;
-  --accent-soft: #1C2C3D;
-  --border-control: #8A9099;
-  --border-decor: #2A3038;
-  --border-decor-str: #3A424C;
-  --danger: #E07A6E;
-  --danger-bg: #341D1A;
-  --danger-hover: #F09A90;
-  --info: #5B9BC4;
-  --info-bg: #13242F;
-  --paper: #14171A;
-  --scrim: rgba(0, 0, 0, 0.62);
-  --scrollbar-thumb: #6E747E;
-  --scrollbar-thumb-hov: #7D828A;
-  --skeleton-bg: #2E343C;
-  --skeleton-shimmer: rgba(255, 255, 255, 0.06);
-  --success: #6FAA7A;
-  --success-bg: #16241A;
-  --surface: #1C2024;
-  --surface-raised: #232830;
-  --surface-sunken: #1A1D21;
-  --switch-on: #3E6EA8;
-  --text-on-accent: #0D1114;
-  --text-on-solid: #0D1114;
-  --text-primary: #E4E7EA;
-  --text-secondary: #AEB6C0;
-  --text-tertiary: #9BA3AD;
-  --warning: #C99A3F;
-  --warning-bg: #242A31;
+  --raw-accent: #7AA9DE;
+  --raw-accent-hover: #8FB8E6;
+  --raw-accent-soft: #1C2C3D;
+  --raw-border-control: #8A9099;
+  --raw-border-decor: #2A3038;
+  --raw-border-decor-str: #3A424C;
+  --raw-danger: #E07A6E;
+  --raw-danger-bg: #341D1A;
+  --raw-danger-hover: #F09A90;
+  --raw-info: #5B9BC4;
+  --raw-info-bg: #13242F;
+  --raw-paper: #14171A;
+  --raw-scrim: rgba(0, 0, 0, 0.62);
+  --raw-scrollbar-thumb: #6E747E;
+  --raw-scrollbar-thumb-hov: #7D828A;
+  --raw-skeleton-bg: #2E343C;
+  --raw-skeleton-shimmer: rgba(255, 255, 255, 0.06);
+  --raw-success: #6FAA7A;
+  --raw-success-bg: #16241A;
+  --raw-surface: #1C2024;
+  --raw-surface-raised: #232830;
+  --raw-surface-sunken: #1A1D21;
+  --raw-switch-on: #3E6EA8;
+  --raw-text-on-accent: #0D1114;
+  --raw-text-on-solid: #0D1114;
+  --raw-text-primary: #E4E7EA;
+  --raw-text-secondary: #AEB6C0;
+  --raw-text-tertiary: #9BA3AD;
+  --raw-warning: #C99A3F;
+  --raw-warning-bg: #242A31;
 }
 /* === END: dark-via-attr === */
 

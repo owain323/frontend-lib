@@ -300,3 +300,38 @@ def resolve_vars(tokens, _depth=0):
         return raw          # 未定义且无 fallback ⇒ 保留原样，不制造空值
 
     return {k: one(k, (k,)) for k in tokens}
+
+
+def mask_comments(css):
+    """把注释替换成**等长空白**（保留换行），偏移量与原文完全一致。
+
+    🔴 为什么不能用 `strip_comments` 代替
+      `strip_comments` 会**删掉**注释 ⇒ 之后拿到的一切下标都对不上原文，
+      写回文件时会错位。而这个函数的用途恰恰是「在原文里定位」：
+
+          masked = mask_comments(css)
+          i = RE.search(masked).start()      # 这个下标在 css 里同样有效
+
+    🔴 为什么需要在注释遮蔽后再匹配 @media
+      实测：`tokens.css` 里有一段注释**举着** `@media … prefers-color-scheme: dark`
+      当例子（讲为什么不用 `light-dark()`）。直接搜会先命中注释里那段，
+      再靠 `[^{]*` 一路吃到真实的 `{` —— 看着"能用"，其实是**偶然对齐**：
+      只要注释里在它之前出现任何 `{`（比如贴一段示例 CSS），
+      整个定位就会静默偏移到错误位置，而门禁照样给出结论。
+    """
+    out = []
+    i, n = 0, len(css)
+    while i < n:
+        if css.startswith('/*', i):
+            j = css.find('*/', i + 2)
+            j = n if j < 0 else j + 2
+            chunk = css[i:j]
+            # 注释里换行要保留（否则行号全错），其余字符变空格
+            out.append(''.join('\n' if c == '\n' else ' ' for c in chunk))
+            i = j
+        else:
+            j = css.find('/*', i)
+            j = n if j < 0 else j
+            out.append(css[i:j])
+            i = j
+    return ''.join(out)

@@ -216,6 +216,9 @@ run "token-parse" $PY 05-audit/token-parse-gate.py --no-browser
 run "token-aud"  $PY 05-audit/token-audience-gate.py
 # 第二种令牌导出（分层 / 无 -- 前缀 / value 不带 $）：形状 + 浏览器 CSSOM 复核
 run "token-tree" $PY 05-audit/token-tree-gate.py
+# 颜色令牌分两层（D5）：`:root` 里不许再出现「语义名 = 颜色字面量」；
+#   暗色段只许覆盖 L1；L1 / L2 必须 1:1。反向控制由 selftest-all 跑。
+run "token-layer" $PY 05-audit/layer-tokens.py --check
 # 机器可读契约层：schema 只用了实现过的关键字 / Profile 有鉴别力 / Patch 可回放
 run "ai-layer"  node 05-audit/ai-layer-gate.js
 # CI 工作流配置：**真 YAML 解析**（不是正则）—— timeout-minutes 必须是整数、

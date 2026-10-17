@@ -49,6 +49,8 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), 
 SRC = os.path.join(ROOT, '01-tokens', 'tokens.css')
 OUT = os.path.join(ROOT, 'ai', 'tokens.tree.json')
 
+RAW_PREFIX = '--raw-'
+
 RE_ROOT = re.compile(r':root\s*\{')
 RE_DARK = re.compile(r'@media[^{]*prefers-color-scheme:\s*dark[^{]*\{')
 RE_DECL = re.compile(r'(--[a-z0-9-]+)\s*:\s*([^;{}]+);')
@@ -246,6 +248,47 @@ def collect_dark(css):
     return res
 
 
+RE_ONLY_RAW = re.compile(r'^var\(\s*(--raw-[a-z0-9-]+)\s*\)$', re.I)
+
+
+def resolve_and_strip(pairs):
+    """把**指向 L1 的引用**（`var(--raw-*)`）解析成实际值，并丢掉 L1 令牌本身。
+
+    🔴 只解析指向 `--raw-*` 的引用，不碰别的 var()
+      第一版对整个集合跑 `resolve_vars`，结果 `--popover-p: var(--sp-3)`
+      被导出成 `12px` / `type: dimension` —— **别名关系丢了**。
+      而"它是 `--sp-3` 的别名"对设计令牌消费方是有效信息
+      （改 `--sp-3` 时该跟着变）。⇒ 非 L1 的引用原样保留。
+
+    🔴 为什么 L1 不进对外契约
+      ① 它是"当前配色的取值"，不是设计令牌。对外暴露会让人以为可以按
+         `--raw-*` 编程 —— 而换一套品牌配色时这一层**整体被替换**，
+         那是破契约。契约只该承诺语义名（`--paper`）。
+      ② 直接导出 `var(--raw-x)` 也不是好答案：Style Dictionary / Figma
+         不认 `var()`，拿到的是一个无法解析的字符串。
+      ⇒ 导出**解析后的值**：对外看到仍是 `#f6f7f8`，与分层前逐字节一致。
+    """
+    tokens = dict(pairs)
+    out = {}
+    for k, v in tokens.items():
+        if k.startswith(RAW_PREFIX):
+            continue
+        m = RE_ONLY_RAW.match(v.strip())
+        if not m:
+            out[k] = v
+            continue
+        ref = m.group(1)
+        hops = 0
+        while hops < 10:
+            nxt = RE_ONLY_RAW.match(tokens.get(ref, '').strip())
+            if not nxt:
+                break
+            ref = nxt.group(1)
+            hops += 1
+        out[k] = tokens.get(ref, v)
+    return out
+
+
 def build_set(pairs):
     """{name: value} ⇒ 层级 dict + index"""
     tree = {}
@@ -270,8 +313,24 @@ def build_set(pairs):
 
 def build():
     css = strip_comments(io.open(SRC, encoding='utf-8').read())
-    light = collect_light(css)
-    dark = collect_dark(css)
+    light_raw = collect_light(css)
+    dark_raw = collect_dark(css)
+    # 🔴 D5 分层后，暗色段**只覆盖 L1**（语义令牌是 var() 引用会自然跟随）。
+    #    所以"暗色覆盖了哪些语义令牌"要由 L1 的名字反推：`--raw-paper` ⇒ `--paper`。
+    #
+    #    ⚠️ 这里**保持"dark = 覆盖集"的既有语义**（30 个），没有顺手补齐成 107 个：
+    #       另一种导出 `ai/tokens.json` 的 `sets.dark` 也是 30 个，
+    #       两者必须一致；补齐是产品决策（消费方到底该拿到覆盖集还是完整集），
+    #       不该混在"令牌分层"这次改造里偷偷做掉。
+    dark_names = set()
+    for k in dark_raw:
+        dark_names.add('--' + k[len(RAW_PREFIX):] if k.startswith(RAW_PREFIX) else k)
+
+    merged_dark = dict(light_raw)
+    merged_dark.update(dark_raw)
+    light = resolve_and_strip(light_raw)
+    dark_all = resolve_and_strip(merged_dark)
+    dark = {k: v for k, v in dark_all.items() if k in dark_names}
     ltree, lindex, p1 = build_set(light)
     dtree, dindex, p2 = build_set(dark)
     problems = p1 + p2

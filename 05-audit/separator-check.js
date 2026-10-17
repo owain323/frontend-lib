@@ -136,9 +136,20 @@ const REPO = path.resolve(__dirname, '..');
         const darkMedia = cutBlock(/@media[^{}]*prefers-color-scheme\s*:\s*dark[^{}]*\{/);
         const darkAttr  = cutBlock(/\[data-theme[^\]]*dark[^\]]*\]\s*\{/);
         const dark = (darkMedia || '') + (darkAttr || '');
-        const has = dark ? /--border-decor\s*:/.test(dark) : false;
+        /* 🔴 D5 分层后：`--border-decor` 在浅色 `:root` 里是 `var(--raw-border-decor)`，
+           暗色块**只覆盖 L1**（语义层是引用会自动跟随）。
+           ⇒ 直接查 `--border-decor` 在暗色块里有没有，必然假红。
+           正解：语义值是 `var(--raw-*)` 时，查**那个 L1** 在暗色块里有没有值。 */
+        const lightM = /--border-decor\s*:\s*([^;]+);/.exec(tok);
+        const lightVal = lightM ? lightM[1].trim() : '';
+        const rawRef = /^var\(\s*(--raw-[a-z0-9-]+)\s*\)$/.exec(lightVal);
+        const target = rawRef ? rawRef[1] : '--border-decor';
+        const has = dark
+          ? new RegExp(target.replace(/-/g, '\\-') + '\\s*:').test(dark)
+          : false;
         return { ok: has,
                  note: '--border-decor 浅色=' + (light || '(未找到)') +
+                       (rawRef ? '（L1：' + target + '）' : '') +
                        (has ? '，暗色块里有定义 ✅（' +
                              [darkMedia && '@media ' + darkMedia.length + ' 字符',
                               darkAttr  && '[data-theme] ' + darkAttr.length + ' 字符']

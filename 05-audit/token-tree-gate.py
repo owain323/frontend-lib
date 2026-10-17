@@ -120,7 +120,11 @@ def check(doc, names, cssom):
     dark = sets.get('dark', {})
 
     # ② index 双向
+    # 🔴 L1（`--raw-*`）刻意不导出（理由见 ⑤a 处），所以"源码有 ⇒ 导出必须有"
+    #    这一侧要排除它。反方向（导出有 ⇒ 源码必须有）**不放宽**。
     for n in names:
+        if n.startswith('--raw-'):
+            continue
         if n not in idx:
             bad.append('② 令牌「%s」在 index 里没有（导出漏了它）' % n)
     for n in sorted(idx):
@@ -160,24 +164,45 @@ def check(doc, names, cssom):
     if cssom is not None:
         en = set(idx)
         bn = set(cssom.get('names', []))
-        for n in sorted(bn - en):
+        # 🔴 L1（`--raw-*`）**刻意不导出**：它是"当前配色的取值"，不是设计令牌。
+        #    对外暴露等于把换肤的内部实现变成契约（换品牌时这一层整体被替换）。
+        #    ⇒ ⑤a 的"浏览器有、导出没有"这一侧要排除它；
+        #      而"导出有、浏览器没有"那一侧**不能**放宽（防导出幻觉）。
+        raw_layer = {n for n in bn if n.startswith('--raw-')}
+        for n in sorted((bn - raw_layer) - en):
             bad.append('⑤a 浏览器解析到了「%s」，导出里没有' % n)
         for n in sorted(en - bn):
             bad.append('⑤a 导出里的「%s」，浏览器根本没解析到（声明被吃掉了？）' % n)
         rev = {}
         for k, v in idx.items():
             rev[v] = k
-        for sname, tree in (('light', light), ('dark', dark)):
+        # 🔴 值比对改用 **getComputedStyle 的解析值**（`resolvedLight` / `resolvedDark`），
+        #    不用 CSSOM 的规则文本。
+        #    原因：D5 分层后 `--paper: var(--raw-paper)`，CSSOM 读出来就是
+        #    `var(--raw-paper)`（自定义属性保留原始 token 流），而导出给消费方的
+        #    是**最终值** `#f6f7f8` —— 拿规则文本比永远对不上。
+        #    浏览器在 computed value 这一步真的做了替换（实测 `--popover-p: var(--sp-3)`
+        #    → `12px`），所以那份才是"消费方看到的"。
+        for sname, tree, reskey in (('light', light, 'resolvedLight'),
+                                    ('dark', dark, 'resolvedDark')):
+            resolved = cssom.get(reskey) or {}
             for cat in sorted(tree):
                 for leaf in sorted(tree[cat]):
                     nm = rev.get(cat + '/' + leaf)
                     if nm is None:
                         continue
                     want = key(tree[cat][leaf].get('value', ''))
-                    got = [key(x) for x in cssom.get('values', {}).get(nm, [])]
-                    if want not in got:
-                        bad.append('⑤b %s 的 %s/%s 值对不上浏览器（导出 %r）'
-                                   % (sname, cat, leaf, want[:48]))
+                    if want.startswith('var('):
+                        # 导出的是 alias（`--popover-p: var(--sp-3)`）——
+                        # 值本来就是 var()，没有字面量可比。
+                        # 别名关系由 ②③ 与类型判据负责；它在浏览器里解析成什么，
+                        # 由"被指向的那个令牌"那条判据保证。
+                        continue
+                    got = key(str(resolved.get(nm, '')))
+                    if want != got:
+                        bad.append('⑤b %s 的 %s/%s 值对不上浏览器'
+                                   '（导出 %r，浏览器 %r）'
+                                   % (sname, cat, leaf, want[:44], got[:44]))
     return bad
 
 

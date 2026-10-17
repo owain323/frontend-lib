@@ -53,6 +53,8 @@ import json
 import os
 import re
 import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _css import declared_tokens, mask_comments, resolve_vars  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 AI = os.path.join(ROOT, 'ai')
@@ -416,43 +418,82 @@ def guess_type(value):
 
 def scan_tokens():
     css_raw = read(TOKENS_CSS)
-    css, balanced = strip_comments(css_raw) if False else (css_raw, True)
+    css = css_raw
     # ⚠️ 保留注释：注释里有实测对比度证据，要抽进 note
     # 但解析声明时必须跳过注释 ⇒ parse_block 内部处理
+
+    # 🔴 D5 分层后，颜色分成 L1（`--raw-*`）+ 语义别名（`--paper: var(--raw-paper)`）。
+    #    `ai/tokens.json` 是**对外契约**：只承诺语义名。
+    #    ① L1 不能导出去（它是"当前配色的取值"，换品牌时整层替换）；
+    #    ② 值必须解析成字面量（消费方拿到 `var(--raw-paper)` 而库里没有那个定义
+    #       就废了 —— 分层前这里是 hex，改成 var() 是静默破契约）。
+    #    全文解析 = CSS 层叠（暗色段在后面，覆盖浅色的 L1）。
+    all_toks = resolve_vars(declared_tokens(css))
+
+    def note_of(note):
+        if not note:
+            return ''
+        return next((ln.strip(' *') for ln in note.splitlines()
+                     if ln.strip(' *').strip()), '')[:200]
+
+    def resolve_alias(v, local):
+        """把 `var(--raw-x)` 换成字面值。
+
+        🔴 必须**先在块内**找（`local`）：`all_toks` 是全文层叠的结果，
+           暗色段在后面会把 `--raw-paper` 覆盖成 `#14171A` ——
+           拿它去解析**浅色**段，得到的会是暗色值（实测踩过：
+           `sets.light["--paper"].$value` 变成 `#14171A`）。
+           块内没有才回退到全文（跨块引用）。
+        """
+        m = re.match(r'^var\(\s*(--raw-[a-z0-9-]+)\s*\)$', v.strip())
+        if not m:
+            return v
+        ref = m.group(1)
+        return local.get(ref) or all_toks.get(ref) or v
 
     def collect(mode_css):
         res = {}
         for m in re.finditer(r':root\s*\{', mode_css):
             body, _ = find_block(mode_css, m.end() - 1)
-            for name, value, note in parse_block(body):
+            decls = list(parse_block(body))
+            local = {n: v for n, v, _ in decls}
+            for name, value, note in decls:
                 if name in res:
                     continue  # 先出现的为准（浅色块在前）
+                if name.startswith('--raw-'):
+                    continue  # L1 不进对外契约
+                value = resolve_alias(value, local)
                 item = {'$value': value, '$type': guess_type(value)}
-                if note:
-                    # 只留第一行有效信息，避免把整段表格塞进来
-                    first_line = next(
-                        (ln.strip(' *') for ln in note.splitlines()
-                         if ln.strip(' *').strip()), '')
-                    if first_line:
-                        item['$description'] = first_line[:200]
+                # 只留第一行有效信息，避免把整段表格塞进来
+                d = note_of(note)
+                if d:
+                    item['$description'] = d
                 res[name] = item
         return res
 
     light = collect(css)
 
+    # 暗色段现在**只覆盖 L1** 且是 `--raw-x: #hex` 的形状 ⇒
+    # 键名去掉 `--raw-` 前缀就是它覆盖的那个语义令牌，值直接就是暗色解析值。
+    # 定位走 `mask_comments`：本文件里有注释举着 `@media … dark` 当例子。
     dark = {}
-    for m in re.finditer(r'@media[^{]*prefers-color-scheme:\s*dark[^{]*\{', css):
-        inner, _ = find_block(css, m.end() - 1)
+    masked = mask_comments(css)
+    for m in re.finditer(r'@media[^{]*prefers-color-scheme:\s*dark[^{]*\{',
+                         masked):
+        inner, _ = find_block(css, m.end() - 1)     # 用原文取 body（保注释）
         for name, value, note in parse_block(inner):
-            if name.startswith('--') and name not in dark:
-                item = {'$value': value, '$type': guess_type(value)}
-                if note:
-                    first_line = next(
-                        (ln.strip(' *') for ln in note.splitlines()
-                         if ln.strip(' *').strip()), '')
-                    if first_line:
-                        item['$description'] = first_line[:200]
-                dark[name] = item
+            if not name.startswith('--'):
+                continue
+            sem = ('--' + name[len('--raw-'):]) if name.startswith('--raw-') \
+                else name
+            if sem in dark:
+                continue
+            val = all_toks.get(sem, value)
+            item = {'$value': val, '$type': guess_type(val)}
+            d = note_of(note)
+            if d:
+                item['$description'] = d
+            dark[sem] = item
 
     # 深色应当是浅色的子集：多出来的说明有人加了浅色没有的令牌
     only_dark = sorted(set(dark) - set(light))
