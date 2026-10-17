@@ -108,7 +108,7 @@
 | # | 事项 | 判据 |
 |---|---|---|
 | W10 | 真机 WebView 验证（iOS WKWebView + Android WebView各一个最小demo） | 需要真机或云真机 |
-| W11 | 删掉失效的 api-snapshot（被 W3 取代后） | 避免两套契约门禁并存造成混乱 |
+| ~~W11~~ | ~~删掉失效的 api-snapshot（被 W3 取代后）~~ | ✅ **已完成**（0.8.9 核对）：`api-snapshot.py` 已不在仓库里，只剩三处**历史说明**（`api-contract-gate.py` / `api-contract.js` / `tsc-gate.py` 的文件头，讲的是它为什么被取代 —— 那些要留着）。⚠️ 这一项在表里躺了好几轮没人划掉，正是 `ERRORS.md` E13「文档里的待办没人回来划」的又一次 |
 | W12 | **`@layer` 的 WebView 基线实测** | 实测数据落 `docs/LAYER-BASELINE.md`；落档后才有资格讨论切换 |
 | W13 | Compatibility Benchmark 的**真模型实测** | 当前 `benchmark/` 只有 10 类意图的骨架，**零条模型记录** —— 骨架不等于成果 |
 
@@ -122,6 +122,7 @@
 | D2 | **dist 的 JS 只去注释不压缩**（esbuild 实测 raw −33.7% / gzip −13.6%） | 撞 `build-dist.py` 约束 ②「零依赖、零构建链：不引入任何 npm 包」。为绕开它而**手写** minifier，就回到约束 ③ 明确拒绝的风险上。（已实测：`--target=es5` 与 `--target=es2017` 输出逐字节相同 ⇒ 源码本就是纯 ES5，风险比预想低，但未归零） | 先决定「要不要为体积破一次零依赖」 |
 | D3 | **拆 `table-core` + `table-variants`**（`table.min.css` 4,863 B 里 81.4% 用不上） | 拆完要同步 `ai/components.json` **与** `docs/API.md`（`doc-facts-gate` 会查），而 `04-recipes` 是配方级、被 `doc-facts` 与 `api-form` 双向约束 ⇒ 风险高于收益 | 若 D1 的重构先做，可顺路一起 |
 | D4 | **全仓行尾统一到 LF**（现在实测 300 个文件 CRLF / 80 个 LF） | `dist/manifest.json` 存了每源文件的 `sourceSha256`，`05-audit/size-baseline.json` 存了每源文件的 raw/gzip 字节数 —— 这两份基线**按当前混合行尾录的**。直接加 `.gitattributes eol=lf` 会让 clone 出来的树全变 LF ⇒ 那 300 个文件的两份基线**全部对不上** ⇒ `dist-fresh` 与 `size-budget` 在**新克隆里假红**（这正是"clone 能不能跑绿"被搞坏的方式）。⇒ **两步必须一起做**：① 先让判据不再依赖行尾（读文本时把 CRLF 归一成 LF 再算哈希/量字节，且只写一份读取器 —— E31）② 再做全仓统一 + 重录两份基线 | 有人愿意同时完成 ① 与 ② 时（只做 ② 会更糟） |
+| D5 | **令牌分两层**（L1 原始值标尺 + L2 语义别名 ⇒ 可整套换肤） | 0.8.9 动手时撞到两个**结构性障碍**，遂回滚（不在最敏感的文件上半途而废）：① 把 `--raw-x: …` 直接写在 `@media (prefers-color-scheme: dark) { }` 体内是**无效 CSS** —— 自定义属性必须挂在选择器上，裸声明会被浏览器丢弃 ⇒ 暗色会静默回落到浅色值；② `theme-sync.py` **只同步语义令牌**（30 个），而它拥有 `[data-theme="dark"]` 段的生成权 ⇒ 原始值层放进去会被生成器漏掉，且 `theme-sync` 的判据看不出来（它不比原始值）。实测数据已齐：浅色 26 / 暗色 29 个不同色值，6 个族（neutral / accent / danger / success / warning / info） | 先扩 `theme-sync.py`：让它同步**整段声明**（含原始值），并加一条「两个暗色块的原始值必须逐条一致」；然后再分层。验收靠 `token-tree` 的浏览器计算值 + 暗色人工核对（`visual` 只拍浅色，抓不到暗色回归） |
 
 ### 🟢 P2·已完成（0.8.9）
 
