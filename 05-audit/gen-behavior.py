@@ -170,12 +170,39 @@ def _same(want, got, ind):
     return True
 
 
+def _snap(path):
+    """备份文件为**字节**。
+
+    🔴 为什么必须按字节（0.8.9 修 · 实测事故）：
+      `io.open(p, encoding='utf-8').read()` 是**文本模式** ⇒ 通用换行会把
+      `\\r\\n` 归一成 `\\n`。再用它还原，写回去就是 LF ⇒
+      **每次跑自检都永久改掉源文件的行尾**（内容一字不差，所以
+      `git diff` 是空的、只有 `git status` 显示 modified）。
+      实测它把 `01-tokens/behavior/dismissable.js` 与
+      `02-primitives/combobox/combobox.js` 的行尾改成了 LF。
+      ⇒ 备份/还原一律用字节；要解析时再单独 decode。
+    """
+    return io.open(path, 'rb').read()
+
+
+def _restore(path, blob):
+    io.open(path, 'wb').write(blob)
+
+
 def inject():
-    """把核写回每个使用点。返回被改写的相对路径列表。"""
+    """把核写回每个使用点。返回被改写的相对路径列表。
+
+    🔴 保留**原文件的行尾**（0.8.9 修）：
+      原来读文本模式（CRLF→LF）再写 `newline=''` ⇒ 一次生成就把 CRLF 文件
+      改成 LF。生成器不该顺手改行尾 —— 那会让下一次 `git diff` 出现
+      一堆"内容没变却整文件重写"的噪声。
+    """
     cs = cores()
     changed = []
     for path in component_files():
-        src = io.open(path, encoding='utf-8').read()
+        raw_b = io.open(path, 'rb').read()
+        eol = '\r\n' if b'\r\n' in raw_b else '\n'
+        src = raw_b.decode('utf-8').replace('\r\n', '\n')
         lines = src.split('\n')
         blocks = scan_blocks(lines)
         if not blocks:
@@ -196,7 +223,7 @@ def inject():
         out.extend(lines[i:])
         new = '\n'.join(out)
         if touched and new != src:
-            io.open(path, 'w', encoding='utf-8', newline='').write(new)
+            io.open(path, 'wb').write(new.replace('\n', eol).encode('utf-8'))
             changed.append(os.path.relpath(path, ROOT).replace(os.sep, '/'))
     return changed
 
@@ -228,7 +255,8 @@ def selftest():
         print('  [FAIL] 找不到核文件')
         return 1
 
-    raw = io.open(cpath, encoding='utf-8').read()
+    raw_b = _snap(cpath)
+    raw = raw_b.decode('utf-8').replace('\r\n', '\n')
     # ⚠️ BEGIN 带 `^` 锚点 ⇒ 必须**逐行**匹配，不能对整段文本 search
     #    （整段文本里 `^` 只匹配开头 ⇒ 永远搜不到 ⇒ 自检会"跳过"漂移验证，
     #     而跳过就等于这条反向控制不存在 —— 典型的假绿）
@@ -244,7 +272,7 @@ def selftest():
                         'var fl' + _camel(name) + '__probe', 1))
         bad, _ = check()
     finally:
-        io.open(cpath, 'w', encoding='utf-8', newline='').write(raw)
+        _restore(cpath, raw_b)        # 字节级还原：行尾也不会变
     if not any('不一致' in b for b in bad):
         print('  [FAIL] 真值源改了，使用点却没被判不一致 ⇒ 门禁是瞎的')
         ok = False
@@ -253,7 +281,8 @@ def selftest():
 
     # ② 改使用点里的块 ⇒ 必须报不一致（证明它比的是内容，不是"有没有块"）
     upath = users[0]
-    uraw = io.open(upath, encoding='utf-8').read()
+    uraw_b = _snap(upath)
+    uraw = uraw_b.decode('utf-8').replace('\r\n', '\n')
     try:
         io.open(upath, 'w', encoding='utf-8', newline='').write(
             uraw + '\n/* probe */\n')
@@ -267,7 +296,7 @@ def selftest():
                 '\n'.join(ulines))
         bad2, _ = check()
     finally:
-        io.open(upath, 'w', encoding='utf-8', newline='').write(uraw)
+        _restore(upath, uraw_b)       # 字节级还原
     if not any('不一致' in b for b in bad2):
         print('  [FAIL] 使用点里的块被篡改却没报错 ⇒ 门禁是瞎的')
         ok = False
@@ -286,11 +315,12 @@ def selftest():
         print('  [OK]   注入了却没调用 ⇒ 能判出来')
 
     # ④ 注入是幂等的：跑两次，第二次不得产生改动
-    before = io.open(upath, encoding='utf-8').read()
+    before_b = _snap(upath)
+    before = before_b.decode('utf-8').replace('\r\n', '\n')
     inject()
-    after = io.open(upath, encoding='utf-8').read()
+    after = _snap(upath).decode('utf-8').replace('\r\n', '\n')
     if before != after:
-        io.open(upath, 'w', encoding='utf-8', newline='').write(before)
+        _restore(upath, before_b)     # 字节级还原
         print('  [FAIL] 注入不幂等（第二次跑又改了文件）')
         ok = False
     else:
