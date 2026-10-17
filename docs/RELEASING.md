@@ -101,6 +101,23 @@ tag 存在 + 是 annotated + **tag 指向的提交里 `VERSION` 就是这个版�
 
 ## 三、发布（这一步只能人做）
 
+### ⚠️ 先确认 registry 不是镜像源
+
+作者这台机器上 `npm config get registry` 返回 `https://registry.npmmirror.com/`
+（淘宝镜像）。**镜像源是只读的**，`npm publish` 会得到：
+
+```
+npm ERR! 403 Forbidden - PUT https://registry.npmmirror.com/agentcss
+```
+
+这不是权限问题、也不是网络问题 —— 改密码、重登都没用。
+仓库根目录的 `.npmrc` 已经把 registry 钉在官方源，**在仓库目录里执行**就不会踩到；
+换个目录执行则仍会用镜像。
+
+```bash
+npm config get registry     # 必须是 https://registry.npmjs.org/
+```
+
 ```bash
 npm login            # 需要账号 + 2FA
 npm run publish:check   # 可选：手工再跑一次发布前自检（prepublishOnly 也会跑）
