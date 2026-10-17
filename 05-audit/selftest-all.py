@@ -47,7 +47,12 @@ AUDIT = os.path.join(ROOT, '05-audit')
 # 列举式跳过（每条都要写理由）。当前为空 —— 26 个全都跑得动（合计约 13 秒）。
 # ⚠️ 不许用"跑得慢"当理由；只有"需要本机没有的外部条件"才算。
 SKIP = {
-    # 'x.py': '需要真机 / 外部 API',
+    # ⚠️ 不是"跑得慢"，是**本脚本的运行环境里没有 :8000 服务** ——
+    #    它的自检要往 `http://127.0.0.1:8000/05-audit/_blank.html` 发请求
+    #    （同源才能读 window 全局）。已在 check-all.sh 的浏览器段注册为
+    #    `dist-js-parity-rev`，那里服务是活的 ⇒ 自检没漏跑，只是不在这一支跑。
+    'dist-js-parity-gate.js':
+        '自检需要 127.0.0.1:8000（由 check-all.sh 提供），已在那里的浏览器段注册',
 }
 
 TIMEOUT = 180
@@ -57,7 +62,7 @@ def candidates():
     out = []
     me = os.path.basename(os.path.abspath(__file__))
     for f in sorted(os.listdir(AUDIT)):
-        if not f.endswith('.py'):
+        if not (f.endswith('.py') or f.endswith('.js')):
             continue
         # 🔴 必须排除自己：本文件里也出现了 `--selftest` 这个字面量，
         #    而它**不支持** --selftest ⇒ 一旦被选进来就会跑 main() ⇒ **递归**。
@@ -65,8 +70,15 @@ def candidates():
             continue
         p = os.path.join(AUDIT, f)
         txt = io.open(p, encoding='utf-8', errors='replace').read()
-        # 只认"真的实现了 --selftest 分支"的（不是注释里提一句）
-        if re.search(r"['\"]--selftest['\"]\s*(?:in|not in)", txt):
+        # 只认"真的实现了 --selftest 分支"的（不是注释里提一句）：
+        #   Python 走 `'--selftest' in sys.argv`；JS 走 `argv.indexOf('--selftest')`
+        #   ⇒ 判据落在**调用点**上，而不是文档里出现过这个词。
+        if f.endswith('.py'):
+            hit = re.search(r"['\"]--selftest['\"]\s*(?:in|not in)", txt)
+        else:
+            hit = re.search(
+                r"argv\.(?:indexOf|includes)\(\s*['\"]--selftest['\"]", txt)
+        if hit:
             out.append(f)
     return out
 
@@ -86,9 +98,12 @@ def tree_state():
 
 def run_one(fname):
     p = os.path.join(AUDIT, fname)
+    # 解释器按扩展名选：JS 的自检必须用 node 跑（用 python 跑 JS 会 RC=1，
+    # 看起来像"自检失败"，实际是跑错了语言 —— 那种红会让人怀疑整个清单）
+    exe = 'node' if fname.endswith('.js') else sys.executable
     t0 = time.time()
     try:
-        r = subprocess.run([sys.executable, p, '--selftest'],
+        r = subprocess.run([exe, p, '--selftest'],
                            cwd=ROOT, capture_output=True, text=True,
                            encoding='utf-8', errors='replace',
                            timeout=TIMEOUT)

@@ -375,6 +375,13 @@ run "dist-parity" node 05-audit/dist-parity-check.js
 run "skel-lever"  node 05-audit/skeleton-lever-check.js
 # 明暗四种组合在真浏览器里成立，且**不加载 theme-toggle.js**
 run "theme-css"   node 05-audit/theme-css-gate.js
+# 全部令牌的**解析值**（107 个 × 4 种明暗组合）：
+#   ① 暗色三条路径等价 ② 浅色两条路径等价 ③ 声明即生效 ④ 无空值 ⑤ 与基线逐条一致
+#   🔴 它补的是「声明合法、文本一致，但浏览器根本没让它生效」这一类
+#      —— 实证过两次（未闭合注释吞掉 --lift-*、裸声明被丢弃）
+#      —— `theme-css` 只探 2 个令牌，恰好是没被吞的那两条，抓不到。
+#   ⚠️ 这也是"暗色人工核对"的替代品：visual 只拍浅色，暗色回归无人看。
+run "token-resolved" node 05-audit/token-resolved-gate.js
 run "accent-gate" $PY 05-audit/accent-gate.py
 run "perf-gate"   node 05-audit/perf-gate.js
 run "size-budget" $PY 05-audit/size-baseline.py
@@ -418,6 +425,9 @@ run "gate-verdict"  $PY 05-audit/gate-verdict-gate.py
 #   做法：在**同源空白页**上分别加载源码 JS 与 dist JS，
 #        比对"新增的 window 全局"与"抛的错"。配反向控制。
 run "dist-js-parity" node 05-audit/dist-js-parity-gate.js
+# 🔴 它的反向控制要连 :8000（本段已有服务）—— 而 selftest-all 里没有服务，
+#   所以那支自检在这里跑，并在 selftest-all 的 SKIP 里写明理由。
+run "dist-js-parity-rev" node 05-audit/dist-js-parity-gate.js --selftest
 # 🔴 a11y 的反向控制（0.8.9 接上 · 审计 P1-8）：
 #   `_a11y-reverse-control.js` 早就写好了 —— 注入 5 类典型违规
 #   （img 无 alt / input 无 label / id 重复 / tabindex 乱序 / 对比度过浅），
