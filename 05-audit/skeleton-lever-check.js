@@ -49,8 +49,16 @@ const http = require('http');
 const ROOT = path.dirname(__dirname);
 const { launch } = require(process.env.FL_BROWSER || path.join(__dirname, 'browser.js'));
 
+// 不参与「骨架杠杆」的目录/页面，每条都要有理由：
+//   · examples/react-vite —— 反向控制用的宿主样板，**故意**不引本库令牌
+//   · 04-recipes/longform —— 单文件交付物，tokens 内联、零外链
+//   · 10-review/webview/capability-probe.html —— 真机能力探针：
+//     它要在**还没支持本库所需特性**的引擎上把结果渲染出来，
+//     引骨架等于让"被测对象"改变测试环境；而且它是拷到手机上单文件打开的。
+//     ⇒ 它当然不吃 `--fs-2xl`，这是设计，不是缺陷。
 const SKIP = ['node_modules', '.git', 'benchmark', '05-audit', 'prefixed',
-              'examples', '04-recipes/longform'];
+              'examples', '04-recipes/longform',
+              '10-review/webview/capability-probe.html'];
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
