@@ -26,6 +26,7 @@
     "--popover-": { "audience": "internal",  "why": "气泡组件自己的尺寸与时长，是组件调参不是主题令牌" },
     "--progress": { "audience": "internal",  "why": "进度条内部参数（--progress 是数值本身，不是族前缀）" },
     "--r-":       { "audience": "public",    "why": "圆角阶梯" },
+    "--raw-":     { "audience": "internal",  "why": "L1 原始值层（D5 分层）：**当前配色的取值本身**，由语义令牌 var() 引用。组件只该用语义名；换一套品牌配色时这一层整体替换 ⇒ 使用者依赖它就是依赖实现细节。它不进 ai/tokens.tree.json（对外契约只承诺语义名）" },
     "--ring-":    { "audience": "internal",  "why": "焦点环尺寸，只由 focus-ring.css 消费" },
     "--sans":     { "audience": "public",    "why": "无衬线字族" },
     "--scrim":    { "audience": "internal",  "why": "遮罩底色，overlay 用" },

@@ -57,7 +57,7 @@ import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _css import find_block, parse_decls  # noqa: E402
+from _css import find_block, mask_comments, parse_decls  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOK = os.path.join(ROOT, '01-tokens', 'tokens.css')
@@ -77,10 +77,16 @@ RE_FN = re.compile(r'\b(?:rgb|rgba|hsl|hsla)\s*\(')
 
 
 def collect(css):
-    """抽出所有 `:root…{}` 块里的令牌（先出现的为准）。"""
+    """抽出所有 `:root…{}` 块里的令牌（先出现的为准）。
+
+    🔴 定位走 `mask_comments(css)`：注释里会出现 `:root` 字样（举例、说明），
+       直接搜会把示例当成真实块。遮蔽器保持长度与换行 ⇒ 下标可直接切原文，
+       原文里的注释也就不会丢。
+    """
     res = {}
-    for m in RE_ROOT.finditer(css):
-        body, _ = find_block(css, m.end() - 1)
+    masked = mask_comments(css)
+    for m in RE_ROOT.finditer(masked):
+        body, _ = find_block(masked, m.end() - 1)
         for name, value, _note in parse_decls(body):
             if name.startswith('--') and name not in res:
                 res[name] = value
@@ -99,11 +105,20 @@ def split_region(css):
 
 
 def dark_tokens(css):
-    """从 `@media (prefers-color-scheme: dark)` 段取暗色令牌（真值来源）。"""
-    m = RE_MEDIA_DARK.search(css)
+    """从 `@media (prefers-color-scheme: dark)` 段取暗色令牌（真值来源）。
+
+    🔴 必须遮蔽注释再搜 —— 实测过两次：
+       ① 文件里有一段注释**举着** `@media … prefers-color-scheme: dark` 讲原因；
+       ② 我自己在 L1 那一层的说明里写了同样一句，
+      两次都让这里定位到注释里的假 @media。
+       ② 的后果更重：matched 到一处空规则块 ⇒ 读出 **0 个令牌** ⇒
+       生成的 `[data-theme="dark"]` 变成空块，而 `--check` 还说"一致"（0 == 0）。
+    """
+    masked = mask_comments(css)
+    m = RE_MEDIA_DARK.search(masked)
     if not m:
         raise SystemExit('tokens.css 里找不到 @media (prefers-color-scheme: dark)')
-    inner, _ = find_block(css, m.end() - 1)
+    inner, _ = find_block(masked, m.end() - 1)
     return collect(inner)
 
 
@@ -122,10 +137,11 @@ def check_css(css):
         return ['tokens.css 缺少 `[data-theme="dark"]` 段 —— 跑 '
                 'python 05-audit/theme-sync.py 生成']
 
-    m = RE_ROOT.search(region)
+    masked = mask_comments(region)
+    m = RE_ROOT.search(masked)
     if not m:
         return ['生成段里找不到 `:root[data-theme="dark"]` 块']
-    body, _ = find_block(region, m.end() - 1)
+    body, _ = find_block(masked, m.end() - 1)
     got = {n: v for n, v, _ in parse_decls(body) if n.startswith('--')}
 
     problems = []
@@ -167,8 +183,8 @@ def generate(css):
     old, a, b = split_region(css)
     if old is None:
         # 插到 @media 暗色段之后
-        m = RE_MEDIA_DARK.search(css)
-        inner, end = find_block(css, m.end() - 1)
+        m = RE_MEDIA_DARK.search(mask_comments(css))
+        inner, end = find_block(mask_comments(css), m.end() - 1)
         return css[:end] + '\n\n' + region + '\n' + css[end:]
     return css[:a] + region + css[b:]
 
@@ -244,7 +260,10 @@ def main():
     if new == css:
         print('  ✓ tokens.css 已是最新（无需改动）')
     else:
-        io.open(TOK, 'w', encoding='utf-8').write(new)
+        # 🔴 必须显式 newline='\n'：Windows 默认把 \n 写成 \r\n。
+        #    实测过：跑一次 `theme-sync.py` 就把 tokens.css 变成全 CRLF，
+        #    而 D4（行尾统一）已经把全库统一成 LF ⇒ 生成器和 D4 直接打架。
+        io.open(TOK, 'w', encoding='utf-8', newline='\n').write(new)
         print('  ✓ 已生成 `[data-theme="dark"]` 段（%d 个令牌）'
               % len(dark_tokens(css)))
     return 0

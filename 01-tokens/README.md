@@ -186,7 +186,7 @@ node ai/cli.js tree   [--set=light|dark] [--cat=color]   # 第二种
 
 ## 精简档 的使用方式
 
-复制 **`04-recipes/tierA-tokens.css`** 进 `<style>`（**13.8 KB**，含浅色 71 + 暗色 23 个令牌，零外链零构建）。
+复制 **`04-recipes/tierA-tokens.css`** 进 `<style>`（**4.9 KB**，含浅色 99 + 暗色 30 个令牌，零外链零构建）。
 
 那一份是由 `tokens.css` **自动抽取**的（`python 05-audit/make-tiersnippet.py`），
 所以不会与本文件漂移；改了这个文件请重新生成。

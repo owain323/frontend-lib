@@ -84,7 +84,34 @@ function serve(cssText) {
       Object.keys(values).forEach((k) => {
         values[k] = values[k].filter((v, i, a) => a.indexOf(v) === i).sort();
       });
-      return { names: names.sort(), values: values, ruleDecls: Object.keys(values).length };
+
+      // 🔴 第二份：**解析后**的值（getComputedStyle）。
+      //    第一份 `values` 是 CSSOM 里的**规则文本** —— 它保留原始 token 流，
+      //    所以 `--paper: var(--raw-paper)` 在这里读出来就是 `var(--raw-paper)`。
+      //    那份用来验证"词法层"（注释被丢弃、孤儿注释吃行）。
+      //
+      //    但**导出给消费方的是最终值**（`#f6f7f8`），要跟它对上就必须读 computed：
+      //    浏览器在这一步真的把 var() 替换掉了。
+      //    实测：`getComputedStyle` 读 `--paper` → `#f6f7f8`，
+      //          读 `--popover-p: var(--sp-3)` → `12px`。
+      //
+      //    暗色只能走 `[data-theme="dark"]` 这条路（`@media` 那条依赖系统主题，
+      //    headless 里改不了）；两段由 theme-sync 保证逐条一致，所以够用。
+      const readAll = () => {
+        const cs = getComputedStyle(document.documentElement);
+        const r = {};
+        for (const n of names) r[n] = cs.getPropertyValue(n).trim();
+        return r;
+      };
+      const resolvedLight = readAll();
+      document.documentElement.setAttribute('data-theme', 'dark');
+      const resolvedDark = readAll();
+      document.documentElement.removeAttribute('data-theme');
+
+      return {
+        names: names.sort(), values: values, ruleDecls: Object.keys(values).length,
+        resolvedLight: resolvedLight, resolvedDark: resolvedDark,
+      };
     });
     await page.close();
     if (process.argv.includes('--json')) {

@@ -29,6 +29,11 @@ make-tiersnippet.py — 从 tokens.css 生成精简档 专用令牌文件
 import sys
 import os
 import re
+import sys as _sys
+import os as _os
+_sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+from _css import declared_tokens, resolve_vars  # noqa: E402
+RAW_PREFIX = '--raw-'
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, '01-tokens', 'tokens.css')
@@ -76,8 +81,21 @@ def _strip_comments(src):
 
 
 def extract(src):
-    """🔴 修正：先剥注释再找（见 _strip_comments 的说明）。
-    原来是 `src.index(':root')` ⇒ 会命中注释里提到的 `:root`。"""
+    """→ (light_block, dark_block)，已做 D5 分层处理。
+
+    🔴 D5 之后 tokens.css 里颜色分成两层：
+         :root        --raw-paper: #f6f7f8;  --paper: var(--raw-paper);
+         @media dark  --raw-paper: #14171A;   （语义层不重复）
+       而 tierA 是**给使用者直接复制进 `<style>` 的单文件极简版** ⇒
+       它必须仍然是"一个令牌一个值"，不能带 L1，也不能带 `var(--raw-*)`。
+
+       ⇒ 浅色段：删掉 L1 行，语义行的 `var(--raw-x)` 换成该 L1 的值；
+         暗色段：L1 的**名字去掉 `--raw-` 前缀**（它就是覆盖那个语义令牌），
+                 值是暗色下的解析值。
+
+    ⚠️ 两份值必须分别解析：浅色用"@media 之前"的文本，暗色用**全文**
+       （CSS 层叠：后面出现覆盖前面出现）。
+    """
     plain = _strip_comments(src)
     i = plain.index(':root')
     depth = 0
@@ -99,7 +117,46 @@ def extract(src):
             if depth == 0:
                 dark = plain[k:j + 1]
                 break
-    return light, dark
+
+    light_toks = resolve_vars(declared_tokens(light))
+    dark_toks = resolve_vars(declared_tokens(plain))     # 全文 = 层叠结果
+
+    def rewrite(block, toks, drop_l1):
+        out = []
+        for ln in block.split('\n'):
+            # 🔴 `_strip_comments` 把注释**替换成等长空格**（为了保住下标好定位），
+            #    于是每一段注释都会留下一行纯空白。直接写出去，tierA 里就会出现
+            #    十几行"看不见但存在"的空行（D5 的 L1 banner 一次留下 16 行）。
+            #    判据：`ln.strip() == ''` 且 `ln != ''` ⇒ 这是注释残行，丢掉。
+            #    真正的空行（`''`）保留，作为分组间隔。
+            if ln.strip() == '' and ln != '':
+                continue
+            if ln.strip() == '':
+                out.append('')
+                continue
+            m = re.match(r'^(\s*)(--[a-z0-9-]+)(\s*:\s*)([^;]+)(;)(\s*)$', ln)
+            if not m:
+                out.append(ln.rstrip())
+                continue
+            ind, name, sep, val, semi, tail = m.groups()
+            if name.startswith(RAW_PREFIX):
+                if drop_l1:
+                    continue                     # 浅色段：L1 不进 tierA
+                name = '--' + name[len(RAW_PREFIX):]   # 暗色段：L1 → 语义名
+                val = toks.get(name, val)
+            elif val.strip().startswith('var('):
+                val = toks.get(name, val)        # 语义别名 → 字面值
+            out.append('%s%s%s%s%s' % (ind, name, sep, val, semi))
+        # 折叠连续空行
+        cleaned = []
+        for ln in out:
+            if ln == '' and cleaned and cleaned[-1] == '':
+                continue
+            cleaned.append(ln)
+        return '\n'.join(cleaned)
+
+    return (rewrite(light, light_toks, True),
+            rewrite(dark, dark_toks, False))
 
 
 def count(t):
@@ -126,7 +183,10 @@ def main():
             return 0
         print('  [FAIL] tierA-tokens.css 已漂移 —— 跑 make-tiersnippet.py 重新生成')
         return 1
-    with open(DST, 'w', encoding='utf-8') as f:
+    # 🔴 必须显式 newline='\n'：Windows 上默认会把 \n 转成 \r\n，
+    #    于是每次生成都在改行尾 ⇒ `dist-fresh` 的「只改换行符」自检当场红，
+    #    且和 D4（行尾统一）直接打架。
+    with open(DST, 'w', encoding='utf-8', newline='\n') as f:
         f.write(body)
     print('  ✓ 已生成 04-recipes/tierA-tokens.css（%d 字节，%d + %d 个令牌）'
           % (os.path.getsize(DST), count(light), count(dark)))

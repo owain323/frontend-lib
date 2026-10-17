@@ -232,18 +232,33 @@ async function judge(cssText, baseline) {
   }
 
   // ⑤ 解析值基线
+  // 🔴 三类必须分开报：
+  //    值变了 / 令牌消失  ⇒ **红**（这是回归）
+  //    基线里没有（新增）⇒ **不红，但要计数并打印**
+  //    D5 分层时踩过：30 个新 `--raw-*` × 明暗两套 = 60 条"基线里没有"，
+  //    如果混进同一条判据，读者看到"共 60 处"会以为配色乱了 ——
+  //    而实际上原有 107 个令牌的解析值**一个都没变**。
+  //    把结构变更读成回归，和把回归读成结构变更，一样危险。
+  const added = [];
   for (const scheme of ['light', 'dark']) {
     const rec = baseline[scheme] || {};
     const now = scheme === 'light' ? light : dark;
     for (const d of diffMap(rec, now)) {
-      problems.push('⑤ ' + scheme + ' 变了解析值：`' + d.name + '` 基线是 `' +
-        d.a + '`，现在是 `' + d.b + '`' +
-        (d.a === undefined ? '（基线里没有这个令牌）' :
-          (d.b === undefined ? '（该令牌已消失）' : '')));
+      if (d.a === undefined) {
+        added.push(scheme + ':' + d.name);
+        continue;
+      }
+      if (d.b === undefined) {
+        problems.push('⑤ ' + scheme + ' 令牌消失：`' + d.name +
+          '` 基线是 `' + d.a + '`（声明被删了？）');
+        continue;
+      }
+      problems.push('⑤ ' + scheme + ' 解析值变了：`' + d.name +
+        '` 基线 `' + d.a + '` → 现在 `' + d.b + '`');
     }
   }
 
-  return { problems, got, declared };
+  return { problems, got, declared, added };
 }
 
 function loadBaseline() {
@@ -297,9 +312,14 @@ async function selftest() {
   await run('原样不动', base, false);
 
   // (2) 把一条暗色令牌的**值**改掉：判据 ⑤ 必须抓到
-  const changed = base.replace(/(--paper:\s*)#14171a/i, '$1#101010');
+  // 🔴 D5 分层后语义令牌的值是 `var(--raw-*)`，直接改 `--paper:` 什么也抓不到
+  //    （`replace` 静默不生效 ⇒ 后面那个"样本失效"分支会接住，但更常见的是
+  //      被写成"期望红 ⇒ 实际绿"然后被当成判据没牙）。
+  //    要改的是 L1 的原始值，且**两处都要改**（@media 段 + 生成段）——
+  //    只改一处会先撞上判据 ①（两条暗色路径不等价），测的就不是判据 ⑤ 了。
+  const changed = base.replace(/(--raw-paper:\s*)#14171A/gi, '$1#101010');
   if (changed === base) {
-    console.log('  [FAIL] 自检样本失效：tokens.css 里找不到暗色 `--paper: #14171a`');
+    console.log('  [FAIL] 自检样本失效：tokens.css 里找不到 `--raw-paper: #14171A`');
     bad++;
   } else {
     await run('暗色值被改', changed, true, '⑤');
@@ -335,9 +355,9 @@ async function selftest() {
   }
 
   // (4) 把某个浅色令牌的声明改成非法值（`--x: ;`）⇒ 解析值为空，判据 ④ 必须抓到
-  const dropped = base.replace(/(--)\b(paper)(\s*:\s*)#f6f7f8\s*;/i, '$1$2$3;');
+  const dropped = base.replace(/(--raw-paper\s*:\s*)#f6f7f8\s*;/i, '$1;');
   if (dropped === base) {
-    console.log('  [FAIL] 自检样本失效：找不到浅色 `--paper: #f6f7f8;`');
+    console.log('  [FAIL] 自检样本失效：找不到浅色 `--raw-paper: #f6f7f8;`');
     bad++;
   } else {
     await run('浅色声明值被清空', dropped, true, '④');
@@ -383,7 +403,7 @@ async function selftest() {
     return;
   }
 
-  const { problems, got, declared } = await judge(cssText, baseline);
+  const { problems, got, declared, added } = await judge(cssText, baseline);
   if (problems.length) {
     problems.forEach((p) => console.log('  [FAIL] ' + p));
     console.log('\n  共 ' + problems.length + ' 处');
@@ -393,4 +413,12 @@ async function selftest() {
   const n = Object.keys(got['light+none']).length;
   console.log('  [OK] 解析值一致：' + n + ' 个令牌 × 4 种明暗组合；' +
     '暗色段声明的 ' + declared.length + ' 个令牌全部真的生效');
+  if (added && added.length) {
+    // 新增令牌**不判红**（加令牌本身不是缺陷，死重量由 audience 门禁管），
+    // 但必须报出来 —— 否则"基线还没覆盖它"这件事只有门禁自己知道。
+    const uniq = Array.from(new Set(added.map((x) => x.split(':')[1])));
+    console.log('  ℹ️ 基线未覆盖 ' + added.length + ' 条（' + uniq.length +
+      ' 个新增令牌 × 明暗两套）：跑 --update 重录。');
+    if (uniq.length <= 6) console.log('     ' + uniq.join(', '));
+  }
 })();

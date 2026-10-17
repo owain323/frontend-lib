@@ -96,20 +96,23 @@ def load_tokens(path, mode='light'):
     except OSError:
         return out
     css = re.sub(r'/\*.*?\*/', '', css, flags=re.S)
-    if mode == 'dark':
-        i = css.find('@media (prefers-color-scheme: dark)')
-        if i >= 0:
-            css = css[i:]
+    # 🔴 D5 分层后，暗色段**只覆盖 L1（`--raw-*`）**，语义令牌（`--paper`）只在
+    #    浅色的 `:root` 里定义一次、值是 `var(--raw-paper)`。
+    #    ⇒ 暗色模式不能只读 `@media` 之后那一段（那里没有语义令牌，会全部报"缺"），
+    #      要按 **CSS 层叠语义**取整份文件：后面出现的覆盖前面出现的
+    #      （暗色 raw 覆盖浅色 raw），语义令牌的 `var()` 解析时就用最终值。
+    #    这与浏览器行为一致 —— 同一份 `:root`，暗色只是覆盖了一层。
+    i = css.find('@media (prefers-color-scheme: dark)')
+    if i < 0 or mode == 'dark':
+        seg = css
     else:
-        i = css.find('@media (prefers-color-scheme: dark)')
-        if i >= 0:
-            css = css[:i]
+        seg = css[:i]
     # 🔴 改成走 `_css` 的唯一解析器（D5 地基）。
     #   旧实现只认字面 `#hex;`，两个后果：
     #     ① 最后一条声明不带分号时**读不到**（CSS 允许）
     #     ② D5 之后语义令牌写成 `var(--raw-x)` ⇒ 旧实现会把 30 个色令牌读成"不存在"，
     #        而对比度报告照样出数字（少算几对，没人看得出来）
-    toks = resolve_vars(declared_tokens(css))
+    toks = resolve_vars(declared_tokens(seg))
     for k, v in toks.items():
         if re.match(r'^#[0-9a-fA-F]{3,6}$', v.strip()):
             out[k] = v.strip()
