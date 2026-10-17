@@ -83,6 +83,10 @@ for _arg in "$@"; do
     --fast)      MODE=fast ;;
     --component) MODE=component ;;
     --full)      MODE=full ;;
+    # 计时日志同样要能用**参数**传：`TIMING=/tmp/x bash …` 在 Windows 的
+    # cmd.exe 里会崩（和 MODE 是同一个原因）。默认路径见 --timing 无值时。
+    --timing)    TIMING="${TMPDIR:-/tmp}/gate-timing.txt" ;;
+    --timing=*)  TIMING="${_arg#--timing=}" ;;
   esac
 done
 MODE="${MODE:-full}"

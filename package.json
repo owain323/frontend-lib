@@ -64,8 +64,8 @@
   "scripts": {
     "test": "node --test 05-audit/unit.test.mjs 05-audit/behavior-cores.test.mjs",
     "gate": "bash 05-audit/check-all.sh",
-    "gate:fast": "MODE=fast bash 05-audit/check-all.sh",
-    "gate:timing": "TIMING=/tmp/gate-timing.txt bash 05-audit/check-all.sh",
+    "gate:fast": "bash 05-audit/check-all.sh --fast",
+    "gate:timing": "bash 05-audit/check-all.sh --timing",
     "size:record": "python3 05-audit/size-baseline.py --record",
     "dist": "python3 05-audit/build-dist.py",
     "dist:check": "python3 05-audit/build-dist.py --check && node 05-audit/dist-parity-check.js && python3 05-audit/dist-cost-gate.py",
@@ -74,7 +74,7 @@
     "ai": "node ai/cli.js",
     "benchmark": "node benchmark/run.js",
     "test:types": "python3 05-audit/tsc-gate.py",
-    "publish:check": "MODE=fast bash 05-audit/check-all.sh && bash 05-audit/pack-smoke.sh",
+    "publish:check": "bash 05-audit/check-all.sh --fast && bash 05-audit/pack-smoke.sh",
     "prepublishOnly": "npm run publish:check"
   },
   "devDependencies": {
