@@ -216,6 +216,16 @@ def self_urls():
 
     归一掉 `git+` 前缀与 `.git` 后缀，好让 README 里那种
     `https://github.com/<owner>/<repo>` 也能认出来。
+
+    🔴 0.8.9 补：**还要认出简写形态**。
+      实测漏抓：「README 里写 `npm install github:owain323/frontend-lib`」
+      —— 那是 GitHub 的合法简写，也是最常用的"从 git 装"写法。
+      但 `self_urls()` 只产出完整 URL（`https://github.com/...`），
+      简写形态匹配不上 ⇒ `owain323` 被判成「用户名泄漏」+「自有域名」，
+      一条安装命令让 `leak` 与 `gate-fixture` 同时红。
+      ⇒ 从同一份取值推导出 `github:<owner>/<repo>` 与 `github.com/<owner>/<repo>`。
+      ⚠️ 只加**带 host 前缀**的形态，不加裸 `owner/repo`
+        （那会把任何"两段路径"都放过 —— 豁免过宽等于门禁失效，见 E8）。
     """
     global _SELF_URLS
     if _SELF_URLS is not None:
@@ -234,7 +244,23 @@ def self_urls():
         if u.endswith('.git'):
             u = u[:-4]
         out.add(u)
-    _SELF_URLS = sorted(out - {''}, key=len, reverse=True)
+        # 从完整 URL 推出 GitHub 简写形态（只认 github.com 的）
+        m = re.search(r'github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)',
+                      u)
+        if m:
+            owner, repo = m.group(1), m.group(2)
+            out.add('github:%s/%s' % (owner, repo))
+            out.add('github.com/%s/%s' % (owner, repo))
+    _SELF_URLS = sorted(
+        # 🔴 只收**像 URL** 的取值（0.8.9 修）：
+        #   `repository` 是 `{type, url}` 字典，而 `_field_values` 会把
+        #   所有字符串取值都吐出来 ⇒ `"type": "git"` 里的 **`git`** 也进了名单。
+        #   一个 3 字符的 needle 会给文本里每个 "git" 造一个豁免区间
+        #   （`npm install git…` 里就有）—— 豁免过宽等于门禁失效（E8）。
+        (u for u in (out - {''})
+         if len(u) >= 8 and ('://' in u or u.startswith('git@')
+                             or 'github.com/' in u or u.startswith('github:'))),
+        key=len, reverse=True)
     return _SELF_URLS
 
 

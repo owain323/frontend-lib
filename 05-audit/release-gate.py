@@ -395,6 +395,24 @@ def main():
                 print('      OK 单 H1 + [Unreleased] + %d 个版本条目降序'
                       '（最新 %s = VERSION）' % (len(hs), hs[0][0]))
     print('')
+
+    # ---------- ⑫ 发布前自检（0.8.9 加 · 发布工程收口）----------
+    #  这一节挡的是"**能发出去、但发错了**"的几种形状。
+    #  全部可离线判定 —— 门禁不该在 CI 里依赖 registry。
+    #
+    #  为什么要有它：本库真实踩过「README 教人 `npm install frontend-lib`，
+    #  而那个名字是别人 2017 年的包」。那次之后包名改成了 agentcss，
+    #  但**没有任何东西**在守"README 里的包名 == package.json.name"。
+    print('  [12] 发布前自检')
+    pub = publish_problems(pkg, files, read_text('README.md') or '')
+    if pub:
+        for m in pub:
+            print('      X %s' % m)
+        bad += len(pub)
+    else:
+        print('      OK private 未设 · access=public · prepublishOnly 就位'
+              ' · 无 prepack · files 无通配 · README 包名一致')
+    print('')
     if bad:
         print('  => 有 %d 项发布契约未闭环' % bad)
         return 1
@@ -402,5 +420,113 @@ def main():
     return 0
 
 
+# ---------------------------------------------------------------------------
+# 发布前自检的判据（**纯函数**，便于自检）
+# ---------------------------------------------------------------------------
+#  为什么抽成函数：这些判断全是"看几个结构"，抽出来就能用合成输入做反向控制 ——
+#  不用每次拷整个仓库（那样 5 个用例要几十秒，实际上没人会给它写测试）。
+#  **可测性是判据能不能被守住的前提。**
+def publish_problems(pkg, files, readme):
+    """→ [问题描述]。空列表 = 通过。"""
+    out = []
+
+    if pkg.get('private') is True:
+        out.append('`private: true` ⇒ npm 会直接拒绝发布')
+
+    acc = (pkg.get('publishConfig') or {}).get('access')
+    if acc != 'public':
+        out.append('publishConfig.access = %r（未配 scope 的包应为 "public"）'
+                   % acc)
+
+    scripts = pkg.get('scripts') or {}
+    if not (scripts.get('prepublishOnly') or '').strip():
+        out.append('缺 `prepublishOnly` ⇒ `npm publish` 会**跳过全部门禁**，'
+                   '把没验过的树发出去')
+    if (scripts.get('prepack') or '').strip():
+        out.append('有 `prepack` ⇒ 它连 `npm pack` 也会触发，'
+                   '而 `pack-smoke` 内部就调 `npm pack` ⇒ 可能递归')
+
+    wild = [f for f in files if f.strip() in ('*', './', '.', '')]
+    if wild:
+        out.append('`files` 里有 %r ⇒ 等于把整个仓库发出去' % wild)
+
+    # README 里的**裸包名**必须等于 package.json.name
+    toks = re.findall(r'npm (?:install|i)\s+([^\s`"\'）)]+)', readme or '')
+    names = []
+    for t in toks:
+        t = t.rstrip('，。、,;')
+        if ':' in t:                              # github: / file: / https:
+            continue
+        if t.startswith(('-', '.', '/')):
+            continue
+        if '/' in t and not t.startswith('@'):     # 相对路径
+            continue
+        names.append(t if t.startswith('@') else t.split('@')[0])
+    wrong = sorted({n for n in names if n != pkg.get('name')})
+    if wrong:
+        out.append('README 里写了 `npm install %s`，而包名是 %r'
+                   ' ⇒ 照做的人会装到别的东西（本库真实踩过）'
+                   % (wrong[0], pkg.get('name')))
+    return out
+
+
+# ---------------------------------------------------------------------------
+# 自检（本库纪律：没有反向控制的判据不算门禁）
+#  6 个反样本（每个都必须被抓）+ 4 个正样本（不许误报）
+# ---------------------------------------------------------------------------
+def _selftest():
+    OK_PKG = {
+        'name': 'agentcss',
+        'publishConfig': {'access': 'public'},
+        'scripts': {'prepublishOnly': 'npm run publish:check'},
+    }
+    OK_FILES = ['dist/', 'ai/', 'README.md']
+    OK_README = ('```bash\nnpm install agentcss\n```\n'
+                 '也可以 `npm install github:owain323/frontend-lib`。')
+    bad = 0
+
+    def chk(label, got, want_red):
+        nonlocal bad
+        red = bool(got)
+        ok = red == want_red
+        print('  %s %-44s %s' % ('OK ' if ok else '🔴 ', label,
+                                 (got[0][:46] if got else '(通过)')))
+        if not ok:
+            bad += 1
+
+    def mod(fn, files=None, readme=None):
+        import copy
+        p = copy.deepcopy(OK_PKG)
+        fn(p)
+        return publish_problems(p, files or OK_FILES,
+                                OK_README if readme is None else readme)
+
+    chk('正：原样通过', publish_problems(OK_PKG, OK_FILES, OK_README), False)
+    chk('反：private=true', mod(lambda p: p.update(private=True)), True)
+    chk('反：access 不是 public',
+        mod(lambda p: p.update(publishConfig={'access': 'restricted'})), True)
+    chk('反：缺 prepublishOnly',
+        mod(lambda p: p['scripts'].pop('prepublishOnly')), True)
+    chk('反：有 prepack', mod(lambda p: p['scripts'].update(prepack='x')), True)
+    chk('反：files 里有 "*"',
+        mod(lambda p: None, files=OK_FILES + ['*']), True)
+    chk('反：README 包名不符',
+        mod(lambda p: None, readme='npm install frontend-lib'), True)
+    for label, rd in [
+        ('不误报：git 安装', 'npm install github:owain323/frontend-lib'),
+        ('不误报：本地 tgz', 'npm install ./agentcss-0.8.9.tgz'),
+        ('不误报：带版本号', 'npm install agentcss@0.9.0'),
+        ('不误报：没写安装段', '# 安装\n\n见 docs/RELEASING.md'),
+    ]:
+        chk(label, publish_problems(OK_PKG, OK_FILES, rd), False)
+
+    print('')
+    print('  ' + ('🔴 %d 条自检未通过' % bad if bad
+                  else '自检全部通过 ⇒ 判据有鉴别力、也不误报'))
+    return 1 if bad else 0
+
+
 if __name__ == '__main__':
+    if '--selftest' in sys.argv:
+        sys.exit(_selftest())
     sys.exit(main())
