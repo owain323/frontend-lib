@@ -234,3 +234,69 @@ def strip_comments(css):
         out.append(css[i])
         i += 1
     return ''.join(out), balanced
+
+
+# ---------------------------------------------------------------------------
+# 令牌取值：`var()` 解析（D5 的地基 · 全库唯一一份）
+# ---------------------------------------------------------------------------
+# 🔴 为什么必须收敛成一份（E31：同一个判断不写第二遍）
+#   `contrast.py` / `dark-gate.py` / `cmp-contrast.py` 各自写了一遍
+#   「从 CSS 里抠 `--x: #hex`」。三份实现只要有一份漏了某种写法（三色 hex、
+#   `rgb()`、`var()` 引用），对比度就会**悄悄**少算几对，而报告照样有数字。
+#
+#   而 D5（令牌分两层）之后，语义令牌会写成 `--paper: var(--raw-paper)` ——
+#   三份旧实现全部只认 hex，会直接把 30 个色令牌读成"不存在"。
+#
+#   ⇒ 解析 `var()` 这一步**本来就是必须写的**，所以写在这里、只写一次。
+import re as _re
+
+# 🔴 分隔符是 `;` **或** `}` —— CSS 允许最后一条声明不带分号，
+#   只认 `;` 会静默漏掉每个块的最后一条（实测：
+#   `--a:var(--b); --b:var(--a)}` 只读到 --a，
+#   于是『循环引用』那个反向控制根本没被触发）。
+_RE_DECL = _re.compile(r'(--[a-z0-9-]+)\s*:\s*([^;}]+)', _re.I)
+_RE_VAR = _re.compile(r'^var\(\s*(--[a-z0-9-]+)\s*(?:,\s*(.*))?\)$', _re.I)
+
+
+def declared_tokens(css):
+    """→ {name: value}（**原样值**，后出现的覆盖先出现的）。
+
+    只做词法，不做语义：值可能是 `#hex`、`rgb(...)`、`var(--x)`、`12px`。
+    """
+    out = {}
+    for m in _RE_DECL.finditer(strip_comments(css)[0]):
+        out[m.group(1).strip()] = m.group(2).strip()
+    return out
+
+
+def resolve_vars(tokens, _depth=0):
+    """把 `var(--x)` 引用解析成最终值，返回新 dict（不修改入参）。
+
+    🔴 三个必须做对的地方：
+      ① **循环引用**（`--a: var(--b); --b: var(--a)`）必须**报错**，
+         不能靠递归深度兜底 —— 那样只会得到一个莫名的 RecursionError。
+      ② **未定义的引用**：`var(--nope)` 有 fallback 就用 fallback，
+         没有就**保留原样**（不静默变成空串 —— 空串会让下游算出错误的对比度）。
+      ③ 值里带多个 var 的（`var(--a) var(--b)`）目前**不解析**，
+         保持原样并让调用方自己判断 —— 本库的令牌值是单值，
+         真出现多值时应该显式加进来，而不是让解析器猜。
+    """
+    if _depth > 20:
+        raise ValueError('var() 解析超过 20 层，可能是循环引用：%r'
+                         % (list(tokens)[:5],))
+
+    def one(name, seen):
+        raw = tokens[name]
+        m = _RE_VAR.match(raw.strip())
+        if not m:
+            return raw
+        ref, fallback = m.group(1), m.group(2)
+        if ref in seen:
+            raise ValueError('var() 循环引用：%s' % ' → '.join(list(seen) + [ref]))
+        if ref in tokens:
+            return one(ref, seen + (ref,))
+        if fallback is not None:
+            return fallback.strip()
+        return raw          # 未定义且无 fallback ⇒ 保留原样，不制造空值
+
+    return {k: one(k, (k,)) for k in tokens}

@@ -23,6 +23,9 @@ dark-gate.py — 暗色配色的门禁
 import sys
 import os
 import re
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+from _css import declared_tokens, resolve_vars  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SEP = os.sep
@@ -65,10 +68,10 @@ def parse(path):
     dark_src = src[i:]
 
     def grab(s):
-        d = {}
-        for m in re.finditer(r'(--[a-z0-9-]+)\s*:\s*(#[0-9a-fA-F]{6})\s*;', s):
-            d[m.group(1)] = m.group(2).lower()
-        return d
+        # 与 contrast.py 同一份解析器（D5 地基）—— 两处各写一遍必然漂移
+        toks = resolve_vars(declared_tokens(s))
+        return {k: v.strip().lower() for k, v in toks.items()
+                if re.match(r'^#[0-9a-fA-F]{6}$', v.strip())}
 
     return grab(light_src), grab(dark_src)
 

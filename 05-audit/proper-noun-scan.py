@@ -55,6 +55,10 @@ WHITELIST = {
     #   ⇒ 三个都是**语言/浏览器标准异常名**，是"我们真踩过的报错"，
     #     按本库的判据（是不是内部代号）它们必须进白名单。
     'AttributeError', 'ModuleNotFoundError', 'SecurityError',
+    # RecursionError（本轮补）：`_css.resolve_vars()` 的注释里解释了
+    # 「循环引用不能靠递归深度兜底，那样只会得到一个莫名的 RecursionError」
+    # —— 是标准异常名，不是内部代号。
+    'RecursionError',
     # Windows 公开 API / 错误码（2026-10-14补）
     #   起因：修 shot-baseline.py 的 node 路径时在注释里写了
     #   「直接丢给 CreateProcess 会 WinError 5」⇒ 被当成内部代号报红。
