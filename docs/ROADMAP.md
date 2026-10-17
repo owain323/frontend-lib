@@ -109,7 +109,7 @@
 |---|---|---|
 | W10 | 真机 WebView 验证（iOS WKWebView + Android WebView 各一个） | 🟡 **已采集 2 个真实入口**：iOS Safari（15/15）、Android 微信内置 WebView / XWEB（14/15）。通道是探针页直接 POST 回传，不需要人工抄数字。**仍缺**：Android 系统 WebView（Chrome）、iOS 微信、其它 App 内核 |
 | ~~W11~~ | ~~删掉失效的 api-snapshot（被 W3 取代后）~~ | ✅ **已完成**（0.8.9 核对）：`api-snapshot.py` 已不在仓库里，只剩三处**历史说明**（`api-contract-gate.py` / `api-contract.js` / `tsc-gate.py` 的文件头，讲的是它为什么被取代 —— 那些要留着）。⚠️ 这一项在表里躺了好几轮没人划掉，正是 `ERRORS.md` E13「文档里的待办没人回来划」的又一次 |
-| W12 | **`@layer` 的 WebView 基线实测** | 🟡 **2 行真机数据，`@layer` 两行都通过**：iOS 18.7 Safari（15/15）、Android 14 微信 8.0.47 / XWEB（14/15，缺 `scrollbar-width`，但本库有 `::-webkit-scrollbar` 私有回退 ⇒ 可接受降级）。⚠️ **判据被数据纠正过一次**：原来把"缺任何一项库在用的能力"都算成"不能切层"，于是微信缺一个 `scrollbar-width` 就会被判死 —— 而那个缺失与层叠无关。现已拆成"阻塞切层（只有 `@layer` 本身）/ 不阻塞但需逐条判定有无回退"。**仍不建议无条件切**：Android 系统 WebView、iOS 微信、其它 App 内核仍空白。另一条方法论：**探针说某项不支持 ≠ 这个能力在本库没效果**，判读必须回源码看有没有第二条路 |
+| W12 | **`@layer` 的 WebView 基线实测** | 🔴 **结论：不能无条件切层**（5 行数据，1 行阻塞）：iOS Safari 15/15 · iOS 微信 15/15 · iOS 企微 15/15 · Android 微信 XWEB 14/15（缺 `scrollbar-width`，有私有回退）· **Android 百度浏览器 11/15，缺 `@layer`（Chromium 97）**。`@layer` 不支持时**整层规则被丢弃**（不是层序错，是样式没了）⇒ 只能 `@supports` 双写或不切。⚠️ 决策还差一步：百度浏览器在目标受众里的占比 —— 基线表只回答"支不支持"，不替产品下"值不值得"的结论。另：判据被数据纠正过一次（原来把"缺任何库在用的能力"都算成不能切层，而 `scrollbar-width` 与层叠无关），已拆成"阻塞（只认 `@layer`）/ 不阻塞但需逐条判定回退"。方法论：**探针说某项不支持 ≠ 该能力在本库没效果**，判读必须回源码看有没有第二条路 |
 | W13 | Compatibility Benchmark 的**真模型实测** | ✅ 工具链已封闭：记录 v2 格式 / 八条判据 / `--check-records` / 参考记录必须满分（管线自洽）。❌ **真模型跑批仍是 0 条** —— 缺的是 API 访问权，不是代码。状态是 `UNVERIFIED`，不是 `PASS` |
 
 ### 🟡 P2·决策项 —— 已论证，**不要擅自实施**

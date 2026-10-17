@@ -68,6 +68,8 @@ WHITELIST = {
     #      改写它等于把证据变成摘要（那样别人就无法复核基线了）。
     #      身份标识（如微信的 MMWEBID）另行脱敏，那是隐私，不是术语。
     'MicroMessenger', 'WeChat', 'NetType',
+    # 企业微信 UA 里的字段名（`Language/zh ColorScheme/Light wwmver/…`）
+    'ColorScheme',
     # 协议 / 规范
     'HTTP', 'HTTPS', 'URL', 'URI', 'ARIA', 'WAI', 'APG', 'WCAG', 'CSS', 'HTML',
     'DOM', 'SVG', 'XML', 'JSON', 'YAML', 'TOML', 'API', 'REST', 'GraphQL',

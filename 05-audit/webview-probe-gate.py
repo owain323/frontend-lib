@@ -85,7 +85,6 @@ CAPS = [
     ('color-scheme', 'color-scheme'),
     ('backdrop-filter', 'backdrop-filter'),
     ('<dialog', '<dialog> + ::backdrop'),
-    ('popover', 'Popover API'),
     ('@layer', '@layer（尚未使用，切层的前提）'),
 ]
 
@@ -93,6 +92,12 @@ CAPS = [
 ALLOW = {
     '@layer（尚未使用，切层的前提）':
         '库里还没用 @layer；它是 W12「能不能切层」的问题本身，所以必须提前测',
+    '原生 Popover 属性（本库未使用，仅记录）':
+        '🔴 这是一次**误映射的修正**：原来 CAPS 里写 ("popover", "Popover API")，'
+        '而 `popover` 在源码里命中的全是**自研类名 `.popover`**（配合 `data-open`），'
+        '不是原生 Popover API —— 实测 grep `showPopover(` / `popover=` / `[popover]` '
+        '全无命中。⇒ 这一项保留是为了记录平台能力，但**不参与**"库能不能用"的判定，'
+        '所以从 CAPS 移到这里，并写明理由。',
 }
 
 PLACEHOLDERS = ('?', '?', 'TBD', 'TODO', '待填', '待定', 'xxx', '—待')
@@ -222,7 +227,7 @@ def check_drift(html):
     # ③b 探针测了、源码不用
     covered = set(n for _f, n in CAPS)
     for name, _m in items:
-        if name in covered:
+        if name in covered or name in ALLOW:
             continue
         problems.append('③ 探针里有 `%s`，但它不在 CAPS 表里 —— 无法判断源码是否还在用'
                         % name)
