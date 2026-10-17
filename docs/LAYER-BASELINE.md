@@ -1,9 +1,15 @@
 # `@layer` 的 WebView 基线（W12）
 
-> **当前状态：部分验证（1 / N）。**
-> 已有 **1 行**真机实测：iPhone · iOS 18.7 · Safari，**15 / 15 全支持**，`@layer` 实测通过。
-> 但 **Android 系统 WebView、各 App 内置 WebView 仍是空白** ——
-> 按下面第三节的判据，**仍然没有资格无条件切层**。缺口就在这张表里，不藏在别处。
+> **当前状态：部分验证（2 行）。**
+> 已有 2 行真机实测，**`@layer` 两行都通过**：
+>
+> | 入口 | 结果 |
+> |---|---|
+> | iOS 18.7 · Safari | 15 / 15 |
+> | Android 14 · 微信 8.0.47（XWEB / Chromium 146） | 14 / 15，缺 `scrollbar-width`（有私有回退） |
+>
+> 但 **Android 系统 WebView、iOS 微信、以及其它 App 内置内核仍是空白**。
+> 按下面第三节的判据：**@layer 本身两行都过，技术上可行；但样本太窄，仍不建议无条件切。**
 
 ---
 
@@ -56,19 +62,33 @@ Android 上 Chrome ≠ 系统 WebView ≠ 各家 App 内置 WebView。**入口�
 
 ## 三、判据：什么时候才有资格切层
 
-| 结论 | 条件 | 动作 |
-|---|---|---|
-| 可以无条件切 | 目标基线里**每一行**都是 `15 / 15` 且 `@layer` 行为实测通过 | 直接切 |
-| 只能条件切 | 有一行缺 `@layer` | 走 `@supports at-rule(@layer)` 双写，或者**不切** |
-| 不能切 | 有任何一行缺 `:has()` / `popover` / `flex gap` 等**库已经在用**的能力 | 先解决那个能力，切层是次要问题 |
+🔴 **先把两类缺失分开**（这一点是被真机数据纠正的）：
+`@layer` 能不能用，与"某一项别的能力缺失"是**两件事**。
+第一版判据把两者混在一起，于是微信缺一个 `scrollbar-width` 就会被判成"不能切层" ——
+而那个缺失跟层叠毫无关系，且本库有私有回退。
 
-⚠️ 第一行里的"每一行"是**字面意思**：只要目标受众里还有一台设备不过，就不能无条件切。
+| 类别 | 判据 | 动作 |
+|---|---|---|
+| **阻塞切层** | 任一行 `@layer` 实测**不通过** | 只能走 `@supports at-rule(@layer)` 双写，或者不切 |
+| **不阻塞切层** | 除 `@layer` 外的其它能力缺失 | 不影响层叠决策；但必须逐条判定"有没有回退、降级后是否可接受"，并把结论写进「缺失能力」列 |
+| **可以无条件切** | 目标受众内**每一行** `@layer` 都通过 | 直接切 |
+
+⚠️ "每一行"是**字面意思**：目标受众里还有一台设备不过，就不能无条件切。
 `docs/INVARIANT.md` 的口径是"约束要么成立、要么被写进合同"，不存在"大部分成立"。
 
-**当前判定：还不能无条件切。** 表里只有 1 行（iOS Safari），
-而本库的目标受众明确包含 **Android 系统 WebView** 与 **App 内置 WebView** ——
-这两类恰恰是 `@layer` 支持最参差的地方，而它们一行数据都没有。
-⇒ 现在的正确动作是**继续采集**，不是"因为 iOS 过了就切"。
+**当前判定：`@layer` 本身两行都通过（技术可行），但样本只有 2 个，仍不建议无条件切。**
+
+| 已有 | 缺 |
+|---|---|
+| iOS Safari、Android 微信（XWEB） | Android 系统 WebView（Chrome）、iOS 微信、其它 App 内置内核 |
+
+另有一条**方法论**上的收获，值得单独记下来：
+
+> `scrollbar-width` 在微信 XWEB 里 `CSS.supports` 返回 `false`，
+> 但本库的滚动条样式**照样生效** —— 因为 `01-tokens/scrollbar.css` 同时写了
+> `::-webkit-scrollbar` 私有实现。
+> ⇒ **「探针说这一项不支持」不等于「这个能力在本库里没有效果」。**
+> 判读基线表时必须回到源码看一眼有没有第二条路，否则会把"可接受降级"误判成"缺陷"。
 
 ---
 
@@ -80,14 +100,17 @@ Android 上 Chrome ≠ 系统 WebView ≠ 各家 App 内置 WebView。**入口�
   · 「状态」只能是 `UNVERIFIED` 或 `VERIFIED`
   · 标成 `VERIFIED` 的行，UA 必须是**从页面 JSON 里复制出来的完整 UA**（不是"iPhone 15"这种简称）
   · 「结果」列写 `支持 N / 15`，缺失项写在「缺失能力」列
-  当前 1 行（iOS Safari）。**Android 与 App 内置 WebView 一行都没有 —— 那是缺口，不是"没问题"。**
+  当前 2 行（iOS Safari + Android 微信 XWEB）。**Android 系统 WebView、iOS 微信、其它 App 内核一行都没有 —— 那是缺口，不是"没问题"。**
   「测试日期」不写死年月日：这个文件在公开仓里，写死日期等于把内部时间线留在仓库里
   （`leak-scan` 的「工作日期戳」判据就是为了这个）。日期以**提交时间**为准，精确到秒且无法伪造。
+  「UA」里凡是**身份标识**（如微信的 `MMWEBID`）一律脱敏成 `<已脱敏>` ——
+  基线需要的是技术信息（内核与版本），不是谁测的。
 -->
 
 | 设备 / 系统 | 入口 | UA | 结果 | 缺失能力 | 测试日期 | 记录人 | 状态 |
 |---|---|---|---|---|---|---|---|
 | iPhone（iOS 18.7，视口 430×932 @3x） | Safari（系统浏览器） | `Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.1 Mobile/15E148 Safari/604.1` | 15 / 15 | 无 | 见采集所在提交（git log） | 项目所有者（真机） | VERIFIED |
+| Android 14（视口 400×787 @2.7x） | 微信 8.0.47 内置 WebView（XWEB 内核，Chromium 146） | `Mozilla/5.0 (Linux; Android 14; PHZ110 Build/UP1A.231005.007; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/146.0.7680.178 Mobile Safari/537.36 XWEB/1460249 MMWEBSDK/20231202 MMWEBID/<已脱敏> MicroMessenger/8.0.47.2560 WeChat/arm64 Weixin NetType/WIFI Language/zh_CN ABI/arm64` | 14 / 15 | `scrollbar-width` —— **标准 API 缺失，但本库有私有回退**：`01-tokens/scrollbar.css` 同时写了 `::-webkit-scrollbar` 伪元素族，XWEB 是 Chromium 内核，私有实现仍在 ⇒ 观感可接受降级，不是缺陷 | 见采集所在提交（git log） | 项目所有者（真机） | VERIFIED |
 
 ---
 

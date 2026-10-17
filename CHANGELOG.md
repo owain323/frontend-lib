@@ -102,6 +102,14 @@
 - 门禁 **143 → 149 道**（`token-resolved` / `webview-probe` / `webview-probe-run` /
   `benchmark-records` / `benchmark-records-rev` / `dist-js-parity-rev`）。
 - `benchmark/results/` 不入库：`models/` 是证据，`results/` 是它的重算产物。
+- **`docs/LAYER-BASELINE.md` 已有 2 行真机数据**：iOS Safari（15/15）、
+  Android 微信 XWEB（14/15）。**切层判据被数据纠正了一次** ——
+  原来把"缺任何一项库在用的能力"都算成"不能切层"，于是微信缺一个
+  `scrollbar-width` 就会被判死，而那个缺失与层叠毫无关系（且本库有
+  `::-webkit-scrollbar` 私有回退）。现拆成「阻塞切层（只有 `@layer` 本身）」
+  与「不阻塞但需逐条判定有无回退」两类。
+- 探针页的「发送到电脑」加了 `navigator.sendBeacon` 兼容通道 ——
+  部分内置 WebView 对 `fetch` 有额外限制，`sendBeacon` 走另一条投递路径。
 
 
 ---
