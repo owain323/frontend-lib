@@ -89,3 +89,8 @@ benchmark/results/
 #   这条挡的是**文件名**，两道都要。
 .npm-token
 .npmrc.local
+
+# --- 发布过程中的一次性状态（绝不入库）---
+.npm-recovery
+.publish-done
+.publish-stuck
