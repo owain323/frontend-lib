@@ -8,8 +8,8 @@
   ],
   "totals": {
     "sourceFiles": 65,
-    "sourceBytes": 687383,
-    "distGzip": 89664
+    "sourceBytes": 687481,
+    "distGzip": 89674
   },
   "files": [
     {
@@ -189,15 +189,15 @@
     },
     {
       "source": "02-primitives/badge/badge.css",
-      "sourceSha256": "97abe909f6aea527d31003962e075469287f6704e2c2961bb7f98ee6b4c0ac63",
-      "sourceBytes": 6451,
-      "sourceGzip": 2794,
+      "sourceSha256": "45baf276af38372930f708bbd417126def0d5fa64da4e8682bb84fa890cd96b1",
+      "sourceBytes": 6549,
+      "sourceGzip": 2854,
       "outputs": [
         {
           "path": "dist/02-primitives/badge/badge.css",
           "kind": "minified",
-          "bytes": 1745,
-          "gzip": 515
+          "bytes": 1767,
+          "gzip": 525
         }
       ]
     },

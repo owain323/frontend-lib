@@ -165,6 +165,65 @@ dist/01-tokens/tokens.css          ← 拷这个
 
 ---
 
+### 最小可运行页面（纯 HTML，不用打包器）
+
+把下面整段存成 `index.html`，放在 `node_modules/` 同级目录，双击打开就是对的：
+
+```html
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>示例</title>
+<link rel="stylesheet" href="node_modules/agentcss/dist/01-tokens/tokens.css">
+<link rel="stylesheet" href="node_modules/agentcss/dist/01-tokens/typography.css">
+<link rel="stylesheet" href="node_modules/agentcss/dist/01-tokens/page.css">
+<link rel="stylesheet" href="node_modules/agentcss/dist/02-primitives/card/card.css">
+<link rel="stylesheet" href="node_modules/agentcss/dist/02-primitives/badge/badge.css">
+<link rel="stylesheet" href="node_modules/agentcss/dist/02-primitives/button/button.css">
+<link rel="stylesheet" href="node_modules/agentcss/dist/02-primitives/input/input.css">
+</head>
+<body class="page">
+<main class="wrap">
+
+  <h1>我的订单</h1>
+  <p class="lede">最近 30 天 · 共 1 笔</p>
+
+  <div class="card card--interactive">
+    <div class="card__body">
+      <h3>茅台 2026 年一季报</h3>
+      <p class="small">订单号 20261017001</p>
+      <span class="badge badge--success">已披露</span>
+    </div>
+  </div>
+
+  <div class="field">
+    <label class="field__label" for="q">订单号</label>
+    <input class="field__input" id="q" type="search" placeholder="输入订单号" inputmode="numeric">
+    <span class="field__hint">支持后四位模糊匹配</span>
+  </div>
+
+  <button class="btn btn--md btn--primary">导出</button>
+
+</main>
+</body>
+</html>
+```
+
+三处最容易写错的地方，模板里已经避开了：
+
+| 如果这样写 | 会发生什么 |
+|---|---|
+| `<input class="input">` | **`.input` 不存在**。不报错、不警告，高度变成 21px |
+| 内容直接放 `.card` 里 | `.card` 自身 `padding: 0`，文字**贴边** |
+| 漏掉 `page.css` | `.wrap` / `.lede` 不生效，整页宽度失去约束 |
+
+**上生产时**：把 `node_modules/agentcss/dist/` 整个复制到静态目录（比如 `vendor/agentcss/`），
+把上面 7 个 `href` 的前缀换掉。`node_modules` 不会随部署上线。
+
+---
+
 ## 体积：默认给你的已经是干净产物
 
 源码目录（`01-tokens/` `02-primitives/` …）里的 CSS **带着全部注释** —— 实测全库 CSS
