@@ -61,6 +61,64 @@ npm install https://github.com/owain323/frontend-lib/releases/download/v0.9.0/ag
 > 这与本库曾经踩过的「README 教人装、装到的是别人 2017 年的包」是同一类坑。
 > 发布成功之后这一行才会换上。
 
+## 组件一览
+
+共 **33** 个（stable 29 / beta 4）。每个组件目录下有 `README.md`（为什么这么做）和 `demo.html`（能直接抄的结构）。
+
+### primitives · 基础件（13）
+
+| 组件 | 根类名 | 用途 |
+|---|---|---|
+| `badge` | `badge` | 状态标签：计数、分类、结果标记 |
+| `button` | `btn` | 动作触发：主/次/危险/纯文字四档 |
+| `card` | `card` | 内容容器：媒体+正文+操作区三段 |
+| `choice` | `choice` | 单选/多选/原生 select 外观的统一控件 |
+| `combobox` | `combo` | 可搜索 + 可多选标签的输入控件 |
+| `date-range` | `drange` | 日期区间选择，含预设快捷范围 |
+| `input` | `field` | 文本输入及其标签/帮助/错误三件套 |
+| `popover` | `popover` | 锚定到触发元素的浮层 |
+| `progress` | `progress` | 进度条与进度环 |
+| `select` | `select` | 自定义下拉选择（非原生） |
+| `separator` | `separator` | 分隔线，可带中间文字 |
+| `skeleton` | `skeleton` | 加载占位骨架 |
+| `switch` | `switch` | 开关切换 |
+
+### patterns · 组合模式（13）
+
+| 组件 | 根类名 | 用途 |
+|---|---|---|
+| `accordion` | `accordion` | 可折叠分组 |
+| `content` | `prose` | 长文排版容器（标题/段落/列表/引用/代码） |
+| `drawer` | `drawer` | 侧边抽屉，含遮罩 |
+| `dropdown` | `dd` | 下拉菜单 |
+| `form-validation` | `form` | 表单校验反馈与错误汇总 |
+| `list` | `list` | 键值列表/条目列表 |
+| `nav` | `nav` | 顶部导航与目录 |
+| `overlay` | `toast` | 吐司提示与模态遮罩 |
+| `pagination` | `pagination` | 分页控件 |
+| `states` | `state` | 空/加载/错误/成功四种整块状态 |
+| `tabs` | `tabs` | 选项卡切换 |
+| `tooltip` | `tooltip` | 悬停/聚焦提示 |
+| `tree` | `tree` | 可展开树形结构 |
+
+### recipes · 整页配方（3）
+
+| 组件 | 根类名 | 用途 |
+|---|---|---|
+| `analysis-report` | `report` | 组合型研究报告页面：正文与辅助栏并排，窄屏自然退回单栏 |
+| `report` | `rep` | 报告版式系统 v1：共享基础 + 三套版式（杂志/科研技术/金融研究），只换一个 … |
+| `table` | `table` | 数据表格：排序/加载/空/错误四态；三种用途预设（财务/学术/统计） |
+
+### assets · 可视化（4）
+
+| 组件 | 根类名 | 用途 |
+|---|---|---|
+| `bar` | `bar` | 柱状图（charter 13 图表规范）：堆叠/分组两种语义、超量程裁剪、图例 |
+| `model-viewer` | `mv` | 3D 模型查看器：令牌驱动样式，不含渲染库本体 |
+| `scientific-plot` | `splot` | 二维科学绘图：折线/区间带/对数轴，纯令牌驱动、零依赖 |
+| `sparkline` | `sparkline` | 迷你趋势图：无坐标轴、纯形状，适合表格内嵌的一行走势 |
+---
+
 ## 用法
 
 **1 · 引入样式**（用你的打包器）

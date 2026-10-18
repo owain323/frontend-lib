@@ -9,6 +9,58 @@
 
 ---
 
+## 用法
+
+```html
+<div class="card">
+  <div class="card__body">
+    <h3>标题</h3>
+    <p class="small">说明文字</p>
+  </div>
+</div>
+```
+
+**`.card__body` 不是可选的。** `.card` 自身 `padding: 0`，内边距全在
+`.card__body` 上（`padding: var(--sp-5)`）。直接往 `.card` 里放内容，文字会**贴边**。
+
+**`.card` 是 `display: flex; flex-direction: column`**，子元素默认被拉伸到整宽。
+所以**行内小元素会被拉成一条整宽的色带**（实测：一个本该 54px 宽的状态标签
+被拉到 355px）。这不是 bug，是 flex 的默认 `align-items: stretch`。
+
+两种解法：
+
+```html
+<!-- ① 包一层（推荐，语义更清楚） -->
+<div class="card"><div class="card__body">
+  <h3>标题</h3>
+  <div><span>状态</span></div>
+</div></div>
+
+<!-- ② 直接给那个元素 align-self: flex-start -->
+<div class="card"><div class="card__body">
+  <h3>标题</h3>
+  <span style="align-self:flex-start">状态</span>
+</div></div>
+```
+
+> 若要在卡片里放**状态标签**，请同时引入 `02-primitives/badge/badge.css` ——
+> 它不在 card 的依赖里，本目录的 `demo.html` 也没有演示它。
+
+| 变体 | 用途 |
+|---|---|
+| `.card--interactive` | 可点击（hover 抬起 2px + 阴影） |
+| `.card--linked` | 整卡可点，语义由 `<a>` 承担 |
+| `.card--flat` | 无边框，靠背景区分 |
+| `.card--elevated` | 常驻阴影 |
+| `.card--compact` | 紧凑内边距 |
+| `.card--row` | 横向排列（图左文右） |
+| `.card--selected` | 选中态 |
+
+依赖：`01-tokens/tokens.css` + `01-tokens/typography.css`（正文）+
+`01-tokens/page.css`（`.wrap` / `.small` 等页面骨架）。
+
+---
+
 ## 唯一的核心判据：hover 不能有布局跳动
 
 hover 只改 **`transform`** 和 **`box-shadow`**，这两个属性不触发回流。

@@ -16,6 +16,27 @@
 
 （0.9.0 的内容已定版，见下一节；这一节留给下一版）
 
+### Fixed · 首次使用的四个文档/配置缺口（实测得出）
+
+用「装 tarball → 只读文档 → 写一个真实移动端页面」的方式跑了一遍，撞到四处静默失效：
+
+- **`.input` 这个类不存在**（真实是 `.field__input`，且必须包在 `.field` 里）。
+  写了不报错、不警告，只是拿到浏览器默认样式（高度 21px vs 组件 44px）。
+  → `input` README 顶部加了醒目警告 + 最小结构。
+- **`.card` 必须包 `.card__body`**（自身 `padding: 0`，内边距在子元素上），
+  而原 README 只有设计论证、没有用法。→ 补 `## 用法`（含"直接放内容会贴边"的说明）。
+- **`.card` 是 flex column ⇒ 行内小元素被拉伸**（实测状态标签从 54px 拉到 355px）。
+  → 在 card README 写明原因与两种解法。
+- **`page.css` 没有 exports 入口**：`import 'agentcss/page.css'` 报
+  `ERR_PACKAGE_PATH_NOT_EXPORTED`，只能写 `agentcss/dist/01-tokens/page.css`，
+  而它是所有组件的依赖。→ `exports` 补 `"./page.css"`。
+
+另：**README 补「组件一览」**（33 个，按 primitives / patterns / recipes / assets 分组，
+含根类名与用途）。此前用户只能翻目录才知道有什么。
+
+> 这四条都不是"功能坏了"，是**信息没到位**。判据能保证"结构对了不会坏"，
+> 保证不了"用户知道结构是什么"。
+
 ## [0.9.0] - 2026-10-17
 
 ### Added
