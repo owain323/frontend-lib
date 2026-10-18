@@ -1,5 +1,23 @@
 # input / field
 
+> 🔴 **没有 `.input` 这个类名。**
+>
+> 真实类名是 **`.field__input`**，而且必须包在 `.field` 里：
+>
+> ```html
+> <div class="field">
+>   <label class="field__label" for="q">订单号</label>
+>   <input class="field__input" id="q" type="search" inputmode="numeric">
+>   <span class="field__hint">支持后四位模糊匹配</span>
+> </div>
+> ```
+>
+> 写 `<input class="input">` **不会报错、不会警告、控制台干净** ——
+> 它只是拿到浏览器默认样式：高度约 **21px**（本组件是 44px），
+> 边框、圆角、聚焦环、错误态全部没有。
+> 这类"静默失效"比报错更贵：你会以为是 HTML 写错了，或者以为库就该这样。
+
+
 | 字段 | 内容 |
 |---|---|
 | **来源** | 原创（依据 WCAG 2.1 + 移动端实测约束） |

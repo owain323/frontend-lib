@@ -21,6 +21,7 @@
     },
     "./tokens.css": "./dist/01-tokens/tokens.css",
     "./typography.css": "./dist/01-tokens/typography.css",
+    "./page.css": "./dist/01-tokens/page.css",
     "./primitives/*": "./dist/02-primitives/*",
     "./patterns/*": "./dist/03-patterns/*",
     "./recipes/*": "./dist/04-recipes/*",

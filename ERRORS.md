@@ -1074,7 +1074,7 @@ JSON 能解析"，**没有一条判据碰过按钮**。它验的是探针**测�
 `versions: ['0.0.0-stage']`。我据此判定"发布没成功"，去网页点了 **Delete package**
 （确认框里手打 `agentcss`），删除请求发出后页面刷新，才显示：
 
-    owain32380 published 0.9.0 · 2 minutes ago
+    （维护者账号）published 0.9.0 · 2 minutes ago
 
 **包其实已经发布成功了，是我把它删掉了。**
 
