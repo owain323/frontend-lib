@@ -514,11 +514,11 @@ def main():
             bad = 1
         return bad
 
-    io.open(p, 'w', encoding='utf-8').write(head + START + '\n' + table + '\n' + tail)
+    io.open(p, 'w', encoding='utf-8', newline='\n').write(head + START + '\n' + table + '\n' + tail)
     print('  ✓ 已重建 START-HERE.md 的组件表（%d 个组件）' % len(rows))
-    io.open(ai_p, 'w', encoding='utf-8').write(s2[:i2] + want2 + s2[j2:])
+    io.open(ai_p, 'w', encoding='utf-8', newline='\n').write(s2[:i2] + want2 + s2[j2:])
     print('  ✓ 已重建 ai/START-HERE.md 的实测清单')
-    io.open(a_p, 'w', encoding='utf-8').write(s3[:i3] + want3 + s3[j3:])
+    io.open(a_p, 'w', encoding='utf-8', newline='\n').write(s3[:i3] + want3 + s3[j3:])
     print('  ✓ 已重建 09-assets/README.md 的能力清单')
     return 0
 

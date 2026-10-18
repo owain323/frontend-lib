@@ -18,7 +18,7 @@
 
 | 档 | 组件 | tokens（必付） | CSS | JS | **合计** | 源码版合计 | 差 |
 |---|---|---:|---:|---:|---:|---:|---:|
-| primitive | `badge` | 2.4 KB | 0.5 KB | — | **2.9 KB** | 19.4 KB | −16.6 KB |
+| primitive | `badge` | 2.4 KB | 0.5 KB | — | **2.9 KB** | 19.5 KB | −16.6 KB |
 | primitive | `button` | 2.4 KB | 1.0 KB | — | **3.3 KB** | 22.9 KB | −19.6 KB |
 | primitive | `card` | 2.4 KB | 0.9 KB | — | **3.3 KB** | 20.2 KB | −16.9 KB |
 | primitive | `choice` | 2.4 KB | 1.1 KB | — | **3.4 KB** | 22.1 KB | −18.6 KB |

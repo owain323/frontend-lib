@@ -38,6 +38,7 @@
   line-height: 1.5;              /* 不用行高单位：11px 字号下 1.5em 会虚 */
   white-space: nowrap;
   vertical-align: baseline;
+  align-self: flex-start;        /* flex 容器里不被 stretch 拉满（实测 54→355px） */
   /* 🔴 不可点 ⇒ cursor 默认、不要 transition 假装能点 */
 }
 
