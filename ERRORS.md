@@ -1065,3 +1065,42 @@ JSON 能解析"，**没有一条判据碰过按钮**。它验的是探针**测�
    —— 这和 E47（用安全上下文测非安全上下文）是同一个病：
    **测的环境不等于跑的环境**。
 3. 判断方法很机械：`env | grep npm_config_` 看当前继承了哪些。
+
+## E55 · 把已经发布成功的包删掉了 —— 在"后台处理中"就下结论 · 0.9.0 发布当天
+
+**发生了什么**
+
+`npm publish` 返回 `RC=0` 且打印 `+ agentcss@0.9.0`，但随后 `curl` 查 registry 只看到
+`versions: ['0.0.0-stage']`。我据此判定"发布没成功"，去网页点了 **Delete package**
+（确认框里手打 `agentcss`），删除请求发出后页面刷新，才显示：
+
+    owain32380 published 0.9.0 · 2 minutes ago
+
+**包其实已经发布成功了，是我把它删掉了。**
+
+随后重发被拒：
+
+    403 agentcss cannot be republished until 24 hours have passed.
+
+**根因（两层）**
+
+① **时间竞态**：npm 的提示写得很清楚 ——
+   `Your package is being processed and may take a few minutes to become available.`
+   我只等了 20 秒就去查，而 registry 在那段时间里**仍返回旧的 `0.0.0-stage` 占位**。
+   `0.0.0-stage` 是更早一次失败 publish 留下的占位包，它的存在**不说明新版本没传上去**。
+
+② **对不可逆操作没有二次确认的"事实依据"**：
+   删除前我的唯一依据是"registry 里没有 0.9.0"，而这个依据本身是**时效性不明的读数**。
+   **拿一个可能过期的观测去支撑不可逆动作，是这一类错误的共同结构。**
+
+**纠正规则**
+
+1. **"发布成功"的唯一判据不是 CLI 返回码，也不是立刻查 registry**，而是：
+   - `npm view <pkg>@<version> version`（带版本查，不是查 latest）
+   - **并且**等到 CLI 提示的 "few minutes" 真的过去（至少 60–120 秒）
+   - 期间不改动任何东西
+2. **任何 `Delete` / `Unpublish` / `--force` 之前，必须换一条独立证据链再确认一次**
+   （例如：网页 Packages 列表里的 "published X.Y.Z · N minutes ago"，
+   或 `npm view pkg time`）——**不能只用同一个读数**。
+3. **不可逆操作前先做可逆的事**：这次如果先做的只是"再等 2 分钟再查"，
+   就不会有损失。**先等，再判断，最后才动手。**
