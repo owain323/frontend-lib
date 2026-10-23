@@ -580,6 +580,17 @@ run "coverage"    $PY 05-audit/coverage-gate.py
 # ⚠️ 解释器选择：`$PY` 没装 Pillow 时，允许用 `PY_PIL` 显式指定一个装了的：
 #      PY_PIL=/path/to/python bash 05-audit/check-all.sh
 #   这样"哪台机器上能跑视觉回归"是**写明**的，而不是靠碰运气。
+# 🔴 视觉门禁的两道**前置守卫**（2026-10-23）：
+#   ① visual-coverage：视野内的 demo.html 必须都在 PAGES 里。
+#      实测事故：PAGES 是硬编码 34 条 ⇒ 新页面**永远不被拍**，
+#      "改了 CSS 没人报警"这个洞静默重开。首跑就抓到 04-recipes/report 没有基线。
+#   ② visual-stamp：基线指纹必须等于当前代码的指纹。
+#      实测事故：浅色基线录于 6f045ff、暗色录于 4962b2c，而 HEAD 已到 208782f，
+#      两页红着过了 5 天 —— 因为指纹不符**只是 WARN**，像素比对仍是唯一判据。
+#   两条都不依赖 Pillow ⇒ 放在 SKIP 判断**之前**，视觉回归跳过时它们照样跑。
+run "visual-coverage" $PY 05-audit/visual-coverage-gate.py
+run "visual-stamp"    $PY 05-audit/visual-stamp-gate.py
+
 PY_VIS=""
 for _c in "${PY_PIL:-}" "$PY"; do
   [ -z "$_c" ] && continue
