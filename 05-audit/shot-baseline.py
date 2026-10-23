@@ -112,6 +112,7 @@ PAGES = [
     # ⭐ 2026-10-10 新增（FL-NEXT-01 / VIZ-02 交付物接入现有机制，不另建截图框架）：
     #    原则不变 —— 有 CSS 且有 demo 的一律纳入。
     ('04-recipes/analysis-report', 'demo.html', '组合型研究报告'),
+    ('04-recipes/report',          'demo.html', '研究报告'),
     ('04-recipes/data-showcase',   'demo.html', '数据展示对照'),
     ('09-assets/scientific-plot',  'demo.html', '科学绘图'),
 ]
@@ -575,6 +576,54 @@ def diff_all(threshold=1.0, tolerance=12):
     return passed, failed
 
 
+def css_fingerprint():
+    """
+    所有 CSS 的内容指纹（用来判断基线是否录于当前代码）
+
+    🔴 必须**先归一化行尾**再哈希。
+    实测事故：Windows 上 `core.autocrlf=true` ⇒ `git clone` 检出的
+    CSS 全是 CRLF，而录基线的机器上是 LF ⇒ 指纹**必然不等**
+    ⇒ 视觉回归门禁在任何 Windows clone 上**永久红**，
+    而报错只说"指纹不符"，看不出是行尾造成的。
+
+    那不是"代码变了"，是"字节表示变了" —— 指纹不该区分这两者。
+    ⇒ 统一把 CRLF 折成 LF 再哈希。
+
+    🔴🔴 第二个实测事故（比行尾更隐蔽）：**旧版只 glob `0*/*/*.css`**。
+    这个"三段"模式**匹配不到二级路径**的文件，实测漏掉 5 个：
+        01-tokens/tokens.css、typography.css、focus-ring.css、
+        scrollbar.css、04-recipes/tierA-tokens.css
+    ⇒ 也就是说：**只改 tokens.css（改颜色、改暗色）时，指纹纹丝不动**，
+      门禁不会提示"基线可能过期"，于是 diff 出现了却没人知道为什么。
+
+    ⇒ 现在改为**遍历库目录**，取所有能影响渲染的文件（css/js/html）。
+    之所以连 js/html 一起算：截图是**渲染结果**，
+    改了 tree.js 的 DOM 结构或 demo.html 的内容，观感一样会变，
+    只算 CSS 会让指纹对这类改动假装没看见。
+    """
+    import hashlib
+    h = hashlib.sha256()
+    skip = {'.git', 'node_modules', '06-vendor', 'shots',
+            '_baseline', '_current', '_diff'}
+    exts = {'.css', '.js', '.html'}
+    files = []
+    for d in ('01-tokens', '02-primitives', '03-patterns', '04-recipes',
+              '09-assets', '10-review', 'adapters'):
+        base = os.path.join(ROOT, d)
+        if not os.path.isdir(base):
+            continue
+        for dirpath, dirnames, filenames in os.walk(base):
+            dirnames[:] = [x for x in dirnames if x not in skip]
+            for fn in filenames:
+                if os.path.splitext(fn)[1].lower() in exts:
+                    files.append(os.path.join(dirpath, fn))
+    for f in sorted(files):
+        rel = os.path.relpath(f, ROOT).replace('\\', '/')
+        h.update(rel.encode('utf-8'))
+        h.update(io.open(f, 'rb').read().replace(b'\r\n', b'\n'))
+    return h.hexdigest()[:16]
+
+
 def main():
     argv = sys.argv[1:]
     scheme = 'light'
@@ -606,52 +655,8 @@ def main():
             print('  --threshold 需要一个数字（如 2.0）')
             return 2
 
-    def css_fingerprint():
-        """
-        所有 CSS 的内容指纹（用来判断基线是否录于当前代码）
-
-        🔴 必须**先归一化行尾**再哈希。
-        实测事故：Windows 上 `core.autocrlf=true` ⇒ `git clone` 检出的
-        CSS 全是 CRLF，而录基线的机器上是 LF ⇒ 指纹**必然不等**
-        ⇒ 视觉回归门禁在任何 Windows clone 上**永久红**，
-        而报错只说"指纹不符"，看不出是行尾造成的。
-
-        那不是"代码变了"，是"字节表示变了" —— 指纹不该区分这两者。
-        ⇒ 统一把 CRLF 折成 LF 再哈希。
-
-        🔴🔴 第二个实测事故（比行尾更隐蔽）：**旧版只 glob `0*/*/*.css`**。
-        这个"三段"模式**匹配不到二级路径**的文件，实测漏掉 5 个：
-            01-tokens/tokens.css、typography.css、focus-ring.css、
-            scrollbar.css、04-recipes/tierA-tokens.css
-        ⇒ 也就是说：**只改 tokens.css（改颜色、改暗色）时，指纹纹丝不动**，
-          门禁不会提示"基线可能过期"，于是 diff 出现了却没人知道为什么。
-
-        ⇒ 现在改为**遍历库目录**，取所有能影响渲染的文件（css/js/html）。
-        之所以连 js/html 一起算：截图是**渲染结果**，
-        改了 tree.js 的 DOM 结构或 demo.html 的内容，观感一样会变，
-        只算 CSS 会让指纹对这类改动假装没看见。
-        """
-        import hashlib
-        h = hashlib.sha256()
-        skip = {'.git', 'node_modules', '06-vendor', 'shots',
-                '_baseline', '_current', '_diff'}
-        exts = {'.css', '.js', '.html'}
-        files = []
-        for d in ('01-tokens', '02-primitives', '03-patterns', '04-recipes',
-                  '09-assets', '10-review', 'adapters'):
-            base = os.path.join(ROOT, d)
-            if not os.path.isdir(base):
-                continue
-            for dirpath, dirnames, filenames in os.walk(base):
-                dirnames[:] = [x for x in dirnames if x not in skip]
-                for fn in filenames:
-                    if os.path.splitext(fn)[1].lower() in exts:
-                        files.append(os.path.join(dirpath, fn))
-        for f in sorted(files):
-            rel = os.path.relpath(f, ROOT).replace('\\', '/')
-            h.update(rel.encode('utf-8'))
-            h.update(io.open(f, 'rb').read().replace(b'\r\n', b'\n'))
-        return h.hexdigest()[:16]
+    # css_fingerprint() 上移到模块级：视觉戳门禁要复用同一份算法，
+    # 不能在这里留第二份（I-7 单一真源）。
 
     def stamp_path():
         return os.path.join(BASELINE, '_stamp.json')
