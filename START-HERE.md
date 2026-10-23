@@ -62,7 +62,7 @@
 | 长文排版 | `03-patterns/content/content.css` | 286 | — | 写文档 / 长文就要 |
 | reveal | `03-patterns/reveal/reveal.css` | 93 | 可选 130 (`reveal.js`，入场动效，纯增强；没有它内容直接可见) |  |
 | analysis-report | `04-recipes/analysis-report/analysis-report.css` | 187 | — |  |
-| detail-page | `04-recipes/detail-page/detail-page.css` | 176 | — |  |
+| detail-page | `04-recipes/detail-page/detail-page.css` | 190 | — |  |
 | report | `04-recipes/report/report.css` | 326 | — |  |
 | table | `04-recipes/table/table.css` | 366 | — |  |
 | bar | `09-assets/bar/bar.css` | 166 | **必需 309** (`bar.js`) |  |

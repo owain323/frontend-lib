@@ -587,6 +587,73 @@ def diff_all(threshold=1.0, tolerance=12):
     return passed, failed
 
 
+def _strip_block_comments(text):
+    """剥掉 /* ... */，**跳过字符串内部**（content: "/* 不是注释 */" 这种）
+
+    写成状态机而不是正则：正则会把 `content: "/*"` 当成注释开头，
+    从那儿一路吃掉半个文件，于是"改了真东西也不报"。
+    """
+    out = []
+    i, n = 0, len(text)
+    quote = None
+    while i < n:
+        ch = text[i]
+        if quote:
+            out.append(ch)
+            if ch == '\\' and i + 1 < n:
+                out.append(text[i + 1])
+                i += 2
+                continue
+            if ch == quote:
+                quote = None
+            i += 1
+            continue
+        if ch in ('"', "'"):
+            quote = ch
+            out.append(ch)
+            i += 1
+            continue
+        if ch == '/' and i + 1 < n and text[i + 1] == '*':
+            j = text.find('*/', i + 2)
+            if j == -1:
+                break                      # 未闭合：剩下全当注释
+            i = j + 2
+            continue
+        out.append(ch)
+        i += 1
+    return ''.join(out)
+
+
+def _hash_text(path):
+    """参与指纹的文本：归一化行尾 + 剥注释
+
+    🔴 为什么必须剥注释（实测负担）：
+      2026-10-23 只往 tokens.css 加了一段**说明**，指纹就变了
+      ⇒ `visual-stamp` 判"基线过期" ⇒ 只能把 40 页重录一遍（30 秒 × 2 方案）。
+      注释不参与渲染，却让"基线对不对得上"变成噪声 —— 噪声判据的下场一定是被无视。
+
+    ⚠️ 只剥三种有把握的形态：CSS/JS 的 /* */、HTML 的 <!-- -->。
+      JS 的 `//` 行注释**不剥**（`https://` 会骗掉它）——
+      宁可对行注释多要求一次重录，也不要剥错让真改动被忽略。
+    """
+    raw = io.open(path, 'rb').read().replace(b'\r\n', b'\n')
+    text = raw.decode('utf-8', 'replace')
+    ext = os.path.splitext(path)[1].lower()
+    if ext == '.html':
+        import re as _re
+        text = _re.sub(r'<!--.*?-->', '', text, flags=_re.S)
+    else:
+        text = _strip_block_comments(text)
+
+    # 再去掉空行与行尾空白：**只加注释/只调空行**不该让基线"过期"。
+    # ⚠️ 缩进仍然参与哈希（改缩进会要求重录，虽然不影响渲染）——
+    #    宁可多报一次，也不要因为归一化过头而漏掉真改动。
+    # ⚠️ 已知代价：字符串里恰好"行尾有空格"或"含空行"的极少数情况会被忽略。
+    lines = [ln.rstrip() for ln in text.split('\n')]
+    text = '\n'.join(ln for ln in lines if ln)
+    return text.encode('utf-8')
+
+
 def css_fingerprint():
     """
     所有 CSS 的内容指纹（用来判断基线是否录于当前代码）
@@ -631,7 +698,7 @@ def css_fingerprint():
     for f in sorted(files):
         rel = os.path.relpath(f, ROOT).replace('\\', '/')
         h.update(rel.encode('utf-8'))
-        h.update(io.open(f, 'rb').read().replace(b'\r\n', b'\n'))
+        h.update(_hash_text(f))
     return h.hexdigest()[:16]
 
 
