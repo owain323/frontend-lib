@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>detail-page · 完整数据</title>
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/page.css">
+<link rel="stylesheet" href="detail-page.css">
+</head>
+<body class="page">
+<main class="wrap">
+<h1>detail-page · 字段齐全</h1>
+<p class="lede">同一张图纸的三种数据状态之一。三个变体的 DOM 结构完全一致，差别只在文案与数值。</p>
+
+<section class="detail-page" data-state="full">
+  <div class="detail-hero">
+    <div class="detail-hero__deco" aria-hidden="true"></div>
+    <div class="detail-hero__body">
+      <p class="detail-hero__eyebrow">服务 · SVC-1024</p>
+      <h1 class="detail-hero__title">示例对象 A</h1>
+      <p class="detail-hero__meta"><span>分类：基础服务</span><span>状态：运行中</span></p>
+    </div>
+  </div>
+
+  <div class="detail-kpis">
+    <div class="detail-kpi">
+      <span class="detail-kpi__label">月度调用量</span>
+      <span class="num detail-kpi__value">1,284 万</span>
+      <span class="num detail-kpi__delta">较上月 +6.2%</span>
+    </div>
+    <div class="detail-kpi">
+      <span class="detail-kpi__label">平均响应</span>
+      <span class="num detail-kpi__value">128 ms</span>
+      <span class="num detail-kpi__delta">较上月 -11 ms</span>
+    </div>
+    <div class="detail-kpi">
+      <span class="detail-kpi__label">可用率</span>
+      <span class="num detail-kpi__value">99.95%</span>
+      <span class="num detail-kpi__delta">近 30 天</span>
+    </div>
+  </div>
+
+  <div class="detail-null">
+    <p class="detail-null__title">数据完整度：3 / 3</p>
+    <p class="detail-null__reason">三项指标均已接入，更新至 2026-10-22。</p>
+  </div>
+
+  <article class="detail-body">
+    <section class="detail-body__section">
+      <h2 class="detail-body__heading">概览</h2>
+      <p class="detail-body__text">字段齐全时，指标区三张卡都填满；说明块此时承担"数据完整度"的告知职责，而不是占位。</p>
+    </section>
+  </article>
+</section>
+</main>
+</body>
+</html>

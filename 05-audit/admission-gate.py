@@ -85,7 +85,10 @@ def chk_contract_registered():
             if d == '09-assets':
                 continue
             # 契约文件名通常是 name-check.js
-            cands = [name + '-check.js', name + '-contract.js']
+            # ⚠️ 2026-10-23：契约不只有 JS —— detail-page / no-data 是 Python 写的。
+            #    只认 .js 会让"明明有判据"的组件被报成"无契约"（门禁冤枉自己人）。
+            cands = [name + '-check.js', name + '-contract.js',
+                     name + '-check.py', name + '-contract.py']
             hit = [c for c in cands if os.path.exists(os.path.join(ROOT, '05-audit', c))]
             if not hit:
                 orphans.append('%s/%s（无契约）' % (d, name))

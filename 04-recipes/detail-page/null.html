@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>detail-page · 无数据</title>
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/page.css">
+<link rel="stylesheet" href="detail-page.css">
+</head>
+<body class="page">
+<main class="wrap">
+<h1>detail-page · 无数据</h1>
+<p class="lede">一条数据都没有时，页面仍然成立：不隐藏、不用 0 冒充、明确说明为什么。</p>
+
+<section class="detail-page" data-state="null">
+  <div class="detail-hero">
+    <div class="detail-hero__deco" aria-hidden="true"></div>
+    <div class="detail-hero__body">
+      <p class="detail-hero__eyebrow">服务 · SVC-1099</p>
+      <h1 class="detail-hero__title">示例对象 C</h1>
+      <p class="detail-hero__meta"><span>分类：待补录</span><span>状态：待接入</span></p>
+    </div>
+  </div>
+
+  <div class="detail-kpis">
+    <div class="detail-kpi">
+      <span class="detail-kpi__label">月度调用量</span>
+      <span class="num detail-kpi__value detail-kpi__value--missing">暂无数据</span>
+      <span class="num detail-kpi__delta">未接入数据源</span>
+    </div>
+    <div class="detail-kpi">
+      <span class="detail-kpi__label">平均响应</span>
+      <span class="num detail-kpi__value detail-kpi__value--missing">暂无数据</span>
+      <span class="num detail-kpi__delta">未接入数据源</span>
+    </div>
+    <div class="detail-kpi">
+      <span class="detail-kpi__label">可用率</span>
+      <span class="num detail-kpi__value detail-kpi__value--missing">暂无数据</span>
+      <span class="num detail-kpi__delta">未接入数据源</span>
+    </div>
+  </div>
+
+  <div class="detail-null">
+    <p class="detail-null__title">暂无数据</p>
+    <p class="detail-null__reason">该对象尚未接入数据源，因此没有可展示的指标。这不是"全部为零"，也不代表服务不可用。</p>
+  </div>
+
+  <article class="detail-body">
+    <section class="detail-body__section">
+      <h2 class="detail-body__heading">为什么保留这张图纸</h2>
+      <p class="detail-body__text">无数据是常态而不是异常。把结构留住、把原因说清，比让整页变成一片空白更有用；后续数据接进来时，页面不需要重新设计。</p>
+    </section>
+  </article>
+</section>
+</main>
+</body>
+</html>

@@ -7,9 +7,9 @@
     "manifesto 里的 sourceSha256 变了而 dist 没重建 ⇒ dist-parity/dist-fresh 门禁会红"
   ],
   "totals": {
-    "sourceFiles": 67,
-    "sourceBytes": 696856,
-    "distGzip": 90950
+    "sourceFiles": 68,
+    "sourceBytes": 702071,
+    "distGzip": 91601
   },
   "files": [
     {
@@ -801,6 +801,20 @@
           "kind": "minified",
           "bytes": 3082,
           "gzip": 818
+        }
+      ]
+    },
+    {
+      "source": "04-recipes/detail-page/detail-page.css",
+      "sourceSha256": "79689e25bb5c67fb014ca4560569d17389b4d4edc407e5be9e6008d49a90d8c1",
+      "sourceBytes": 5215,
+      "sourceGzip": 2071,
+      "outputs": [
+        {
+          "path": "dist/04-recipes/detail-page/detail-page.css",
+          "kind": "minified",
+          "bytes": 2124,
+          "gzip": 651
         }
       ]
     },

@@ -70,8 +70,20 @@ def components():
 
 
 def contract_files():
-    return [norm(f) for f in glob.glob(os.path.join(ROOT, '05-audit', '*.js'))
-            if f.endswith('-check.js') or f.endswith('-contract.js')]
+    """契约 = 05-audit 下的 *-check / *-contract（JS 与 Python 都算）
+
+    🔴 2026-10-23 修：原先只 glob `*.js`，于是用 Python 写的契约
+    （detail-page-contract.py / no-data-gate.py 这一批）**不被承认**，
+    明明有判据却报"无契约覆盖" —— 门禁在冤枉自己人。
+    契约是"有没有判据"，不是"用什么语言写"。
+    """
+    out = []
+    for pat in ('*.js', '*.py'):
+        for f in glob.glob(os.path.join(ROOT, '05-audit', pat)):
+            base = os.path.basename(f)
+            if base.endswith('-check.js') or base.endswith('-contract.js')                     or base.endswith('-check.py') or base.endswith('-contract.py'):
+                out.append(norm(f))
+    return out
 
 
 def main():

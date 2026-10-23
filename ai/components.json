@@ -8,19 +8,19 @@
     "beta": "有 demo + 专属门禁，但**下面至少有一条没过**：① 状态仍用 .is-* class 表达（违反 INVARIANT I-8）；② 该收编到微行为核的行为还是**手写副本**（manual）或**根本没做**（gap） ⇒ 改一处不会全库跟着变（I-14 的病）",
     "stable": "以上四条全过：有 demo + 专属门禁 + 状态全在 data-* 属性上 + 行为零欠账",
     "$note": "成熟度是【计算出来的】，不是拍的。手写把某个组件改成 stable 而它还有 manual / gap ⇒ 门禁会红。",
-    "$whyFourth": "🔴 为什么第四条判据不能省：用前三条时多数组件会**全是 stable** ⇒ ladder 没有任何鉴别力（对标 Primer 六档阶梯，每档都有硬判据）。补上「行为欠账」这一条后：**stable 30 / beta 4**（本行由生成器算出，不要手改）。",
+    "$whyFourth": "🔴 为什么第四条判据不能省：用前三条时多数组件会**全是 stable** ⇒ ladder 没有任何鉴别力（对标 Primer 六档阶梯，每档都有硬判据）。补上「行为欠账」这一条后：**stable 31 / beta 4**（本行由生成器算出，不要手改）。",
     "$strictImpact": "⚠️ strict 档位只放行 stable ⇒ 4 个组件在 strict 下不可用：accordion / drawer / dropdown / overlay。放宽 strict 会让「未收编的手写行为」进入生产路径。（本行由生成器算出，不要手改）"
   },
   "summary": {
-    "total": 34,
+    "total": 35,
     "byMaturity": {
-      "stable": 30,
+      "stable": 31,
       "beta": 4
     },
     "byTier": {
       "primitive": 13,
       "pattern": 14,
-      "recipe": 3,
+      "recipe": 4,
       "asset": 4
     }
   },
@@ -1689,6 +1689,56 @@
       ],
       "global": null,
       "behaviorRef": "API.md#analysis-report"
+    },
+    {
+      "id": "detail-page",
+      "tier": "recipe",
+      "purpose": "实体详情页骨架：字段齐全 / 部分缺失 / 无数据三种状态同构，无数据是一等状态",
+      "rootClass": "detail-page",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true,
+        "behaviorDebt": []
+      },
+      "gates": [
+        "detail-page-contract.py"
+      ],
+      "files": {
+        "css": "04-recipes/detail-page/detail-page.css",
+        "js": null,
+        "demo": "04-recipes/detail-page/demo.html"
+      },
+      "slots": [],
+      "variants": [],
+      "states": {
+        "enum": {},
+        "boolean": [],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [],
+        "attrs": []
+      },
+      "usesOtherNamespaces": [
+        "detail-body__heading",
+        "detail-body__section",
+        "detail-body__text",
+        "detail-hero__body",
+        "detail-hero__deco",
+        "detail-hero__eyebrow",
+        "detail-hero__meta",
+        "detail-hero__title",
+        "detail-kpi__delta",
+        "detail-kpi__label",
+        "detail-kpi__value",
+        "detail-kpi__value--missing",
+        "detail-null__reason",
+        "detail-null__title"
+      ],
+      "global": null,
+      "behaviorRef": "API.md#detail-page"
     },
     {
       "id": "report",
