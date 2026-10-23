@@ -56,6 +56,13 @@ jobs:
     timeout-minutes: 6 # 兜底：卡住就掐掉，不烧额度
     steps:
       - uses: actions/checkout@v4
+        with:
+          # 🔴 fetch-depth: 0 + fetch-tags —— release 门禁要核 "版本有没有 tag 锚点"。
+          #    默认 depth=1 时 tag 指向的是祖先提交，**根本不会被抓下来**，
+          #    于是 CI 从 2026-10-19 起一直是红的（本地全绿，没人看出为什么）。
+          #    仓库只有 2 MB，全量检出比一次误诊便宜得多。
+          fetch-depth: 0
+          fetch-tags: true
 
       - uses: actions/setup-node@v4
         with:
@@ -107,6 +114,13 @@ jobs:
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
+        with:
+          # 🔴 fetch-depth: 0 + fetch-tags —— release 门禁要核 "版本有没有 tag 锚点"。
+          #    默认 depth=1 时 tag 指向的是祖先提交，**根本不会被抓下来**，
+          #    于是 CI 从 2026-10-19 起一直是红的（本地全绿，没人看出为什么）。
+          #    仓库只有 2 MB，全量检出比一次误诊便宜得多。
+          fetch-depth: 0
+          fetch-tags: true
 
       - uses: actions/setup-node@v4
         with:
@@ -152,6 +166,13 @@ jobs:
             engine: firefox
     steps:
       - uses: actions/checkout@v4
+        with:
+          # 🔴 fetch-depth: 0 + fetch-tags —— release 门禁要核 "版本有没有 tag 锚点"。
+          #    默认 depth=1 时 tag 指向的是祖先提交，**根本不会被抓下来**，
+          #    于是 CI 从 2026-10-19 起一直是红的（本地全绿，没人看出为什么）。
+          #    仓库只有 2 MB，全量检出比一次误诊便宜得多。
+          fetch-depth: 0
+          fetch-tags: true
 
       - uses: actions/setup-node@v4
         with:

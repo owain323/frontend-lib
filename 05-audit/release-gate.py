@@ -330,9 +330,20 @@ def main():
     if not _git_ok:
         pass
     elif not tag_type:
-        print('      X 没有 `%s` 这个 tag ⇒ 版本与提交点之间没有锚点'
-              % tag)
-        print('        打一个：git tag -a %s <版本对应的提交>' % tag)
+        # 🔴 2026-10-23 实测：CI 从 10-19 起一直红在这条，而本地全绿 ——
+        #    因为 actions/checkout 默认 fetch-depth: 1，tag 指向的是祖先提交，
+        #    **根本不会被抓下来**，于是"没有 tag"被报成事实，实际是"没取到"。
+        #    ⇒ 浅克隆必须单独说清楚，否则下一个人会去补一个已存在的 tag。
+        _shallow = (_git('rev-parse', '--is-shallow-repository') or '').strip() == 'true'
+        if _shallow:
+            print('      X 这是**浅克隆**，`%s` 没有被取下来 ⇒ 无法判断 tag 是否存在'
+                  % tag)
+            print('        先 `git fetch --tags --unshallow`；CI 上应在 checkout 设')
+            print('        `fetch-depth: 0` + `fetch-tags: true`（本仓只有 2 MB）')
+        else:
+            print('      X 没有 `%s` 这个 tag ⇒ 版本与提交点之间没有锚点'
+                  % tag)
+            print('        打一个：git tag -a %s <版本对应的提交>' % tag)
         bad += 1
     elif tag_type != 'tag':
         print('      X `%s` 是 lightweight tag（%s）'
