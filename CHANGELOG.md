@@ -16,6 +16,44 @@
 
 （0.9.0 的内容已定版，见下一节；这一节留给下一版）
 
+### Added · reveal（入场动效）
+
+- 新组件 `03-patterns/reveal`：一个 `data-reveal` 属性撑六个方向，
+  六方向共用一套 `transform`（只改三个变量，不写 keyframes）。
+- 位移上限 8px、时长只走 `--dur-*`、错峰 40ms 封顶 6 个、不做出场动画。
+- **无 JS 全可见**：隐藏只在 `html[data-reveal-ready]` 下生效，引擎默认不接管。
+- 与参考实现的两处偏离：默认只播一次（重播需 `data-reveal-repeat`）；
+  引擎需显式 `data-reveal-auto` 或 `Reveal.enable()` 才接管。
+- 专属门禁 `reveal-contract`（10 条 + 11 条自检）。
+
+### Added · detail-page（实体详情页骨架）
+
+- 新配方 `04-recipes/detail-page`：字段齐全 / 部分缺失 / 无数据三态**同构**。
+- 无数据是一等状态：不隐藏、不用 0 冒充、必须写清原因。
+- `detail-page-contract`（标签序列逐项比对 + 视觉覆盖核对）、
+  `no-data-gate`（无数据态三规则）。
+
+### Added · 视觉与动效的两道守卫
+
+- `visual-coverage-gate`：视野内的 `demo.html` 必须都在 shot 基线清单里
+  （首跑即抓到 `04-recipes/report` 从无基线）。
+- `visual-stamp-gate`：基线指纹必须等于当前代码指纹；不再只是 WARN。
+- `motion-policy.json` + `motion.py --reduced-audit`：减少动效从"一刀切"
+  升级为可检查的策略（保留清单 + 未登记保留即红）。
+
+### Changed · 视觉基线
+
+- 重录浅色/暗色基线到当前代码（原先浅色录于 `6f045ff`、暗色录于 `4962b2c`，
+  而 HEAD 已到 `208782f` —— 两页红着过了 5 天）。
+- `shot_name` 支持同目录多页（此前只按目录命名，四个变体互相覆盖成一张图）。
+
+### Fixed · 三处门禁自身缺陷
+
+- `coverage-gate` / `admission-gate` 只认 `*-check.js` / `*-contract.js`
+  ⇒ 用 Python 写的契约不被承认，明明有判据却报"无契约"。
+- `shot-baseline` 同目录多页互相覆盖（见上）。
+- `api-form-gate` 的诊断提示只怀疑"生成器抓错了"，漏了"探针表没登记该页面"。
+
 ### Fixed · 首次使用的四个文档/配置缺口（实测得出）
 
 用「装 tarball → 只读文档 → 写一个真实移动端页面」的方式跑了一遍，撞到四处静默失效：
