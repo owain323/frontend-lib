@@ -104,6 +104,7 @@ PAGES = [
     ('03-patterns/accordion',     'demo.html', '折叠面板'),
     ('03-patterns/pagination',    'demo.html', '分页'),
     ('03-patterns/tabs',          'demo.html', '选项卡'),
+    ('03-patterns/reveal',        'demo.html', '入场动效'),
     ('09-assets/model-viewer',    'demo.html', '模型查看器'),
     ('09-assets/sparkline',       'demo.html', '迷你图'),
     ('04-recipes/table',          'demo.html', '表格'),

@@ -38,6 +38,8 @@ const TARGETS = {
   Toc: '/03-patterns/nav/demo.html',
   Bar: '/09-assets/bar/demo.html',
   FLIP: '/03-patterns/list/demo.html',
+  /* 入场动效（0.9.1 新增）：direct 形态，enable/disable/replay */
+  Reveal: '/03-patterns/reveal/demo.html',
   Pagination: '/03-patterns/pagination/demo.html',
   Chart: '/09-assets/sparkline/demo.html',
   ChartAdapter: '/09-assets/echarts-adapter/demo.html',

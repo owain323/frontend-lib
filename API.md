@@ -53,6 +53,7 @@
 | `Overlay` | ✅ | direct | `dialog` `toast` |
 | `Drawer` | ✅ | direct | `open` |
 | `Toc` | ✅ | direct | `init` |
+| `Reveal` | ✅ | direct | `enable` `disable` `replay`（入场动效；默认不接管，见 `03-patterns/reveal/README.md`）|
 | `Chart` | ✅ | direct | `draw` `update` `emit` `observe` |
 | `Bar` | ✅ | direct | `draw` |
 | `FLIP` | ✅ | direct | `flip` `remove`（过渡工具） |

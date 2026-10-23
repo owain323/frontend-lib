@@ -7,9 +7,9 @@
     "manifesto 里的 sourceSha256 变了而 dist 没重建 ⇒ dist-parity/dist-fresh 门禁会红"
   ],
   "totals": {
-    "sourceFiles": 65,
-    "sourceBytes": 687481,
-    "distGzip": 89674
+    "sourceFiles": 67,
+    "sourceBytes": 696091,
+    "distGzip": 90950
   },
   "files": [
     {
@@ -656,6 +656,35 @@
           "kind": "stripped",
           "bytes": 7555,
           "gzip": 2619
+        }
+      ],
+      "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
+    },
+    {
+      "source": "03-patterns/reveal/reveal.css",
+      "sourceSha256": "78eded01047bddf4584dd4b1c4bcfe27efaa7e556b48dcda0b01facc4128bf37",
+      "sourceBytes": 4048,
+      "sourceGzip": 1769,
+      "outputs": [
+        {
+          "path": "dist/03-patterns/reveal/reveal.css",
+          "kind": "minified",
+          "bytes": 1052,
+          "gzip": 343
+        }
+      ]
+    },
+    {
+      "source": "03-patterns/reveal/reveal.js",
+      "sourceSha256": "01510e501c8e1520e19da66a9195c86b48daad31ada90078170a0896447b3694",
+      "sourceBytes": 4562,
+      "sourceGzip": 1929,
+      "outputs": [
+        {
+          "path": "dist/03-patterns/reveal/reveal.js",
+          "kind": "stripped",
+          "bytes": 2492,
+          "gzip": 933
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"

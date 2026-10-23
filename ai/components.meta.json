@@ -147,6 +147,10 @@
       "rootClass": "tabs",
       "purpose": "选项卡切换"
     },
+    "reveal": {
+      "rootClass": "reveal",
+      "purpose": "入场动效：一个 data-reveal 属性六个方向，无 JS 时内容全可见"
+    },
     "tooltip": {
       "rootClass": "tooltip",
       "purpose": "悬停/聚焦提示"

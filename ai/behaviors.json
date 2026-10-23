@@ -108,6 +108,10 @@
       "scientific-plot": [
         "n/a",
         "科学绘图：SVG 绘制，没有浮层"
+      ],
+      "reveal": [
+        "n/a",
+        "不是浮层：入场由 IntersectionObserver 触发，没有打开/关闭状态"
       ]
     },
     "focus-return": {
@@ -186,6 +190,10 @@
       "scientific-plot": [
         "n/a",
         "科学绘图不涉及焦点"
+      ],
+      "reveal": [
+        "n/a",
+        "不改焦点、不接管键盘"
       ]
     },
     "roving": {
@@ -264,6 +272,10 @@
       "scientific-plot": [
         "n/a",
         "科学绘图的坐标轴/刻度不是可游走的 UI 项集合"
+      ],
+      "reveal": [
+        "n/a",
+        "不是复合控件：没有一组可聚焦项要在其间移动"
       ]
     },
     "typeahead": {
@@ -342,6 +354,10 @@
       "scientific-plot": [
         "n/a",
         "科学绘图没有候选项集合"
+      ],
+      "reveal": [
+        "n/a",
+        "不是复合控件：没有可键入定位的集合"
       ]
     }
   }
