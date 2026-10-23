@@ -316,7 +316,8 @@ def build_table(rows, comps):
         'model-viewer': 'model-viewer.js',
     }
     OPTIONAL_JS = {'list': ('flip.js', 'FLIP 增删动画，纯增强'),
-                   'nav': ('toc.js', '自动生成目录，纯增强')}
+                   'nav': ('toc.js', '自动生成目录，纯增强'),
+                   'reveal': ('reveal.js', '入场动效，纯增强；没有它内容直接可见')}
     check_js_classification(rows, REQUIRED_JS, OPTIONAL_JS)
     for name, rel, n_css, n_js, js_name in rows:
         if name in REQUIRED_JS:

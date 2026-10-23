@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>reveal · 入场动效</title>
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/page.css">
+<link rel="stylesheet" href="../../02-primitives/button/button.css">
+<link rel="stylesheet" href="../../03-patterns/reveal/reveal.css">
+<style>
+.rv-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 16px 0 24px; }
+.rv-box  { padding: 20px 12px; text-align: center; border-radius: var(--radius-md);
+           background: var(--surface-raised); color: var(--text-primary);
+           border: 1px solid var(--border-subtle); font-size: var(--fs-sm); }
+.rv-row  { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.rv-status { font-family: var(--mono); font-size: var(--fs-xs); color: var(--text-secondary); }
+.rv-list { display: grid; gap: 8px; margin: 16px 0 24px; }
+.rv-item { padding: 12px; border-radius: var(--radius-sm); background: var(--surface-raised);
+           border: 1px solid var(--border-subtle); font-size: var(--fs-sm); }
+.rv-note  { font-size: var(--fs-sm); color: var(--text-secondary); }
+.rv-spacer { height: 40px; }
+</style>
+</head>
+<body class="page">
+<main class="wrap">
+  <h1>reveal · 入场动效</h1>
+  <p class="lede">
+    给内容挂一个 <code>data-reveal</code> 属性，它就会在进入视口时从指定方向就位。
+    六个方向共用一套 <code>transform</code>，位移上限 8px、时长只用令牌、错峰 40ms 封顶 6 个。
+    <strong>本页加载时是静态的</strong>：点下面按钮才由引擎接管 —— 这样截图基线可复现，
+    也说明"没有 JS 时内容照常可见"。
+  </p>
+
+  <div class="rv-row">
+    <button class="btn btn--md btn--primary" id="play" type="button">播放入场</button>
+    <button class="btn btn--md btn--ghost" id="reset" type="button">复原</button>
+    <span class="rv-status" id="status">引擎未接管（内容全可见）</span>
+  </div>
+
+  <div class="rv-spacer"></div>
+
+  <h2 class="rule-top">六个方向</h2>
+  <div class="rv-grid">
+    <div class="rv-box" data-reveal="up">up · 从下往上 8px</div>
+    <div class="rv-box" data-reveal="down">down · 从上往下 8px</div>
+    <div class="rv-box" data-reveal="left">left · 从左往右 8px</div>
+    <div class="rv-box" data-reveal="right">right · 从右往左 8px</div>
+    <div class="rv-box" data-reveal="scale">scale · .97 放大到位</div>
+    <div class="rv-box" data-reveal="none">none · 只淡入</div>
+  </div>
+
+  <h2 class="rule-top">分批（不用逐个标）</h2>
+  <p class="rv-note">
+    容器写 <code>data-reveal-children="up"</code>，子元素自动依次入场。
+    间隔 40ms，超过第 6 个之后<strong>同时</strong>开始 —— 否则第 20 个要等 800ms。
+  </p>
+  <div class="rv-list" data-reveal-children="up">
+    <div class="rv-item">第 1 项</div>
+    <div class="rv-item">第 2 项</div>
+    <div class="rv-item">第 3 项</div>
+    <div class="rv-item">第 4 项</div>
+    <div class="rv-item">第 5 项</div>
+    <div class="rv-item">第 6 项</div>
+    <div class="rv-item">第 7 项（已封顶，与第 6 项同时）</div>
+    <div class="rv-item">第 8 项（同上）</div>
+  </div>
+
+  <h2 class="rule-top">单独延迟</h2>
+  <div class="rv-grid">
+    <div class="rv-box" data-reveal="up" data-reveal-delay="120ms">延迟 120ms</div>
+    <div class="rv-box" data-reveal="up" data-reveal-delay="240ms">延迟 240ms</div>
+  </div>
+
+  <h2 class="rule-top">怎么接到自己的页面</h2>
+  <p class="rv-note">
+    两种接法，二选一：<br>
+    ① 在 <code>&lt;html&gt;</code> 上写 <code>data-reveal-auto</code>，脚本加载后自动接管；<br>
+    ② 手动调 <code>Reveal.enable()</code>（本页就是这种，方便截图与演示）。<br>
+    都不写 ⇒ 完全不接管：内容可见、位置不偏。<strong>这是刻意的默认值。</strong>
+  </p>
+</main>
+
+<script src="../../03-patterns/reveal/reveal.js"></script>
+<script>
+(function () {
+  'use strict';
+  var play = document.getElementById('play');
+  var reset = document.getElementById('reset');
+  var status = document.getElementById('status');
+
+  play.addEventListener('click', function () {
+    Reveal.replay();
+    status.textContent = '引擎已接管（已就位的内容保持可见，未进入视口的会隐藏）';
+  });
+
+  reset.addEventListener('click', function () {
+    Reveal.disable();
+    status.textContent = '引擎未接管（内容全可见）';
+  });
+})();
+</script>
+</body>
+</html>

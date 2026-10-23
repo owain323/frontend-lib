@@ -442,6 +442,8 @@ run "dist-cost"   $PY 05-audit/dist-cost-gate.py
 #    按 `a11y`(py) / `a11y-scan`(js) 的既有惯例：JS 契约用脚本名。
 run "switch-contract" node 05-audit/switch-contract.js
 run "tabs"       node 05-audit/tabs-contract.js
+# 入场动效（03-patterns/reveal）：六方向共用 transform / 位移 ≤8px / 无 JS 不白屏
+run "reveal"     node 05-audit/reveal-contract.js
 run "accordion"  node 05-audit/accordion-contract.js
 run "chart"      node 05-audit/chart-check.js
 run "sparkline"  node 05-audit/sparkline-contract.js

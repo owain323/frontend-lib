@@ -8,18 +8,18 @@
     "beta": "有 demo + 专属门禁，但**下面至少有一条没过**：① 状态仍用 .is-* class 表达（违反 INVARIANT I-8）；② 该收编到微行为核的行为还是**手写副本**（manual）或**根本没做**（gap） ⇒ 改一处不会全库跟着变（I-14 的病）",
     "stable": "以上四条全过：有 demo + 专属门禁 + 状态全在 data-* 属性上 + 行为零欠账",
     "$note": "成熟度是【计算出来的】，不是拍的。手写把某个组件改成 stable 而它还有 manual / gap ⇒ 门禁会红。",
-    "$whyFourth": "🔴 为什么第四条判据不能省：用前三条时多数组件会**全是 stable** ⇒ ladder 没有任何鉴别力（对标 Primer 六档阶梯，每档都有硬判据）。补上「行为欠账」这一条后：**stable 29 / beta 4**（本行由生成器算出，不要手改）。",
+    "$whyFourth": "🔴 为什么第四条判据不能省：用前三条时多数组件会**全是 stable** ⇒ ladder 没有任何鉴别力（对标 Primer 六档阶梯，每档都有硬判据）。补上「行为欠账」这一条后：**stable 30 / beta 4**（本行由生成器算出，不要手改）。",
     "$strictImpact": "⚠️ strict 档位只放行 stable ⇒ 4 个组件在 strict 下不可用：accordion / drawer / dropdown / overlay。放宽 strict 会让「未收编的手写行为」进入生产路径。（本行由生成器算出，不要手改）"
   },
   "summary": {
-    "total": 33,
+    "total": 34,
     "byMaturity": {
-      "stable": 29,
+      "stable": 30,
       "beta": 4
     },
     "byTier": {
       "primitive": 13,
-      "pattern": 13,
+      "pattern": 14,
       "recipe": 3,
       "asset": 4
     }
@@ -704,6 +704,55 @@
       "usesOtherNamespaces": [],
       "global": "Pagination",
       "behaviorRef": "API.md#pagination"
+    },
+    {
+      "id": "reveal",
+      "tier": "pattern",
+      "purpose": "入场动效：一个 data-reveal 属性六个方向，无 JS 时内容全可见",
+      "rootClass": "reveal",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true,
+        "behaviorDebt": []
+      },
+      "gates": [
+        "reveal-contract.js"
+      ],
+      "files": {
+        "css": "03-patterns/reveal/reveal.css",
+        "js": "03-patterns/reveal/reveal.js",
+        "demo": "03-patterns/reveal/demo.html"
+      },
+      "slots": [],
+      "variants": [],
+      "states": {
+        "enum": {
+          "reveal": [
+            "down",
+            "left",
+            "none",
+            "right",
+            "scale",
+            "up"
+          ]
+        },
+        "boolean": [
+          "reveal",
+          "reveal-children",
+          "reveal-done",
+          "reveal-ready"
+        ],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [],
+        "attrs": []
+      },
+      "usesOtherNamespaces": [],
+      "global": "Reveal",
+      "behaviorRef": "API.md#reveal"
     },
     {
       "id": "states",

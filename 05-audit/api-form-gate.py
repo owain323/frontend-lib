@@ -381,9 +381,14 @@ def main():
         for cid, g in bad_globals:
             print('     %-14s global=%s' % (cid, g))
         print('')
-        print('     ⇒ 多半是「契约生成器的正则抓错了东西」（例如把 `===` 的')
-        print('       第一个 `=` 当成赋值）。这是**静默**的错：重跑生成器')
-        print('       会让契约与源码"一致"，于是没人发现它已经是错的。')
+        print('     ⇒ 两种可能，先分清再改：')
+        print('       ① 「契约生成器的正则抓错了东西」（例如把 `===` 的第一个 `=`')
+        print('          当成赋值）—— 重跑生成器会让契约与源码"一致"，')
+        print('          于是没人发现它已经是错的。')
+        print('       ② 「探针表没登记这个组件的 demo 页」—— 属实测（2026-10-23）：')
+        print('          `05-audit/global-api-probe.js` 的 PAGES 是硬编码表，')
+        print('          新组件不登记 ⇒ 浏览器里根本没人去查它 ⇒ 误报成 ①。')
+        print('          （同一个坑已经在 shot-baseline 的 PAGES 上发生过一次。）')
 
     # 判据 5：源码注释里承诺的 API 必须真实存在
     promises = scan_comment_promises(list(rt.keys()))
