@@ -402,6 +402,9 @@ done
 #    传 --dir 时它会扫到 0 个文件 ⇒ 0 违规 ⇒ 显示 PASS
 #    （它自己的源码第 98-103 行就写了这个警告，别再踩）。
 run "es5-gate"    $PY 05-audit/es5-gate.py .
+
+# 减少动效策略：声明要保留的必须真保留，私自保留的必须登记理由
+run "motion-reduced" $PY 05-audit/motion.py --reduced-audit
 for g in tierA-gate icon-gate hover-gate measure-gate license-gate numeric-gate dark-gate hardcode-gate reuse-check _docclaims; do
   run "$g"       $PY "05-audit/$g.py" --dir $DIR_ARGS
 done
