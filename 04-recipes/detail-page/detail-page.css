@@ -40,6 +40,16 @@
   display: block;
 }
 
+/* 示例页顶部的"这是哪个变体"标签。
+   🔴 刻意不用 h1：页面主标题是 .detail-hero__title（对象名），
+      一个页面只该有一个 h1 —— 否则照着这份模板抄的人会复制出两个。 */
+.dp-demo {
+  margin: 0 0 var(--sp-3);
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  letter-spacing: .02em;
+}
+
 /* ---- 1 · 头部：装饰层与内容层平级 ---- */
 .detail-hero {
   position: relative;
@@ -91,7 +101,7 @@
 /* ---- 2 · 关键指标：网格，缺哪个都不断版 ---- */
 .detail-kpis {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
   gap: var(--detail-gap);
   margin: var(--detail-gap) 0;
 }
@@ -125,9 +135,13 @@
 }
 
 /* 缺失值：用文本表达，不用 0，也不用空字符串 */
+/* 缺失值是"文本"，不是"数字"：用正文档字号，不跟着指标字号走。
+   否则 393 宽下三列会折成两行（实测「暂无数／据」）。 */
 .detail-kpi__value--missing {
   color: var(--text-tertiary);
   font-weight: 500;
+  font-size: var(--fs-md);
+  white-space: nowrap;
 }
 
 /* ---- 3 · 无数据说明块：可解释，不占位 ---- */
