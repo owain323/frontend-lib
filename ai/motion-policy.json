@@ -1,0 +1,22 @@
+{
+  "_comment": "减少动效（prefers-reduced-motion）下的保留清单。默认一律关掉；只有列在 keep 里的组件允许保留动画，且必须写明为什么 —— 判定见 05-audit/motion.py --reduced-audit。⚠️ 不登记却私自保留 = 红：这正是本文件存在的意义。",
+  "version": "1.0.0",
+  "keep": {
+    "button": {
+      "file": "02-primitives/button/button.css",
+      "reason": "按钮里的 spinner 是「提交正在进行」的唯一证据。停掉它，用户会以为没点上，从而重复提交。"
+    },
+    "states": {
+      "file": "03-patterns/states/states.css",
+      "reason": "加载态停住 ⇒ 用户看到一个永远不动的界面，比有动画更糟。骨架屏的静态占位保留、扫光停止。"
+    },
+    "form-validation": {
+      "file": "03-patterns/form-validation/form-validation.css",
+      "reason": "校验中的小 spinner：没有它就没有「正在检查」的反馈，用户会重复提交表单。"
+    }
+  },
+  "shorten": {
+    "_comment": "颜色/透明度类允许保留但缩短到 --dur-fast。这一档**不强制**：本库没有为它逐文件改造（20 多个文件只为一个观感细节），所以不做机器判定 —— 写了却没判据的规则比没有规则更糟。",
+    "note": "组件若在 reduced 块里用 transition-duration: var(--dur-fast) 保留颜色过渡，审计不报错。"
+  }
+}

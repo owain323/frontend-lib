@@ -28,6 +28,10 @@ import sys
 import os
 import re
 import glob
+import json
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+POLICY = os.path.join(ROOT, 'ai', 'motion-policy.json')
 
 HIGH, MEDIUM = 'HIGH', 'MEDIUM'
 
@@ -137,7 +141,153 @@ def check(path):
     return probs
 
 
+def reduced_blocks(css):
+    """取出所有 prefers-reduced-motion 块（已剥注释，按括号配平切）"""
+    css = strip_comments(css)
+    out = []
+    for m in re.finditer(r'@media[^{]*prefers-reduced-motion[^{]*\{', css):
+        i = m.end()
+        depth, j = 1, i
+        while j < len(css) and depth > 0:
+            if css[j] == '{':
+                depth += 1
+            elif css[j] == '}':
+                depth -= 1
+            j += 1
+        out.append(css[i:j - 1])
+    return out
+
+
+def keeps_motion(block):
+    """块内有没有 >=100ms 的 animation-duration（即"真的保留了动画"）
+
+    为什么用 100ms 当门槛：0.01ms / 0s 是"关掉"，1.2s 是"保留"，
+    中间没有第三个语义。100ms 只是把两类分开，不是调参。
+    """
+    for m in re.finditer(r'animation-duration\s*:\s*([0-9.]+)\s*(ms|s)', block):
+        val = float(m.group(1))
+        ms = val if m.group(2).lower() == 'ms' else val * 1000
+        if ms >= 100:
+            return True, ms
+    return False, None
+
+
+def audit_reduced(texts, policy):
+    """纯函数：texts = {组件名: (路径, css)}，policy = motion-policy.json 内容
+
+    三个方向，缺一个都会留下洞：
+      ① 声明了保留，但 CSS 没真保留（写了空话）
+      ② 没声明，却私自保留了动画（偷偷给自己开白条）
+      ③ 登记了但文件不存在（清单腐烂）
+    """
+    probs = []
+    keep = policy.get('keep', {})
+
+    for name, meta in sorted(keep.items()):
+        if name not in texts:
+            probs.append((name, 'missing', '登记在 motion-policy 里，但找不到 CSS：%s'
+                          % meta.get('file', '?')))
+            continue
+        ok = False
+        for b in reduced_blocks(texts[name][1]):
+            if keeps_motion(b)[0]:
+                ok = True
+                break
+        if not ok:
+            probs.append((name, 'not-kept',
+                          '声明要保留动画，但 reduced 块里没有 >=100ms 的 '
+                          'animation-duration（要么没写，要么被 0.01ms 灭了）'))
+
+    for name, (_path, css) in sorted(texts.items()):
+        if name in keep:
+            continue
+        for b in reduced_blocks(css):
+            kept, ms = keeps_motion(b)
+            if kept:
+                probs.append((name, 'undeclared',
+                              '它保留了 %.0fms 的动画，但没在 ai/motion-policy.json '
+                              '登记理由' % ms))
+                break
+    return probs
+
+
+def reduced_audit():
+    """读盘执行（判据逻辑在 audit_reduced 里，便于 --selftest 喂合成数据）"""
+    if not os.path.isfile(POLICY):
+        print('  [FAIL] 缺 %s —— 没有策略就没有判据，不许判通过' % POLICY)
+        return 1
+    with open(POLICY, encoding='utf-8') as f:
+        policy = json.load(f)
+
+    texts = {}
+    for f in sorted(glob.glob(os.path.join(ROOT, '0*', '**', '*.css'), recursive=True)):
+        parts = os.path.relpath(f, ROOT).replace('\\', '/').split('/')
+        if len(parts) < 3:
+            continue
+        name = parts[1]
+        with open(f, encoding='utf-8', errors='replace') as fh:
+            texts[name] = (parts[0] + '/' + parts[1] + '/' + parts[2], fh.read())
+
+    if not texts:
+        print('  [FAIL] 一个组件 CSS 都没扫到 —— 视野为空，不许判通过')
+        return 1
+
+    probs = audit_reduced(texts, policy)
+    keep = policy.get('keep', {})
+    print('  减少动效策略：保留 %d 个组件 / 扫描 %d 个组件 CSS' % (len(keep), len(texts)))
+    if probs:
+        for name, kind, msg in probs:
+            print('  FAIL %-18s [%s] %s' % (name, kind, msg))
+        print('')
+        print('  ⇒ 保留动画必须有理由，且理由要写在 ai/motion-policy.json 里：')
+        print('     要么去掉这段保留，要么登记它、说清"关掉会害到谁"。')
+        return 1
+    print('  OK   保留清单与实现一致，且没有未登记的私自动效')
+    return 0
+
+
+def selftest():
+    """反向控制：喂合成 CSS，判据必须能红也必须不乱红"""
+    policy = {'keep': {'spinner': {'file': 'x/spinner.css'}}}
+    cases = [
+        ('合规（保留已声明）',
+         {'spinner': ('x', '@media (prefers-reduced-motion: reduce){.a{animation-duration:1.2s !important}}'),
+          'card': ('y', '@media (prefers-reduced-motion: reduce){.b{transform:none}}')},
+         []),
+        ('声明了但没保留',
+         {'spinner': ('x', '@media (prefers-reduced-motion: reduce){.a{animation-duration:0.01ms !important}}')},
+         ['not-kept']),
+        ('私自保留（未登记）',
+         {'spinner': ('x', '@media (prefers-reduced-motion: reduce){.a{animation-duration:1.2s !important}}'),
+          'toast': ('y', '@media (prefers-reduced-motion: reduce){.b{animation-duration:2s !important}}')},
+         ['undeclared']),
+        ('登记了但文件不存在',
+         {'card': ('y', '/* 无 */')},
+         ['missing']),
+    ]
+    bad = 0
+    for name, texts, want in cases:
+        got = [k for _n, k, _m in audit_reduced(texts, policy)]
+        ok = sorted(set(got)) == sorted(set(want)) and (want or not got)
+        print('  %-18s %s  期望 %s 实得 %s'
+              % (name, 'PASS' if ok else 'FAIL', want or '无问题', got or '无问题'))
+        if not ok:
+            bad += 1
+    # ⑦b 对偶：证明"没报错"不是因为函数永远返回空
+    if not audit_reduced({'card': ('y', '@media (prefers-reduced-motion: reduce){.b{animation-duration:3s}}')},
+                         {'keep': {}}):
+        print('  [FAIL] 对偶用例失败：明显未登记的动效却判无问题')
+        bad += 1
+    print('  自检 %d 条，失败 %d 条' % (len(cases) + 1, bad))
+    return 1 if bad else 0
+
+
 def main():
+    if '--selftest' in sys.argv:
+        return selftest()
+    if '--reduced-audit' in sys.argv:
+        return reduced_audit()
+
     args = [a for a in sys.argv[1:] if not a.startswith('--')]
     if not args or '--help' in sys.argv:
         print(__doc__)
