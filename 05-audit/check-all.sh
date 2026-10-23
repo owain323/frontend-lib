@@ -534,6 +534,10 @@ run "analysis-report" node 05-audit/analysis-report-check.js
 # 报告版式系统 v1：三套 profile 的**取舍**真的落在计算值上（不是文案差异）
 run "report" node 05-audit/report-check.js
 run "data-showcase" node 05-audit/data-showcase-check.js
+# 详情页配方：三变体必须同构（标签序列逐项比对），且都必须进视觉基线
+run "detail-page" $PY 05-audit/detail-page-contract.py
+# 无数据态：必须给理由、不得用 0 冒充、不得整块隐藏
+run "no-data"     $PY 05-audit/no-data-gate.py
 run "tooltip" node 05-audit/tooltip-check.js
 run "dropdown" node 05-audit/dropdown-check.js
 run "tree" node 05-audit/tree-check.js

@@ -115,6 +115,10 @@ PAGES = [
     ('04-recipes/analysis-report', 'demo.html', '组合型研究报告'),
     ('04-recipes/report',          'demo.html', '研究报告'),
     ('04-recipes/data-showcase',   'demo.html', '数据展示对照'),
+    ('04-recipes/detail-page',    'demo.html', '详情页-入口'),
+    ('04-recipes/detail-page',    'full.html', '详情页-完整数据'),
+    ('04-recipes/detail-page',    'partial.html', '详情页-部分缺失'),
+    ('04-recipes/detail-page',    'null.html', '详情页-无数据'),
     ('09-assets/scientific-plot',  'demo.html', '科学绘图'),
 ]
 
@@ -162,7 +166,13 @@ def shot_name(d, f):
     修法：两侧共用本函数，命名不可能再分叉；
           且比对侧若发现 `_current` 为空必须**判失败**，不能静默跳过。
     """
-    return d.replace('/', '_') + '.png'
+    stem = os.path.splitext(f)[0]
+    # demo.html 沿用旧名（改名会让已有 40 张基线集体变成"缺失"，那是自造假红）；
+    # 同一目录下的其它页面（full / partial / null …）必须带上自己的名字，
+    # 否则会**互相覆盖** —— 2026-10-23 实测：detail-page 的四个页面只产出 1 张 PNG。
+    if stem == 'demo':
+        return d.replace('/', '_') + '.png'
+    return d.replace('/', '_') + '_' + stem + '.png'
 
 
 def _pages_exist():

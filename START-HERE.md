@@ -62,6 +62,7 @@
 | 长文排版 | `03-patterns/content/content.css` | 286 | — | 写文档 / 长文就要 |
 | reveal | `03-patterns/reveal/reveal.css` | 93 | 可选 130 (`reveal.js`，入场动效，纯增强；没有它内容直接可见) |  |
 | analysis-report | `04-recipes/analysis-report/analysis-report.css` | 187 | — |  |
+| detail-page | `04-recipes/detail-page/detail-page.css` | 176 | — |  |
 | report | `04-recipes/report/report.css` | 326 | — |  |
 | table | `04-recipes/table/table.css` | 366 | — |  |
 | bar | `09-assets/bar/bar.css` | 166 | **必需 309** (`bar.js`) |  |
@@ -108,6 +109,7 @@
 |---|---|---|
 | `analysis-report/` | `04-recipes/analysis-report/` | 组合型研究报告：正文 + 辅助栏并排，窄屏退回单栏 |
 | `data-showcase/` | `04-recipes/data-showcase/` | 四种数据表达方式对照：我到底该用哪个 |
+| `detail-page/` | `04-recipes/detail-page/` | 实体详情页骨架：字段齐全 / 部分缺失 / 无数据，三态同构（DOM 不变） |
 | `longform/` | `04-recipes/longform/` | 单栏长文排版与阅读节奏 |
 | `report/` | `04-recipes/report/` | 报告版式系统 v1：共享基础 + 三种版式取舍（杂志 / 科研技术 / 金融研究） |
 | `table/` | `04-recipes/table/` | 专业数据表格：列级格式与单位，三种用途预设 |

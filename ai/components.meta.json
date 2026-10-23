@@ -158,6 +158,11 @@
     "tree": {
       "rootClass": "tree",
       "purpose": "可展开树形结构"
+    },
+    "detail-page": {
+      "rootClass": "detail-page",
+      "tier": "recipe",
+      "purpose": "实体详情页骨架：字段齐全 / 部分缺失 / 无数据三种状态同构，无数据是一等状态"
     }
   }
 }

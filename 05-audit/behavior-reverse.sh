@@ -62,6 +62,8 @@ run "mojibake"    $PY 05-audit/mojibake-check.py --selftest
 run "doc-facts"    $PY 05-audit/doc-facts-gate.py --selftest
 run "reveal"      node 05-audit/reveal-contract.js --selftest
 run "motion-reduced" $PY 05-audit/motion.py --selftest
+run "detail-page"    $PY 05-audit/detail-page-contract.py --selftest
+run "no-data"        $PY 05-audit/no-data-gate.py --selftest
 # 视觉门禁的两道守卫：判据自己会不会红（喂合成数据，不读磁盘）
 run "visual-coverage" $PY 05-audit/visual-coverage-gate.py --selftest
 run "visual-stamp"    $PY 05-audit/visual-stamp-gate.py --selftest

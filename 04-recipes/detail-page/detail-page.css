@@ -1,0 +1,176 @@
+/* ============================================================================
+   detail-page — 实体详情页骨架
+   ============================================================================
+   🔴 它解决的是"同一类页面，字段多少不一，但结构必须一致"这件事。
+   ---------------------------------------------------------------------------
+     同一张图纸要能装下三种数据状态：
+        full     字段齐全
+        partial  部分缺失（有的有、有的没）
+        null     一条数据都没有
+     三个变体的 **DOM 结构完全相同**，差异只在三处：
+        ① 文案      ② 数值      ③ 有无说明块
+     ⇒ `verify-skeleton.py` 用标签序列比对来守这件事。
+        没有它，"同构"会在第二次修改时悄悄失效。
+
+   🔴 三条结构规则（比任何样式细节都值钱）
+   ---------------------------------------------------------------------------
+     1. **装饰层与内容层是平级兄弟**，不是父子。
+        装饰永远不能影响内容布局，也不能吃点击（pointer-events: none）。
+        父子关系会让装饰的内边距/定位把内容挤走 —— 这是最常见的翻车方式。
+     2. **皮肤挂在 section 上，不挂 body**。
+        同一页里不同区块可以各自换肤；挂 body 就只能整页一个肤色。
+     3. **DOM 不许变**。差异只允许出现在色对 / 媒体策略 / 尾部说明块。
+        字段缺失是"值缺失"，不是"节点缺失"。
+
+   🔴 无数据态是一等状态（本文件最重要的一条）
+   ---------------------------------------------------------------------------
+     · 不隐藏：整块消失会让读者以为"这页没有这项"
+     · 不用 0 冒充：0 是"确实是零"，缺失是"没有数据"，语义相反
+     · 必须给理由：读者要知道"为什么看不到"，而不是猜
+     ⇒ 这三条由 `05-audit/no-data-gate.py` 机检。
+
+   🔴 视觉强度按产品页取，不按作品集取
+   ---------------------------------------------------------------------------
+     1px 描边 / 字重 500–600 / 行高 ≥1.4。3px 描边 + 900 字重
+     在高密度页面上会把内容压死。
+   ========================================================================= */
+
+.detail-page {
+  --detail-gap: var(--sp-4);
+  display: block;
+}
+
+/* ---- 1 · 头部：装饰层与内容层平级 ---- */
+.detail-hero {
+  position: relative;
+  padding: var(--sp-5) var(--sp-4);
+  border: 1px solid var(--border-decor);
+  border-radius: var(--r-lg);
+  background: var(--surface-raised);
+  overflow: hidden;
+}
+
+/* 装饰层：不吃点击、不参与布局、读屏忽略 */
+.detail-hero__deco {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 80% at 100% 0%, var(--accent-soft) 0%, transparent 60%);
+  opacity: .9;
+}
+
+.detail-hero__body {
+  position: relative;   /* 压在装饰层之上，但布局不受它影响 */
+}
+
+.detail-hero__eyebrow {
+  margin: 0 0 var(--sp-1);
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  letter-spacing: .02em;
+}
+
+.detail-hero__title {
+  margin: 0;
+  font-size: var(--fs-xl);
+  line-height: 1.3;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.detail-hero__meta {
+  margin: var(--sp-2) 0 0;
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+}
+
+/* ---- 2 · 关键指标：网格，缺哪个都不断版 ---- */
+.detail-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--detail-gap);
+  margin: var(--detail-gap) 0;
+}
+
+.detail-kpi {
+  padding: var(--sp-3);
+  border: 1px solid var(--border-decor);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.detail-kpi__label {
+  display: block;
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+}
+
+.detail-kpi__value {
+  display: block;
+  margin-top: var(--sp-1);
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.detail-kpi__delta {
+  display: block;
+  margin-top: var(--sp-1);
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+}
+
+/* 缺失值：用文本表达，不用 0，也不用空字符串 */
+.detail-kpi__value--missing {
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+/* ---- 3 · 无数据说明块：可解释，不占位 ---- */
+.detail-null {
+  padding: var(--sp-4);
+  border: 1px dashed var(--border-decor-str);
+  border-radius: var(--r-md);
+  background: var(--surface-sunken);
+}
+
+.detail-null__title {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.detail-null__reason {
+  margin: 0;
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+/* ---- 4 · 正文 ---- */
+.detail-body {
+  margin-top: var(--detail-gap);
+}
+
+.detail-body__section + .detail-body__section {
+  margin-top: var(--sp-4);
+}
+
+.detail-body__heading {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.detail-body__text {
+  margin: 0;
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  color: var(--text-secondary);
+}

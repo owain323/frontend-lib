@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>detail-page · 实体详情页骨架</title>
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/page.css">
+<link rel="stylesheet" href="../../02-primitives/button/button.css">
+<link rel="stylesheet" href="detail-page.css">
+<style>
+.dp-links { display: grid; gap: 12px; margin: 16px 0 24px; }
+.dp-link { display: block; padding: 14px 16px; border-radius: var(--r-md);
+           border: 1px solid var(--border-decor); background: var(--surface-raised);
+           text-decoration: none; color: var(--text-primary); }
+.dp-link__t { font-weight: 600; }
+.dp-link__d { display: block; margin-top: 4px; font-size: var(--fs-sm);
+              color: var(--text-secondary); }
+</style>
+</head>
+<body class="page">
+<main class="wrap">
+  <h1>detail-page · 实体详情页骨架</h1>
+  <p class="lede">
+    同一张图纸要装下三种数据状态，而 <strong>DOM 结构一个节点都不变</strong>：
+    差异只在文案、数值、以及说明块写什么。三个变体见下，结构由
+    <code>05-audit/detail-page-contract.py</code> 逐标签比对。
+  </p>
+
+  <nav class="dp-links">
+    <a class="dp-link" href="full.html">
+      <span class="dp-link__t">① 字段齐全（full）</span>
+      <span class="dp-link__d">三项指标都有值，说明块承担"数据完整度"的告知。</span>
+    </a>
+    <a class="dp-link" href="partial.html">
+      <span class="dp-link__t">② 部分缺失（partial）</span>
+      <span class="dp-link__d">缺的那项写"未披露"并用弱化色 —— 不是 0，也不是删掉节点。</span>
+    </a>
+    <a class="dp-link" href="null.html">
+      <span class="dp-link__t">③ 无数据（null）</span>
+      <span class="dp-link__d">一条数据都没有时页面仍然成立：不隐藏、不冒充零、必须说清原因。</span>
+    </a>
+  </nav>
+
+  <h2 class="rule-top">三条结构规则</h2>
+  <p>
+    ① 装饰层与内容层是<strong>平级兄弟</strong>，装饰不吃点击（<code>pointer-events: none</code>）；<br>
+    ② 皮肤挂在 <code>section</code> 上，不挂 <code>body</code>；<br>
+    ③ <strong>DOM 不许变</strong>，字段缺失是值缺失，不是节点缺失。
+  </p>
+</main>
+</body>
+</html>
