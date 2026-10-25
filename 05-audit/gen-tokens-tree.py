@@ -83,6 +83,8 @@ COLOR = {
     '--switch-on', '--scrim',
     '--skeleton-bg', '--skeleton-shimmer',
     '--scrollbar-thumb', '--scrollbar-thumb-hov',
+    # 气泡的一对"反色面"（P1：由 tooltip.css 里的 media 分支改成令牌）
+    '--tooltip-bg', '--tooltip-fg', '--tooltip-border',
 }
 
 SIZE = {

@@ -36,7 +36,7 @@
 |---|---|---|---|---|
 | 按钮 | `02-primitives/button/button.css` | 353 | — | 几乎总要 |
 | 输入框 | `02-primitives/input/input.css` | 239 | — | 有表单就要 |
-| 标签 / 徽章 | `02-primitives/badge/badge.css` | 147 | — | 有状态标记就要（"已披露""停牌"） |
+| 标签 / 徽章 | `02-primitives/badge/badge.css` | 141 | — | 有状态标记就要（"已披露""停牌"） |
 | 卡片 | `02-primitives/card/card.css` | 246 | — | 有分组内容就要 |
 | 单选 / 多选 | `02-primitives/choice/choice.css` | 395 | — | 单选 / 多选就要 |
 | 下拉选择 | `02-primitives/select/select.css` | 151 | **必需 549** (`select.js`) | 原生 select 的外观或交互不够用就要 |
@@ -50,7 +50,7 @@
 | 标签页 | `03-patterns/tabs/tabs.css` | 159 | **必需 306** (`tabs.js`) | 同层级内容切换就要 |
 | 折叠面板（beta） | `03-patterns/accordion/accordion.css` | 453 | **必需 368** (`accordion.js`) | 长表单分段就要 |
 | 动作菜单（beta） | `03-patterns/dropdown/dropdown.css` | 135 | **必需 451** (`dropdown.js`) | 要一组动作（新建 / 导出 / 删除）就要 |
-| 文字提示 | `03-patterns/tooltip/tooltip.css` | 98 | **必需 288** (`tooltip.js`) | 图标按钮或缩写需要一句话解释就要 |
+| 文字提示 | `03-patterns/tooltip/tooltip.css` | 89 | **必需 288** (`tooltip.js`) | 图标按钮或缩写需要一句话解释就要 |
 | 分页 | `03-patterns/pagination/pagination.css` | 195 | **必需 394** (`pagination.js`) | 数据多到要翻页就要 |
 | 树形 | `03-patterns/tree/tree.css` | 113 | **必需 456** (`tree.js`) | 层级数据（文件 / 组织 / 分类）要展开就要 |
 | 侧边抽屉（beta） | `03-patterns/drawer/drawer.css` | 129 | **必需 258** (`drawer.js`) | 要从侧边滑出面板就要 |

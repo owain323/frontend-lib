@@ -203,15 +203,20 @@ const REPO = path.resolve(__dirname, '..');
                                   : '四个组合各有一条有色边，且 RTL 物理边相反 ✅' };
       },
 
-      /* ⑦ 暗色下气泡要反色（否则深底深字）*/
-      '暗色下气泡反色': async () => {
-        const fs = require('fs');
-        const raw = kit.stripComments(
-          fs.readFileSync(REPO + '/03-patterns/tooltip/tooltip.css', 'utf8'));
-        const dark = raw.match(/@media[^{]*prefers-color-scheme\s*:\s*dark[^{]*\{/);
-        return { ok: !!dark,
-                 note: dark ? '有暗色段 ✅' : '🔴 无暗色段（深色主题下深底深字）' };
-      },
+      /* ⑦ （原「暗色下气泡反色」判据已删，2026-10-25）
+       *
+       * 它查的是 tooltip.css 里**有没有 `@media (prefers-color-scheme: dark)` 段**——
+       * 那是把判据绑在**实现形态**上（INVARIANT I-15 同一类），而不是绑在结果上。
+       * 气泡改成令牌驱动（RFC-THEME-SCOPE D5）之后，这段 media 被删了，
+       * 判据就报"🔴 无暗色段"，而**实际暗色下的表现一点没变**。
+       *
+       * 真正要守的东西由上面 ④ 用**实测值**守着：
+       *   暗色下「文字 vs 自身底色」对比度 11.93:1、且底色确实从
+       *   rgb(21,24,28) 切到了 rgb(35,40,48)。
+       * 「组件里不许出现 prefers-color-scheme 分支」这条由 `theme-scope-gate`
+       * 静态守着（它管全库 27 个组件，不是只这一个）。
+       * ⇒ 这里不再重复一遍实现形态的检查。
+       */
     },
   });
   process.exit(kit.report(r));

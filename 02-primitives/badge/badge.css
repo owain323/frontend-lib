@@ -137,11 +137,5 @@
    ⇒ 白字压上去只有 2.72:1 ⇒ 实心态在暗色下必须换成**深字**。
    ⚠️ 这不是"暗色就该反色"，而是 WCAG 的硬要求：
       浅底必须配深字，否则对比度不够。 */
-@media (prefers-color-scheme: dark) {
-  /* 暗色下这些底色变浅 ⇒ 必须换深字。
-     ⚠️ 用令牌而不是写死色值 —— 否则违反本库"零硬编码"纪律
-        （badge 契约的判据 ① 会当场报出来，这条判据当场就会报出来）。 */
-  .badge--solid-success { color: var(--text-on-solid); }
-  .badge--solid-danger  { color: var(--text-on-solid); }
-  .badge--solid-warning { color: var(--text-on-solid); }
-}
+/* 原有 `@media (prefers-color-scheme: dark)` 块已删：它的内容与上面三行
+   逐字相同（`--text-on-solid` 令牌化后暗色自己会变深），是死代码。 */

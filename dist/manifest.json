@@ -8,8 +8,8 @@
   ],
   "totals": {
     "sourceFiles": 68,
-    "sourceBytes": 704499,
-    "distGzip": 91845
+    "sourceBytes": 709319,
+    "distGzip": 92034
   },
   "files": [
     {
@@ -89,15 +89,15 @@
     },
     {
       "source": "01-tokens/focus-ring.css",
-      "sourceSha256": "99897995b2e36ef927c4d4bb1948605c3bbba1f4692be432252ff6363fad53c3",
-      "sourceBytes": 5472,
-      "sourceGzip": 2022,
+      "sourceSha256": "54f8c732afe9101635b42a8989d98635a641f5171ab90650503d91a5a66c5880",
+      "sourceBytes": 5653,
+      "sourceGzip": 2122,
       "outputs": [
         {
           "path": "dist/01-tokens/focus-ring.css",
           "kind": "minified",
-          "bytes": 968,
-          "gzip": 380
+          "bytes": 958,
+          "gzip": 382
         }
       ]
     },
@@ -161,15 +161,15 @@
     },
     {
       "source": "01-tokens/tokens.css",
-      "sourceSha256": "8f36d0f69b60a53acd2bf893fe7257fb832eb78aaae9236d89770575b4ff3efb",
-      "sourceBytes": 44237,
-      "sourceGzip": 17506,
+      "sourceSha256": "1cbd65db006717a1074020acb9ad51d42c8f3579962fc2b4712e1e86e12c5872",
+      "sourceBytes": 49224,
+      "sourceGzip": 18499,
       "outputs": [
         {
           "path": "dist/01-tokens/tokens.css",
           "kind": "minified",
-          "bytes": 7637,
-          "gzip": 2429
+          "bytes": 11338,
+          "gzip": 2694
         }
       ]
     },
@@ -189,15 +189,15 @@
     },
     {
       "source": "02-primitives/badge/badge.css",
-      "sourceSha256": "45baf276af38372930f708bbd417126def0d5fa64da4e8682bb84fa890cd96b1",
-      "sourceBytes": 6549,
-      "sourceGzip": 2854,
+      "sourceSha256": "879b860df6089cf23a13be9fceac26304438b15ef309d7562c62063fa94acdfc",
+      "sourceBytes": 6274,
+      "sourceGzip": 2810,
       "outputs": [
         {
           "path": "dist/02-primitives/badge/badge.css",
           "kind": "minified",
-          "bytes": 1767,
-          "gzip": 525
+          "bytes": 1578,
+          "gzip": 494
         }
       ]
     },
@@ -734,15 +734,15 @@
     },
     {
       "source": "03-patterns/tooltip/tooltip.css",
-      "sourceSha256": "937d1919f85b115e359719701f6f3e7dcefc5cf24d21c42e942b80a26f37d8fd",
-      "sourceBytes": 3797,
-      "sourceGzip": 1717,
+      "sourceSha256": "355528058b7468942700365422c54a82481e4c8d2644075624052ba7f68a5b4b",
+      "sourceBytes": 3538,
+      "sourceGzip": 1778,
       "outputs": [
         {
           "path": "dist/03-patterns/tooltip/tooltip.css",
           "kind": "minified",
-          "bytes": 1679,
-          "gzip": 583
+          "bytes": 1240,
+          "gzip": 501
         }
       ]
     },
@@ -848,15 +848,15 @@
     },
     {
       "source": "04-recipes/tierA-tokens.css",
-      "sourceSha256": "d4e11c7feb39ec722ceb955da631c3608a12c24b8ebfb7e0e02bfd4ab7b6976d",
-      "sourceBytes": 4971,
-      "sourceGzip": 1976,
+      "sourceSha256": "0a0bd6a1826a9d7c8d28f48ba16a87ff120969d57a416413963d67edb1172f9f",
+      "sourceBytes": 5157,
+      "sourceGzip": 2015,
       "outputs": [
         {
           "path": "dist/04-recipes/tierA-tokens.css",
           "kind": "minified",
-          "bytes": 3123,
-          "gzip": 1278
+          "bytes": 3257,
+          "gzip": 1313
         }
       ]
     },

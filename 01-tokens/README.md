@@ -21,6 +21,45 @@
 
 ---
 
+## 明暗与**局部换肤**
+
+整页明暗有三条路，都不需要 JS：
+
+| 做法 | 效果 |
+|---|---|
+| 什么都不做 | 跟随系统（`prefers-color-scheme`） |
+| `<html data-theme="dark">` | 强制暗（系统是浅色也暗） |
+| `<html data-theme="light">` | 强制亮（系统是暗色也亮） |
+
+**任何容器**也可以单独指定，用来做"深色 hero + 浅色正文"、文档站里的反色示例：
+
+```html
+<div data-theme="dark">          <!-- 这块区域整体切到暗色 -->
+  <button class="btn btn--primary">暗色按钮</button>
+
+  <div data-theme="light">       <!-- 嵌回去也成立 -->
+    <button class="btn btn--primary">浅色按钮</button>
+  </div>
+</div>
+```
+
+⚠️ 三条边界，都是有意的：
+
+1. **容器必须显式写 `data-theme`**。不做"没写就跟随系统"——那需要把令牌写到
+   **每一个元素**上（`*:not([data-theme])`），后果是使用者写在 `body` 上的覆盖
+   失效，且长页面上每个元素各存 30 个自定义属性。
+2. **容器自己不会涂底色**。`[data-theme]` 只切换令牌；要不要给这块区域加背景，
+   由你决定（通常 `background: var(--paper)`）。
+3. **`color-scheme` 目前只由 `date-range` 局部设置**，根上没有。所以暗色下
+   原生滚动条/日期弹层不会跟着变 —— 这是已知未决项，见
+   `docs/RFC-THEME-SCOPE.md` 第六节（它会让既有 40 页视觉基线全变，需要单独一轮）。
+
+组件的明暗差异**全部由令牌表达**，组件 CSS 里不许出现
+`@media (prefers-color-scheme: dark)` —— 主题能从容器来之后，那种写法只反映系统偏好，
+局部暗区里的组件会拿到另一套配色。这条由 `theme-scope-gate` 静态守着。
+
+---
+
 ## 色（全部实测达标）
 
 | 令牌 | 值 | 对比度 |
@@ -186,7 +225,7 @@ node ai/cli.js tree   [--set=light|dark] [--cat=color]   # 第二种
 
 ## 精简档 的使用方式
 
-复制 **`04-recipes/tierA-tokens.css`** 进 `<style>`（**4.9 KB**，含浅色 99 + 暗色 30 个令牌，零外链零构建）。
+复制 **`04-recipes/tierA-tokens.css`** 进 `<style>`（**5.1 KB**，含浅色 102 + 暗色 33 个令牌，零外链零构建）。
 
 那一份是由 `tokens.css` **自动抽取**的（`python 05-audit/make-tiersnippet.py`），
 所以不会与本文件漂移；改了这个文件请重新生成。
