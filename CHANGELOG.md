@@ -14,6 +14,32 @@
 
 ## [Unreleased]
 
+### Added · `orphan-gate`（05-audit 里不许有"没人跑"的脚本）
+
+- 判据：每个 `05-audit/*.{py,js,mjs,sh}` 必须属于四类之一 ——
+  被 `check-all.sh` / `package.json` / workflow 引用、被别的脚本 import、
+  `_` 前缀的工具模块、或前 40 行里写了 `MANUAL-ONLY: <理由>` 的人工工具。
+  四类都不是 ⇒ 红。
+- 反向控制 5 例（含"只被 CHANGELOG 提过"不算有主 —— 第一版就是那里判错的）。
+- **首跑抓到 11 个，其中两个不是"垃圾"而是"丢了的东西"**：
+  - `tap-target.js` —— WCAG 2.5.8（24×24）/ 2.5.5（44×44）命中区检查，跑 8 个页面，
+    实现完整但**从来没被调用**。已接线。
+  - `switch-geometry.js` —— `ai/components.json` 一直把它列为 `switch` 的门禁，
+    而它第一行就 `ReferenceError: Cannot access 'REPO' before initialization`，
+    **一次都没跑起来过**。修好并接线（顺带证明滑块两端间隙 2/20、行程 20px 正确）。
+- 其余：4 个标为 `MANUAL-ONLY`（各带具体理由）、5 个移进 `_attic/`（带墓碑说明）。
+
+### Fixed · `core-boundary-gate` 每跑一次留下一个临时目录
+
+- `tempfile.mkdtemp(prefix='fl-coreboundary-')` 两处，**没有任何清理**
+  ⇒ `%TEMP%` 里攒了 **369 个**。已用 `atexit.register(shutil.rmtree, …)` 兜住
+  （不包 `try/finally` 是因为该函数有 5 条提前 `return`，重排缩进的风险大于收益）。
+- 验证：修前跑一次 +1，修后跑 `main` + `--selftest` 各一次，增量 **0**。
+
+### Added · `05-audit/README.md`（门禁目录的唯一入口）
+
+- 四类脚本约定、参数约定的坑（传错只扫 0 个文件却判 PASS）、新增门禁的六条清单。
+
 ### Added · `motion-live` 门禁（动效的**运行时**判据）
 
 - 背景：现有三道动效门禁全是静态的 —— 查"有没有 `prefers-reduced-motion` 块"、

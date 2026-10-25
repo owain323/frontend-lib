@@ -35,10 +35,12 @@ core-boundary-gate.py — 核心里**不许出现呈现形态语义**
 """
 from __future__ import annotations
 
+import atexit
 import io
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -104,6 +106,12 @@ def check_roundtrip():
         ]
     }
     tmp = tempfile.mkdtemp(prefix='fl-coreboundary-')
+    # 🔴 自己建的目录必须自己删（0.10.1 修）。
+    #    此前两处 mkdtemp 都没有任何清理：这个门禁跑一次留一个，
+    #    实测在 %TEMP% 里攒了 **369 个** fl-coreboundary-* —— 量具污染环境。
+    #    用 atexit 而不是 try/finally：这里有 5 条提前 return 的路径，
+    #    包 finally 要重排整段缩进，风险比收益大。
+    atexit.register(shutil.rmtree, tmp, ignore_errors=True)
     fdeck = os.path.join(tmp, 'deck.json')
     fdoc = os.path.join(tmp, 'doc.json')
     io.open(fdeck, 'w', encoding='utf-8').write(json.dumps(deck, ensure_ascii=False))
@@ -130,6 +138,7 @@ def selftest():
     """反向控制：证明 A 判据会红。"""
     ok = True
     tmp = tempfile.mkdtemp(prefix='fl-coreboundary-')
+    atexit.register(shutil.rmtree, tmp, ignore_errors=True)
     # 干净的核心不该报
     p = os.path.join(tmp, 'clean.css')
     io.open(p, 'w', encoding='utf-8').write(

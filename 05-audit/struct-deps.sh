@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # struct-deps.sh — 改 HTML 结构之前先跑这个
 #
+# MANUAL-ONLY: 人工在改结构前跑一次，不是流水线的一环
+#   （它输出的是给人看的依赖清单，没有可判定的通过/失败）。
+#
 # 为什么需要：本库真实发生过 —— 把 input 从 label 内移到平级后，
 # `.choice__mark` 不再是相邻兄弟，所有 `X + .choice__mark` 规则**全部失效**，
 # 一度 7 处同时静默失效（勾号 / disabled / indeterminate / radio）。
