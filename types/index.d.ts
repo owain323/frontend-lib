@@ -34,9 +34,9 @@
  * 怎么用
  * ---------------------------------------------------------------------------
  *   // tsconfig.json
- *   { "compilerOptions": { "paths": { "frontend-lib": ["./types/index.d.ts"] } } }
+ *   { "compilerOptions": { "paths": { "agentcss": ["./types/index.d.ts"] } } }
  *
- *   import { Select } from 'frontend-lib';
+ *   import { Select } from 'agentcss';
  *   const s = Select.create(el, { label: '口径', onChange: (v, text) => … });
  *                                                       ^^^^^^^^^^^^^^ 参数名/个数写错会立刻报错
  */

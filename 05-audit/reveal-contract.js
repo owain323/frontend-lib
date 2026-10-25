@@ -143,6 +143,27 @@ const RULES = [
       '特性检测 ' + hasDetect + ' / 全显兜底 ' + hasFallback + ' / unobserve ' + hasUnobserve];
   }],
 
+  ['白屏有兜底', (f) => {
+    /* 🆕 0.9.1：`data-reveal-ready` 是**先**打上的，`new IntersectionObserver`
+       是**后**执行的 ⇒ 构造函数一旦抛错，隐藏态已生效而 revealAll() 永远跑不到，
+       结果就是整页空白。上面那条「JS 有 IO 兜底」查不到这个，因为它只查
+       "函数存在"，不查"异常路径上会不会走到"。
+
+       判据要求四件事同时成立：
+         ① 构造/注册被 try 包住
+         ② catch 分支必须 revealAll()
+         ③ 有看门狗定时器
+         ④ 看门狗真的会对元素 markDone（不是空函数）
+    */
+    const tryGuard = /try\s*\{[\s\S]*?new\s+global\.IntersectionObserver[\s\S]*?\}\s*catch/.test(f.js);
+    const catchOpen = /catch\s*\([^)]*\)\s*\{[\s\S]*?revealAll\(\)/.test(f.js);
+    const timer = /setTimeout\(\s*watchdogSweep/.test(f.js);
+    const sweeps = /function\s+watchdogSweep\s*\([^)]*\)\s*\{[\s\S]*?markDone\(/.test(f.js);
+    const ok = tryGuard && catchOpen && timer && sweeps;
+    return [ok, 'try 包住 ' + tryGuard + ' / catch 全显 ' + catchOpen +
+      ' / 看门狗 ' + timer + ' / 真补元素 ' + sweeps];
+  }],
+
   ['默认不自动接管', (f) => {
     /* 引擎只允许在 <html data-reveal-auto> 时自动 enable；
        直接无条件 enable() 等于"引了脚本内容就消失"，与无 JS 契约矛盾 */
@@ -184,6 +205,7 @@ const MUTATIONS = {
   '无 JS 不白屏': (f) => { f.css = f.css.replace('  transform: translate', '  opacity: 0;\n  transform: translate'); },
   '降级关掉位移': (f) => { f.css = f.css.replace('transform: none;', 'transform: scale(.99);'); },
   'JS 有 IO 兜底': (f) => { f.js = f.js.replace(/unobserve\(/g, '/* 去掉 */('); },
+  '白屏有兜底': (f) => { f.js = f.js.replace('setTimeout(watchdogSweep', 'setTimeout(noop'); },
   '默认不自动接管': (f) => { f.js = f.js.replace("hasAttribute('data-reveal-auto')", "hasAttribute('no-such-attr')"); },
   'demo 覆盖协议': (f) => { f.demo = f.demo.replace(/data-reveal-children/g, 'data-rv-children'); },
 };
@@ -196,7 +218,7 @@ function selftest() {
   }
   const good = run({ css: base.css, js: base.js, demo: base.demo });
   let bad = good.filter(r => !r.ok).length;
-  console.log('  基准（未破坏）：' + (bad ? 'FAIL ' + bad : 'PASS 10/10'));
+  console.log('  基准（未破坏）：' + (bad ? 'FAIL ' + bad : 'PASS ' + RULES.length + '/' + RULES.length));
 
   RULES.forEach(function (r) {
     const name = r[0];

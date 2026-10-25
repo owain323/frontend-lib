@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * cli.js — frontend-lib 的**独立校验入口**
+ * cli.js — 本库（包名 `agentcss`）的**独立校验入口**
  *
  * ============================================================================
  * 🔴 为什么必须是独立 CLI，而不是"写在提示词里让 AI 自己注意"
@@ -15,14 +15,14 @@
  * ============================================================================
  * 用法
  * ----------------------------------------------------------------------------
- *   frontend-lib ai check      <doc.json> [--profile=strict]
- *   frontend-lib ai validate   <file.json> --schema=contract|components|tokens|tokensAudience|tokensTree|deprecations|patch
- *   frontend-lib ai diff       <a.json> <b.json>
- *   frontend-lib ai patch      <doc.json> <patch.json> [-o out.json]
- *   frontend-lib ai components [--maturity=stable] [--json]
- *   frontend-lib ai tokens     [--set=light|dark] [--json]
- *   frontend-lib ai profile    列出三档及其差异
- *   frontend-lib ai capabilities
+ *   agentcss ai check      <doc.json> [--profile=strict]
+ *   agentcss ai validate   <file.json> --schema=contract|components|tokens|tokensAudience|tokensTree|deprecations|patch
+ *   agentcss ai diff       <a.json> <b.json>
+ *   agentcss ai patch      <doc.json> <patch.json> [-o out.json]
+ *   agentcss ai components [--maturity=stable] [--json]
+ *   agentcss ai tokens     [--set=light|dark] [--json]
+ *   agentcss ai profile    列出三档及其差异
+ *   agentcss ai capabilities
  * ============================================================================
  */
 'use strict';
@@ -361,7 +361,7 @@ function main() {
   var argv = process.argv.slice(2);
   if (!argv.length || argv[0] === 'help' || argv[0] === '--help') {
     process.stdout.write(
-      'frontend-lib ai —— 独立校验入口（零依赖、不联网、不依赖任何模型）\n\n' +
+      'agentcss ai —— 独立校验入口（零依赖、不联网、不依赖任何模型）\n\n' +
       '  ai check        <doc.json> [--profile=creative|standard|strict]\n' +
       '  ai validate     <file.json> --schema=contract|components|tokens|tokensAudience|tokensTree|deprecations|patch\n' +
       '  ai diff         <改动前.json> <改动后.json>      按语义 id 比对\n' +
