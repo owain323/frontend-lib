@@ -405,6 +405,13 @@ run "es5-gate"    $PY 05-audit/es5-gate.py .
 
 # 减少动效策略：声明要保留的必须真保留，私自保留的必须登记理由
 run "motion-reduced" $PY 05-audit/motion.py --reduced-audit
+# 动效的**运行时**判据（真浏览器，0.10.1 加）。
+#   上面那几道全是静态的：查的是"有没有 media query""时长是不是走令牌"。
+#   这条量的是**动画对象本身**：① 切状态必须产生动画（没有=瞬移）；
+#   ② 同属性并发 ≤1；③ reduced 下必须 0 个动画且 opacity 恒 1。
+#   反向控制注入 `*{transition:none}` ⇒ ① 必须变红。
+run "motion-live"   node 05-audit/motion-concurrency.js
+run "motion-live-rev" node 05-audit/motion-concurrency.js --selftest
 for g in tierA-gate icon-gate hover-gate measure-gate license-gate numeric-gate dark-gate hardcode-gate reuse-check _docclaims; do
   run "$g"       $PY "05-audit/$g.py" --dir $DIR_ARGS
 done
