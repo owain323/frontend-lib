@@ -412,6 +412,13 @@ run "motion-reduced" $PY 05-audit/motion.py --reduced-audit
 #   反向控制注入 `*{transition:none}` ⇒ ① 必须变红。
 run "motion-live"   node 05-audit/motion-concurrency.js
 run "motion-live-rev" node 05-audit/motion-concurrency.js --selftest
+# 下面两道都是"写好了却从来没人跑"的脚本（orphan-gate 抓到的）：
+#   · tap-target  —— WCAG 2.5.8(24×24) / 2.5.5(44×44) 命中区，跑 8 个页面
+#   · switch-geom —— 开关滑块几何（上下对称 + 真实行程 20px）。
+#     ai/components.json 一直把它列为 switch 的门禁，而它第一行就
+#     `ReferenceError: Cannot access 'REPO' before initialization` —— 一次都没跑起来过。
+run "tap-target"    node 05-audit/tap-target.js
+run "switch-geom"   node 05-audit/switch-geometry.js
 for g in tierA-gate icon-gate hover-gate measure-gate license-gate numeric-gate dark-gate hardcode-gate reuse-check _docclaims; do
   run "$g"       $PY "05-audit/$g.py" --dir $DIR_ARGS
 done
@@ -689,6 +696,11 @@ run "pkg-name-rev" $PY 05-audit/pkg-name-gate.py --selftest
 #   首跑就抓到 exports["."] 指向未发布的 ./index.html（pack-smoke 因只认 string 形态而漏掉）。
 run "pkg-resolve"     $PY 05-audit/pkg-resolve-gate.py
 run "pkg-resolve-rev" $PY 05-audit/pkg-resolve-gate.py --selftest
+# 孤儿脚本（0.10.1 加）：05-audit 里不许有"没人跑"的脚本。
+#   来历：orphan-gate 的第一版就把 tap-target.js（WCAG 命中区）和
+#   switch-geometry.js（契约里声明了、但第一行就崩）抓了出来。
+run "orphan"      $PY 05-audit/orphan-gate.py
+run "orphan-rev"  $PY 05-audit/orphan-gate.py --selftest
 # 版本四处一致（VERSION / package.json / package-lock ×2 / CHANGELOG）。
 # 与 release-gate 判据重叠但**入口不同**：这个给的是"哪一处不一致"的定位，
 # 而 release-gate 给的是"发布前还缺什么"。两者都要，不是重复。

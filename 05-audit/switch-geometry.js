@@ -1,7 +1,11 @@
-const { launch } = require(REPO + '/05-audit/browser.js');
 const path = require('path');
 // ⭐ 库根用 __dirname 推导，不写死绝对路径（否则会泄漏本地目录结构）
+// 🔴 顺序要紧：REPO 必须在 require(browser.js) **之前**定义。
+//    0.10.1 修：原来第一行就 `require(REPO + ...)`，而 REPO 声明在第 4 行 ⇒
+//    `ReferenceError: Cannot access 'REPO' before initialization`，
+//    脚本一次都跑不起来 —— 而 ai/components.json 把它列为 switch 的门禁。
 const REPO = path.resolve(__dirname, '..');
+const { launch } = require(REPO + '/05-audit/browser.js');
 (async () => {
   const b = await launch(); const p = await b.newPage();
   await p.setViewport({width:393,height:852,deviceScaleFactor:3,isMobile:true,hasTouch:true});
