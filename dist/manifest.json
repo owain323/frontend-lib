@@ -8,8 +8,8 @@
   ],
   "totals": {
     "sourceFiles": 68,
-    "sourceBytes": 702653,
-    "distGzip": 91627
+    "sourceBytes": 704499,
+    "distGzip": 91845
   },
   "files": [
     {
@@ -676,15 +676,15 @@
     },
     {
       "source": "03-patterns/reveal/reveal.js",
-      "sourceSha256": "01510e501c8e1520e19da66a9195c86b48daad31ada90078170a0896447b3694",
-      "sourceBytes": 4562,
-      "sourceGzip": 1929,
+      "sourceSha256": "95fb29ccc9dfb2b4da04f1deccbd1d80471ccf364d9d2fce69889eb15f9f610c",
+      "sourceBytes": 6408,
+      "sourceGzip": 2676,
       "outputs": [
         {
           "path": "dist/03-patterns/reveal/reveal.js",
           "kind": "stripped",
-          "bytes": 2492,
-          "gzip": 933
+          "bytes": 3202,
+          "gzip": 1151
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"

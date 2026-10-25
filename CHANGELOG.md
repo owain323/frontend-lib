@@ -14,7 +14,44 @@
 
 ## [Unreleased]
 
-（0.9.0 的内容已定版，见下一节；这一节留给下一版）
+（0.10.0 已定版，见下一节；这一节留给下一版）
+
+## [0.10.0] - 2026-10-25
+
+> ⚠️ 定版说明：本节原来挂在 `[Unreleased]` 下，还带着一句「0.9.0 的内容已定版，见下一节」
+> —— **那句是错的**。`v0.9.0` 标签停在 `d29a151`（10-17），而下面这些内容
+> （reveal / detail-page / 视觉守卫 / 动效分级 / pkg-name）都是之后做的，
+> 一共 13 个提交。它们属于 **0.10.0**：期间新增了两个组件，按语义化版本是**次版本**。
+
+### Added · `pkg-name` 门禁（包名一致性）
+
+- 背景：包名从 `frontend-lib` 改为 `agentcss`，但类型测试仍用**旧名**做
+  `paths` 映射 ⇒ 类型门禁验的是旧名，用户真会写的 `from 'agentcss'`
+  一次都没被编译过。
+- 四条判据：① tsconfig 的 `paths` 键必须只有包名；② 类型测试的 import
+  说明符必须是包名；③ 代码/CLI 里不许把**仓库名**当包名用（仓库名从
+  `repository.url` 推出，改名时判据自动跟着变）；④ README / START-HERE
+  的**代码块内**安装命令必须是本包或 `github:` 形式。
+- 判据 ④ 第一版写成"所有文档都查"，当场误报 `RELEASING.md` 的历史记录
+  （"当时写的是 npm install frontend-lib"）⇒ 收紧为只查 README/START-HERE
+  且只在 fenced 代码块内（E36「判据第一版过宽」的同类修正）。
+- 自带 `--selftest`：6 个变异体 + 1 条**良性对照**（正文引旧命令必须仍然绿）。
+- 顺带把 `type-tests` 的包名、`types/index.d.ts` 的用法示例、`ai/cli.js`
+  的用法串统一到 `agentcss`；`package.json` 补上 `bin`（`agentcss ai …`
+  终于能当命令用，此前只有 `node ai/cli.js`）。
+
+### Fixed · reveal 的白屏兜底（huxx 第 5 条落地）
+
+- **真实缺陷**：`enable()` 先把 `data-reveal-ready` 打到 `<html>` 上，
+  **再** `new IntersectionObserver`。构造函数一旦抛错（部分 WebView 有此
+  问题），隐藏态已经生效，而 `revealAll()` 永远跑不到 ⇒ **整页空白**。
+- 修法两条：① 构造 + 注册整体放进 `try`，`catch` 里 `revealAll()` 全显；
+  ② 加 2 秒看门狗，只补「**已经在视口内**却还没显示」的元素
+  —— 不直接全显，否则折叠线以下的内容会提前播完，reveal 退化成一次性淡入。
+- `reveal-contract` 新增判据「白屏有兜底」（try 包住 / catch 全显 /
+  看门狗 / 真补元素 四条同时成立），并配变异体 ⇒ 11 条判据 + 12 条自检。
+
+---
 
 ### Added · reveal（入场动效）
 

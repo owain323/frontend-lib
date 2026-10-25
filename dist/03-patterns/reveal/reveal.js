@@ -6,7 +6,9 @@ var GROUP_SELECTOR = '[data-reveal-children]';
 var STAGGER_MS = 40;
 var STAGGER_CAP = 6;
 var THRESHOLD = 0.15;
+var WATCHDOG_MS = 2000;
 var observer = null;
+var watchdog = null;
 
 function each(list, fn) {
 for (var i = 0; i < list.length; i++) { fn(list[i], i); }
@@ -42,7 +44,22 @@ function revealAll() {
 each(document.querySelectorAll(SELECTOR), markDone);
 }
 
+function inViewport(el) {
+var vh = global.innerHeight || document.documentElement.clientHeight || 0;
+var r = el.getBoundingClientRect();
+return r.bottom > 0 && r.top < vh;
+}
+
+function watchdogSweep() {
+watchdog = null;
+each(document.querySelectorAll(SELECTOR), function (el) {
+if (el.hasAttribute('data-reveal-done')) { return; }
+if (inViewport(el)) { markDone(el); }
+});
+}
+
 function teardown() {
+if (watchdog) { global.clearTimeout(watchdog); watchdog = null; }
 if (observer) { observer.disconnect(); observer = null; }
 each(document.querySelectorAll(SELECTOR), function (el) {
 clearDone(el);
@@ -62,6 +79,7 @@ revealAll();
 return true;
 }
 
+try {
 observer = new global.IntersectionObserver(function (entries) {
 for (var i = 0; i < entries.length; i++) {
 var en = entries[i];
@@ -79,6 +97,18 @@ clearDone(en.target);
 each(document.querySelectorAll(SELECTOR), function (el) {
 observer.observe(el);
 });
+} catch (e) {
+if (observer) {
+try { observer.disconnect(); } catch (e2) { observer = null; }
+observer = null;
+}
+revealAll();
+return true;
+}
+
+if (!watchdog) {
+watchdog = global.setTimeout(watchdogSweep, WATCHDOG_MS);
+}
 return true;
 }
 

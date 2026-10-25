@@ -23,7 +23,7 @@
  *   ⚠️ 本文件**故意编译不过**，所以 tsconfig 把它排除在主配置之外
  *      （见 tsc-gate.ts：它单独调用 tsc 并检查期望的错误信息）。
  */
-import { Select, Combobox, DateRange, Tree } from 'frontend-lib';
+import { Select, Combobox, DateRange, Tree } from 'agentcss';
 
 declare const root: HTMLElement;
 declare const treeRoot: HTMLElement;

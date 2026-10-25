@@ -60,7 +60,7 @@
 | 列表增删 | `03-patterns/list/list.css` | 162 | 可选 201 (`flip.js`，FLIP 增删动画，纯增强) | 列表会动态增删就要 |
 | 导航 / 目录 | `03-patterns/nav/nav.css` | 305 | 可选 111 (`toc.js`，自动生成目录，纯增强) | 顶部要导航，或长文要目录就要 |
 | 长文排版 | `03-patterns/content/content.css` | 286 | — | 写文档 / 长文就要 |
-| reveal | `03-patterns/reveal/reveal.css` | 93 | 可选 130 (`reveal.js`，入场动效，纯增强；没有它内容直接可见) |  |
+| reveal | `03-patterns/reveal/reveal.css` | 93 | 可选 171 (`reveal.js`，入场动效，纯增强；没有它内容直接可见) |  |
 | analysis-report | `04-recipes/analysis-report/analysis-report.css` | 187 | — |  |
 | detail-page | `04-recipes/detail-page/detail-page.css` | 190 | — |  |
 | report | `04-recipes/report/report.css` | 326 | — |  |

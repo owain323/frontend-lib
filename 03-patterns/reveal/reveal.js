@@ -18,6 +18,12 @@
       ① 没有 IntersectionObserver ⇒ 全部直接显示
       ② prefers-reduced-motion   ⇒ 全部直接显示（不做淡入，见 CSS 注释）
       ③ 单个元素已 done           ⇒ unobserve，不再参与
+      ④ 🆕 构造函数抛错           ⇒ try/catch 后全部直接显示
+      ⑤ 🆕 2 秒看门狗             ⇒ 视口内仍未显示的强制显示
+
+      ④⑤ 是 0.9.1 补的。此前 `data-reveal-ready` 先打上、再 new IntersectionObserver：
+      构造函数一旦抛错（部分 WebView 有此问题），隐藏态已经生效而 revealAll()
+      永远跑不到 ⇒ **整页空白**。这正是"隐藏态必须配兜底"那条的落点。
    ========================================================================= */
 (function (global) {
   'use strict';
@@ -27,7 +33,9 @@
   var STAGGER_MS = 40;      /* 40 × 6 = 240ms 播完一批，超过 300ms 会觉得慢 */
   var STAGGER_CAP = 6;      /* 封顶：不封顶时第 20 个元素要等 800ms 才动 */
   var THRESHOLD = 0.15;
+  var WATCHDOG_MS = 2000;   /* 兜底看门狗：接管后 2s，视口内还没显示的强制显示 */
   var observer = null;
+  var watchdog = null;
 
   function each(list, fn) {
     for (var i = 0; i < list.length; i++) { fn(list[i], i); }
@@ -64,7 +72,25 @@
     each(document.querySelectorAll(SELECTOR), markDone);
   }
 
+  function inViewport(el) {
+    var vh = global.innerHeight || document.documentElement.clientHeight || 0;
+    var r = el.getBoundingClientRect();
+    return r.bottom > 0 && r.top < vh;
+  }
+
+  /* 兜底一轮：只补「已经在视口里、却还没显示」的元素。
+     🔴 为什么不直接 revealAll()：折叠线以下的元素本来就该等滚动，
+        全显会让 reveal 退化成"进页面一次性淡入"，与协议不符。 */
+  function watchdogSweep() {
+    watchdog = null;
+    each(document.querySelectorAll(SELECTOR), function (el) {
+      if (el.hasAttribute('data-reveal-done')) { return; }
+      if (inViewport(el)) { markDone(el); }
+    });
+  }
+
   function teardown() {
+    if (watchdog) { global.clearTimeout(watchdog); watchdog = null; }
     if (observer) { observer.disconnect(); observer = null; }
     each(document.querySelectorAll(SELECTOR), function (el) {
       clearDone(el);
@@ -84,23 +110,38 @@
       return true;
     }
 
-    observer = new global.IntersectionObserver(function (entries) {
-      for (var i = 0; i < entries.length; i++) {
-        var en = entries[i];
-        if (en.isIntersecting) {
-          markDone(en.target);
-          if (!en.target.hasAttribute('data-reveal-repeat')) {
-            observer.unobserve(en.target);
+    /* 🔴 构造 + 注册都放进 try：这两步任何一步抛错，隐藏态已经生效，
+       不兜底就是白屏。宁可全显，也不留看不见的内容。 */
+    try {
+      observer = new global.IntersectionObserver(function (entries) {
+        for (var i = 0; i < entries.length; i++) {
+          var en = entries[i];
+          if (en.isIntersecting) {
+            markDone(en.target);
+            if (!en.target.hasAttribute('data-reveal-repeat')) {
+              observer.unobserve(en.target);
+            }
+          } else if (en.target.hasAttribute('data-reveal-repeat')) {
+            clearDone(en.target);
           }
-        } else if (en.target.hasAttribute('data-reveal-repeat')) {
-          clearDone(en.target);
         }
-      }
-    }, { threshold: THRESHOLD, rootMargin: '0px 0px -8% 0px' });
+      }, { threshold: THRESHOLD, rootMargin: '0px 0px -8% 0px' });
 
-    each(document.querySelectorAll(SELECTOR), function (el) {
-      observer.observe(el);
-    });
+      each(document.querySelectorAll(SELECTOR), function (el) {
+        observer.observe(el);
+      });
+    } catch (e) {
+      if (observer) {
+        try { observer.disconnect(); } catch (e2) { observer = null; }
+        observer = null;
+      }
+      revealAll();
+      return true;
+    }
+
+    if (!watchdog) {
+      watchdog = global.setTimeout(watchdogSweep, WATCHDOG_MS);
+    }
     return true;
   }
 

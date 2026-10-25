@@ -7,7 +7,7 @@
 import {
   Select, Combobox, DateRange, Dropdown, Tree,
   type SelectOption, type PresetName,
-} from 'frontend-lib';
+} from 'agentcss';
 
 declare const root: HTMLElement;
 declare const treeRoot: HTMLElement;

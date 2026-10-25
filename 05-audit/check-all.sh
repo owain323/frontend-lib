@@ -668,6 +668,13 @@ run "api-form-rev"   $PY 05-audit/api-form-gate.py --selftest
 run "api-doc"      $PY 05-audit/api-doc-gate.py
 run "legacy-api"  $PY 05-audit/legacy-api-gate.py
 run "release"     $PY 05-audit/release-gate.py
+# 包名一致性（0.9.1 加）。
+#   背景：包名从 frontend-lib 改成 agentcss 之后，类型测试里还留着旧名的 paths 映射
+#   ⇒ 类型门禁验的是旧名，用户真会写的 `from 'agentcss'` 一次都没被编译过。
+#   这条把「仓库名 ≠ 包名」写成推导式判据（仓库名从 repository.url 推出），
+#   下次改名时判据自动跟着变。自带 --selftest（6 个变异体 + 1 条良性对照）。
+run "pkg-name"    $PY 05-audit/pkg-name-gate.py
+run "pkg-name-rev" $PY 05-audit/pkg-name-gate.py --selftest
 # 版本四处一致（VERSION / package.json / package-lock ×2 / CHANGELOG）。
 # 与 release-gate 判据重叠但**入口不同**：这个给的是"哪一处不一致"的定位，
 # 而 release-gate 给的是"发布前还缺什么"。两者都要，不是重复。
