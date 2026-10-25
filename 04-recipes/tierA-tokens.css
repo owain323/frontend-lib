@@ -9,7 +9,7 @@
       但**那个区块从来不存在**。复用的人照着做只会找不到。
       这个文件就是那个"核心"，真的、能复制、能用。
 
-   体积：浅色 99 个令牌 + 暗色 30 个，零外链零构建。
+   体积：浅色 102 个令牌 + 暗色 33 个，零外链零构建。
    --------------------------------------------------------------------- */
 
 :root {
@@ -72,6 +72,10 @@
   --switch-on:         #1b4d8f;
   --accent-hover:     #163a6d;
   --accent-soft:      #e6eef7;
+
+  --tooltip-bg:       #15181c;
+  --tooltip-fg:       #f6f7f8;
+  --tooltip-border:   #15181c;
 
   --sp-1:  4px;
   --sp-2:  8px;
@@ -175,6 +179,10 @@
   --switch-on:       #3E6EA8;
   --accent-hover:    #8FB8E6;
   --accent-soft:     #1C2C3D;
+
+  --tooltip-bg:      #232830;
+  --tooltip-fg:      #E4E7EA;
+  --tooltip-border:  #2A3038;
 
   --scrim:           rgba(0, 0, 0, 0.62);
 }

@@ -118,6 +118,18 @@
           "value": "#606770",
           "type": "color"
         },
+        "tooltip-bg": {
+          "value": "#15181c",
+          "type": "color"
+        },
+        "tooltip-border": {
+          "value": "#15181c",
+          "type": "color"
+        },
+        "tooltip-fg": {
+          "value": "#f6f7f8",
+          "type": "color"
+        },
         "warning": {
           "value": "#8a5a00",
           "type": "color"
@@ -580,6 +592,18 @@
           "value": "#9BA3AD",
           "type": "color"
         },
+        "tooltip-bg": {
+          "value": "#232830",
+          "type": "color"
+        },
+        "tooltip-border": {
+          "value": "#2A3038",
+          "type": "color"
+        },
+        "tooltip-fg": {
+          "value": "#E4E7EA",
+          "type": "color"
+        },
         "warning": {
           "value": "#C99A3F",
           "type": "color"
@@ -687,6 +711,9 @@
     "--text-primary": "color/text-primary",
     "--text-secondary": "color/text-secondary",
     "--text-tertiary": "color/text-tertiary",
+    "--tooltip-bg": "color/tooltip-bg",
+    "--tooltip-border": "color/tooltip-border",
+    "--tooltip-fg": "color/tooltip-fg",
     "--tracking-normal": "letterSpacing/normal",
     "--tracking-title": "letterSpacing/title",
     "--warning": "color/warning",
@@ -701,8 +728,8 @@
     "--z-toast": "zIndex/toast"
   },
   "meta": {
-    "lightCount": 107,
-    "darkCount": 30,
+    "lightCount": 110,
+    "darkCount": 33,
     "categories": [
       "breakpoint",
       "color",

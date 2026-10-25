@@ -40,6 +40,7 @@
     "--switch-":  { "audience": "internal",  "why": "开关轨道色，只由 switch 消费" },
     "--sz-":      { "audience": "public",    "why": "触控尺寸（--sz-touch / -sm）：点按目标最小边" },
     "--text-":    { "audience": "public",    "why": "文字色五档（primary / secondary / tertiary / on-accent / on-solid）" },
+    "--tooltip-": { "audience": "internal",  "why": "气泡的一对反色面（bg / fg / border），只由 tooltip 消费。它替代了原先把 `prefers-color-scheme` 写进组件的那段分支（RFC-THEME-SCOPE D5）—— 是组件实现细节，不承诺改名" },
     "--tracking-":{ "audience": "public",    "why": "字距阶梯（标题 / 常规）" },
     "--warning":  { "audience": "public",    "why": "警告色（--warning / -bg）" },
     "--z-":       { "audience": "internal",  "why": "层级栈：库内部层序，使用者不该依赖具体数值（依赖了就会和以后的层打架）" }

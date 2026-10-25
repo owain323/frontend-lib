@@ -18,13 +18,14 @@
   z-index: var(--z-raised);
   max-width: 260px;
   padding: var(--sp-2) var(--sp-3);
-  background: var(--text-primary);       /* 深色气泡（浅色主题下） */
-  color: var(--paper);
+  background: var(--tooltip-bg);          /* 深色气泡（浅色作用域下） */
+  color: var(--tooltip-fg);
   font-size: var(--fs-xs);
   line-height: 1.5;
   border-radius: var(--r-sm);
-  /* 不写死色值：跟随主题的 --text-primary / --paper 自动反色 */
-  box-shadow: var(--shadow-2, 0 4px 12px rgba(0, 0, 0, .18));
+  /* 描边用 inset 环而不用 border：同色时零像素，暗色下正好贴在原边线上。
+     `--shadow-2` 是公开令牌，不写兜底字面量（兜底 = 第二份真值，见 I-7）。 */
+  box-shadow: inset 0 0 0 1px var(--tooltip-border), var(--shadow-2);
   /* 文字不被选中（否则会误选） */
   user-select: none;
   /* 淡入用透明度，不用 display（display 会让读屏读不到）*/
@@ -54,36 +55,26 @@
 .tooltip--top::after {
   top: 100%; inset-inline-start: 50%;
   margin-inline-start: -5px;
-  border-top-color: var(--text-primary);
+  border-top-color: var(--tooltip-bg);
 }
 .tooltip--bottom::after {
   bottom: 100%; inset-inline-start: 50%;
   margin-inline-start: -5px;
-  border-bottom-color: var(--text-primary);
+  border-bottom-color: var(--tooltip-bg);
 }
 .tooltip--inset-inline-start::after {
   inset-inline-start: 100%; top: 50%;
   margin-top: -5px;
-  border-inline-start-color: var(--text-primary);
+  border-inline-start-color: var(--tooltip-bg);
 }
 .tooltip--inset-inline-end::after {
   inset-inline-end: 100%; top: 50%;
   margin-top: -5px;
-  border-inline-end-color: var(--text-primary);
+  border-inline-end-color: var(--tooltip-bg);
 }
 
-/* ---------- 暗色下气泡反过来（深底浅字）---------- */
-@media (prefers-color-scheme: dark) {
-  .tooltip {
-    background: var(--surface-raised);
-    color: var(--text-primary);
-    border: 1px solid var(--border-decor);
-  }
-  .tooltip--top::after    { border-top-color: var(--surface-raised); }
-  .tooltip--bottom::after { border-bottom-color: var(--surface-raised); }
-  .tooltip--inset-inline-start::after { border-inline-start-color: var(--surface-raised); }
-  .tooltip--inset-inline-end::after   { border-inline-end-color: var(--surface-raised); }
-}
+/* 原有一段 `@media (prefers-color-scheme: dark)`，已改为令牌驱动：
+   主题能挂在容器上之后，media 只反映系统偏好（RFC-THEME-SCOPE D5）。 */
 
 /* ---------- 减弱动效：不要淡入动画 ---------- */
 @media (prefers-reduced-motion: reduce) {

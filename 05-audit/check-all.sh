@@ -437,6 +437,13 @@ run "dist-parity" node 05-audit/dist-parity-check.js
 run "skel-lever"  node 05-audit/skeleton-lever-check.js
 # 明暗四种组合在真浏览器里成立，且**不加载 theme-toggle.js**
 run "theme-css"   node 05-audit/theme-css-gate.js
+# 容器级作用域：`[data-theme]` 挂在容器（不是根）上也能换肤，含嵌套回退
+#   ① 容器内令牌取该作用域的值 ② 组件（按钮 / 气泡）跟着变 ③ 作用域内对比度
+#   ④ 焦点环用暗色加强版 ⑤ 组件里不许再有 `prefers-color-scheme` 分支
+#   🔴 首跑抓到两件事：L2 别名在不同作用域不会重新求值（必须在每个作用域重声明）；
+#      badge / tooltip 仍按系统偏好分支。两条都已修
+run "theme-scope" node 05-audit/theme-scope-gate.js
+run "theme-scope-rev" node 05-audit/theme-scope-gate.js --selftest
 # 探针页自身要能跑：静态判据只能证明"清单写全了"，证明不了探测函数没写坏
 run "webview-probe-run" node 05-audit/webview-probe-check.js
 # 全部令牌的**解析值**（107 个 × 4 种明暗组合）：
