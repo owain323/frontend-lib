@@ -14,7 +14,37 @@
 
 ## [Unreleased]
 
-（0.10.0 已定版，见下一节；这一节留给下一版）
+### Added · `pkg-resolve` 门禁（发布物的**真实解析**）
+
+- 为什么不是又一道存在性检查：`tsc-gate` 走 `type-tests` 的 `paths` 别名，
+  验的是"这个 d.ts 语法对不对"；`pack-smoke` 验的是"文件在不在包里"。
+  **没有一道回答"使用者那句 `import { Select } from 'agentcss'` 到底能不能成"。**
+- 做法：按 `files` 白名单把真实发布物摆成 `node_modules/<name>/` 的样子，
+  让 `tsc --strict --skipLibCheck false --moduleResolution bundler` 从**包名**解析一次。
+- 判据 A：`npm pack --dry-run --json` 的清单与复制出的文件数一致（用 npm 自己的答案当真源）；
+  B：tsc 退出码 0 且输出无 `error TS`；
+  C：`exports` 每一条落点都存在（**精确目标查文件、通配目标查目录非空**）。
+- 反向控制两条：删掉 `exports["."].types` ⇒ 必须报 TS2307；
+  把 `./tokens.css` 指向不存在的文件 ⇒ 判据 C 必须红。
+- **首跑就抓到一个真缺陷**（见下）。
+
+### Fixed · 发布物的三处真缺陷
+
+1. **`exports["."]` 指向 `./index.html`，而它不在 `files` 白名单里** ⇒
+   包装完之后，包根导出指向一个**不存在的文件**。已改为只保留 `types` 条件
+   （根路径只用于 `import type`，运行时不导出任何东西是符合预期的）。
+2. **`pack-smoke` 的条件式 exports 盲区**：它只遍历 `typeof v === 'string'` 的条目，
+   而 `exports["."]` 是 `{types, default}` 这种对象形态 ⇒ **整条被跳过**。
+   已改成递归展开所有叶子。
+3. **`pack-smoke` 的通配检查多了一层 `dirname`**：`./dist/02-primitives/*` 被检查成了
+   `dist/` 而不是 `dist/02-primitives/` ⇒ 目标子目录不存在也能过。已去掉那层 `dirname`。
+
+### 已知未修（下一轮）
+
+- `Select` 的公开返回值**没有** `destroy()`（`select.js:541` 只返回 `open/close/value`，
+  另两处 `destroy` 是内部微行为核的）。它因此是六个交互组件里唯一不支持卸载的 ——
+  类型里没写 `destroy()` 是**对的**，缺的是运行时。补它会扩 API，留给 P5 单独做。
+
 
 ## [0.10.0] - 2026-10-25
 

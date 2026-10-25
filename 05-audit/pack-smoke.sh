@@ -110,8 +110,11 @@ while IFS=$'\t' read -r key target; do
   [ -z "$key" ] && continue
   case "$target" in
     # 通配导出：检查目标目录存在且非空
+    # 🔴 0.10.1 修：原来写的是 `dirname "${target%/*}"` —— 那等于**再上一级**。
+    #    `./dist/02-primitives/*` 会被检查成 `dist/` 而非 `dist/02-primitives/`
+    #    ⇒ 目标子目录根本不存在时也能过。多一层 dirname 就是多一个盲区。
     *'*')
-      d="$PKG/$(dirname "${target%/*}")"
+      d="$PKG/${target%/*}"
       if [ ! -d "$d" ]; then
         BAD="$BAD $key -> $target（目录不存在）"
       elif [ -z "$(ls -A "$d" 2>/dev/null)" ]; then
@@ -128,9 +131,20 @@ done < <(node -e "
   const fs = require('fs');
   const pkg = JSON.parse(fs.readFileSync('$PKG/package.json', 'utf8'));
   const ex = pkg.exports || {};
-  for (const [k, v] of Object.entries(ex)) {
-    if (typeof v === 'string') console.log(k + '\t' + v);
+  // 🔴 0.10.1 修：原来只认 \`typeof v === 'string'\`，于是条件式导出
+  //    （{\"types\": ..., \"default\": ...}）被**整段跳过** ——
+  //    \`exports[\".\"]\` 正是这种形态，实测它指向的 ./index.html 根本不在包里，
+  //    而这道门禁一声不响。⇒ 改成递归展开所有叶子。
+  function walk(k, v) {
+    if (typeof v === 'string') { console.log(k + '\t' + v); return; }
+    if (Array.isArray(v)) { for (var i = 0; i < v.length; i++) walk(k, v[i]); return; }
+    if (v && typeof v === 'object') {
+      var ks = Object.keys(v);
+      for (var j = 0; j < ks.length; j++) walk(k, v[ks[j]]);
+    }
   }
+  var keys = Object.keys(ex);
+  for (var a = 0; a < keys.length; a++) walk(keys[a], ex[keys[a]]);
 ")
 if [ -n "$BAD" ]; then
   echo "  FAIL  🔴 exports 声明了但tarball 里不存在："

@@ -120,6 +120,27 @@ bash 05-audit/publish.sh
 `.npm-token` 已被 `.gitignore` 挡住（`git check-ignore .npm-token` 可验证），
 **发布完请删掉它**。凭据不进仓库、也不该贴进任何聊天窗口。
 
+### 关于 provenance（现在**没有** —— 这是决策，不是遗漏）
+
+npm 支持 `npm publish --provenance`：包页面会显示「Built and signed on GitHub Actions」，
+使用者能验证"这个 tarball 由这个仓库、这次提交、这条流水线产出"。
+
+我们**现在不发 provenance**，三条原因，每条都可以推翻：
+
+| # | 原因 | 推翻条件 |
+|---|---|---|
+| 1 | 人工在本机发布（`publish.sh`）拿不到 OIDC 身份 —— provenance 要由 CI 的 `id-token: write` 签发 | 把发布搬进 GitHub Actions |
+| 2 | 仓库里没有 release workflow（只有 `gate.yml`） | 同上 |
+| 3 | 需要仓库 secret `NPM_TOKEN` | 在 GitHub 设置里加一次 |
+
+**要加的时候**动作是：新增 `.github/workflows/release.yml`（`on: workflow_dispatch`），
+job 加 `permissions: id-token: write` 与 `contents: write`，跑
+`npm publish --provenance --access public`，并把 tag / CHANGELOG / VERSION 三者核对
+**放在 publish 之前**。
+
+⚠️ provenance 证明的是**来源**，不是**内容正确**。内容正确性仍然由 160+ 道门禁与
+`prepublishOnly` 守着 —— 两件事不能互相替代，别拿一个顶另一个。
+
 ### ⚠️ 先确认 registry 不是镜像源
 
 作者这台机器上 `npm config get registry` 返回 `https://registry.npmmirror.com/`

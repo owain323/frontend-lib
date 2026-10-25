@@ -675,6 +675,13 @@ run "release"     $PY 05-audit/release-gate.py
 #   下次改名时判据自动跟着变。自带 --selftest（6 个变异体 + 1 条良性对照）。
 run "pkg-name"    $PY 05-audit/pkg-name-gate.py
 run "pkg-name-rev" $PY 05-audit/pkg-name-gate.py --selftest
+# 发布物的**真实解析**（0.10.1 加）。
+#   和 tsc-gate 的区别：tsc-gate 走 type-tests 的 paths 别名，验的是"这个 d.ts 语法对不对"；
+#   这条按 files 白名单摆出 node_modules，让 tsc 以 moduleResolution:bundler **从包名解析**，
+#   验的是"使用者那句 import 到底能不能成"。
+#   首跑就抓到 exports["."] 指向未发布的 ./index.html（pack-smoke 因只认 string 形态而漏掉）。
+run "pkg-resolve"     $PY 05-audit/pkg-resolve-gate.py
+run "pkg-resolve-rev" $PY 05-audit/pkg-resolve-gate.py --selftest
 # 版本四处一致（VERSION / package.json / package-lock ×2 / CHANGELOG）。
 # 与 release-gate 判据重叠但**入口不同**：这个给的是"哪一处不一致"的定位，
 # 而 release-gate 给的是"发布前还缺什么"。两者都要，不是重复。

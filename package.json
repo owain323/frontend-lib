@@ -19,8 +19,7 @@
   "types": "./types/index.d.ts",
   "exports": {
     ".": {
-      "types": "./types/index.d.ts",
-      "default": "./index.html"
+      "types": "./types/index.d.ts"
     },
     "./tokens.css": "./dist/01-tokens/tokens.css",
     "./typography.css": "./dist/01-tokens/typography.css",
