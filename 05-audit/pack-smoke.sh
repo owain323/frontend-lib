@@ -99,69 +99,28 @@ if [ -n "$(echo "$JUNK" | tr -d ' ')" ]; then
 fi
 echo "  OK    tarball 内无内部判据产物 / 负向 fixture"
 
-# ---------- 4. exports 声明的每个入口都必须真实存在 ----------
-#⚠️ 必须按**通配语义**判，不能逐条- [ -e ]：
-#    `./patterns/*` 这种通配导出对应的目标 `03-patterns/*` 本身带*，
-#    `[ -e "node_modules/pkg/03-patterns/*" ]` 永远是假
-#    ⇒ 会把**正常的通配导出**误报成缺失（实测踩过）。
-#    正解：通配导出取目录，检查**目录存在且非空**。
-BAD=()
-while IFS=$'\t' read -r key target; do
-  [ -z "$key" ] && continue
-  case "$target" in
-    # 通配导出：检查目标目录存在且非空
-    *'*')
-      d="$PKG/$(dirname "${target%/*}")"
-      if [ ! -d "$d" ]; then
-        BAD+=("$key -> $target（目录不存在）")
-      elif [ -z "$(ls -A "$d" 2>/dev/null)" ]; then
-        BAD+=("$key -> $target（目录为空）")
-      fi
-      ;;
-    # 精确导出：文件或目录必须在
-    *)
-      p="$PKG/${target#./}"
-      [ -e "$p" ] || BAD+=("$key -> $target（缺失）")
-      ;;
-  esac
-done < <(node -e "
-  const fs = require('fs');
-  const pkg = JSON.parse(fs.readFileSync('$PKG/package.json', 'utf8'));
-  const ex = pkg.exports || {};
-  /* 🔴 必须递归展开**任意形态**的导出目标。
-     以前的写法是 typeof v === 'string' —— 于是
-        \".\": { \"types\": ..., \"default\": \"./index.html\" }
-     这种**条件导出对象被整体跳过**，主入口在包里缺失也报 \"OK 每个入口都真实存在\"。
-     实测证据：0.9.0 的 tarball 里没有 index.html，而本检查仍 exit 0。
-     ⇒ 现在 string / array / object(条件) 一律展开，一条不漏。 */
-  const seen = new Set();
-  (function walk(key, v, top) {
-    if (typeof v === 'string') {
-      if (!key) return;
-      if (!v.startsWith('./') && !v.startsWith('../')) return;  /* 跳过 node: 内置与 URL */
-      const sig = key + '\t' + v;
-      if (seen.has(sig)) return;
-      seen.add(sig);
-      console.log(sig);
-      return;
-    }
-    if (Array.isArray(v)) { v.forEach(function (x) { walk(key, x, top); }); return; }
-    if (v && typeof v === 'object') {
-      Object.keys(v).forEach(function (cond) {
-        /* 顶层 key 就是 entry 名，直接保留；条件层标成 entry[cond]，
-           这样报错时能看出是哪个入口的哪一路条件缺文件。 */
-        const next = top ? cond : key + '[' + cond + ']';
-        walk(next, v[cond], false);
-      });
-    }
-  })(null, ex, true);
-")
-if [ ${#BAD[@]} -gt 0 ]; then
-  echo "  FAIL  🔴 exports 声明了但 tarball 里不存在："
-  for b in "${BAD[@]}"; do echo "        $b"; done
+# ---------- 4. 声明 vs 包内实物：闭包判定（判据只留一份）----------
+# 🔴 这一节原来自己用 bash + `node -e` 走一遍 exports。
+#   老写法是 `if (typeof v === 'string') console.log(k + '\t' + v)` ⇒
+#   条件导出对象整片跳过。而 `exports["."]` 恰好就是那种形态：
+#        { "types": "./types/index.d.ts", "default": "./index.html" }
+#   ⇒ 它一行都没进循环，于是 index.html 漏到 0.9.0，这里还常年打
+#     "OK exports 的每个入口都真实存在"。
+#
+#   中间版本给 bash 打了补丁（递归展开 string/array/object）。但那是
+#   **同一判定写两遍**（本库 ERROR E31：必然漂移），而且补丁只加了
+#   exports 一条，HTML 引用、文档路径仍然没人判。
+#   ⇒ 现在判据**只有一份**：`05-audit/pack-closure.js`
+#        清单模式 → 每次 `--fast` 都跑（~1.5s，拿 npm 自己算的清单）
+#        目录模式 → 就是这里，判**真装完之后**的树
+#      两边共用同一套 walker，修一处两边都跟着变。
+if ! node "$REPO_ROOT/05-audit/pack-closure.js" --dir "$WORK/consumer/$PKG" \
+       > "$WORK/closure.txt" 2>&1; then
+  echo "  FAIL  🔴 包内实物与声明不闭合："
+  sed 's/^/        /' "$WORK/closure.txt"
   exit 1
 fi
-echo "  OK    exports 的每个入口都真实存在"
+echo "  OK    exports / HTML 引用 / 文档路径 与包内实物一致"
 
 # ---------- 5. 关键文件必须在（types 是对外承诺）----------
 MISS=""
@@ -202,32 +161,18 @@ else
   exit 1
 fi
 
-# ---------- 7. 文档里给使用者的路径必须真实存在 ----------
+# ---------- 7. 文档里给使用者的路径 ----------
 # 🔴 这条来自一个真实的用户级问题（2026-10-06）：
 #   README 写 `<script src="node_modules/frontend-lib/patterns/overlay/overlay.js">`
 #   而 tarball 里根本没有 patterns/ 这个目录 ⇒ 陌生人照抄必然 404。
 #   根因：exports 的 "./patterns/*" 只对**包解析**（import）生效，
-#   它不会在node_modules 里造一个 patterns/ 目录。
+#   它不会在 node_modules 里造一个 patterns/ 目录。
 #
-#   ⇒ 凡是文档里出现 node_modules/<pkg>/... 的路径，
-#     必须在 tarball 里逐个核实。
-BAD_DOC=""
-while IFS= read -r ref; do
-  [ -z "$ref" ] && continue
-  # ref 形如 frontend-lib/03-patterns/overlay/overlay.js
-  rel="${ref#"$NAME"/}"
-  if [ ! -e "$PKG_ABS/$rel" ]; then
-    BAD_DOC="$BAD_DOC
-         $ref"
-  fi
-done < <(cd "$PKG_ABS" && grep -rhoE "node_modules/$NAME/[A-Za-z0-9_/.-]+\.(js|css)" \
-          --include='*.md' . 2>/dev/null | sed "s|node_modules/||" | sort -u)
-if [ -n "$BAD_DOC" ]; then
-  echo "  FAIL  🔴 文档里的路径在包里不存在：$BAD_DOC"
-  echo "        ⇒ 使用者照抄必然 404。exports 不会在 node_modules 里造目录。"
-  exit 1
-fi
-echo "  OK    文档里给使用者的路径全部存在"
+#   ⚠️ 判据已迁到第 4 步（`pack-closure.js --dir` 的第 [4] 段），
+#      本文件不再留第二份实现 —— E31：同一判定写两遍必然漂移。
+#      上面第 4 步的 "OK exports / HTML 引用 / 文档路径 与包内实物一致"
+#      已经包含这条；这里只保留事故记录，防止以后有人以为漏了。
+echo "  OK    文档路径检查已并入第 4 步（pack-closure --dir）"
 
 echo ""
 echo "  ⇒ 用户装到的东西与我们以为的一致。"
