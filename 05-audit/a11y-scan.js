@@ -50,6 +50,15 @@ const BASE = 'http://127.0.0.1:8000';
 //    ⇒ 从这里移除，让门禁重新盯住这两条。
 const KNOWN_OK = new Set();   // 目前为空 —— 没有"已知且暂不做"的规则
 
+/* 🔴 允许"扫不到"的页面。**必须是空集默认**，要加就得写理由。
+ *
+ *   外部审计 P1-4：原来只有 `scanned === 0`（一页都没加载）才判失败，
+ *   其余失败页只打一行 warning ⇒ 37 页里 36 页 404、1 页零违规，门禁仍 exit 0。
+ *   "扫了一半"和"扫完了全对"在退出码上等价，这是典型的假绿。
+ *   ⇒ 现在：任何未被显式豁免的跳过页，都让本次**不算通过**。
+ *     真要豁免，必须在这里登记页面名 + 理由，而不是靠 warning 混过去。 */
+const KNOWN_SKIP = new Set();
+
 // 🔴 0.8.9：PAGES 不再手写。
 //   原来这里硬编码了 11 个页面，而组件有 33 个 ⇒ axe 只覆盖了三分之一的组件面，
 //   而 README:199 写的是「每个组件的键盘路径 / ARIA / 对比度都有契约守着」
@@ -172,11 +181,19 @@ if (PAGES.length === 0) {
     skippedPages.forEach((n) => console.error('     跳过: ' + n));
     process.exit(1);
   }
+  /* 🔴 覆盖不完整 ≠ 通过。原来这里只 warn，退出码照旧看"真问题"有没有 ——
+     于是 37 页扫到 1 页也能 exit 0。现在未豁免的跳过页直接让本次不通过。 */
+  const incomplete = skippedPages.filter((n) => !KNOWN_SKIP.has(n));
   if (skippedPages.length) {
-    console.warn('');
-    console.warn('⚠ 有 ' + skippedPages.length + '/' + list.length +
-                 ' 页未能加载，本次覆盖**不完整**：');
-    skippedPages.forEach((n) => console.warn('     ' + n));
+    const log = incomplete.length ? console.error : console.warn;
+    log('');
+    log((incomplete.length ? '🔴' : '⚠') + ' 有 ' + skippedPages.length + '/' + list.length +
+        ' 页未能加载，本次覆盖**不完整**：');
+    skippedPages.forEach((n) => log('     ' + n + (KNOWN_SKIP.has(n) ? '（已登记豁免）' : '')));
+    if (incomplete.length) {
+      log('   ⇒ 覆盖不完整**不能算通过**。要么修好这些页面，要么把页面名 + 理由');
+      log('     登记进 KNOWN_SKIP —— 不许用一条 warning 把它蒙过去。');
+    }
   }
   console.log('');
   // 分「已知且已决定不做」与「真问题」两类报告。
@@ -204,6 +221,7 @@ if (PAGES.length === 0) {
   console.log('  · alt 写得有没有意义      · 阅读顺序对不对');
   console.log('  · 复杂控件的键盘行为是否正确（日期选择、轮播、树形视图）');
   console.log('  · 屏幕阅读器实际听到的是什么 —— 那一项永远需要人用耳朵听。');
-  // 只按「真问题」决定退出码 —— 已决定暂不做的那些不该让门禁变红
-  process.exit(real.length ? 1 : 0);
+  // 只按「真问题」决定退出码 —— 已决定暂不做的那些不该让门禁变红。
+  // ⚠️ 但**覆盖不完整**必须红：跳过一半页面再说"没有其他问题"是假绿。
+  process.exit(real.length || incomplete.length ? 1 : 0);
 })();
