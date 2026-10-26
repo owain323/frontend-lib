@@ -16,6 +16,8 @@ var scrollLock = { changed: false, saved: '', varSet: false };
 
 var inertRefs = [];
 
+var ariaRefs = [];
+
 function focusableIn(root) {
 var all = Array.prototype.slice.call(root.querySelectorAll(FOCUSABLE));
 
@@ -70,6 +72,29 @@ inertRefs[i].count--;
 if (inertRefs[i].count <= 0) {
 node.inert = false;
 inertRefs.splice(i, 1);
+}
+return;
+}
+}
+
+function ariaAcquire(node) {
+for (var i = 0; i < ariaRefs.length; i++) {
+if (ariaRefs[i].node === node) { ariaRefs[i].count++; return; }
+}
+
+ariaRefs.push({ node: node, count: 1, prev: node.getAttribute('aria-hidden') });
+node.setAttribute('aria-hidden', 'true');
+}
+
+function ariaRelease(node) {
+for (var i = 0; i < ariaRefs.length; i++) {
+if (ariaRefs[i].node !== node) continue;
+ariaRefs[i].count--;
+if (ariaRefs[i].count <= 0) {
+var prev = ariaRefs[i].prev;
+if (prev === null) node.removeAttribute('aria-hidden');
+else node.setAttribute('aria-hidden', prev);
+ariaRefs.splice(i, 1);
 }
 return;
 }
@@ -269,18 +294,23 @@ if (e.target === backdrop) close();
 
 var closed = false;
 var inerted = [];
+var ariaed = [];
 
-if ('inert' in HTMLElement.prototype) {
+var useInert = 'inert' in HTMLElement.prototype;
 var nodes = Array.prototype.slice.call(
 document.body.querySelectorAll('body > *')
 );
 nodes.forEach(function (n) {
 
 if (n.classList.contains('dialog-backdrop')) return;
+if (useInert) {
 inerted.push(n);
 inertAcquire(n);
-});
+} else {
+ariaed.push(n);
+ariaAcquire(n);
 }
+});
 
 function close() {
 if (closed) return;
@@ -293,6 +323,8 @@ box.contains(ae) || backdrop.contains(ae);
 if (backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
 
 inerted.forEach(inertRelease);
+
+ariaed.forEach(ariaRelease);
 unlockScroll();
 
 fr.restore();
