@@ -150,13 +150,24 @@ function main() {
     /* ---------- ③ 嵌套非 LIFO 关闭 ---------- */
       .then(function () { return freshPage(); }).then(function (p) {
         return p.evaluate(function () {
-          if (!('inert' in HTMLElement.prototype)) return { skipped: true };
+          /* 🔴 不再"引擎不支持 inert 就 skipped"。
+             那个 skipped 会让 PR 补的 aria-hidden 兜底**零自动回归**。
+             两种机制回答同一个问题（背景是否被隔离），谓词切换即可。 */
+          var useInert = 'inert' in HTMLElement.prototype;
+          function locked(node) {
+            return node ? (useInert ? node.inert === true
+                                    : node.getAttribute('aria-hidden') === 'true') : false;
+          }
+          function released(node) {
+            return node ? (useInert ? node.inert === false
+                                    : node.getAttribute('aria-hidden') === null) : false;
+          }
           var bg = null;
           var kids = document.body.querySelectorAll('body > *');
           for (var i = 0; i < kids.length; i++) {
             if (!kids[i].classList.contains('dialog-backdrop')) { bg = kids[i]; break; }
           }
-          if (!bg) return { skipped: true };
+          if (!bg) return { skipped: true, why: '找不到背景节点' };
 
           var A = window.Overlay.dialog({ title: '外层 A', actions: [{ label: 'a' }] });
           var B = window.Overlay.dialog({ title: '内层 B', actions: [{ label: 'b' }] });
@@ -164,23 +175,24 @@ function main() {
 
           /* 🔴 非 LIFO：先关外层 —— 旧的"所有权记账"在这里失效 */
           A.close();
-          var bgInertWhileBOpen = bg.inert === true;
+          var bgInertWhileBOpen = locked(bg);
           var bStillOpen = document.body.contains(B.el);
 
           B.close();
-          var bgInertAfterAll = bg.inert === false;
-          return { skipped: false, bInDomBefore: bInDomBefore,
+          var bgInertAfterAll = released(bg);
+          return { skipped: false, mech: useInert ? 'inert' : 'aria-hidden',
+            bInDomBefore: bInDomBefore,
             bgInertWhileBOpen: bgInertWhileBOpen, bStillOpen: bStillOpen,
             bgInertAfterAll: bgInertAfterAll,
-            inertRaw: bg.inert === true ? 'true(锁着)' : 'false(已解锁)' };
+            inertRaw: useInert ? String(bg.inert) : String(bg.getAttribute('aria-hidden')) };
         }).then(function (r) {
-          if (r.skipped) { pass(true, '③ 嵌套背景锁定（SKIP：引擎不支持 inert）'); return p.close(); }
+          if (r.skipped) { pass(false, '③ 嵌套背景锁定：场景没跑起来', r.why || ''); return p.close(); }
           pass(r.bgInertWhileBOpen && r.bStillOpen,
-            '③ 先关外层时，背景必须仍然锁着（内层还开着）',
-            'A 关闭后：内层还在=' + r.bStillOpen + ' · 背景 inert=' + r.bgInertWhileBOpen);
+            '③ 先关外层时，背景必须仍然锁着（内层还开着）· 机制=' + r.mech,
+            'A 关闭后：内层还在=' + r.bStillOpen + ' · 背景锁定=' + r.bgInertWhileBOpen);
           pass(r.bgInertAfterAll,
-            '③ 两层都关完后背景必须解锁',
-            '两层都关后 inert=' + r.inertRaw);
+            '③ 两层都关完后背景必须还原（机制=' + r.mech + '）',
+            '两层都关后=' + r.inertRaw);
           return p.close();
         });
       })
