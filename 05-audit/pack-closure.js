@@ -47,6 +47,23 @@
  *     release-gate 只负责"仓库内存在性"并在输出里点名指向这里。
  *
  * ---------------------------------------------------------------------------
+ * 🔁 第二轮外部审计（2026-10-26 晚）补掉的四个洞
+ *
+ *   P1-1 通配判定：原来只看「`*` 前面那个目录存不存在、非空」。
+ *        `./x/*` → `./dist/*.js`，`dist/` 里只有 `notes.txt` 时**照样绿**。
+ *        实际 `*` 是 Node 的字符串替换，可以跨目录 ⇒ 现在对**包内文件集**
+ *        求模式匹配，至少命中一个才算成立；根通配也不再无条件放行。
+ *   P1-2 HTML 引用：只认双引号 `src`/`href`。补单引号 / 无引号 /
+ *        `srcset` / `poster`；根相对 `/x` 原来被当外部**静默忽略**，
+ *        现在按包根判（实测仓库 51 个 HTML、334 条引用里根相对为 0 条，
+ *        这条今天不产生误报，只是把将来的漏判变成明判）。
+ *   ① 字段：`main` / `module` / `browser`(字符串或对象) / `imports`(# 映射)
+ *        原来完全不查。现在只要声明了、且值是包内相对路径，就必须在包里。
+ *   ② 清单结构：`npm pack --dry-run --json` 的输出原来直接
+ *        `parsed[0].files.map(...)`，schema 一变就是 TypeError。
+ *        现在 `readPackList()` 显式校验并给出可诊断原因。
+ *
+ * ---------------------------------------------------------------------------
  * ⚠️ 明确不覆盖（说了不做，比假装覆盖强）
  *
  *   `data-mv-three="vendor/three.min.js"` 这类 **data-* 运行时配置**的
@@ -55,6 +72,9 @@
  *   models/，看到降级 UI 是预期行为」。本门禁**不判**它，因为
  *   「声明为外部依赖」和「漏打包」在静态层面长得一模一样，
  *   硬判只会制造假红。⇒ 这一项保留为**未验证**，不记作通过。
+ *
+ *   同样不覆盖：入口能否被消费者 `import`/`require` 真正解析 ——
+ *   那是 `05-audit/entry-resolve.js`（在 pack-smoke 里、装完之后跑）。
  * ==========================================================================*/
 'use strict';
 
@@ -112,29 +132,50 @@ function walkExports(ex) {
   return rows;
 }
 
-/** 单个导出目标在文件集里是否成立。通配按目录判，不逐字符判。 */
+/** 把 npm 的导出目标模式翻成正则。
+ *
+ *  🔴 `*` 不是"一层目录"，是 Node 的**字符串替换**：匹配到的那一段可以包含
+ *     `/`。所以 `dist/*.js` 既匹配 `dist/a.js`，也匹配 `dist/x/y.js`。
+ *     旧判据只取 `*` 前面的目录、看"目录非空"就算过 ——
+ *     `dist/*.js` 而目录里只有 `notes.txt` 时**照样绿**。
+ *     ⇒ 现在改成对包内真实文件集合求模式匹配，至少命中一个才算成立。
+ */
+function patternToRegExp(t) {
+  var esc = String(t)
+    .replace(/[.+?^${}()|[\]\\]/g, '\\$&')   /* 注意：不转义 * */
+    .replace(/\*/g, '[\\s\\S]*');
+  return new RegExp('^' + esc + '$');
+}
+
+/** 单个导出目标在文件集里是否成立。 */
 function targetStatus(target, vfs) {
   var t = String(target).replace(/^\.\//, '');
-  var star = t.indexOf('*');
 
-  if (star >= 0) {
-    /* `./patterns/*` → 目录 `patterns`。
-       ⚠️ 不能对带 * 的路径直接 exists()，那永远为假 ⇒ 把正常的通配导出
-          误报成缺失（pack-smoke 的老注释里记着这个坑）。 */
-    var dir = t.slice(0, star).replace(/\/+$/, '');
-    if (dir === '') return { ok: true, kind: 'root-wildcard' };
-    if (!vfs.isDir(dir)) return { ok: false, kind: 'wildcard', why: '目标目录不存在' };
-    if (vfs.listDir(dir).length === 0) {
-      return { ok: false, kind: 'wildcard', why: '目标目录为空' };
+  if (t.indexOf('*') >= 0) {
+    var re = patternToRegExp(t);
+    var files = vfs.allFiles();
+    for (var i = 0; i < files.length; i++) {
+      if (re.test(files[i])) {
+        return { ok: true, kind: 'wildcard', match: files[i] };
+      }
     }
-    return { ok: true, kind: 'wildcard' };
+    return {
+      ok: false, kind: 'wildcard',
+      why: '包里没有任何文件匹配该模式（`*` 可跨目录，不是在某个目录里找）'
+    };
   }
 
   if (vfs.exists(t)) return { ok: true, kind: 'exact' };
   return { ok: false, kind: 'exact', why: '文件不存在' };
 }
 
-/** HTML 里真正会被浏览器请求的本地引用（不含注释、不含转义后的示例代码）。 */
+/** HTML 里真正会被浏览器请求的本地引用（不含注释、不含转义后的示例代码）。
+ *
+ *  🔴 三个必须覆盖的写法（外部审计 P1-2）：
+ *     ① 值可以是 `"…"`、`'…'`、或无引号 —— 旧正则只认双引号；
+ *     ② `srcset` 是逗号分隔的候选列表，`poster` 是视频封面，都算引用；
+ *     ③ `<!-- -->` 里的示例和 `&lt;script&gt;` 转义示例都不算。
+ */
 function htmlRefs(text) {
   var out = [];
   /* 🔴 必须先剥注释。`09-assets/model-viewer/demo.html` 里有一句
@@ -143,20 +184,61 @@ function htmlRefs(text) {
   var clean = text.replace(/<!--[\s\S]*?-->/g, '');
   /* 🔴 也只能认**真标签**。`&lt;script src="echarts.min.js"&gt;` 是文档
      示例（被转义过，没有字面 `<`），用裸正则 `src="…"` 同样会误报。 */
-  var tag = /<(script|link|img|source|video|audio|iframe|use)\b([^>]*)>/gi;
-  var attr = /\b(?:src|href)\s*=\s*"([^"]*)"/i;
+  var tag = /<(script|link|img|source|video|audio|iframe|use|track|embed|object|input)\b([^>]*)>/gi;
+  var attr = /([\w:-]+)\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'`=<>]+))/g;
   var m;
   while ((m = tag.exec(clean))) {
-    var a = attr.exec(m[2]);
-    if (a) out.push(a[1].trim());
+    var attrs = m[2];
+    var a;
+    attr.lastIndex = 0;
+    while ((a = attr.exec(attrs))) {
+      var nm = a[1].toLowerCase();
+      var val = a[3] !== undefined ? a[3] : (a[4] !== undefined ? a[4] : a[5]);
+      if (nm === 'src' || nm === 'href' || nm === 'poster') {
+        out.push(String(val).trim());
+      } else if (nm === 'srcset') {
+        String(val).split(',').forEach(function (part) {
+          var u = part.trim().split(/\s+/)[0];
+          if (u) out.push(u);
+        });
+      }
+    }
   }
   return out;
 }
 
 function isExternalRef(u) {
-  return !u || u.charAt(0) === '#' || u.charAt(0) === '/' ||
+  return !u || u.charAt(0) === '#' ||
     /^[a-z][a-z0-9+.-]*:/i.test(u) ||      /* http: data: mailto: javascript: */
     u.slice(0, 2) === '//';
+}
+
+/** 这个字段值算不算"包内相对路径"。
+ *  `main: "index.js"`（不带 `./`）是合法且常见的写法，必须算；
+ *  裸包名（`"browser": {"fs": false}` 的键、`imports` 指向依赖）不能算。 */
+function isRelPath(v) {
+  if (typeof v !== 'string' || !v) return false;
+  if (v.slice(0, 2) === './' || v.slice(0, 3) === '../') return true;
+  if (v.charAt(0) === '/' || v.charAt(0) === '#') return false;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(v)) return false;
+  return /\.[a-z0-9]+$/i.test(v);          /* index.js / dist/x.css */
+}
+
+/** 严格形态：必须以 `./` 或 `../` 开头（`imports` 的目标用这个判）。 */
+function isDotRel(v) {
+  return typeof v === 'string' &&
+    (v.slice(0, 2) === './' || v.slice(0, 3) === '../');
+}
+
+/** 把任意形态（字符串 / 数组 / 条件对象）里的字符串全收集出来。 */
+function collectStrings(v, out) {
+  out = out || [];
+  if (typeof v === 'string') { out.push(v); return out; }
+  if (Array.isArray(v)) { v.forEach(function (x) { collectStrings(x, out); }); return out; }
+  if (v && typeof v === 'object') {
+    Object.keys(v).forEach(function (k) { collectStrings(v[k], out); });
+  }
+  return out;
 }
 
 /**
@@ -192,6 +274,57 @@ function checkClosure(pkg, vfs) {
     }
   });
 
+  /* ---------- B1. 传统入口字段 ----------
+   *  `main` / `module` 是 npm 生态里比 `exports` 更老的入口契约，
+   *  `browser` 还有字符串和对象两种形态。它们同样是对外承诺：
+   *  文件不在包里，`require('pkg')` 就炸。
+   *  ⚠️ 只判**相对路径**形态：裸包名（`"module": "some-pkg"`）和 URL
+   *     属于依赖策略，硬判会制造假红。 */
+  function checkFieldPath(field, v) {
+    if (!isRelPath(v)) return;
+    if (v.indexOf('*') >= 0) {
+      var st = targetStatus(v, vfs);
+      if (!st.ok) {
+        problems.push({ s: 'exports', t: field + ' → ' + v + '（' + st.why + '）' });
+      }
+      return;
+    }
+    if (!vfs.exists(v.replace(/^\.\//, ''))) {
+      problems.push({ s: 'exports', t: field + ' → ' + v + '（文件不在包内）' });
+    }
+  }
+  checkFieldPath('main', pkg.main);
+  checkFieldPath('module', pkg.module);
+  checkFieldPath('jsnext:main', pkg['jsnext:main']);
+  if (typeof pkg.browser === 'string') {
+    checkFieldPath('browser', pkg.browser);
+  } else if (pkg.browser && typeof pkg.browser === 'object') {
+    /* 对象形态：{ "./a.js": "./b.js", "fs": false }。只判**值**是相对路径的
+       那几项；键是请求说明符，存在与否由目标决定。 */
+    Object.keys(pkg.browser).forEach(function (k) {
+      checkFieldPath('browser["' + k + '"]', pkg.browser[k]);
+    });
+  }
+
+  /* ---------- B2. imports（# 内部映射）----------
+   *  只处理包内 `#x": "./..."`；指向外部包名的留给依赖策略。
+   *  键必须以 `#` 开头，否则 Node 会直接抛 ERR_PACKAGE_IMPORT_NOT_DEFINED。 */
+  (function () {
+    var im = pkg.imports;
+    if (!im || typeof im !== 'object') return;
+    Object.keys(im).forEach(function (k) {
+      if (k.charAt(0) !== '#') {
+        problems.push({ s: 'exports', t: 'imports 的键必须以 # 开头：' + k });
+      }
+      collectStrings(im[k]).forEach(function (v) {
+        /* 裸包名（`"#dep": "some-pkg"`）是"指向依赖"，属依赖策略，跳过；
+           只有 `./` 开头的才是包内目标。 */
+        if (!isDotRel(v)) return;
+        checkFieldPath('imports["' + k + '"]', v);
+      });
+    });
+  })();
+
   /* ---------- C. 随包 HTML 的本地引用 ---------- */
   var htmlN = 0;
   var refN = 0;
@@ -204,6 +337,27 @@ function checkClosure(pkg, vfs) {
       var pure = u.split('#')[0].split('?')[0];
       if (!pure) return;
       refN++;
+
+      /* 🔴 根相对 `/assets/x.css` 原来被 isExternalRef 直接当外部忽略 ——
+         那是**静默放过**：包内 HTML 是从 node_modules 里打开的，没有站点根，
+         `/x` 只会 404。这里改成按**包根**解析并显式判定。
+         实测（2026-10-26）仓库 51 个 HTML、334 条引用里根相对是 **0 条**，
+         所以这条规则今天不产生任何误报，纯粹是把将来的漏判变成明判。 */
+      if (pure.charAt(0) === '/') {
+        var rt = path.posix.normalize(pure.replace(/^\/+/, ''));
+        if (!rt || rt.slice(0, 2) === '..') {
+          problems.push({ s: 'html', t: f + ' 引用 ' + u + '（根相对路径越界）' });
+          return;
+        }
+        if (!vfs.exists(rt)) {
+          problems.push({
+            s: 'html',
+            t: f + ' 引用根相对路径 ' + u + '（包根处没有 ' + rt + '）'
+          });
+        }
+        return;
+      }
+
       var tgt = path.posix.normalize(path.posix.join(path.posix.dirname(f), pure));
       if (tgt.slice(0, 2) === '..') {
         problems.push({ s: 'html', t: f + ' 引用 ' + u + '（跑到包外去了）' });
@@ -438,6 +592,92 @@ function selftest() {
     'docs/A.md': '写成 node_modules/agentcss/patterns/x.js 即可'
   }), true);
 
+  /* ---------- 通配：**目录非空 ≠ 有文件匹配**（外部审计 P1-1） ----------
+     🔴 旧判据把 `*` 当"这一层目录"，只看目录非空。
+        `./x/*` → `./dist/*.js`，而 dist/ 里只有 notes.txt 时**照样通过**。
+        实际 `*` 是 Node 的字符串替换，可以跨目录 —— 必须对真实文件集求匹配。 */
+  expect('反：通配目录非空，但没有任何文件匹配 `dist/*.js`', {
+    name: 'agentcss', exports: { './x/*': './dist/*.js' }
+  }, base({ 'dist/notes.txt': '' }), true);
+
+  expect('不误报：`dist/*.js` 下有真实 js', {
+    name: 'agentcss', exports: { './x/*': './dist/*.js' }
+  }, base({ 'dist/a.js': '' }), false);
+
+  expect('反：根通配但包内一个文件都没有', {
+    name: 'agentcss', exports: { './*': './*' }
+  }, {}, true);
+
+  /* ---------- HTML 引用：单引号 / 无引号 / srcset / poster ---------- */
+  expect('反：单引号 href 指向未打包 css', { name: 'agentcss', exports: {} },
+    base({ 'demo/a.html': '<link rel="stylesheet" href=\'gone.css\'>' }), true);
+
+  expect('反：无引号 src 指向未打包 js', { name: 'agentcss', exports: {} },
+    base({ 'demo/a.html': '<script src=gone.js></script>' }), true);
+
+  expect('反：srcset 里的候选缺失', { name: 'agentcss', exports: {} },
+    base({ 'demo/a.html': '<img src="a.png" srcset="gone.png 2x, a.png 1x">',
+           'demo/a.png': '' }), true);
+
+  expect('反：video poster 缺失', { name: 'agentcss', exports: {} },
+    base({ 'demo/a.html': '<video src="a.mp4" poster="gone.jpg"></video>',
+           'demo/a.mp4': '' }), true);
+
+  expect('不误报：单引号 / 无引号 / srcset 都指向已有文件', { name: 'agentcss', exports: {} },
+    base({ 'demo/a.html': '<link href=\'demo.css\'>' +
+                          '<script src=demo.js></script>' +
+                          '<img src=a.png srcset=\'a.png 2x\'>',
+           'demo/demo.css': '', 'demo/demo.js': '', 'demo/a.png': '' }), false);
+
+  /* ---------- 根相对 `/x`：原来直接被当外部忽略 ⇒ 静默放过 ---------- */
+  expect('反：根相对引用在包根处不存在', { name: 'agentcss', exports: {} },
+    base({ 'demo/a.html': '<link rel="stylesheet" href="/assets/x.css">' }), true);
+
+  expect('不误报：根相对引用在包根处存在', { name: 'agentcss', exports: {} },
+    base({ 'demo/a.html': '<link rel="stylesheet" href="/assets/x.css">',
+           'assets/x.css': '' }), false);
+
+  /* ---------- main / module / imports ---------- */
+  expect('反：main 指向未打包文件', {
+    name: 'agentcss', exports: {}, main: './dist/index.js'
+  }, base(), true);
+
+  expect('不误报：main 不带 ./ 也算相对路径', {
+    name: 'agentcss', exports: {}, main: '03-patterns/overlay/overlay.js'
+  }, base(), false);
+
+  expect('反：imports 的 # 映射指向未打包文件', {
+    name: 'agentcss', exports: {}, imports: { '#x': './gone.js' }
+  }, base(), true);
+
+  expect('不误报：imports 指向外部包名不判（属依赖策略）', {
+    name: 'agentcss', exports: {}, imports: { '#dep': 'some-pkg' }
+  }, base(), false);
+
+  expect('反：imports 的键没以 # 开头', {
+    name: 'agentcss', exports: {}, imports: { 'x': './index.html' }
+  }, base(), true);
+
+  /* ---------- npm pack --json 结构校验（不许一换 schema 就 TypeError） ---------- */
+  (function () {
+    function rp(label, payload, expectErr) {
+      var got = readPackList(payload);
+      var has = got.errors.length > 0;
+      if (has !== expectErr) {
+        bad++;
+        console.log('      X ' + label + '（实际 ' + (has ? got.errors[0] : '通过') + '）');
+      } else {
+        console.log('      OK ' + label);
+      }
+    }
+    rp('不误报：npm pack --json 的正常结构',
+       [{ name: 'agentcss', version: '0.9.0', files: [{ path: 'package.json' }] }], false);
+    rp('反：顶层空数组', [], true);
+    rp('反：files 不是数组', [{ files: {} }], true);
+    rp('反：files 是空数组', [{ files: [] }], true);
+    rp('反：files 元素缺 path', [{ files: [{ size: 1 }] }], true);
+  })();
+
   /* ---------- 目录模式：必须与清单模式**同语义** ----------
      🔴 这条真踩过：第一版 vfsFromDir.listDir 用的是
         `readdirSync(p).filter(isFile)`（只看直接子项），
@@ -460,7 +700,7 @@ function selftest() {
         console.log('      X 目录模式：目标目录**只含子目录**时被误判为空（' +
                     probs[0].t + '）');
       } else {
-        console.log('      OK 目录模式：只含子目录的目标目录算非空（与清单模式同语义）');
+        console.log('      OK 目录模式：目标目录只有子目录时，仍能匹配到真实文件（与清单模式同语义）');
       }
     } finally {
       fs.rmSync(tmp, { recursive: true, force: true });
@@ -473,6 +713,44 @@ function selftest() {
 /* ==========================================================================
  * ④ 入口
  * ========================================================================*/
+/**
+ * 校验 `npm pack --dry-run --json` 的输出结构，返回文件清单。
+ *
+ * 🔴 npm 只承诺"有 --json"，**没有承诺 schema 跨版本稳定**。
+ *    原来直接 `parsed[0].files.map(f => f.path)`：
+ *    结构一变就是 `TypeError: Cannot read properties of undefined`，
+ *    而报错信息对"哪里变了"毫无帮助。这里显式校验并给出可诊断的原因。
+ */
+function readPackList(parsed) {
+  function bad(msg) { return { list: [], errors: [msg], meta: {} }; }
+  if (!Array.isArray(parsed)) {
+    return bad('npm 输出顶层不是数组（实际 ' + Object.prototype.toString.call(parsed) + '）');
+  }
+  if (parsed.length === 0) return bad('npm 输出是空数组：一个包都没打出来');
+  var p0 = parsed[0];
+  if (!p0 || typeof p0 !== 'object') return bad('parsed[0] 不是对象');
+  if (!Array.isArray(p0.files)) {
+    return bad('parsed[0].files 不是数组（实际 ' + typeof p0.files + '）');
+  }
+  if (p0.files.length === 0) {
+    return bad('parsed[0].files 是空数组：files 白名单把一切都排除了？');
+  }
+  var list = [];
+  var errs = [];
+  p0.files.forEach(function (f, i) {
+    if (!f || typeof f !== 'object' || typeof f.path !== 'string' || !f.path) {
+      errs.push('files[' + i + '] 没有字符串 path 字段');
+      return;
+    }
+    list.push(f.path);
+  });
+  return {
+    list: list,
+    errors: errs,
+    meta: { name: p0.name, version: p0.version, id: p0.id, entryCount: p0.entryCount }
+  };
+}
+
 function main(argv) {
   var dirArg = null;
   var i = argv.indexOf('--dir');
@@ -511,9 +789,26 @@ function main(argv) {
       console.log('      X npm 输出的不是 JSON：' + String(r.stdout).slice(0, 120));
       return 1;
     }
-    var list = parsed[0].files.map(function (f) { return f.path; });
-    console.log('  清单来源：npm pack --dry-run（' + list.length + ' 个文件）');
     pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
+
+    var got = readPackList(parsed);
+    if (got.errors.length) {
+      console.log('  [1] 取包内清单');
+      got.errors.slice(0, 5).forEach(function (e) { console.log('      X ' + e); });
+      console.log('        ⇒ 清单结构不认识。这不是"检查不通过"，是清单没读出来 ——');
+      console.log('          npm 换了 --json 结构时应当先修本门禁，而不是让它变成 TypeError。');
+      return 1;
+    }
+    if (got.meta.name && got.meta.name !== pkg.name) {
+      console.log('  [1] 取包内清单');
+      console.log('      X npm 打出的是 `' + got.meta.name + '`，仓库 package.json 是 `' +
+                  pkg.name + '`');
+      console.log('        ⇒ 判错了对象，后面的结论一律无效。');
+      return 1;
+    }
+    var list = got.list;
+    console.log('  清单来源：npm pack --dry-run（' + list.length + ' 个文件' +
+                (got.meta.version ? '，' + got.meta.name + '@' + got.meta.version : '') + '）');
     vfs = vfsFromPackList(list);
   }
   console.log('');
@@ -547,7 +842,8 @@ function main(argv) {
 
   console.log('  [3] 随包 HTML 的本地引用');
   console.log('      ' + (bad('html') ? 'X  ' : 'OK ') +
-              s.html + ' 个 HTML、' + s.refs + ' 条本地引用（已剔注释与转义示例）');
+              s.html + ' 个 HTML、' + s.refs + ' 条本地引用（单/双/无引号 + srcset + poster 都算；' +
+              '根相对按包根判）');
 
   console.log('  [4] 文档里给使用者的路径');
   console.log('      ' + (bad('docs') ? 'X  ' : 'OK ') +
@@ -566,9 +862,12 @@ function main(argv) {
   }
 
   console.log('');
-  console.log('  ⇒ 包内 ' + s.files + ' 个文件与声明一致');
-  console.log('  ! 未覆盖：data-* 运行时配置引用的资源（如 model-viewer 的 vendor/）；');
-  console.log('    该项保留为**未验证**，不记作通过。');
+  console.log('  ⇒ 静态引用闭合：包内 ' + s.files + ' 个文件；exports / 类型 / main 等字段 /' +
+              ' HTML 引用 / 文档路径全部落在包内。');
+  console.log('  ! 这只覆盖**静态引用**。未验证的两项：');
+  console.log('    · data-* 运行时配置引用的资源（如 model-viewer 的 vendor/）；');
+  console.log('    · 入口能否被消费者的 import/require 真正解析（由 entry-resolve.js 判）。');
+  console.log('    ⇒ 别把这一行读成"包内一切与声明一致"。');
   return 0;
 }
 
@@ -584,4 +883,11 @@ if (require.main === module) {
   process.exit(main(argv));
 }
 
-module.exports = { walkExports: walkExports, checkClosure: checkClosure, htmlRefs: htmlRefs };
+module.exports = {
+  walkExports: walkExports,
+  checkClosure: checkClosure,
+  htmlRefs: htmlRefs,
+  targetStatus: targetStatus,
+  patternToRegExp: patternToRegExp,
+  readPackList: readPackList
+};
