@@ -41,16 +41,16 @@
       "raw": 4535
     },
     "01-tokens/tokens.css": {
-      "gzip": 17108,
-      "raw": 43472
+      "gzip": 17506,
+      "raw": 44237
     },
     "01-tokens/typography.css": {
       "gzip": 3401,
       "raw": 7139
     },
     "02-primitives/badge/badge.css": {
-      "gzip": 2794,
-      "raw": 6451
+      "gzip": 2854,
+      "raw": 6549
     },
     "02-primitives/button/button.css": {
       "gzip": 6338,
@@ -169,8 +169,8 @@
       "raw": 12252
     },
     "03-patterns/overlay/overlay.js": {
-      "gzip": 6477,
-      "raw": 16863
+      "gzip": 9067,
+      "raw": 24552
     },
     "03-patterns/pagination/pagination.css": {
       "gzip": 3422,
@@ -179,6 +179,14 @@
     "03-patterns/pagination/pagination.js": {
       "gzip": 7047,
       "raw": 17632
+    },
+    "03-patterns/reveal/reveal.css": {
+      "gzip": 1769,
+      "raw": 4048
+    },
+    "03-patterns/reveal/reveal.js": {
+      "gzip": 1929,
+      "raw": 4562
     },
     "03-patterns/states/states.css": {
       "gzip": 4125,
@@ -212,6 +220,10 @@
       "gzip": 2884,
       "raw": 7150
     },
+    "04-recipes/detail-page/detail-page.css": {
+      "gzip": 2325,
+      "raw": 5797
+    },
     "04-recipes/report/report.css": {
       "gzip": 5419,
       "raw": 13742
@@ -226,6 +238,6 @@
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 228432,
-  "total_raw": 573279
+  "total_gzip": 237503,
+  "total_raw": 596238
 }
