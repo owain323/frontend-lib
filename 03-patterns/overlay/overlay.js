@@ -49,6 +49,8 @@
      ⇒ 改成引用计数：**只要还有弹层需要锁，背景就不许解锁**，
        与关闭顺序无关。这与"所有权"的区别就是引用计数解决不了的问题。 */
   var inertRefs = [];         /* [{node, count}] —— ES5 没有 Map，用数组 */
+  /* 不支持 inert 的旧 WebView 走这套（见下方 ariaAcquire 的说明） */
+  var ariaRefs = [];          /* [{node, count, prev}] —— prev 是原来的 aria-hidden 值 */
 
   /* ---------------------------------------------------------------- 工具 */
   function focusableIn(root) {
@@ -126,6 +128,44 @@
       if (inertRefs[i].count <= 0) {
         node.inert = false;
         inertRefs.splice(i, 1);
+      }
+      return;
+    }
+  }
+
+  /* ============================================================ aria 兜底
+     🔴 为什么需要这一套
+     本库的目标是「旧 WebView 也要能用」，而 `inert` 要
+       Safari 15.5+ / Chrome 102+（≈2022 年），旧 WebView 浏览器没有。
+     没有 inert 时，此前只剩**焦点陷阱**：键盘 Tab 是逃不出去，
+     但**屏幕阅读器的假想光标仍能读到背景内容**（焦点陷阱管的是 focus，
+     管不了浏览模式下的虚拟光标）。
+     ⇒ 不支持 inert 时用 aria-hidden 把背景从无障碍树里摘掉，
+       与焦点陷阱叠加，才是完整的"背景不可达"。
+     ⚠️ aria-hidden 不能替代 inert 的**交互屏蔽**（它不阻止点击），
+        所以这里只作为补充，不去掉焦点陷阱。 */
+
+  /** 取一个背景节点的 aria 引用计数条目（没有就建一个并置 aria-hidden）。 */
+  function ariaAcquire(node) {
+    for (var i = 0; i < ariaRefs.length; i++) {
+      if (ariaRefs[i].node === node) { ariaRefs[i].count++; return; }
+    }
+    /* 记住原值：可能是 null（本来没有这个属性），也可能本来就是 true/false。
+       恢复时必须回到原样 —— 否则我们自己就成了新的无障碍缺陷。 */
+    ariaRefs.push({ node: node, count: 1, prev: node.getAttribute('aria-hidden') });
+    node.setAttribute('aria-hidden', 'true');
+  }
+
+  /** 还一个 aria 引用；降到 0 才恢复原值。 */
+  function ariaRelease(node) {
+    for (var i = 0; i < ariaRefs.length; i++) {
+      if (ariaRefs[i].node !== node) continue;
+      ariaRefs[i].count--;
+      if (ariaRefs[i].count <= 0) {
+        var prev = ariaRefs[i].prev;
+        if (prev === null) node.removeAttribute('aria-hidden');
+        else node.setAttribute('aria-hidden', prev);
+        ariaRefs.splice(i, 1);
       }
       return;
     }
@@ -355,6 +395,7 @@
 
     var closed = false;
     var inerted = [];
+    var ariaed = [];   /* 不支持 inert 时改走这条（见 ariaAcquire 的说明） */
 
     /* 背景 inert：把背后页面整个变不可交互 —— 比 focus trap 更彻底。
        支持就用（现代浏览器都有），不支持就靠上面的 focus trap 兜底。
@@ -370,17 +411,25 @@
        ⇒ 改成引用计数：**只要还有弹层需要锁，背景就不许解锁**，
          与关闭顺序无关（见文件头 inertRefs 的注释）。
     */
-    if ('inert' in HTMLElement.prototype) {
-      var nodes = Array.prototype.slice.call(
-        document.body.querySelectorAll('body > *')
-      );
-      nodes.forEach(function (n) {
-        /* 任何已有的 backdrop（外层）都跳过 —— 它们自己管自己的 */
-        if (n.classList.contains('dialog-backdrop')) return;
+    /* 🔴 背景隔离必须**两条路都走**：
+       支持 inert 就用 inert；不支持（旧 WebView）就用 aria-hidden 兜底。
+       以前只有 inert 分支，旧 WebView 上等于**什么都没做**，
+       辅助技术的虚拟光标仍能穿透到背景内容。 */
+    var useInert = 'inert' in HTMLElement.prototype;
+    var nodes = Array.prototype.slice.call(
+      document.body.querySelectorAll('body > *')
+    );
+    nodes.forEach(function (n) {
+      /* 任何已有的 backdrop（外层）都跳过 —— 它们自己管自己的 */
+      if (n.classList.contains('dialog-backdrop')) return;
+      if (useInert) {
         inerted.push(n);
         inertAcquire(n);
-      });
-    }
+      } else {
+        ariaed.push(n);
+        ariaAcquire(n);
+      }
+    });
 
     function close() {
       if (closed) return;
@@ -398,6 +447,8 @@
       if (backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
       /* ⭐ 引用计数：还一个引用，降到 0 才真的解锁 ⇒ 与关闭顺序无关 */
       inerted.forEach(inertRelease);
+      /* 旧 WebView 走 aria-hidden 的那条路，同样要按引用计数还 */
+      ariaed.forEach(ariaRelease);
       unlockScroll();
 
       /* 🔴 焦点必须回到**触发它的那个元素**。

@@ -54,7 +54,7 @@
 | 分页 | `03-patterns/pagination/pagination.css` | 195 | **必需 394** (`pagination.js`) | 数据多到要翻页就要 |
 | 树形 | `03-patterns/tree/tree.css` | 113 | **必需 456** (`tree.js`) | 层级数据（文件 / 组织 / 分类）要展开就要 |
 | 侧边抽屉（beta） | `03-patterns/drawer/drawer.css` | 129 | **必需 258** (`drawer.js`) | 要从侧边滑出面板就要 |
-| 弹窗 / 吐司（beta） | `03-patterns/overlay/overlay.css` | 319 | **必需 415** (`overlay.js`) | 需要弹层（吐司 / 模态）就要 |
+| 弹窗 / 吐司（beta） | `03-patterns/overlay/overlay.css` | 319 | **必需 466** (`overlay.js`) | 需要弹层（吐司 / 模态）就要 |
 | 状态（空 / 加载 / 错 / 成功） | `03-patterns/states/states.css` | 252 | — | **凡是会异步取数就要** |
 | 表单校验 | `03-patterns/form-validation/form-validation.css` | 263 | — | 提交前要校验就要 |
 | 列表增删 | `03-patterns/list/list.css` | 162 | 可选 201 (`flip.js`，FLIP 增删动画，纯增强) | 列表会动态增删就要 |
