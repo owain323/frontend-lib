@@ -64,6 +64,28 @@
  *        现在 `readPackList()` 显式校验并给出可诊断原因。
  *
  * ---------------------------------------------------------------------------
+ * 🔁 第三轮外部审计（2026-10-26 深夜）—— 本轮修的是「判据本身在撒谎」
+ *
+ *   审计点名的四条，全部属于**我们的判据给了一个 Node 不会给的答案**：
+ *
+ *   R3-1 多星号：目标里每个 `*` 被独立展开成 `[\\s\\S]*`。
+ *        Node 的真实语义是**同一个值替换所有星号** ⇒
+ *        `./dist/<star>/copy-<star>.js` 会被 `dist/a/copy-b.js` 判绿，而 Node 解析不出来。
+ *        ⇒ 星号语义整体搬到 `05-audit/_pkg-target.js`（唯一实现），
+ *          多星用 `\\1` 回填；并用**真 Node 解析**做差分自检。
+ *   R3-2 空星号：`[\\s\\S]*` 允许空串。实测 Node 对空星号直接
+ *        `ERR_PACKAGE_PATH_NOT_EXPORTED` ⇒ 改成 `+`。
+ *   R3-3 目标形状：先 `replace(/^\\.\\//, '')` 再判存在 ⇒ 声明 `"dist/x.js"`
+ *        （没有 `./`）只要文件在就判绿，而 Node 抛 `ERR_INVALID_PACKAGE_TARGET`。
+ *        ⇒ 加 `checkExportsTarget()`。**只对 exports 生效** ——
+ *          `main`/`module`/`browser` 允许不带 `./`，套这条会制造假红。
+ *   R3-4 HTML 词法：`<tag ([^>]*)>` 不理解属性引号 ⇒
+ *        `<img data-label="a > b" src="missing.png">` 在引号内的 `>` 处截断，
+ *        缺失的 `src` **完全看不到**。⇒ 换成引号感知的 tokenizer（不引第三方
+ *        依赖，本库零依赖是硬约束），并把 `<base>` / 导航链接 / srcset
+ *        语法一起收紧。
+ *
+ * ---------------------------------------------------------------------------
  * ⚠️ 明确不覆盖（说了不做，比假装覆盖强）
  *
  *   `data-mv-three="vendor/three.min.js"` 这类 **data-* 运行时配置**的
@@ -73,6 +95,12 @@
  *   「声明为外部依赖」和「漏打包」在静态层面长得一模一样，
  *   硬判只会制造假红。⇒ 这一项保留为**未验证**，不记作通过。
  *
+ *   CSS 文档里的 `url()` 与 `@import`：第三轮审计也点了这一条（「后者不是
+ *   HTML attribute，需要单独定义范围」）。**本轮明确不做**，理由不是难，
+ *   而是它是**另一类文档**：随包有上百个 CSS，要按 CSS 语法判、要处理
+ *   `url(#grad)` / `data:` / `var()` 拼接，塞进这道 HTML 引用判据里会让
+ *   判据混杂、误报率不可控。⇒ 结论行里显式打印为**未验证**，不记作通过。
+ *
  *   同样不覆盖：入口能否被消费者 `import`/`require` 真正解析 ——
  *   那是 `05-audit/entry-resolve.js`（在 pack-smoke 里、装完之后跑）。
  * ==========================================================================*/
@@ -81,6 +109,8 @@
 var fs = require('fs');
 var path = require('path');
 var cp = require('child_process');
+/* 星号 / 目标形状的判据**只有一份**（E31）。别在本文件里再写一遍正则。 */
+var pkgTarget = require('./_pkg-target.js');
 
 var ROOT = path.resolve(__dirname, '..');
 
@@ -91,6 +121,31 @@ var ROOT = path.resolve(__dirname, '..');
 /* npm 永远会带上这三样，哪怕 files 白名单里没写（README/LICENSE 任意扩展名、
  * package.json 本身）。清单里有没有都算"有"，否则会制造假红。 */
 var ALWAYS_SHIPPED = { 'package.json': 1, 'readme.md': 1, 'license': 1 };
+
+/** 🔴 已知豁免：**发布出去**的页面里有几条导航链接指向**不发布**的开发目录。
+ *
+ *  实测（2026-10-26，第三轮审计把导航链接纳入判定之后第一次跑出来的）：
+ *    根 index.html:36 / :75 / :76 / :77 分别指向
+ *      10-review/ios/index.html（出现两次）
+ *      10-review/composition/demo.html
+ *      examples/react-vite/index.html
+ *    而 `files` 白名单里**没有** `10-review/` 和 `examples/`
+ *    ⇒ 消费者装完点这两处必然 404。
+ *
+ *  ⚠️ 为什么不顺手改 index.html：
+ *    ① 它是**视觉基线页**之一，改内容要连带重录基线，而本机渲染环境与基线
+ *       不一致（见 ERRORS：未改一行代码的 master 就跑出 37/40 页 31px 高度差）
+ *       ⇒ 在这台机器上重录等于用另一套渲染覆盖基准；
+ *    ② 「入口页在发布版里要不要链到开发目录」是**产品取舍**，不是门禁能替
+ *       维护者决定的（严格 scope freeze）。
+ *  ⇒ 登记为显式豁免，并在结论里**打印**（不静默）。新增的死链仍然会红 ——
+ *    这条豁免按**目标路径逐个列**，不是"导航链接一律放过"。
+ */
+var KNOWN_DEV_ONLY_NAV = {
+  '10-review/composition/demo.html': '开发期评审页；files 白名单未包含 10-review/',
+  '10-review/ios/index.html': '同上（Safari 专项验证页）',
+  'examples/react-vite/index.html': '开发期示例；files 白名单未包含 examples/'
+};
 
 /**
  * 把 exports 摊平成 { label, target } 列表。
@@ -103,11 +158,20 @@ var ALWAYS_SHIPPED = { 'package.json': 1, 'readme.md': 1, 'license': 1 };
  *      ④ 数组（回退链）   "./x": ["./a.js", "./b.js"]
  *    另外顶层 exports 本身也可以是字符串或数组（单入口包）。
  *
- *  ⚠️ 数组（回退链）本门禁要求**每个分支都存在**，比 Node 的实际语义更严
- *     （Node 会跳过解析不出的分支、继续试下一个）。这是**有意 fail-closed**：
- *     一条声明了却指向未打包文件的分支，基本等于作者以为它在包里。
- *     真有正当理由要留空分支，请把那条从 package.json 里删掉 ——
- *     本门禁不猜"这条大概是想回退吧"。（第二轮审计也点了这一处，记为规格已决。）
+ *  ⚠️ 数组（回退链）—— **这是本项目自定的政策，不是对 Node 行为的描述。**
+ *     本门禁要求数组里的**每一个**字符串分支都指向包内存在的文件。
+ *
+ *     第三轮审计指出上一版这句话说得过宽：「Node 会跳过解析不出的分支、
+ *     继续试下一个」。更准确的说法是 —— 两者**宽严不同，不可互相解释**：
+ *       · Node 解析数组时，只在「该分支在当前条件集下不可用」时继续试下一个；
+ *         「目标字符串非法」（如不以 `./` 开头）是直接抛 ERR_INVALID_PACKAGE_TARGET，
+ *         不会回退。至于「目标文件不存在」是否被当作可跳过，取决于解析所处
+ *         的阶段与条件集，**不该被当成判据引用**。
+ *       · 本门禁只看一件事：**声明了却不在包里的分支 = 作者以为它在包里**。
+ *         所以要求全部分支存在，这是有意的 fail-closed，不是对 Node 的模拟。
+ *     ⇒ 真有正当理由要留空分支，请把那条从 package.json 里删掉。
+ *        本门禁不猜「这条大概是想回退吧」。规格已决（第二轮审计登记，
+ *        第三轮审计核准为「有意政策可以接受，但注释措辞要改」）。
  */
 function walkExports(ex) {
   var rows = [];
@@ -138,36 +202,53 @@ function walkExports(ex) {
   return rows;
 }
 
-/** 把 npm 的导出目标模式翻成正则。
+/** 把导出目标模式翻成正则。
  *
- *  🔴 `*` 不是"一层目录"，是 Node 的**字符串替换**：匹配到的那一段可以包含
- *     `/`。所以 `dist/*.js` 既匹配 `dist/a.js`，也匹配 `dist/x/y.js`。
- *     旧判据只取 `*` 前面的目录、看"目录非空"就算过 ——
- *     `dist/*.js` 而目录里只有 `notes.txt` 时**照样绿**。
- *     ⇒ 现在改成对包内真实文件集合求模式匹配，至少命中一个才算成立。
+ *  🔴 实现**不在这里** —— 已搬到 `05-audit/_pkg-target.js`。
+ *     第三轮审计点名：本文件和 entry-resolve.js 各写过一遍，而且**已经分叉**
+ *     （一个每个 `*` 独立展开，一个只取 `m[1]`，两个都不是 Node 的语义）。
+ *     ⇒ 按 E31「同一判定写两遍必然漂移」，现在只留一个实现，这里只转发。
+ *     保留这个函数名是因为 `--selftest` 与外部按名引用它。
  */
 function patternToRegExp(t) {
-  var esc = String(t)
-    .replace(/[.+?^${}()|[\]\\]/g, '\\$&')   /* 注意：不转义 * */
-    .replace(/\*/g, '[\\s\\S]*');
-  return new RegExp('^' + esc + '$');
+  return pkgTarget.toRegExp(t);
 }
 
-/** 单个导出目标在文件集里是否成立。 */
-function targetStatus(target, vfs) {
-  var t = String(target).replace(/^\.\//, '');
+/**
+ * 单个目标在文件集里是否成立。
+ *
+ * @param {string} target  导出声明的目标
+ * @param {{allFiles:fn, exists:fn}} vfs 文件集
+ * @param {{strictShape?:boolean}} [opts]
+ *        `strictShape`（默认 true）要求目标符合 **exports 目标**形状：
+ *        必须以 `./` 开头、不许 `..` 段、不许 `node_modules`。
+ *        判 `main` / `module` / `browser` / `jsnext:main` 时**必须传 false** ——
+ *        那些更老的字段允许 `index.js` 这种不带 `./` 的写法，
+ *        套 exports 的形状会制造假红（实测：包里就有 `"main": "03-patterns/…"`）。
+ */
+function targetStatus(target, vfs, opts) {
+  var strictShape = !(opts && opts.strictShape === false);
 
-  if (t.indexOf('*') >= 0) {
-    var re = patternToRegExp(t);
+  if (strictShape) {
+    var shape = pkgTarget.checkExportsTarget(target);
+    if (!shape.ok) return { ok: false, kind: 'shape', why: shape.why };
+  }
+
+  var t = String(target).replace(/^\.\//, '');
+  var stars = pkgTarget.starCount(t);
+
+  if (stars > 0) {
+    /* 🔴 多个 `*` 必须用**同一个值**替换（Node 语义，实测见 _pkg-target.js 头）。
+       旧实现在这里给每个 `*` 各开一个 `[\s\S]*` ⇒ `dist/a/copy-b.js` 也判绿。 */
     var files = vfs.allFiles();
     for (var i = 0; i < files.length; i++) {
-      if (re.test(files[i])) {
+      if (pkgTarget.starValue(t, files[i]) !== null) {
         return { ok: true, kind: 'wildcard', match: files[i] };
       }
     }
     return {
       ok: false, kind: 'wildcard',
-      why: '包里没有任何文件匹配该模式（`*` 可跨目录，不是在某个目录里找）'
+      why: '包里没有任何文件匹配该模式（`*` 可跨目录、且多个 `*` 必须是同一个值）'
     };
   }
 
@@ -175,42 +256,236 @@ function targetStatus(target, vfs) {
   return { ok: false, kind: 'exact', why: '文件不存在' };
 }
 
-/** HTML 里真正会被浏览器请求的本地引用（不含注释、不含转义后的示例代码）。
+/* ==========================================================================
+ *  ①b HTML 词法：引号感知的 tokenizer
  *
- *  🔴 三个必须覆盖的写法（外部审计 P1-2）：
- *     ① 值可以是 `"…"`、`'…'`、或无引号 —— 旧正则只认双引号；
- *     ② `srcset` 是逗号分隔的候选列表，`poster` 是视频封面，都算引用；
- *     ③ `<!-- -->` 里的示例和 `&lt;script&gt;` 转义示例都不算。
+ * 🔴 第三轮审计 R3-4：旧实现是 `<tag ([^>]*)>` —— 它**不理解属性引号**：
+ *      <img data-label="a > b" src="missing.png">
+ *    在引号里的 `>` 处就把标签截断了，后面的 `src` **完全看不到**。
+ *    这是合法 HTML，不是刁钻写法，只是文案里带个 `>` 而已。
+ *
+ *    用 HTML parser 是最正的解，但本库的核心约束是**零第三方运行时依赖**，
+ *    devDependencies 里也没有 HTML parser（引进来会给维护者多一份要跟进的东西）。
+ *    ⇒ 写一个够用的 tokenizer：只认开始/结束标签 + 属性，规范到「引号内不结束」
+ *      这一条；**不**做实体解码（属性值里的 `&amp;` 在路径里几乎不会出现，
+ *      真出现也只会造成假红，不会假绿）。
+ *
+ *    它也顺手解决另一个洞：`<script>` 的内部文本不是标签。
+ *    以前 `<script>var s = '<img src="x">'</script>` 会被当成真引用。
+ * ========================================================================*/
+
+/* 内容不是标签的元素：open tag 之后必须**跳过内容**直到闭合标签。
+   ⚠️ 少写一个就是一个假红/假绿来源，所以按规范列表来，不按"见过的"来。 */
+var RAW_TEXT_TAGS = {
+  script: 1, style: 1, textarea: 1, title: 1, xmp: 1, iframe: 1,
+  noembed: 1, noframes: 1, plaintext: 1
+};
+
+/**
+ * 把 HTML 切成标签流。返回 `[{tag, attrs: [{name, value}], end}]`。
+ * `end: true` 表示结束标签（`</x>`）或声明（`<!doctype>`），调用方忽略即可。
  */
-function htmlRefs(text) {
+function tokenizeTags(html) {
+  var text = String(html);
   var out = [];
-  /* 🔴 必须先剥注释。`09-assets/model-viewer/demo.html` 里有一句
-     `<!-- 🔴 注意：这里**没有** <script src="three.min.js"> -->`，
-     不剥就会被判成"引用了没打包的引擎" —— 一条纯假红。 */
-  var clean = text.replace(/<!--[\s\S]*?-->/g, '');
-  /* 🔴 也只能认**真标签**。`&lt;script src="echarts.min.js"&gt;` 是文档
-     示例（被转义过，没有字面 `<`），用裸正则 `src="…"` 同样会误报。 */
-  var tag = /<(script|link|img|source|video|audio|iframe|use|track|embed|object|input)\b([^>]*)>/gi;
-  var attr = /([\w:-]+)\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'`=<>]+))/g;
-  var m;
-  while ((m = tag.exec(clean))) {
-    var attrs = m[2];
-    var a;
-    attr.lastIndex = 0;
-    while ((a = attr.exec(attrs))) {
-      var nm = a[1].toLowerCase();
-      var val = a[3] !== undefined ? a[3] : (a[4] !== undefined ? a[4] : a[5]);
-      if (nm === 'src' || nm === 'href' || nm === 'poster') {
-        out.push(String(val).trim());
-      } else if (nm === 'srcset') {
-        String(val).split(',').forEach(function (part) {
-          var u = part.trim().split(/\s+/)[0];
-          if (u) out.push(u);
-        });
+  var i = 0;
+  var n = text.length;
+
+  while (i < n) {
+    var lt = text.indexOf('<', i);
+    if (lt < 0) break;
+
+    /* 注释整段跳过。`<!--` 里可以有 `>`，所以不能等 `>`。 */
+    if (text.substr(lt, 4) === '<!--') {
+      var ce = text.indexOf('-->', lt + 4);
+      i = ce < 0 ? n : ce + 3;
+      continue;
+    }
+
+    var c1 = text.charAt(lt + 1);
+
+    /* 结束标签 / doctype / 处理指令：名字取出来，属性为空。 */
+    if (c1 === '/' || c1 === '!' || c1 === '?') {
+      var gt = text.indexOf('>', lt);
+      var name = '';
+      if (c1 === '/') {
+        var mm = /^<\/([a-zA-Z][^\s/>]*)/.exec(text.slice(lt, lt + 48));
+        name = mm ? mm[1].toLowerCase() : '';
+      }
+      out.push({ tag: name || '!', attrs: [], end: true });
+      if (gt < 0) break;
+      i = gt + 1;
+      continue;
+    }
+
+    if (!/[a-zA-Z]/.test(c1)) { i = lt + 1; continue; }
+
+    /* 标签名 */
+    var j = lt + 1;
+    while (j < n && !/[\s/>]/.test(text.charAt(j))) j++;
+    var tag = text.slice(lt + 1, j).toLowerCase();
+
+    /* 属性：**引号感知**。这里是整个函数存在的理由。 */
+    var attrs = [];
+    while (j < n) {
+      while (j < n && /\s/.test(text.charAt(j))) j++;
+      if (j >= n) break;
+      var ch = text.charAt(j);
+      if (ch === '>') { j++; break; }
+      if (ch === '/') { j++; continue; }          /* `<br />` 的自闭合斜杠 */
+
+      var s = j;
+      while (j < n && !/[\s=/>]/.test(text.charAt(j))) j++;
+      if (j === s) { j++; continue; }             /* 防御：不认识就前进一格，绝不原地打转 */
+      var aname = text.slice(s, j).toLowerCase();
+
+      var avalue = '';
+      var k = j;
+      while (k < n && /\s/.test(text.charAt(k))) k++;
+      if (text.charAt(k) === '=') {
+        k++;
+        while (k < n && /\s/.test(text.charAt(k))) k++;
+        var q = text.charAt(k);
+        if (q === '"' || q === "'") {
+          var qe = text.indexOf(q, k + 1);
+          if (qe < 0) { avalue = text.slice(k + 1); k = n; }
+          else { avalue = text.slice(k + 1, qe); k = qe + 1; }
+        } else {
+          var ve = k;
+          while (ve < n && !/[\s>]/.test(text.charAt(ve))) ve++;
+          avalue = text.slice(k, ve);
+          k = ve;
+        }
+        j = k;
+      }
+      attrs.push({ name: aname, value: avalue });
+    }
+
+    out.push({ tag: tag, attrs: attrs, end: false });
+    i = j;
+
+    /* 原始文本元素：内容不是标签，必须跳到闭合标签之后。 */
+    if (RAW_TEXT_TAGS[tag] && text.charAt(j - 1) !== '/') {
+      var close = new RegExp('</' + tag + '\\b', 'i');
+      var cm = close.exec(text.slice(i));
+      if (cm) {
+        var gt2 = text.indexOf('>', i + cm.index);
+        i = gt2 < 0 ? n : gt2 + 1;
+      } else {
+        i = n;
       }
     }
   }
+
   return out;
+}
+
+/**
+ * 按 **srcset 语法**拆候选，不是 `split(',')`。
+ *
+ * 🔴 第三轮审计点名的假红：`data:image/png;base64,AAAA 1x, b.png 2x`
+ *    用 `split(',')` 会把 data URI 拆成两段，然后报「data:image/png;base64 不存在」。
+ *
+ * 规范事实：srcset 里的 URL **不允许含空白**，但**允许含逗号**；
+ * 候选之间用逗号分隔，且分隔逗号**后面**跟的才是下一个 URL。
+ * ⇒ 按「先吃到空白为止得到一个 URL，再跳到下一个逗号」来走。
+ */
+function parseSrcset(v) {
+  var text = String(v);
+  var out = [];
+  var i = 0;
+  var n = text.length;
+
+  while (i < n) {
+    while (i < n && (/\s/.test(text.charAt(i)) || text.charAt(i) === ',')) i++;
+    if (i >= n) break;
+
+    var s = i;
+    while (i < n && !/\s/.test(text.charAt(i))) i++;
+    var url = text.slice(s, i);
+
+    if (/,$/.test(url)) {
+      /* `a.png, b.png` —— 逗号紧贴 URL 结尾，这个候选没有描述符 */
+      out.push(url.replace(/,+$/, ''));
+      continue;
+    }
+    out.push(url);
+
+    /* 描述符里不会出现逗号，所以下一个逗号就是候选分隔符 */
+    while (i < n && text.charAt(i) !== ',') i++;
+  }
+
+  return out.filter(function (u) { return !!u; });
+}
+
+/* 同一属性在一张标签里出现两次时按 HTML 规范取**第一个**。 */
+function attrsOf(tagToken) {
+  var map = {};
+  tagToken.attrs.forEach(function (a) {
+    if (!Object.prototype.hasOwnProperty.call(map, a.name)) map[a.name] = a.value;
+  });
+  return map;
+}
+
+/** 这些标签上的 `href` 是**资源**（页面加载时就会请求）。 */
+var HREF_IS_RESOURCE = { link: 1, use: 1, image: 1, script: 1, track: 1 };
+
+/** 这些标签上的 `href` 是**导航**（用户点了才请求）。 */
+var HREF_IS_NAV = { a: 1, area: 1 };
+
+/**
+ * 从标签流里取出引用，分成三类：
+ *   `res`  资源引用（src / srcset / poster / object[data] / link[href] …）
+ *   `nav`  导航引用（a[href] / area[href] / form[action] / formaction）
+ *   `base` `<base href>` 的值（null 表示没有）
+ *
+ * ⚠️ 为什么要分两类而不是混成一个数组：**判据不同**。
+ *    资源引用必须精确命中一个文件；导航链接可以指向目录（浏览器会找
+ *    index），也可以省略 `.html`。混在一起会把 demo 里的正常目录链接判红。
+ */
+function collectRefs(tokens) {
+  var res = [];
+  var nav = [];
+  var base = null;
+
+  tokens.forEach(function (t) {
+    if (t.end) return;
+    var a = attrsOf(t);
+
+    if (t.tag === 'base' && base === null &&
+        Object.prototype.hasOwnProperty.call(a, 'href')) {
+      base = a.href;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(a, 'src')) res.push(a.src);
+    if (Object.prototype.hasOwnProperty.call(a, 'poster')) res.push(a.poster);
+    if (Object.prototype.hasOwnProperty.call(a, 'srcset')) {
+      parseSrcset(a.srcset).forEach(function (u) { res.push(u); });
+    }
+    if (t.tag === 'object' && Object.prototype.hasOwnProperty.call(a, 'data')) {
+      res.push(a.data);
+    }
+    if (Object.prototype.hasOwnProperty.call(a, 'href')) {
+      if (HREF_IS_RESOURCE[t.tag]) res.push(a.href);
+      else if (HREF_IS_NAV[t.tag]) nav.push(a.href);
+    }
+    /* SVG 的 `xlink:href`（老写法；新写法是裸 `href`，上面已覆盖） */
+    if (Object.prototype.hasOwnProperty.call(a, 'xlink:href') &&
+        (t.tag === 'image' || t.tag === 'use')) {
+      res.push(a['xlink:href']);
+    }
+    if (t.tag === 'form' && Object.prototype.hasOwnProperty.call(a, 'action')) {
+      nav.push(a.action);
+    }
+    if (Object.prototype.hasOwnProperty.call(a, 'formaction')) nav.push(a.formaction);
+  });
+
+  return { res: res, nav: nav, base: base };
+}
+
+/** 兼容旧接口：只返回资源引用（不含导航）。 */
+function htmlRefs(text) {
+  return collectRefs(tokenizeTags(text)).res;
 }
 
 function isExternalRef(u) {
@@ -289,7 +564,8 @@ function checkClosure(pkg, vfs) {
   function checkFieldPath(field, v) {
     if (!isRelPath(v)) return;
     if (v.indexOf('*') >= 0) {
-      var st = targetStatus(v, vfs);
+      /* strictShape:false —— main/module/browser 允许不带 `./` */
+      var st = targetStatus(v, vfs, { strictShape: false });
       if (!st.ok) {
         problems.push({ s: 'exports', t: field + ' → ' + v + '（' + st.why + '）' });
       }
@@ -331,18 +607,64 @@ function checkClosure(pkg, vfs) {
     });
   })();
 
-  /* ---------- C. 随包 HTML 的本地引用 ---------- */
+  /* ---------- C. 随包 HTML 的本地引用 ----------
+   *
+   *  第三轮审计点名了三处，本轮全改：
+   *    ① 注释与转义示例不算引用  —— 已在 tokenizer 里（注释整段跳过、
+   *       转义示例没有字面 `<`，天然不会进标签流）。
+   *    ② `<base href>` 能改变**整页**相对 URL 的基准。旧实现根本没读它，
+   *       于是页面加了 `<base href="https://cdn/">` 之后，本地引用实际会
+   *       请求到 CDN 上去，而门禁还按"HTML 文件所在目录"判 → 假绿。
+   *       ⇒ 现在：相对 base 参与解析；**指向包外/站点根的 base 直接判红**
+   *         （fail-closed：那种页面的相对引用我们无法静态判定，与其判绿
+   *         不如说清"判不了"）。实测仓库 51 个 HTML 里 `<base>` 出现 **0** 次。
+   *    ③ 导航链接（`a` / `area` / `form[action]` / `formaction`）原来完全不判。
+   *       ⇒ 现在判，但用**不同的判据**（见 judge() 的 isNav 分支）：
+   *         导航可以指向目录，也可以省略 `.html`，资源引用不行。
+   *   ⚠️ 仍未覆盖：CSS 文档里的 `url()` / `@import`（理由见文件头「明确不覆盖」）。
+   */
   var htmlN = 0;
   var refN = 0;
+  var navN = 0;
+  var baseN = 0;
+  var exemptN = 0;
+
   vfs.allFiles().forEach(function (f) {
     if (!/\.html?$/i.test(f)) return;
     htmlN++;
-    var text = vfs.read(f);
-    htmlRefs(text).forEach(function (u) {
+
+    var parsed = collectRefs(tokenizeTags(vfs.read(f)));
+
+    /* 解析基准：默认是 HTML 文件所在目录；有相对 `<base>` 时改用它。 */
+    var baseDir = path.posix.dirname(f);
+    if (parsed.base !== null) {
+      baseN++;
+      var b = String(parsed.base).trim();
+      if (isExternalRef(b) || b.charAt(0) === '/') {
+        problems.push({
+          s: 'html',
+          t: f + ' 的 <base href="' + b + '"> 指向包外/站点根 ⇒ 本页相对引用' +
+               '不指向包内，静态无法判定（fail-closed，不记作通过）'
+        });
+        return;                       /* 已记一条，不再逐条误判这一页 */
+      }
+      var joined = path.posix.normalize(path.posix.join(path.posix.dirname(f), b));
+      baseDir = /\/$/.test(b) ? joined : path.posix.dirname(joined);
+      if (baseDir.slice(0, 2) === '..') {
+        problems.push({ s: 'html', t: f + ' 的 <base href="' + b + '"> 越出包根' });
+        return;
+      }
+    }
+
+    function judge(raw, isNav) {
+      var u = String(raw).trim();
       if (isExternalRef(u)) return;
+
+      /* 去掉 `#fragment` 与 `?query` 后再判文件。纯 `#x` / `?x` 是页内跳转。 */
       var pure = u.split('#')[0].split('?')[0];
       if (!pure) return;
-      refN++;
+
+      if (isNav) navN++; else refN++;
 
       /* 🔴 根相对 `/assets/x.css` 原来被 isExternalRef 直接当外部忽略 ——
          那是**静默放过**：包内 HTML 是从 node_modules 里打开的，没有站点根，
@@ -355,24 +677,40 @@ function checkClosure(pkg, vfs) {
           problems.push({ s: 'html', t: f + ' 引用 ' + u + '（根相对路径越界）' });
           return;
         }
-        if (!vfs.exists(rt)) {
+        if (!existsFor(rt, isNav)) {
           problems.push({
-            s: 'html',
-            t: f + ' 引用根相对路径 ' + u + '（包根处没有 ' + rt + '）'
+            s: 'html', t: f + ' 引用根相对路径 ' + u + '（包根处没有 ' + rt + '）'
           });
         }
         return;
       }
 
-      var tgt = path.posix.normalize(path.posix.join(path.posix.dirname(f), pure));
+      var tgt = path.posix.normalize(path.posix.join(baseDir, pure));
       if (tgt.slice(0, 2) === '..') {
         problems.push({ s: 'html', t: f + ' 引用 ' + u + '（跑到包外去了）' });
         return;
       }
-      if (!vfs.exists(tgt)) {
+      if (isNav && Object.prototype.hasOwnProperty.call(KNOWN_DEV_ONLY_NAV, tgt)) {
+        exemptN++;
+        return;
+      }
+      if (!existsFor(tgt, isNav)) {
         problems.push({ s: 'html', t: f + ' 引用 ' + u + ' → ' + tgt + '（不在包内）' });
       }
-    });
+    }
+
+    /** 资源引用必须**精确命中文件**；导航链接宽松一档（目录 / 补 .html / index）。 */
+    function existsFor(p, isNav) {
+      if (vfs.exists(p)) return true;
+      if (!isNav) return false;
+      var dir = p.replace(/\/+$/, '');
+      return vfs.isDir(dir) ||
+             vfs.exists(dir + '.html') ||
+             vfs.exists(dir + '/index.html');
+    }
+
+    parsed.res.forEach(function (u) { judge(u, false); });
+    parsed.nav.forEach(function (u) { judge(u, true); });
   });
 
   /* ---------- D. 文档里给使用者的 node_modules/<包名>/… 路径 ---------- */
@@ -401,8 +739,8 @@ function checkClosure(pkg, vfs) {
   return {
     problems: problems,
     stats: {
-      exact: exact, wildcard: wild, html: htmlN, refs: refN, docRefs: docN,
-      files: vfs.allFiles().length
+      exact: exact, wildcard: wild, html: htmlN, refs: refN, nav: navN, base: baseN,
+      exempt: exemptN, docRefs: docN, files: vfs.allFiles().length
     }
   };
 }
@@ -713,6 +1051,171 @@ function selftest() {
     }
   })();
 
+  /* ---------- 星号语义：**必须与真 Node 一致**（第三轮审计 R3-1/2/3） ----------
+     🔴 审计原话：「待验证：空匹配……应加真实 Node 解析样例，不宜仅凭正则推断。」
+        ⇒ 这里直接建临时包，用 `Module.createRequire()` **真解析**一遍
+          （只解析，不执行模块 —— 本库的入口是 HTML/CSS，执行必碰 document）。
+          判据只有一条：**我们的答案必须等于 Node 的答案**。
+          将来 Node 改语义，这条会红，而不是我们继续假绿。 */
+  (function () {
+    var Module = require('module');
+    var os = require('os');
+    var cases = [
+      { label: '单星可跨目录（dist/b/c.js）',
+        exportsMap: { './x/*': './dist/*.js' },
+        files: ['dist/a.js', 'dist/b/c.js'], sub: 'x/b/c' },
+      { label: '多星不同值 **不成立**（dist/a/copy-b.js）',
+        exportsMap: { './x/*': './dist/*/copy-*.js' },
+        files: ['dist/a/copy-b.js'], sub: 'x/a' },
+      { label: '多星同值成立（dist/a/copy-a.js）',
+        exportsMap: { './x/*': './dist/*/copy-*.js' },
+        files: ['dist/a/copy-a.js'], sub: 'x/a' },
+      { label: '目标不带 ./ 不成立（ERR_INVALID_PACKAGE_TARGET）',
+        exportsMap: { './i': 'dist/i.js' },
+        files: ['dist/i.js'], sub: 'i' }
+    ];
+
+    var tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'pack-closure-node-'));
+    try {
+      cases.forEach(function (c, idx) {
+        var dir = path.join(tmp, 'c' + idx);
+        var pkgDir = path.join(dir, 'node_modules', 'p');
+        fs.mkdirSync(pkgDir, { recursive: true });
+        fs.writeFileSync(path.join(pkgDir, 'package.json'),
+          JSON.stringify({ name: 'p', version: '1.0.0', exports: c.exportsMap }));
+        c.files.forEach(function (f) {
+          var abs = path.join(pkgDir, f);
+          fs.mkdirSync(path.dirname(abs), { recursive: true });
+          fs.writeFileSync(abs, '');
+        });
+
+        var anchor = path.join(dir, '__a.js');
+        fs.writeFileSync(anchor, '');
+        var nodeOk = true;
+        try { Module.createRequire(anchor).resolve('p/' + c.sub); }
+        catch (e) { nodeOk = false; }
+
+        /* 我们的答案：把 exports 里唯一的目标拿出来判 */
+        var target = null;
+        (function pick(v) {
+          if (target !== null) return;
+          if (typeof v === 'string') { target = v; return; }
+          if (Array.isArray(v)) { v.forEach(pick); return; }
+          if (v && typeof v === 'object') Object.keys(v).forEach(function (k) { pick(v[k]); });
+        })(c.exportsMap[Object.keys(c.exportsMap)[0]]);
+
+        var ours = targetStatus(target, fakeVfs(function () {
+          var m = { 'package.json': '{}' };
+          c.files.forEach(function (f) { m[f] = ''; });
+          return m;
+        }())).ok;
+
+        if (ours !== nodeOk) {
+          bad++;
+          console.log('      X 与真 Node 不一致：' + c.label +
+                      '（Node ' + (nodeOk ? '解析成功' : '解析失败') +
+                      '，本判据 ' + (ours ? '判绿' : '判红') + '）');
+        } else {
+          console.log('      OK 与真 Node 一致：' + c.label +
+                      ' ⇒ ' + (nodeOk ? '成立' : '不成立'));
+        }
+      });
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
+  })();
+
+  /* ---------- 空星号 ----------
+     🔴 实测：`exports {"./a*": "./dist/*.js"}` + 子路径 `a` ⇒
+        ERR_PACKAGE_PATH_NOT_EXPORTED —— Node 在**键**这一侧就拒绝了空匹配。
+     ⚠️ 本门禁判的是「这个通配导出**是否存在某个**可用子路径」，
+        不模拟「某个**具体**子路径能不能解析」（后者由 entry-resolve.js 用
+        真解析器逐个验）。所以键侧的空匹配不在本判据的射程内，
+        这里只钉住**目标**一侧的规则：`*` 不许匹配空串。
+        两侧口径一致 ⇒ 不会出现"目标允许空、键不允许"的口径错位。 */
+  (function () {
+    var empties = [
+      ['dist/*.js', 'dist/.js'],
+      ['dist/*/*.js', 'dist//a.js'],
+      ['*', ''],
+      ['a*/b', 'a/b']
+    ];
+    var leaked = [];
+    empties.forEach(function (pair) {
+      if (pkgTarget.starValue(pair[0], pair[1]) !== null) leaked.push(pair[0] + ' ⇐ ' + pair[1]);
+    });
+    if (leaked.length) {
+      bad++;
+      console.log('      X 空星号被判成命中（Node 不接受）：' + leaked.join('；'));
+    } else {
+      console.log('      OK 空星号不算命中：`*` 必须匹配至少一个字符（与 Node 键侧口径一致）');
+    }
+  })();
+
+  /* ---------- HTML 词法：引号里的 `>` 不许截断标签 ---------- */
+  expect('反：属性值里有 `>` 时，后面的 src 仍要判出来（旧实现被截断 ⇒ 假绿）',
+    { name: 'agentcss', exports: {} },
+    base({ 'demo/a.html': '<img data-label="a > b" src="gone.png">' }), true);
+
+  expect('不误报：属性值里有 `>` 且文件都在', { name: 'agentcss', exports: {} },
+    base({ 'demo/a.html': '<img data-label="a > b" src="a.png">', 'demo/a.png': '' }), false);
+
+  expect('不误报：<script> 内容里的伪标签不算引用', { name: 'agentcss', exports: {} },
+    base({ 'demo/a.html': '<script>var s = \'<img src="gone.png">\';</script>' }), false);
+
+  /* ---------- <base href> ---------- */
+  expect('反：<base> 指向包外 ⇒ 相对引用无法静态判定，fail-closed',
+    { name: 'agentcss', exports: {} },
+    base({ 'demo/a.html': '<base href="https://cdn.example/">' +
+                          '<link rel="stylesheet" href="x.css">' }), true);
+
+  expect('不误报：相对 <base href="sub/"> 下的引用按 sub/ 解析',
+    { name: 'agentcss', exports: {} },
+    base({ 'demo/a.html': '<base href="sub/"><link rel="stylesheet" href="x.css">',
+           'demo/sub/x.css': '' }), false);
+
+  expect('反：有 <base href="sub/"> 时，HTML 同级的 x.css **不算**命中',
+    { name: 'agentcss', exports: {} },
+    base({ 'demo/a.html': '<base href="sub/"><link rel="stylesheet" href="x.css">',
+           'demo/x.css': '' }), true);
+
+  /* ---------- srcset 语法：data URI 里的逗号不是候选分隔符 ---------- */
+  expect('不误报：srcset 里 data URI 的逗号不该被当成候选分隔（旧实现假红）',
+    { name: 'agentcss', exports: {} },
+    base({ 'demo/a.html': '<img src="a.png" ' +
+                          'srcset="data:image/png;base64,AAAA 1x, a.png 2x">',
+           'demo/a.png': '' }), false);
+
+  expect('反：srcset 第二个候选真的缺失', { name: 'agentcss', exports: {} },
+    base({ 'demo/a.html': '<img src="a.png" srcset="a.png 1x, gone.png 2x">',
+           'demo/a.png': '' }), true);
+
+  /* ---------- 导航链接：判，但判据比资源引用宽松一档 ---------- */
+  expect('反：<a href> 指向包内不存在的文件', { name: 'agentcss', exports: {} },
+    base({ 'demo/a.html': '<a href="gone.html">x</a>' }), true);
+
+  expect('不误报：<a href> 指向目录（浏览器会找 index）', { name: 'agentcss', exports: {} },
+    base({ 'demo/a.html': '<a href="sub/">x</a>', 'demo/sub/index.html': '' }), false);
+
+  expect('不误报：<a href> 省略 .html', { name: 'agentcss', exports: {} },
+    base({ 'demo/a.html': '<a href="other">x</a>', 'demo/other.html': '' }), false);
+
+  expect('不误报：<a href="#x"> 与 mailto:/javascript: 都不是本地引用',
+    { name: 'agentcss', exports: {} },
+    base({ 'demo/a.html': '<a href="#x">1</a><a href="mailto:a@b.c">2</a>' +
+                          '<a href="javascript:void(0)">3</a>' }), false);
+
+  expect('反：form[action] 指向不存在的本地端点', { name: 'agentcss', exports: {} },
+    base({ 'demo/a.html': '<form action="/api/gone"></form>' }), true);
+
+  /* ---------- exports 目标形状（R3-3） ---------- */
+  expect('反：exports 目标不带 ./（Node 抛 ERR_INVALID_PACKAGE_TARGET）',
+    { name: 'agentcss', exports: { './i': 'index.html' } }, base(), true);
+
+  expect('反：exports 目标含 .. 段', {
+    name: 'agentcss', exports: { './i': './../outside.js' }
+  }, base(), true);
+
   return bad;
 }
 
@@ -848,8 +1351,17 @@ function main(argv) {
 
   console.log('  [3] 随包 HTML 的本地引用');
   console.log('      ' + (bad('html') ? 'X  ' : 'OK ') +
-              s.html + ' 个 HTML、' + s.refs + ' 条本地引用（单/双/无引号 + srcset + poster 都算；' +
-              '根相对按包根判）');
+              s.html + ' 个 HTML、' + s.refs + ' 条资源引用 + ' + s.nav +
+              ' 条导航链接（引号感知 tokenizer；单/双/无引号 + srcset + poster + ' +
+              'object[data] 都算；根相对按包根判；<base> 参与基准）');
+  if (s.base) {
+    console.log('      ! 本包有 ' + s.base + ' 个页面声明了 <base href>，' +
+                '这些页面的相对引用按 base 解析');
+  }
+  if (s.exempt) {
+    console.log('      ! 已知豁免 ' + s.exempt + ' 条导航链接（指向 **不发布** 的开发目录，' +
+                '逐条登记在 KNOWN_DEV_ONLY_NAV；装到 node_modules 里点开是 404，属已登记取舍）');
+  }
 
   console.log('  [4] 文档里给使用者的路径');
   console.log('      ' + (bad('docs') ? 'X  ' : 'OK ') +
@@ -869,9 +1381,11 @@ function main(argv) {
 
   console.log('');
   console.log('  ⇒ 静态引用闭合：包内 ' + s.files + ' 个文件；exports / 类型 / main 等字段 /' +
-              ' HTML 引用 / 文档路径全部落在包内。');
-  console.log('  ! 这只覆盖**静态引用**。未验证的两项：');
+              ' HTML 引用 / 文档路径全部落在包内' +
+              (s.exempt ? '（导航链接另有 ' + s.exempt + ' 条已登记豁免）' : '') + '。');
+  console.log('  ! 这只覆盖**静态引用**。未验证的三项：');
   console.log('    · data-* 运行时配置引用的资源（如 model-viewer 的 vendor/）；');
+  console.log('    · CSS 文档里的 url() 与 @import（另一类文档，需单独一道按 CSS 语法判）；');
   console.log('    · 入口能否被消费者的 import/require 真正解析（由 entry-resolve.js 判）。');
   console.log('    ⇒ 别把这一行读成"包内一切与声明一致"。');
   return 0;
@@ -893,6 +1407,9 @@ module.exports = {
   walkExports: walkExports,
   checkClosure: checkClosure,
   htmlRefs: htmlRefs,
+  tokenizeTags: tokenizeTags,
+  parseSrcset: parseSrcset,
+  collectRefs: collectRefs,
   targetStatus: targetStatus,
   patternToRegExp: patternToRegExp,
   readPackList: readPackList
