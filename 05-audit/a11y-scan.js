@@ -90,12 +90,20 @@ if (PAGES.length === 0) {
   let totalV = 0, totalPass = 0;
   const allViolations = [];
   const knownIssues = [];
+  /* 🔴 实际扫描计数：上面的 PAGES.length 守卫只挡住"清单为空"，
+     挡不住"清单有 30 页、但每一页 goto 都失败"——那种情况会一路
+     continue 到最后 exit 0，报"没有其他问题"，正是假绿。
+     ⇒ 只有真的扫到了页面，才有资格说无障碍达标。 */
+  let scanned = 0;
+  const skippedPages = [];
   for (const [name, rel] of list) {
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 900 });
     try {
       await page.goto(BASE + '/' + rel, { waitUntil: 'networkidle0', timeout: 15000 });
+      scanned++;
     } catch (e) {
+      skippedPages.push(name);
       console.log('  [跳过] ' + name + '  ' + String(e).slice(0, 50));
       await page.close();
       continue;
@@ -155,6 +163,21 @@ if (PAGES.length === 0) {
     await page.close();
   }
   await browser.close();
+  /* 假绿守卫：一页都没真正加载成功时，任何"0 违规"都毫无意义。 */
+  if (scanned === 0) {
+    console.error('');
+    console.error('❌ 清单里有 ' + list.length + ' 页，但**没有一页成功加载**。');
+    console.error('   ⇒ 这是假绿，不是无障碍达标。常见原因：');
+    console.error('     · BASE 没起或端口不对 · 清单里的路径写错 · 沙箱拦截了请求');
+    skippedPages.forEach((n) => console.error('     跳过: ' + n));
+    process.exit(1);
+  }
+  if (skippedPages.length) {
+    console.warn('');
+    console.warn('⚠ 有 ' + skippedPages.length + '/' + list.length +
+                 ' 页未能加载，本次覆盖**不完整**：');
+    skippedPages.forEach((n) => console.warn('     ' + n));
+  }
   console.log('');
   // 分「已知且已决定不做」与「真问题」两类报告。
   // 之前把"缺 <main> 地标"和真问题混在一起报，看起来像还有 6 个页面坏了，

@@ -105,7 +105,7 @@ echo "  OK    tarball 内无内部判据产物 / 负向 fixture"
 #    `[ -e "node_modules/pkg/03-patterns/*" ]` 永远是假
 #    ⇒ 会把**正常的通配导出**误报成缺失（实测踩过）。
 #    正解：通配导出取目录，检查**目录存在且非空**。
-BAD=""
+BAD=()
 while IFS=$'\t' read -r key target; do
   [ -z "$key" ] && continue
   case "$target" in
@@ -113,28 +113,52 @@ while IFS=$'\t' read -r key target; do
     *'*')
       d="$PKG/$(dirname "${target%/*}")"
       if [ ! -d "$d" ]; then
-        BAD="$BAD $key -> $target（目录不存在）"
+        BAD+=("$key -> $target（目录不存在）")
       elif [ -z "$(ls -A "$d" 2>/dev/null)" ]; then
-        BAD="$BAD $key -> $target（目录为空）"
+        BAD+=("$key -> $target（目录为空）")
       fi
       ;;
     # 精确导出：文件或目录必须在
     *)
       p="$PKG/${target#./}"
-      [ -e "$p" ] || BAD="$BAD $key -> $target（缺失）"
+      [ -e "$p" ] || BAD+=("$key -> $target（缺失）")
       ;;
   esac
 done < <(node -e "
   const fs = require('fs');
   const pkg = JSON.parse(fs.readFileSync('$PKG/package.json', 'utf8'));
   const ex = pkg.exports || {};
-  for (const [k, v] of Object.entries(ex)) {
-    if (typeof v === 'string') console.log(k + '\t' + v);
-  }
+  /* 🔴 必须递归展开**任意形态**的导出目标。
+     以前的写法是 typeof v === 'string' —— 于是
+        \".\": { \"types\": ..., \"default\": \"./index.html\" }
+     这种**条件导出对象被整体跳过**，主入口在包里缺失也报 \"OK 每个入口都真实存在\"。
+     实测证据：0.9.0 的 tarball 里没有 index.html，而本检查仍 exit 0。
+     ⇒ 现在 string / array / object(条件) 一律展开，一条不漏。 */
+  const seen = new Set();
+  (function walk(key, v, top) {
+    if (typeof v === 'string') {
+      if (!key) return;
+      if (!v.startsWith('./') && !v.startsWith('../')) return;  /* 跳过 node: 内置与 URL */
+      const sig = key + '\t' + v;
+      if (seen.has(sig)) return;
+      seen.add(sig);
+      console.log(sig);
+      return;
+    }
+    if (Array.isArray(v)) { v.forEach(function (x) { walk(key, x, top); }); return; }
+    if (v && typeof v === 'object') {
+      Object.keys(v).forEach(function (cond) {
+        /* 顶层 key 就是 entry 名，直接保留；条件层标成 entry[cond]，
+           这样报错时能看出是哪个入口的哪一路条件缺文件。 */
+        const next = top ? cond : key + '[' + cond + ']';
+        walk(next, v[cond], false);
+      });
+    }
+  })(null, ex, true);
 ")
-if [ -n "$BAD" ]; then
-  echo "  FAIL  🔴 exports 声明了但tarball 里不存在："
-  for b in $BAD; do echo "        $b"; done
+if [ ${#BAD[@]} -gt 0 ]; then
+  echo "  FAIL  🔴 exports 声明了但 tarball 里不存在："
+  for b in "${BAD[@]}"; do echo "        $b"; done
   exit 1
 fi
 echo "  OK    exports 的每个入口都真实存在"
