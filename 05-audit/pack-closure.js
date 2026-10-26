@@ -102,6 +102,12 @@ var ALWAYS_SHIPPED = { 'package.json': 1, 'readme.md': 1, 'license': 1 };
  *      ③ 嵌套条件         "node": { "import": ..., "require": ... }
  *      ④ 数组（回退链）   "./x": ["./a.js", "./b.js"]
  *    另外顶层 exports 本身也可以是字符串或数组（单入口包）。
+ *
+ *  ⚠️ 数组（回退链）本门禁要求**每个分支都存在**，比 Node 的实际语义更严
+ *     （Node 会跳过解析不出的分支、继续试下一个）。这是**有意 fail-closed**：
+ *     一条声明了却指向未打包文件的分支，基本等于作者以为它在包里。
+ *     真有正当理由要留空分支，请把那条从 package.json 里删掉 ——
+ *     本门禁不猜"这条大概是想回退吧"。（第二轮审计也点了这一处，记为规格已决。）
  */
 function walkExports(ex) {
   var rows = [];
