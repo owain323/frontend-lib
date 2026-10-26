@@ -122,6 +122,22 @@ if ! node "$REPO_ROOT/05-audit/pack-closure.js" --dir "$WORK/consumer/$PKG" \
 fi
 echo "  OK    exports / HTML 引用 / 文档路径 与包内实物一致"
 
+# ---------- 4b. 消费者侧解析：文件在包里 ≠ 入口可用 ----------
+# 🔴 外部审计 P1-3：第 4 步判的是「目标**在包里**」，第 6 步判的是
+#   「JS **语法**没错」，两者之间有个洞 —— `import` 时到底解析不解析得出来。
+#   exports 写错层级、通配替换落到不存在的路径、包内 `import './missing.js'`
+#   缺文件，都能让消费者直接抛错，而上面两步全绿。
+#   ⇒ 这里以**消费者身份**（require 锚点在 $WORK/consumer，不在包内）
+#     走一遍 Node 真正的 exports 解析，但**一行代码都不执行**（CSS/标签库
+#     在 Node 里执行必然碰 document，那是假红）。
+if ! node "$REPO_ROOT/05-audit/entry-resolve.js" \
+        --consumer "$WORK/consumer" --pkg "$NAME" > "$WORK/resolve.txt" 2>&1; then
+  echo "  FAIL  🔴 消费者侧解析不过："
+  sed 's/^/        /' "$WORK/resolve.txt"
+  exit 1
+fi
+echo "  OK    每个 exports 入口都能被 Node 解析到真实文件，入口内 import 也闭合"
+
 # ---------- 5. 关键文件必须在（types 是对外承诺）----------
 MISS=""
 for f in types/index.d.ts LICENSE README.md; do
