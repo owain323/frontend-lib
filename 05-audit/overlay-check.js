@@ -349,12 +349,15 @@ const REPO = path.resolve(__dirname, '..');
           for (var j = 0; j < locked.length; j++) { locked[j].inert = false; }
         });
 
+        /* 🔴 不再按"引擎支不支持"决定 skip。
+           原来 `!supported` 直接 `ok: true, note: '该判据不适用，跳过'` ——
+           于是 PR 补的 aria-hidden 兜底**没有任何自动回归**：把兜底删掉照样绿。
+           两个机制回答的是同一个问题（「背景有没有对键盘/读屏隔离」），
+           只是承载属性不同（inert vs aria-hidden），所以用同一场景 + 谓词切换。
+           （专门的兜底回归在下面「无 inert 的旧 WebView」那一条里强制跑。） */
         const supported = await p.evaluate(
           () => 'inert' in HTMLElement.prototype);
-        if (!supported) {
-          return { ok: true,
-                   note: '当前环境不支持 inert（该判据不适用，跳过）' };
-        }
+        const MECH = supported ? 'inert' : 'aria-hidden';
 
         /* 造一个明确在背景里的元素 —— 它是否 inert 是可客观判定的 */
         await p.evaluate(() => {
@@ -376,12 +379,18 @@ const REPO = path.resolve(__dirname, '..');
         });
         await new Promise((r) => setTimeout(r, 380));
 
-        const afterA = await p.evaluate(() => {
+        const afterA = await p.evaluate((useInert) => {
           const bg = document.getElementById('probe-bg');
-          return { lockedByA: !!(bg && bg.inert) };
-        });
+          return {
+            lockedByA: !!(bg && (useInert ? bg.inert
+                                          : bg.getAttribute('aria-hidden') === 'true')),
+            raw: bg ? (useInert ? String(bg.inert)
+                                : String(bg.getAttribute('aria-hidden'))) : '(节点没了)',
+          };
+        }, supported);
         if (!afterA.lockedByA) {
-          return { ok: false, note: '前置条件不成立：外层未锁住背景，无法测归属权' };
+          return { ok: false, note: '前置条件不成立：外层未隔离背景（机制=' + MECH +
+                                    '，实际=' + afterA.raw + '），无法测归属权' };
         }
 
         /* 打开内层 */
@@ -404,17 +413,27 @@ const REPO = path.resolve(__dirname, '..');
         await p.keyboard.press('Escape');
         await new Promise((r) => setTimeout(r, 650));
 
-        const mid = await p.evaluate(() => {
+        const mid = await p.evaluate((useInert) => {
           const bg = document.getElementById('probe-bg');
           return {
             layers: document.querySelectorAll('[role="dialog"]').length,
-            stillInert: !!(bg && bg.inert),
+            stillInert: !!(bg && (useInert ? bg.inert
+                                           : bg.getAttribute('aria-hidden') === 'true')),
           };
-        });
+        }, supported);
 
-        /* 收尾：关掉外层再清理（无论断言成败都不留垃圾） */
+        /* 收尾：关掉外层（顺便验"还原"——aria 兜底特有，不能只设不减） */
         await p.keyboard.press('Escape');
         await new Promise((r) => setTimeout(r, 650));
+        const afterAll = await p.evaluate((useInert) => {
+          const bg = document.getElementById('probe-bg');
+          if (!bg) return { released: false, raw: '(节点没了)' };
+          return {
+            released: useInert ? bg.inert === false
+                               : bg.getAttribute('aria-hidden') === null,
+            raw: useInert ? String(bg.inert) : String(bg.getAttribute('aria-hidden')),
+          };
+        }, supported);
         await p.evaluate(() => {
           const bg = document.getElementById('probe-bg');
           if (bg) bg.parentNode.removeChild(bg);
@@ -427,10 +446,106 @@ const REPO = path.resolve(__dirname, '..');
         }
         if (!mid.stillInert) {
           return { ok: false,
-                   note: '🔴 关掉内层后，外层还在开着，但背景已被解锁 ' +
-                         '⇒ inert 记账混淆了「当前状态」与「归属权」' };
+                   note: '🔴 关掉内层后，外层还在开着，但背景已被解锁（机制=' + MECH +
+                         '）⇒ 记账混淆了「当前状态」与「归属权」' };
         }
-        return { ok: true, note: '内层关闭未解除外层的背景隔离 ✅' };
+        if (!afterAll.released) {
+          return { ok: false,
+                   note: '🔴 两层都关完后背景没还原（机制=' + MECH + '，实际=' +
+                         afterAll.raw + '）⇒ 开的时候设了，关的时候没还原干净' };
+        }
+        return { ok: true, note: '内层关闭未解除外层的背景隔离，全关后已还原 ✅（机制=' +
+                                 MECH + '）' };
+      },
+
+      /* 🔴 PR 补的 aria-hidden 兜底必须自己有一条回归。
+         现代 Chromium 都有 inert，上面那条永远走不到兜底分支
+         ⇒ 不主动构造就等于**没测**（把兜底删掉照样全绿）。
+         做法：把 inert 从 HTMLElement.prototype 上删掉，模拟
+         Safari < 15.5 / Chrome < 102 这类老 WebView。 */
+      '旧 WebView（无 inert）：背景改用 aria-hidden 隔离': async (p) => {
+        const env = await p.evaluate(() => {
+          window.__inertDesc = Object.getOwnPropertyDescriptor(
+            HTMLElement.prototype, 'inert') || null;
+          try { delete HTMLElement.prototype.inert; } catch (e) { /* 只读就删不掉 */ }
+          return { removed: !('inert' in HTMLElement.prototype) };
+        });
+        if (!env.removed) {
+          return { ok: false,
+                   note: '构造不出「没有 inert」的环境（原型上的 inert 删不掉）' };
+        }
+
+        /* 背景探针必须在弹层打开**之前**存在，才会被当成 body 的直接子节点 */
+        await p.evaluate(() => {
+          const bg = document.createElement('div');
+          bg.id = 'probe-aria';
+          bg.textContent = '背景容器（无 inert 环境）';
+          document.body.appendChild(bg);
+          window.Overlay.dialog({ title: 'A3', desc: '外层',
+                                  actions: [{ label: '好', variant: 'primary' }] });
+        });
+        await new Promise((r) => setTimeout(r, 420));
+
+        const s1 = await p.evaluate(() => {
+          const bg = document.getElementById('probe-aria');
+          return {
+            aria: bg ? bg.getAttribute('aria-hidden') : '(节点没了)',
+            inertUsed: bg ? bg.inert === true : false,
+          };
+        });
+
+        /* 再开一层：只关内层时，引用计数不许把 aria-hidden 撤掉 */
+        await p.evaluate(() => {
+          window.Overlay.dialog({ title: 'B3', desc: '内层',
+                                  actions: [{ label: '好', variant: 'primary' }] });
+        });
+        await new Promise((r) => setTimeout(r, 420));
+        await p.keyboard.press('Escape');
+        await new Promise((r) => setTimeout(r, 650));
+
+        const s2 = await p.evaluate(() => {
+          const bg = document.getElementById('probe-aria');
+          return {
+            layers: document.querySelectorAll('[role="dialog"]').length,
+            aria: bg ? bg.getAttribute('aria-hidden') : '(节点没了)',
+          };
+        });
+
+        await p.keyboard.press('Escape');
+        await new Promise((r) => setTimeout(r, 650));
+
+        const s3 = await p.evaluate(() => {
+          const bg = document.getElementById('probe-aria');
+          const out = { aria: bg ? bg.getAttribute('aria-hidden') : '(节点没了)' };
+          if (bg) bg.parentNode.removeChild(bg);
+          /* 还原原型，别把后面的用例带坏 */
+          if (window.__inertDesc) {
+            try { Object.defineProperty(HTMLElement.prototype, 'inert', window.__inertDesc); }
+            catch (e) { /* 还原失败也只是影响后续用例，前面已判完 */ }
+          }
+          return out;
+        });
+
+        if (s1.aria !== 'true' || s1.inertUsed) {
+          return { ok: false,
+                   note: '🔴 无 inert 时背景必须被设 aria-hidden="true"；实际 aria=' +
+                         String(s1.aria) + '、inert 被用了=' + s1.inertUsed };
+        }
+        if (s2.layers !== 1) {
+          return { ok: false,
+                   note: '关内层后应剩 1 层，实际 ' + s2.layers + '（判据场景没跑对）' };
+        }
+        if (s2.aria !== 'true') {
+          return { ok: false,
+                   note: '🔴 只关内层就把背景的 aria-hidden 撤了（实际=' +
+                         String(s2.aria) + '）⇒ 引用计数没起作用，读屏会重新走进背景' };
+        }
+        if (s3.aria !== null) {
+          return { ok: false,
+                   note: '🔴 全关后 aria-hidden 没还原成原始值（实际=' +
+                         String(s3.aria) + '，期望 null）' };
+        }
+        return { ok: true, note: '无 inert 时用 aria-hidden 隔离：设上了、嵌套不误撤、关闭后还原 ✅' };
       },
     },
   });
