@@ -100,6 +100,55 @@ return;
 }
 }
 
+var openStack = [];
+
+function installIsolation(entry) {
+var box = entry.box;
+var backdrop = entry.backdrop;
+var lastInside = null;
+
+function topmost() { return openStack[openStack.length - 1]; }
+
+function pullBack() {
+if (lastInside && document.contains(lastInside) && box.contains(lastInside)) {
+lastInside.focus();
+return;
+}
+var f = focusableIn(box);
+if (f.length) { f[0].focus(); return; }
+box.focus();
+}
+
+function onFocusIn(e) {
+if (topmost() !== entry) return;
+var t = e.target;
+if (box.contains(t) || backdrop.contains(t)) { lastInside = t; return; }
+pullBack();
+}
+
+function onPointer(e) {
+if (topmost() !== entry) return;
+if (backdrop.contains(e.target)) return;
+if (e.cancelable) e.preventDefault();
+e.stopPropagation();
+}
+
+document.addEventListener('focusin', onFocusIn, true);
+document.addEventListener('pointerdown', onPointer, true);
+document.addEventListener('mousedown', onPointer, true);
+document.addEventListener('touchstart', onPointer, true);
+
+document.addEventListener('click', onPointer, true);
+
+return function uninstall() {
+document.removeEventListener('focusin', onFocusIn, true);
+document.removeEventListener('pointerdown', onPointer, true);
+document.removeEventListener('mousedown', onPointer, true);
+document.removeEventListener('touchstart', onPointer, true);
+document.removeEventListener('click', onPointer, true);
+};
+}
+
 function toast(opts) {
 opts = opts || {};
 
@@ -255,6 +304,12 @@ backdrop.appendChild(box);
 document.body.appendChild(backdrop);
 lockScroll();
 
+var useInert = 'inert' in HTMLElement.prototype;
+var stackEntry = { backdrop: backdrop, box: box };
+var uninstallIsolation = null;
+openStack.push(stackEntry);
+if (!useInert) uninstallIsolation = installIsolation(stackEntry);
+
 function focusables() { return focusableIn(box); }
 
 box.addEventListener('keydown', function (e) {
@@ -296,7 +351,6 @@ var closed = false;
 var inerted = [];
 var ariaed = [];
 
-var useInert = 'inert' in HTMLElement.prototype;
 var nodes = Array.prototype.slice.call(
 document.body.querySelectorAll('body > *')
 );
@@ -321,6 +375,11 @@ var focusIsMine = !ae || ae === document.body ||
 box.contains(ae) || backdrop.contains(ae);
 
 if (backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
+
+for (var si = openStack.length - 1; si >= 0; si--) {
+if (openStack[si] === stackEntry) { openStack.splice(si, 1); break; }
+}
+if (uninstallIsolation) { uninstallIsolation(); uninstallIsolation = null; }
 
 inerted.forEach(inertRelease);
 

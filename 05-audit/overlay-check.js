@@ -547,6 +547,117 @@ const REPO = path.resolve(__dirname, '..');
         }
         return { ok: true, note: '无 inert 时用 aria-hidden 隔离：设上了、嵌套不误撤、关闭后还原 ✅' };
       },
+
+      /* 🔴🔴 第三轮外部审计（2026-10-26 深夜）要求把两件事**分开断言**：
+        「辅助技术隐藏背景」≠「键盘/指针交互隔离」。
+        上一条只证明了 aria-hidden 被设上 —— 而 aria-hidden **不阻止键盘和鼠标**：
+        背景按钮照样能 Tab 到、照样能点。把前者通过读成后者已解决，
+        是这次审计明确点出的误读。
+        所以这一条单独验"交互真的进不去"，同样先删掉 inert 构造旧环境。 */
+      '旧 WebView（无 inert）：背景的**键盘与指针**也必须进不去': async (p) => {
+        const env = await p.evaluate(() => {
+          window.__inertDesc2 = Object.getOwnPropertyDescriptor(
+            HTMLElement.prototype, 'inert') || null;
+          try { delete HTMLElement.prototype.inert; } catch (e) { /* 只读就删不掉 */ }
+          return { removed: !('inert' in HTMLElement.prototype) };
+        });
+        if (!env.removed) {
+          /* 构造不出环境 ⇒ 不许算通过（跳过不是通过） */
+          return { ok: false,
+                   note: '构造不出「没有 inert」的环境 ⇒ 交互隔离未被验证，不许记作通过' };
+        }
+
+        /* 背景里放一个**真能聚焦、真能点**的按钮 —— 这是判据的载体 */
+        await p.evaluate(() => {
+          const bg = document.createElement('div');
+          bg.id = 'probe-iso';
+          const b = document.createElement('button');
+          b.id = 'probe-iso-btn';
+          b.textContent = '背景按钮';
+          window.__bgClicks = 0;
+          b.addEventListener('click', () => { window.__bgClicks++; });
+          bg.appendChild(b);
+          document.body.appendChild(bg);
+          window.Overlay.dialog({
+            title: 'A4', desc: '隔离探测',
+            actions: [{ label: '好', variant: 'primary' }]
+          });
+        });
+        await new Promise((r) => setTimeout(r, 420));
+
+        /* ① 键盘：脚本 focus() 到背景按钮，焦点必须被拉回弹层 */
+        const kbd = await p.evaluate(() => {
+          const btn = document.getElementById('probe-iso-btn');
+          if (!btn) return { err: '背景按钮没了' };
+          btn.focus();
+          const a = document.activeElement;
+          const ov = document.querySelector('[role="dialog"]');
+          return {
+            inPanel: !!(ov && (a === ov || ov.contains(a))),
+            where: a ? (a.id || a.tagName) : '(null)',
+          };
+        });
+
+        /* ② 键盘：再连按 Tab，焦点仍然不许出去 */
+        let escaped = null;
+        for (let i = 0; i < 8; i++) {
+          await p.keyboard.press('Tab');
+          const inPanel = await p.evaluate(() => {
+            const ov = document.querySelector('[role="dialog"]');
+            const a = document.activeElement;
+            return !!(ov && (a === ov || ov.contains(a)));
+          });
+          if (!inPanel) { escaped = i + 1; break; }
+        }
+
+        /* ③ 指针：对背景按钮派发真事件，守卫必须拦下
+             · mousedown 用 dispatchEvent 的返回值判 —— 被 preventDefault 则返回 false
+             · click 要断言背景的监听**没被调用**（stopPropagation 在捕获阶段就断了） */
+        const ptr = await p.evaluate(() => {
+          const btn = document.getElementById('probe-iso-btn');
+          if (!btn) return { err: '背景按钮没了' };
+          const md = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
+          const mdOk = btn.dispatchEvent(md);
+          const ck = new MouseEvent('click', { bubbles: true, cancelable: true });
+          btn.dispatchEvent(ck);
+          return { mdNotPrevented: mdOk, bgClicks: window.__bgClicks };
+        });
+
+        /* 关闭并还原环境 */
+        await p.keyboard.press('Escape');
+        await new Promise((r) => setTimeout(r, 650));
+        await p.evaluate(() => {
+          const bg = document.getElementById('probe-iso');
+          if (bg) bg.parentNode.removeChild(bg);
+          if (window.__inertDesc2) {
+            try { Object.defineProperty(HTMLElement.prototype, 'inert', window.__inertDesc2); }
+            catch (e) { /* 还原失败只影响后续用例，前面已判完 */ }
+          }
+        });
+
+        if (kbd.err) return { ok: false, note: '🔴 ' + kbd.err };
+        if (!kbd.inPanel) {
+          return { ok: false,
+                   note: '🔴 脚本 focus() 到背景后焦点停在 `' + kbd.where +
+                         '`，没被拉回弹层 ⇒ 键盘隔离没实现（aria-hidden 管不到这个）' };
+        }
+        if (escaped !== null) {
+          return { ok: false,
+                   note: '🔴 第 ' + escaped + ' 次 Tab 焦点跑到弹层外 ⇒ 焦点陷阱在无 inert 时不成立' };
+        }
+        if (ptr.err) return { ok: false, note: '🔴 ' + ptr.err };
+        if (ptr.mdNotPrevented) {
+          return { ok: false,
+                   note: '🔴 背景按钮的 mousedown 没被拦下（dispatchEvent 返回 true）⇒ 指针隔离没实现' };
+        }
+        if (ptr.bgClicks !== 0) {
+          return { ok: false,
+                   note: '🔴 背景按钮的 click 监听被调用了 ' + ptr.bgClicks + ' 次 ⇒ 旧 WebView 上背景仍可点' };
+        }
+        return { ok: true,
+                 note: '无 inert 时：focus() 被拉回、连按 8 次 Tab 未逃出、mousedown 被拦、' +
+                       'click 监听未被调用 ✅（交互隔离与 aria-hidden 是两条独立契约）' };
+      },
     },
   });
   process.exit(kit.report(r));

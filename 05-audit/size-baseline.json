@@ -169,8 +169,8 @@
       "raw": 12252
     },
     "03-patterns/overlay/overlay.js": {
-      "gzip": 7339,
-      "raw": 19504
+      "gzip": 9067,
+      "raw": 24552
     },
     "03-patterns/pagination/pagination.css": {
       "gzip": 3422,
@@ -238,6 +238,6 @@
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 235775,
-  "total_raw": 591190
+  "total_gzip": 237503,
+  "total_raw": 596238
 }
