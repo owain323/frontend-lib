@@ -676,6 +676,20 @@ if [ -f "$NODE_MODULES/typescript/bin/tsc" ] || [ -f "node_modules/typescript/bi
 else
   skip "tsc" "缺 typescript：npm install 后才会跑"
 fi
+# 🔴 pack-closure（2026-10-26 加 · 外部审计第 3 条建议）
+#   判「**消费者真正收到的东西**」：拿 `npm pack --dry-run --json` 的清单
+#   （npm 自己按 files 白名单算的，权威），递归判定 exports 的**每一种**形态
+#   （字符串 / 条件对象 / 嵌套条件 / 数组回退链 / 通配），外加随包 HTML 的
+#   本地引用、文档里给使用者的 node_modules/<包名>/… 路径。
+#
+#   为什么它必须进 fast 层：`pack-smoke` 要真打包再装一次（几十秒，component
+#   层）⇒ 日常 `--fast` 直接跳过 ⇒ 这个 bug 类**日常根本不会被跑到**。
+#   本脚本 ~1.5 秒，可以每次提交都跑。
+#   ⚠️ 它自己含 `node`，按②会被判成 component，所以必须显式 @static。
+#
+#   实测：修复前 `npm pack` 出 269 个文件、`index.html` 0 个，而 package.json
+#   的 `exports["."].default` 正指向它 ⇒ 包根导入必然失效。
+run "pack-closure" @static node 05-audit/pack-closure.js
 run "pack-smoke"       bash 05-audit/pack-smoke.sh
 run "leak"        $PY 05-audit/leak-scan.py
 run "proper-noun" $PY 05-audit/proper-noun-scan.py
