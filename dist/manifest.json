@@ -8,7 +8,7 @@
   ],
   "totals": {
     "sourceFiles": 68,
-    "sourceBytes": 717008,
+    "sourceBytes": 717792,
     "distGzip": 92571
   },
   "files": [
@@ -146,9 +146,9 @@
     },
     {
       "source": "01-tokens/theme-toggle.js",
-      "sourceSha256": "8ebab1106dcbeaae96f5ad25daabfeb3b17745b4cb6c12f2e35a49e02a23b19e",
-      "sourceBytes": 4535,
-      "sourceGzip": 2059,
+      "sourceSha256": "4e1e3e11f4095ba7363ef9b5108949af5d5d048fbc27ff2a78c9185a0a371006",
+      "sourceBytes": 4647,
+      "sourceGzip": 2125,
       "outputs": [
         {
           "path": "dist/01-tokens/theme-toggle.js",
@@ -445,9 +445,9 @@
     },
     {
       "source": "03-patterns/accordion/accordion.js",
-      "sourceSha256": "7bc2bb3e17720f2f85e72781e62da37154650beb53280424da34e2f083ccce97",
-      "sourceBytes": 16717,
-      "sourceGzip": 6946,
+      "sourceSha256": "36422d7fd436534bc989f3499f70d98da059986bd2f65700d7d2c20355adf8de",
+      "sourceBytes": 16840,
+      "sourceGzip": 7006,
       "outputs": [
         {
           "path": "dist/03-patterns/accordion/accordion.js",
@@ -647,14 +647,14 @@
     },
     {
       "source": "03-patterns/pagination/pagination.js",
-      "sourceSha256": "d837b54973c30d1a900893701ef49835b6125049c2625b7e72c1d827d94fd14b",
-      "sourceBytes": 17632,
-      "sourceGzip": 7047,
+      "sourceSha256": "05e50d1fea2b63476c3fb728dfbe03423dbd511623619eec49d55c62089a68e5",
+      "sourceBytes": 17738,
+      "sourceGzip": 7107,
       "outputs": [
         {
           "path": "dist/03-patterns/pagination/pagination.js",
           "kind": "stripped",
-          "bytes": 7555,
+          "bytes": 7556,
           "gzip": 2619
         }
       ],
@@ -676,9 +676,9 @@
     },
     {
       "source": "03-patterns/reveal/reveal.js",
-      "sourceSha256": "95fb29ccc9dfb2b4da04f1deccbd1d80471ccf364d9d2fce69889eb15f9f610c",
-      "sourceBytes": 6408,
-      "sourceGzip": 2676,
+      "sourceSha256": "3348674dbc479bcddc91634b48c6ebdd13d4c4e6d43d520a2dd693b95f42ff81",
+      "sourceBytes": 6529,
+      "sourceGzip": 2726,
       "outputs": [
         {
           "path": "dist/03-patterns/reveal/reveal.js",
@@ -719,9 +719,9 @@
     },
     {
       "source": "03-patterns/tabs/tabs.js",
-      "sourceSha256": "c03381b03bd40e5a78faab9797067a0bbf991c11dda16c26f72728d2f3239247",
-      "sourceBytes": 11083,
-      "sourceGzip": 4353,
+      "sourceSha256": "a4b649fe4cde45394ff635a0f6f6cd3172688266538381760f0c45548a817819",
+      "sourceBytes": 11183,
+      "sourceGzip": 4396,
       "outputs": [
         {
           "path": "dist/03-patterns/tabs/tabs.js",
@@ -920,9 +920,9 @@
     },
     {
       "source": "09-assets/model-viewer/model-viewer.js",
-      "sourceSha256": "19ed98660523d91df4fa1ad678caa64f24ad60da4fb60136f7275c46111142c4",
-      "sourceBytes": 17645,
-      "sourceGzip": 7038,
+      "sourceSha256": "10a0392ab2c4cf14524d96d3b929be99c592d4a7e9b6990156e5de86d9c34566",
+      "sourceBytes": 17743,
+      "sourceGzip": 7090,
       "outputs": [
         {
           "path": "dist/09-assets/model-viewer/model-viewer.js",
@@ -978,9 +978,9 @@
     },
     {
       "source": "09-assets/sparkline/sparkline.js",
-      "sourceSha256": "e339ce86bf51a6c72efeba88df4634bc791eacdb32e692c5677d26596c336563",
-      "sourceBytes": 23958,
-      "sourceGzip": 10031,
+      "sourceSha256": "c5b2c898b9e19c2775d5bcc637837b194d6a57a8bfae832a722570df138b32ee",
+      "sourceBytes": 24082,
+      "sourceGzip": 10095,
       "outputs": [
         {
           "path": "dist/09-assets/sparkline/sparkline.js",

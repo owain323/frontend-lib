@@ -83,6 +83,42 @@ window.ScientificPlot.render(el, {
 });
 ```
 
+### 自动初始化（哪些要自己调）
+
+⚠️ 这一段是**必须知道**的：本库的组件**不是统一都自动初始化**。
+把 `Accordion` 的经验套到 `Select` 上，页面会**渲染得完全正常、但点了没有任何反应**，
+而且**不会报错** —— 这是最难查的一类"静默失效"。
+<!-- autoinit-table:begin -->
+| 全局 | 会自动初始化 | 触发条件 |
+|---|---|---|
+| `Accordion` | 是 | 扫 `[data-accordion]`，实例挂在 `el.accordionInstance` |
+| `Tabs` | 是 | 扫 `[data-tabs]`，实例挂在 `el.tabsInstance` |
+| `Pagination` | 是 | 扫 `[data-pagination]` |
+| `Chart` | 是 | sparkline：扫 `.sparkline[data-spark]`（resize / 内容变化时重画） |
+| `Reveal` | 条件 | **只有** `<html data-reveal-auto>` 才 `enable()`；不写就完全不动 |
+| `Select` | 否 | 必须 `Select.create(root, opts)` |
+| `Combobox` | 否 | 必须 `Combobox.create(root, opts)` |
+| `DateRange` | 否 | 必须 `DateRange.create(root, opts)` |
+| `Tree` | 否 | 必须 `Tree.create(root, opts)` |
+| `Dropdown` | 否 | 必须 `Dropdown.create(root, opts)` |
+| `Tooltip` | 否 | 必须 `Tooltip.attach(root, opts)` |
+| `Popover` | 否 | 必须 `Popover.attach(root, opts)` |
+| `Overlay` | 否 | 必须 `Overlay.dialog(...)` / `Overlay.toast(...)` |
+| `Drawer` | 否 | 必须 `Drawer.open(...)` |
+| `Toc` | 否 | 必须 `Toc.init(...)` |
+| `Bar` | 否 | 必须 `Bar.draw(...)` |
+| `FLIP` | 否 | 必须 `FLIP.flip(...)` |
+| `ModelViewer` | 是 | 扫 `[data-mv]`（模型加载后自动 `update()`） |
+| `ScientificPlot` | 否 | 必须 `ScientificPlot.render(el, opts)` |
+<!-- autoinit-table:end -->
+
+**为什么不做成"全都自动"**：需要 options 的组件（`Select.create(root, opts)`）
+自动初始化时拿不到 options，等于给一个"看起来能用、实际行为不对"的默认实例 ——
+那比不初始化更坏。所以这里选择**把区别写清楚**，而不是抹平它。
+
+每一行都由 `05-audit/autoinit-gate.py` 守着：源码里的 `@autoinit` 标记、
+本表、以及"文件里到底有没有 `DOMContentLoaded`"三者必须一致。
+
 ### 关于主题
 
 主题优先走**纯 CSS**：`data-theme` 属性 + `prefers-color-scheme`，

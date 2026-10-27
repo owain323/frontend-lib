@@ -360,6 +360,7 @@
     }
   }
 
+  // @autoinit: [data-accordion] —— 自动初始化；与 API.md「自动初始化」表由 autoinit-gate 双向校验
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {

@@ -492,6 +492,7 @@
     window.addEventListener('resize', function () { Chart.update(); });
   }
 
+  // @autoinit: .sparkline[data-spark] —— 扫类名+属性自动观察并绘制（详见 API.md「自动初始化」）
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {

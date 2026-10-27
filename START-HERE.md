@@ -47,11 +47,11 @@
 | 进度条 / 环 | `02-primitives/progress/progress.css` | 172 | — | 有耗时过程要给进度就要 |
 | 浮层气泡 | `02-primitives/popover/popover.css` | 187 | **必需 331** (`popover.js`) | 要一段信息贴着触发元素浮出来就要 |
 | 日期区间 | `02-primitives/date-range/date-range.css` | 206 | **必需 301** (`date-range.js`) | 要选起止日期就要 |
-| 标签页 | `03-patterns/tabs/tabs.css` | 159 | **必需 306** (`tabs.js`) | 同层级内容切换就要 |
-| 折叠面板（beta） | `03-patterns/accordion/accordion.css` | 453 | **必需 368** (`accordion.js`) | 长表单分段就要 |
+| 标签页 | `03-patterns/tabs/tabs.css` | 159 | **必需 307** (`tabs.js`) | 同层级内容切换就要 |
+| 折叠面板（beta） | `03-patterns/accordion/accordion.css` | 453 | **必需 369** (`accordion.js`) | 长表单分段就要 |
 | 动作菜单（beta） | `03-patterns/dropdown/dropdown.css` | 135 | **必需 451** (`dropdown.js`) | 要一组动作（新建 / 导出 / 删除）就要 |
 | 文字提示 | `03-patterns/tooltip/tooltip.css` | 89 | **必需 288** (`tooltip.js`) | 图标按钮或缩写需要一句话解释就要 |
-| 分页 | `03-patterns/pagination/pagination.css` | 195 | **必需 394** (`pagination.js`) | 数据多到要翻页就要 |
+| 分页 | `03-patterns/pagination/pagination.css` | 195 | **必需 395** (`pagination.js`) | 数据多到要翻页就要 |
 | 树形 | `03-patterns/tree/tree.css` | 113 | **必需 456** (`tree.js`) | 层级数据（文件 / 组织 / 分类）要展开就要 |
 | 侧边抽屉（beta） | `03-patterns/drawer/drawer.css` | 129 | **必需 258** (`drawer.js`) | 要从侧边滑出面板就要 |
 | 弹窗 / 吐司（beta） | `03-patterns/overlay/overlay.css` | 319 | **必需 563** (`overlay.js`) | 需要弹层（吐司 / 模态）就要 |
@@ -60,15 +60,15 @@
 | 列表增删 | `03-patterns/list/list.css` | 162 | 可选 201 (`flip.js`，FLIP 增删动画，纯增强) | 列表会动态增删就要 |
 | 导航 / 目录 | `03-patterns/nav/nav.css` | 305 | 可选 111 (`toc.js`，自动生成目录，纯增强) | 顶部要导航，或长文要目录就要 |
 | 长文排版 | `03-patterns/content/content.css` | 286 | — | 写文档 / 长文就要 |
-| reveal | `03-patterns/reveal/reveal.css` | 93 | 可选 171 (`reveal.js`，入场动效，纯增强；没有它内容直接可见) |  |
+| reveal | `03-patterns/reveal/reveal.css` | 93 | 可选 172 (`reveal.js`，入场动效，纯增强；没有它内容直接可见) |  |
 | analysis-report | `04-recipes/analysis-report/analysis-report.css` | 187 | — |  |
 | detail-page | `04-recipes/detail-page/detail-page.css` | 190 | — |  |
 | report | `04-recipes/report/report.css` | 326 | — |  |
 | table | `04-recipes/table/table.css` | 366 | — |  |
 | bar | `09-assets/bar/bar.css` | 166 | **必需 309** (`bar.js`) |  |
-| model-viewer | `09-assets/model-viewer/model-viewer.css` | 143 | **必需 422** (`model-viewer.js`) |  |
+| model-viewer | `09-assets/model-viewer/model-viewer.css` | 143 | **必需 423** (`model-viewer.js`) |  |
 | scientific-plot | `09-assets/scientific-plot/scientific-plot.css` | 141 | **必需 610** (`scientific-plot.js`) |  |
-| sparkline | `09-assets/sparkline/sparkline.css` | 158 | **必需 507** (`sparkline.js`) |  |
+| sparkline | `09-assets/sparkline/sparkline.css` | 158 | **必需 508** (`sparkline.js`) |  |
 
 ### 🔴 这些组件的 JS 是**必需的**（不是增强）
 

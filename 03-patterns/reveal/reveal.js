@@ -163,6 +163,7 @@
     }
   }
 
+  // @autoinit: conditional[data-reveal-auto] —— 只有 <html data-reveal-auto> 才 enable()；不写则完全不动
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', auto, false);
   } else {

@@ -264,6 +264,7 @@ return Math.max(1, Math.ceil((total || 1) / (pageSize || 20)));
 };
 
 if (typeof window !== 'undefined') window.Pagination = API;
+
 if (document.readyState === 'loading') {
 document.addEventListener('DOMContentLoaded', function () { API.update(); });
 } else {
