@@ -627,6 +627,14 @@ run "coverage"    $PY 05-audit/coverage-gate.py
 #      实测事故：浅色基线录于 6f045ff、暗色录于 4962b2c，而 HEAD 已到 208782f，
 #      两页红着过了 5 天 —— 因为指纹不符**只是 WARN**，像素比对仍是唯一判据。
 #   两条都不依赖 Pillow ⇒ 放在 SKIP 判断**之前**，视觉回归跳过时它们照样跑。
+# 🔴 财务示例页的勾稽门禁（2026-10-27 加）：
+#   示例页存在的意义是"证明本库能拼出产品级的一页"。第一次交付时
+#   33 条勾稽错了 6 条（利润表加不出营业利润、BS 少了少数股东权益、
+#   五年表研发费用与利润表差 6 倍、ROE 与权益对不上、估值三数互斥）
+#   —— 而它**通过了所有既有门禁**，因为没有任何一道在看"数对不对"。
+#   读者判断一页财务报告可不可信，第一件事是拿计算器加一遍。
+#   这条不依赖 Pillow、不启动浏览器，秒级 ⇒ 放在 SKIP 判断之前。
+run "fin-ties" $PY 05-audit/finance-example-ties.py
 run "visual-coverage" $PY 05-audit/visual-coverage-gate.py
 run "visual-stamp"    $PY 05-audit/visual-stamp-gate.py
 
