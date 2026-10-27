@@ -58,7 +58,8 @@
     "CONTRIBUTING.md",
     "CODE_OF_CONDUCT.md",
     "CHANGELOG.md",
-    "LICENSE"
+    "LICENSE",
+    "index.html"
   ],
   "sideEffects": [
     "*.css",

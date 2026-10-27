@@ -50,6 +50,15 @@ const BASE = 'http://127.0.0.1:8000';
 //    ⇒ 从这里移除，让门禁重新盯住这两条。
 const KNOWN_OK = new Set();   // 目前为空 —— 没有"已知且暂不做"的规则
 
+/* 🔴 允许"扫不到"的页面。**必须是空集默认**，要加就得写理由。
+ *
+ *   外部审计 P1-4：原来只有 `scanned === 0`（一页都没加载）才判失败，
+ *   其余失败页只打一行 warning ⇒ 37 页里 36 页 404、1 页零违规，门禁仍 exit 0。
+ *   "扫了一半"和"扫完了全对"在退出码上等价，这是典型的假绿。
+ *   ⇒ 现在：任何未被显式豁免的跳过页，都让本次**不算通过**。
+ *     真要豁免，必须在这里登记页面名 + 理由，而不是靠 warning 混过去。 */
+const KNOWN_SKIP = new Set();
+
 // 🔴 0.8.9：PAGES 不再手写。
 //   原来这里硬编码了 11 个页面，而组件有 33 个 ⇒ axe 只覆盖了三分之一的组件面，
 //   而 README:199 写的是「每个组件的键盘路径 / ARIA / 对比度都有契约守着」
@@ -90,12 +99,20 @@ if (PAGES.length === 0) {
   let totalV = 0, totalPass = 0;
   const allViolations = [];
   const knownIssues = [];
+  /* 🔴 实际扫描计数：上面的 PAGES.length 守卫只挡住"清单为空"，
+     挡不住"清单有 30 页、但每一页 goto 都失败"——那种情况会一路
+     continue 到最后 exit 0，报"没有其他问题"，正是假绿。
+     ⇒ 只有真的扫到了页面，才有资格说无障碍达标。 */
+  let scanned = 0;
+  const skippedPages = [];
   for (const [name, rel] of list) {
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 900 });
     try {
       await page.goto(BASE + '/' + rel, { waitUntil: 'networkidle0', timeout: 15000 });
+      scanned++;
     } catch (e) {
+      skippedPages.push(name);
       console.log('  [跳过] ' + name + '  ' + String(e).slice(0, 50));
       await page.close();
       continue;
@@ -155,6 +172,29 @@ if (PAGES.length === 0) {
     await page.close();
   }
   await browser.close();
+  /* 假绿守卫：一页都没真正加载成功时，任何"0 违规"都毫无意义。 */
+  if (scanned === 0) {
+    console.error('');
+    console.error('❌ 清单里有 ' + list.length + ' 页，但**没有一页成功加载**。');
+    console.error('   ⇒ 这是假绿，不是无障碍达标。常见原因：');
+    console.error('     · BASE 没起或端口不对 · 清单里的路径写错 · 沙箱拦截了请求');
+    skippedPages.forEach((n) => console.error('     跳过: ' + n));
+    process.exit(1);
+  }
+  /* 🔴 覆盖不完整 ≠ 通过。原来这里只 warn，退出码照旧看"真问题"有没有 ——
+     于是 37 页扫到 1 页也能 exit 0。现在未豁免的跳过页直接让本次不通过。 */
+  const incomplete = skippedPages.filter((n) => !KNOWN_SKIP.has(n));
+  if (skippedPages.length) {
+    const log = incomplete.length ? console.error : console.warn;
+    log('');
+    log((incomplete.length ? '🔴' : '⚠') + ' 有 ' + skippedPages.length + '/' + list.length +
+        ' 页未能加载，本次覆盖**不完整**：');
+    skippedPages.forEach((n) => log('     ' + n + (KNOWN_SKIP.has(n) ? '（已登记豁免）' : '')));
+    if (incomplete.length) {
+      log('   ⇒ 覆盖不完整**不能算通过**。要么修好这些页面，要么把页面名 + 理由');
+      log('     登记进 KNOWN_SKIP —— 不许用一条 warning 把它蒙过去。');
+    }
+  }
   console.log('');
   // 分「已知且已决定不做」与「真问题」两类报告。
   // 之前把"缺 <main> 地标"和真问题混在一起报，看起来像还有 6 个页面坏了，
@@ -181,6 +221,7 @@ if (PAGES.length === 0) {
   console.log('  · alt 写得有没有意义      · 阅读顺序对不对');
   console.log('  · 复杂控件的键盘行为是否正确（日期选择、轮播、树形视图）');
   console.log('  · 屏幕阅读器实际听到的是什么 —— 那一项永远需要人用耳朵听。');
-  // 只按「真问题」决定退出码 —— 已决定暂不做的那些不该让门禁变红
-  process.exit(real.length ? 1 : 0);
+  // 只按「真问题」决定退出码 —— 已决定暂不做的那些不该让门禁变红。
+  // ⚠️ 但**覆盖不完整**必须红：跳过一半页面再说"没有其他问题"是假绿。
+  process.exit(real.length || incomplete.length ? 1 : 0);
 })();

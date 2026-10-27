@@ -213,31 +213,51 @@ def main():
         print('      OK 无 main（本库无 JS 运行时入口，行为走 script 标签）')
 
     # ---------- ⑦ exports 里的路径都真实存在 ----------
+    #  ⚠️ 判的是**仓库内**存在性。这不是"包内也有"——
+    #     两者是不同的东西，本库真踩过（外部审计第 1 条）：
+    #     `exports["."].default` = `./index.html`，仓库里有，
+    #     而 `files` 白名单没写它 ⇒ 0.9.0 的 tarball 里 0 个 index.html。
+    #     ⇒ 本节只负责"路径有没有写错"，**包内清单由 `pack-closure.js` 判**
+    #       （用 `npm pack --dry-run --json` 的权威清单）。别在这里补实现：
+    #       E31 —— 同一判定写两遍必然漂移。
+    print('  [7] exports 路径在仓库内存在（**包内**清单见 pack-closure）')
     ex = pkg.get('exports') or {}
     ex_bad = []
 
     def _walk_targets(v):
-        """🔴 0.8.9：exports 的值有两种形态，都要处理。
+        """🔴 exports 的值有**四种**形态，都要走到。
 
         ① 字符串：`"./tokens.css": "./dist/01-tokens/tokens.css"`
         ② **条件导出对象**（0.8.9 为让现代 TS 能拿到类型才加的）：
              `".": { "types": "./types/index.d.ts", "default": "./index.html" }`
-           ⇒ 原来的判据直接 `v.endswith('*')`，遇到 dict 会抛
+           ⇒ 最早的判据直接 `v.endswith('*')`，遇到 dict 抛
              `AttributeError: 'dict' object has no attribute 'endswith'`。
-           ⚠️ 这不是判据太宽，是它**没跟上 P1-1 的修复** ——
-              加了条件导出就得让判据认识它，否则门禁自己崩。
+        ③ 嵌套条件：`{"node": {"import": ...}}`
+        ④ 数组回退链：`["./a.js", "./b.js"]`
+
+        ⚠️ 0.9.0 时这一版只认到 ② 的**第一层**（`v.values()` 里挑 str），
+           ③④ 静默漏掉 —— 又是"判据只认一种形态"这个病。
+           ⇒ 现在一律递归，string / list / dict 三种全展开。
         """
         if isinstance(v, str):
             return [v]
+        if isinstance(v, list):
+            out = []
+            for x in v:
+                out.extend(_walk_targets(x))
+            return out
         if isinstance(v, dict):
-            return [x for x in v.values() if isinstance(x, str)]
+            out = []
+            for x in v.values():
+                out.extend(_walk_targets(x))
+            return out
         return []
 
     n_cond = 0
     for k, v in ex.items():
+        if isinstance(v, (dict, list)):
+            n_cond += 1
         for t in _walk_targets(v):
-            if isinstance(v, dict):
-                n_cond += 1
             if t.endswith('*') or k.endswith('.json'):
                 continue          # 通配与元数据跳过
             if not os.path.isfile(os.path.join(ROOT, t.lstrip('./'))):
@@ -246,10 +266,13 @@ def main():
         print('      X exports 指向不存在的文件：%s' % ', '.join(ex_bad[:3]))
         bad += 1
     else:
-        print('      OK exports %d 条（含 %d 个条件导出目标）路径有效'
+        print('      OK exports %d 条（含 %d 个条件/数组入口）在仓库内存在'
               % (len(ex), n_cond))
+        print('         ⚠️ 本节**不**判包内清单：tarball 是另一回事，'
+              '由 pack-closure 判')
 
     # ---------- ⑧ devDependencies 存在（可复现）----------
+    print('  [8] devDependencies 可复现')
     dev = pkg.get('devDependencies') or {}
     lock = [f for f in ('package-lock.json', 'pnpm-lock.yaml', 'yarn.lock')
             if os.path.isfile(os.path.join(ROOT, f))]
