@@ -47,7 +47,7 @@
 | 进度条 / 环 | `02-primitives/progress/progress.css` | 172 | — | 有耗时过程要给进度就要 |
 | 浮层气泡 | `02-primitives/popover/popover.css` | 187 | **必需 331** (`popover.js`) | 要一段信息贴着触发元素浮出来就要 |
 | 日期区间 | `02-primitives/date-range/date-range.css` | 206 | **必需 301** (`date-range.js`) | 要选起止日期就要 |
-| 标签页 | `03-patterns/tabs/tabs.css` | 159 | **必需 307** (`tabs.js`) | 同层级内容切换就要 |
+| 标签页 | `03-patterns/tabs/tabs.css` | 172 | **必需 307** (`tabs.js`) | 同层级内容切换就要 |
 | 折叠面板（beta） | `03-patterns/accordion/accordion.css` | 453 | **必需 369** (`accordion.js`) | 长表单分段就要 |
 | 动作菜单（beta） | `03-patterns/dropdown/dropdown.css` | 135 | **必需 451** (`dropdown.js`) | 要一组动作（新建 / 导出 / 删除）就要 |
 | 文字提示 | `03-patterns/tooltip/tooltip.css` | 89 | **必需 288** (`tooltip.js`) | 图标按钮或缩写需要一句话解释就要 |
@@ -58,14 +58,14 @@
 | 状态（空 / 加载 / 错 / 成功） | `03-patterns/states/states.css` | 252 | — | **凡是会异步取数就要** |
 | 表单校验 | `03-patterns/form-validation/form-validation.css` | 263 | — | 提交前要校验就要 |
 | 列表增删 | `03-patterns/list/list.css` | 162 | 可选 201 (`flip.js`，FLIP 增删动画，纯增强) | 列表会动态增删就要 |
-| 导航 / 目录 | `03-patterns/nav/nav.css` | 305 | 可选 111 (`toc.js`，自动生成目录，纯增强) | 顶部要导航，或长文要目录就要 |
+| 导航 / 目录 | `03-patterns/nav/nav.css` | 314 | 可选 111 (`toc.js`，自动生成目录，纯增强) | 顶部要导航，或长文要目录就要 |
 | 长文排版 | `03-patterns/content/content.css` | 286 | — | 写文档 / 长文就要 |
 | reveal | `03-patterns/reveal/reveal.css` | 93 | 可选 172 (`reveal.js`，入场动效，纯增强；没有它内容直接可见) |  |
 | analysis-report | `04-recipes/analysis-report/analysis-report.css` | 187 | — |  |
 | detail-page | `04-recipes/detail-page/detail-page.css` | 190 | — |  |
 | report | `04-recipes/report/report.css` | 326 | — |  |
-| table | `04-recipes/table/table.css` | 366 | — |  |
-| bar | `09-assets/bar/bar.css` | 166 | **必需 309** (`bar.js`) |  |
+| table | `04-recipes/table/table.css` | 372 | — |  |
+| bar | `09-assets/bar/bar.css` | 166 | **必需 320** (`bar.js`) |  |
 | model-viewer | `09-assets/model-viewer/model-viewer.css` | 143 | **必需 423** (`model-viewer.js`) |  |
 | scientific-plot | `09-assets/scientific-plot/scientific-plot.css` | 141 | **必需 610** (`scientific-plot.js`) |  |
 | sparkline | `09-assets/sparkline/sparkline.css` | 158 | **必需 508** (`sparkline.js`) |  |

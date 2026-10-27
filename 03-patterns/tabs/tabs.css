@@ -62,7 +62,17 @@
   gap: var(--sp-1);
   border-bottom: 1px solid var(--border-decor);
   position: relative;
+
+  /* 🔴 窄屏横滑，不能撑破整页：320 视口 + 三个 tab ⇒ scrollWidth 320→331。
+     ⚠️ overflow-y 必须显式 hidden —— 一个轴 auto 会让另一轴也 auto 化，
+        否则选中态的 border-bottom 会被裁。 */
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;   /* 下面那条 border 已经暗示"这是一条栏" */
 }
+
+.tabs__list::-webkit-scrollbar { display: none; }
+
 
 /* 纵向变体 */
 .tabs--vertical {
@@ -92,6 +102,9 @@
   transition: color var(--dur-fast) var(--ease-out),
               border-color var(--dur-fast) var(--ease-out);
   white-space: nowrap;
+  /* 配合上面 .tabs__list 的横滑：tab 不许被压缩，
+     压窄了文字换行，比让用户滑一下更糟 */
+  flex: 0 0 auto;
 }
 
 .tabs--vertical .tabs__tab {

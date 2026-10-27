@@ -273,7 +273,16 @@
   }
   .nav__toggle[aria-expanded="true"] i { transform: none; }
   .nav__toggle[aria-expanded="true"] i::before { transform: none; }
-  .nav__list { transform: translateX(100%); }
+}
+
+/* 🔴 这两条**必须**带断点。抽屉的"收起态"靠 translateX(100%) 移出视口，
+   动画被关掉后得有东西撑着它；但曾经写在**无断点**的 reduced-motion 段里
+   ⇒ 开启「减少动态效果」的桌面用户，顶部导航整体飞出屏幕右侧
+      （实测 1440 视口 scrollWidth 1440 → 1512 = 列表自身宽度），菜单直接消失。
+   默认环境下截图看不到它，只有 emulateMedia({reducedMotion:'reduce'}) 才暴露。
+   ⭐ 教训：「关掉动画」不能顺手把布局也关掉。 */
+@media (prefers-reduced-motion: reduce) and (max-width: 48rem) {
+  .nav__list { transform: translateX(100%); }        /* 收起态：仍在视口外 */
   .nav__list[data-state="open"] { transform: translateX(0); }
 }
 

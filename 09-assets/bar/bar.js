@@ -70,6 +70,9 @@
    * @param {string[]} [opt.labels]  X 轴标签（可少于 values.length）
    * @param {Number} [opt.threshold] 阈值线（画一条虚线）
    * @param {Number} [opt.height]   画布高，默认 180
+   * @param {Number} [opt.width]    画布宽，默认 640。**窄容器必须传真实宽度**，
+   *                                否则整张图被等比缩小，刻度字会缩到不可读
+   *                                （393 视口实测 10px → 3×6px）
    * @param {string} [opt.note]     脚注（例如"09-01 已按 400 截断"）
    * @param {boolean}[opt.legend]   是否画图例（默认：系列数 ≥ 2 且都有名字时自动出）
    * @returns {Object} { el, clipped, mode, tops, legend, destroy() }
@@ -103,7 +106,15 @@
     var H = opt.height || 180;
     var nS = series.length;
     var mode = opt.mode === 'group' ? 'group' : 'stack';
-    var W = 640;                 /* viewBox 宽；靠 CSS width:100% 自适应 */
+    /* 🔴 viewBox 宽**必须是参数**，不能写死 640。
+       原来这里写的是「640；靠 CSS width:100% 自适应」—— 那句话是错的：
+       `width:100%` 只是把整张 SVG **等比缩放**，SVG 里的刻度字是绝对值（10px），
+       跟着一起缩。实测 393 视口下容器 334px ⇒ 缩放 0.52 ⇒ 10px 的字渲染成
+       **3×6 像素**，等于不可读。
+       ⇒ 传真实容器宽，布局按容器重排（groupW/barW 都是从 plotW 算的，天然自适应），
+         字号保持 10px 不变。CSS 的 width:100% 此时只是"正好等于"，不再缩放。
+       ⚠️ 下限 240：比这更窄时五根柱子的标签必然重叠，图本身就不该在那宽度出现。 */
+    var W = Math.max(240, Math.round(+opt.width || 640));
     var padT = 14, padB = 22, padL = 34, padR = 8;
     var plotH = H - padT - padB;
     var plotW = W - padL - padR;

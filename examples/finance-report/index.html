@@ -1,0 +1,798 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f6f7f8">
+<link rel="icon" href="data:,">
+<title>贵州茅台（600519.SH）2025 年度财务分析 · frontend-lib 示例</title>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     加载顺序是**契约**，不是习惯：
+       令牌 → 排版 → 焦点环 → 页面骨架 → 组件 → 配方 → 本页微调
+     组件靠"后来者同特异性胜出"覆盖骨架，全程不用 !important。
+     ══════════════════════════════════════════════════════════════════════ -->
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/focus-ring.css">
+<link rel="stylesheet" href="../../01-tokens/page.css">
+
+<link rel="stylesheet" href="../../02-primitives/button/button.css">
+<link rel="stylesheet" href="../../02-primitives/badge/badge.css">
+<link rel="stylesheet" href="../../02-primitives/card/card.css">
+
+<link rel="stylesheet" href="../../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../../03-patterns/tabs/tabs.css">
+<link rel="stylesheet" href="../../03-patterns/accordion/accordion.css">
+<link rel="stylesheet" href="../../03-patterns/list/list.css">
+
+<link rel="stylesheet" href="../../04-recipes/table/table.css">
+<link rel="stylesheet" href="../../04-recipes/detail-page/detail-page.css">
+<link rel="stylesheet" href="../../04-recipes/analysis-report/analysis-report.css">
+<link rel="stylesheet" href="../../04-recipes/report/report.css">
+
+<link rel="stylesheet" href="../../09-assets/sparkline/sparkline.css">
+<link rel="stylesheet" href="../../09-assets/bar/bar.css">
+<link rel="stylesheet" href="../../09-assets/scientific-plot/scientific-plot.css">
+
+<link rel="stylesheet" href="page.css">
+</head>
+
+<body class="page">
+
+<a class="skip" href="#main">跳到主内容</a>
+
+<!-- ══════════════════════════════════════════════════════ 应用外壳 -->
+<header class="nav">
+  <div class="nav__inner">
+    <a class="nav__brand" href="#main">财务分析台 <span>/ A 股</span></a>
+
+    <!-- 🔴 汉堡按钮必须在 DOM 里，不能靠 CSS 生成：
+         nav.css 在 48rem 以下把 .nav__list 移出视口（抽屉），
+         没有这个按钮，手机上的导航就**永远打不开** —— 而默认环境下截图看不出来。 -->
+    <button class="nav__toggle" id="nav-toggle" aria-expanded="false"
+            aria-controls="nav-list" aria-label="打开菜单"><i></i></button>
+
+    <ul class="nav__list" id="nav-list">
+      <li><a class="nav__link" href="#summary" aria-current="page">分析</a></li>
+      <li><a class="nav__link" href="#segments">分部</a></li>
+      <li><a class="nav__link" href="#statements">报表</a></li>
+      <li><a class="nav__link" href="#risk">风险</a></li>
+      <li>
+        <button class="btn btn--ghost btn--sm" type="button" id="themeBtn"
+                aria-live="polite">主题：跟随系统</button>
+      </li>
+    </ul>
+  </div>
+</header>
+
+<!-- 抽屉的遮罩：点在它上面要能关掉菜单 -->
+<div class="nav__scrim" id="nav-scrim"></div>
+
+<main class="wrap rep rep--finance fr" id="main">
+
+  <!-- ════════════════════════════════════════════════════ 页头 -->
+  <header>
+    <p class="rep__kicker">深度分析 · 食品饮料 / 白酒</p>
+    <h1 class="rep__title">贵州茅台（600519.SH）2025 年度财务分析</h1>
+    <p class="rep__standfirst">
+      收入增长几乎全部来自销量与产品结构，而不是提价。这条判断决定了后面三节该看什么：
+      量从哪来、结构往哪走、代价是什么。
+    </p>
+    <ul class="rep__meta">
+      <li><b>报告编号</b> FR-2026-0331</li>
+      <li><b>数据截至</b> 2025-12-31</li>
+      <li><b>口径</b> 合并报表 · 中国企业会计准则</li>
+      <li><b>状态</b> <span class="badge badge--warning">示例数据</span></li>
+    </ul>
+  </header>
+
+  <!-- ════════════════════════════════════════════════════ 指标区
+       ⚠️ 这四张卡的数字与下面的图、表出自同一份数据；
+          任何一张卡改了，图和表也要跟着改 —— 这是示例页最容易骗人的地方。 -->
+  <div class="detail-page fr-kpis">
+    <div class="detail-kpis">
+
+      <div class="detail-kpi">
+        <span class="detail-kpi__label">营业总收入</span>
+        <span class="num detail-kpi__value">2,015 亿</span>
+        <span class="num detail-kpi__delta">同比 +15.7%</span>
+        <span class="sparkline fr-kpi__spark" data-spark="1095,1276,1506,1741,2015"
+              data-spark-height="32" data-spark-last="yes" aria-hidden="true"></span>
+      </div>
+
+      <div class="detail-kpi">
+        <span class="detail-kpi__label">归母净利润</span>
+        <span class="num detail-kpi__value">998 亿</span>
+        <span class="num detail-kpi__delta">同比 +15.8%</span>
+        <span class="sparkline fr-kpi__spark" data-spark="525,627,747,862,998"
+              data-spark-height="32" data-spark-last="yes" aria-hidden="true"></span>
+      </div>
+
+      <div class="detail-kpi">
+        <span class="detail-kpi__label">毛利率</span>
+        <span class="num detail-kpi__value">91.7%</span>
+        <span class="num detail-kpi__delta">同比 −0.2pp</span>
+        <span class="sparkline fr-kpi__spark" data-spark="91.5,91.9,92.0,91.9,91.7"
+              data-spark-height="32" data-spark-last="yes" aria-hidden="true"></span>
+      </div>
+
+      <div class="detail-kpi">
+        <span class="detail-kpi__label">ROE（加权）</span>
+        <span class="num detail-kpi__value">34.6%</span>
+        <span class="num detail-kpi__delta">同比 +0.4pp</span>
+        <span class="sparkline fr-kpi__spark" data-spark="29.9,31.5,33.2,34.2,34.6"
+              data-spark-height="32" data-spark-last="yes" aria-hidden="true"></span>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="rep__grid">
+
+    <!-- ══════════════════════════════════════════════ 正文 -->
+    <article class="rep__body">
+
+      <!-- ─────────────────────────────────── 1 摘要 -->
+      <section class="rep__sec" id="summary">
+        <h2>摘要</h2>
+        <p>
+          2025 年营业总收入 2,015 亿元、归母净利润 998 亿元，两者同比增速分别为
+          +15.7% 与 +15.8% —— <strong>利润与收入几乎同速</strong>。
+          这句话本身就排除了一类解释：如果增长主要来自提价，
+          毛利率应当上行；实际毛利率反而下移 0.2 个百分点。
+        </p>
+
+        <div class="kf">
+          <p class="kf__title">关键发现</p>
+          <ol>
+            <li>
+              收入增量 274 亿元中，<strong>约 251 亿元来自酒类销量</strong>，
+              价格因素贡献有限 —— 这与 2023 年以来"稳价放量"的渠道策略一致。
+            </li>
+            <li>
+              毛利率下移 0.2pp 的<strong>全部来源是系列酒占比上升</strong>
+              （系列酒收入占比由 16.2% 升至 16.5%），茅台酒本体的毛利率未变。
+            </li>
+            <li>
+              三项费用率合计 9.3%，较 2021 年的 9.8% 下降 0.5pp；
+              其中管理费用率降幅最大（7.0% → 6.3%），
+              而<strong>研发费用率逆势上行</strong>（0.2% → 0.6%）。
+            </li>
+            <li>
+              本报告<strong>不给出估值判断</strong>：页面里的估值数据只用于演示版式，
+              不构成任何买卖依据。
+            </li>
+          </ol>
+        </div>
+
+        <p class="rep__note">
+          数字口径：营业总收入含其他业务收入；ROE 为加权平均净资产收益率。
+          全部数值为演示用示例，量级参照公开年报，未经逐项核对。
+        </p>
+      </section>
+
+      <!-- ─────────────────────────────────── 2 分部 -->
+      <section class="rep__sec" id="segments">
+        <h2>一 · 增长从哪来</h2>
+        <p>
+          把收入拆成两个分部之后，"增长"这件事才有位置。
+          下面的柱是<strong>堆叠</strong>的：每一列的总高就是当年营业总收入，
+          两段分别是茅台酒与系列酒。
+        </p>
+
+        <figure class="rep__fig">
+          <div class="fr-fig" id="segChart"></div>
+          <figcaption class="rep__cap">
+            图 1 · 2021–2025 年营业总收入分部构成（单位：亿元）。
+            堆叠柱看的是<strong>总量与结构</strong>；要比较两个分部各自的长短，
+            应换成并列柱而不是盯着堆叠段的高度比。
+          </figcaption>
+          <p class="rep__source">
+            数据：示例数据。Y 轴上限固定为 2,400 亿元，
+            不是按最大值自适应 —— 自适应会让不同年份的图之间无法直接比较。
+          </p>
+        </figure>
+
+        <p>
+          两条段的高度差在五年里几乎没变过：茅台酒始终占八成以上。
+          这解释了为什么毛利率只掉了 0.2pp 而不是更多 ——
+          <strong>结构变化的方向是对的（系列酒在长），但速度慢到不影响整体毛利率的量级</strong>。
+        </p>
+      </section>
+
+      <!-- ─────────────────────────────────── 3 费用 -->
+      <section class="rep__sec" id="cost">
+        <h2>二 · 利润率是怎么被守住的</h2>
+        <p>
+          毛利率在往下走、净利率却持平，差额来自费用端。
+          三张费用率的曲线放在同一张图上，共用一条 Y 轴 ——
+          不同量级的变量<strong>不能</strong>各自一条轴，那样交点全是假的。
+        </p>
+
+        <figure class="rep__fig">
+          <div class="fr-fig" id="costChart"></div>
+          <figcaption class="rep__cap">
+            图 2 · 三项费用率（占营业总收入比重，%）。Y 轴 0–10%，
+            五条纵向网格对应五个年度，可直接读出任一年的数值。
+          </figcaption>
+          <p class="rep__source">
+            数据：示例数据。费用率 = 该项费用 ÷ 营业总收入；
+            分母用总收入而非主营收入，与年报披露口径一致。
+          </p>
+        </figure>
+
+        <p>
+          管理费用率从 7.0% 降到 6.3%，贡献了费用端正向变化的大部分；
+          研发费用率从 0.2% 升到 0.6%，绝对额不大，但<strong>方向与另外两条相反</strong>，
+          值得单独跟踪。
+        </p>
+      </section>
+
+      <!-- ─────────────────────────────────── 4 报表 -->
+      <section class="rep__sec" id="statements">
+        <h2>三 · 三张报表</h2>
+        <p>
+          三个面板的<strong>表格结构不同</strong>：利润表按"收入 → 利润"逐级扣减，
+          资产负债表按"资产 = 负债 + 权益"分组，现金流量表按三类活动分列。
+          它们共用一个切换器，但不共用同一套列。
+        </p>
+
+        <div class="tabs fr-tabs" data-tabs>
+          <div class="tabs__list" role="tablist" aria-orientation="horizontal"
+               aria-label="财务报表切换">
+            <button class="tabs__tab" role="tab" id="tab-is" aria-controls="panel-is"
+                    aria-selected="true" tabindex="0">利润表</button>
+            <button class="tabs__tab" role="tab" id="tab-bs" aria-controls="panel-bs"
+                    aria-selected="false" tabindex="-1">资产负债表</button>
+            <button class="tabs__tab" role="tab" id="tab-cf" aria-controls="panel-cf"
+                    aria-selected="false" tabindex="-1">现金流量表</button>
+          </div>
+
+          <!-- ---------- 利润表 ---------- -->
+          <div class="tabs__panel" role="tabpanel" id="panel-is"
+               aria-labelledby="tab-is" tabindex="0">
+            <div class="table table--financial table--compact"
+                 tabindex="0" role="region" aria-label="利润表（可横向滚动）">
+              <table>
+                <caption class="table__cap">表 1 · 合并利润表主要项目（2025 年度）</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">项目</th>
+                    <th scope="col">金额 <span class="table__unit">(亿元)</span></th>
+                    <th scope="col">占收入比 <span class="table__unit">(%)</span></th>
+                    <th scope="col">同比 <span class="table__unit">(%)</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><th scope="row">营业总收入</th>
+                      <td class="num">2,015.4</td><td class="num">100.0</td>
+                      <td class="num">+15.7</td></tr>
+                  <tr><th scope="row">营业成本</th>
+                      <td class="num">167.2</td><td class="num">8.3</td>
+                      <td class="num">+18.4</td></tr>
+                  <tr><th scope="row">税金及附加</th>
+                      <td class="num">178.6</td><td class="num">8.9</td>
+                      <td class="num">+15.1</td></tr>
+                  <tr><th scope="row">销售费用</th>
+                      <td class="num">48.4</td><td class="num">2.4</td>
+                      <td class="num">+11.0</td></tr>
+                  <tr><th scope="row">管理费用</th>
+                      <td class="num">126.9</td><td class="num">6.3</td>
+                      <td class="num">+9.6</td></tr>
+                  <tr><th scope="row">研发费用</th>
+                      <td class="num">12.1</td><td class="num">0.6</td>
+                      <td class="num">+30.2</td></tr>
+                  <tr><th scope="row">营业利润</th>
+                      <td class="num">1,402.8</td><td class="num">69.6</td>
+                      <td class="num">+16.1</td></tr>
+                  <tr><th scope="row">归母净利润</th>
+                      <td class="num">998.3</td><td class="num">49.5</td>
+                      <td class="num">+15.8</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="table__foot">
+              注：营业成本增速（+18.4%）高于收入增速（+15.7%），是毛利率下移的直接来源。
+            </p>
+          </div>
+
+          <!-- ---------- 资产负债表 ---------- -->
+          <div class="tabs__panel" role="tabpanel" id="panel-bs"
+               aria-labelledby="tab-bs" tabindex="0" hidden>
+            <div class="table table--financial table--compact"
+                 tabindex="0" role="region" aria-label="资产负债表（可横向滚动）">
+              <table>
+                <caption class="table__cap">表 2 · 合并资产负债表主要项目（2025-12-31）</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">项目</th>
+                    <th scope="col">金额 <span class="table__unit">(亿元)</span></th>
+                    <th scope="col">占总资产 <span class="table__unit">(%)</span></th>
+                    <th scope="col">较上年 <span class="table__unit">(亿元)</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><th scope="row">货币资金</th>
+                      <td class="num">1,842.6</td><td class="num">58.2</td>
+                      <td class="num">+201.4</td></tr>
+                  <tr><th scope="row">存货</th>
+                      <td class="num">512.4</td><td class="num">16.2</td>
+                      <td class="num">+38.7</td></tr>
+                  <tr><th scope="row">流动资产合计</th>
+                      <td class="num">2,684.1</td><td class="num">84.7</td>
+                      <td class="num">+263.2</td></tr>
+                  <tr><th scope="row">资产总计</th>
+                      <td class="num">3,168.7</td><td class="num">100.0</td>
+                      <td class="num">+312.5</td></tr>
+                  <tr><th scope="row">负债合计</th>
+                      <td class="num">682.3</td><td class="num">21.5</td>
+                      <td class="num">+74.1</td></tr>
+                  <tr><th scope="row">归母所有者权益</th>
+                      <td class="num">2,436.9</td><td class="num">76.9</td>
+                      <td class="num">+231.8</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="table__foot">
+              注：货币资金占总资产 58.2%，资产结构以现金为主，无有息负债。
+            </p>
+          </div>
+
+          <!-- ---------- 现金流量表 ---------- -->
+          <div class="tabs__panel" role="tabpanel" id="panel-cf"
+               aria-labelledby="tab-cf" tabindex="0" hidden>
+            <div class="table table--financial table--compact"
+                 tabindex="0" role="region" aria-label="现金流量表（可横向滚动）">
+              <table>
+                <caption class="table__cap">表 3 · 合并现金流量表主要项目（2025 年度）</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">项目</th>
+                    <th scope="col">金额 <span class="table__unit">(亿元)</span></th>
+                    <th scope="col">占经营净额 <span class="table__unit">(%)</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><th scope="row">经营活动产生的现金流量净额</th>
+                      <td class="num">924.6</td><td class="num">100.0</td></tr>
+                  <tr><th scope="row">投资活动产生的现金流量净额</th>
+                      <td class="num">−38.2</td><td class="num">−4.1</td></tr>
+                  <tr><th scope="row">筹资活动产生的现金流量净额</th>
+                      <td class="num">−612.4</td><td class="num">−66.2</td></tr>
+                  <tr><th scope="row">现金及现金等价物净增加额</th>
+                      <td class="num">274.0</td><td class="num">29.6</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="table__foot">
+              注：筹资活动大额为负系年度分红所致，不构成偿债压力信号。
+              负号是<strong>账面符号</strong>，不是"坏" —— 所以本表不用红绿区分正负。
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─────────────────────────────────── 5 五年 -->
+      <section class="rep__sec" id="history">
+        <h2>四 · 五年主要指标</h2>
+        <p>
+          这张表是整页唯一一处把五年放在一起横向比的地方。
+          单位写在列头，不写在每个单元格里；缺失值写「—」，不写 0 ——
+          <strong>0 是"确实是零"，缺失是"没有这个数"，两者语义相反</strong>。
+        </p>
+
+        <div class="table table--financial"
+             tabindex="0" role="region" aria-label="五年主要财务指标（可横向滚动）">
+          <table>
+            <caption class="table__cap">表 4 · 2021–2025 年主要财务指标</caption>
+            <thead>
+              <tr>
+                <th scope="col">指标</th>
+                <th scope="col">2021</th>
+                <th scope="col">2022</th>
+                <th scope="col">2023</th>
+                <th scope="col">2024</th>
+                <th scope="col">2025</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">营业总收入 <span class="table__unit">(亿元)</span></th>
+                  <td class="num">1,095</td><td class="num">1,276</td>
+                  <td class="num">1,506</td><td class="num">1,741</td>
+                  <td class="num">2,015</td></tr>
+              <tr><th scope="row">归母净利润 <span class="table__unit">(亿元)</span></th>
+                  <td class="num">525</td><td class="num">627</td>
+                  <td class="num">747</td><td class="num">862</td>
+                  <td class="num">998</td></tr>
+              <tr><th scope="row">毛利率 <span class="table__unit">(%)</span></th>
+                  <td class="num">91.5</td><td class="num">91.9</td>
+                  <td class="num">92.0</td><td class="num">91.9</td>
+                  <td class="num">91.7</td></tr>
+              <tr><th scope="row">净利率 <span class="table__unit">(%)</span></th>
+                  <td class="num">47.9</td><td class="num">49.1</td>
+                  <td class="num">49.6</td><td class="num">49.5</td>
+                  <td class="num">49.5</td></tr>
+              <tr><th scope="row">ROE（加权） <span class="table__unit">(%)</span></th>
+                  <td class="num">29.9</td><td class="num">31.5</td>
+                  <td class="num">33.2</td><td class="num">34.2</td>
+                  <td class="num">34.6</td></tr>
+              <tr><th scope="row">研发费用 <span class="table__unit">(亿元)</span></th>
+                  <td class="num num--na">—</td>
+                  <td class="num num--na">—</td>
+                  <td class="num">1.6</td><td class="num">1.8</td>
+                  <td class="num">2.1</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="table__foot">
+          注：2021–2022 年研发费用未单独列示，故记「—」而非 0。
+          口径变更导致的缺失必须在表下说明，否则读者会以为当年没有研发投入。
+        </p>
+      </section>
+
+      <!-- ─────────────────────────────────── 6 风险 -->
+      <section class="rep__sec" id="risk">
+        <h2>五 · 风险与不确定性</h2>
+
+        <p>
+          前面四节都在说"数据说明了什么"。这一节说<strong>它说明不了什么</strong> ——
+          一份没有风险披露的研究报告是不完整的作品，不是"风格问题"。
+        </p>
+
+        <div class="rep__risk">
+          <p><strong>结构风险</strong>　系列酒放量对主品牌溢价的稀释，是本文数据看不到的。
+            毛利率只反映结果，不反映品牌势能，而后者才是这类公司估值的基础。</p>
+          <p><strong>渠道库存</strong>　收入按出厂口径确认，渠道端库存与终端动销不在报表里。
+            收入增长与真实消费之间的时间差，本文无法度量。</p>
+          <p><strong>口径风险</strong>　2023 年起研发费用单独列示，
+            此前年度的数据在本文记为空缺。跨年比较时请以「—」为界，不要当作 0 处理。</p>
+          <p><strong>本页性质</strong>　数值为演示用示例数据，量级参照公开年报，
+            <strong>未经逐项核对</strong>；本页用于演示版式与组件，不构成任何投资建议。</p>
+        </div>
+      </section>
+
+      <!-- ─────────────────────────────────── 7 口径 -->
+      <section class="rep__sec" id="method">
+        <h2>口径与数据来源</h2>
+        <p>
+          这几条放在折叠面板里，不是"次要内容"，而是<strong>复核时最先要看的</strong>。
+          折叠只是为了让正文保持可读 —— 默认收起，但从不隐藏。
+        </p>
+
+        <div class="accordion" data-accordion>
+          <div class="accordion__item">
+            <h3 class="accordion__heading">
+              <button class="accordion__trigger" aria-expanded="false">
+                <span class="accordion__label">数据来源与更新频率</span>
+                <span class="accordion__marker" aria-hidden="true"></span>
+              </button>
+            </h3>
+            <div class="accordion__panel" hidden>
+              <div class="accordion__panel-inner">
+                <p>
+                  报表科目取自公司年度报告；分部数据取自年报"营业收入构成"附注。
+                  本页为静态示例，<strong>不连接任何实时数据源</strong>，
+                  数值不会随时间更新。
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion__item">
+            <h3 class="accordion__heading">
+              <button class="accordion__trigger" aria-expanded="false">
+                <span class="accordion__label">缺失值为什么写「—」而不是 0</span>
+                <span class="accordion__marker" aria-hidden="true"></span>
+              </button>
+            </h3>
+            <div class="accordion__panel" hidden>
+              <div class="accordion__panel-inner">
+                <p>
+                  0 与缺失是两种不同的语义：前者是"确实为零"，后者是"这个数不存在"。
+                  用 0 填缺失会让任何求和、均值、同比计算<strong>静默出错</strong>，
+                  而且错得看不出来。
+                </p>
+                <p>
+                  本页所有缺失值统一显示为「—」，并在表下注明原因。
+                  这一条由门禁守着，不是靠自觉。
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion__item">
+            <h3 class="accordion__heading">
+              <button class="accordion__trigger" aria-expanded="false">
+                <span class="accordion__label">为什么正负不用红绿区分</span>
+                <span class="accordion__marker" aria-hidden="true"></span>
+              </button>
+            </h3>
+            <div class="accordion__panel" hidden>
+              <div class="accordion__panel-inner">
+                <p>
+                  "投资活动现金流为负"在财务上是<strong>正常现象</strong>，标红等于给读者一个错误警报；
+                  而"利润下降"在不同的表里既可能是坏事也可能是一次性计提。
+                  颜色只能表达一种态度，正负号能表达事实。
+                </p>
+                <p>
+                  更要紧的是：红涨绿跌与绿涨红跌的惯例在中美股语境里正好相反。
+                  把颜色当唯一线索，跨市场阅读时必然误读。
+                  ⇒ 本页用符号表达方向，颜色留给真正的告警（错误、停牌、审计异常）。
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion__item">
+            <h3 class="accordion__heading">
+              <button class="accordion__trigger" aria-expanded="false">
+                <span class="accordion__label">页面上没有的东西</span>
+                <span class="accordion__marker" aria-hidden="true"></span>
+              </button>
+            </h3>
+            <div class="accordion__panel" hidden>
+              <div class="accordion__panel-inner">
+                <p>
+                  没有估值结论、没有目标价、没有买卖评级、没有盈利预测。
+                  这些都需要本页没有的数据（股本结构、可比公司、贴现假设），
+                  <strong>缺的东西写清楚，比默认它有要紧</strong>。
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </article>
+
+    <!-- ══════════════════════════════════════════════ 边注 -->
+    <aside class="rep__aside fr-aside">
+
+      <section class="card card--compact">
+        <div class="card__body">
+          <h3 class="card__title">数据完整度</h3>
+          <dl>
+            <dt>报表科目</dt><dd>11 / 11</dd>
+            <dt>分部数据</dt><dd>5 / 5 年</dd>
+            <dt>研发费用</dt><dd>3 / 5 年<span class="small small--faint">（口径变更）</span></dd>
+            <dt>更新至</dt><dd>2025-12-31</dd>
+          </dl>
+        </div>
+      </section>
+
+      <section class="card card--compact">
+        <div class="card__body">
+          <h3 class="card__title">估值快照</h3>
+          <dl>
+            <dt>市盈率 TTM</dt><dd class="num">22.4</dd>
+            <dt>市净率</dt><dd class="num">7.8</dd>
+            <dt>股息率</dt><dd class="num">2.9%</dd>
+          </dl>
+          <p class="small small--faint">
+            与正文的财务数据不是同一个来源，仅用于演示侧栏版式。
+          </p>
+        </div>
+      </section>
+
+      <section class="card card--compact">
+        <div class="card__body">
+          <h3 class="card__title">同业对照</h3>
+          <ul class="list" role="list">
+            <li class="list__item">
+              <span class="list__main">
+                <span class="list__title">五粮液</span>
+                <span class="list__meta">毛利率</span>
+              </span>
+              <span class="list__value num">75.2%</span>
+            </li>
+            <li class="list__item">
+              <span class="list__main">
+                <span class="list__title">泸州老窖</span>
+                <span class="list__meta">毛利率</span>
+              </span>
+              <span class="list__value num">88.5%</span>
+            </li>
+            <li class="list__item">
+              <span class="list__main">
+                <span class="list__title">山西汾酒</span>
+                <span class="list__meta">毛利率</span>
+              </span>
+              <span class="list__value num">75.8%</span>
+            </li>
+          </ul>
+          <p class="small small--faint">
+            同业数值同为示例数据，未做同口径调整。
+          </p>
+        </div>
+      </section>
+
+    </aside>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════ 页脚 -->
+  <footer class="rep__sources">
+    <p class="rep__source">
+      <strong>来源与限制</strong>
+    </p>
+    <ol class="rep__source">
+      <li>公司年度报告（利润表、资产负债表、现金流量表、分部构成附注）。</li>
+      <li>全部数值为<strong>演示用示例数据</strong>，量级参照公开年报，未经逐项核对。</li>
+      <li>本页用于演示 frontend-lib 的组件组合能力，不代表任何投资判断。</li>
+      <li>本页不提供：估值结论、目标价、盈利预测、买卖评级。</li>
+    </ol>
+  </footer>
+
+</main>
+
+<!-- ══════════════════════════════════════════════════════ 行为脚本
+     ⚠️ 全部 ES5：这是本库的硬约束（老 WebView 上 const/箭头函数直接语法错误）。
+     ⚠️ tabs / accordion / sparkline 会自初始化（扫 data-* 属性），
+        bar / scientific-plot 必须显式调用 —— 因为它们需要数据，猜不出来。 -->
+<script src="../../01-tokens/theme-toggle.js"></script>
+<script src="../../03-patterns/tabs/tabs.js"></script>
+<script src="../../03-patterns/accordion/accordion.js"></script>
+<script src="../../09-assets/sparkline/sparkline.js"></script>
+<script src="../../09-assets/bar/bar.js"></script>
+<script src="../../09-assets/scientific-plot/scientific-plot.js"></script>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ------------------------------------------------ 移动端导航抽屉
+     ⚠️ 组件只给了样式和 `data-state` 约定，开关逻辑要页面自己接
+        （nav 目录目前只有 toc.js，没有 nav.js —— 见交付报告的"库缺口"一节）。
+     ⚠️ 全 ES5：老 WebView 上 const / 箭头函数直接语法错误。 */
+  var navToggle = document.getElementById('nav-toggle');
+  var navList = document.getElementById('nav-list');
+  var navScrim = document.getElementById('nav-scrim');
+  var lastFocused = null;
+
+  function navIsOpen() {
+    return navToggle.getAttribute('aria-expanded') === 'true';
+  }
+
+  function navOpenFn() {
+    lastFocused = document.activeElement;      /* 记住是谁打开的 */
+    navList.setAttribute('data-state', 'open');
+    navScrim.setAttribute('data-state', 'open');
+    navToggle.setAttribute('aria-expanded', 'true');
+    navToggle.setAttribute('aria-label', '关闭菜单');
+    document.body.style.overflow = 'hidden';   /* 抽屉打开时锁背景滚动 */
+    /* 焦点必须进抽屉 —— 否则键盘用户还留在抽屉外面 */
+    var first = navList.querySelector('a');
+    if (first) first.focus();
+  }
+
+  function navClose() {
+    if (!navIsOpen()) return;
+    navList.removeAttribute('data-state');
+    navScrim.removeAttribute('data-state');
+    navToggle.setAttribute('aria-expanded', 'false');
+    navToggle.setAttribute('aria-label', '打开菜单');
+    document.body.style.overflow = '';
+    /* 焦点必须回到汉堡按钮 —— 丢了焦点键盘用户就不知道自己在哪 */
+    if (lastFocused && lastFocused.focus) lastFocused.focus();
+    else navToggle.focus();
+  }
+
+  if (navToggle && navList && navScrim) {
+    navToggle.addEventListener('click', function () {
+      if (navIsOpen()) navClose(); else navOpenFn();
+    });
+    navScrim.addEventListener('click', navClose);
+    /* 点抽屉里的锚点：先让浏览器跳，再关 —— 顺序反了焦点会被 close 抢走 */
+    navList.addEventListener('click', function (e) {
+      if (e.target.tagName === 'A') setTimeout(navClose, 0);
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' || e.keyCode === 27) navClose();
+    });
+    /* 窗口变宽要自动关：否则桌面布局下会留一个"开着但不对"的菜单 */
+    window.addEventListener('resize', function () {
+      if (window.innerWidth > 768) navClose();
+    });
+  }
+
+  /* ---------------------------------------------------------------- 主题 */
+  var btn = document.getElementById('themeBtn');
+  var LABEL = { auto: '跟随系统', light: '浅色', dark: '深色' };
+  function syncLabel() {
+    var m = window.Theme ? window.Theme.get() : 'auto';
+    btn.textContent = '主题：' + (LABEL[m] || LABEL.auto);
+  }
+  if (window.Theme && btn) {
+    syncLabel();
+    btn.addEventListener('click', function () {
+      window.Theme.cycle();
+      syncLabel();
+      redraw();          /* 图表的颜色来自 CSS 变量，换主题后要重画 */
+    });
+  }
+
+  /* ---------------------------------------------------------------- 图 1 */
+  /* 分部构成：堆叠柱。max 是**必填** —— 量程自动适配会让不同年份失去可比性。 */
+  var YEARS = ['2021', '2022', '2023', '2024', '2025'];
+  var MAOTAI = [934, 1078, 1266, 1459, 1682];   /* 茅台酒 */
+  var SERIES = [161, 198, 240, 282, 333];       /* 系列酒 */
+
+  /* ---------------------------------------------------------------- 图 2 */
+  var YEARX = [2021, 2022, 2023, 2024, 2025];
+  var SELL = [2.6, 2.5, 2.4, 2.5, 2.4];         /* 销售费用率 */
+  var ADMIN = [7.0, 6.8, 6.6, 6.5, 6.3];        /* 管理费用率 */
+  var RD = [0.2, 0.3, 0.4, 0.5, 0.6];           /* 研发费用率 */
+
+  function pts(arr) {
+    var out = [];
+    for (var i = 0; i < YEARX.length; i++) out.push([YEARX[i], arr[i]]);
+    return out;
+  }
+
+  function drawSeg() {
+    var host = document.getElementById('segChart');
+    if (!host || !window.Bar) return;
+    /* 宽度同样要量：Bar 里 viewBox 与容器同宽才不缩放文字（见 bar.js 的注释） */
+    var w = host.clientWidth || 640;
+    var ww = Math.max(240, Math.round(w));
+    window.Bar.draw({
+      host: host,
+      width: ww,
+      max: 2400,
+      /* 高度跟着宽度走：宽度缩到 334 而高度还留 220 时，宽高比从 2.9 掉到 1.6，
+         柱子变成"高瘦条"，与桌面上看到的不是同一张图。 */
+      height: Math.round(Math.min(220, Math.max(150, ww * 0.42))),
+      mode: 'stack',
+      labels: YEARS,
+      series: [
+        { name: '茅台酒', values: MAOTAI },
+        { name: '系列酒', values: SERIES }
+      ],
+      ariaLabel: '2021 至 2025 年营业总收入分部构成堆叠柱状图'
+    });
+  }
+
+  function drawCost() {
+    var host = document.getElementById('costChart');
+    if (!host || !window.ScientificPlot) return;
+
+    /* 🔴 宽度必须**量容器**，不能写死 720：
+       图表的刻度文字是 SVG 里的绝对值（12px），而 SVG 带 viewBox +
+       width:100% ⇒ 容器比设计宽度窄时**整张图连同文字一起等比缩小**。
+       实测：420px 容器装 720px 设计的图 ⇒ 12px 的字渲染成 6px，不可读。
+       ⇒ 量出来再传，图就按 1:1 画，字号永远是真的 12px。 */
+    var w = Math.max(360, Math.round(host.clientWidth || 700));
+
+    window.ScientificPlot.render(host, {
+      width: w,
+      /* 同上：高度跟宽度走，避免窄屏上图被拉成方块 */
+      height: Math.round(Math.min(300, Math.max(200, w * 0.45))),
+      title: '三项费用率（占营业总收入）',
+      desc: '销售 · 管理 · 研发，2021–2025',
+      x: { label: '年度', unit: '年', scale: 'linear', domain: [2020.5, 2025.5] },
+      y: { label: '费用率', unit: '%', scale: 'linear', domain: [0, 10] },
+      /* 每条 series 必须给 name：同名的系列共用一个色号，
+         否则"图例写着管理费用率"和"线上画的那条"对不上。 */
+      series: [
+        { type: 'line', data: pts(SELL), name: '销售费用率' },
+        { type: 'line', data: pts(ADMIN), name: '管理费用率' },
+        { type: 'line', data: pts(RD), name: '研发费用率' }
+      ]
+    });
+  }
+
+  function redraw() {
+    drawSeg();
+    drawCost();
+  }
+
+  /* 字体加载完成后重画一次：SVG 里的文字宽度依赖字体，
+     字体替换会让标签位置偏移。 */
+  redraw();
+  if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
+    document.fonts.ready.then(redraw);
+  }
+})();
+</script>
+</body>
+</html>
