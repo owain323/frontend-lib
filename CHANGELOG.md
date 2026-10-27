@@ -14,7 +14,25 @@
 
 ## [Unreleased]
 
-（下一版）
+### Merged · 两条外部修复分支（2026-10-27）
+
+- `fix/overlay-aria-fallback`：旧 WebView 没有 `inert` 时补 `aria-hidden` + 交互隔离
+  （focusin 拉回焦点、指针事件全 capture 拦截）；两条契约分开断言，
+  原有两处"不支持就跳过"改成机制感知谓词。
+- `fix/package-closure-and-gate-blindspots`：包内闭包门禁（`pack-closure`）+
+  消费者侧解析（`entry-resolve`）+ 星号语义改问真 Node（`_pkg-target`）+
+  `pkg-name` / `motion-live` / `orphan` / `switch-geom` / `tap-target` / `theme-scope`。
+
+### Fixed · 根入口的两半修复合并后自相矛盾
+
+同一个缺陷（`exports["."]` 指向从未发布的 `./index.html`）两边各修了一半：
+本机侧**删掉声明**（只留 `types`），另一台机器**把文件真正打进包**。
+合并后变成"文件在包里、声明已删" ⇒ `pack-smoke` 的消费者侧解析判红
+（`require`/`import` 都 `ERR_PACKAGE_PATH_NOT_EXPORTED`）。
+
+处置：既然 `index.html` 现在确实随包发布，就**恢复声明**（`"default": "./index.html"`），
+而不是留一个既解析不到、又没说明为什么的 `exports["."]`。
+⇒ 根入口的语义是"落地页"，库本身仍无 JS 运行时入口（`main` 依旧不设）。
 
 ---
 
