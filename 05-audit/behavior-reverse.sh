@@ -60,10 +60,15 @@ run "engine-probe" node 05-audit/engine-probe.js --selftest
 run "combobox-inst" $PY 05-audit/combobox-instance-reverse.py
 run "mojibake"    $PY 05-audit/mojibake-check.py --selftest
 run "doc-facts"    $PY 05-audit/doc-facts-gate.py --selftest
+# 🔴 2026-10-27 补：dead-class 有 --selftest，但从没被任何脚本跑过（P2）
+#   它自己是 run 级真门禁（退出码判失败），可它的"反例能不能让它红"
+#   一直没人验证 ⇒ 门禁死了也不会有人知道（I-10 第 N 种形态）。
+run "dead-class"   $PY 05-audit/dead-class-gate.py --selftest
 run "reveal"      node 05-audit/reveal-contract.js --selftest
 run "motion-reduced" $PY 05-audit/motion.py --selftest
 run "detail-page"    $PY 05-audit/detail-page-contract.py --selftest
 run "no-data"        $PY 05-audit/no-data-gate.py --selftest
+run "autoinit"       $PY 05-audit/autoinit-gate.py --selftest
 # 视觉门禁的两道守卫：判据自己会不会红（喂合成数据，不读磁盘）
 run "visual-coverage" $PY 05-audit/visual-coverage-gate.py --selftest
 run "visual-stamp"    $PY 05-audit/visual-stamp-gate.py --selftest

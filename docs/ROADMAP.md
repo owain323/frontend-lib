@@ -163,11 +163,20 @@
 
 ## 五、当前评级
 
-| 维度 | 上一轮 | 现在 | 说明 |
-|---|---:|---:|---|
-| TypeScript / Runtime 一致性 | 5 | **9** | 有编译器双向验证 |
-| API 契约门禁有效性 | 5 | **7** | tsc 门禁已补；运行时描述符比对待做（W3） |
-| npm / Package 工程 | 7 | **8.5** | tarball 实装已验证 |
-| WebView 真实性证据 | 4.5 | 4.5 | 未变（P2，需真机） |
-| CI / Release | 6 | 6.5 | npm ci + WebKit 待做（W7） |
-| 文档产品化 | 6.5 | **7.5** | 事实门禁待做（W4） |
+> ⚠️ 这张表以前在"说明"列里写"待做"，但其中两项**早已完成**：
+> `api-form-gate` 已经在比对运行时形态、`doc-facts-gate` 已经在跑。
+> 过时的"待做"会让下一个人从头再做一遍 —— 这正是本库反复登记的
+> 「文档说有、实现没有」的反向形态。
+> ⇒ 现在每一行都带**复核命令**，分数不靠记忆。
+
+| 维度 | 上一轮 | 现在 | 说明 | 复核 |
+|---|---:|---:|---|---|
+| TypeScript / Runtime 一致性 | 5 | **9** | 编译器双向验证 | 门禁里的 `tsc` |
+| API 契约门禁有效性 | 5 | **8.5** | 运行时形态由 `api-form-gate` 比对：真浏览器探针取形态，再与 `API.md` 双向比（形态 / 成员 / 漏掉的全局） | `python 05-audit/api-form-gate.py` |
+| npm / Package 工程 | 7 | **9** | tarball 实装 + 包内闭包 + 消费者侧 `require`/`import` 真解析 | `release-gate.py` · `pack-closure.js` · `pkg-resolve-gate.py` |
+| WebView 真实性证据 | 4.5 | **4.5（环境边界）** | 7 行真机全部 `VERIFIED`；再扩需要拿不到的 Android 系统浏览器 —— 见 `docs/BACKLOG.md` §4.1 | `python 05-audit/webview-probe-gate.py` |
+| CI / Release | 6 | **6.5（待远端验证）** | `npm ci` 每个 job 都跑、nightly 含 WebKit 矩阵、浅克隆丢 tag 已修（`fetch-depth: 0` + `fetch-tags`）—— 但**修复后还没在远端跑过一次** | 推送后看 Actions 结果，不要本地推断 |
+| 文档产品化 | 6.5 | **8.5** | `doc-facts` 核对组件数 / 门禁数 / stable·beta；`autoinit` 把"哪些组件会自动初始化"写成契约 | `doc-facts-gate.py` · `autoinit-gate.py` |
+
+**评级纪律**：表中任何一行，只要能被门禁复核，就以门禁输出为准；
+不能用"我记得改过"当依据。

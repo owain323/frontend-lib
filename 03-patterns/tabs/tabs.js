@@ -298,6 +298,7 @@
     }
   }
 
+  // @autoinit: [data-tabs] —— 扫属性自动建实例（详见 API.md「自动初始化」）
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {

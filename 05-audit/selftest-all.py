@@ -29,33 +29,60 @@ selftest-all.py — 把所有门禁的反向控制**一次性跑一遍**
 ⚠️ 判据 ③ 需要 git。没有 git（比如解压出来的 tarball）时：
    **跳过这一条并明说**，不假装通过。
 
+🔴 判据 ④「跑不起来 ≠ 通过」（2026-10-27 加）
+---------------------------------------------------------------------------
+  实测事故：`MODE=fast` 全跑时报 `selftest-all FAIL`，原因是它内部有
+  `motion-concurrency.js --selftest`，而那一条要连 `127.0.0.1:8000`。
+  fast 档是纯静态层、**不起服务** ⇒ 该自检打印「跑不起来：ERR_CONNECTION_REFUSED」。
+
+  两个错误处置，都要避免：
+    · 把它塞进 SKIP ⇒ 这条自检就永远不跑了（比红灯更糟，是**没人知道**）
+    · 看它输出「[FAIL]」就以为已判红 ⇒ 不成立：判红必须靠**退出码**，
+      而"跑不起来"和"检查出问题"在语义上完全不同，必须分开报
+
+  ⇒ 正解是**判据自己造前提**：本脚本自己确保 :8000 服务在跑（canary 校验
+    服务的是不是这棵树），跑完关掉。这样 fast / full / 单跑三种入口都成立。
+  ⇒ 另加一条牙：**RC=0 但输出说"跑不起来"的，判红**。理由是
+    「跑不起来」绝不能以任何形式被记成「通过」（INVARIANT I-10）。
+
 用法
 ---------------------------------------------------------------------------
     python3 05-audit/selftest-all.py
     SKIP_SELFTESTS="a.py,b.py" python3 05-audit/selftest-all.py   # 临时跳过
 """
+import atexit
 import io
 import os
 import re
 import subprocess
 import sys
 import time
+import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 AUDIT = os.path.join(ROOT, '05-audit')
 
-# 列举式跳过（每条都要写理由）。当前为空 —— 26 个全都跑得动（合计约 13 秒）。
-# ⚠️ 不许用"跑得慢"当理由；只有"需要本机没有的外部条件"才算。
+# 列举式跳过（每条都要写理由）。
+# ⚠️ 这里**不写条数** —— 原注释写「当前为空 —— 26 个全都跑得动」，
+#    到 2026-10 已经是 51 个自检 + 1 条跳过。数字写死在注释里就是第二个真源，
+#    真值只由运行时的「发现 N 个自检」那一行给出。
+# ⚠️ 不许用"跑得慢"当理由；只有"需要本机没有的外部条件"或"已在别处注册"才算。
 SKIP = {
-    # ⚠️ 不是"跑得慢"，是**本脚本的运行环境里没有 :8000 服务** ——
-    #    它的自检要往 `http://127.0.0.1:8000/05-audit/_blank.html` 发请求
-    #    （同源才能读 window 全局）。已在 check-all.sh 的浏览器段注册为
-    #    `dist-js-parity-rev`，那里服务是活的 ⇒ 自检没漏跑，只是不在这一支跑。
+    # ⚠️ 不是"跑得慢"，是**避免同一条自检在一个批次里跑两遍**：
+    #    它要起浏览器（2-8 秒）且需要同源服务，已在 check-all.sh 的浏览器段
+    #    注册为 `dist-js-parity-rev`，那里服务一定是活的。
+    #    🔴 2026-10-27 措辞修正：本脚本已自备 :8000（见 ensure_server），
+    #    所以跳过理由**不再是"跑不起来"**。原措辞写着"本脚本的环境里没有
+    #    :8000 服务"，留着会让下一个人以为环境有洞、再"修"一遍。
     'dist-js-parity-gate.js':
-        '自检需要 127.0.0.1:8000（由 check-all.sh 提供），已在那里的浏览器段注册',
+        '已在 check-all.sh 浏览器段注册（避免重复跑，不是跑不起来）',
 }
 
 TIMEOUT = 180
+
+# 判据 ④ 的触发词。用「冒号」把普通叙述排除掉：
+#   "跑不起来：" 是这些脚本自己的失败前缀，不是文档里提一嘴。
+BOOT_FAIL = ('ERR_CONNECTION_REFUSED', '跑不起来：')
 
 
 def candidates():
@@ -96,6 +123,73 @@ def tree_state():
         return None
 
 
+# :8000 的服务句柄。只在本脚本**自己起的**时候持有；复用别人的不碰。
+_SERVER = {'proc': None}
+
+
+def _fetch(path, timeout=3):
+    with urllib.request.urlopen('http://127.0.0.1:8000' + path,
+                                timeout=timeout) as r:
+        return r.read()
+
+
+def ensure_server():
+    """确保 :8000 上跑的是**这棵树**。返回 (状态, 说明)。
+
+    为什么由本脚本负责，而不是靠调用者（check-all.sh 已经会起）：
+      `selftest-all` 同时也是**可单跑的**（"我改了个门禁，先跑它的自检"），
+      而 `MODE=fast` 那一档为了不抢用户端口**故意不起服务**。
+      前提不自己造 ⇒ 结果由"今天谁先跑"决定，这正是交接纪律第 8 条。
+
+    canary 为什么必须做：只看"8000 通"会把**另一棵树**当真。
+    实测先例见 check-all.sh 的同名注释（源仓库残留服务导致 100+ 道门禁
+    量的全是别人的代码）。这里复用的是同一条判据：**字节比对**。
+    """
+    try:
+        local = io.open(os.path.join(ROOT, 'index.html'), 'rb').read()
+    except OSError:
+        local = None
+
+    try:
+        if local is not None and _fetch('/index.html') == local:
+            return 'reuse', '复用已在跑的服务（canary 字节一致）'
+        return 'wrong-tree', (':8000 上跑的是**另一棵树**（index.html 字节'
+                              '与本地不一致）⇒ 自检结果不可信')
+    except Exception:
+        pass
+
+    proc = subprocess.Popen(
+        [sys.executable, '-m', 'http.server', '8000',
+         '--bind', '127.0.0.1', '--directory', ROOT],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, cwd=ROOT)
+    for _ in range(20):
+        try:
+            got = _fetch('/index.html', 1)
+            if local is None or got == local:
+                _SERVER['proc'] = proc
+                return 'started', '已启动本地静态服务 :8000（canary 字节一致）'
+        except Exception:
+            time.sleep(0.3)
+    proc.terminate()
+    try:
+        proc.wait(timeout=5)
+    except Exception:
+        proc.kill()
+    return 'failed', '服务起不来（20 次探测全失败）⇒ 依赖 :8000 的自检无法作数'
+
+
+def stop_server():
+    p = _SERVER.get('proc')
+    if not p:
+        return
+    p.terminate()
+    try:
+        p.wait(timeout=5)
+    except Exception:
+        p.kill()
+    _SERVER['proc'] = None
+
+
 def run_one(fname):
     p = os.path.join(AUDIT, fname)
     # 解释器按扩展名选：JS 的自检必须用 node 跑（用 python 跑 JS 会 RC=1，
@@ -113,9 +207,66 @@ def run_one(fname):
     return rc, out, int((time.time() - t0) * 1000)
 
 
+def verdict(rc, out, dirt=''):
+    """一次自检的判定。**抽成函数是为了能被自检喂合成样本**（见 selftest）。
+
+    返回 (ok, extra)。ok 只由三件事决定：
+      · 退出码 0（唯一的"通过"来源）
+      · 没有弄脏工作区（`dirt` 非空即红）
+      · 输出里没有"跑不起来"（判据 ④，见文件头）
+    """
+    extra = dirt
+    boot = [k for k in BOOT_FAIL if k in out]
+    if rc == 0 and boot:
+        extra += '  🔴 输出说「%s」却 RC=0（跑不起来≠通过）' % boot[0]
+    return (rc == 0 and not extra), extra
+
+
+def selftest():
+    """判据合成：喂样本，看它该红的时候红、该绿的时候绿。
+
+    这是本库的通用纪律「判据必须有反向控制」用在自己身上。
+    之前它没有 —— 于是它漏判「跑不起来但 RC=0」这件事，
+    要靠一次 `MODE=fast` 的偶然红才被发现。
+    """
+    print('  === selftest-all 自身的判据合成 ===')
+    cases = [
+        # 名称, rc, 输出, 脏文件, 期望
+        ('RC=0 且输出干净', 0, 'OK 全部通过', '', True),
+        ('RC=0 但说「跑不起来：」', 0,
+         '[FAIL] 跑不起来：net::ERR_CONNECTION_REFUSED', '', False),
+        ('RC=0 但含 ERR_CONNECTION_REFUSED', 0,
+         'net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8000/', '', False),
+        ('RC=1 输出无关键词', 1, 'something broke', '', False),
+        ('RC=0 但弄脏工作区', 0, 'OK', '  🔴 弄脏工作区: a.css', False),
+    ]
+    bad = 0
+    for name, rc, out, dirt, want in cases:
+        got, _ = verdict(rc, out, dirt)
+        ok = (got == want)
+        print('  %s %-32s 期望=%-5s 实得=%-5s'
+              % ('OK ' if ok else '🔴 ', name, want, got))
+        if not ok:
+            bad += 1
+    if bad:
+        print('  => %d 个样本判错 ⇒ 判定函数没有鉴别力' % bad)
+        return 1
+    print('  OK %d 个样本全部判对 ⇒ 判据有牙' % len(cases))
+    return 0
+
+
 def main():
     print('  === 全部门禁的反向控制（--selftest）===')
     print('')
+
+    # 判据 ④ 的前提：有些自检要连 :8000，前提必须自己造（见文件头）。
+    srv, srv_msg = ensure_server()
+    if srv in ('wrong-tree', 'failed'):
+        print('  [FAIL] %s' % srv_msg)
+        print('         ⇒ 不继续跑：没有可信的服务，浏览器类自检的结论没有意义。')
+        return 2
+    atexit.register(stop_server)
+    print('  [%s] %s' % ('OK' if srv in ('reuse', 'started') else '??', srv_msg))
 
     names = [f for f in candidates() if f not in SKIP]
     skipped = [(f, SKIP[f]) for f in candidates() if f in SKIP]
@@ -142,15 +293,15 @@ def main():
     slow = []
     for f in names:
         rc, out, ms = run_one(f)
-        extra = ''
+        dirt = ''
         if has_git:
             now = tree_state()
             new = now - base if now is not None else set()
             if new:
                 dirty += 1
-                extra = '  🔴 弄脏工作区: %s' % ', '.join(sorted(new))[:60]
+                dirt = '  🔴 弄脏工作区: %s' % ', '.join(sorted(new))[:60]
                 base = now          # 避免后续脚本被前面的污染连坐
-        ok = (rc == 0) and not extra
+        ok, extra = verdict(rc, out, dirt)
         print('  %s %-30s RC=%-3d %5dms%s'
               % ('OK ' if ok else '🔴 ', f, rc, ms, extra))
         if not ok:
@@ -188,4 +339,8 @@ def main():
 
 
 if __name__ == '__main__':
+    # --selftest 必须在 main() **之前**分流：合成样本是纯内存的，
+    # 不需要 :8000；否则会为了测一个纯函数去起一个 http server。
+    if '--selftest' in sys.argv:
+        sys.exit(selftest())
     sys.exit(main())

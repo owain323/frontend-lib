@@ -95,6 +95,7 @@
     else if (mq.addListener) mq.addListener(onChange);
   }
 
+  // @autoinit: self —— 不扫 DOM，只在启动时把已保存的主题应用上去（读 localStorage）
   function init() { apply(read()); }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);

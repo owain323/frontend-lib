@@ -519,7 +519,13 @@ def selftest():
             # 🔴 只关心"散列"那部分：孤儿是另一条判据的事，
             #    不滤掉的话，有人留了个孤儿 ⇒ 这条自检会假红，
             #    看起来像"散列又按字节算了"，其实是串台。
-            bad = [b for b in check_freshness() if '孤儿' not in b]
+            # 🔴 同理，**"源码改过但 dist 没重建"也要滤掉**（2026-10-27 实测）：
+            #    那次改了 6 个 js 的注释、还没 build 就跑 selftest-all ⇒
+            #    这条自检报「判据又退化成按字节算了」，而真因只是 dist 旧了。
+            #    ⇒ 一道真实问题变成两个红灯，第二个纯噪声，且指向错误的方向。
+            #    本自检的语义是"换行符不影响散列"，不是"dist 是不是新鲜"。
+            bad = [b for b in check_freshness()
+                   if '孤儿' not in b and '没重建' not in b]
         finally:
             io.open(p, 'wb').write(raw)
         if bad:

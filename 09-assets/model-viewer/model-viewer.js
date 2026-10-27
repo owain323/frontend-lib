@@ -414,6 +414,7 @@
 
   if (typeof window !== 'undefined') window.ModelViewer = ModelViewer;
 
+  // @autoinit: [data-mv] —— 扫属性自动 update()（详见 API.md「自动初始化」）
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () { ModelViewer.update(); });
   } else {

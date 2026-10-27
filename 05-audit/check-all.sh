@@ -317,6 +317,13 @@ run "beh-matrix" $PY 05-audit/behavior-matrix-gate.py
 run "maturity"  $PY 05-audit/maturity-gate.py
 # 废弃治理：移除公开名字必须走流程（登记 → 迁移窗口 → 兑现）；基线只增不减
 run "deprecation" $PY 05-audit/deprecation-gate.py
+# 🔴 自动初始化的三处一致（2026-10-27 · P3 的正确修法）：
+#   19 个全局里只有 6 个脚本会自动初始化，其余必须自己 create/new/attach。
+#   这个区别以前没有任何文档写 —— 使用者把 Accordion 的经验套到 Select 上，
+#   页面渲染正常、点了没反应、**不报错**。
+#   ⇒ 现在：实现里的 @autoinit 标记 + API.md 那张表 + 文件里到底有没有
+#     DOMContentLoaded，三者必须一致（双向）。
+run "autoinit"    $PY 05-audit/autoinit-gate.py
 echo ""
 # 🔴 0.8.9：fast 是**纯静态**层，它不需要 :8000
 #   （需要服务的门禁都已被判为 component 层并跳过）。
@@ -498,8 +505,10 @@ run "gate-verdict"  $PY 05-audit/gate-verdict-gate.py
 #   做法：在**同源空白页**上分别加载源码 JS 与 dist JS，
 #        比对"新增的 window 全局"与"抛的错"。配反向控制。
 run "dist-js-parity" node 05-audit/dist-js-parity-gate.js
-# 🔴 它的反向控制要连 :8000（本段已有服务）—— 而 selftest-all 里没有服务，
-#   所以那支自检在这里跑，并在 selftest-all 的 SKIP 里写明理由。
+# 🔴 它的反向控制要连 :8000（本段已有服务）。
+#   2026-10-27 起 selftest-all **自己也会起服务**，所以这里保留一道的原因是
+#   避免同一条自检在一个 fast/full 里跑两遍（它要起浏览器，约 2-8 秒）；
+#   → selftest-all 的 SKIP 里同步改成了「已在本段注册」的措辞。
 run "dist-js-parity-rev" node 05-audit/dist-js-parity-gate.js --selftest
 # 🔴 a11y 的反向控制（0.8.9 接上 · 审计 P1-8）：
 #   `_a11y-reverse-control.js` 早就写好了 —— 注入 5 类典型违规
@@ -742,6 +751,13 @@ run "gate-fixture" $PY 05-audit/gate-selfcheck-fixtures.py
 #   实测它抓到 gen-behavior.py 的自检用文本模式备份（CRLF→LF 在读取时就丢了），
 #   还原写回去就把两个源文件的行尾永久改成了 LF（git diff 为空，只有 status 能看出）。
 run "selftest-all"  $PY 05-audit/selftest-all.py
+# 🔴 2026-10-27：元门禁自己也要有牙。
+#   事故：`MODE=fast` 下 selftest-all 报红，真因是它内部的
+#   `motion-concurrency --selftest` 要连 :8000，而 fast 档不起服务。
+#   修法两条：① selftest-all 自己确保 :8000（canary 校验 + 退出时关掉）；
+#             ② 判定抽成 `verdict()` 并用合成样本自检 —— 其中一条样本就是
+#                「RC=0 但输出说跑不起来 ⇒ 必须判红」（判据 ④）。
+run "selftest-all-rev" $PY 05-audit/selftest-all.py --selftest
 # ---------------------------------------------------------------------------
 # 🔴 结论必须放在**最后**（0.8.9 修）
 #   原先它在中段（后面还有约 20 道门禁），于是日志里会先打「全部通过。」

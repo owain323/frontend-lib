@@ -386,6 +386,7 @@
   };
 
   if (typeof window !== 'undefined') window.Pagination = API;
+  // @autoinit: [data-pagination] —— 扫属性自动 update()（详见 API.md「自动初始化」）
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () { API.update(); });
   } else {
