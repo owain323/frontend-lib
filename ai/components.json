@@ -643,7 +643,9 @@
         "roles": [
           "status"
         ],
-        "attrs": []
+        "attrs": [
+          "hidden"
+        ]
       },
       "usesOtherNamespaces": [
         "dialog__actions",
