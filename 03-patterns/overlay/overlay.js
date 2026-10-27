@@ -49,6 +49,8 @@
      ⇒ 改成引用计数：**只要还有弹层需要锁，背景就不许解锁**，
        与关闭顺序无关。这与"所有权"的区别就是引用计数解决不了的问题。 */
   var inertRefs = [];         /* [{node, count}] —— ES5 没有 Map，用数组 */
+  /* 不支持 inert 的旧 WebView 走这套（见下方 ariaAcquire 的说明） */
+  var ariaRefs = [];          /* [{node, count, prev}] —— prev 是原来的 aria-hidden 值 */
 
   /* ---------------------------------------------------------------- 工具 */
   function focusableIn(root) {
@@ -129,6 +131,119 @@
       }
       return;
     }
+  }
+
+  /* ============================================================ aria 兜底
+     🔴 为什么需要这一套
+     本库的目标是「旧 WebView 也要能用」，而 `inert` 要
+       Safari 15.5+ / Chrome 102+（≈2022 年），旧 WebView 浏览器没有。
+     没有 inert 时，此前只剩**焦点陷阱**：键盘 Tab 是逃不出去，
+     但**屏幕阅读器的假想光标仍能读到背景内容**（焦点陷阱管的是 focus，
+     管不了浏览模式下的虚拟光标）。
+     ⇒ 不支持 inert 时用 aria-hidden 把背景从无障碍树里摘掉，
+       与焦点陷阱叠加，才是完整的"背景不可达"。
+     ⚠️ aria-hidden 不能替代 inert 的**交互屏蔽**（它不阻止点击），
+        所以这里只作为补充，不去掉焦点陷阱。 */
+
+  /** 取一个背景节点的 aria 引用计数条目（没有就建一个并置 aria-hidden）。 */
+  function ariaAcquire(node) {
+    for (var i = 0; i < ariaRefs.length; i++) {
+      if (ariaRefs[i].node === node) { ariaRefs[i].count++; return; }
+    }
+    /* 记住原值：可能是 null（本来没有这个属性），也可能本来就是 true/false。
+       恢复时必须回到原样 —— 否则我们自己就成了新的无障碍缺陷。 */
+    ariaRefs.push({ node: node, count: 1, prev: node.getAttribute('aria-hidden') });
+    node.setAttribute('aria-hidden', 'true');
+  }
+
+  /** 还一个 aria 引用；降到 0 才恢复原值。 */
+  function ariaRelease(node) {
+    for (var i = 0; i < ariaRefs.length; i++) {
+      if (ariaRefs[i].node !== node) continue;
+      ariaRefs[i].count--;
+      if (ariaRefs[i].count <= 0) {
+        var prev = ariaRefs[i].prev;
+        if (prev === null) node.removeAttribute('aria-hidden');
+        else node.setAttribute('aria-hidden', prev);
+        ariaRefs.splice(i, 1);
+      }
+      return;
+    }
+  }
+
+  /* ============================================ 交互隔离（仅旧 WebView）
+     🔴 第三轮外部审计要求把这两件事分开：原文：
+        「aria-hidden 不阻止键盘或鼠标交互，测试也没有断言 Tab 焦点不会逃出；
+          应把『辅助技术隐藏背景』和『键盘/指针交互隔离』作为**不同契约**，
+          避免把前者通过误读成后者已解决。」
+
+     ⇒ 本文件从此把两件事分开写、分开关：
+
+        · 辅助技术隐藏：背景从无障碍树摘掉
+            现代 → `inert`（浏览器顺手把交互也挡了）
+            旧   → `aria-hidden="true"`（**只管读屏，不管键盘鼠标**）
+        · 交互隔离：背景收不到焦点、收不到指针事件
+            现代 → `inert` 自带，不用我们做
+            旧   → **浏览器没有任何机制可用**，只能自己装 document 级守卫（本函数）
+
+     ⚠️ 为什么只在**没有 inert** 时装守卫：
+        有 inert 时背景本来就不可聚焦、不可点击，再拦一层只会给宿主页面
+        添意外行为（比如它自己写在 document 上的委托监听被吞掉）。
+        也就是说：现代路径的行为**一个字节都没变**。 */
+  var openStack = [];          /* 打开着的弹层，最后一个是最上层（嵌套用） */
+
+  function installIsolation(entry) {
+    var box = entry.box;
+    var backdrop = entry.backdrop;
+    var lastInside = null;
+
+    function topmost() { return openStack[openStack.length - 1]; }
+
+    /** 把焦点拉回弹层。优先回到**刚才在弹层里的那个元素**，别每次从头开始。 */
+    function pullBack() {
+      if (lastInside && document.contains(lastInside) && box.contains(lastInside)) {
+        lastInside.focus();
+        return;
+      }
+      var f = focusableIn(box);
+      if (f.length) { f[0].focus(); return; }
+      box.focus();
+    }
+
+    /* 键盘一侧：focusin 是全捕获的 —— 不管是 Tab、还是脚本 focus()、
+       还是读屏软件移焦点，只要焦点落到背景就拉回来。 */
+    function onFocusIn(e) {
+      if (topmost() !== entry) return;      /* 不是最上层：别抢内层的焦点 */
+      var t = e.target;
+      if (box.contains(t) || backdrop.contains(t)) { lastInside = t; return; }
+      pullBack();
+    }
+
+    /* 指针一侧：与 inert 对齐 —— 事件**根本不送到宿主页面**。
+       原来的问题是：旧 WebView 上背景按钮照样能点，而 inert 下不能 ⇒ 两种
+       环境的行为不一致，且"背景不可达"这条承诺只在现代浏览器成立。 */
+    function onPointer(e) {
+      if (topmost() !== entry) return;
+      if (backdrop.contains(e.target)) return;
+      if (e.cancelable) e.preventDefault();
+      e.stopPropagation();
+    }
+
+    document.addEventListener('focusin', onFocusIn, true);
+    document.addEventListener('pointerdown', onPointer, true);
+    document.addEventListener('mousedown', onPointer, true);
+    document.addEventListener('touchstart', onPointer, true);
+    /* `click` 也要拦：合成事件与老 WebView 的"tap→click"路径都可能绕过
+       pointerdown / mousedown。 */
+    document.addEventListener('click', onPointer, true);
+
+    return function uninstall() {
+      document.removeEventListener('focusin', onFocusIn, true);
+      document.removeEventListener('pointerdown', onPointer, true);
+      document.removeEventListener('mousedown', onPointer, true);
+      document.removeEventListener('touchstart', onPointer, true);
+      document.removeEventListener('click', onPointer, true);
+    };
   }
 
   /* ================================================================ Toast
@@ -306,6 +421,17 @@
     document.body.appendChild(backdrop);
     lockScroll();
 
+    /* 🔴 入栈与装守卫必须**早于设置初始焦点**（下面「初始焦点」那一段）。
+       实测踩过：放在后面时，外层弹层的守卫先看到"焦点落到我自己范围外"
+       （其实是内层弹层刚拿到焦点），立刻把它拉回外层 ⇒ 内层的初始焦点失效，
+       连带的后果是内层关掉后外层再也收不到 keydown，Esc 失效、aria-hidden
+       永远不还原。⇒ 顺序：appendChild → 入栈 → 装守卫 → 设初始焦点。 */
+    var useInert = 'inert' in HTMLElement.prototype;
+    var stackEntry = { backdrop: backdrop, box: box };
+    var uninstallIsolation = null;
+    openStack.push(stackEntry);
+    if (!useInert) uninstallIsolation = installIsolation(stackEntry);
+
     /* ------------------------------------------------------------ 焦点 */
     function focusables() { return focusableIn(box); }
 
@@ -355,6 +481,7 @@
 
     var closed = false;
     var inerted = [];
+    var ariaed = [];   /* 不支持 inert 时改走这条（见 ariaAcquire 的说明） */
 
     /* 背景 inert：把背后页面整个变不可交互 —— 比 focus trap 更彻底。
        支持就用（现代浏览器都有），不支持就靠上面的 focus trap 兜底。
@@ -370,17 +497,26 @@
        ⇒ 改成引用计数：**只要还有弹层需要锁，背景就不许解锁**，
          与关闭顺序无关（见文件头 inertRefs 的注释）。
     */
-    if ('inert' in HTMLElement.prototype) {
-      var nodes = Array.prototype.slice.call(
-        document.body.querySelectorAll('body > *')
-      );
-      nodes.forEach(function (n) {
-        /* 任何已有的 backdrop（外层）都跳过 —— 它们自己管自己的 */
-        if (n.classList.contains('dialog-backdrop')) return;
+    /* 🔴 背景隔离必须**两条路都走**：
+       支持 inert 就用 inert；不支持（旧 WebView）就用 aria-hidden 兜底。
+       以前只有 inert 分支，旧 WebView 上等于**什么都没做**，
+       辅助技术的虚拟光标仍能穿透到背景内容。
+       （`useInert` / `stackEntry` / `uninstallIsolation` 在 appendChild 之后
+        就已经算好了 —— 那份顺序说明见那里，别搬回来。） */
+    var nodes = Array.prototype.slice.call(
+      document.body.querySelectorAll('body > *')
+    );
+    nodes.forEach(function (n) {
+      /* 任何已有的 backdrop（外层）都跳过 —— 它们自己管自己的 */
+      if (n.classList.contains('dialog-backdrop')) return;
+      if (useInert) {
         inerted.push(n);
         inertAcquire(n);
-      });
-    }
+      } else {
+        ariaed.push(n);
+        ariaAcquire(n);
+      }
+    });
 
     function close() {
       if (closed) return;
@@ -396,8 +532,20 @@
         box.contains(ae) || backdrop.contains(ae);
 
       if (backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
+
+      /* 🔴 守卫必须在**焦点归还之前**拆掉。
+         不拆的话 fr.restore() 把焦点送回触发器（在背景里）⇒
+         focusin 捕获到"焦点跑到背景"⇒ 守卫立刻又把它拉回弹层，
+         用户看到的是"关闭了但焦点没回来"。 */
+      for (var si = openStack.length - 1; si >= 0; si--) {
+        if (openStack[si] === stackEntry) { openStack.splice(si, 1); break; }
+      }
+      if (uninstallIsolation) { uninstallIsolation(); uninstallIsolation = null; }
+
       /* ⭐ 引用计数：还一个引用，降到 0 才真的解锁 ⇒ 与关闭顺序无关 */
       inerted.forEach(inertRelease);
+      /* 旧 WebView 走 aria-hidden 的那条路，同样要按引用计数还 */
+      ariaed.forEach(ariaRelease);
       unlockScroll();
 
       /* 🔴 焦点必须回到**触发它的那个元素**。

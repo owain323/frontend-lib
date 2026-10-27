@@ -43,6 +43,14 @@ td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabu
     首屏<strong>不会有 three.js</strong>。点下去才出现
     <code>three.min.js</code> <code>GLTFLoader.js</code> <code>OrbitControls.js</code>。
   </p>
+  <p class="note">
+    <strong>发布包里没有下面这些资源</strong> —— <code>vendor/</code>（引擎与两个 loader）
+    和 <code>models/</code>（.glb 模型）都在 <code>package.json</code> 的
+    <code>files</code> 排除名单里（592KB 体积，且那两个 loader 是 ES6 class，
+    与「JS 一律 ES5」冲突）。
+    ⇒ 直接打开本页看到的是<strong>降级 UI，这是预期行为，不是坏了</strong>；
+    想看真效果，请自行放好这三个文件，或用下方 URL 参数逐条复现降级路径。
+  </p>
 
   <div class="mv" data-mv="models/fox.glb"
        data-mv-height="320"

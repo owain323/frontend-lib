@@ -349,12 +349,15 @@ const REPO = path.resolve(__dirname, '..');
           for (var j = 0; j < locked.length; j++) { locked[j].inert = false; }
         });
 
+        /* 🔴 不再按"引擎支不支持"决定 skip。
+           原来 `!supported` 直接 `ok: true, note: '该判据不适用，跳过'` ——
+           于是 PR 补的 aria-hidden 兜底**没有任何自动回归**：把兜底删掉照样绿。
+           两个机制回答的是同一个问题（「背景有没有对键盘/读屏隔离」），
+           只是承载属性不同（inert vs aria-hidden），所以用同一场景 + 谓词切换。
+           （专门的兜底回归在下面「无 inert 的旧 WebView」那一条里强制跑。） */
         const supported = await p.evaluate(
           () => 'inert' in HTMLElement.prototype);
-        if (!supported) {
-          return { ok: true,
-                   note: '当前环境不支持 inert（该判据不适用，跳过）' };
-        }
+        const MECH = supported ? 'inert' : 'aria-hidden';
 
         /* 造一个明确在背景里的元素 —— 它是否 inert 是可客观判定的 */
         await p.evaluate(() => {
@@ -376,12 +379,18 @@ const REPO = path.resolve(__dirname, '..');
         });
         await new Promise((r) => setTimeout(r, 380));
 
-        const afterA = await p.evaluate(() => {
+        const afterA = await p.evaluate((useInert) => {
           const bg = document.getElementById('probe-bg');
-          return { lockedByA: !!(bg && bg.inert) };
-        });
+          return {
+            lockedByA: !!(bg && (useInert ? bg.inert
+                                          : bg.getAttribute('aria-hidden') === 'true')),
+            raw: bg ? (useInert ? String(bg.inert)
+                                : String(bg.getAttribute('aria-hidden'))) : '(节点没了)',
+          };
+        }, supported);
         if (!afterA.lockedByA) {
-          return { ok: false, note: '前置条件不成立：外层未锁住背景，无法测归属权' };
+          return { ok: false, note: '前置条件不成立：外层未隔离背景（机制=' + MECH +
+                                    '，实际=' + afterA.raw + '），无法测归属权' };
         }
 
         /* 打开内层 */
@@ -404,17 +413,27 @@ const REPO = path.resolve(__dirname, '..');
         await p.keyboard.press('Escape');
         await new Promise((r) => setTimeout(r, 650));
 
-        const mid = await p.evaluate(() => {
+        const mid = await p.evaluate((useInert) => {
           const bg = document.getElementById('probe-bg');
           return {
             layers: document.querySelectorAll('[role="dialog"]').length,
-            stillInert: !!(bg && bg.inert),
+            stillInert: !!(bg && (useInert ? bg.inert
+                                           : bg.getAttribute('aria-hidden') === 'true')),
           };
-        });
+        }, supported);
 
-        /* 收尾：关掉外层再清理（无论断言成败都不留垃圾） */
+        /* 收尾：关掉外层（顺便验"还原"——aria 兜底特有，不能只设不减） */
         await p.keyboard.press('Escape');
         await new Promise((r) => setTimeout(r, 650));
+        const afterAll = await p.evaluate((useInert) => {
+          const bg = document.getElementById('probe-bg');
+          if (!bg) return { released: false, raw: '(节点没了)' };
+          return {
+            released: useInert ? bg.inert === false
+                               : bg.getAttribute('aria-hidden') === null,
+            raw: useInert ? String(bg.inert) : String(bg.getAttribute('aria-hidden')),
+          };
+        }, supported);
         await p.evaluate(() => {
           const bg = document.getElementById('probe-bg');
           if (bg) bg.parentNode.removeChild(bg);
@@ -427,10 +446,217 @@ const REPO = path.resolve(__dirname, '..');
         }
         if (!mid.stillInert) {
           return { ok: false,
-                   note: '🔴 关掉内层后，外层还在开着，但背景已被解锁 ' +
-                         '⇒ inert 记账混淆了「当前状态」与「归属权」' };
+                   note: '🔴 关掉内层后，外层还在开着，但背景已被解锁（机制=' + MECH +
+                         '）⇒ 记账混淆了「当前状态」与「归属权」' };
         }
-        return { ok: true, note: '内层关闭未解除外层的背景隔离 ✅' };
+        if (!afterAll.released) {
+          return { ok: false,
+                   note: '🔴 两层都关完后背景没还原（机制=' + MECH + '，实际=' +
+                         afterAll.raw + '）⇒ 开的时候设了，关的时候没还原干净' };
+        }
+        return { ok: true, note: '内层关闭未解除外层的背景隔离，全关后已还原 ✅（机制=' +
+                                 MECH + '）' };
+      },
+
+      /* 🔴 PR 补的 aria-hidden 兜底必须自己有一条回归。
+         现代 Chromium 都有 inert，上面那条永远走不到兜底分支
+         ⇒ 不主动构造就等于**没测**（把兜底删掉照样全绿）。
+         做法：把 inert 从 HTMLElement.prototype 上删掉，模拟
+         Safari < 15.5 / Chrome < 102 这类老 WebView。 */
+      '旧 WebView（无 inert）：背景改用 aria-hidden 隔离': async (p) => {
+        const env = await p.evaluate(() => {
+          window.__inertDesc = Object.getOwnPropertyDescriptor(
+            HTMLElement.prototype, 'inert') || null;
+          try { delete HTMLElement.prototype.inert; } catch (e) { /* 只读就删不掉 */ }
+          return { removed: !('inert' in HTMLElement.prototype) };
+        });
+        if (!env.removed) {
+          return { ok: false,
+                   note: '构造不出「没有 inert」的环境（原型上的 inert 删不掉）' };
+        }
+
+        /* 背景探针必须在弹层打开**之前**存在，才会被当成 body 的直接子节点 */
+        await p.evaluate(() => {
+          const bg = document.createElement('div');
+          bg.id = 'probe-aria';
+          bg.textContent = '背景容器（无 inert 环境）';
+          document.body.appendChild(bg);
+          window.Overlay.dialog({ title: 'A3', desc: '外层',
+                                  actions: [{ label: '好', variant: 'primary' }] });
+        });
+        await new Promise((r) => setTimeout(r, 420));
+
+        const s1 = await p.evaluate(() => {
+          const bg = document.getElementById('probe-aria');
+          return {
+            aria: bg ? bg.getAttribute('aria-hidden') : '(节点没了)',
+            inertUsed: bg ? bg.inert === true : false,
+          };
+        });
+
+        /* 再开一层：只关内层时，引用计数不许把 aria-hidden 撤掉 */
+        await p.evaluate(() => {
+          window.Overlay.dialog({ title: 'B3', desc: '内层',
+                                  actions: [{ label: '好', variant: 'primary' }] });
+        });
+        await new Promise((r) => setTimeout(r, 420));
+        await p.keyboard.press('Escape');
+        await new Promise((r) => setTimeout(r, 650));
+
+        const s2 = await p.evaluate(() => {
+          const bg = document.getElementById('probe-aria');
+          return {
+            layers: document.querySelectorAll('[role="dialog"]').length,
+            aria: bg ? bg.getAttribute('aria-hidden') : '(节点没了)',
+          };
+        });
+
+        await p.keyboard.press('Escape');
+        await new Promise((r) => setTimeout(r, 650));
+
+        const s3 = await p.evaluate(() => {
+          const bg = document.getElementById('probe-aria');
+          const out = { aria: bg ? bg.getAttribute('aria-hidden') : '(节点没了)' };
+          if (bg) bg.parentNode.removeChild(bg);
+          /* 还原原型，别把后面的用例带坏 */
+          if (window.__inertDesc) {
+            try { Object.defineProperty(HTMLElement.prototype, 'inert', window.__inertDesc); }
+            catch (e) { /* 还原失败也只是影响后续用例，前面已判完 */ }
+          }
+          return out;
+        });
+
+        if (s1.aria !== 'true' || s1.inertUsed) {
+          return { ok: false,
+                   note: '🔴 无 inert 时背景必须被设 aria-hidden="true"；实际 aria=' +
+                         String(s1.aria) + '、inert 被用了=' + s1.inertUsed };
+        }
+        if (s2.layers !== 1) {
+          return { ok: false,
+                   note: '关内层后应剩 1 层，实际 ' + s2.layers + '（判据场景没跑对）' };
+        }
+        if (s2.aria !== 'true') {
+          return { ok: false,
+                   note: '🔴 只关内层就把背景的 aria-hidden 撤了（实际=' +
+                         String(s2.aria) + '）⇒ 引用计数没起作用，读屏会重新走进背景' };
+        }
+        if (s3.aria !== null) {
+          return { ok: false,
+                   note: '🔴 全关后 aria-hidden 没还原成原始值（实际=' +
+                         String(s3.aria) + '，期望 null）' };
+        }
+        return { ok: true, note: '无 inert 时用 aria-hidden 隔离：设上了、嵌套不误撤、关闭后还原 ✅' };
+      },
+
+      /* 🔴🔴 第三轮外部审计（2026-10-26 深夜）要求把两件事**分开断言**：
+        「辅助技术隐藏背景」≠「键盘/指针交互隔离」。
+        上一条只证明了 aria-hidden 被设上 —— 而 aria-hidden **不阻止键盘和鼠标**：
+        背景按钮照样能 Tab 到、照样能点。把前者通过读成后者已解决，
+        是这次审计明确点出的误读。
+        所以这一条单独验"交互真的进不去"，同样先删掉 inert 构造旧环境。 */
+      '旧 WebView（无 inert）：背景的**键盘与指针**也必须进不去': async (p) => {
+        const env = await p.evaluate(() => {
+          window.__inertDesc2 = Object.getOwnPropertyDescriptor(
+            HTMLElement.prototype, 'inert') || null;
+          try { delete HTMLElement.prototype.inert; } catch (e) { /* 只读就删不掉 */ }
+          return { removed: !('inert' in HTMLElement.prototype) };
+        });
+        if (!env.removed) {
+          /* 构造不出环境 ⇒ 不许算通过（跳过不是通过） */
+          return { ok: false,
+                   note: '构造不出「没有 inert」的环境 ⇒ 交互隔离未被验证，不许记作通过' };
+        }
+
+        /* 背景里放一个**真能聚焦、真能点**的按钮 —— 这是判据的载体 */
+        await p.evaluate(() => {
+          const bg = document.createElement('div');
+          bg.id = 'probe-iso';
+          const b = document.createElement('button');
+          b.id = 'probe-iso-btn';
+          b.textContent = '背景按钮';
+          window.__bgClicks = 0;
+          b.addEventListener('click', () => { window.__bgClicks++; });
+          bg.appendChild(b);
+          document.body.appendChild(bg);
+          window.Overlay.dialog({
+            title: 'A4', desc: '隔离探测',
+            actions: [{ label: '好', variant: 'primary' }]
+          });
+        });
+        await new Promise((r) => setTimeout(r, 420));
+
+        /* ① 键盘：脚本 focus() 到背景按钮，焦点必须被拉回弹层 */
+        const kbd = await p.evaluate(() => {
+          const btn = document.getElementById('probe-iso-btn');
+          if (!btn) return { err: '背景按钮没了' };
+          btn.focus();
+          const a = document.activeElement;
+          const ov = document.querySelector('[role="dialog"]');
+          return {
+            inPanel: !!(ov && (a === ov || ov.contains(a))),
+            where: a ? (a.id || a.tagName) : '(null)',
+          };
+        });
+
+        /* ② 键盘：再连按 Tab，焦点仍然不许出去 */
+        let escaped = null;
+        for (let i = 0; i < 8; i++) {
+          await p.keyboard.press('Tab');
+          const inPanel = await p.evaluate(() => {
+            const ov = document.querySelector('[role="dialog"]');
+            const a = document.activeElement;
+            return !!(ov && (a === ov || ov.contains(a)));
+          });
+          if (!inPanel) { escaped = i + 1; break; }
+        }
+
+        /* ③ 指针：对背景按钮派发真事件，守卫必须拦下
+             · mousedown 用 dispatchEvent 的返回值判 —— 被 preventDefault 则返回 false
+             · click 要断言背景的监听**没被调用**（stopPropagation 在捕获阶段就断了） */
+        const ptr = await p.evaluate(() => {
+          const btn = document.getElementById('probe-iso-btn');
+          if (!btn) return { err: '背景按钮没了' };
+          const md = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
+          const mdOk = btn.dispatchEvent(md);
+          const ck = new MouseEvent('click', { bubbles: true, cancelable: true });
+          btn.dispatchEvent(ck);
+          return { mdNotPrevented: mdOk, bgClicks: window.__bgClicks };
+        });
+
+        /* 关闭并还原环境 */
+        await p.keyboard.press('Escape');
+        await new Promise((r) => setTimeout(r, 650));
+        await p.evaluate(() => {
+          const bg = document.getElementById('probe-iso');
+          if (bg) bg.parentNode.removeChild(bg);
+          if (window.__inertDesc2) {
+            try { Object.defineProperty(HTMLElement.prototype, 'inert', window.__inertDesc2); }
+            catch (e) { /* 还原失败只影响后续用例，前面已判完 */ }
+          }
+        });
+
+        if (kbd.err) return { ok: false, note: '🔴 ' + kbd.err };
+        if (!kbd.inPanel) {
+          return { ok: false,
+                   note: '🔴 脚本 focus() 到背景后焦点停在 `' + kbd.where +
+                         '`，没被拉回弹层 ⇒ 键盘隔离没实现（aria-hidden 管不到这个）' };
+        }
+        if (escaped !== null) {
+          return { ok: false,
+                   note: '🔴 第 ' + escaped + ' 次 Tab 焦点跑到弹层外 ⇒ 焦点陷阱在无 inert 时不成立' };
+        }
+        if (ptr.err) return { ok: false, note: '🔴 ' + ptr.err };
+        if (ptr.mdNotPrevented) {
+          return { ok: false,
+                   note: '🔴 背景按钮的 mousedown 没被拦下（dispatchEvent 返回 true）⇒ 指针隔离没实现' };
+        }
+        if (ptr.bgClicks !== 0) {
+          return { ok: false,
+                   note: '🔴 背景按钮的 click 监听被调用了 ' + ptr.bgClicks + ' 次 ⇒ 旧 WebView 上背景仍可点' };
+        }
+        return { ok: true,
+                 note: '无 inert 时：focus() 被拉回、连按 8 次 Tab 未逃出、mousedown 被拦、' +
+                       'click 监听未被调用 ✅（交互隔离与 aria-hidden 是两条独立契约）' };
       },
     },
   });
