@@ -14,6 +14,48 @@
 
 ## [Unreleased]
 
+### Added · 组合示例页 `examples/finance-report/`（2026-10-27）
+
+一张 A 股公司分析页，把库当素材拼成真实产品的一页：`detail-kpi` 指标区（带
+sparkline 迷你趋势）+ `rep--finance` 报告版式 + `Bar` 分部堆叠柱 +
+`scientific-plot` 费用率折线 + `tabs` 三张报表 + `table--financial` 五年指标 +
+`accordion` 口径说明 + `nav` 应用外壳与移动端抽屉 + 明暗主题切换。
+
+它的作用不是"再多一个 demo"，而是**组件组合起来是否成立**的活证据 ——
+单个组件都对、拼起来错位，正是组件库最典型的失败方式。
+已纳入视觉基线（受管页 40 → 41）。
+
+### Fixed · 三个"默认环境看不见"的缺陷
+
+**① 导航在「减少动态效果」下整块飞出屏幕**（最严重）
+`nav.css` 的 reduced-motion 段把移动端抽屉的"收起态位移"
+（`translateX(100%)`）写在了**无断点**的作用域里。后果：任何在系统里开启
+「减少动态效果」的用户，**桌面端顶部导航整体移出视口右侧**，菜单消失且无报错。
+实测 1440 视口下 `scrollWidth` 1440 → 1512，正好是列表自身宽度。
+修法：那两条移进 `@media (prefers-reduced-motion: reduce) and (max-width: 48rem)`。
+⚠️ 基线截图是 393 宽视口拍的，抽屉本来就该收起 ⇒ **视觉门禁永远看不见这个 bug**。
+
+**② 财务表的列头与数字不同侧**
+`<th>` 默认 `text-align: center`，而 `.num` 是 `end` ⇒ 列头「2021」居中、
+下面的「1,095」靠右，两者不在一条竖线上（五年表实测错开约半个列宽）。
+新增 `.table--financial thead th:not(:first-child) { text-align: end }`。
+⚠️ 只改 financial：三线表的表头居中是学科惯例，两者语义不同。
+
+**③ 窄容器里柱状图的刻度字缩到 3×6 像素**
+`bar.js` 把 `viewBox` 宽写死 640，注释还写着"靠 CSS width:100% 自适应" ——
+那句话是错的：`width:100%` 只是**等比缩放整张 SVG**，而图中的刻度字是绝对值
+（10px），跟着一起缩。393 视口（容器 334px）实测缩放 0.52 ⇒ 字号渲染成 3×6px。
+修法：新增 `opt.width`（默认 640，下限 240），布局本来就按 `plotW` 算的，
+传入真实容器宽后按容器重排、字号保持 10px。
+
+### Fixed · `visual-coverage-gate` 只认 `demo.html`
+
+判据把入口文件名写死成 `demo.html`，`examples/` 下用 `index.html` 的示例页
+要么扫不到（漏覆盖）、要么被当成"幽灵条目"判红。两种都是判据写错。
+改成 `ENTRY_NAMES` 常量一处定义，并把 `examples/` 纳入视野。
+放宽视野后立刻暴露一个既有缺口：`10-review/ios/` 从来没有基线
+（它是给人在 iPhone Safari 上逐条核对的验收清单，已登记豁免并写明理由）。
+
 ### Merged · 两条外部修复分支（2026-10-27）
 
 - `fix/overlay-aria-fallback`：旧 WebView 没有 `inert` 时补 `aria-hidden` + 交互隔离

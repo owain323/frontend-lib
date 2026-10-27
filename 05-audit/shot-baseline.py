@@ -120,6 +120,11 @@ PAGES = [
     ('04-recipes/detail-page',    'partial.html', '详情页-部分缺失'),
     ('04-recipes/detail-page',    'null.html', '详情页-无数据'),
     ('09-assets/scientific-plot',  'demo.html', '科学绘图'),
+    # ⭐ 2026-10-27 新增：组合示例页（examples/）也纳入回归。
+    #    理由：它是"库能拼成什么样"的活证据，坏掉不会被任何组件门禁发现
+    #    —— 单个组件都对、组合起来错位，正是组件库最典型的失败方式。
+    #    ⚠️ 加入前已确认 40/40 页像素一致（本页是新增，不参与那 40 页的比对）。
+    ('examples/finance-report',    'index.html', '金融分析示例页'),
 ]
 
 VIEWPORT = (393, 852)      # iPhone 尺寸：移动端是这个尺寸

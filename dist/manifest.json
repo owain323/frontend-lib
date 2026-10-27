@@ -8,8 +8,8 @@
   ],
   "totals": {
     "sourceFiles": 68,
-    "sourceBytes": 717792,
-    "distGzip": 92571
+    "sourceBytes": 720530,
+    "distGzip": 92649
   },
   "files": [
     {
@@ -575,15 +575,15 @@
     },
     {
       "source": "03-patterns/nav/nav.css",
-      "sourceSha256": "f39a75aff6398b73c97e843e0086dad461014fc1638a7e77d1a50a0dad05b4b6",
-      "sourceBytes": 11763,
-      "sourceGzip": 4315,
+      "sourceSha256": "2076c0bb55983e30edded770e6e2484a8662134940efa41af8f785e3fa75c225",
+      "sourceBytes": 12430,
+      "sourceGzip": 4640,
       "outputs": [
         {
           "path": "dist/03-patterns/nav/nav.css",
           "kind": "minified",
-          "bytes": 4707,
-          "gzip": 1257
+          "bytes": 4770,
+          "gzip": 1266
         }
       ]
     },
@@ -705,15 +705,15 @@
     },
     {
       "source": "03-patterns/tabs/tabs.css",
-      "sourceSha256": "ec388401622eff40ff300cbc00f63ce5a7ac8c384d2541f0fd57abaa3f81fa30",
-      "sourceBytes": 5435,
-      "sourceGzip": 2409,
+      "sourceSha256": "ed8efb7b44f3d422b95647b5fe29e722b693f1229cff11f86c2fb7eeae774e37",
+      "sourceBytes": 6008,
+      "sourceGzip": 2704,
       "outputs": [
         {
           "path": "dist/03-patterns/tabs/tabs.css",
           "kind": "minified",
-          "bytes": 1827,
-          "gzip": 664
+          "bytes": 1942,
+          "gzip": 712
         }
       ]
     },
@@ -834,15 +834,15 @@
     },
     {
       "source": "04-recipes/table/table.css",
-      "sourceSha256": "d428c8eaf3c9ad18a0d1ed8c2da054ac378ed0ef29ce445b4bece4a8a3b4e5a5",
-      "sourceBytes": 15290,
-      "sourceGzip": 5927,
+      "sourceSha256": "411044fa658d9f2fb0e23dc7e839c8261bcf4cb750e8e9bd6cd263a02e727f6a",
+      "sourceBytes": 15796,
+      "sourceGzip": 6169,
       "outputs": [
         {
           "path": "dist/04-recipes/table/table.css",
           "kind": "minified",
-          "bytes": 4863,
-          "gzip": 1370
+          "bytes": 4925,
+          "gzip": 1379
         }
       ]
     },
@@ -876,15 +876,15 @@
     },
     {
       "source": "09-assets/bar/bar.js",
-      "sourceSha256": "24d4830c6c9ee1f6355356959f6f761e726c11b2b837421b290cc897485df181",
-      "sourceBytes": 14125,
-      "sourceGzip": 5977,
+      "sourceSha256": "5f2789d7fdbb97d1d3cad8d29eed823324bbc1f018b56fc427a2073003b299a3",
+      "sourceBytes": 15117,
+      "sourceGzip": 6426,
       "outputs": [
         {
           "path": "dist/09-assets/bar/bar.js",
           "kind": "stripped",
-          "bytes": 5564,
-          "gzip": 2329
+          "bytes": 5606,
+          "gzip": 2341
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"

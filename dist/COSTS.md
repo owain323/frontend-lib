@@ -37,19 +37,19 @@
 | pattern | `dropdown` | 2.6 KB | 0.8 KB | 2.9 KB | **6.3 KB** | 26.3 KB | −20.0 KB |
 | pattern | `form-validation` | 2.6 KB | 0.8 KB | — | **3.4 KB** | 22.6 KB | −19.2 KB |
 | pattern | `list` | 2.6 KB | 0.6 KB | — | **3.2 KB** | 20.5 KB | −17.2 KB |
-| pattern | `nav` | 2.6 KB | 1.2 KB | — | **3.9 KB** | 22.3 KB | −18.4 KB |
+| pattern | `nav` | 2.6 KB | 1.2 KB | — | **3.9 KB** | 22.6 KB | −18.7 KB |
 | pattern | `overlay` | 2.6 KB | 1.1 KB | 2.8 KB | **6.6 KB** | 32.0 KB | −25.4 KB |
 | pattern | `pagination` | 2.6 KB | 0.8 KB | 2.6 KB | **6.0 KB** | 28.3 KB | −22.4 KB |
 | pattern | `reveal` | 2.6 KB | 0.3 KB | 1.1 KB | **4.1 KB** | 22.5 KB | −18.4 KB |
 | pattern | `states` | 2.6 KB | 0.8 KB | — | **3.5 KB** | 22.1 KB | −18.6 KB |
-| pattern | `tabs` | 2.6 KB | 0.6 KB | 2.0 KB | **5.2 KB** | 24.7 KB | −19.5 KB |
+| pattern | `tabs` | 2.6 KB | 0.7 KB | 2.0 KB | **5.3 KB** | 25.0 KB | −19.7 KB |
 | pattern | `tooltip` | 2.6 KB | 0.5 KB | 1.9 KB | **5.0 KB** | 24.7 KB | −19.7 KB |
 | pattern | `tree` | 2.6 KB | 0.6 KB | 2.9 KB | **6.2 KB** | 25.7 KB | −19.5 KB |
 
 ## 三、全库
 
-- 全部组件都用上（min，含 tokens 一份）：**57.3 KB**
-- 源码版（带注释）全库 gzip：279.6 KB
+- 全部组件都用上（min，含 tokens 一份）：**57.4 KB**
+- 源码版（带注释）全库 gzip：280.9 KB
 
 > ⚠️ 源码版那个数字**不是**要付的钱：它包含我们的注释（全库 CSS 有 66% 是注释，字节口径）。
 > 它的用途只有一个 —— 让人看清"dist 到底省了多少"。

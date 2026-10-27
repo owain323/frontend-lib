@@ -1,0 +1,143 @@
+/* ============================================================================
+   finance-report/page.css — 示例页的**页面级**微调
+   ============================================================================
+
+   🔴 这个文件为什么存在、以及它刻意**不**做什么
+   ---------------------------------------------------------------------------
+   页面的骨架（.page / .wrap / .lede / .note）、版式（.rep--finance）、
+   组件（.card / .badge / .table / .tabs / .accordion / .detail-kpi）、
+   图表（.sparkline / .bar / .splot）**全部来自库**，本文件一条都没有重抄。
+
+   它只补四件"这一页有、库里没有"的排布：
+     ① KPI 卡里塞进迷你趋势图（库的 detail-kpi 只定义了标签/值/变化三行）
+     ② 图表容器（库的 bar / splot 只画 SVG，不管外面那个框）
+     ③ tab 面板里第一张表的上边距（tabs 组件不知道面板里装的是什么）
+     ④ 窄屏下 KPI 卡的折行策略
+
+   🔴 所有颜色 / 间距 / 字号一律走令牌，没有一个写死的值。
+      这是"换主题自动成立"的前提，也是 05-audit 里 hardcode 系列门禁的底线。
+   ========================================================================== */
+
+/* ---------- ⓪ 本页的版面宽度：改的是**令牌**，不是规则 ----------
+   🔴 为什么不直接写 `.wrap { max-width: 60rem }`：
+      `.page .wrap` 的特异性是 (0,2,0)，页面上再写一条单类选择器压不过它，
+      只能加 !important —— 而 !important 一旦出现，使用者就再也没法覆盖。
+      ⇒ 改 `--measure-page` 这个**变量**：`.page .wrap` 的规则一个字没动，
+        只是它读到的值变大了。这是库允许的覆盖方式（见 tokens.css 的令牌分层）。
+
+   🔴 为什么必须变宽（实测，不是审美）：
+      `--rep-measure: 30em` 在 --fs-sm(14px) 下 = **420px**。
+      而 Bar 按 640px 设计、scientific-plot 按 720px 设计，
+      塞进 420px 的容器里会被 `width:100%` 整体缩放到 0.6 倍
+      ⇒ 图上的 12px 刻度字实际渲染成 **6px**（实测 rect 4×7），等于不可读。
+      ⇒ 把正文列放到 50em(700px)，图才回到接近 1:1。
+
+   三个数要一起算，改一个就要重算其余两个：
+      正文 50em(700) + 边注 16em(224) + 间距 sp-6(≈36) = 960px = 60rem */
+.fr {
+  --measure-page: 60rem;
+  --rep-measure: 50em;
+  --measure-aside: 16em;
+}
+
+/* ---------- ① KPI 卡内的迷你趋势 ----------
+   .sparkline 自己是 display:block + width:100%，
+   这里只负责给它一个不贴边的位置。
+   高度由 JS 按 data-spark-height 写进 --spark-h，样式不参与。 */
+.fr-kpi__spark {
+  margin-top: var(--sp-2);
+  color: var(--text-tertiary);       /* 图未画出来时的占位色 */
+}
+
+/* KPI 卡里三行 + 一张图，卡片会比正文高；
+   行高交给 detail-page.css，这里不覆写（库里 --sp-1 已经是最小档，
+   再写死 2px 就等于自己开了第二套间距体系 —— 换主题时不会跟着变）。 */
+
+/* ---------- ② 图表容器 ----------
+   🔴 为什么要有 border：图表是**白底 SVG**，页面也是白底，
+      不描边时图的边界靠刻度猜。描边不是为了好看，是为了让"图到哪为止"可判定。 */
+.fr-fig {
+  margin: var(--sp-4) 0;
+  padding: var(--sp-3);
+  background: var(--surface);
+  border: 1px solid var(--border-decor);
+  border-radius: var(--r-md);
+  /* 窄屏下宽图要能横向滚动，而不是把整页撑出横向滚动条 */
+  overflow-x: auto;
+}
+
+/* ---------- ③ tab 面板里的表 ----------
+   tabs 组件只管"面板显隐"，不管面板里装什么。
+   面板第一块内容贴着 tab 栏会显得没分开 ⇒ 这里补一个间距。 */
+.fr-tabs .tabs__panel > .table:first-child,
+.fr-tabs .tabs__panel > .fr-fig:first-child {
+  margin-top: var(--sp-3);
+}
+
+/* tab 栏在窄屏下会横滑，这是组件自己的行为；
+   这里只保证它不和上下的表格粘在一起 */
+.fr-tabs .tabs__list {
+  margin-bottom: 0;
+}
+
+/* ---------- ④ 窄屏：KPI 两列 ----------
+   detail-kpis 用的是 minmax(96px, 1fr) 自动填充，
+   393px 下会自动排成三列（每列 113px）—— 数字带单位后挤。
+   这里在窄屏显式降成两列，让"营收 1,741 亿"这一串写得下。 */
+@media (max-width: 30rem) {
+  .fr-kpis .detail-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ---------- ⑤ 侧栏卡片之间的呼吸 ----------
+   .rep__aside 里放的是 card 组件，card 自己不管兄弟间距。 */
+.fr-aside > * + * {
+  margin-top: var(--sp-3);
+}
+
+/* 🔴 侧栏里的 dl 必须自己排，不能靠浏览器默认值。
+   默认 dd 有 `margin-inline-start: 40px` ⇒ 在 224px 的侧栏里，
+   值会被缩进到几乎贴右边，看起来像错位（实测第一版就是这样）。
+   这里改成"标签一行、值一行"的紧凑块，与 analysis-report 的边注同一套写法。 */
+.fr-aside dl {
+  margin: var(--sp-2) 0 0;
+}
+
+.fr-aside dt {
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+}
+
+.fr-aside dt + dt,
+.fr-aside dd + dt {
+  margin-top: var(--sp-2);
+}
+
+.fr-aside dd {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--text-primary);
+}
+
+/* 侧栏里的列表项不要撑得比卡还宽 */
+.fr-aside .list__item {
+  padding-inline: 0;
+}
+
+/* 卡里的小字说明与上面的内容之间要分开，否则像同一段 */
+.fr-aside .card__body > .small {
+  margin: var(--sp-2) 0 0;
+}
+
+/* ---------- ⑥ 报表切换里的数字列不换行 ----------
+   财务表最怕 "1,741" 被折成 "1,74 / 1"。 */
+.fr-tabs .table td,
+.fr-tabs .table th {
+  white-space: nowrap;
+}
+
+/* ---------- ⑦ 页面在打印时：图表容器不要跨页撕裂 ---------- */
+@media print {
+  .fr-fig { break-inside: avoid; }
+}

@@ -39,15 +39,33 @@ import importlib.util
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# 视觉门禁的视野：这几层下所有 demo.html 都该被拍
+# 视觉门禁的视野：这几层下所有入口页都该被拍
+#   ⚠️ `examples/` 是 2026-10-27 加进来的：示例页是"组件能拼成什么样"的活证据，
+#     单个组件都对、组合起来错位，正是组件库最典型的失败方式。
 SCAN_DIRS = ('01-tokens', '02-primitives', '03-patterns',
-             '04-recipes', '09-assets', '10-review')
+             '04-recipes', '09-assets', '10-review', 'examples')
+
+# 入口文件名：组件的 demo 叫 demo.html，整页示例叫 index.html。
+# 🔴 原来这里写死 'demo.html' —— 于是 index.html 形式的示例页
+#    要么扫不到（漏覆盖），要么被当成"幽灵条目"报错。两种都是判据写错，
+#    不是页面错。放成常量一处定义，别在 glob 和 report 里各写一遍。
+ENTRY_NAMES = ('demo.html', 'index.html')
 
 # 豁免：必须有理由，且页面必须真实存在（③ 会核）
 EXEMPT = {
     '09-assets/echarts-adapter':
         '无 CSS（纯 JS 适配层），且依赖外部 CDN 的 echarts —— 截图不可稳定复现',
+    'examples/react-vite':
+        '需要 npm install + Vite 构建才能出页面，静态截图不可复现（同上一条的理由）',
+    '10-review/ios':
+        '给人在 iPhone Safari 上逐条核对的验收清单，不是可回归的版式；'
+        'Chromium 截图代表不了它的目标环境（本页的意义恰恰是 Safari 与 Chromium 的差异）',
 }
+
+
+def entry_name_of(dirpath):
+    """这个目录的入口文件叫什么 —— 只用于把报错信息说准。"""
+    return 'index.html' if dirpath.startswith('examples/') else 'demo.html'
 
 
 def load_pages():
@@ -63,15 +81,17 @@ def load_pages():
 
 
 def scan_demos():
-    """扫出视野内真实存在的 demo.html（返回 {目录: 文件名}）"""
+    """扫出视野内真实存在的入口页（返回 {目录: 文件名}）"""
     found = {}
     for d in SCAN_DIRS:
         base = os.path.join(ROOT, d)
         if not os.path.isdir(base):
             continue
-        for path in glob.glob(os.path.join(base, '**', 'demo.html'), recursive=True):
-            rel = os.path.relpath(os.path.dirname(path), ROOT).replace('\\', '/')
-            found[rel] = 'demo.html'
+        for name in ENTRY_NAMES:
+            for path in glob.glob(os.path.join(base, '**', name),
+                                  recursive=True):
+                rel = os.path.relpath(os.path.dirname(path), ROOT).replace('\\', '/')
+                found[rel] = name
     return found
 
 
@@ -89,14 +109,14 @@ def report(uncovered, phantom, dead_exempt):
         bad = True
         print('  [FAIL] 这些页面有 demo.html，却没有视觉基线（改坏了没人报警）：')
         for p in uncovered:
-            print('         + %s/demo.html' % p)
+            print('         + %s/%s' % (p, entry_name_of(p)))
         print('         → 加进 05-audit/shot-baseline.py 的 PAGES，然后 --update 录基线；')
         print('           确实不该拍的，写进本脚本 EXEMPT 并给出理由。')
     if phantom:
         bad = True
         print('  [FAIL] PAGES 里这些条目没有对应文件（门禁会比一个不存在的页面）：')
         for p in phantom:
-            print('         - %s/demo.html' % p)
+            print('         - %s/%s' % (p, entry_name_of(p)))
     if dead_exempt:
         bad = True
         print('  [FAIL] EXEMPT 里这些页面已经不存在了（白条过期 = 事实上的关闭开关）：')
@@ -136,15 +156,15 @@ def main():
     covered = load_pages()
     actual = scan_demos()
     if not actual:
-        print('  [FAIL] 一个 demo.html 都没扫到 —— 视野已空，不许判通过')
+        print('  [FAIL] 一个入口页都没扫到 —— 视野已空，不许判通过')
         return 2
 
     uncovered, phantom, dead_exempt = check(covered, actual, EXEMPT)
-    print('  受管页面 %d / 实际 demo %d / 豁免 %d'
+    print('  受管页面 %d / 实际入口页 %d / 豁免 %d'
           % (len(covered), len(actual), len(EXEMPT)))
     if report(uncovered, phantom, dead_exempt):
         return 1
-    print('  OK   全部 demo.html 都在视觉基线的视野内')
+    print('  OK   全部入口页都在视觉基线的视野内')
     return 0
 
 

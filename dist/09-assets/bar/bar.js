@@ -40,7 +40,8 @@ var max = +opt.max;
 var H = opt.height || 180;
 var nS = series.length;
 var mode = opt.mode === 'group' ? 'group' : 'stack';
-var W = 640;
+
+var W = Math.max(240, Math.round(+opt.width || 640));
 var padT = 14, padB = 22, padL = 34, padR = 8;
 var plotH = H - padT - padB;
 var plotW = W - padL - padR;
