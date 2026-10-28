@@ -6,10 +6,12 @@ autoinit-gate.py — 「哪些组件会自动初始化」必须三处一致
 ===========================================================================
 🔴 它抓什么（P3 · 交接单里被误判成"自动初始化静默失效"的那件事）
 ---------------------------------------------------------------------------
-  本库 19 个全局对象里，**只有 4 个会自动初始化**（Accordion / Tabs /
-  Pagination / ModelViewer + Chart 的 sparkline 观察，Reveal 是条件自动）。
+  本库 22 个全局对象里，**只有 7 个会自动初始化**（Accordion / Tabs /
+  Pagination / Nav / ModelViewer + Chart 的 sparkline 观察，Reveal 是条件自动）。
 
   剩下 15 个必须自己 `create` / `new` / `attach` / 直接调。
+  （数字随代码走：本门禁每次运行都会打印实测的「7 个自动初始化」和文件名单，
+    那行输出才是真值；这段文字如果哪天对不上，改这段，不要改门禁。）
 
   这个区别**从来没有写在文档里**。后果不是"少一行文档"，而是：
 
@@ -106,15 +108,30 @@ def marks(root):
 
 
 def globals_map(root):
-    """{全局名: js 相对路径} —— 来自组件契约（单一真源）。"""
+    """{全局名: js 相对路径} —— 来自组件契约（单一真源）。
+
+    🔴 一个组件目录可以导出**不止一个**全局（0.11.2：nav/ 里 nav.js 导 `Nav`、
+       toc.js 导 `Toc`）。只读 `global` 一个字段的话，第二个全局在门禁眼里
+       **不存在** ⇒ 表里写了它反而被判「库里没有这个全局」—— 这是**误报**，
+       而误报的处置方式如果改成"把表里那行删掉"，就等于拿真实信息换绿灯。
+       ⇒ 契约补 `globalAlso`（同样从源码正则推出来，不是手写），门禁认它。
+    """
     p = os.path.join(root, 'ai', 'components.json')
     d = json.loads(_read(p))
     m = {}
+
+    def fix(v):
+        return (v or '').replace(os.sep, '/')
+
     for c in d.get('components') or []:
+        files = c.get('files') or {}
         g = c.get('global')
-        if not g:
-            continue
-        m[g] = ((c.get('files') or {}).get('js') or '').replace(os.sep, '/')
+        if g and g not in m:
+            m[g] = fix(files.get('js'))
+        for extra in c.get('globalAlso') or []:
+            name = extra.get('global')
+            if name and name not in m:
+                m[name] = fix(extra.get('js'))
     return m
 
 
@@ -256,9 +273,11 @@ LIAR_JS = ("// @autoinit: [data-nope]\n"
 SELF_JS = ("// @autoinit: self\n"
            "if (document.readyState === 'loading') {\n"
            "  document.addEventListener('DOMContentLoaded', function () {});\n}\n")
+# 同目录下的第二个脚本：导出另一个全局，但**不**自动初始化
+SECOND_JS = "var Toc = { init: function () {} };\nwindow.Toc = Toc;\n"
 
 
-def _fixture(tmp, files, table, globals_):
+def _fixture(tmp, files, table, globals_, also=None):
     for rel, body in files.items():
         p = os.path.join(tmp, rel)
         d = os.path.dirname(p)
@@ -267,6 +286,14 @@ def _fixture(tmp, files, table, globals_):
         io.open(p, 'w', encoding='utf-8', newline='\n').write(body)
     comps = {'components': [{'id': g.lower(), 'global': g,
                              'files': {'js': js}} for g, js in globals_.items()]}
+    # `also`：同一目录下的**第二个**全局 ⇒ 挂到目录相同的那个组件上（`globalAlso`）
+    for g, js in (also or {}).items():
+        for c in comps['components']:
+            if os.path.dirname(c['files']['js']) == os.path.dirname(js):
+                c.setdefault('globalAlso', []).append({'global': g, 'js': js})
+                break
+        else:
+            raise AssertionError('also 里的 %s 找不到同目录组件' % g)
     p = os.path.join(tmp, 'ai')
     if not os.path.isdir(p):
         os.makedirs(p)
@@ -332,15 +359,46 @@ def selftest():
                '02-primitives/select/select.js': SELECT_JS},
         table=[('Select', '否')],
         globals_={'Select': '02-primitives/select/select.js'}), False))
+    # ⑧ 同目录第二个全局（nav 的实际形状）：契约里有、表里漏 ⇒ 必须红
+    #    —— 这条是 0.11.2 的真事故：契约只记 `global` 一个字段，
+    #       于是 toc.js 导出的 `Toc` 在门禁眼里不存在，表里写了它被报"库里没有"。
+    #    ⚠️ 第一版这两个样本里**一个自动初始化脚本都没有** ⇒ 命中"判据空转"，
+    #       红得对但红错了理由（漏进表根本没被验到）。⇒ 必须搭一个会自动初始化的
+    #       Widget 让门禁有东西可查，并**断言红的理由**是"没进表"，不是"空转"。
+    cases.append(('同目录第二个全局漏进表 ⇒ 红', dict(
+        files={'02-primitives/select/select.js': SELECT_JS,
+               '02-primitives/select/extra.js': SECOND_JS,
+               '03-patterns/widget/widget.js': AUTO_JS},
+        table=[('Select', '否'), ('Widget', '是')],
+        globals_={'Select': '02-primitives/select/select.js',
+                  'Widget': '03-patterns/widget/widget.js'},
+        also={'Toc': '02-primitives/select/extra.js'}), True, '没进'))
+    # ⑨ 同上但表里写全了 ⇒ 绿（证明 globalAlso 这条路径是**通**的，不只是会红）
+    cases.append(('同目录第二个全局登记完整 ⇒ 绿', dict(
+        files={'02-primitives/select/select.js': SELECT_JS,
+               '02-primitives/select/extra.js': SECOND_JS,
+               '03-patterns/widget/widget.js': AUTO_JS},
+        table=[('Select', '否'), ('Widget', '是'), ('Toc', '否')],
+        globals_={'Select': '02-primitives/select/select.js',
+                  'Widget': '03-patterns/widget/widget.js'},
+        also={'Toc': '02-primitives/select/extra.js'}), False))
 
     bad = 0
-    for name, spec, want_red in cases:
+    for case in cases:
+        name, spec, want_red = case[0], case[1], case[2]
+        # 第 4 项（可选）：红的**理由**必须命中这个词。
+        # 只断言"红"是不够的 —— 门禁可能因为别的原因红（"判据空转"就抓到过一次），
+        # 那种"红"对被测判据来说是零信息量。
+        want_sub = case[3] if len(case) > 3 else None
         tmp = tempfile.mkdtemp(prefix='fl-autoinit-')
         try:
-            _fixture(tmp, spec['files'], spec['table'], spec['globals_'])
+            _fixture(tmp, spec['files'], spec['table'], spec['globals_'],
+                     spec.get('also'))
             probs = run(tmp)
             red = bool(probs)
             ok = (red == want_red)
+            if ok and want_sub:
+                ok = any(want_sub in p[1] or want_sub in p[2] for p in probs)
             print('  %s %-34s 期望=%s 实得=%s%s'
                   % ('OK ' if ok else '🔴 ', name,
                      '红' if want_red else '绿',

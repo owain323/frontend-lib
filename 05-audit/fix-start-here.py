@@ -179,19 +179,17 @@ def measure():
         #    而那恰恰是最危险的一栏（行为契约藏在里面）。
         #    ⇒ 找不到就退回"目录里唯一的 .js"，并把真实文件名带出去。
         d = os.path.dirname(os.path.join(ROOT, rel))
-        js = os.path.join(d, name + '.js')
-        if os.path.isfile(js):
-            n_js = sum(1 for _ in io.open(js, encoding='utf-8'))
-            js_name = name + '.js'
-        else:
-            cands = [f for f in os.listdir(d) if f.endswith('.js')]
-            if len(cands) == 1:
-                n_js = sum(1 for _ in io.open(os.path.join(d, cands[0]),
-                                              encoding='utf-8'))
-                js_name = cands[0]
-            else:
-                n_js, js_name = 0, None
-        rows.append((name, rel, n_css, n_js, js_name))
+        # 🔴 一个组件可以有**多个** JS（0.11.2：nav = nav.js 行为层 + toc.js 目录增强）。
+        #    旧版写的是"目录里唯一的 .js"，于是 nav 加第二个 JS 之后：
+        #      cands 长度 2 ⇒ n_js=0, js_name=None ⇒ 表格显示「—」、
+        #      分类校验第一行就 `continue` ⇒ **门禁自己静默失效了**。
+        #    ⭐ 这比它要防的 bug 更隐蔽：校验脚本报"全部通过"，而事实是它什么都没查。
+        #    ⇒ 一次把目录里所有 .js 都带出去，由分类表逐文件核对。
+        js_files = []
+        for fn in sorted(f for f in os.listdir(d) if f.endswith('.js')):
+            js_files.append((fn, sum(1 for _ in
+                                     io.open(os.path.join(d, fn), encoding='utf-8'))))
+        rows.append((name, rel, n_css, js_files))
     return rows
 
 
@@ -222,48 +220,68 @@ def js_mechanisms(rel, js_name):
     ])
 
 
+def _decl(v):
+    """登记值有两种写法，统一成 ((文件, 理由), …)：
+
+        'tabs.js'                     —— 只有一个必需文件
+        ('flip.js', '理由')            —— 一个可选文件 + 理由
+        (('nav.js', '理由'), ('toc.js', '理由'))  —— 一个组件多个文件
+    """
+    v = v or ()
+    if isinstance(v, str):
+        return ((v, ''),)
+    if v and isinstance(v[0], str):
+        return (tuple(v),)
+    return tuple(v)
+
+
 def check_js_classification(rows, required, optional):
     """「必需 / 可选」是**人写的判断**，所以它必须被源码反向校验。
 
-    三条判据：
-      ① 目录里有 JS，却既不标必需也不标可选 ⇒ 漏登记（新增组件最容易犯）
-      ② 标了"必需"，源码里却没有行为契约的痕迹 ⇒ 标错了，那是纯增强
-      ③ 标了"可选"，源码里却满是行为契约 ⇒ 也标错了，它其实必需
+    判据（按**文件**核对，不是一个组件一个结论 —— 0.11.2 改）：
+      ① 目录里有 JS，却不在任一张表里           ⇒ 漏登记
+      ② 表里登记了，目录里却没有这个文件        ⇒ 陈旧登记（改名/删除没同步）
+      ③ 标"必需"的文件里行为契约痕迹不足        ⇒ 标错了，那是纯增强
+      ④ 标"可选"的文件里行为契约痕迹很多        ⇒ 标错了，它是行为层
+
+    为什么改成按文件：nav 现在有 nav.js（行为层，必需）和 toc.js（目录增强，可选）
+    两个文件，"这个组件的 JS 是必需还是可选"这个问题**本身就没有答案**。
+    按组件给结论，必然要么漏一个、要么把一个说错。
 
     任何一条不符就退出 —— 分类表自己不会说话，只能靠这个替它说话。
     """
-    # 🔴 图表类组件（09-assets）**不适用** aria 计数判据：
-    #   那条判据数的是键盘/ARIA 行为契约，是为**交互组件**设计的；
-    #   图表的 JS 是「把数据画出来」，它理应没有那些（实测 0/2/0/0）。
-    #   ⇒ 对这类组件，判据只证明它能证明的事：**登记的 JS 文件真的存在**。
-    #   分类本身是**显式声明**（连理由一起写进 REQUIRED_JS 上方的注释）。
     ASSET_TIER = '09-assets'
     bad = []
-    for name, rel, n_css, n_js, js_name in rows:
-        if not js_name:
+    for name, rel, n_css, js_files in rows:
+        if not js_files:
             continue
-        if name not in required and name not in optional:
+        on_disk = set(fn for fn, _ in js_files)
+        decl_r = dict(_decl(required.get(name)))
+        decl_o = dict(_decl(optional.get(name)))
+        registered = set(decl_r) | set(decl_o)
+
+        for fn in sorted(on_disk - registered):
             bad.append('%s：有 %s，但没登记进 REQUIRED_JS / OPTIONAL_JS'
-                       % (name, js_name))
-            continue
-        declared = (required.get(name) or (optional[name][0]))[:]
-        if js_name not in declared:
-            bad.append('%s：登记的是 %s，目录里实际是 %s ⇒ 改名后没同步'
-                       % (name, declared, js_name))
-            continue
+                       % (name, fn))
+        for fn in sorted(registered - on_disk):
+            bad.append('%s：登记了 %s，但目录里没有这个文件 ⇒ 改名后没同步'
+                       % (name, fn))
         if rel.startswith(ASSET_TIER + '/'):
             continue          # 图表类：跳过 aria 计数，只查文件存在（上面已查）
-        n = len(PAT_BEHAVIOR.findall(
-            io.open(_js_path(rel, js_name), encoding='utf-8').read()))
-        if name in required and n < ARIA_MIN:
-            bad.append('%s：标了「必需」，但 %s 里行为契约只有 %d 处（< %d）'
-                       ' ⇒ 它是纯增强，不该标必需' % (name, js_name, n, ARIA_MIN))
-        elif name in optional and n >= ARIA_MIN:
-            bad.append('%s：标了「可选」，但 %s 里行为契约有 %d 处（>= %d）'
-                       ' ⇒ 它是行为层，不该标可选' % (name, js_name, n, ARIA_MIN))
+
+        for fn in sorted(on_disk & registered):
+            n = len(PAT_BEHAVIOR.findall(
+                io.open(_js_path(rel, fn), encoding='utf-8').read()))
+            if fn in decl_r and n < ARIA_MIN:
+                bad.append('%s：%s 标了「必需」，但行为契约只有 %d 处（< %d）'
+                           ' ⇒ 它是纯增强，不该标必需' % (name, fn, n, ARIA_MIN))
+            elif fn in decl_o and n >= ARIA_MIN:
+                bad.append('%s：%s 标了「可选」，但行为契约有 %d 处（>= %d）'
+                           ' ⇒ 它是行为层，不该标可选' % (name, fn, n, ARIA_MIN))
     if bad:
         raise SystemExit(
-            'JS 的「必需 / 可选」分类与源码不符：\n  - ' + '\n  - '.join(bad))
+            'JS 的「必需 / 可选」分类与源码不符：' + chr(10) + '  - '
+            + (chr(10) + '  - ').join(bad))
 
 
 def build_table(rows, comps):
@@ -301,6 +319,10 @@ def build_table(rows, comps):
         'popover': 'popover.js',
         'date-range': 'date-range.js',
         'pagination': 'pagination.js',
+        # 🔴 0.11.2 补：nav 的抽屉行为层。之前它**不存在** ——
+        #    nav.css 定义了三个状态却没人切，每个使用者抄一份，
+        #    抄出来的版本把 aria-hidden 打在抽屉祖先上（截图全绿、读屏全哑）。
+        'nav': (('nav.js', '抽屉行为：Esc / 焦点归位 / 背景锁 / 遮罩 / 变宽自关'),),
         'tooltip': 'tooltip.js',
         'tree': 'tree.js',
         # 🔴 09-assets 四个（0.8.3 补）：它们的 JS 是**必需**的 ——
@@ -315,20 +337,23 @@ def build_table(rows, comps):
         'scientific-plot': 'scientific-plot.js',
         'model-viewer': 'model-viewer.js',
     }
+    # 🔴 一个组件可以有多个 JS（0.11.2）：nav = nav.js（行为层，必需）+ toc.js（目录增强，可选）。
+    #    ⇒ 登记值允许写成 ((文件, 理由), …) —— 混合写法见 _decl()。
     OPTIONAL_JS = {'list': ('flip.js', 'FLIP 增删动画，纯增强'),
-                   'nav': ('toc.js', '自动生成目录，纯增强'),
+                   'nav': (('toc.js', '自动生成目录，纯增强'),),
                    'reveal': ('reveal.js', '入场动效，纯增强；没有它内容直接可见')}
     check_js_classification(rows, REQUIRED_JS, OPTIONAL_JS)
-    for name, rel, n_css, n_js, js_name in rows:
-        if name in REQUIRED_JS:
-            js = '**必需 %d** (`%s`)' % (n_js, js_name)
-        elif name in OPTIONAL_JS:
-            fn, why = OPTIONAL_JS[name]
-            js = '可选 %d (`%s`，%s)' % (n_js, fn, why)
-        elif n_js:
-            js = '**%d** (`%s`)' % (n_js, js_name)
-        else:
-            js = '—'
+    for name, rel, n_css, js_files in rows:
+        lines = dict(js_files)
+        parts = []
+        for fn, _why in _decl(REQUIRED_JS.get(name)):
+            parts.append('**必需 %d** (`%s`)' % (lines.get(fn, 0), fn))
+        for fn, why in _decl(OPTIONAL_JS.get(name)):
+            parts.append('可选 %d (`%s`，%s)' % (lines.get(fn, 0), fn, why))
+        if not parts and js_files:
+            # 没登记（新组件还没分类）：只把文件名亮出来，不假装它是必需或可选
+            parts.append('`%s`' % '` · `'.join(fn for fn, _ in js_files))
+        js = ' · '.join(parts) if parts else '—'
         # beta 从契约里读，不手抄 —— 契约一变，入口跟着变。
         cn = CN.get(name, name)
         c = comps.get(name)
@@ -344,11 +369,10 @@ def build_table(rows, comps):
             '',
             '| 组件 | JS | JS 里实测承担的机制 |',
             '|---|---|---|']
-    for name, rel, n_css, n_js, js_name in rows:
-        if name not in REQUIRED_JS:
-            continue
-        out.append('| %s | `%s` | %s |'
-                   % (CN.get(name, name), js_name, js_mechanisms(rel, js_name)))
+    for name, rel, n_css, js_files in rows:
+        for fn, _why in _decl(REQUIRED_JS.get(name)):
+            out.append('| %s | `%s` | %s |'
+                       % (CN.get(name, name), fn, js_mechanisms(rel, fn)))
     out += ['',
             '**已经人工验证过后果的三条**（其余的按上表推断，不要凭印象写后果）：',
             '',

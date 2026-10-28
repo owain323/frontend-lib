@@ -272,6 +272,23 @@ def scan_component(cid, cdir, tier, meta, layer_dir):
         if m:
             global_name = m.group(1)
 
+    # 🔴 一个目录可以有**多个**全局（0.11.2：nav/ 里 nav.js 导出 Nav、toc.js 导出 Toc）。
+    #    只记主文件那个 ⇒ 另一个全局在契约里**彻底消失** ⇒ autoinit 门禁拿不到它
+    #    ⇒ 「表里多了一个库里没有的全局 Toc」这种**误报**（真值是表对了、契约缺了）。
+    #    ⚠️ 修法不是从表里删掉 Toc（那是拿错误换绿灯），是让契约认第二个文件。
+    js_also = [os.path.relpath(os.path.join(cdir, f), ROOT).replace('\\', '/')
+               for f in sorted(os.listdir(cdir))
+               if f.endswith('.js')
+               and (not js_path or f != os.path.basename(js_path))]
+    global_also = []
+    for rel in js_also:
+        try:
+            m = RE_GLOBAL.search(io.open(os.path.join(ROOT, rel), encoding='utf-8').read())
+        except IOError:
+            m = None
+        if m and m.group(1) != global_name:
+            global_also.append({'global': m.group(1), 'js': rel})
+
     dedicated = dedicated_gates(cid, layer_dir)
 
     has_demo = demo_path is not None
@@ -319,6 +336,14 @@ def scan_component(cid, cdir, tier, meta, layer_dir):
         'files': {
             'css': os.path.relpath(css_path, ROOT).replace('\\', '/'),
             'js': os.path.relpath(js_path, ROOT).replace('\\', '/') if js_path else None,
+            # 🔴 一个组件可以有**多个** JS（0.11.2：nav = nav.js 行为层 + toc.js 目录增强）。
+            #    `files.js` 只放**主**文件（与 `global` 对应的那个），其余的放这里。
+            #    没有这个字段的话，第二个文件在契约里**彻底消失** ——
+            #    而 AI 消费者读的就是这份契约：看不见就等于不存在。
+            #    ⚠️ 旧版按 `<id>.js` 找主文件，找不到就退到"目录里唯一的 .js"；
+            #       出现第二个 .js 之后，nav 的主文件会**随机**落到排序第一个
+            #       （实际正好是 nav.js，但这属于碰巧，不是判据）。
+            'jsAlso': js_also,
             'demo': os.path.relpath(demo_path, ROOT).replace('\\', '/') if demo_path else None,
         },
         'slots': elements,
@@ -334,6 +359,8 @@ def scan_component(cid, cdir, tier, meta, layer_dir):
         },
         'usesOtherNamespaces': sorted(set(foreign)),
         'global': global_name,
+        # 同目录下一个组件还能导出的**其他**全局（主文件之外）。空列表 = 只有一个全局。
+        'globalAlso': global_also,
         'behaviorRef': 'API.md#' + cid,
     }
 

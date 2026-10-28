@@ -130,7 +130,43 @@
   }
 }
 
-.rep__body { max-width: var(--rep-measure); }
+/* --------- 行长：施加在**内容块**上，不是施加在列容器上 ---------
+   🔴 为什么不能在 .rep__body 上压 max-width（0.11.2 改）
+      容器一压，任何子元素都不可能比它更宽 —— 于是 `.rep__fig--wide`
+      （README 里写着"大图请放进正文流"）**永远是个空类**：
+      `max-width:none` 对一个本来就比父容器窄的元素毫无作用。
+      实测：金融版行长 30em@14px = 420px，1800 宽的折线图被压到 420px，
+      刻度字缩到 6px。当时是靠"把 --rep-measure 改成 50em"绕过去的，
+      那等于**把整页正文也放宽** —— 用错误换错误。
+   ⇒ 正确做法：行长逐块施加（这也是 tokens.css 里 h1/p 的既有写法）。
+      文字保持 30em，图/表默认跟行长，加 `--wide` 才用满正文列。
+   ⚠️ 只施加在 **font-size = 基准** 的块上：`30em` 里的 em 跟着**元素自身**
+      字号走，套到 h2（1.5rem）上会静默变成 30×1.5rem=720px。
+      标题本来就由 `--measure-title` 管，这里不重复。 */
+.rep__body { max-width: none; }
+
+.rep__body p,
+.rep__body ul,
+.rep__body ol,
+.rep__body dl,
+.rep__body .rep__fig,
+.rep__body .table,
+.rep__body .kf,
+.rep__body .accordion,
+.rep__body .rep__note,
+.rep__body .rep__risk,
+.rep__body .rep__keyline { max-width: var(--rep-measure); }
+
+/* ⭐ 宽图 / 宽表通道：唯一的开关。
+   默认跟行长（读者不必左右甩头），需要看清细节时才用满正文列。
+   ⚠️ 它只放宽到**正文列**为止，不越过边注 —— 越过边注是整页版式的事，
+      不是一张图的事。
+   🔴 特异性必须写成 `.rep__body .rep__wide`（0,2,0）而不是裸类（0,1,0）：
+      上面那条压缩正文的规则是 0,2,0，裸类压不过它 ——
+      **加了 class 却没生效**，是比没有这个 class 更难查的一种失败。
+      （实测：写成裸类时 `.rep__fig--wide` 的量出来还是 420px。） */
+.rep__body .rep__fig--wide,
+.rep__body .rep__wide { max-width: none; }
 .rep__aside { color: var(--text-secondary); }
 
 /* --------- 间距层级：五级，全部走令牌 ---------
@@ -241,9 +277,11 @@
   --rep-lead-fs: var(--fs-xl);
 }
 
-.rep--magazine .rep__fig--wide {
-  max-width: none;                        /* 出血：图可以比正文宽 */
-}
+/* 🟡 删掉 `.rep--magazine .rep__fig--wide { max-width: none }`（0.11.2）：
+   它注释写着"出血：图可以比正文宽"，但当时正文列整体被压到 42em，
+   子元素再宽的 max-width 也越不过父容器 ⇒ 这条规则**从来没有生效过**。
+   现在宽图通道在基础层统一实现（见上方 `.rep__fig--wide, .rep__wide`），
+   三个 profile 共用，不需要每套再写一遍。 */
 
 /* 🔴 为什么这里保留彩色竖条（0.8.4 · 全库竖条政策）
    本库整体立场是去掉纯装饰竖条（见 typography.css 的删除记录）。

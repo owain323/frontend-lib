@@ -7,9 +7,9 @@
     "manifesto 里的 sourceSha256 变了而 dist 没重建 ⇒ dist-parity/dist-fresh 门禁会红"
   ],
   "totals": {
-    "sourceFiles": 68,
-    "sourceBytes": 720530,
-    "distGzip": 92649
+    "sourceFiles": 69,
+    "sourceBytes": 740911,
+    "distGzip": 95349
   },
   "files": [
     {
@@ -588,6 +588,21 @@
       ]
     },
     {
+      "source": "03-patterns/nav/nav.js",
+      "sourceSha256": "7c611c4ac4b093fd7a066459b7e1fd581ce4c06ddb355a1494dd77389b1ac1b5",
+      "sourceBytes": 18038,
+      "sourceGzip": 6778,
+      "outputs": [
+        {
+          "path": "dist/03-patterns/nav/nav.js",
+          "kind": "stripped",
+          "bytes": 8464,
+          "gzip": 2649
+        }
+      ],
+      "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
+    },
+    {
       "source": "03-patterns/nav/toc.js",
       "sourceSha256": "e6dd2c5c2706ab9587f7f4e804a89057a60867b048e9bcb0fcd4bd2560a591ca",
       "sourceBytes": 4271,
@@ -820,15 +835,15 @@
     },
     {
       "source": "04-recipes/report/report.css",
-      "sourceSha256": "1e4c3886a82fedd8fa8bf90759232f4af8c85c733496d6e9fd0bd835207a1c7e",
-      "sourceBytes": 13742,
-      "sourceGzip": 5419,
+      "sourceSha256": "41a609adb315ba750c2125bbd0682dd562a3cd84de9500d68e26d907b3906b50",
+      "sourceBytes": 16085,
+      "sourceGzip": 6400,
       "outputs": [
         {
           "path": "dist/04-recipes/report/report.css",
           "kind": "minified",
-          "bytes": 3917,
-          "gzip": 1122
+          "bytes": 4163,
+          "gzip": 1173
         }
       ]
     },

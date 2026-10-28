@@ -43,7 +43,7 @@
 <a class="skip" href="#main">跳到主内容</a>
 
 <!-- ══════════════════════════════════════════════════════ 应用外壳 -->
-<header class="nav">
+<header class="nav" data-nav>
   <div class="nav__inner">
     <a class="nav__brand" href="#main">财务分析台 <span>/ A 股</span></a>
 
@@ -182,7 +182,7 @@
           两段分别是茅台酒与系列酒。
         </p>
 
-        <figure class="rep__fig">
+        <figure class="rep__fig rep__fig--wide">
           <div class="fr-fig" id="segChart"></div>
           <figcaption class="rep__cap">
             图 1 · 2021–2025 年营业总收入分部构成（单位：亿元）。
@@ -211,7 +211,7 @@
           不同量级的变量<strong>不能</strong>各自一条轴，那样交点全是假的。
         </p>
 
-        <figure class="rep__fig">
+        <figure class="rep__fig rep__fig--wide">
           <div class="fr-fig" id="costChart"></div>
           <figcaption class="rep__cap">
             图 2 · 三项费用率（占营业总收入比重，%）。Y 轴 0–10%，
@@ -253,7 +253,7 @@
           <!-- ---------- 利润表 ---------- -->
           <div class="tabs__panel" role="tabpanel" id="panel-is"
                aria-labelledby="tab-is" tabindex="0">
-            <div class="table table--financial table--compact"
+            <div class="table table--financial table--compact rep__wide"
                  tabindex="0" role="region" aria-label="利润表（可横向滚动）">
               <table>
                 <caption class="table__cap">表 1 · 合并利润表主要项目（2025 年度）</caption>
@@ -325,7 +325,7 @@
           <!-- ---------- 资产负债表 ---------- -->
           <div class="tabs__panel" role="tabpanel" id="panel-bs"
                aria-labelledby="tab-bs" tabindex="0" hidden>
-            <div class="table table--financial table--compact"
+            <div class="table table--financial table--compact rep__wide"
                  tabindex="0" role="region" aria-label="资产负债表（可横向滚动）">
               <table>
                 <caption class="table__cap">表 2 · 合并资产负债表主要项目（2025-12-31）</caption>
@@ -373,7 +373,7 @@
           <!-- ---------- 现金流量表 ---------- -->
           <div class="tabs__panel" role="tabpanel" id="panel-cf"
                aria-labelledby="tab-cf" tabindex="0" hidden>
-            <div class="table table--financial table--compact"
+            <div class="table table--financial table--compact rep__wide"
                  tabindex="0" role="region" aria-label="现金流量表（可横向滚动）">
               <table>
                 <caption class="table__cap">表 3 · 合并现金流量表主要项目（2025 年度）</caption>
@@ -413,7 +413,7 @@
           <strong>0 是"确实是零"，缺失是"没有这个数"，两者语义相反</strong>。
         </p>
 
-        <div class="table table--financial"
+        <div class="table table--financial rep__wide"
              tabindex="0" role="region" aria-label="五年主要财务指标（可横向滚动）">
           <table>
             <caption class="table__cap">表 4 · 2021–2025 年主要财务指标</caption>
@@ -670,6 +670,7 @@
      ⚠️ tabs / accordion / sparkline 会自初始化（扫 data-* 属性），
         bar / scientific-plot 必须显式调用 —— 因为它们需要数据，猜不出来。 -->
 <script src="../../01-tokens/theme-toggle.js"></script>
+<script src="../../03-patterns/nav/nav.js"></script>
 <script src="../../03-patterns/tabs/tabs.js"></script>
 <script src="../../03-patterns/accordion/accordion.js"></script>
 <script src="../../09-assets/sparkline/sparkline.js"></script>
@@ -679,61 +680,6 @@
 <script>
 (function () {
   'use strict';
-
-  /* ------------------------------------------------ 移动端导航抽屉
-     ⚠️ 组件只给了样式和 `data-state` 约定，开关逻辑要页面自己接
-        （nav 目录目前只有 toc.js，没有 nav.js —— 见交付报告的"库缺口"一节）。
-     ⚠️ 全 ES5：老 WebView 上 const / 箭头函数直接语法错误。 */
-  var navToggle = document.getElementById('nav-toggle');
-  var navList = document.getElementById('nav-list');
-  var navScrim = document.getElementById('nav-scrim');
-  var lastFocused = null;
-
-  function navIsOpen() {
-    return navToggle.getAttribute('aria-expanded') === 'true';
-  }
-
-  function navOpenFn() {
-    lastFocused = document.activeElement;      /* 记住是谁打开的 */
-    navList.setAttribute('data-state', 'open');
-    navScrim.setAttribute('data-state', 'open');
-    navToggle.setAttribute('aria-expanded', 'true');
-    navToggle.setAttribute('aria-label', '关闭菜单');
-    document.body.style.overflow = 'hidden';   /* 抽屉打开时锁背景滚动 */
-    /* 焦点必须进抽屉 —— 否则键盘用户还留在抽屉外面 */
-    var first = navList.querySelector('a');
-    if (first) first.focus();
-  }
-
-  function navClose() {
-    if (!navIsOpen()) return;
-    navList.removeAttribute('data-state');
-    navScrim.removeAttribute('data-state');
-    navToggle.setAttribute('aria-expanded', 'false');
-    navToggle.setAttribute('aria-label', '打开菜单');
-    document.body.style.overflow = '';
-    /* 焦点必须回到汉堡按钮 —— 丢了焦点键盘用户就不知道自己在哪 */
-    if (lastFocused && lastFocused.focus) lastFocused.focus();
-    else navToggle.focus();
-  }
-
-  if (navToggle && navList && navScrim) {
-    navToggle.addEventListener('click', function () {
-      if (navIsOpen()) navClose(); else navOpenFn();
-    });
-    navScrim.addEventListener('click', navClose);
-    /* 点抽屉里的锚点：先让浏览器跳，再关 —— 顺序反了焦点会被 close 抢走 */
-    navList.addEventListener('click', function (e) {
-      if (e.target.tagName === 'A') setTimeout(navClose, 0);
-    });
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' || e.keyCode === 27) navClose();
-    });
-    /* 窗口变宽要自动关：否则桌面布局下会留一个"开着但不对"的菜单 */
-    window.addEventListener('resize', function () {
-      if (window.innerWidth > 768) navClose();
-    });
-  }
 
   /* ---------------------------------------------------------------- 主题 */
   var btn = document.getElementById('themeBtn');

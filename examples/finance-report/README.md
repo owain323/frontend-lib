@@ -64,6 +64,21 @@ http://localhost:8000/examples/finance-report/
 资产负债表少一行、五年表研发费用差 6 倍），而所有门禁都是绿的。
 台账记在 `ERRORS.md` E60，判据补成了 `finance-example-ties.py`。
 
+## 这一页当初"绕过"库的两处，现在都在库里了
+
+第一版交付时报告里写着两条缺口，**都补完了**（0.11.2）：
+
+1. **`nav` 没有 `nav.js`** —— 抽屉的开关逻辑要使用者自己抄 60 行（这一页抄了）。
+   ⇒ 现在是 `03-patterns/nav/nav.js`：`data-nav` 自动初始化、复用三个行为核，
+   `05-audit/nav-drawer.js` 用 44 条判据盯着（含焦点陷阱和 Esc 后的焦点归位）。
+   本页因此删掉了那 70 行内联脚本，只剩 `data-nav` 一个属性。
+2. **`rep--finance` 没有"正文列之外的宽图通道"** —— 这一页的做法是把
+   `--rep-measure` 改成 50em，等于**把整页正文也放宽**。
+   ⇒ 现在是 `.rep__fig--wide` / `.rep__wide`：正文回到 30em（420px），
+   两张图和三张表各自申请宽度，用满 700px 的正文列。
+   `05-audit/rep-wide-channel.js` 在 1440 宽度下量数字盯着这件事 ——
+   因为视觉基线只拍 393 宽，**这个功能在基线里根本看不见**。
+
 ## 自己改的时候
 
 - 页面级样式全在 `page.css`，**只写库没有的排布**，颜色间距字号一律走令牌。
@@ -71,3 +86,5 @@ http://localhost:8000/examples/finance-report/
 - `index.html` 里的脚本是 ES5（本库硬约束：老 WebView 上 `const` 直接语法错误）。
 - 图表宽度必须**量容器**再传（`host.clientWidth`），不要写死设计宽度 ——
   原因见 `bar.js` 里 `var W = ...` 上方的注释。
+- 图/表要放宽，给元素加 `rep__fig--wide` / `rep__wide`，**不要**去改
+  `--rep-measure` —— 那会连正文一起放宽。

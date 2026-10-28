@@ -58,12 +58,12 @@
 | 状态（空 / 加载 / 错 / 成功） | `03-patterns/states/states.css` | 252 | — | **凡是会异步取数就要** |
 | 表单校验 | `03-patterns/form-validation/form-validation.css` | 263 | — | 提交前要校验就要 |
 | 列表增删 | `03-patterns/list/list.css` | 162 | 可选 201 (`flip.js`，FLIP 增删动画，纯增强) | 列表会动态增删就要 |
-| 导航 / 目录 | `03-patterns/nav/nav.css` | 314 | 可选 111 (`toc.js`，自动生成目录，纯增强) | 顶部要导航，或长文要目录就要 |
+| 导航 / 目录 | `03-patterns/nav/nav.css` | 314 | **必需 430** (`nav.js`) · 可选 111 (`toc.js`，自动生成目录，纯增强) | 顶部要导航，或长文要目录就要 |
 | 长文排版 | `03-patterns/content/content.css` | 286 | — | 写文档 / 长文就要 |
 | reveal | `03-patterns/reveal/reveal.css` | 93 | 可选 172 (`reveal.js`，入场动效，纯增强；没有它内容直接可见) |  |
 | analysis-report | `04-recipes/analysis-report/analysis-report.css` | 187 | — |  |
 | detail-page | `04-recipes/detail-page/detail-page.css` | 190 | — |  |
-| report | `04-recipes/report/report.css` | 326 | — |  |
+| report | `04-recipes/report/report.css` | 364 | — |  |
 | table | `04-recipes/table/table.css` | 372 | — |  |
 | bar | `09-assets/bar/bar.css` | 166 | **必需 320** (`bar.js`) |  |
 | model-viewer | `09-assets/model-viewer/model-viewer.css` | 143 | **必需 423** (`model-viewer.js`) |  |
@@ -88,6 +88,7 @@
 | 树形 | `tree.js` | 键盘 ✓ · ARIA ✓ · 焦点 ✓ |
 | 侧边抽屉 | `drawer.js` | 键盘 ✓ · ARIA ✓ · 焦点 ✓ |
 | 弹窗 / 吐司 | `overlay.js` | 键盘 ✓ · ARIA ✓ · 焦点 ✓ |
+| 导航 / 目录 | `nav.js` | 键盘 ✓ · ARIA ✓ · 焦点 ✓ |
 | bar | `bar.js` | 键盘 — · ARIA ✓ · 焦点 — |
 | model-viewer | `model-viewer.js` | 键盘 — · ARIA — · 焦点 — |
 | scientific-plot | `scientific-plot.js` | 键盘 — · ARIA ✓ · 焦点 — |

@@ -113,7 +113,7 @@ def members_from_cell(cell):
 
 
 def load_contract_globals():
-    """ai/components.json 里每个组件声明的 global。"""
+    """ai/components.json 里每个组件声明的 global（含同目录的 globalAlso）。"""
     p = os.path.join(ROOT, 'ai', 'components.json')
     if not os.path.isfile(p):
         return None
@@ -121,11 +121,64 @@ def load_contract_globals():
         data = json.load(io.open(p, encoding='utf-8'))
     except Exception:
         return None
-    return [(c.get('id'), c.get('global')) for c in data.get('components', [])]
+    out = []
+    for c in data.get('components', []):
+        out.append((c.get('id'), c.get('global')))
+        for extra in c.get('globalAlso') or []:
+            out.append((c.get('id') + '+', extra.get('global')))
+    return out
 
 
-def check_globals(decls, rt):
+def probe_targets():
+    """探针表里登记了哪些全局（从探针源码里读，保证与真表同源）。
+
+    🔴 为什么要专门读一次：探针表是**硬编码**的。新加一个全局却不登记，
+       浏览器里根本没人去查它 ⇒ 判据 4 只会报「声明了不存在的全局」，
+       而人看到这句话的第一反应是"契约生成器坏了"，不是"探针漏登记"。
+       那种误导性的红，最后往往被"改契约"糊过去 —— 拿真实信息换绿灯。
+    """
+    p = os.path.join(ROOT, '05-audit', 'global-api-probe.js')
+    if not os.path.isfile(p):
+        return set()
+    raw = io.open(p, encoding='utf-8').read()
+    return set(re.findall(r"^\s*([A-Z][A-Za-z0-9]*)\s*:\s*'", raw, re.M))
+
+
+def real_members_of(actual):
+    """实现里**真的存在**的成员集合。
+
+    ⚠️ 一个实例能调的方法都在原型上，与它是 `create` 出来的还是 `attach`
+       出来的**无关**。旧版只在 `form == 'construct'` 时才并入 `protoMethods`，
+       于是 `Nav`（attach 形态，实例方法 open/close/isOpen/destroy 都在原型上）
+       被报成「文档写了实现没有的成员」—— 那是**量具**的错，不是文档的错。
+       受影响的面：凡 create / attach 返回实例、且文档提到实例方法的组件，
+       旧判据必然假红。假红比不查更坏：它会教人「改文档」来换绿灯。
+    """
+    out = set(actual.get('members') or {})
+    if (actual.get('form') or '') in ('construct', 'attach', 'create'):
+        out |= set(actual.get('protoMethods') or {})
+    return out
+
+
+def check_members(name, claimed, actual):
+    """纯函数：文档声称的成员是否都存在。返回问题元组或 None。"""
+    claimed = set(claimed or [])
+    if not claimed:
+        return None
+    real = real_members_of(actual)
+    missing = claimed - real
+    if missing:
+        return (name, '文档写了实现没有的成员',
+                ', '.join(sorted(missing)), ', '.join(sorted(real)))
+    return None
+
+
+def check_globals(decls, rt, targets=None):
     """判据 4：声明的 global 必须是浏览器里真探到的全局。
+
+    `targets` 给了就同时查第二件事：**探针表登记过它没有**。
+    两件事的红必须分开报 —— 前者是实现/契约的问题，后者是量具的问题。
+    混在一句话里，修的人就分不清该改代码还是该改探针。
 
     ⚠️ 纯函数（不读文件、不起浏览器）⇒ 反向控制可以直接喂合成数据，
        不必真去改仓库里的契约文件。
@@ -134,9 +187,12 @@ def check_globals(decls, rt):
     for cid, g in decls or []:
         if not g:
             continue          # 纯 CSS 组件没有全局，不算问题
+        if targets is not None and g not in targets:
+            bad.append((cid, g, 'probe-missing'))
+            continue
         a = rt.get(g)
         if not a or a.get('absent') or a.get('error'):
-            bad.append((cid, g))
+            bad.append((cid, g, 'absent'))
     return bad
 
 
@@ -258,6 +314,23 @@ def selftest():
     else:
         print('  [OK]   页面里 absent 的全局 ⇒ 抓到')
 
+    # ④b 探针表漏登记 ⇒ 必须红，且理由必须是 probe-missing（不能混成"探不到"）
+    #     真事故（0.11.2）：加 nav.js 导出 `Nav` 后没人把它补进 TARGETS，
+    #     门禁报的是"声明了浏览器里不存在的 global"，读起来像是契约生成器坏了。
+    got = check_globals([('nav', 'Nav')], rt, {'Select', 'Tabs'})
+    if not got or got[0][2] != 'probe-missing':
+        print('  [FAIL] 探针表漏登记没被单独识别出来 ⇒ 两种红混成一种，修的人会改错地方')
+        ok = False
+    else:
+        print('  [OK]   探针表漏登记 ⇒ 单独报 probe-missing')
+
+    # ④c 探针表登记了、页面里也真有 ⇒ 不许报
+    if check_globals([('nav', 'Select')], rt, {'Select', 'Nav'}):
+        print('  [FAIL] 探针表登记且真探到却报了问题 ⇒ 判据过严')
+        ok = False
+    else:
+        print('  [OK]   探针表登记且真探到 ⇒ 不报')
+
     # ⑤ 判据 5：注释里承诺的方法必须真实存在
     rt5 = {'Pagination': {'members': {'create': 'function',
                                       'update': 'function',
@@ -311,6 +384,26 @@ def selftest():
     else:
         print('  [OK]   直接写 `Pagination.nothing(` ⇒ 抓到')
 
+    # ⑦ 成员核对：attach 形态的实例方法在原型上，必须算"实现里有"。
+    #    ⚠️ 这是 0.11.2 的**假红真值**：Nav 加进 API.md 后，
+    #       旧判据只在 construct 时并入 protoMethods ⇒ open/close/isOpen/destroy
+    #       全被报成"文档写了实现没有的成员"。人看到这句就会去删文档。
+    nav_rt = {'form': 'attach', 'members': {'attach': 'function'},
+              'protoMethods': {'open': 'function', 'close': 'function'}}
+    if check_members('Nav', ['attach', 'open', 'close'], nav_rt):
+        print('  [FAIL] attach 形态的原型方法被当成"实现没有" ⇒ 量具假红')
+        ok = False
+    else:
+        print('  [OK]   attach 形态的实例方法按原型算 ⇒ 不假红')
+
+    # ⑧ 但"文档写了真不存在的实例方法"必须抓到
+    #    —— `Nav.toggle` 就是这么被发现的：原型上只有 isOpen/open/close/destroy
+    if not check_members('Nav', ['toggle'], nav_rt):
+        print('  [FAIL] 文档写了不存在的实例方法没被抓到 ⇒ 门禁是瞎的')
+        ok = False
+    else:
+        print('  [OK]   文档写了不存在的实例方法 ⇒ 抓到')
+
     return 0 if ok else 1
 
 
@@ -357,38 +450,38 @@ def main():
 
         # 成员列表核对（只查有写成员的行）
         claimed = members_from_cell(cell)
-        if not claimed:
-            continue
-        real_members = set(actual.get('members', {}))
-        # construct 形态的成员在原型上，用实例方法比
-        if real_form == 'construct':
-            real_members |= set(actual.get('protoMethods', {}))
-        missing = claimed - real_members
-        if missing:
-            bad.append((name, '文档写了实现没有的成员',
-                        ', '.join(sorted(missing)),
-                        ', '.join(sorted(real_members))))
+        p = check_members(name, claimed, actual)
+        if p:
+            bad.append(p)
 
     # 判据 4：ai/components.json 声明的 global 必须是浏览器里真探到的
     decls = load_contract_globals()
     if decls is None:
         print('  FAIL  读不到 ai/components.json')
         return 1
-    bad_globals = check_globals(decls, rt)
+    bad_globals = check_globals(decls, rt, probe_targets())
     if bad_globals:
         print('')
         print('  🔴 ai/components.json 声明了浏览器里不存在的 global：')
-        for cid, g in bad_globals:
-            print('     %-14s global=%s' % (cid, g))
+        for item in bad_globals:
+            cid, g = item[0], item[1]
+            why = item[2] if len(item) > 2 else 'absent'
+            tag = '（探针表没登记）' if why == 'probe-missing' else '（页面里探不到）'
+            print('     %-14s global=%-16s %s' % (cid, g, tag))
         print('')
-        print('     ⇒ 两种可能，先分清再改：')
-        print('       ① 「契约生成器的正则抓错了东西」（例如把 `===` 的第一个 `=`')
-        print('          当成赋值）—— 重跑生成器会让契约与源码"一致"，')
-        print('          于是没人发现它已经是错的。')
-        print('       ② 「探针表没登记这个组件的 demo 页」—— 属实测（2026-10-23）：')
-        print('          `05-audit/global-api-probe.js` 的 PAGES 是硬编码表，')
-        print('          新组件不登记 ⇒ 浏览器里根本没人去查它 ⇒ 误报成 ①。')
-        print('          （同一个坑已经在 shot-baseline 的 PAGES 上发生过一次。）')
+        if any(len(i) > 2 and i[2] == 'probe-missing' for i in bad_globals):
+            print('     ⇒ 「探针表没登记」这类红**不是实现坏了**：')
+            print('       `05-audit/global-api-probe.js` 的 TARGETS 是硬编码表，')
+            print('       新全局不登记 ⇒ 浏览器里根本没人查它 ⇒ 会被误读成"契约坏了"。')
+            print('       修法是把全局补进 TARGETS（选一个真的加载它的页面），')
+            print('       **不是**把契约里的 global 删掉。')
+            print('       （同一个坑已经在 shot-baseline 的 PAGES 上发生过一次。）')
+        if any(len(i) <= 2 or i[2] == 'absent' for i in bad_globals):
+            print('     ⇒ 「页面里探不到」这类红，先分清再改：')
+            print('       ① 「契约生成器的正则抓错了东西」（例如把 `===` 的第一个 `=`')
+            print('          当成赋值）—— 重跑生成器会让契约与源码"一致"，')
+            print('          于是没人发现它已经是错的。')
+            print('       ② 该组件真的没把全局挂到 window 上。')
 
     # 判据 5：源码注释里承诺的 API 必须真实存在
     promises = scan_comment_promises(list(rt.keys()))
