@@ -59,6 +59,29 @@ BASELINE = os.path.join(SHOTS, '_baseline')
 CURRENT = os.path.join(SHOTS, '_current')
 DIFFS = os.path.join(SHOTS, '_diff')
 
+# ===========================================================================
+# 🔴 基线**按平台分集**（0.11.9 加 · 起因是这道门禁第一次在 CI 上跑）
+# ---------------------------------------------------------------------------
+#   本库不含任何 `@font-face`：字体全靠系统栈
+#   （`Segoe UI` / `Microsoft YaHei` / `PingFang SC` / `Noto Sans CJK SC` …）。
+#   同一份 HTML 换到 Linux，前面那几个字体**一个都不存在** ⇒ 落到别的字体
+#   ⇒ 字宽、行高、换行位置全变 ⇒ 整页像素差 7~11%，单块最差处 60~97%。
+#
+#   2026-10-29：门禁第一次在 ubuntu 上跑，42 张基线**全红**。
+#   基线没错，代码也没错 —— 错的是「把一台机器的渲染当成所有机器的标准」。
+#
+#   ⇒ 与 Playwright `toHaveScreenshot` 同一策略：基线目录名带平台
+#     `_baseline-<平台>[-<scheme>][-rtl]`，各平台各存一套、互不覆盖。
+#
+#   ⚠️ 这不叫"跳过"：某平台没有基线集时，这门门禁在该平台**直接判红**，
+#      并说清去哪弄。没有基线就**不许**说"观感没变"。
+#   ⚠️ 同一平台内的字体差异（Win10 vs Win11、改 DPI、换字体）仍可能红 ——
+#      那是对的：这时要么在本机重录，要么承认这台机器判不了。
+# ===========================================================================
+PLAT = {'win32': 'win32', 'linux': 'linux', 'darwin': 'darwin'}.get(
+    sys.platform, sys.platform)   # 未知平台就用原值（本身就是文件名安全的）
+
+
 # 🔴 明暗两套基线（0.9.0 加）。
 #   `visual` 此前**只拍浅色** —— 而 D1/D3/D5 三项改造都要动 CSS，
 #   暗色坏了没有任何门禁能发现（token-resolved 只覆盖令牌解析值，
@@ -754,17 +777,17 @@ def main():
     global BASELINE, CURRENT, DIFFS, SCHEME, DIRN
     SCHEME = scheme
     DIRN = dirn
-    # 目录后缀：light+ltr 沿用原名（现有基线与路径**一个字节不变**），
-    # 其余组合各占一套，互不覆盖。
-    suffix = ''
+    # 目录名 = `_baseline-<平台>[-<scheme>][-rtl]`
+    #   平台放在**最前面**（紧跟 `_baseline-`）：`10-review/shots/` 下有
+    #   9 个目录时，同一个平台的排在一起才看得过来。
+    suffix = '-' + PLAT
     if scheme != 'light':
         suffix += '-' + scheme
     if dirn != 'ltr':
         suffix += '-' + dirn
-    if suffix:
-        BASELINE = os.path.join(SHOTS, '_baseline' + suffix)
-        CURRENT = os.path.join(SHOTS, '_current' + suffix)
-        DIFFS = os.path.join(SHOTS, '_diff' + suffix)
+    BASELINE = os.path.join(SHOTS, '_baseline' + suffix)
+    CURRENT = os.path.join(SHOTS, '_current' + suffix)
+    DIFFS = os.path.join(SHOTS, '_diff' + suffix)
 
     if '--list' in argv:
         for row in managed():
@@ -832,7 +855,13 @@ def main():
 
     # 默认 --check
     if not os.path.isdir(BASELINE):
-        print('  [FAIL] 没有基线。请先跑：python 05-audit/shot-baseline.py --record')
+        print('  [FAIL] 本平台（%s）没有基线集：%s'
+              % (PLAT, os.path.relpath(BASELINE, ROOT)))
+        print('         ⇒ 这台机器**判不了**观感有没有变 —— 这不叫通过。')
+        print('         ⇒ 但**不要**在 CI 上随手 --record：那等于把 CI 的渲染'
+              '当成标准，')
+        print('           下次真回归反而看不出来。正确做法是在目标平台上录一次，')
+        print('           把 png 连同 _stamp.json 一起提交。')
         return 1
     n = shoot(CURRENT)
     # 🔴🔴截图环节失败 ⇒ 整道门禁失败，绝不继续比 diff。
@@ -862,8 +891,8 @@ def main():
         print('  [FAIL] %s' % (failed[0] if failed else '未知错误'))
         return 1
 
-    print('  === 视觉回归（阈值 %.2f%%%s）==='
-          % (threshold, '，dir=rtl' if DIRN == 'rtl' else ''))
+    print('  === 视觉回归（阈值 %.2f%%%s · 平台 %s）==='
+          % (threshold, '，dir=rtl' if DIRN == 'rtl' else '', PLAT))
     compared = passed + len(failed)
     print('  OK   %d / %d 个页面观感一致' % (passed, compared))
     # 🔴 诚实报告：截了但**没有基线可比**的页面 = 本轮**没被验证**。

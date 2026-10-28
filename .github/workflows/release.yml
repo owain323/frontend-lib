@@ -27,6 +27,11 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      shoot_baseline:
+        description: '只录本平台（Linux）的视觉基线，不发布'
+        type: boolean
+        default: false
 
 permissions:
   contents: write     # 建 GitHub Release
@@ -39,6 +44,9 @@ concurrency:
 jobs:
   publish:
     name: 校验 → 门禁 → 发布
+    # 🔴 只有**打 tag** 才发布。workflow_dispatch 是给"补录某平台视觉基线"用的
+    #   （见文件末尾的 shoot-baseline job）—— 手动点一下不该顺手把包发出去。
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -54,6 +62,12 @@ jobs:
         with:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
+
+      # 🔴 必须在门禁**之前**装：视觉基线是在这套字体下录的。
+      #   不装的话 CJK/阿拉伯文整段变方框，像素比对必然全红，
+      #   而"红"的原因跟代码一点关系都没有（见 05-audit/ci-fonts.sh 顶部）。
+      - name: 装 CI 字体（视觉基线锚在它上面）
+        run: bash 05-audit/ci-fonts.sh
 
       - name: 校验 tag 与 package.json 版本一致
         run: |
@@ -105,3 +119,52 @@ jobs:
           gh release create "$GITHUB_REF_NAME" \
             --title "v$V" \
             --notes-file release-notes.md
+
+      # 🔴 门禁红了要能**看图**，不能只有一行"FAIL"。
+      #   diff 图和当前截图都在这里，下载下来就能判断是"真回归"还是"环境变了"。
+      - name: 失败时上传视觉证据（当前截图 + diff 图）
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-evidence-${{ github.run_id }}
+          path: |
+            10-review/shots/_current-*/
+            10-review/shots/_diff-*/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # ==========================================================================
+  # shoot-baseline —— 在**本平台**录一套视觉基线
+  # ==========================================================================
+  # 为什么单独一个 job：基线只能在它**将要被判的那个环境**里录。
+  #   Linux 的基线没法在 Windows 上凭空生成（字体不同 ⇒ 渲染不同），
+  #   而我又不打算把"CI 自己随便跑一次的截图"当成标准 —— 录完要**人看过**
+  #   再提交，所以这里只出 artifact，不落库。
+  #
+  # 用法：Actions → release → Run workflow → 勾上 shoot_baseline
+  #   产物：baseline-Linux（三个 `_baseline-linux*` 目录）
+  #   下一步：下载解压到 `10-review/shots/`，**逐张看一遍**，再提交。
+  shoot-baseline:
+    name: 录本平台视觉基线（不发布）
+    if: github.event_name == 'workflow_dispatch' && inputs.shoot_baseline
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: 装 CI 字体（与判基线时同一套）
+        run: bash 05-audit/ci-fonts.sh
+      - run: npm ci
+      - name: 录三套基线
+        run: |
+          set -eu
+          python3 05-audit/shot-baseline.py --record
+          python3 05-audit/shot-baseline.py --record --scheme dark
+          python3 05-audit/shot-baseline.py --record --dir rtl
+      - uses: actions/upload-artifact@v4
+        with:
+          name: baseline-${{ runner.os }}
+          path: 10-review/shots/_baseline-*/
+          retention-days: 14
