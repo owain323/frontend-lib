@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>全局约定 · agentcss</title>
+<meta name="description" content="令牌三层、间距台阶、焦点环、动效时长、暗色三态、逻辑属性、能不能用 @layer 与 !important">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%227%22%20fill%3D%22%231b4d8f%22%2F%3E%3Crect%20x%3D%228%22%20y%3D%228%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%221.6%22%20fill%3D%22%23fff%22%2F%3E%3Crect%20x%3D%2217%22%20y%3D%228%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%221.6%22%20fill%3D%22%23fff%22%20opacity%3D%22.5%22%2F%3E%3Crect%20x%3D%228%22%20y%3D%2217%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%221.6%22%20fill%3D%22%23fff%22%20opacity%3D%22.5%22%2F%3E%3Crect%20x%3D%2217%22%20y%3D%2217%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%221.6%22%20fill%3D%22%23fff%22%2F%3E%3C%2Fsvg%3E">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">全局约定</span>
+    <a class="g-jump" href="index.html">回到索引<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">全局约定 · 跨组件</p>
+    <h1>全局约定</h1>
+    <p class="lede">令牌三层、间距台阶、焦点环、动效时长、暗色三态、逻辑属性、能不能用 @layer 与 !important</p>
+    <ul class="g-meta"><li><a href="../docs/CONVENTIONS.md"><code>docs/CONVENTIONS.md</code></a></li><li>规则由 <code>01-tokens/</code> 实现，判据见文末对应表</li></ul>
+    <article class="g-doc">
+<p>这些规则不属于任何一个组件：令牌怎么用、焦点环多大、动效多久、暗色怎么切、能不能写 <code>margin-left</code>。它们由 <code>01-tokens/</code> 里的几个全局文件实现，由一批门禁守住。本文是它们的<strong>唯一说明书</strong> —— 规则写在这里，判据在仓库里，两边一一对应。</p>
+<p>读法：如果你只想知道「我该写哪个变量」，看第一节和第二节；如果你想改这套东西，看第十节，那里列了每条规则由什么挡住。</p>
+<h2 id="s2">一 · 令牌分三层，你只用中间层<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>层</th><th>长什么样</th><th>谁写</th><th>谁用</th>
+</tr></thead>
+<tbody>
+<tr><td>raw</td><td><code>--raw-paper</code>、<code>--raw-text-primary</code></td><td>只有 <code>01-tokens/tokens.css</code></td><td>没人 —— 它是调色板原料</td></tr>
+<tr><td>语义</td><td><code>--paper</code>、<code>--surface</code>、<code>--text-primary</code></td><td>只有 <code>01-tokens/tokens.css</code></td><td><strong>你的代码用这一层</strong></td></tr>
+<tr><td>组件私有</td><td><code>--btn-pad</code> 之类</td><td>该组件自己的 CSS</td><td>该组件自己</td></tr>
+</tbody>
+</table></div>
+<p><strong>为什么必须隔一层</strong>：暗色不是&quot;把颜色逐条改掉&quot;，而是<strong>换掉 raw 的值，语义层不动</strong>。组件里写 <code>--raw-*</code>，暗色就会漏掉它 —— 这也是 <code>dark-contrast.js</code> 会算两遍对比度的原因。组件与页面里<strong>写死 <code>#hex</code></strong> 一律不许（<code>hygiene.py</code> 判）。</p>
+<p>常用语义令牌，括号里是对当前纸底 / 表面的<strong>实算对比度</strong>（不是估的）：</p>
+<div class="table"><table>
+<thead><tr>
+<th>令牌</th><th>用途</th><th>对比度</th>
+</tr></thead>
+<tbody>
+<tr><td><code>--paper</code></td><td>页面底色</td><td>—</td></tr>
+<tr><td><code>--surface</code> / <code>--surface-raised</code> / <code>--surface-sunken</code></td><td>卡片 / 浮起 / 凹陷</td><td>—</td></tr>
+<tr><td><code>--text-primary</code></td><td>正文</td><td>16.60 / 17.81 · AAA</td></tr>
+<tr><td><code>--text-secondary</code></td><td>次要说明</td><td>7.01 · AAA</td></tr>
+<tr><td><code>--text-tertiary</code></td><td>弱化文字</td><td>5.33 / 4.89 · AA</td></tr>
+<tr><td><code>--border-control</code></td><td>输入框等<strong>控件</strong>边框</td><td>3.19 / 3.42 · AA（大字与控件）</td></tr>
+<tr><td><code>--border-decor</code></td><td>纯装饰分隔线</td><td>1.18 · 不适用（WCAG 不强制装饰）</td></tr>
+<tr><td><code>--accent</code> / <code>--accent-soft</code></td><td>强调色 / 浅底与焦点环</td><td>见 <code>contrast.py</code> 输出</td></tr>
+</tbody>
+</table></div>
+<p>⚠️ <code>--accent-soft</code> <strong>不要拿来当正文背景</strong>：它只保证&quot;能看见有一块色&quot;，不保证字读得清。</p>
+<h2 id="s3">二 · 间距、圆角、层级：只准踩台阶<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
+<p>间距是 8 档，前 3 档固定、后 5 档随视口缩放：</p>
+<div class="table"><table>
+<thead><tr>
+<th>令牌</th><th>值</th><th>说明</th>
+</tr></thead>
+<tbody>
+<tr><td><code>--sp-1</code> / <code>--sp-2</code> / <code>--sp-3</code></td><td>4 / 8 / 12px</td><td>组件内部微调</td></tr>
+<tr><td><code>--sp-4</code></td><td><code>clamp(1rem, …, 1.25rem)</code></td><td>16 → 20px</td></tr>
+<tr><td><code>--sp-5</code></td><td><code>clamp(1.25rem, …, 1.75rem)</code></td><td>20 → 28px</td></tr>
+<tr><td><code>--sp-6</code></td><td><code>clamp(1.5rem, …, 2.25rem)</code></td><td>24 → 36px</td></tr>
+<tr><td><code>--sp-7</code></td><td><code>clamp(2rem, …, 3.5rem)</code></td><td>32 → 56px</td></tr>
+<tr><td><code>--sp-8</code></td><td><code>clamp(2.5rem, …, 4.5rem)</code></td><td>40 → 72px</td></tr>
+</tbody>
+</table></div>
+<p>圆角：<code>--r-xs 3</code> / <code>--r-sm 6</code> / <code>--r-md 10</code> / <code>--r-lg 14</code> / <code>--r-pill 999</code>（px）。层级：<code>--z-base 0</code> → <code>--z-sticky 10</code> → <code>--z-header 20</code> → <code>--z-overlay 30</code> → <code>--z-modal 40</code> → <code>--z-toast 50</code>，另有 <code>--z-raised 5</code>（卡片悬停、内层可点元素）。</p>
+<p>写 <code>padding: 13px</code> 不算错，但它<strong>不会跟着页面框一起变</strong> —— 这就是为什么文档站曾经出现&quot;改 <code>--sp-6</code>，35 页 padding-top 一动不动&quot;（那时页面框被写了两份）。</p>
+<h2 id="s4">三 · 焦点环：<code>:focus-visible</code>，2px + 2px<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-css">:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}</code></pre>
+<ul><li><strong>只用 <code>:focus-visible</code>，不用 <code>:focus</code></strong>。前者只给键盘用户看，鼠标点击不冒框。用 <code>:focus</code> 的后果是&quot;点一下留个框&quot;，用户会以为界面卡住了。</li><li><strong>禁止 <code>outline: none</code> 而不给替代指示</strong> —— 这是无障碍事故，不是审美选择。真要自绘，用 <code>--focus-ring-width</code> / <code>--focus-ring-offset</code> / <code>--focus-ring-color</code> 三个令牌，别自己写死像素。</li><li>深底上（暗色、实心按钮）加一圈内白环 <code>--focus-ring-inset</code>，否则焦点环与背景糊在一起。</li><li>打开弹层再关掉，<strong>焦点必须回到触发它的元素</strong>上：<code>focus-return-check.js</code> 判这一条。</li></ul>
+<h2 id="s5">四 · 动效：三档时长，三条规定<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>令牌</th><th>值</th><th>用在哪</th>
+</tr></thead>
+<tbody>
+<tr><td><code>--dur-fast</code></td><td>120ms</td><td>颜色、透明度、悬停</td></tr>
+<tr><td><code>--dur-base</code></td><td>180ms</td><td>位移、展开</td></tr>
+<tr><td><code>--dur-slow</code></td><td>280ms</td><td>大块入场、遮罩</td></tr>
+</tbody>
+</table></div>
+<p>曲线三条：<code>--ease-out</code>（入场/展开）、<code>--ease-in-out</code>（屏上位移/折叠）、 <code>--ease-drawer</code>（抽屉式滑入）。超过 300ms 的 UI 动效会被读成&quot;卡&quot;。</p>
+<p>系统开了&quot;减少动效&quot;时，策略是<strong>分档</strong>的，不是一刀切：</p>
+<ol><li><strong>位移 / 缩放 / 旋转 —— 关</strong>。前庭不适的主要来源。</li><li><strong>真实进度（spinner、加载态）—— 留</strong>。停掉它，用户会以为没点上，从而重复提交；这比有动画更糟。目前登记的例外只有三处：<code>button</code>、<code>states</code>、<code>form-validation</code>。</li><li><strong>颜色 / 透明度 —— 可以缩短到 <code>--dur-fast</code> 保留</strong>，这一档不强制、也没有判据（写了却没判据的规则，比没有规则更糟）。</li></ol>
+<p>例外登记在 <code>ai/motion-policy.json</code>。<strong>声明了却没实现 ⇒ 红；实现了却没声明 ⇒ 红。</strong> 这条双向判据是它存在的全部意义。</p>
+<h2 id="s6">五 · 暗色：三种状态，组件一律不许自判<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>使用者的意思</th><th>怎么表达</th>
+</tr></thead>
+<tbody>
+<tr><td>跟随系统</td><td>什么都不写（<code>color-scheme: light dark</code> 已声明）</td></tr>
+<tr><td>我要亮的</td><td><code>&lt;html data-theme=&quot;light&quot;&gt;</code></td></tr>
+<tr><td>我要暗的</td><td><code>&lt;html data-theme=&quot;dark&quot;&gt;</code></td></tr>
+</tbody>
+</table></div>
+<p>实现上有两个必须知道的坑：</p>
+<ul><li>系统暗色那一段的选择器是 <code>:root:not([data-theme=&quot;light&quot;])</code>，<strong>强制暗</strong>另由 <code>:root[data-theme=&quot;dark&quot;]</code> 那一段负责，两段互不干扰。 <strong>少了 <code>:not(...)</code></strong>，系统开着暗色时使用者点&quot;亮&quot;仍然会看到暗的 —— 三态开关里最容易被漏掉的那条路径（这也是为什么&quot;强制亮&quot;能压过系统暗色）。</li><li><strong>组件里不许出现 <code>prefers-color-scheme</code></strong>。组件只认语义令牌，主题切换由 <code>tokens.css</code> 一处完成。组件自己判主题，等于给每种组件各开一个&quot;主题分支&quot;，加一个主题就要改 35 个文件。</li></ul>
+<p>暗色不等于&quot;把浅色取反&quot;，三条已经踩过的坑：正文不用纯白（深底上字会发散）、凹陷面在暗色里要<strong>比纸面略亮</strong>（层级靠变亮，不是变暗）、滚动条 thumb 要更亮（用浅色那档会变成&quot;黑里有黑&quot;）。</p>
+<h2 id="s7">六 · 逻辑属性：不许写 <code>margin-left</code><a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
+<p>交付的 43 个 CSS 里，物理方向属性（<code>margin-left</code> / <code>padding-left</code> / <code>left:</code>）<strong>0 处</strong>，全部用 <code>margin-inline-start</code> 这类逻辑属性。<code>rtl-check.js</code> 守这一条。</p>
+<p>绝对定位是唯一需要动脑的地方：</p>
+<pre class="code" tabindex="0"><code class="language-css">/* 错的：RTL 下浮层会跑到另一边 */
+.tip { position: absolute; left: 0; }
+/* 对的：两个方向都说清楚 */
+.tip { position: absolute; inset-inline-start: 0; }
+/* 确实要按物理方向时，显式覆盖 */
+[dir=&quot;rtl&quot;] .tip { left: auto; right: 0; }</code></pre>
+<h2 id="s8">七 · 不用 <code>@layer</code>；<code>!important</code> 必须说得清<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
+<p>交付 CSS 里 <code>@layer</code> 是 <strong>0 处</strong>，这是决定，不是遗漏：目标环境里有 Chromium 97 的内核（见<a href="../SUPPORT.md">浏览器支持矩阵</a>），它不认识 <code>@layer</code> —— <strong>整层样式会直接消失</strong>。所以&quot;未分层&quot;是当前唯一安全的选择。<code>cascade-layer-gate.py</code> 把这条变成可判状态：一旦出现第一条 <code>@layer</code>，就要求三条前提的实测记录已落档，否则红。</p>
+<p><code>!important</code> 现有 10 处，<strong>每一处都必须能被归类</strong>：</p>
+<div class="table"><table>
+<thead><tr>
+<th>类别</th><th>处数</th><th>为什么必须赢</th>
+</tr></thead>
+<tbody>
+<tr><td>无障碍偏好（<code>prefers-reduced-motion</code>）</td><td>9</td><td>操作系统级偏好，组件无权推翻</td></tr>
+<tr><td>正确性（<code>[hidden] { display: none }</code>）</td><td>1</td><td>不赢就会&quot;藏不住&quot;</td></tr>
+</tbody>
+</table></div>
+<p>分不了类的 <code>!important</code> ⇒ 红。判据不是&quot;清零&quot;——清零会逼人删掉无障碍兜底。</p>
+<h2 id="s9">八 · 对比度与触控的硬线<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
+<ul><li>正文 <strong>4.5:1</strong>，大字与<strong>控件</strong>边界 <strong>3:1</strong>，纯装饰不强制（但也不许拿来传信息）。</li><li>触控目标 <strong>44×44</strong>（WCAG 2.5.5）。视觉尺寸可以更小，热区要补足。</li><li><strong>禁用态用明确色值，不用 <code>opacity</code></strong>。半透明会让文字对比度随底色漂移，在暗色下直接不达标；而且&quot;看起来只是淡了点&quot;没法表达&quot;不能点&quot;。</li></ul>
+<h2 id="s10">九 · 覆盖策略：改令牌，不要改组件<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-css">/* 换品牌色：只改一个语义令牌，全站生效，暗色与焦点环自动跟上 */
+:root { --accent: var(--brand-accent); }</code></pre>
+<p><code>--brand-accent</code> 由你自己定义（任意合法颜色值）。之所以不在这里写一个具体的十六进制：本库的对比度判据会把<strong>文档里的色值</strong>当成&quot;内联副本&quot;去核对，它分不清示例与真实用法 —— 与其教它开例外，不如让示例本来就不带字面值。</p>
+<ul><li>优先覆盖 <strong>语义令牌</strong>（第一节那张表）。</li><li>其次覆盖组件自己的槽位变量（如按钮的内边距），它们都以组件名为前缀。</li><li><strong>不要把 <code>!important</code> 当覆盖手段</strong>：赢了这一条，会把无障碍兜底一起压掉。</li><li>不要用更深的选择器去压（<code>.page .btn.btn--primary</code>）—— 那是把特异性当版本管理，下次改版必然打架。</li></ul>
+<h2 id="s11">十 · 每条规则由什么挡住<a class="anchor" href="#s11" aria-label="本节直链">#</a></h2>
+<p>规则只有落到判据上才会被遵守。对应关系如下（文件都在 <code>05-audit/</code>）：</p>
+<div class="table"><table>
+<thead><tr>
+<th>规则</th><th>判据</th>
+</tr></thead>
+<tbody>
+<tr><td>不写死 <code>#hex</code>、不留调试残留</td><td><code>hygiene.py</code></td></tr>
+<tr><td>组件之间不许 <code>@import</code> 互相依赖</td><td><code>css-independence.py</code></td></tr>
+<tr><td>亮/暗两套对比度达标</td><td><code>contrast.py</code>、<code>dark-contrast.js</code>、<code>component-contrast.py</code></td></tr>
+<tr><td>焦点环存在且不是 <code>outline:none</code></td><td><code>focus-ring-check.js</code></td></tr>
+<tr><td>关掉弹层后焦点回到触发点</td><td><code>focus-return-check.js</code></td></tr>
+<tr><td>键盘可达（Tab 顺序、Esc 关闭）</td><td><code>keyboard-nav.js</code></td></tr>
+<tr><td>减少动效策略双向一致</td><td><code>motion.py --reduced-audit</code></td></tr>
+<tr><td>逻辑属性全覆盖</td><td><code>rtl-check.js</code></td></tr>
+<tr><td><code>@layer</code> 计数与 <code>!important</code> 分类</td><td><code>cascade-layer-gate.py</code></td></tr>
+<tr><td>触控目标 44px</td><td><code>a11y.py</code>（静态） + 行为脚本（运行时）</td></tr>
+<tr><td>页面骨架只有一份（改令牌能牵动全部页面）</td><td><code>skeleton-lever-check.js</code></td></tr>
+</tbody>
+</table></div>
+<p>想加一条新规则？先在门禁里加判据、确认它会红，再写进本文 —— <strong>顺序反了就会得到一条&quot;写在文档里、没人执行&quot;的规则。</strong></p>
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      
+      <a class="g-pager__link g-pager__link--next" href="accessibility.html"><span>下一页</span>无障碍</a>
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    <ul class="g-toc"><li><a href="#s2">一 · 令牌分三层，你只用中间层</a></li><li><a href="#s3">二 · 间距、圆角、层级：只准踩台阶</a></li><li><a href="#s4">三 · 焦点环：:focus-visible，2px + 2px</a></li><li><a href="#s5">四 · 动效：三档时长，三条规定</a></li><li><a href="#s6">五 · 暗色：三种状态，组件一律不许自判</a></li><li><a href="#s7">六 · 逻辑属性：不许写 margin-left</a></li><li><a href="#s8">七 · 不用 @layer；!important 必须说得清</a></li><li><a href="#s9">八 · 对比度与触控的硬线</a></li><li><a href="#s10">九 · 覆盖策略：改令牌，不要改组件</a></li><li><a href="#s11">十 · 每条规则由什么挡住</a></li></ul>
+  </aside>
+</div>
+<footer class="g-foot">
+  <p>v0.11.8 · 零第三方运行时依赖 · 组件数 35</p>
+</footer>
+</body>
+</html>

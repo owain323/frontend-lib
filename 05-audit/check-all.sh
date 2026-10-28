@@ -744,6 +744,15 @@ run "doc-facts"       $PY 05-audit/doc-facts-gate.py
 #   ⚠️ 它读 git 视野比对"改了 README 忘了重跑"，纯静态、~0.3 秒。
 run "docs-site"     $PY 05-audit/docs-site-gate.py
 run "docs-site-rev" $PY 05-audit/docs-site-gate.py --selftest
+# 🔴 md-links（2026-10-29 加 · 起因是"文档指着四份不存在的文件"）
+#   `README.zh-CN.md` / `docs/INVARIANT.md` / `ai/START-HERE.md` 一共 9 处指向
+#   `docs/GUIDANCE.md`、`docs/BENCHMARK.md`、`docs/ROADMAP.md`、`docs/RELEASING.md`
+#   —— 那四份在 0.11.4 被**故意**移进内部目录（含账号二次因子、到期日），
+#   于是公开面留下一排悬空指针。既有判据都在看别的东西：
+#   pack-closure 判包内 HTML 引用、docs-site 判生成后的页面链接，
+#   **md 里的路径一直没人管**。
+run "md-links"      $PY 05-audit/md-links.py
+run "md-links-rev"  $PY 05-audit/md-links.py --selftest
 run "api-contract"     $PY 05-audit/api-contract-gate.py
 run "api-form"       $PY 05-audit/api-form-gate.py
 run "api-form-rev"   $PY 05-audit/api-form-gate.py --selftest

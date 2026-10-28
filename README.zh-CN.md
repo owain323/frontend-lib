@@ -69,8 +69,8 @@ npm install github:owain323/frontend-lib
 ```
 
 > 历史说明：0.9.0 曾发布成功、两分钟后被误删（`ERRORS.md` E55）；此后一段时间
-> registry 上没有可安装版本，靠 GitHub Release 附件分发（`docs/RELEASING.md`
-> 「发布受阻时」）。自 0.11.2 起这条通路已恢复。
+> registry 上没有可安装版本，靠 GitHub Release 附件分发（当时的分发路径记在
+> `CHANGELOG.md` 的 0.11.2 一节）。自 0.11.2 起这条通路已恢复。
 
 **② 源码复制**（不想装依赖）：把 `01-tokens/` 和需要的组件目录复制进你的项目。
 ⚠️ 复制 `dist/` 里的版本，**别复制源码版** —— 源码版有一半以上是给人和 AI 读的注释
@@ -343,7 +343,7 @@ import 'agentcss/dist/02-primitives/button/button.css';
 | `ai/` | **机器可读契约**：`components.json` / `tokens.json` / schema / 校验器 / 命令行 |
 | `adapters/` | 场景适配层（如演示文稿），**不进核心** |
 | `benchmark/` | 兼容性基准（10 类编辑意图，当前无模型实测记录） |
-| `docs/` | `INVARIANT.md`（不变式）· `GUIDANCE.md`（建议）· `BENCHMARK.md`（对标） |
+| `docs/` | `INVARIANT.md`（不变式）· `CONVENTIONS.md`（全局约定）· `ACCESSIBILITY.md`（无障碍）· `AI-CONTRACT.md`（与 AI 协作的契约）· `LAYER-BASELINE.md`（引擎能力基线） |
 | `types/` | TypeScript 类型定义（描述 `window` 上的全局对象） |
 
 ## 示例与验证状态
@@ -474,10 +474,10 @@ node ai/cli.js diff   a.json b.json           # 两份契约文档按语义 id �
 |---|---|---|
 | **不变式** | `docs/INVARIANT.md` | 客观事实，永不变。有门禁守边界 |
 | **契约** | `ai/*.json` + `API.md` | 约定，随版本变 |
-| **建议** | `docs/GUIDANCE.md` | 工作建议，可整份推翻 |
+| **建议** | `CONTRIBUTING.md` | 工作方式建议，可整份推翻 |
 
 约束要放宽时动的是**建议层**，不变式一个字都不用动。
-对标了谁、故意不学谁，见 `docs/BENCHMARK.md`。
+对标了谁、故意不学谁，散见 `CHANGELOG.md`（每版一节的取舍）与各组件的 README（每份都写了「来源」一栏）。
 
 ## 可访问性
 
@@ -499,9 +499,9 @@ npm run benchmark                        # 兼容性基准
 
 改代码时跑 `gate:fast` 即可；**提交前**再跑一次 `gate`。
 
-类型声明在 `types/index.d.ts`。改动它之前先看
-[docs/ROADMAP.md](docs/ROADMAP.md) 里的「契约类事项」——
-那几项没做完之前，本库还不适合作为长期依赖引入。
+类型声明在 `types/index.d.ts`。改动它之前先看 `API.md` 的「稳定程度约定」，
+以及 `ai/components.json` 里标 `beta` 的那几个组件 ——
+它们定稿之前，那几部分不适合作为长期依赖引入。
 
 ## 许可
 

@@ -222,7 +222,11 @@ def check_search_examples(html):
 # 不属于任何组件 —— 要补的是"全局约定页"，不是搜索）。
 # 探针放在这里，是为了让"命中率"不会哪天被悄悄改回去。
 SEARCH_PROBES = ('焦点环', '禁用', '错误态', '空状态', '对比度', '暗色', '打印',
-                 '弹层', '阴影', '圆角', '读屏', '键盘', '分页', '抽屉')
+                 '弹层', '阴影', '圆角', '读屏', '键盘', '分页', '抽屉',
+                 # 🔴 2026-10-29 加：这三个词**不属于任何组件**，此前全站 0 命中。
+                 #    它们暴露的不是"键表漏了词"，而是"没有页面承载跨组件的约定"
+                 #    —— 补搜索词只是止痛，页面才是器官。见 guide/conventions.html。
+                 '减少动效', '逻辑属性', '强制暗')
 
 
 def check_search_probes(html):
@@ -244,7 +248,14 @@ def check_search_probes(html):
     return errs
 
 
-def check_coverage(files, comp_ids):
+def check_coverage(files, comp_ids, concept_ids=()):
+    """覆盖：组件各有其页；概念页（跨组件约定）也各有其页；不许有多余页。
+
+    🔴 概念页这一支是 2026-10-29 加的。加之前这里是"多出没有对应组件的页面 ⇒ FAIL"，
+       而那正是**结构缺口**的表达方式：生成器只认组件目录，所以
+       「令牌用法 / 焦点环 / 动效 / 暗色」这些跨组件规则根本没有地方放。
+       症状是搜索里搜「减少动效」命中 0 项 —— 补搜索词是止痛，加页面才是器官。
+    """
     errs = []
     pages = set(f[len('guide/'):-len('.html')] for f in files
                 if f.startswith('guide/') and f.endswith('.html'))
@@ -253,7 +264,11 @@ def check_coverage(files, comp_ids):
             errs.append(('COVER-1', '组件 %s 没有文档页' % cid))
     if 'index' not in pages:
         errs.append(('COVER-2', '没有 guide/index.html'))
-    extra = sorted(p for p in pages if p != 'index' and p not in comp_ids)
+    for cid in concept_ids:
+        if cid not in pages:
+            errs.append(('COVER-4', '概念页 %s 没有生成（约定页是跨组件规则的唯一载体）' % cid))
+    allowed = set(comp_ids) | set(concept_ids)
+    extra = sorted(p for p in pages if p != 'index' and p not in allowed)
     if extra:
         errs.append(('COVER-3', '多出没有对应组件的页面 %s' % extra[:5]))
     return errs
@@ -564,7 +579,8 @@ def main():
         errs.append(('[1] %s 与现算结果不一致 —— 改了 README 或生成器却没重跑' % d))
 
     # [2] 覆盖
-    errs += ['[2] ' + m for _c, m in check_coverage(files, comp_ids)]
+    concept_ids = [c[0] for c in gen.CONCEPT_PAGES]
+    errs += ['[2] ' + m for _c, m in check_coverage(files, comp_ids, concept_ids)]
 
     # [3][4][5] 逐页
     tracked = set()
@@ -632,8 +648,8 @@ def main():
         print('  ⇒ 改完 README 或生成器后跑：python3 05-audit/gen-docs.py')
         return 1
 
-    print('  [OK] %d 页（%d 组件 + 索引）· 摘要 %d 行 · 链接全部落地'
-          % (n_pages, len(comp_ids),
+    print('  [OK] %d 页（%d 组件 + %d 约定页 + 索引）· 摘要 %d 行 · 链接全部落地'
+          % (n_pages, len(comp_ids), len(concept_ids),
              len(re.findall(r'class="g-item__desc"', files['guide/index.html']))))
     return 0
 
