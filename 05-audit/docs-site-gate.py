@@ -75,7 +75,7 @@ def load_gen():
 # 判据（纯函数：喂字符串与"存在性"回调，便于自检）
 # ===========================================================================
 
-def check_page(path, html, exists):
+def check_page(path, html, exists, base='/'):
     """一页的静态检查。返回 [(判据代号, 理由)]。"""
     errs = []
 
@@ -111,14 +111,48 @@ def check_page(path, html, exists):
         target = u.split('#')[0]
         if not target:
             continue
-        base = os.path.dirname(path)
-        full = os.path.normpath(os.path.join(base, target)).replace('\\', '/')
+        if target.startswith('/'):
+            # 站内绝对路径（只有 404 页会用）。剥掉站点前缀再当仓库内
+            #   路径判落地 —— 不豁免，只是换个算法。
+            prefix = base if base != '/' else '/'
+            if not target.startswith(prefix):
+                errs.append(('LINK', '%s：绝对路径 %s 不在站点前缀 %s 下 ⇒ 线上必然 404'
+                             % (path, u, prefix)))
+                continue
+            full = target[len(prefix):]
+        else:
+            here = os.path.dirname(path)
+            full = os.path.normpath(os.path.join(here, target)).replace('\\', '/')
         if full.startswith('..'):
             errs.append(('LINK', '%s：链接 %s 跑到仓库外' % (path, u)))
             continue
         if not exists(full):
             errs.append(('LINK', '%s：链接 %s 指向不存在的 %s ⇒ 点开 404'
                          % (path, u, full)))
+    return errs
+
+
+def check_404_paths(html, base):
+    """404 页的每个引用都必须是绝对路径。
+
+    这不是风格要求。GitHub Pages 拿这个文件响应**任意**不存在的地址，
+    而浏览器地址栏仍停在那个错路径上：访问 `/frontend-lib/typo/x` 时，
+    页内 `01-tokens/tokens.css` 会被解析成 `/frontend-lib/typo/01-tokens/tokens.css`
+    —— 又一次 404。于是整页裸奔：没样式、没暗色、字挤成一团。
+
+    正常页面永远不会遇到这个失败模式，所以要单独一条判据盯着。
+    """
+    errs = []
+    for m in re.finditer(r'(?:href|src)="([^"]+)"', html):
+        u = m.group(1)
+        if u.startswith(SKIP_SCHEMES):
+            continue
+        if not u.startswith('/'):
+            errs.append(('404-1', '用了相对路径 %s ⇒ 在错路径下会解析成错地址，'
+                                  '整页样式丢失' % u))
+    if base == '/':
+        errs.append(('404-2', '推导不出站点前缀（package.json 没有 homepage）⇒ '
+                              '绝对路径无处可落'))
     return errs
 
 
@@ -180,6 +214,36 @@ def check_search_examples(html):
     return errs
 
 
+# 用户真会这么问 —— 回归探针。
+#
+# 这 14 个词在「键表只有类名/属性/标题」的版本里有一半命中 0：
+# 搜「禁用」「焦点环」「错误态」全是空结果，因为这几个字只出现在正文句子里。
+# 键表补上正文之后 21/22 命中（唯一缺的「减少动效」是全局约定，
+# 不属于任何组件 —— 要补的是"全局约定页"，不是搜索）。
+# 探针放在这里，是为了让"命中率"不会哪天被悄悄改回去。
+SEARCH_PROBES = ('焦点环', '禁用', '错误态', '空状态', '对比度', '暗色', '打印',
+                 '弹层', '阴影', '圆角', '读屏', '键盘', '分页', '抽屉')
+
+
+def check_search_probes(html):
+    errs = []
+    kw = re.search(r'<script type="application/json" id="kw">(.*?)</script>',
+                   html, re.S)
+    if not kw:
+        return [('SEARCH-3', '索引页没有键表')]
+    try:
+        table = json.loads(kw.group(1))
+    except ValueError:
+        return [('SEARCH-3', '键表不是合法 JSON')]
+    keys = [re.sub(r'\s+', '', v.lower()) for v in table.values()]
+    for tok in SEARCH_PROBES:
+        q = re.sub(r'\s+', '', tok.lower())
+        if not any(q in k for k in keys):
+            errs.append(('SEARCH-3', '搜「%s」命中 0 项 —— 用户问的是意思，'
+                                     '键表里只有结构词' % tok))
+    return errs
+
+
 def check_coverage(files, comp_ids):
     errs = []
     pages = set(f[len('guide/'):-len('.html')] for f in files
@@ -195,6 +259,77 @@ def check_coverage(files, comp_ids):
     return errs
 
 
+FENCE = '```'
+
+
+def _strip_wrap(s):
+    """剥掉前导引用符与缩进。
+
+    围栏、表格、标题写进列表项或引用块时，前面会带 `> ` 或两个空格。
+    旧的渲染器只认行首，于是那些块被当成行内文字 —— 这里要先剥，
+    不然判据和渲染器一样瞎。
+    """
+    while True:
+        t = s.lstrip()
+        if t.startswith('>'):
+            s = t[1:]
+            continue
+        if t != s:
+            s = t
+            continue
+        return s
+
+
+def md_counts(md):
+    """README 的块级元素数。围栏里的 `|` 与 `#` 不算（那是代码）。"""
+    fence = table = head = 0
+    infence = False
+    for raw in md.replace('\r\n', '\n').split('\n'):
+        s = _strip_wrap(raw).strip()
+        if s.startswith(FENCE):
+            fence += 1
+            infence = not infence
+            continue
+        if infence:
+            continue
+        if re.match(r'^\|[\s:\-|]*-[\s:\-|]*\|$', s):
+            table += 1
+        if re.match(r'^#{2,3}\s+\S', s):
+            head += 1
+    return {'fence': fence // 2, 'table': table, 'head': head}
+
+
+def html_counts(html):
+    return {'fence': len(re.findall(r'<pre\b', html)),
+            'table': len(re.findall(r'<table\b', html)),
+            'head': len(re.findall(r'<h[23]\b', html))}
+
+
+def check_parity(comps, readme_text, pages):
+    """README 写了 N 段代码 / M 张表 / K 个小标题，页面就得有同样多。
+
+    防的不是排版难看，是**静默丢内容**：围栏写进列表项或引用块时，
+    旧渲染器整块吞掉或降级成行内文字。页面上看不出「少了东西」——
+    少的那段代码不会留下空位、不会报错、截图也一切正常。
+    """
+    names = {'fence': '代码块', 'table': '表格', 'head': '小标题'}
+    errs = []
+    for c in comps:
+        page = 'guide/%s.html' % c['id']
+        if page not in pages:
+            continue
+        md = readme_text(c['id'])
+        if md is None:
+            errs.append(('PARITY-0', '%s 的 README 读不到' % c['id']))
+            continue
+        want, got = md_counts(md), html_counts(pages[page])
+        for k in ('fence', 'table', 'head'):
+            if want[k] != got[k]:
+                errs.append(('PARITY-1', '%s 的%s：README %d 个，页面 %d 个'
+                             % (c['id'], names[k], want[k], got[k])))
+    return errs
+
+
 def check_fresh(files, out_root):
     """磁盘 vs 现算。返回 (缺, 多, 异)。"""
     missing, extra, diff = [], [], []
@@ -203,7 +338,7 @@ def check_fresh(files, out_root):
         for n in names:
             p = os.path.join(base, n)
             rel = os.path.relpath(p, out_root).replace('\\', '/')
-            if rel.startswith('guide/') or rel == 'index.html':
+            if rel.startswith('guide/') or rel in ('index.html', '404.html'):
                 disk.add(rel)
     for rel in sorted(files):
         if rel not in disk:
@@ -303,6 +438,18 @@ def selftest():
                                          {'badge': 'badge solid-danger'})):
         bad += 1
         print('  [FAIL] 真能搜到的占位示例被判红')
+
+    # 搜索探针：键表只有结构词 ⇒ 用户问的词必须搜不到，判据要报
+    got = [c for c, _ in check_search_probes(
+        search_page('例如：抽屉', {'button': 'button badge btn--ghost aria-sort'}))]
+    if 'SEARCH-3' not in got:
+        bad += 1
+        print('  [FAIL] 键表只有结构词时，搜索探针没报：%s' % got)
+
+    # 反向控制：探针词都在键表里时不许报
+    if check_search_probes(search_page('例如：抽屉', {'x': ' '.join(SEARCH_PROBES)})):
+        bad += 1
+        print('  [FAIL] 探针词齐全的键表被判红')
     got = [c for c, _ in check_search_examples(search_page('例如：抽屉', {}))]
     if 'SEARCH-1' not in got:
         bad += 1
@@ -340,6 +487,50 @@ def selftest():
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
+    # 内容守恒：README 两块代码、页面一块 ⇒ 必须报
+    md_two = '## a\n\n\x60\x60\x60html\n<b>x</b>\n\x60\x60\x60\n\n\x60\x60\x60css\na{}\n\x60\x60\x60\n'
+    pg_one = ('<html lang="zh-CN"><head><title>t</title></head><body>'
+              '<main id="main"><h1>x</h1><h2>a</h2>'
+              '<pre class="code"><code>&lt;b&gt;x&lt;/b&gt;</code></pre>'
+              '</main></body></html>')
+    fake = [{'id': 'x'}]
+    got = [c for c, _ in check_parity(fake, lambda _i: md_two, {'guide/x.html': pg_one})]
+    if 'PARITY-1' not in got:
+        bad += 1
+        print('  [FAIL] README 丢了一个代码块没被判红：%s' % got)
+
+    # 反向控制：块数一致时不许报
+    pg_two = pg_one.replace('</main>',
+                            '<pre class="code"><code>a{}</code></pre></main>')
+    if check_parity(fake, lambda _i: md_two, {'guide/x.html': pg_two}):
+        bad += 1
+        print('  [FAIL] 数量一致的样本被判红')
+
+    # 容器里的围栏也要算数：列表项/引用块里的代码块，README 侧必须数到
+    md_wrapped = ('## a\n\n- 说明：\n\n  \x60\x60\x60html\n  <i>y</i>\n  \x60\x60\x60\n\n'
+                  '> \x60\x60\x60css\n> b{}\n> \x60\x60\x60\n')
+    if md_counts(md_wrapped)['fence'] != 2:
+        bad += 1
+        print('  [FAIL] 缩进/引用里的围栏没被数到：%s' % md_counts(md_wrapped))
+
+    # 404 页：相对路径必须报（错路径下会二次 404，整页裸奔）
+    got = [c for c, _ in check_404_paths(
+        '<link rel="stylesheet" href="01-tokens/tokens.css">', '/frontend-lib/')]
+    if '404-1' not in got:
+        bad += 1
+        print('  [FAIL] 404 页用相对路径没被判红：%s' % got)
+
+    # 反向控制：全绝对路径不许报
+    if check_404_paths('<link href="/frontend-lib/a.css"><a href="#x">y</a>',
+                       '/frontend-lib/'):
+        bad += 1
+        print('  [FAIL] 全绝对路径的 404 页被判红')
+
+    # 推不出站点前缀时必须报（否则绝对路径无处可落）
+    if not check_404_paths('<a href="/a">x</a>', '/'):
+        bad += 1
+        print('  [FAIL] 站点前缀缺失没被判红')
+
     if bad == 0:
         # 🔴 这里**不写条数**。原来写的是「自检 16 条通过」，而实际断言
         #    早就不止 16 条 —— 一个没人能核对的数字，早晚会变成假的。
@@ -359,6 +550,7 @@ def main():
     gen = load_gen()
     files, comps, conf = gen.build(ROOT)
     comp_ids = [c['id'] for c in comps]
+    SITE_BASE = gen.site_base()
 
     errs = []
 
@@ -390,7 +582,8 @@ def main():
     for rel in sorted(files):
         if not rel.endswith('.html'):
             continue          # guide.css 之类不是页面，a11y 判据不适用
-        errs += ['[3/4/5] ' + m for _c, m in check_page(rel, files[rel], exists)]
+        errs += ['[3/4/5] ' + m
+                 for _c, m in check_page(rel, files[rel], exists, base=SITE_BASE)]
 
     # [6] 内部词（复用同一份词表）
     pat = terms.process_trace_pat()
@@ -405,6 +598,26 @@ def main():
 
     # [8] 搜索框的占位示例必须真搜得到
     errs += ['[8] ' + m for _c, m in check_search_examples(files['guide/index.html'])]
+
+    # [8b] 用户真会问的词必须搜得到
+    errs += ['[8b] ' + m for _c, m in check_search_probes(files['guide/index.html'])]
+
+    # [10] 404 页只许用绝对路径（它要在任意错路径下都能加载样式）
+    errs += ['[10] ' + m for _c, m in
+             check_404_paths(files.get('404.html', ''), SITE_BASE)]
+
+    # [9] 内容守恒：README 里有的块，页面上一块都不能少
+    def readme_text(cid):
+        c = next((x for x in comps if x['id'] == cid), None)
+        if not c:
+            return None
+        p = os.path.join(ROOT, os.path.dirname(c['files']['css']), 'README.md')
+        if not os.path.isfile(p):
+            return None
+        with io.open(p, encoding='utf-8') as f:
+            return f.read()
+
+    errs += ['[9] ' + m for _c, m in check_parity(comps, readme_text, files)]
 
     # 视野声明：扫到 0 页不许通过
     n_pages = len([f for f in files if f.startswith('guide/')])

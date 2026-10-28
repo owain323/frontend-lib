@@ -32,7 +32,11 @@
     <p class="lede">文本输入及其标签/帮助/错误三件套</p>
     <ul class="g-meta"><li><a href="../02-primitives/input/demo.html"><code>02-primitives/input/demo.html</code></a></li><li><a href="../02-primitives/input/input.css"><code>02-primitives/input/input.css</code></a></li></ul>
     <article class="g-doc">
-<blockquote><p>🔴 <strong>没有 <code>.input</code> 这个类名。</strong><br>真实类名是 <strong><code>.field__input</code></strong>，而且必须包在 <code>.field</code> 里：<br><code>html<br>&lt;div class=&quot;field&quot;&gt;<br>&lt;label class=&quot;field__label&quot; for=&quot;q&quot;&gt;订单号&lt;/label&gt;<br>&lt;input class=&quot;field__input&quot; id=&quot;q&quot; type=&quot;search&quot; inputmode=&quot;numeric&quot;&gt;<br>&lt;span class=&quot;field__hint&quot;&gt;支持后四位模糊匹配&lt;/span&gt;<br>&lt;/div&gt;<br></code><br>写 <code>&lt;input class=&quot;input&quot;&gt;</code> <strong>不会报错、不会警告、控制台干净</strong> ——<br>它只是拿到浏览器默认样式：高度约 <strong>21px</strong>（本组件是 44px），<br>边框、圆角、聚焦环、错误态全部没有。<br>这类&quot;静默失效&quot;比报错更贵：你会以为是 HTML 写错了，或者以为库就该这样。</p></blockquote>
+<blockquote><p>🔴 <strong>没有 <code>.input</code> 这个类名。</strong><br>真实类名是 <strong><code>.field__input</code></strong>，而且必须包在 <code>.field</code> 里：</p><pre class="code" tabindex="0"><code>&lt;div class=&quot;field&quot;&gt;
+  &lt;label class=&quot;field__label&quot; for=&quot;q&quot;&gt;订单号&lt;/label&gt;
+  &lt;input class=&quot;field__input&quot; id=&quot;q&quot; type=&quot;search&quot; inputmode=&quot;numeric&quot;&gt;
+  &lt;span class=&quot;field__hint&quot;&gt;支持后四位模糊匹配&lt;/span&gt;
+&lt;/div&gt;</code></pre><p>写 <code>&lt;input class=&quot;input&quot;&gt;</code> <strong>不会报错、不会警告、控制台干净</strong> ——<br>它只是拿到浏览器默认样式：高度约 <strong>21px</strong>（本组件是 44px），<br>边框、圆角、聚焦环、错误态全部没有。<br>这类&quot;静默失效&quot;比报错更贵：你会以为是 HTML 写错了，或者以为库就该这样。</p></blockquote>
 <div class="table"><table>
 <thead><tr>
 <th>字段</th><th>内容</th>
@@ -155,7 +159,7 @@ autocomplete=&quot;off&quot;</code></pre>
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.11.5 · 零第三方运行时依赖 · 组件数 35</p>
+  <p>v0.11.6 · 零第三方运行时依赖 · 组件数 35</p>
 </footer>
 </body>
 </html>

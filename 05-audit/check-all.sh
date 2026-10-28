@@ -289,6 +289,11 @@ run "content-hygiene" $PY 05-audit/hygiene.py
 run "shot-path"  $PY 05-audit/shot-path.py
 run "mojibake"   $PY 05-audit/mojibake-check.py .
 run "repo-hygiene"  $PY 05-audit/repo-hygiene.py
+# 🔴 组件之间不许有 CSS @import —— 「拷一个文件就能用」是库对外的承诺。
+#   一旦有 @import，用户拷了 A 没拷 B，页面不报错、不警告，只少掉一部分样式。
+#    注：注释里的 @import 不算（tokens.css 正在教用户怎么 import 我们）。
+#   注入验证过一次：给 badge.css 追加 @import ⇒ 精确报出第 143 行。
+run "css-independence" $PY 05-audit/css-independence.py
 # 🔴 HTML 标签配平（0.8.9 接进来 · 外部审计 P1-8 点名的孤儿门禁）：
 #   它抓的是 **axe 与静态类名门禁都抓不到** 的一类 —— 未闭合 / 串位的标签。
 #   浏览器会自动纠正，所以页面"看起来正常"，不留任何痕迹。

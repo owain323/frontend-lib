@@ -143,7 +143,8 @@ report.css                   ← 本系统</code></pre>
 <h2 id="s10">四 · 🔴 本轮明确不做<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
 <ol><li><strong>分页 PDF / 印刷分页</strong>：<code>@page</code> 页边距、页眉页脚、页码、跨页不断行、孤行寡行控制 —— 全部不在本版范围内，它需要 <code>@page</code>、实物打样与 PDF 引擎验证。 CSS 里只有 <code>@media print</code> 的<strong>最小保障</strong>（隐藏边注、图表与表格不跨撕裂），那是&quot;不更糟&quot;，<strong>不是&quot;能出版&quot;</strong>。门禁里有一条<strong>反向判据</strong>盯着这件事：<code>report.css</code> 一旦出现 <code>@page</code> 或 <code>break-after: page</code> 就报红 —— 谁偷偷做了一半，谁这条就红。</li><li><strong>自动目录、脚注尾注、交叉引用、参考文献样式</strong>：编号只做到&quot;写第几就显示第几&quot;，再往上的引用维护（&quot;详见第 3 图&quot;自动跟随）不支持。</li><li><strong>Markdown / 文档输入、CMS、多语言排版（竖排、RTL）</strong>：不是本系统的目标。</li></ol>
 <h2 id="s11">五 · 已知限制（实测记录，不是&quot;也许&quot;）<a class="anchor" href="#s11" aria-label="本节直链">#</a></h2>
-<ul><li><strong>边注列只有 14em（252px）</strong>：正文 + 边注共享库的标准页宽 832px，取库默认的 <code>--measure-aside</code>（32em=576px）会把正文压到 <strong>220px ≈ 12em</strong>（一行 12 字，读不了）。 ⇒ 就地收窄到 14em，正文恢复到 30em。<strong>代价：边注装不下大图表</strong> —— 大图请放进正文流，不要塞进边注。</li><li><strong>宽图 / 宽表要走 <code>--wide</code> 通道</strong>：正文行长（<code>--rep-measure</code>）默认施加在所有内容块上，图也不例外 —— 一张 1800 宽的折线图被压到 420px 时，图里的刻度字会跟着缩到 6px。需要看清细节时给 <code>figure</code> 加 <code>rep__fig--wide</code>、给表格容器加 <code>rep__wide</code>： <code>html &lt;figure class=&quot;rep__fig rep__fig--wide&quot;&gt;…&lt;/figure&gt; &lt;div class=&quot;table rep__wide&quot;&gt;…&lt;/div&gt; </code> 两者是<strong>同一个开关</strong>（<code>.rep__fig--wide, .rep__wide { max-width: none }</code>）。 ⚠️ 它只放宽到<strong>正文列</strong>为止，不越过边注 —— 越过边注是整页版式的事，不是一张图的事。 ⚠️ 0.11.2 之前这个类<strong>是空的</strong>：当时正文列整体被 <code>max-width</code> 压着，子元素再宽也越不过父容器。现在行长改施加在内容块上，通道才真的通。</li><li><strong>边注折叠在 62rem</strong> 以下：窄屏没有边注，只有正文流。</li><li><strong>CSS counter 的具体数字无法被自动断言</strong>：<code>::before</code> 的生成文字既不在 DOM 里，也不在无障碍树里（实测 <code>accessibility.snapshot()</code> 抓不到）。门禁能验证的是「规则命中 + 用对了哪一路计数器 + 生成框真的占了像素」， <strong>数字本身（&quot;图 1&quot;里的 1）属于未验证项</strong>，不拿绿色冒充。</li></ul>
+<ul><li><strong>边注列只有 14em（252px）</strong>：正文 + 边注共享库的标准页宽 832px，取库默认的 <code>--measure-aside</code>（32em=576px）会把正文压到 <strong>220px ≈ 12em</strong>（一行 12 字，读不了）。 ⇒ 就地收窄到 14em，正文恢复到 30em。<strong>代价：边注装不下大图表</strong> —— 大图请放进正文流，不要塞进边注。</li><li><p><strong>宽图 / 宽表要走 <code>--wide</code> 通道</strong>：正文行长（<code>--rep-measure</code>）默认施加在所有内容块上，图也不例外 —— 一张 1800 宽的折线图被压到 420px 时，图里的刻度字会跟着缩到 6px。需要看清细节时给 <code>figure</code> 加 <code>rep__fig--wide</code>、给表格容器加 <code>rep__wide</code>：</p><pre class="code" tabindex="0"><code>  &lt;figure class=&quot;rep__fig rep__fig--wide&quot;&gt;…&lt;/figure&gt;
+  &lt;div class=&quot;table rep__wide&quot;&gt;…&lt;/div&gt;</code></pre><p>两者是<strong>同一个开关</strong>（<code>.rep__fig--wide, .rep__wide { max-width: none }</code>）。 ⚠️ 它只放宽到<strong>正文列</strong>为止，不越过边注 —— 越过边注是整页版式的事，不是一张图的事。 ⚠️ 0.11.2 之前这个类<strong>是空的</strong>：当时正文列整体被 <code>max-width</code> 压着，子元素再宽也越不过父容器。现在行长改施加在内容块上，通道才真的通。</p></li><li><strong>边注折叠在 62rem</strong> 以下：窄屏没有边注，只有正文流。</li><li><strong>CSS counter 的具体数字无法被自动断言</strong>：<code>::before</code> 的生成文字既不在 DOM 里，也不在无障碍树里（实测 <code>accessibility.snapshot()</code> 抓不到）。门禁能验证的是「规则命中 + 用对了哪一路计数器 + 生成框真的占了像素」， <strong>数字本身（&quot;图 1&quot;里的 1）属于未验证项</strong>，不拿绿色冒充。</li></ul>
 <h2 id="s12">六 · 门禁<a class="anchor" href="#s12" aria-label="本节直链">#</a></h2>
 <pre class="code" tabindex="0"><code class="language-bash">node 05-audit/report-check.js      # 单独跑
 bash 05-audit/check-all.sh         # 全量</code></pre>
@@ -160,7 +161,7 @@ bash 05-audit/check-all.sh         # 全量</code></pre>
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.11.5 · 零第三方运行时依赖 · 组件数 35</p>
+  <p>v0.11.6 · 零第三方运行时依赖 · 组件数 35</p>
 </footer>
 </body>
 </html>
