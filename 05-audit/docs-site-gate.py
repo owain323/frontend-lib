@@ -40,6 +40,7 @@ docs-site-gate.py —— 文档站与根索引页的判据
 ===========================================================================
 """
 import io
+import json
 import os
 import re
 import sys
@@ -138,6 +139,44 @@ def check_index_rows(html):
         if txt in ('---', '***') or txt.startswith('<') or '```' in txt:
             errs.append(('INDEX-3', '索引行「%s」的摘要取到了代码/分隔线：%r'
                          % (label, txt[:40])))
+    return errs
+
+
+def check_search_examples(html):
+    """搜索框的占位示例，必须**真的搜得到**。
+
+    🔴 为什么单独判这一条：占位文案 `例如：抽屉 / 表格 / btn--ghost`
+       是给用户抄的。第一版写的是 `badge--dot` —— 那个类名在全仓库
+       不存在（badge 只有 `--solid-danger` 这些），用户照抄搜 0 项，
+       只会以为"这个站搜不到东西"。
+       示例写错不会报错、不会缺样式，只会让人对搜索失去信心。
+    """
+    errs = []
+    m = re.search(r'placeholder="([^"]*)"', html)
+    kw = re.search(r'<script type="application/json" id="kw">(.*?)</script>',
+                   html, re.S)
+    if not m:
+        return [('SEARCH-1', '索引页没有搜索框占位文案')]
+    if not kw:
+        return [('SEARCH-1', '索引页没有键表 ⇒ 搜索框是死的')]
+    try:
+        table = json.loads(kw.group(1))
+    except ValueError:
+        return [('SEARCH-1', '键表不是合法 JSON')]
+    if not table:
+        return [('SEARCH-1', '键表是空的')]
+    keys = [re.sub(r'\s+', '', v.lower()) for v in table.values()]
+
+    text = m.group(1)
+    part = text.split('：')[-1] if '：' in text else text
+    picked = [t.strip() for t in part.split('/') if t.strip()]
+    if not picked:
+        return [('SEARCH-2', '占位文案里没有示例词：%r' % text)]
+    for tok in picked:
+        q = re.sub(r'\s+', '', tok.lower())
+        if not any(q in k for k in keys):
+            errs.append(('SEARCH-2',
+                         '占位示例「%s」在键表里命中 0 项 —— 用户照抄搜不到东西' % tok))
     return errs
 
 
@@ -249,6 +288,26 @@ def selftest():
         bad += 1
         print('  [FAIL] 正常摘要被判红')
 
+    # 搜索示例：写错一个词必须判红，写对了必须绿（两个方向都要有）
+    def search_page(ph, table):
+        return ('<input id="q" placeholder="%s">'
+                '<script type="application/json" id="kw">%s</script>'
+                % (ph, json.dumps(table, ensure_ascii=False)))
+
+    got = [c for c, _ in check_search_examples(
+        search_page('例如：抽屉 / badge--dot', {'badge': 'badge solid-danger'}))]
+    if 'SEARCH-2' not in got:
+        bad += 1
+        print('  [FAIL] 占位示例里那个不存在的词没被判红：%s' % got)
+    if check_search_examples(search_page('例如：badge / solid-danger',
+                                         {'badge': 'badge solid-danger'})):
+        bad += 1
+        print('  [FAIL] 真能搜到的占位示例被判红')
+    got = [c for c, _ in check_search_examples(search_page('例如：抽屉', {}))]
+    if 'SEARCH-1' not in got:
+        bad += 1
+        print('  [FAIL] 空键表没被判红：%s' % got)
+
     # 覆盖：缺页 / 多页
     got = [c for c, _ in check_coverage({'guide/index.html', 'guide/a.html'}, ['a', 'b'])]
     if 'COVER-1' not in got:
@@ -282,7 +341,10 @@ def selftest():
         shutil.rmtree(tmp, ignore_errors=True)
 
     if bad == 0:
-        print('  自检 16 条通过（好样本绿 / 坏样本红且理由非空）')
+        # 🔴 这里**不写条数**。原来写的是「自检 16 条通过」，而实际断言
+        #    早就不止 16 条 —— 一个没人能核对的数字，早晚会变成假的。
+        #    证据是这一行本身：`--selftest` 一跑就是全部通过/不通过。
+        print('  自检全部通过（好样本绿 / 坏样本红且理由非空）')
     return bad
 
 
@@ -340,6 +402,9 @@ def main():
 
     # [7] 索引行摘要
     errs += ['[7] ' + m for _c, m in check_index_rows(files['guide/index.html'])]
+
+    # [8] 搜索框的占位示例必须真搜得到
+    errs += ['[8] ' + m for _c, m in check_search_examples(files['guide/index.html'])]
 
     # 视野声明：扫到 0 页不许通过
     n_pages = len([f for f in files if f.startswith('guide/')])

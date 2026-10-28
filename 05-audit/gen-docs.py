@@ -37,6 +37,7 @@ import os
 import re
 import shutil
 import sys
+from urllib.parse import quote
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -498,6 +499,24 @@ def make_resolver(cdir, page_ids):
 # 四 · 页面模板
 # ===========================================================================
 
+# 站点图标：**内联成 data URI**，不落一个 favicon.svg 文件。
+#   ① 不落文件 ⇒ 不用动 `package.json` 的 files 白名单（多一个根文件就多一条
+#     pack-closure 关系，而根 `index.html` 是随包发出去的）；
+#   ② 不落文件 ⇒ 不用动 repo-hygiene 的根目录白名单；
+#   ③ 没有 <link rel="icon"> 时，浏览器会去要 /favicon.ico —— 线上实测
+#     每个页面都吃一个 404。给了就没这个请求。
+#   ⚠️ 整段百分号编码：属性值里留裸 `<` 会让"标签配平"这类按 `<` 扫的判据
+#      把图标当成真的 SVG 元素。
+FAVICON_SVG = (
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">'
+    '<rect width="32" height="32" rx="7" fill="#1b4d8f"/>'
+    '<rect x="8" y="8" width="7" height="7" rx="1.6" fill="#fff"/>'
+    '<rect x="17" y="8" width="7" height="7" rx="1.6" fill="#fff" opacity=".5"/>'
+    '<rect x="8" y="17" width="7" height="7" rx="1.6" fill="#fff" opacity=".5"/>'
+    '<rect x="17" y="17" width="7" height="7" rx="1.6" fill="#fff"/>'
+    '</svg>')
+FAVICON = 'data:image/svg+xml,' + quote(FAVICON_SVG, safe='')
+
 HEAD_TPL = '''<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -506,6 +525,7 @@ HEAD_TPL = '''<!DOCTYPE html>
 <meta name="color-scheme" content="light dark">
 <title>%(title)s</title>
 <meta name="description" content="%(desc)s">
+<link rel="icon" href="%(fav)s">
 <link rel="stylesheet" href="%(up)s01-tokens/tokens.css">
 <link rel="stylesheet" href="%(up)s01-tokens/typography.css">
 <link rel="stylesheet" href="%(up)s01-tokens/page.css">
@@ -566,7 +586,7 @@ INDEX_PAGE = HEAD_TPL + '''<body class="page g-index">
     <div class="g-search">
       <label class="g-search__label" for="q">搜索组件、状态、选择器</label>
       <input class="g-search__input" id="q" type="search" autocomplete="off"
-             spellcheck="false" placeholder="例如：抽屉 / 表格 / badge--dot" aria-describedby="hits">
+             spellcheck="false" placeholder="例如：抽屉 / 表格 / btn--ghost" aria-describedby="hits">
       <p class="g-search__hint" id="hits" aria-live="polite">共 %(n)d 项</p>
     </div>
 
@@ -633,6 +653,7 @@ def render_component(c, page_ids, ver, n_total, prev_c, next_c):
                % (next_c['id'], esc(title_of(readme_of(next_c['dir']), next_c['id']))))
 
     return COMP_PAGE % {
+        'fav': FAVICON,
         'title': esc(h1) + ' · agentcss',
         'desc': esc(c['purpose']),
         'up': '../',
@@ -662,11 +683,15 @@ def render_row(c, page_ids):
     #    choice 拿到的是「1. 绝不 display:none…」（列表第一项）。
     #    README 的段落顺序服从"论证"，不服从"导览"——索引页要的是后者。
     summary = c['purpose'] or first_para(md)
-    # 搜索键 = 名字 + 摘要 + 小标题 + **契约里的类名**。
-    #   只搜标题会漏掉最常用的一种找法："`.badge--dot` 是哪个组件的？"
-    #   类名清单本来就在 ai/components.json 里，不必另造一份索引。
+    # 搜索键 = 名字 + 摘要 + 小标题 + **CSS 里真有的类名** + README 里的反引号片段。
+    #   最常用的一种找法是"`.btn--ghost` 是哪个组件的？"。
+    #   ⚠️ 类名**不能**只从 `ai/components.json` 的 `slots` 取：badge 的 slots
+    #      是空数组，照它建索引等于把数据缺口变成搜索缺口（实测：搜
+    #      `badge--solid-danger` 命中 0）。而 CSS 文件里就有全部类名 ——
+    #      那才是"这个组件到底提供什么"的真值。
     keys = ' '.join([c['id'], title, summary,
                      ' '.join(c.get('slots') or []),
+                     ' '.join(css_tokens(c)),
                      ' '.join(code_tokens(md)),
                      ' '.join(h for h in headings_of(md))])
     demo = c['files'].get('demo') or ''
@@ -717,6 +742,32 @@ def code_tokens(md):
                 if len(out) >= 120:
                     return out
     return out
+
+
+def css_tokens(c):
+    """组件 CSS 里**真的存在**的类名 —— 只给搜索用。
+
+    实测动机：最常用的一种找法是「`.btn--ghost` 是哪个组件的？」。
+    契约里的 `slots` 回答不了这个问题（badge 的 slots 是空数组），
+    而 CSS 文件里就是全部类名，不必另造一份清单。
+
+    只取形如 `.x` / `.x--y` / `.x__z` 的选择器片段；`@media` 里的
+    `(min-width: …)` 之类不含 `.`，自然不会被抓进来。
+    """
+    css = (c.get('files') or {}).get('css')
+    if not css:
+        return []
+    p = os.path.join(ROOT, css)
+    if not os.path.isfile(p):
+        return []
+    out, seen = [], set()
+    for tok in re.findall(r'\.(-?[a-z][a-z0-9_-]*)', read(p).lower()):
+        # 纯数字/单位残片（`0.5rem` 会被切成 `5rem`）剔掉
+        if tok in seen or tok[:1].isdigit():
+            continue
+        seen.add(tok)
+        out.append(tok)
+    return out[:80]
 
 
 def headings_of(md):
@@ -841,6 +892,7 @@ def render_index(comps, page_ids, ver, extras, site_rows):
                                        '这三个页面不随 npm 包发布，只在文档站上。',
                                        [r for r, _i, _k in site_rows]))
     return INDEX_PAGE % {
+        'fav': FAVICON,
         'title': '组件文档 · agentcss',
         'desc': '%d 个组件的索引与文档。' % len(comps),
         # 索引页同样在 guide/ 里 —— 写成 '' 会让 tokens.css 指向
@@ -881,6 +933,7 @@ def render_root_index(comps, page_ids, ver):
             blocks.append('<h2 class="rule-top">%s</h2>\n<p class="r__d">%s</p>\n<ul>\n%s\n</ul>'
                           % (esc(label), esc(desc), '\n'.join(rows)))
     return ROOT_INDEX % {
+        'fav': FAVICON,
         'title': 'agentcss · 演示',
         'ver': esc(ver),
         'n': len(comps),
@@ -895,6 +948,7 @@ ROOT_INDEX = '''<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <title>%(title)s</title>
+<link rel="icon" href="%(fav)s">
 <link rel="stylesheet" href="01-tokens/tokens.css">
 <link rel="stylesheet" href="01-tokens/typography.css">
 <link rel="stylesheet" href="01-tokens/page.css">
