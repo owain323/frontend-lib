@@ -94,3 +94,6 @@ benchmark/results/
 .npm-recovery
 .publish-done
 .publish-stuck
+
+# npm pack 产物（本地发布用，不进仓库）
+*.tgz

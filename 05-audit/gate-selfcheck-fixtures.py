@@ -215,6 +215,11 @@ def _check_scannable_fallback():
         less = sorted(git_view - walk_view)[:4]
         out.append('兜底视野与 git 视野不一致（兜底多 %s / 兜底少 %s）'
                    % (extra, less))
+        out.append('   ⇒ 先看是不是 .gitignore 用了兜底实现不认的写法：'
+                   '`_common._ignore_patterns` 只认「目录名 / 扩展名 / 整条路径」，'
+                   '`/*.tgz` 这种**根锚定**写法与 `**` 都不认（实测踩过：'
+                   '加一行 `/*.tgz` 让本项红，而 git 那边确实是忽略的）。'
+                   '改成 `*.tgz` 即可，或去扩 `_ignored`。')
     else:
         print('  OK   %-14s 兜底视野与 git 视野完全一致（%d 个文件）'
               % ('scannable_files', len(git_view)))

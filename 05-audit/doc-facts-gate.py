@@ -359,11 +359,19 @@ def iter_lines(text):
 
 
 def scan_claims(text, patterns):
-    """返回 [(claim_int, line_text, line_no)]。"""
+    """返回 [(claim_int, line_text, line_no)]。
+
+    🔴 匹配前先剥掉 Markdown 强调符（`**` / `__`）。
+       E69 的事故：README 写「共 **33** 个（stable 29 / beta 4）」，
+       加粗的两个星号把"共"和数字隔开 ⇒ 正则匹配不上 ⇒ **判据失明**，
+       而失明的样子和通过的样子一模一样。
+       剥的是**匹配用的副本**，报错信息里仍然给原文（人要看懂是哪儿）。
+    """
     out = []
     for line, no in iter_lines(text):
+        bare = line.replace('**', '').replace('__', '')
         for pat in patterns:
-            for m in re.finditer(pat, line):
+            for m in re.finditer(pat, bare):
                 out.append((int(m.group(1)), line.strip(), no))
     return out
 
@@ -372,6 +380,13 @@ PAT_COMPONENTS = [
     r'(?:本版|当前|本库|全库|总共|一共|共)\s*(?:有\s*)?(\d+)\s*个组件',
     r'(\d+)\s*个组件成熟度',
 ]
+
+# 🔴 0.11.2 新增（E69）：`共 N 个（stable A / beta B）` 这种**列举式**声明。
+#   旧的两条正则都要求「个组件」后缀，而这种写法是「个（」，一个都不匹配 ⇒
+#   README 写 33 / stable 29 时，契约已经是 35 / 31，门禁全绿。
+#   现在**三个数字一起核**：总数错、拆分错都红。
+PAT_COMPONENTS_BREAKDOWN = (
+    r'(\d+)\s*个(?:（|\()\s*stable\s*(\d+)\s*/\s*beta\s*(\d+)')
 PAT_GATES = [
     # 🔴 只在**声明总数**时才比对（0.8.9 修）：
     #   原来的 `(\d+)\s*道门禁` 会把随口一提的数量也当总数 ——
@@ -476,7 +491,8 @@ def main():
     if not files:
         problems.append(('（全仓）', '判据视野已空',
                          '一份文档都没扫到 ⇒ 这份"通过"不作数'))
-    print('     视野：%d 份受版本控制的 .md（另有 CHANGELOG 只查当前版本段）'
+    print('     视野：%d 份受版本控制的 .md（另有 CHANGELOG 只查当前版本段；'
+          'ERRORS.md 是历史台账，只查"当前事实"类判据以外的东西）'
           % len(files))
 
     cur = None
@@ -490,13 +506,34 @@ def main():
         text = io.open(p, encoding='utf-8').read()
 
         # F1 组件总数
-        if n_comp is not None:
+        #   ⚠️ ERRORS.md 是**历史台账**：它引用当年写错的数字是**正确的引用**
+        #      （E69 那条就把「共 33 个（stable 29 / beta 4）」原样抄了进去）。
+        #      拿今天的真值去核一份历史记录，是判据用错了地方 ——
+        #      与 CHANGELOG「只查当前版本段」同一个道理。
+        if n_comp is not None and f != 'ERRORS.md':
             for claim, line, no in scan_claims(text, PAT_COMPONENTS):
                 if claim == n_comp:
                     continue
                 problems.append((f, '组件数量与实际不符',
                                  '第 %d 行写 %d 个，ai/components.json 是 %d 个'
                                  ' ⇒ %s' % (no, claim, n_comp, line[:60])))
+
+        # F1b 组件总数 + 成熟度拆分的**列举式**声明
+        #     「共 35 个（stable 31 / beta 4）」—— 三个数一起核。
+        if n_comp is not None and maturity and f != 'ERRORS.md':
+            for line, no in iter_lines(text):
+                bare = line.replace('**', '').replace('__', '')
+                for m in re.finditer(PAT_COMPONENTS_BREAKDOWN, bare):
+                    got = (int(m.group(1)), int(m.group(2)), int(m.group(3)))
+                    want = (n_comp,
+                            int(maturity.get('stable', 0)),
+                            int(maturity.get('beta', 0)))
+                    if got != want:
+                        problems.append(
+                            (f, '组件数与成熟度拆分不符',
+                             '第 %d 行写 共 %d / stable %d / beta %d，契约是 '
+                             '共 %d / stable %d / beta %d ⇒ %s'
+                             % ((no,) + got + want + (line.strip()[:60],))))
 
         # F2 门禁总数
         if gates:
