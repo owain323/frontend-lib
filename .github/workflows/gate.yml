@@ -76,6 +76,11 @@ jobs:
       - name: 装 CI 字体（视觉基线锚在它上面）
         run: bash 05-audit/ci-fonts.sh
 
+      # 🔴 与 release 工作流同因：checkout 对 tag 只留轻量 ref，
+      #   annotated tag 对象抓不下来 ⇒ release 门禁会误判。
+      - name: 补齐 tag 对象
+        run: git fetch --tags --force origin
+
       # 🔴 必须装依赖：否则 lockfile 的可复现性从未被验证
       - name: 按锁文件安装（验证 lockfile 真能装）
         run: npm ci

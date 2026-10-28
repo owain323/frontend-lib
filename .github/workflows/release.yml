@@ -69,6 +69,13 @@ jobs:
       - name: 装 CI 字体（视觉基线锚在它上面）
         run: bash 05-audit/ci-fonts.sh
 
+      # 🔴 checkout 处理 tag push 时会留下一个**指向提交的轻量 ref**，
+      #   真正的 annotated tag 对象没被抓下来 ⇒ release 门禁的
+      #   「tag 必须 annotated」会误判成"你打的是轻量 tag"（2026-10-29 实测）。
+      #   `--force` 是必须的：本地那个轻量 ref 不是快进关系，不加它不覆盖。
+      - name: 补齐 tag 对象
+        run: git fetch --tags --force origin
+
       - name: 校验 tag 与 package.json 版本一致
         run: |
           set -eu

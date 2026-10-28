@@ -369,9 +369,18 @@ def main():
             print('        打一个：git tag -a %s <版本对应的提交>' % tag)
         bad += 1
     elif tag_type != 'tag':
-        print('      X `%s` 是 lightweight tag（%s）'
-              ' ⇒ 没有 tag message，回溯时看不到"这一版是什么"'
+        # 🔴 2026-10-29 实测：远端确实是 annotated（`gh api .../git/ref/tags/...`
+        #    返回 object.type=tag），但 CI 里这条判成 lightweight ——
+        #    `actions/checkout` 处理 tag push 时只留了一个**指向提交的轻量 ref**，
+        #    真正的 tag 对象没被抓下来。于是"本地状态"又被当成了"仓库事实"。
+        #    ⇒ 两种成因要分开说，否则下一个人会去重打一个本来就对的 tag。
+        print('      X `%s` 在**本地**是轻量 ref（指向 %s），没有 tag message'
               % (tag, tag_type))
+        print('        ⇒ 若在 CI 上：checkout 只留了轻量 ref，tag 对象没抓下来。')
+        print('          先 `git fetch --tags --force origin` 再判')
+        print('          （两个工作流现在都在 checkout 之后加了这一步）。')
+        print('        ⇒ 若在本机：说明确实打成了轻量 tag，重打一个：')
+        print('          git tag -a %s <版本对应的提交>' % tag)
         bad += 1
     else:
         at_ver = _git('show', '%s:VERSION' % tag).strip()
