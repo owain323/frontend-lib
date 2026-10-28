@@ -231,6 +231,67 @@ HR_RE = re.compile(r'^(?:-{3,}|\*{3,}|_{3,})\s*$')
 FENCE_RE = re.compile(r'^```(\w*)\s*$')
 
 
+# 容器内（引用块 / 列表项）把多行合并成一段时用的分隔符：
+#   逐行 inline 会把跨行的 `**加粗**` 切成两半，最后再换回 <br>。
+_SENT = '\u241e'
+
+
+def split_fenced(rows):
+    """把容器里收集到的行拆成 [('t', 文本), ('c', 代码)] 序列。
+
+    容器里的围栏必须当块级处理。旧实现把收集到的所有行用哨兵连成一行
+    再 inline，于是 ```html 被当成"三个空的行内代码片段"吃掉，
+    里面的内容要么整块消失、要么降级成一片行内代码色文字。
+    """
+    seq, buf = [], []
+    i, n = 0, len(rows)
+    while i < n:
+        if FENCE_RE.match(rows[i].strip()):
+            if buf:
+                seq.append(('t', buf))
+                buf = []
+            i += 1
+            body = []
+            while i < n and not rows[i].strip().startswith('```'):
+                body.append(rows[i])
+                i += 1
+            i += 1                      # 闭合行；缺了也照收，数量不符由判据报
+            seq.append(('c', '\n'.join(body)))
+        else:
+            buf.append(rows[i])
+            i += 1
+    if buf:
+        seq.append(('t', buf))
+    return seq
+
+
+def emit_container(rows, resolve_link, wrap_single=False, br=False):
+    """容器内产出：文本段 → 段落，代码段 → 代码块。
+
+    ``br`` 决定折行怎么接：引用块保留逐行（`<br>`），列表项走
+    `_join_lines` 接成一段 —— 中英之间要不要空格由它判断，
+    直接 join 会在中文里塞满空格。
+    """
+    def text_of(chunk):
+        if br:
+            return inline(_SENT.join(x.strip() for x in chunk if x.strip()),
+                          resolve_link).replace(_SENT, '<br>')
+        return inline(_join_lines(chunk), resolve_link)
+
+    seq = split_fenced(rows)
+    if len(seq) == 1 and seq[0][0] == 't':
+        body = text_of(seq[0][1])
+        return '<p>%s</p>' % body if wrap_single else body
+    parts = []
+    for kind, body in seq:
+        if kind == 'c':
+            parts.append('<pre class="code" tabindex="0"><code>%s</code></pre>'
+                         % esc(body))
+        else:
+            parts.append('<p>%s</p>' % text_of(body))
+    return ''.join(parts)
+
+
 def md_to_html(text, resolve_link=None, on_heading=None):
     """块级解析。返回 (html, headings)。
 
@@ -300,32 +361,28 @@ def md_to_html(text, resolve_link=None, on_heading=None):
         if stripped.startswith('>'):
             buf = []
             while i < n and lines[i].strip().startswith('>'):
-                buf.append(lines[i].strip()[1:].strip())
+                raw = lines[i].strip()[1:]
+                buf.append(raw[1:] if raw.startswith(' ') else raw)
                 i += 1
-            # 🔴 先合并成一行再解析行内，最后把哨兵换回 <br>。
-            #    逐行 inline 会把跨行的 `**加粗**` 切成两半 ——
-            #    实测 accordion / model-viewer 的引用块各有一处，渲染出来
-            #    源文里的星号原样显示。
-            SENTINEL = '\u241e'
-            body = inline(SENTINEL.join(b for b in buf if b), resolve_link)
-            out.append('<blockquote><p>%s</p></blockquote>' % body.replace(SENTINEL, '<br>'))
+            out.append('<blockquote>%s</blockquote>'
+                       % emit_container(buf, resolve_link, wrap_single=True, br=True))
             continue
 
         m = UL_RE.match(stripped)
         if m:
-            items = []
+            items = []                  # 每项是一组行（含续行，可能含围栏）
             while i < n:
                 cur = lines[i]
                 mm = UL_RE.match(cur.strip())
                 if mm:
-                    items.append(mm.group(1).strip())
+                    items.append([mm.group(1).strip()])
                     i += 1
                 elif cur.strip() and cur.startswith(('  ', '\t')):
-                    items[-1] = _join_lines([items[-1], cur])
+                    items[-1].append(cur)
                     i += 1
                 else:
                     break
-            out.append('<ul>' + ''.join('<li>%s</li>' % inline(t, resolve_link)
+            out.append('<ul>' + ''.join('<li>%s</li>' % emit_container(t, resolve_link)
                                         for t in items) + '</ul>')
             continue
 
@@ -336,14 +393,14 @@ def md_to_html(text, resolve_link=None, on_heading=None):
                 cur = lines[i]
                 mm = OL_RE.match(cur.strip())
                 if mm:
-                    items.append(mm.group(2).strip())
+                    items.append([mm.group(2).strip()])
                     i += 1
                 elif cur.strip() and cur.startswith(('  ', '\t')) and items:
-                    items[-1] = _join_lines([items[-1], cur])
+                    items[-1].append(cur)
                     i += 1
                 else:
                     break
-            out.append('<ol>' + ''.join('<li>%s</li>' % inline(t, resolve_link)
+            out.append('<ol>' + ''.join('<li>%s</li>' % emit_container(t, resolve_link)
                                         for t in items) + '</ol>')
             continue
 
@@ -582,6 +639,9 @@ INDEX_PAGE = HEAD_TPL + '''<body class="page g-index">
     <h1>组件文档</h1>
     <p class="lede">%(n)d 个组件，按「基础件 → 模式 → 版式模板 → 图表」排列。
       每一项都能点开示例，样式与行为脚本可以整段复制走。</p>
+    <p class="lede lede--note">组件之间没有 CSS 依赖：任意一个组件的样式表只用到
+      <code>01-tokens</code> 的令牌，不会 <code>@import</code> 别的组件。
+      只要 <code>tokens.css</code> + 这一个文件；行为脚本按需再加。</p>
 
     <div class="g-search">
       <label class="g-search__label" for="q">搜索组件、状态、选择器</label>
@@ -693,7 +753,8 @@ def render_row(c, page_ids):
                      ' '.join(c.get('slots') or []),
                      ' '.join(css_tokens(c)),
                      ' '.join(code_tokens(md)),
-                     ' '.join(h for h in headings_of(md))])
+                     ' '.join(headings_of(md)),
+                     prose_words(md)])
     demo = c['files'].get('demo') or ''
     demo_link = ('<a class="g-item__demo" href="../%s">示例</a>' % demo) if demo else ''
     # 🔴 搜索键**不放进 DOM 属性**：它会被读屏当正文念出来，也会被"按结构扫
@@ -768,6 +829,31 @@ def css_tokens(c):
         seen.add(tok)
         out.append(tok)
     return out[:80]
+
+
+def prose_words(md):
+    """正文散文里的词也进键表。
+
+    在这之前键表只有类名、属性名、标题 —— 用户搜「禁用」「焦点环」
+    「错误态」全是 0 命中，因为这几个词只出现在正文句子里。
+    键表覆盖的是「结构词」，而人问的是「意思」。
+
+    只留中文词组与英文词，去掉标点、数字、单字：
+    正文 63KB → 词串 30KB 左右，换掉一半的搜不到。
+    """
+    out, infence = [], False
+    for line in md.split('\n'):
+        s = line.strip()
+        if s.startswith('```'):
+            infence = not infence
+            continue
+        if infence:
+            continue
+        out.append(s)
+    text = ' '.join(out)
+    words = re.findall(r'[\u4e00-\u9fff]{2,}|[A-Za-z][A-Za-z0-9_-]{1,}', text)
+    # 同一个组件里重复出现的词没有区分度，只留第一次（保留原顺序）
+    return ' '.join(dict.fromkeys(words))
 
 
 def headings_of(md):
@@ -909,6 +995,87 @@ def render_index(comps, page_ids, ver, extras, site_rows):
     }
 
 
+def site_base():
+    """404 页要用的绝对前缀，从 package.json 的 homepage 推。
+
+    不另写一份常量：fork 的人改了 homepage 而 404 页还指着旧名字，
+    这种错只在"访问一个不存在的地址"时才看得见 —— 而那时人已经在
+    找东西了，看到的是一张没有样式的裸页。
+    """
+    pkg = os.path.join(ROOT, 'package.json')
+    if not os.path.isfile(pkg):
+        return '/'
+    with io.open(pkg, encoding='utf-8') as f:
+        home = (json.load(f).get('homepage') or '').strip()
+    m = re.match(r'^https?://[^/]+(/.*?)/?$', home)
+    return (m.group(1).rstrip('/') + '/') if m else '/'
+
+
+# 404 页**只能**用绝对路径引资源。
+#   GitHub Pages 用它响应任意不存在的地址，而浏览器地址栏仍停在那个
+#   错路径上（`/frontend-lib/typo/xxx`）—— 此时 `01-tokens/tokens.css`
+#   会被解析成 `/frontend-lib/typo/01-tokens/tokens.css`，也 404。
+#   于是整页裸奔：没样式、没暗色、字挤在一起。
+#   这个失败模式不会出现在正常页面上，所以必须由判据盯着。
+ROOT_404 = '''<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>页面不存在 · agentcss</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="%(fav)s">
+<link rel="stylesheet" href="%(base)s01-tokens/tokens.css">
+<link rel="stylesheet" href="%(base)s01-tokens/typography.css">
+<link rel="stylesheet" href="%(base)s01-tokens/page.css">
+<style>
+.skip { position: absolute; left: -9999px; }
+.skip:focus { left: var(--sp-3); top: var(--sp-3); z-index: 9;
+  background: var(--surface); padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-sm); }
+.e-wrap { max-width: 34rem; margin: 0 auto; padding: var(--sp-8) var(--sp-5);
+  min-height: 76vh; display: grid; align-content: center; }
+.e-kicker { margin: 0 0 var(--sp-2); font-size: var(--fs-sm);
+  letter-spacing: 0.08em; color: var(--text-tertiary); }
+.e-wrap h1 { margin: 0 0 var(--sp-3); }
+.e-note { margin: 0 0 var(--sp-6); color: var(--text-secondary); }
+.e-links { margin: 0 0 var(--sp-7); padding: 0; list-style: none; }
+.e-links li { margin: 0 0 var(--sp-3); }
+/* 不写颜色就会落到浏览器默认蓝：暗色下那个蓝偏暗、和纸面糊在一起 */
+.e-links a { color: var(--accent); font-weight: 500; }
+.e-links span { color: var(--text-tertiary); }
+.e-tech { margin: 0; font-size: var(--fs-sm); color: var(--text-tertiary); }
+.e-tech code { word-break: break-all; }
+</style>
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<main id="main" class="e-wrap">
+  <p class="e-kicker">404</p>
+  <h1>这个地址没有内容</h1>
+  <p class="e-note">多半是旧链接，或者路径里打错了一个字符。</p>
+  <ul class="e-links">
+    <li><a href="%(base)sguide/index.html">组件索引</a>
+      <span>—— %(n)d 个组件，可以按类名、状态、中文词搜</span></li>
+    <li><a href="%(base)s">演示总览</a>
+      <span>—— 每个组件一个能点的页面</span></li>
+  </ul>
+  <p class="e-tech">你请求的是 <code id="u"></code></p>
+</main>
+<script>
+  var u = document.getElementById('u');
+  if (u) u.textContent = location.pathname + location.search;
+</script>
+</body>
+</html>
+'''
+
+
+def render_404(comps, ver):
+    return ROOT_404 % {'fav': FAVICON, 'base': esc(site_base()), 'n': len(comps)}
+
+
 def render_root_index(comps, page_ids, ver):
     """根 `index.html` —— **只链包内真实存在的页面**。
 
@@ -1041,6 +1208,7 @@ def build(out_dir):
     files['guide/index.html'] = render_index(comps, page_ids, ver, extras, site_rows)
     files['guide/guide.css'] = GUIDE_CSS
     files['index.html'] = render_root_index(comps, page_ids, ver)
+    files['404.html'] = render_404(comps, ver)
 
     # 站点专属页（`10-review/` `examples/` 下那三个）只列在 `guide/index.html`。
     #   根 `index.html` 在 `files` 白名单里、会随包发出去，把它链到
@@ -1296,6 +1464,14 @@ GUIDE_CSS = """/* 由 05-audit/gen-docs.py 生成，勿手改（改生成器） 
 }
 
 /* ---- 索引页 --------------------------------------------------------------- */
+.lede--note {
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  max-width: 46em;
+  margin: calc(var(--sp-3) * -1) 0 var(--sp-5);
+}
+.lede--note code { font-size: var(--fs-xs); }
+
 .g-search { margin: 0 0 var(--sp-6); }
 .g-search__label {
   display: block;

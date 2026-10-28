@@ -114,7 +114,13 @@ function walk(dir, out) {
 function serve() {
   return new Promise((resolve) => {
     const srv = http.createServer((req, res) => {
-      const rel = decodeURIComponent(req.url.split('?')[0]).replace(/^\/+/, '');
+      let rel = decodeURIComponent(req.url.split('?')[0]).replace(/^\/+/, '');
+      // 站点部署在子路径下（GitHub Pages 的 /frontend-lib/），而 404.html
+      // 引资源只能用绝对路径 —— 否则它会在"用户敲错的目录"里二次 404。
+      // 这里把站点前缀剥掉，让 404 页也能在本地被真实测量；
+      // 顺带把"子路径部署"这个前提变成可测的环境，而不是假设。
+      const m = /^frontend-lib\/(.*)$/.exec(rel);
+      if (m) rel = m[1];
       const file = path.join(ROOT, rel);
       if (!file.startsWith(ROOT) || !fs.existsSync(file) ||
           fs.statSync(file).isDirectory()) {

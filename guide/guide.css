@@ -212,6 +212,14 @@
 }
 
 /* ---- 索引页 --------------------------------------------------------------- */
+.lede--note {
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  max-width: 46em;
+  margin: calc(var(--sp-3) * -1) 0 var(--sp-5);
+}
+.lede--note code { font-size: var(--fs-xs); }
+
 .g-search { margin: 0 0 var(--sp-6); }
 .g-search__label {
   display: block;
