@@ -8,8 +8,8 @@
   ],
   "totals": {
     "sourceFiles": 69,
-    "sourceBytes": 740911,
-    "distGzip": 95349
+    "sourceBytes": 740799,
+    "distGzip": 95316
   },
   "files": [
     {
@@ -648,9 +648,9 @@
     },
     {
       "source": "03-patterns/pagination/pagination.css",
-      "sourceSha256": "c4bc7e1504fb0a53a23830b1fdb9b8bd08ad0db05ffd249c04cfa3a81d45601f",
-      "sourceBytes": 7851,
-      "sourceGzip": 3422,
+      "sourceSha256": "b4e17f903e40f0a643c9f6b3b7176584317143d8e2f5f9653831aa08f785e914",
+      "sourceBytes": 7854,
+      "sourceGzip": 3418,
       "outputs": [
         {
           "path": "dist/03-patterns/pagination/pagination.css",
@@ -849,9 +849,9 @@
     },
     {
       "source": "04-recipes/table/table.css",
-      "sourceSha256": "411044fa658d9f2fb0e23dc7e839c8261bcf4cb750e8e9bd6cd263a02e727f6a",
-      "sourceBytes": 15796,
-      "sourceGzip": 6169,
+      "sourceSha256": "17f3503c903e6bcca08a96fc0076de7d21482acf39a8995ee291c767080ea39d",
+      "sourceBytes": 15761,
+      "sourceGzip": 6136,
       "outputs": [
         {
           "path": "dist/04-recipes/table/table.css",
@@ -891,9 +891,9 @@
     },
     {
       "source": "09-assets/bar/bar.js",
-      "sourceSha256": "5f2789d7fdbb97d1d3cad8d29eed823324bbc1f018b56fc427a2073003b299a3",
-      "sourceBytes": 15117,
-      "sourceGzip": 6426,
+      "sourceSha256": "cbb67fb8084172d1f385b7966fd0d43f53c16b2bfe9102e8f5ac1a335ad9cd41",
+      "sourceBytes": 15077,
+      "sourceGzip": 6395,
       "outputs": [
         {
           "path": "dist/09-assets/bar/bar.js",
@@ -964,15 +964,15 @@
     },
     {
       "source": "09-assets/scientific-plot/scientific-plot.js",
-      "sourceSha256": "9cbf8283bdcdaf16c71f3dc7f0bcd494bf74c16bdf1dbc2c8245300c7a8398c4",
-      "sourceBytes": 27040,
-      "sourceGzip": 9844,
+      "sourceSha256": "3f0a5951ea906cd64583cf6e56ff4f40d4d2a205c74a4dbc141e9cb46caeff13",
+      "sourceBytes": 27000,
+      "sourceGzip": 9810,
       "outputs": [
         {
           "path": "dist/09-assets/scientific-plot/scientific-plot.js",
           "kind": "stripped",
-          "bytes": 24013,
-          "gzip": 8589
+          "bytes": 23973,
+          "gzip": 8556
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"

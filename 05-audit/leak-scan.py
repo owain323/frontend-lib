@@ -95,6 +95,7 @@ PATTERNS = [
 CHECKS_EXTRA = [
     ('内部目录引用', re.compile('|'.join(re.escape(d) for d in terms.INTERNAL_DIRS))),
     ('内部协作痕迹', re.compile('|'.join(re.escape(w) for w in terms.COLLAB_TRACE), re.I)),
+    ('过程痕迹', terms.process_trace_pat()),
     ('未替换占位符', re.compile(terms.PLACEHOLDER_RE)),
 ]
 

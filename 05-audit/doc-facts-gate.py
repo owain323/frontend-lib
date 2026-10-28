@@ -6,8 +6,8 @@ doc-facts-gate.py — 文档事实门禁（任务 W4，2026-10-09 加固）
 ===========================================================================
 🔴 为什么需要这道门禁
 ---------------------------------------------------------------------------
-  评审指出：START-HERE 里写「badge / table / pagination 还没做」，
-  而仓库里它们**早就有了**。根因不是有人偷懒，而是：
+  START-HERE 里曾写着「badge / table / pagination 还没做」，
+  而仓库里它们**早就有了**。根因不是写的人偷懒，而是：
 
   **文档里的"事实"没有任何东西在维护它** ——
   组件加了没人改文档，门禁也不查，于是几个月后文档在骗人。
@@ -491,8 +491,7 @@ def main():
     if not files:
         problems.append(('（全仓）', '判据视野已空',
                          '一份文档都没扫到 ⇒ 这份"通过"不作数'))
-    print('     视野：%d 份受版本控制的 .md（另有 CHANGELOG 只查当前版本段；'
-          'ERRORS.md 是历史台账，只查"当前事实"类判据以外的东西）'
+    print('     视野：%d 份受版本控制的 .md（CHANGELOG 只查当前版本段）'
           % len(files))
 
     cur = None
@@ -506,11 +505,10 @@ def main():
         text = io.open(p, encoding='utf-8').read()
 
         # F1 组件总数
-        #   ⚠️ ERRORS.md 是**历史台账**：它引用当年写错的数字是**正确的引用**
-        #      （E69 那条就把「共 33 个（stable 29 / beta 4）」原样抄了进去）。
-        #      拿今天的真值去核一份历史记录，是判据用错了地方 ——
-        #      与 CHANGELOG「只查当前版本段」同一个道理。
-        if n_comp is not None and f != 'ERRORS.md':
+        #   ⚠️ 历史台账类文档（按当年真值抄了旧数字）不在 `git ls-files` 视野里
+        #      —— 它们不进版本控制，本门禁也扫不到。这是**有意为之**：
+        #      拿今天的真值去核一份历史记录，是判据用错了地方。
+        if n_comp is not None:
             for claim, line, no in scan_claims(text, PAT_COMPONENTS):
                 if claim == n_comp:
                     continue
@@ -520,7 +518,7 @@ def main():
 
         # F1b 组件总数 + 成熟度拆分的**列举式**声明
         #     「共 35 个（stable 31 / beta 4）」—— 三个数一起核。
-        if n_comp is not None and maturity and f != 'ERRORS.md':
+        if n_comp is not None and maturity:
             for line, no in iter_lines(text):
                 bare = line.replace('**', '').replace('__', '')
                 for m in re.finditer(PAT_COMPONENTS_BREAKDOWN, bare):

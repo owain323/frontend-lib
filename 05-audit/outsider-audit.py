@@ -120,6 +120,9 @@ PATTERNS = [
     #      · 「Tier A」是 `05-audit/` 门禁自己的档位术语，且 05-audit 已在下文豁免
     #    ⇒ 统一走 `terms.process_pat()`（与 leak-scan 同一份判据，只写一份）。
     ('内部流程', terms.process_pat()),
+    # 过程痕迹：第三方来源 / 评审轨迹 / 账号与凭据细节。
+    # 与 leak-scan 共用 `terms.process_trace_pat()`（同一份判据，只写一份）。
+    ('过程痕迹', terms.process_trace_pat()),
     # ⚠️ `/tmp` 与 `$HOME` 是**通用路径与变量**，不含身份信息
     #    （每个 Linux 用户都有 /tmp，每台机器都有 $HOME）。
     #    ⇒ 只有**具体用户名**与**具体盘符目录**才算泄漏。
