@@ -14,6 +14,10 @@
 
 ## [Unreleased]
 
+（本轮无未发布改动 —— 0.11.2 的条目见下方。）
+
+## [0.11.2] - 2026-10-28
+
 ### Added · `03-patterns/nav/nav.js` —— 抽屉的行为层（2026-10-28）
 
 `nav.css` 早就定义了抽屉的三个状态（`list`/`scrim` 的 `data-state`、
