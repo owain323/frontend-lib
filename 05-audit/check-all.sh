@@ -723,6 +723,15 @@ run "hype"        $PY 05-audit/hype-scan.py
 # ⚠️ 直接调 node，不套 with-server.sh ——
 #   check-all 自己已经起了 :8000，而 with-server.sh 遇到端口被占会直接报错。
 run "doc-facts"       $PY 05-audit/doc-facts-gate.py
+# 🔴 docs-site（2026-10-28 加 · 起因是"全绿但漏页"）
+#   根索引页此前是手写的，于是 `reveal` / `analysis-report` / `detail-page` /
+#   `longform` / `data-showcase` / `scientific-plot` 六个页面早就存在、
+#   索引里一个都没有，而 177 道门禁全绿 —— 因为没有判据问过"索引覆盖几页"。
+#   ⇒ 索引与 guide/ 改为生成，本门禁核四件事：产物是现算的、每页链接都能落地、
+#     页面本身可访问（lang / 单一 h1 / main / skip link / 无重复 id）、无外链资源。
+#   ⚠️ 它读 git 视野比对"改了 README 忘了重跑"，纯静态、~0.3 秒。
+run "docs-site"     $PY 05-audit/docs-site-gate.py
+run "docs-site-rev" $PY 05-audit/docs-site-gate.py --selftest
 run "api-contract"     $PY 05-audit/api-contract-gate.py
 run "api-form"       $PY 05-audit/api-form-gate.py
 run "api-form-rev"   $PY 05-audit/api-form-gate.py --selftest

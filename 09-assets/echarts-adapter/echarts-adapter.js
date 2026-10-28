@@ -14,7 +14,7 @@
  *
  *   ⇒ 本文件是**图表规范的机器可读版本**：
  *     - 主题：换主题时图表跟着变（不用手改 ECharts 配置）
- *     - 规范：把 charter 10 里的规则**变成默认值**（不用每次重想）
+ *     - 规范：把图表规则**变成默认值**（不用每次重想）
  *
  * ============================================================================
  * 为什么这个维护成本≈0
@@ -38,7 +38,7 @@
  *   </script>
  *
  *   ⚠️ 精简档（某项目）**不要引 ECharts**（约 1MB gzip）——
- *      那边继续用 09-assets/sparkline。见 charter 10。
+ *      那边继续用 `09-assets/sparkline`。
  */
 (function () {
   'use strict';
@@ -79,7 +79,7 @@
   /**
    * 取 n 个系列的颜色。
    * 🔴 **不让调色板自己循环** —— 超过可用色数就返回 null，
-   *    调用方应当**改图表类型**（charter 10 的规则：系列 ≤ 5）。
+   *    调用方应当**改图表类型**（规则：系列 ≤ 5）。
    *
    * 为什么不循环：第 6 个颜色和第 1 个同色，用户分不清谁是谁。
    * 「颜色不够用」是**该换图表**的信号，不是该加颜色的理由。
@@ -119,7 +119,7 @@
         borderColor: p.border,
         borderWidth: 1,
         textStyle: { color: p.text, fontSize: 12 },
-        // 🔴 数字统一等宽 + 千分位（charter 10 的数字格式规则）
+        // 🔴 数字统一等宽 + 千分位（数字格式规则）
         extraCssText: isDark
           ? 'box-shadow:0 2px 8px rgba(0,0,0,.5);'
           : 'box-shadow:0 2px 8px rgba(0,0,0,.1);',
@@ -137,7 +137,7 @@
       axisTick: { show: false },
       axisLabel: { color: p.textSub, fontSize: 11 },
       splitLine: { lineStyle: { color: p.border, type: 'dashed' } },
-      // 🔴 分类轴从 0 开始（柱状图的诚实性要求，见 charter 10）
+      // 🔴 分类轴从 0 开始（柱状图的诚实性要求）
       splitNumber: 4,
     };
   }
@@ -145,7 +145,7 @@
   /* ---------- 4. 合规的默认配置 ---------- */
 
   /**
-   * 一组**符合 charter 10 规范**的默认 option。
+   * 一组**符合图表规范**的默认 option。
    * 覆盖 ECharts 的默认值 —— 让你不写就合规。
    */
   function defaults(option) {
@@ -191,11 +191,11 @@
       if (y && y.min === undefined) y.min = 0;
     }
 
-    // 🔴 超过 5 个系列 ⇒ 明确警告（charter 10：系列 ≤ 5）
+    // 🔴 超过 5 个系列 ⇒ 明确警告（系列 ≤ 5）
     if (o.series.length > 5) {
       if (typeof console !== 'undefined' && console.warn) {
         console.warn('[frontend-lib] 系列数 ' + o.series.length +
-          ' 超过 5 —— 请改图表类型或分屏，见 charter 10。配色循环会让颜色撞车。');
+          ' 超过 5 —— 请改图表类型或分屏。配色循环会让颜色撞车。');
       }
     }
 

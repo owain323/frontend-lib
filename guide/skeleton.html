@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>skeleton · 骨架屏 · agentcss</title>
+<meta name="description" content="加载占位骨架">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">skeleton · 骨架屏</span>
+    <a class="g-jump" href="../02-primitives/skeleton/demo.html">打开示例<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">基础组件 · stable</p>
+    <h1>skeleton · 骨架屏</h1>
+    <p class="lede">加载占位骨架</p>
+    <ul class="g-meta"><li><a href="../02-primitives/skeleton/demo.html"><code>02-primitives/skeleton/demo.html</code></a></li><li><a href="../02-primitives/skeleton/skeleton.css"><code>02-primitives/skeleton/skeleton.css</code></a></li></ul>
+    <article class="g-doc">
+<blockquote><p>加载态是移动端<strong>最高频</strong>的状态。没有它，每个业务方都会自己造一个<br>⇒ 形状不统一、闪烁频率不一致、暗色下颜色不对。</p></blockquote>
+<h2 id="s2">用法<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-html">&lt;link rel=&quot;stylesheet&quot; href=&quot;skeleton.css&quot;&gt;
+
+&lt;!-- 文本骨架（多行） --&gt;
+&lt;div aria-busy=&quot;true&quot;&gt;
+  &lt;span class=&quot;skeleton skeleton--text&quot; aria-hidden=&quot;true&quot; style=&quot;width:92%&quot;&gt;&lt;/span&gt;
+  &lt;span class=&quot;skeleton skeleton--text&quot; aria-hidden=&quot;true&quot; style=&quot;width:78%&quot;&gt;&lt;/span&gt;
+&lt;/div&gt;
+
+&lt;!-- 块状（图片/卡片占位） --&gt;
+&lt;div class=&quot;skeleton skeleton--block&quot; aria-hidden=&quot;true&quot; style=&quot;height:96px&quot;&gt;&lt;/div&gt;
+
+&lt;!-- 圆形（头像占位） --&gt;
+&lt;span class=&quot;skeleton skeleton--circle&quot; aria-hidden=&quot;true&quot;&gt;&lt;/span&gt;
+
+&lt;!-- 列表骨架（最常用形态） --&gt;
+&lt;div class=&quot;skeleton-list&quot; aria-busy=&quot;true&quot;&gt;
+  &lt;div class=&quot;skeleton-list__row&quot;&gt;
+    &lt;span class=&quot;skeleton skeleton--circle&quot; aria-hidden=&quot;true&quot;&gt;&lt;/span&gt;
+    &lt;div style=&quot;flex:1&quot;&gt;
+      &lt;span class=&quot;skeleton skeleton--text&quot; aria-hidden=&quot;true&quot; style=&quot;width:40%&quot;&gt;&lt;/span&gt;
+      &lt;span class=&quot;skeleton skeleton--text&quot; aria-hidden=&quot;true&quot; style=&quot;width:88%&quot;&gt;&lt;/span&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+<h2 id="s3">令牌<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>令牌</th><th>默认</th><th>说明</th>
+</tr></thead>
+<tbody>
+<tr><td><code>--skeleton-bg</code></td><td><code>#e9ecef</code> / 暗色 <code>#2E343C</code></td><td>底色。<strong>与纸面亮度差必须 &gt; 0.02</strong>（契约强制）</td></tr>
+<tr><td><code>--skeleton-shimmer</code></td><td><code>rgba(255,255,255,.72)</code></td><td>微光高光</td></tr>
+<tr><td><code>--skeleton-h</code></td><td><code>1em</code></td><td>单行高度</td></tr>
+<tr><td><code>--skeleton-size</code></td><td><code>40px</code></td><td>circle 直径</td></tr>
+<tr><td><code>--skeleton-duration</code></td><td><code>1.4s</code></td><td>微光周期</td></tr>
+</tbody>
+</table></div>
+<h2 id="s4">无障碍（必读）<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
+<p>骨架屏<strong>没有文字</strong>。若不处理，读屏会念出一堆空白。</p>
+<pre class="code" tabindex="0"><code class="language-html">&lt;!-- ✅ 正确：外层标 aria-busy（读屏会念&quot;忙&quot;），骨架逐个 aria-hidden --&gt;
+&lt;div aria-busy=&quot;true&quot;&gt;
+  &lt;span class=&quot;skeleton&quot; aria-hidden=&quot;true&quot;&gt;&lt;/span&gt;
+&lt;/div&gt;</code></pre>
+<p>⚠️ <code>prefers-reduced-motion: reduce</code> 时<strong>动画停掉，但骨架屏仍显示</strong> —— 用户依然知道正在加载。（WCAG 2.3.3）</p>
+<h2 id="s5">何时<strong>不该</strong>用<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
+<ul><li>❌ <strong>很短的文字</strong>（&lt; 12px）：骨架屏会读成&quot;渲染坏了&quot;，读屏还会念空白</li><li>❌ <strong>只要 200ms 就完成</strong>的加载：闪一下更伤体验，直接不显示</li><li>❌ <strong>已知时长的操作</strong>（如上传 3MB）：用 <code>progress</code> 而不是骨架屏</li><li>❌ <strong>骨架屏里放 spinner</strong>：两者都是&quot;不确定进度&quot;的信号，同时出现是噪声</li></ul>
+<h2 id="s6">相关<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
+<ul><li>已知进度 ⇒ <code>progress</code>（已提供）</li><li>短反馈 ⇒ <code>toast</code>（<strong>待补</strong>）</li></ul>
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      <a class="g-pager__link g-pager__link--prev" href="separator.html"><span>上一页</span>separator · 分隔线</a>
+      <a class="g-pager__link g-pager__link--next" href="switch.html"><span>下一页</span>switch · 开关</a>
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    <ul class="g-toc"><li><a href="#s2">用法</a></li><li><a href="#s3">令牌</a></li><li><a href="#s4">无障碍（必读）</a></li><li><a href="#s5">何时不该用</a></li><li><a href="#s6">相关</a></li></ul>
+  </aside>
+</div>
+<footer class="g-foot">
+  <p>v0.11.4 · 零第三方运行时依赖 · 组件数 35</p>
+</footer>
+</body>
+</html>

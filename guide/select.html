@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>select · 自建下拉选择 · agentcss</title>
+<meta name="description" content="自定义下拉选择（非原生）">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">select · 自建下拉选择</span>
+    <a class="g-jump" href="../02-primitives/select/demo.html">打开示例<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">基础组件 · stable</p>
+    <h1>select · 自建下拉选择</h1>
+    <p class="lede">自定义下拉选择（非原生）</p>
+    <ul class="g-meta"><li><a href="../02-primitives/select/demo.html"><code>02-primitives/select/demo.html</code></a></li><li><a href="../02-primitives/select/select.css"><code>02-primitives/select/select.css</code></a></li><li><a href="../02-primitives/select/select.js"><code>02-primitives/select/select.js</code></a></li></ul>
+    <article class="g-doc">
+<p>依据 <strong>APG（ARIA Authoring Practices）Select-Only Combobox</strong> 模式。</p>
+<h2 id="s2">⭐ 什么场景用、什么场景别用<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>场景</th><th>用什么</th>
+</tr></thead>
+<tbody>
+<tr><td>表单提交、移动端体验</td><td><strong>原生 <code>&lt;select&gt;</code></strong></td></tr>
+<tr><td>需要自定义外观（圆角/字体/阴影、选项带说明）</td><td>本组件</td></tr>
+</tbody>
+</table></div>
+<p><strong>为什么需要自建</strong>：原生 <code>&lt;select&gt;</code> 在 Windows 上<strong>无法定制样式</strong>（下拉列表由系统绘制），圆角/字体/阴影全部无效 ⇒ 跨平台观感不一致。</p>
+<p>⛔ 但<strong>表单提交</strong>仍由本组件通过 <code>hidden input</code> 承接，<code>create()</code> 时会自己建。</p>
+<h2 id="s3">结构<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-html">&lt;div class=&quot;select&quot;&gt;
+  &lt;button class=&quot;select__btn&quot; data-select-btn aria-haspopup=&quot;listbox&quot;
+          aria-expanded=&quot;false&quot; aria-controls=&quot;select-list-1&quot;&gt;
+    &lt;span class=&quot;select__value&quot;&gt;…&lt;/span&gt;
+    &lt;span class=&quot;select__caret&quot; aria-hidden=&quot;true&quot;&gt;&lt;/span&gt;
+  &lt;/button&gt;
+  &lt;ul class=&quot;select__list&quot; data-select-list id=&quot;select-list-1&quot; role=&quot;listbox&quot;&gt;
+    &lt;li class=&quot;select__opt&quot; role=&quot;option&quot; aria-selected=&quot;false&quot;&gt;
+      &lt;span class=&quot;select__opt-text&quot;&gt;…&lt;/span&gt;
+    &lt;/li&gt;
+  &lt;/ul&gt;
+&lt;/div&gt;</code></pre>
+<div class="table"><table>
+<thead><tr>
+<th>部件</th><th>说明</th>
+</tr></thead>
+<tbody>
+<tr><td><code>.select</code></td><td>根（<strong>必须</strong>），<code>position: relative</code> 靠它定位列表</td></tr>
+<tr><td><code>[data-select-btn]</code> / <code>[data-select-list]</code></td><td><strong>两个都必需</strong>，缺一个 <code>create()</code> 直接抛错</td></tr>
+<tr><td><code>.select__value</code></td><td>按钮里显示当前值</td></tr>
+<tr><td><code>.select__check</code></td><td>多选时的勾选位</td></tr>
+<tr><td><code>.select--block</code></td><td>整块宽度（省掉 <code>min-width: 12rem</code>）</td></tr>
+<tr><td><code>.select--end</code></td><td>列表右对齐</td></tr>
+</tbody>
+</table></div>
+<p>⚠️ <code>id</code> 可以不写，<code>create()</code> 会自动补<code>select-list-N</code>。</p>
+<h2 id="s4">启用<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-js">const sel = Select.create(元素, { multiple: false, value: 'b', label: '选项' });</code></pre>
+<div class="table"><table>
+<thead><tr>
+<th>参数</th><th>说明</th>
+</tr></thead>
+<tbody>
+<tr><td><code>multiple</code></td><td>多选（会写 <code>aria-multiselectable</code>）</td></tr>
+<tr><td><code>value</code></td><td>初始选中项的 value</td></tr>
+<tr><td><code>label</code></td><td>列表的 <code>aria-label</code></td></tr>
+</tbody>
+</table></div>
+<h2 id="s5">🔴 APG 的键盘契约（三条最容易漏）<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>键</th><th>行为</th>
+</tr></thead>
+<tbody>
+<tr><td>打开后焦点</td><td><strong>落在选中项</strong>（不是第一项，也不是按钮）</td></tr>
+<tr><td><code>↑</code> <code>↓</code></td><td>循环上下移动</td></tr>
+<tr><td><code>Home</code> / <code>End</code></td><td>跳首/ 末</td></tr>
+<tr><td><code>Enter</code> / <code>Space</code></td><td>选中并关闭</td></tr>
+<tr><td><code>Esc</code></td><td>关闭，并<strong>把焦点还给按钮</strong></td></tr>
+<tr><td><code>Alt</code> + <code>↓</code></td><td>直接打开</td></tr>
+</tbody>
+</table></div>
+<p><strong>① 为什么强调&quot;落在选中项&quot;</strong>：这是 APG 明确要求的，也是最常做错的一条。打开后焦点在第一项，用户按一次<code>↓</code> 就跳到第二项 —— 原来选的那项被跳过了。</p>
+<h2 id="s6">类型搜索（typeahead）<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
+<p>连续打字跳到匹配项。<strong>原生 <code>&lt;select&gt;</code> 有这个能力，所以自建的必须有</strong>。</p>
+<p>它不是在这里实现的，而是<strong>接线</strong>到共享微行为核 <code>01-tokens/behavior/typeahead.js</code>（<code>BEHAVIOR INJECT: typeahead</code> 段）—— <code>tabs</code> / <code>tree</code> 等也接同一份，所以各组件只有一半接线代码，不是各抄一遍规则。</p>
+<p>⚠️ 已知盲点（实测结论，记在 <code>select-check.js</code> 里）：把 <code>typeahead.type(k)</code> 那行接线删掉，门禁<strong>会红</strong>；但把 <code>close()</code> 里的 <code>typeahead.clear()</code> 删掉，<strong>守不住</strong>。 ⇒ 这类&quot;接线&quot;类缺陷目前只能靠人读，别把门禁绿当成&quot;接线全对&quot;。</p>
+<h2 id="s7">成熟度：beta（两条行为债，如实列出）<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>债</th><th>现在的后果</th>
+</tr></thead>
+<tbody>
+<tr><td><code>dismissable:manual</code></td><td>点外部空白能关，但<strong>不是统一机制</strong></td></tr>
+<tr><td><code>focus-return:manual</code></td><td><code>Esc</code> 关闭后焦点能回按钮，但<strong>不是统一机制</strong></td></tr>
+</tbody>
+</table></div>
+<p>接统一行为层前，别当<code>stable</code> 用。</p>
+<h2 id="s8">门禁<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
+<p><code>05-audit/select-check.js</code> —— 覆盖键盘契约与 ARIA 属性同步。</p>
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      <a class="g-pager__link g-pager__link--prev" href="progress.html"><span>上一页</span>progress · 进度条</a>
+      <a class="g-pager__link g-pager__link--next" href="separator.html"><span>下一页</span>separator · 分隔线</a>
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    <ul class="g-toc"><li><a href="#s2">⭐ 什么场景用、什么场景别用</a></li><li><a href="#s3">结构</a></li><li><a href="#s4">启用</a></li><li><a href="#s5">🔴 APG 的键盘契约（三条最容易漏）</a></li><li><a href="#s6">类型搜索（typeahead）</a></li><li><a href="#s7">成熟度：beta（两条行为债，如实列出）</a></li><li><a href="#s8">门禁</a></li></ul>
+  </aside>
+</div>
+<footer class="g-foot">
+  <p>v0.11.4 · 零第三方运行时依赖 · 组件数 35</p>
+</footer>
+</body>
+</html>

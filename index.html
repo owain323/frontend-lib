@@ -4,79 +4,94 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<title>frontend-lib · 演示</title>
+<title>agentcss · 演示</title>
 <link rel="stylesheet" href="01-tokens/tokens.css">
 <link rel="stylesheet" href="01-tokens/typography.css">
 <link rel="stylesheet" href="01-tokens/page.css">
-<style>
-ul { list-style:none; padding:0; margin:0; }
-li { padding: var(--sp-2) 0; border-bottom: 1px solid var(--border-decor); }
-a { color: var(--accent); text-decoration: none; display: block; }
-a:active { background: var(--surface-sunken); }
-.first { background: var(--surface-sunken); border: 1px solid var(--border-control);
-           border-radius: var(--r-md); padding: var(--sp-4); margin: 0 0 var(--sp-5); }
-.first a { font-weight: 600; }
-</style>
 <link rel="stylesheet" href="03-patterns/nav/nav.css">
+<style>
+ul { list-style: none; padding: 0; margin: 0 0 var(--sp-6); }
+li { padding: var(--sp-3) 0; border-bottom: 1px solid var(--border-decor); }
+li a { color: var(--accent); text-decoration: none; display: block; font-weight: 600; }
+li a:active { background: var(--surface-sunken); }
+.r__d { margin: 0 0 var(--sp-3); color: var(--text-secondary);
+        font-size: var(--fs-sm); line-height: var(--lh-normal); }
+.r__p { display: block; color: var(--text-secondary); font-size: var(--fs-sm);
+        line-height: var(--lh-normal); margin-top: var(--sp-1); }
+</style>
 </head>
-<body class="page page">
-<!-- 🔴 补（a11y-scan 报 landmark-one-main / region 两违规）：
-     入口页必须有 <main> 地标，并提供"跳到主内容"的 skip link
-     （WCAG 2.4.1 Bypass Blocks）—— 键盘用户按一次 Tab 就能跳过导航。
-     ⚠️ 这段必须写在**生成器**里，否则每次重新生成 index.html 都会被覆盖。 -->
+<body class="page">
 <a href="#main" class="skip">跳到主内容</a>
 <main id="main" class="wrap">
-  <h1>frontend-lib · 演示</h1>
+  <h1>agentcss · 演示</h1>
   <p class="lede">
-    零依赖前端组件库。全部页面可点开，<strong>在手机上直接看也可以</strong>。
+    35 个组件，每一页都能直接打开看。
+    <strong>手机上也一样</strong> —— 布局、触控尺寸、暗色都是按移动端调的。
   </p>
 
-  <div class="first">
-    <p style="margin:0 0 var(--sp-2)"><strong>建议先看这个</strong></p>
-    <a href="10-review/ios/index.html">iOS 验证页（十项，Safari 专用）</a>
-    <p class="note" style="margin:var(--sp-2) 0 0">
-      按钮 / 输入框 / 开关 / 单选 / 标签页 / 折叠 / 弹窗 / 趋势图 / 徽章 / 暗色
-      —— 每节都写了「该看到什么」。
-    </p>
-  
-  <h2 class="rule-top">全部页面</h2>
-  <ul>
-    <li><a href="02-primitives/badge/demo.html"><code>02-primitives/badge/demo.html</code></a></li>
-    <li><a href="02-primitives/button/demo.html"><code>02-primitives/button/demo.html</code></a></li>
-    <li><a href="02-primitives/card/demo.html"><code>02-primitives/card/demo.html</code></a></li>
-    <li><a href="02-primitives/choice/demo.html"><code>02-primitives/choice/demo.html</code></a></li>
-    <li><a href="02-primitives/combobox/demo.html"><code>02-primitives/combobox/demo.html</code></a></li>
-    <li><a href="02-primitives/date-range/demo.html"><code>02-primitives/date-range/demo.html</code></a></li>
-    <li><a href="02-primitives/input/demo.html"><code>02-primitives/input/demo.html</code></a></li>
-    <li><a href="02-primitives/popover/demo.html"><code>02-primitives/popover/demo.html</code></a></li>
-    <li><a href="02-primitives/progress/demo.html"><code>02-primitives/progress/demo.html</code></a></li>
-    <li><a href="02-primitives/select/demo.html"><code>02-primitives/select/demo.html</code></a></li>
-    <li><a href="02-primitives/separator/demo.html"><code>02-primitives/separator/demo.html</code></a></li>
-    <li><a href="02-primitives/skeleton/demo.html"><code>02-primitives/skeleton/demo.html</code></a></li>
-    <li><a href="02-primitives/switch/demo.html"><code>02-primitives/switch/demo.html</code></a></li>
-    <li><a href="03-patterns/accordion/demo.html"><code>03-patterns/accordion/demo.html</code></a></li>
-    <li><a href="03-patterns/content/demo.html"><code>03-patterns/content/demo.html</code></a></li>
-    <li><a href="03-patterns/drawer/demo.html"><code>03-patterns/drawer/demo.html</code></a></li>
-    <li><a href="03-patterns/dropdown/demo.html"><code>03-patterns/dropdown/demo.html</code></a></li>
-    <li><a href="03-patterns/form-validation/demo.html"><code>03-patterns/form-validation/demo.html</code></a></li>
-    <li><a href="03-patterns/list/demo.html"><code>03-patterns/list/demo.html</code></a></li>
-    <li><a href="03-patterns/nav/demo.html"><code>03-patterns/nav/demo.html</code></a></li>
-    <li><a href="03-patterns/overlay/demo.html"><code>03-patterns/overlay/demo.html</code></a></li>
-    <li><a href="03-patterns/pagination/demo.html"><code>03-patterns/pagination/demo.html</code></a></li>
-    <li><a href="03-patterns/states/demo.html"><code>03-patterns/states/demo.html</code></a></li>
-    <li><a href="03-patterns/tabs/demo.html"><code>03-patterns/tabs/demo.html</code></a></li>
-    <li><a href="03-patterns/tooltip/demo.html"><code>03-patterns/tooltip/demo.html</code></a></li>
-    <li><a href="03-patterns/tree/demo.html"><code>03-patterns/tree/demo.html</code></a></li>
-    <li><a href="04-recipes/table/demo.html"><code>04-recipes/table/demo.html</code></a></li>
-    <li><a href="09-assets/bar/demo.html"><code>09-assets/bar/demo.html</code></a></li>
-    <li><a href="09-assets/echarts-adapter/demo.html"><code>09-assets/echarts-adapter/demo.html</code></a></li>
-    <li><a href="09-assets/model-viewer/demo.html"><code>09-assets/model-viewer/demo.html</code></a></li>
-    <li><a href="09-assets/sparkline/demo.html"><code>09-assets/sparkline/demo.html</code></a></li>
-    <li><a href="10-review/composition/demo.html"><code>10-review/composition/demo.html</code></a></li>
-    <li><a href="10-review/ios/index.html"><code>10-review/ios/index.html</code></a></li>
-    <li><a href="examples/react-vite/index.html"><code>examples/react-vite/index.html</code></a></li>
-  </ul>
-</div>
+<h2 class="rule-top">基础组件</h2>
+<p class="r__d">单一控件。拷一段 CSS 就能用。</p>
+<ul>
+<li><a href="02-primitives/badge/demo.html">badge · 状态标记</a><span class="r__p">状态标签：计数、分类、结果标记</span></li>
+<li><a href="02-primitives/button/demo.html">button</a><span class="r__p">动作触发：主/次/危险/纯文字四档</span></li>
+<li><a href="02-primitives/card/demo.html">card</a><span class="r__p">内容容器：媒体+正文+操作区三段</span></li>
+<li><a href="02-primitives/choice/demo.html">checkbox / radio / select</a><span class="r__p">单选/多选/原生 select 外观的统一控件</span></li>
+<li><a href="02-primitives/combobox/demo.html">combobox · 组合框 / 标签输入</a><span class="r__p">可搜索 + 可多选标签的输入控件</span></li>
+<li><a href="02-primitives/date-range/demo.html">date-range · 日期区间</a><span class="r__p">日期区间选择，含预设快捷范围</span></li>
+<li><a href="02-primitives/input/demo.html">input / field</a><span class="r__p">文本输入及其标签/帮助/错误三件套</span></li>
+<li><a href="02-primitives/popover/demo.html">popover · 气泡卡片</a><span class="r__p">锚定到触发元素的浮层</span></li>
+<li><a href="02-primitives/progress/demo.html">progress · 进度条</a><span class="r__p">进度条与进度环</span></li>
+<li><a href="02-primitives/select/demo.html">select · 自建下拉选择</a><span class="r__p">自定义下拉选择（非原生）</span></li>
+<li><a href="02-primitives/separator/demo.html">separator · 分隔线</a><span class="r__p">分隔线，可带中间文字</span></li>
+<li><a href="02-primitives/skeleton/demo.html">skeleton · 骨架屏</a><span class="r__p">加载占位骨架</span></li>
+<li><a href="02-primitives/switch/demo.html">switch · 开关</a><span class="r__p">开关切换</span></li>
+</ul>
+
+<h2 class="rule-top">模式</h2>
+<p class="r__d">由多个控件组成的一种交互，通常带行为脚本。</p>
+<ul>
+<li><a href="03-patterns/accordion/demo.html">accordion · 折叠面板</a><span class="r__p">可折叠分组</span></li>
+<li><a href="03-patterns/content/demo.html">content —— 内容渲染样式</a><span class="r__p">长文排版容器（标题/段落/列表/引用/代码）</span></li>
+<li><a href="03-patterns/drawer/demo.html">drawer · 抽屉</a><span class="r__p">侧边抽屉，含遮罩</span></li>
+<li><a href="03-patterns/dropdown/demo.html">dropdown · 下拉菜单</a><span class="r__p">下拉菜单</span></li>
+<li><a href="03-patterns/form-validation/demo.html">表单校验</a><span class="r__p">表单校验反馈与错误汇总</span></li>
+<li><a href="03-patterns/list/demo.html">list —— 列表</a><span class="r__p">键值列表/条目列表</span></li>
+<li><a href="03-patterns/nav/demo.html">nav —— 页头 / 目录 / 移动端抽屉</a><span class="r__p">顶部导航与目录</span></li>
+<li><a href="03-patterns/overlay/demo.html">Toast / Dialog（反馈层）</a><span class="r__p">吐司提示与模态遮罩</span></li>
+<li><a href="03-patterns/pagination/demo.html">pagination · 分页</a><span class="r__p">分页控件</span></li>
+<li><a href="03-patterns/reveal/demo.html">reveal · 入场动效</a><span class="r__p">入场动效：一个 data-reveal 属性六个方向，无 JS 时内容全可见</span></li>
+<li><a href="03-patterns/states/demo.html">容器四态：empty / loading / error / success</a><span class="r__p">空/加载/错误/成功四种整块状态</span></li>
+<li><a href="03-patterns/tabs/demo.html">tabs · 标签页</a><span class="r__p">选项卡切换</span></li>
+<li><a href="03-patterns/tooltip/demo.html">tooltip · 文字提示</a><span class="r__p">悬停/聚焦提示</span></li>
+<li><a href="03-patterns/tree/demo.html">tree · 树形视图</a><span class="r__p">可展开树形结构</span></li>
+</ul>
+
+<h2 class="rule-top">版式模板</h2>
+<p class="r__d">一整页的排版约定，给&quot;有结论、有数据&quot;的材料用。</p>
+<ul>
+<li><a href="04-recipes/analysis-report/demo.html">analysis-report · 组合型研究报告</a><span class="r__p">组合型研究报告页面：正文与辅助栏并排，窄屏自然退回单栏</span></li>
+<li><a href="04-recipes/detail-page/demo.html">detail-page · 实体详情页骨架</a><span class="r__p">实体详情页骨架：字段齐全 / 部分缺失 / 无数据三种状态同构，无数据是一等状态</span></li>
+<li><a href="04-recipes/report/demo.html">report · 报告版式系统 v1</a><span class="r__p">报告版式系统 v1：共享基础 + 三套版式（杂志/科研技术/金融研究），只换一个 rep--* 类即可切换取舍</span></li>
+<li><a href="04-recipes/table/demo.html">table · 专业数据表格</a><span class="r__p">数据表格：排序/加载/空/错误四态；三种用途预设（财务/学术/统计）</span></li>
+</ul>
+
+<h2 class="rule-top">图表与资源</h2>
+<p class="r__d">数据可视化与可选的第三方适配层。</p>
+<ul>
+<li><a href="09-assets/bar/demo.html">bar · 柱状图</a><span class="r__p">柱状图：堆叠/分组两种语义、超量程裁剪、图例</span></li>
+<li><a href="09-assets/model-viewer/demo.html">model-viewer — 惰性加载的 3D 模型查看器</a><span class="r__p">3D 模型查看器：令牌驱动样式，不含渲染库本体</span></li>
+<li><a href="09-assets/scientific-plot/demo.html">scientific-plot · 二维科学绘图</a><span class="r__p">二维科学绘图：折线/区间带/对数轴，纯令牌驱动、零依赖</span></li>
+<li><a href="09-assets/sparkline/demo.html">sparkline · 迷你趋势图</a><span class="r__p">迷你趋势图：无坐标轴、纯形状，适合表格内嵌的一行走势</span></li>
+</ul>
+
+  <h2 class="rule-top">说明</h2>
+  <p class="note">
+    本页只链随包发布的页面。完整文档与其余开发期页面在
+    <code>guide/index.html</code>（仓库内）与线上文档站。
+  </p>
 </main>
+<footer class="wrap">
+  <p class="note">0.11.4 · 零第三方运行时依赖</p>
+</footer>
 </body>
 </html>

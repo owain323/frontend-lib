@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>popover · 气泡卡片 · agentcss</title>
+<meta name="description" content="锚定到触发元素的浮层">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">popover · 气泡卡片</span>
+    <a class="g-jump" href="../02-primitives/popover/demo.html">打开示例<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">基础组件 · stable</p>
+    <h1>popover · 气泡卡片</h1>
+    <p class="lede">锚定到触发元素的浮层</p>
+    <ul class="g-meta"><li><a href="../02-primitives/popover/demo.html"><code>02-primitives/popover/demo.html</code></a></li><li><a href="../02-primitives/popover/popover.css"><code>02-primitives/popover/popover.css</code></a></li><li><a href="../02-primitives/popover/popover.js"><code>02-primitives/popover/popover.js</code></a></li></ul>
+    <article class="g-doc">
+<p>通行系统的必备件。<strong>非模态</strong>——背景仍可交互，这是它与 dialog 的根本区别。</p>
+<h2 id="s2">⭐ 该用哪一个（记不住就问这句）<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<blockquote><p><strong>用户需要&quot;在里面操作&quot;吗？</strong><br>不需要 → <code>tooltip</code><br>需要，但不<strong>打断</strong>当前上下文 → <strong>popover</strong><br>需要，且<strong>必须先处理完</strong>才能继续 → <code>dialog</code></p></blockquote>
+<div class="table"><table>
+<thead><tr>
+<th></th><th>能不能放交互内容</th><th>焦点管理</th>
+</tr></thead>
+<tbody>
+<tr><td><code>tooltip</code></td><td>❌ 只能纯文字</td><td>无</td></tr>
+<tr><td><strong><code>popover</code></strong></td><td>✅ 表单、按钮、列表都行</td><td><strong>焦点进入</strong></td></tr>
+<tr><td><code>dialog</code></td><td>✅ 但<strong>模态</strong>（背景锁死）</td><td>focus trap</td></tr>
+</tbody>
+</table></div>
+<p>参照实现：Radix Popover / MUI Popover / Carbon Popover。</p>
+<h2 id="s3">启用：DOM 由 JS 建，不用自己写<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-js">const p = Popover.attach(按钮元素, { place: 'bottom', label: '标题' });</code></pre>
+<p><code>attach()</code> 会自动：把触发器包进新建的 <code>.popover-anchor</code>（定位上下文）、建出浮层本体并写好 <code>role</code> 与 <code>aria-label</code>。</p>
+<div class="table"><table>
+<thead><tr>
+<th>参数</th><th>取值</th>
+</tr></thead>
+<tbody>
+<tr><td><code>place</code></td><td><code>bottom</code>（默认）/ <code>top</code> / <code>start</code> / <code>end</code></td></tr>
+<tr><td><code>label</code></td><td>浮层的 <code>aria-label</code></td></tr>
+</tbody>
+</table></div>
+<p>返回的对象有 <code>open()</code> / <code>close()</code> / <code>toggle()</code>。</p>
+<p>全局还有两个：</p>
+<pre class="code" tabindex="0"><code class="language-js">Popover.closeAll();   // 关掉当前开着的那个
+Popover.current;      // 当前开着的实例（没有则null）</code></pre>
+<h2 id="s4">内部结构（JS 生成，供你放内容）<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-html">&lt;span class=&quot;popover-anchor&quot;&gt;
+  &lt;button aria-haspopup=&quot;dialog&quot; aria-expanded=&quot;false&quot;&gt;…&lt;/button&gt;
+  &lt;div class=&quot;popover popover--bottom&quot; role=&quot;dialog&quot;
+       data-open=&quot;false&quot; aria-label=&quot;标题&quot; inert&gt;
+    &lt;div class=&quot;popover__title&quot;&gt;…&lt;/div&gt;
+    &lt;div class=&quot;popover__desc&quot;&gt;…可含表单、按钮、列表…&lt;/div&gt;
+    &lt;div class=&quot;popover__footer&quot;&gt;…&lt;/div&gt;
+    &lt;span class=&quot;popover__arrow&quot; aria-hidden=&quot;true&quot;&gt;&lt;/span&gt;
+  &lt;/div&gt;
+&lt;/span&gt;</code></pre>
+<div class="table"><table>
+<thead><tr>
+<th>部件</th><th>说明</th>
+</tr></thead>
+<tbody>
+<tr><td><code>.popover-anchor</code></td><td><strong>定位上下文</strong> —— 箭头与浮层都相对它</td></tr>
+<tr><td><code>.popover</code> + <code>--top/--bottom/--start/--end</code></td><td>浮层与四个方位，箭头自动指回触发器</td></tr>
+<tr><td><code>.popover__title</code> / <code>__desc</code> / <code>__footer</code></td><td>内容分区</td></tr>
+<tr><td><code>.popover__arrow</code></td><td>箭头</td></tr>
+</tbody>
+</table></div>
+<p>⚠️ <strong>关闭态用 <code>inert</code>，不是 <code>hidden</code></strong> —— <code>inert</code> 让内部元素<strong>不可聚焦</strong> （<code>hidden</code> 只是视觉隐藏，里面还能 Tab 到，这是常见错法）。</p>
+<h2 id="s5">🔴 四个最容易做错的地方<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>#</th><th>要求</th><th>做错的后果</th>
+</tr></thead>
+<tbody>
+<tr><td>①</td><td><strong>非模态</strong>：背景仍可交互，<code>role=&quot;dialog&quot;</code> 但<strong>不加 <code>aria-modal</code></strong></td><td>加了 <code>aria-modal</code> ⇒ 语义变成模态，读屏会锁焦点</td></tr>
+<tr><td>②</td><td>焦点<strong>进入</strong>浮层</td><td>焦点留在触发器 ⇒ 键盘用户进不去，浮层等于摆设</td></tr>
+<tr><td>③</td><td><code>Esc</code> 关闭 <strong>+ 焦点归还触发器</strong></td><td>只关不还 ⇒ 焦点掉到 <code>&lt;body&gt;</code>，Tab 从头再来</td></tr>
+<tr><td>④</td><td>点<strong>外部</strong>关闭，点<strong>浮层内部不关</strong></td><td>内部点击也关 ⇒ 表单填到一半全没了（最常见的 bug）</td></tr>
+</tbody>
+</table></div>
+<h2 id="s6">动画<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
+<p>尊重 <code>prefers-reduced-motion</code> —— 用户在系统里关了动效，组件的过渡也要跟着关。</p>
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      <a class="g-pager__link g-pager__link--prev" href="input.html"><span>上一页</span>input / field</a>
+      <a class="g-pager__link g-pager__link--next" href="progress.html"><span>下一页</span>progress · 进度条</a>
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    <ul class="g-toc"><li><a href="#s2">⭐ 该用哪一个（记不住就问这句）</a></li><li><a href="#s3">启用：DOM 由 JS 建，不用自己写</a></li><li><a href="#s4">内部结构（JS 生成，供你放内容）</a></li><li><a href="#s5">🔴 四个最容易做错的地方</a></li><li><a href="#s6">动画</a></li></ul>
+  </aside>
+</div>
+<footer class="g-foot">
+  <p>v0.11.4 · 零第三方运行时依赖 · 组件数 35</p>
+</footer>
+</body>
+</html>

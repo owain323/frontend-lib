@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>pagination · 分页 · agentcss</title>
+<meta name="description" content="分页控件">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">pagination · 分页</span>
+    <a class="g-jump" href="../03-patterns/pagination/demo.html">打开示例<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">模式 · stable</p>
+    <h1>pagination · 分页</h1>
+    <p class="lede">分页控件</p>
+    <ul class="g-meta"><li><a href="../03-patterns/pagination/demo.html"><code>03-patterns/pagination/demo.html</code></a></li><li><a href="../03-patterns/pagination/pagination.css"><code>03-patterns/pagination/pagination.css</code></a></li><li><a href="../03-patterns/pagination/pagination.js"><code>03-patterns/pagination/pagination.js</code></a></li></ul>
+    <article class="g-doc">
+<p>判据：<strong>WCAG 2.5.5Target Size</strong> + 键盘 <code>←</code> <code>→</code> <code>Home</code> <code>End</code> 可达。</p>
+<p>依据 5 个来源口径一致：W3C APG / MDN / USWDS / Component Gallery / Mironsoft。</p>
+<h2 id="s2">🔴 六条结构硬要求（不是&quot;最佳实践&quot;）<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<h3 id="s3">1. 必须包在 <code>&lt;nav&gt;</code> 里，且 <code>aria-label</code> <strong>唯一</strong><a class="anchor" href="#s3" aria-label="本节直链">#</a></h3>
+<p>一个页面常常有多个 <code>&lt;nav&gt;</code> —— 主导航、面包屑、分页。没有 <code>aria-label</code>，读屏用户分不清哪个是哪个。</p>
+<p>⛔ <strong>不要</strong>把 <code>role=&quot;navigation&quot;</code> 直接放在 <code>&lt;ul&gt;</code> 上 —— 那会<strong>覆盖 <code>&lt;ul&gt;</code> 的列表语义</strong>（Component Gallery 明确点出这是常见错误）。</p>
+<h3 id="s4">2. 用 <code>&lt;ul&gt;</code> + <code>&lt;li&gt;</code>，不要用松散的 <code>&lt;a&gt;</code><a class="anchor" href="#s4" aria-label="本节直链">#</a></h3>
+<p>列表能传达&quot;共几项&quot;和&quot;当前在第几项&quot;。</p>
+<h3 id="s5">3. 当前页用 <code>aria-current=&quot;page&quot;</code><a class="anchor" href="#s5" aria-label="本节直链">#</a></h3>
+<p>⚠️ <strong>不要</strong>用 <code>aria-selected</code> —— 那是给 tab / option / row 用的。</p>
+<h3 id="s6">4. 每个页码的 <code>aria-label</code> 要说人话<a class="anchor" href="#s6" aria-label="本节直链">#</a></h3>
+<p>&quot;第 4 页&quot;，不是 &quot;4&quot;。脱离上下文时，孤零零的数字没有意义。</p>
+<h3 id="s7">5. 上一页/下一页要有明确的 <code>aria-label</code><a class="anchor" href="#s7" aria-label="本节直链">#</a></h3>
+<p>&quot;上一页&quot;，不是只有一个箭头图标。首/末页时用 <strong><code>disabled</code></strong> 标记 —— 不是&quot;留在 DOM 里但不工作&quot;。</p>
+<h3 id="s8">6. ⭐ 客户端翻页必须有 <code>aria-live=&quot;polite&quot;</code>，且<strong>元素常驻 DOM</strong><a class="anchor" href="#s8" aria-label="本节直链">#</a></h3>
+<p>只改 <code>textContent</code>。<strong>插入新元素的话很多读屏器播报不出来</strong> —— 这是实测里最容易踩的一条。</p>
+<h2 id="s9">结构<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-html">&lt;nav class=&quot;pagination&quot; aria-label=&quot;分页导航&quot;&gt;
+  &lt;ul class=&quot;pagination__list&quot; data-pg-list&gt;
+    &lt;li class=&quot;pagination__item&quot;&gt;
+      &lt;a class=&quot;pagination__link&quot; href=&quot;?page=1&quot;
+         aria-label=&quot;上一页&quot; data-goto=&quot;prev&quot;&gt;上一页&lt;/a&gt;
+    &lt;/li&gt;
+    &lt;li class=&quot;pagination__item&quot;&gt;
+      &lt;a class=&quot;pagination__link&quot; href=&quot;?page=4&quot; aria-label=&quot;第 4 页&quot;
+         aria-current=&quot;page&quot; data-page=&quot;4&quot;&gt;4&lt;/a&gt;
+    &lt;/li&gt;
+    &lt;li class=&quot;pagination__ellipsis&quot; aria-hidden=&quot;true&quot;&gt;…&lt;/li&gt;
+    …
+  &lt;/ul&gt;
+  &lt;p class=&quot;pagination__status pagination__sr&quot; data-pg-live
+     aria-live=&quot;polite&quot;&gt;&lt;/p&gt;
+&lt;/nav&gt;</code></pre>
+<div class="table"><table>
+<thead><tr>
+<th>部件</th><th>说明</th>
+</tr></thead>
+<tbody>
+<tr><td><code>.pagination</code></td><td>根（在 <code>&lt;nav&gt;</code> 里）</td></tr>
+<tr><td><code>.pagination__list</code> / <code>[data-pg-list]</code></td><td><code>&lt;ul&gt;</code></td></tr>
+<tr><td><code>.pagination__item</code> / <code>.pagination__link</code></td><td><code>&lt;li&gt;</code> / <code>&lt;a&gt;</code></td></tr>
+<tr><td><code>.pagination__ellipsis</code></td><td>省略号，<code>aria-hidden</code></td></tr>
+<tr><td><code>.pagination__live</code> / <code>[data-pg-live]</code></td><td><strong>常驻</strong>的播报区，<code>aria-live=&quot;polite&quot;</code></td></tr>
+<tr><td><code>.pagination__sr</code></td><td>只给读屏的视觉隐藏文本</td></tr>
+<tr><td><code>.pagination__status</code></td><td>当前状态文字</td></tr>
+</tbody>
+</table></div>
+<h2 id="s10">启用：配置全部从 DOM 属性读<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-html">&lt;nav class=&quot;pagination&quot; aria-label=&quot;分页导航&quot;
+     data-pagination data-total=&quot;302&quot; data-page-size=&quot;20&quot; data-page=&quot;1&quot;&gt;</code></pre>
+<pre class="code" tabindex="0"><code class="language-js">const pg = Pagination.create(元素);   // 单参数</code></pre>
+<div class="table"><table>
+<thead><tr>
+<th>属性</th><th>含义</th><th>默认</th>
+</tr></thead>
+<tbody>
+<tr><td><code>data-total</code></td><td>总条数</td><td>1</td></tr>
+<tr><td><code>data-page-size</code></td><td>每页条数</td><td>20</td></tr>
+<tr><td><code>data-page</code></td><td>当前页</td><td>1</td></tr>
+<tr><td><code>data-pg-param</code></td><td>URL 里的页码参数名</td><td><code>page</code></td></tr>
+</tbody>
+</table></div>
+<p>另外两个：</p>
+<pre class="code" tabindex="0"><code class="language-js">Pagination.update();                  // 扫描 [data-pagination] 并逐个 create（可传 root 限定范围）
+Pagination.pagesOf(total, pageSize);  // ⭐ 纯函数算页数 —— 表格用它显示「共 N 页」</code></pre>
+<p><code>create()</code> 是<strong>幂等</strong>的：同一个元素第二次调用直接返回已有实例，不会重复绑。</p>
+<h3 id="s11">⭐ 从 URL 恢复页码<a class="anchor" href="#s11" aria-label="本节直链">#</a></h3>
+<pre class="code" tabindex="0"><code class="language-js">var u = node.getAttribute('data-pg-param') || 'page';
+var q = parseInt(new URL(location.href).searchParams.get(u) || '0', 10);
+if (q &gt; 0) this.page = Math.min(q, this.pages);</code></pre>
+<p>刷新页面、别人分享链接，都能回到同一页 —— 而且会被<strong>夹在合法页数范围内</strong>。这是&quot;翻页&quot;从一次性动作变成可分享状态的关键。</p>
+<h2 id="s12">成熟度：stable（无行为债）<a class="anchor" href="#s12" aria-label="本节直链">#</a></h2>
+<p><code>ai/components.json</code> 里 <code>pagination</code> 的 <code>behaviorDebt</code> 为空。</p>
+<h2 id="s13">门禁<a class="anchor" href="#s13" aria-label="本节直链">#</a></h2>
+<p><code>05-audit/pagination-check.js</code></p>
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      <a class="g-pager__link g-pager__link--prev" href="overlay.html"><span>上一页</span>Toast / Dialog（反馈层）</a>
+      <a class="g-pager__link g-pager__link--next" href="reveal.html"><span>下一页</span>reveal · 入场动效</a>
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    <ul class="g-toc"><li><a href="#s2">🔴 六条结构硬要求（不是&quot;最佳实践&quot;）</a></li><li><a href="#s9">结构</a></li><li><a href="#s10">启用：配置全部从 DOM 属性读</a></li><li><a href="#s12">成熟度：stable（无行为债）</a></li><li><a href="#s13">门禁</a></li></ul>
+  </aside>
+</div>
+<footer class="g-foot">
+  <p>v0.11.4 · 零第三方运行时依赖 · 组件数 35</p>
+</footer>
+</body>
+</html>

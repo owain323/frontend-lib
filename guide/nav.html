@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>nav —— 页头 / 目录 / 移动端抽屉 · agentcss</title>
+<meta name="description" content="顶部导航与目录">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">nav —— 页头 / 目录 / 移动端抽屉</span>
+    <a class="g-jump" href="../03-patterns/nav/demo.html">打开示例<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">模式 · stable</p>
+    <h1>nav —— 页头 / 目录 / 移动端抽屉</h1>
+    <p class="lede">顶部导航与目录</p>
+    <ul class="g-meta"><li><a href="../03-patterns/nav/demo.html"><code>03-patterns/nav/demo.html</code></a></li><li><a href="../03-patterns/nav/nav.css"><code>03-patterns/nav/nav.css</code></a></li><li><a href="../03-patterns/nav/nav.js"><code>03-patterns/nav/nav.js</code></a></li><li><a href="../03-patterns/nav/toc.js"><code>03-patterns/nav/toc.js</code></a></li></ul>
+    <article class="g-doc">
+<div class="table"><table>
+<thead><tr>
+<th>字段</th><th>内容</th>
+</tr></thead>
+<tbody>
+<tr><td><strong>来源</strong></td><td>原创。<code>toc.js</code> 是从 <code>04-recipes/longform</code> 内联脚本<strong>提取并加固</strong>的；<code>nav.js</code> 是从 demo/示例页<strong>手抄了两遍</strong>的抽屉逻辑抽出来的</td></tr>
+<tr><td><strong>实测</strong></td><td>demo 三件事都能真机验证（页头/目录/抽屉）；抽屉的 22 条行为由 <code>05-audit/nav-drawer.js</code> 在浏览器里跑</td></tr>
+<tr><td><strong>适用</strong></td><td>精简档 / B / C，<code>toc.js</code> 与 <code>nav.js</code> 均为 ES5</td></tr>
+<tr><td><strong>依赖</strong></td><td><code>01-tokens/tokens.css</code> + <code>02-primitives/button/button.css</code> + <code>01-tokens/page.css</code>（页面骨架：<code>.wrap</code> / <code>.lede</code> / <code>.note</code>） + <code>01-tokens/typography.css</code></td></tr>
+<tr><td><strong>规范</strong></td><td>见本文件「状态切换」一节</td></tr>
+</tbody>
+</table></div>
+<hr>
+<h2 id="s2">一个目录，两个全局<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<p><code>nav/</code> 里有<strong>两个独立脚本、两个全局</strong>：</p>
+<div class="table"><table>
+<thead><tr>
+<th>文件</th><th>全局</th><th>形态</th><th>自动初始化</th>
+</tr></thead>
+<tbody>
+<tr><td><code>nav.js</code></td><td><code>Nav</code></td><td>attach（<code>Nav.attach(root)</code>）</td><td><strong>是</strong>，扫 <code>[data-nav]</code></td></tr>
+<tr><td><code>toc.js</code></td><td><code>Toc</code></td><td>direct（<code>Toc.init(opts)</code>）</td><td>否，必须自己调</td></tr>
+</tbody>
+</table></div>
+<p>它们<strong>共用同一份 HTML</strong>（页头 + 目录 + 抽屉）但<strong>生命周期无关</strong>：抽屉常常用不上目录，目录也可能出现在没有抽屉的长文页里。所以不合并成一个脚本。</p>
+<p>⚠️ AI 契约（<code>ai/components.json</code>）里 <code>nav</code> 这个组件记的是 <code>global: &quot;Nav&quot;</code> + <code>globalAlso: [{Toc}]</code> —— 一个组件目录可以导出第二个全局。 <code>05-audit/autoinit-gate.py</code> 会按这张清单核对 <code>API.md</code> 的表，少记一个就会报「表里出现了库里没有的全局」。</p>
+<hr>
+<h2 id="s3">抽屉行为层：<code>nav.js</code>（可选，但没有它抽屉就是死的）<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-html">&lt;header class=&quot;nav&quot; data-nav&gt;
+  &lt;button class=&quot;nav__toggle&quot; aria-expanded=&quot;false&quot; aria-controls=&quot;nav-list&quot;&gt;…&lt;/button&gt;
+  &lt;ul class=&quot;nav__list&quot; id=&quot;nav-list&quot;&gt;…&lt;/ul&gt;
+  &lt;div class=&quot;nav__scrim&quot;&gt;&lt;/div&gt;      &lt;!-- 可省，缺了 JS 自己建 --&gt;
+&lt;/header&gt;
+&lt;script src=&quot;nav.js&quot;&gt;&lt;/script&gt;         &lt;!-- 有 data-nav 就自动初始化 --&gt;</code></pre>
+<p><code>nav.css</code> 只定义了<strong>状态长什么样</strong>（<code>[data-state=&quot;open&quot;]</code> / <code>aria-expanded</code>），从没规定<strong>谁来切</strong>。所以在这之前，每个使用者都要抄 60 行 —— 抄出来的版本各有各的漏。现在这一层在库里，并且被门禁按 22 条判据盯着。</p>
+<h3 id="s4">🔴 抄出来的版本里那个 bug：<code>aria-hidden</code> 打在了祖先上<a class="anchor" href="#s4" aria-label="本节直链">#</a></h3>
+<p>旧 demo 的写法是「把 body 的每个子元素都 <code>aria-hidden</code>，跳过 list/scrim/toggle」。问题：<code>&lt;header class=&quot;nav&quot;&gt;</code> 是 list 的<strong>祖先</strong>，它不在跳过名单里 ⇒ 整块 <code>&lt;header&gt;</code> 被 <code>aria-hidden=&quot;true&quot;</code> 包住，<strong>抽屉自己也跟着对读屏消失</strong>。</p>
+<p>而它&quot;看起来完全正常&quot;：截图正常、像素比对正常、键盘 Tab 也正常。 <strong>只有用读屏打开菜单才会发现里面一个字都读不出来。</strong></p>
+<p><code>nav.js</code> 的判据是「跳过<strong>包含</strong>导航自身的节点」，而不是「跳过这三个元素」。</p>
+<h3 id="s5">🔴 为什么复用 <code>drawer.js</code> 会错<a class="anchor" href="#s5" aria-label="本节直链">#</a></h3>
+<p><code>03-patterns/drawer/drawer.js</code> 的 <code>Drawer.open()</code> <strong>自己建 DOM</strong>（new aside、塞进 body、关了就删）。而导航列表在文档里本来就有一份，桌面端还要用它横排。 <strong>生命周期相反</strong>（即用即毁 vs 常驻），所以不共用实现，只共用<strong>核</strong>： <code>emit</code> / <code>focus-return</code> / <code>dismissable</code> 三块与 <code>drawer.js</code> 逐行同源（<code>gen-behavior.py</code> 保证）。</p>
+<h3 id="s6">🔴 断点不写数字<a class="anchor" href="#s6" aria-label="本节直链">#</a></h3>
+<p>&quot;窗口变宽就关掉&quot;的判据是<strong>汉堡按钮还在不在</strong>（<code>offsetParent !== null</code>），不是 <code>window.innerWidth &gt; 768</code>。CSS 里改一个断点值，写死数字的 JS 会<strong>静默错位</strong>。</p>
+<h3 id="s7">事件<a class="anchor" href="#s7" aria-label="本节直链">#</a></h3>
+<p><code>fl-nav-open</code> / <code>fl-nav-close</code>（<code>detail = { root }</code>）。自动初始化不接回调 —— 要收通知请听事件（与 <code>tabs.js</code> 同一条纪律）。</p>
+<hr>
+<h2 id="s8">目录高亮：<code>toc.js</code><a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-js">Toc.init({ links: '#toc-list .toc__link', sections: 'main h2[id]' });</code></pre>
+<p>返回一个取消函数（解绑事件）。</p>
+<h3 id="s9">🔴 为什么不用 <code>IntersectionObserver</code>（实测到 bug）<a class="anchor" href="#s9" aria-label="本节直链">#</a></h3>
+<p>第一版用的是 <code>IntersectionObserver</code> + <code>rootMargin: '-10% 0px -70% 0px'</code>，靠 <code>seen[id] = isIntersecting</code> 增量维护当前节。</p>
+<p><strong>实测反馈&quot;导航不跟随文章移动&quot;。</strong> 根因：</p>
+<blockquote><p><strong>滚到两个 section 之间时，观察区里一个 section 都没有</strong><br>⇒ <code>seen</code> 全为 false ⇒ 不调 <code>mark()</code> ⇒ 高亮停在上一个不动。</p></blockquote>
+<p><strong>这不是边界情况，是常态</strong>——用户大部分时间就滚在两节之间。</p>
+<p>现在统一用计算：<code>取最后一个 offsetTop &lt;= 滚动位置 + 100px 的 section</code>。 <strong>任何滚动位置都有确定答案</strong>，不会出现&quot;都不在观察区&quot;的状态。</p>
+<p><strong>为什么不用 IO 省 CPU</strong>：两者成本其实一样——<code>scroll</code> 监听也只在<strong>滚动时</strong>执行（已用 <code>rAF</code> 节流），不滚动时都不跑。为了一个&quot;看起来更优&quot;的方案换正确性风险，不划算。</p>
+<h3 id="s10">⚠️ <code>offsetTop</code> 的前提<a class="anchor" href="#s10" aria-label="本节直链">#</a></h3>
+<p>它相对于 <strong><code>offsetParent</code></strong>。若把目录放在一个 <code>position: relative</code> 的容器里， <code>offsetTop</code> 会是相对那个容器的值，与 <code>pageYOffset</code> 不可比 ⇒ <strong>高亮会错位</strong>。</p>
+<p><strong>目录所在的祖先链上不要出现 <code>position: relative/absolute</code>。</strong></p>
+<h3 id="s11">前提：目录项与标题 id 一一对应<a class="anchor" href="#s11" aria-label="本节直链">#</a></h3>
+<pre class="code" tabindex="0"><code class="language-html">&lt;h2 id=&quot;mem&quot;&gt;…&lt;/h2&gt;          ← 标题必须有 id
+&lt;a class=&quot;toc__link&quot; href=&quot;#mem&quot;&gt;…&lt;/a&gt;   ← 目录指向它</code></pre>
+<p>少一个，<strong>那一项永远不会被高亮</strong>。<code>refs.py</code> 会静态抓这个错。</p>
+<hr>
+<hr>
+<h2 id="s12">目录的 sticky 必须在库里，不在 demo 里<a class="anchor" href="#s12" aria-label="本节直链">#</a></h2>
+<p>🔴 第一版这条只写在 demo 的内联 <code>&lt;style&gt;</code> 里，<strong>任何引了 <code>nav.css</code> 的页面都没有 sticky</strong> ——目录随正文滚出视口，&quot;跟着走&quot;这个最基本的效果没有。</p>
+<p><strong>布局规则写在 demo 里 = 分层崩了。</strong> 现在 <code>nav.css</code> 里：</p>
+<pre class="code" tabindex="0"><code class="language-css">@media (min-width: 60rem) {
+  .toc { position: sticky; top: 76px; align-self: start; }
+}</code></pre>
+<ul><li><code>top</code> 要<strong>大于页头高度</strong>（56px + 20px 留白），否则会停在页头下面被遮住</li><li><code>align-self: start</code> <strong>必须写</strong> —— grid 子项默认 <code>stretch</code>，元素被拉高后 sticky 无处可动</li></ul>
+<hr>
+<h2 id="s13">抽屉：五条判据<a class="anchor" href="#s13" aria-label="本节直链">#</a></h2>
+<h3 id="s14">1. 只动 <code>transform</code>，不动 <code>width/left/top</code><a class="anchor" href="#s14" aria-label="本节直链">#</a></h3>
+<pre class="code" tabindex="0"><code class="language-css">.nav__list { transform: translateX(100%); transition: transform 180ms; }
+.nav__list[data-state=&quot;open&quot;] { transform: translateX(0); }</code></pre>
+<p>动 <code>width</code> 会引起重排，页面抖一下。</p>
+<h3 id="s15">2. 打开时背景必须锁<a class="anchor" href="#s15" aria-label="本节直链">#</a></h3>
+<p>视觉上是覆盖层，逻辑上也要是模态——<strong>两边必须一致</strong>。否则用户能 Tab 到抽屉外面看不见的地方。</p>
+<h3 id="s16">3. 焦点必须移进抽屉，并且<strong>关闭后回到汉堡按钮</strong><a class="anchor" href="#s16" aria-label="本节直链">#</a></h3>
+<p>丢了焦点，键盘用户就不知道自己在哪了。</p>
+<h3 id="s17">4. Esc 必须能关<a class="anchor" href="#s17" aria-label="本节直链">#</a></h3>
+<p>这是唯一&quot;所有人都知道&quot;的操作，不能只靠点遮罩。</p>
+<h3 id="s18">5. 窗口变宽时自动关掉<a class="anchor" href="#s18" aria-label="本节直链">#</a></h3>
+<p>否则抽屉会留在打开状态，而桌面布局下 <code>nav__list</code> 是横排的—— 用户会看到一个&quot;开着但不对&quot;的菜单。</p>
+<hr>
+<h2 id="s19">三个无障碍细节<a class="anchor" href="#s19" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>做法</th><th>原因</th>
+</tr></thead>
+<tbody>
+<tr><td>跳过链接用 <code>transform</code> 移出视口，<strong>不用 <code>display:none</code></strong></td><td><code>display:none</code> 会把它移出 tab 顺序，键盘用户 Tab 不到</td></tr>
+<tr><td>当前页用 <code>aria-current=&quot;page&quot;</code></td><td>屏幕阅读器会播报&quot;当前页面&quot;，自定义 class 它不知道</td></tr>
+<tr><td>目录高亮用 <code>aria-current=&quot;true&quot;</code></td><td>表示&quot;在当前范围内的当前位置&quot;，目录高亮通行做法</td></tr>
+</tbody>
+</table></div>
+<hr>
+<h2 id="s20">汉堡按钮的三条线怎么变 X<a class="anchor" href="#s20" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code>默认：  ─────  三条线
+        i::before / i::after 上下偏移 ±5.5px
+
+展开：  i 自身 rotate(45deg)      → 变成 /
+        i::before translateY + rotate(-90deg) → 变成 \
+        i::after opacity 0        → 消失</code></pre>
+<p><strong>为什么偏移量是 5.5px</strong>：线宽 1.5px，中心间距 11px，所以偏移 5.5px 让它们重合到中心。这个数是算出来的，不是估的。</p>
+<hr>
+<h2 id="s21">反模式<a class="anchor" href="#s21" aria-label="本节直链">#</a></h2>
+<ul><li>❌ <strong>抽屉展开时动 <code>width</code> / <code>left</code> / <code>top</code></strong> —— 引起重排，页面抖</li><li>❌ <strong>抽屉打开后背景仍可 Tab / 可点</strong> —— 视觉是覆盖层，逻辑不是模态</li><li>❌ <strong>汉堡按钮小于 44px</strong> —— 触摸目标硬下限</li><li>❌ <strong>当前页指示用自定义 class 而非 <code>aria-current</code></strong> —— 屏幕阅读器不知道</li><li>❌ <strong>目录项允许换行</strong> —— 行高跳变，目录看着散</li><li>❌ <strong>没有 IntersectionObserver 就不做高亮</strong> —— 目录变成死链接</li><li>❌ <strong>跳过链接用 <code>display:none</code></strong> —— 移出 tab 顺序，键盘到不了</li><li>❌ <strong>页头 sticky 但没背景色</strong> —— 内容从下面透出来像重影</li></ul>
+<hr>
+<h2 id="s22">门禁<a class="anchor" href="#s22" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>项</th><th>能否机械检查</th>
+</tr></thead>
+<tbody>
+<tr><td>CSS 引用完整性</td><td>✅ <code>refs.py</code></td></tr>
+<tr><td>状态切换的叠放/占位/溢出</td><td>✅ <code>switch.py</code></td></tr>
+<tr><td>焦点管理、Esc、背景锁、点遮罩、变宽自关</td><td>✅ <code>05-audit/nav-drawer.js</code>（浏览器 + 键盘，22 条）</td></tr>
+<tr><td>读屏里到底听到了什么</td><td>❌ <strong>必须真机开读屏</strong></td></tr>
+<tr><td>视觉上别扭不别扭</td><td>❌ <strong>必须真机</strong></td></tr>
+</tbody>
+</table></div>
+<p>🟡 0.11.2 之前这里写的是「焦点、Esc、背景锁<strong>静态检查一个都查不出来</strong>，必须真机」。那句话当时是对的，但它描述的是一种<strong>可以修的</strong>状态 —— 现在这三件事由 <code>nav-drawer.js</code> 在真浏览器里跑（含连续 8 次 Tab 的焦点陷阱、Esc 后焦点归位、 <code>aria-hidden</code> 是否误伤祖先）。<strong>仍然查不出来的是&quot;读屏实际播报什么&quot;</strong>：无头浏览器没有语音输出，<code>accessibility.snapshot()</code> 也只能读到树，读不到播报。</p>
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      <a class="g-pager__link g-pager__link--prev" href="list.html"><span>上一页</span>list —— 列表</a>
+      <a class="g-pager__link g-pager__link--next" href="overlay.html"><span>下一页</span>Toast / Dialog（反馈层）</a>
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    <ul class="g-toc"><li><a href="#s2">一个目录，两个全局</a></li><li><a href="#s3">抽屉行为层：nav.js（可选，但没有它抽屉就是死的）</a></li><li><a href="#s8">目录高亮：toc.js</a></li><li><a href="#s12">目录的 sticky 必须在库里，不在 demo 里</a></li><li><a href="#s13">抽屉：五条判据</a></li><li><a href="#s19">三个无障碍细节</a></li><li><a href="#s20">汉堡按钮的三条线怎么变 X</a></li><li><a href="#s21">反模式</a></li><li><a href="#s22">门禁</a></li></ul>
+  </aside>
+</div>
+<footer class="g-foot">
+  <p>v0.11.4 · 零第三方运行时依赖 · 组件数 35</p>
+</footer>
+</body>
+</html>

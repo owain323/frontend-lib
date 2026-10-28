@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>bar · 柱状图 · agentcss</title>
+<meta name="description" content="柱状图：堆叠/分组两种语义、超量程裁剪、图例">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">bar · 柱状图</span>
+    <a class="g-jump" href="../09-assets/bar/demo.html">打开示例<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">图表与资源 · stable</p>
+    <h1>bar · 柱状图</h1>
+    <p class="lede">柱状图：堆叠/分组两种语义、超量程裁剪、图例</p>
+    <ul class="g-meta"><li><a href="../09-assets/bar/demo.html"><code>09-assets/bar/demo.html</code></a></li><li><a href="../09-assets/bar/bar.css"><code>09-assets/bar/bar.css</code></a></li><li><a href="../09-assets/bar/bar.js"><code>09-assets/bar/bar.js</code></a></li></ul>
+    <article class="g-doc">
+<p><strong>图表规范</strong>的四条铁律全部落地。ES5、零依赖、纯 SVG。</p>
+<h2 id="s2">🔴 四条铁律<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>#</th><th>铁律</th><th>落地在哪</th>
+</tr></thead>
+<tbody>
+<tr><td>一</td><td>超量程必须被<strong>容器裁剪</strong></td><td>CSS 侧 <code>overflow: hidden</code>（JS 不参与）</td></tr>
+<tr><td>二</td><td><strong>标注不得覆盖数据</strong>（≤ 4 个）</td><td><code>markLabel()</code> 只标关键点</td></tr>
+<tr><td>三</td><td><strong>量程必须显式声明</strong></td><td><code>max</code> 是<strong>必填参数</strong>，无默认值</td></tr>
+<tr><td>铁</td><td>门禁要能证伪</td><td><code>05-audit/chart-check.js</code> 覆盖本组件</td></tr>
+</tbody>
+</table></div>
+<h3 id="s3">铁律一：为什么<strong>两道</strong>裁剪都不能删<a class="anchor" href="#s3" aria-label="本节直链">#</a></h3>
+<pre class="code" tabindex="0"><code class="language-css">.bar    { overflow: hidden; }   /* 第二道：防穿透到别的卡片 */
+.bar__svg { overflow: hidden; } /* 根因：裁掉超出 viewBox 的部分 */</code></pre>
+<p>关键在 <code>overflow</code> 的默认值：<strong>SVG 的 <code>overflow</code> 默认是 <code>visible</code>，不是 <code>hidden</code></strong> （<code>canvas</code> 才是默认 hidden）—— 与 HTML 的直觉相反。一根高度算出 400px、viewBox 只有 200px 的柱子会<strong>照原样画到外面</strong>。</p>
+<p>⚠️ 但<strong>只裁剪是止损不是解决</strong>：被裁的那根看起来像&quot;到顶了&quot;。所以 JS 侧同时给出 <code>data-clipped</code> 标记 + <code>.bar__note</code> 文字说明。</p>
+<h3 id="s4">铁律三：<code>max</code> 必填，因为<strong>自动适配是最隐蔽的谎报</strong><a class="anchor" href="#s4" aria-label="本节直链">#</a></h3>
+<p>一个 <code>400</code> 的异常值 + 30 个 <code>0.35</code> 的常态值，若 Y 轴自适应到 400 ⇒ 所有常态值被压成<strong>一条贴底的直线</strong> ⇒ 读者会得出「这些天完全没有变化」的<strong>错误结论</strong>。</p>
+<p>所以 <code>opt.max</code> <strong>没有默认值</strong>——不声明就是 bug，构造函数直接要求你回答。</p>
+<h3 id="s5">铁律二：只标关键点<a class="anchor" href="#s5" aria-label="本节直链">#</a></h3>
+<p>标数字的位置会压在柱子上、彼此重叠（右下角糊成一团）。所以默认<strong>只标 4 个</strong>，其余靠 Y 轴刻度读。</p>
+<h2 id="s6">启用<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-js">const chart = Bar.draw({
+  host: 元素,                        // 会自动清空
+  series: [{ name: '成交', values: [120, 90, 150] },
+           { name: '挂单', values: [30, 40, 20] }],
+  max: 200,                          // 🔴 必填
+  mode: 'stack',                     // 'stack'（默认）| 'group'
+  labels: ['09-01', '09-02', '09-03'],
+  threshold: 100,                    // 可选：画一条虚线
+  height: 180,
+  note: '…',
+  legend: true,                      // 默认：系列 ≥2 且都有名字时自动出
+});</code></pre>
+<p>返回 <code>{ el, clipped, mode, tops, legend, destroy() }</code> —— <code>clipped</code> 是被裁的类目下标，<code>tops</code> 是每列合计/最高值。</p>
+<h2 id="s7">🔴 堆叠 vs 分组：语义必须显式选择<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
+<p>原实现的 <code>base</code> 数组在<strong>每个系列开始时</strong>被重置，且所有系列的柱用同一横坐标与同一柱宽 ⇒ 多系列不是堆叠，是<strong>后画的盖住先画的</strong>。它自称堆叠，实际重叠。</p>
+<p>现在：<code>base</code> 提到系列循环外累计；堆叠宽度与分组宽度分开算。判据直接断言<strong>几何关系</strong>：多段柱首尾相接、重叠 0。</p>
+<h2 id="s8">类名<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>类</th><th>用途</th>
+</tr></thead>
+<tbody>
+<tr><td><code>.bar</code> / <code>.bar__svg</code></td><td>根 / SVG</td></tr>
+<tr><td><code>.bar__bar</code> + <code>.bar__s0</code>…<code>.bar__s4</code></td><td>柱体 + 5 个分类色</td></tr>
+<tr><td><code>.bar__grid</code> / <code>.bar__ytick</code> / <code>.bar__xlabel</code></td><td>网格 / Y 刻度 / X 标签</td></tr>
+<tr><td><code>.bar__label</code> / <code>--max</code> / <code>--clip</code></td><td>标注（铁律二）</td></tr>
+<tr><td><code>.bar__threshold</code></td><td>阈值线</td></tr>
+<tr><td><code>.bar__legend</code> / <code>__legend-item</code> / <code>__legend-swatch</code></td><td>图例</td></tr>
+<tr><td><code>.bar__note</code></td><td>脚注（说明截断了什么）</td></tr>
+</tbody>
+</table></div>
+<p><strong>超过 5 个系列请自己给 <code>series[i].cls</code></strong> —— 颜色循环会造成误读。</p>
+<h2 id="s9">依赖<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
+<p><code>01-tokens/tokens.css</code>（颜色全走令牌，不写死）。</p>
+<h2 id="s10">成熟度：stable（无行为债）<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
+<h2 id="s11">门禁<a class="anchor" href="#s11" aria-label="本节直链">#</a></h2>
+<p><code>05-audit/chart-check.js</code> —— 覆盖堆叠几何、<code>tops</code> 口径、柱高与合计相符、超量程裁剪与写明、图例同色五条。</p>
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      <a class="g-pager__link g-pager__link--prev" href="table.html"><span>上一页</span>table · 专业数据表格</a>
+      <a class="g-pager__link g-pager__link--next" href="model-viewer.html"><span>下一页</span>model-viewer — 惰性加载的 3D 模型查看器</a>
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    <ul class="g-toc"><li><a href="#s2">🔴 四条铁律</a></li><li><a href="#s6">启用</a></li><li><a href="#s7">🔴 堆叠 vs 分组：语义必须显式选择</a></li><li><a href="#s8">类名</a></li><li><a href="#s9">依赖</a></li><li><a href="#s10">成熟度：stable（无行为债）</a></li><li><a href="#s11">门禁</a></li></ul>
+  </aside>
+</div>
+<footer class="g-foot">
+  <p>v0.11.4 · 零第三方运行时依赖 · 组件数 35</p>
+</footer>
+</body>
+</html>

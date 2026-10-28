@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>drawer · 抽屉 · agentcss</title>
+<meta name="description" content="侧边抽屉，含遮罩">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">drawer · 抽屉</span>
+    <a class="g-jump" href="../03-patterns/drawer/demo.html">打开示例<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">模式 · beta</p>
+    <h1>drawer · 抽屉</h1>
+    <p class="lede">侧边抽屉，含遮罩</p>
+    <ul class="g-meta"><li><a href="../03-patterns/drawer/demo.html"><code>03-patterns/drawer/demo.html</code></a></li><li><a href="../03-patterns/drawer/drawer.css"><code>03-patterns/drawer/drawer.css</code></a></li><li><a href="../03-patterns/drawer/drawer.js"><code>03-patterns/drawer/drawer.js</code></a></li></ul>
+    <article class="g-doc">
+<p>依据 <strong>APG Dialog 模式</strong> —— 抽屉就是&quot;从侧边滑进来的 Dialog&quot;。</p>
+<p><strong>与 dialog 的差别只有&quot;从哪进来&quot;，三条硬要求完全一样。</strong></p>
+<h2 id="s2">🔴 三条硬要求（一条都不能少）<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>#</th><th>要求</th><th>做错的后果</th>
+</tr></thead>
+<tbody>
+<tr><td>①</td><td><strong>焦点陷阱</strong>：Tab 在抽屉内循环</td><td>Tab 跑到背景上去，抽屉等于没锁</td></tr>
+<tr><td>②</td><td><code>Esc</code> 关闭</td><td>键盘用户出不来</td></tr>
+<tr><td>③</td><td><strong>关闭后焦点归位</strong>（回到触发它的那个按钮）</td><td>键盘用户被&quot;扔&quot;回页面顶部，得从头 Tab 一遍</td></tr>
+</tbody>
+</table></div>
+<p>③ 最容易漏、<strong>影响最大</strong>。所以本组件的焦点归位走共享微行为核 <code>01-tokens/behavior/focus-return.js</code> 注入，不是各组件各写一遍。</p>
+<h2 id="s3">⚠️ 抽屉是模态：背景必须 inert<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-js">// 只把 body 的直接子元素（除抽屉容器）设 inert</code></pre>
+<p>不设 <code>inert</code> / <code>aria-hidden</code> 的后果：<strong>读屏会同时读到抽屉与背景</strong> （业内叫&quot;双重朗读&quot;）—— 用户听到一半不知道自己在听哪。</p>
+<h2 id="s4">结构<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-html">&lt;aside class=&quot;drawer drawer--right&quot; role=&quot;dialog&quot; aria-modal=&quot;true&quot;
+       aria-label=&quot;标题&quot;&gt;
+  &lt;header class=&quot;drawer__head&quot;&gt;
+    &lt;h2 class=&quot;drawer__title&quot;&gt;…&lt;/h2&gt;
+    &lt;button class=&quot;drawer__close&quot; type=&quot;button&quot;&gt;✕&lt;/button&gt;
+  &lt;/header&gt;
+  &lt;div class=&quot;drawer__body&quot;&gt;…&lt;/div&gt;
+  &lt;footer class=&quot;drawer__foot&quot;&gt;…&lt;/footer&gt;
+&lt;/aside&gt;</code></pre>
+<div class="table"><table>
+<thead><tr>
+<th>部件</th><th>说明</th>
+</tr></thead>
+<tbody>
+<tr><td><code>--right</code>（默认）/ <code>--left</code> / <code>--top</code> / <code>--bottom</code></td><td>四个进入方向</td></tr>
+<tr><td><code>.drawer__head</code> / <code>__title</code> / <code>__close</code></td><td>头部与关闭按钮</td></tr>
+<tr><td><code>.drawer__body</code></td><td>内容</td></tr>
+<tr><td><code>.drawer__foot</code></td><td>底部操作区</td></tr>
+</tbody>
+</table></div>
+<h2 id="s5">启用<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-js">Drawer.open({ place: 'right' });   // 默认就是 right</code></pre>
+<p>全局只导出 <code>open</code>（不是 <code>create</code>）—— DOM 由 JS 建。</p>
+<h3 id="s6">🔴 焦点必须在插入 DOM <strong>之前</strong>记<a class="anchor" href="#s6" aria-label="本节直链">#</a></h3>
+<pre class="code" tabindex="0"><code class="language-js">// ⭐ 记住&quot;打开那一刻的焦点&quot; —— 必须在插入 DOM 之前，
+//    否则会记到刚建出来的新节点上（那就等于没记）</code></pre>
+<p>抽屉没有 fallback：打开它的元素若被删了，就<strong>维持现状不动</strong>，不假装&quot;还回去了&quot;（那样会把焦点送到一个已经不存在的地方）。</p>
+<h2 id="s7">嵌套用锁计数<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
+<p>背景 <code>inert</code> 用 <code>lockCount</code> 计数管理 ⇒ 抽屉里再开抽屉时，外层的锁不会因为内层关闭而被提前解掉。</p>
+<h2 id="s8">成熟度：beta（两条行为债，如实列出）<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>债</th><th>现在的后果</th>
+</tr></thead>
+<tbody>
+<tr><td><code>dismissable:manual</code></td><td>点遮罩关闭是手写的，不是统一机制</td></tr>
+</tbody>
+</table></div>
+<h2 id="s9">门禁<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
+<p><code>05-audit/drawer-check.js</code></p>
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      <a class="g-pager__link g-pager__link--prev" href="content.html"><span>上一页</span>content —— 内容渲染样式</a>
+      <a class="g-pager__link g-pager__link--next" href="dropdown.html"><span>下一页</span>dropdown · 下拉菜单</a>
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    <ul class="g-toc"><li><a href="#s2">🔴 三条硬要求（一条都不能少）</a></li><li><a href="#s3">⚠️ 抽屉是模态：背景必须 inert</a></li><li><a href="#s4">结构</a></li><li><a href="#s5">启用</a></li><li><a href="#s7">嵌套用锁计数</a></li><li><a href="#s8">成熟度：beta（两条行为债，如实列出）</a></li><li><a href="#s9">门禁</a></li></ul>
+  </aside>
+</div>
+<footer class="g-foot">
+  <p>v0.11.4 · 零第三方运行时依赖 · 组件数 35</p>
+</footer>
+</body>
+</html>

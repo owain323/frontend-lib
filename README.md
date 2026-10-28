@@ -10,6 +10,15 @@ npm install agentcss
 
 The npm package is `agentcss`; the repository is `frontend-lib`. They are different things: the package name is what you install, the repository name is where the source lives.
 
+## Docs and live demos
+
+- **Every demo page, one index** — https://owain323.github.io/frontend-lib/
+- **Component documentation with search** — https://owain323.github.io/frontend-lib/guide/
+
+Both are generated from `ai/components.json` and the per-component `README.md`
+files, so a page cannot quietly go missing from the index when a component is
+added. The docs pages resolve every link to a file that actually exists.
+
 ---
 
 ## What it solves

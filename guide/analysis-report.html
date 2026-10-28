@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>analysis-report · 组合型研究报告 · agentcss</title>
+<meta name="description" content="组合型研究报告页面：正文与辅助栏并排，窄屏自然退回单栏">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">analysis-report · 组合型研究报告</span>
+    <a class="g-jump" href="../04-recipes/analysis-report/demo.html">打开示例<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">版式模板 · stable</p>
+    <h1>analysis-report · 组合型研究报告</h1>
+    <p class="lede">组合型研究报告页面：正文与辅助栏并排，窄屏自然退回单栏</p>
+    <ul class="g-meta"><li><a href="../04-recipes/analysis-report/demo.html"><code>04-recipes/analysis-report/demo.html</code></a></li><li><a href="../04-recipes/analysis-report/analysis-report.css"><code>04-recipes/analysis-report/analysis-report.css</code></a></li></ul>
+    <article class="g-doc">
+<p>一个<strong>多栏组合</strong>页面的可运行示例。它证明本库能组合出的不只是单栏长文。</p>
+<h2 id="s2">用途<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<p>给「有结论、有数据、有出处」的报告用：实验报告、技术评估、调研纪要。和 <code>04-recipes/longform</code> 的分工很清楚：</p>
+<div class="table"><table>
+<thead><tr>
+<th></th><th><code>longform</code></th><th><code>analysis-report</code>（本示例）</th>
+</tr></thead>
+<tbody>
+<tr><td>布局</td><td>单栏长文</td><td><strong>正文 + 辅助栏并排</strong>，窄屏退回单栏</td></tr>
+<tr><td>证明的是</td><td>长文排版与阅读节奏</td><td><strong>信息层级 + 组合能力</strong></td></tr>
+<tr><td>数据</td><td>无</td><td>表格 + 坐标系图表</td></tr>
+</tbody>
+</table></div>
+<h2 id="s3">文件<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>文件</th><th>说明</th>
+</tr></thead>
+<tbody>
+<tr><td><code>demo.html</code></td><td>可直接打开的示例页</td></tr>
+<tr><td><code>analysis-report.css</code></td><td>本示例的局部样式（并排布局、关键发现区、引用块、代码块）</td></tr>
+<tr><td><code>README.md</code></td><td>本文件</td></tr>
+</tbody>
+</table></div>
+<h2 id="s4">依赖<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
+<p><strong>零新增运行时依赖。</strong> 只引用库内已有资产：</p>
+<pre class="code" tabindex="0"><code>01-tokens/tokens.css          ← 设计令牌（必引）
+01-tokens/typography.css      ← 排版基线
+01-tokens/page.css            ← 页面骨架（.page / .wrap / .lede）
+02-primitives/card/card.css   ← 辅助栏卡片，复用现有组件
+02-primitives/badge/badge.css ← 状态标记
+04-recipes/table/table.css    ← 数据表格（复用，不另造）
+09-assets/scientific-plot/…   ← 图表（复用，不另造）
+analysis-report.css          ← 本示例的局部样式</code></pre>
+<p>引用顺序：<strong>骨架在组件之前</strong>。组件靠「后来者同特异性胜出」覆盖骨架，不需要 <code>!important</code>（这条顺序有门禁守着）。</p>
+<h2 id="s5">布局策略<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code>.report__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);          /* 默认单栏 */
+}
+@media (min-width: 64rem) {                        /* --bp-lg = 1024px */
+  grid-template-columns: minmax(0, 1fr) 15rem;     /* 正文 + 辅助栏 */
+}</code></pre>
+<p>三个要点：</p>
+<ol><li><strong>默认就是单栏</strong>，并排是宽屏才<strong>发生</strong>的事 —— 不是把桌面版缩小。窄屏下不需要任何额外媒体查询，栅格自然退成一行。</li><li><code>minmax(0, 1fr)</code> 而不是 <code>1fr</code>：否则长表格/长代码会把栅格列撑开，产生横向溢出。这是 Grid 的经典陷阱。</li><li>辅助栏 <code>position: sticky</code> 必须配 <code>align-self: start</code>，否则 sticky 在 Grid 里不生效（默认 stretch 会撑满整列高度）。</li></ol>
+<h2 id="s6">已知限制<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
+<ul><li>断点写不了 <code>var()</code> —— 媒体查询里的 <code>64rem</code> 与令牌 <code>--bp-lg</code> 是同一数值，但<strong>必须写字面值</strong>（CSS 规范限制）。改令牌时这里要手动同步。</li><li>辅助栏在 <code>100vh</code> 内滚动，正文很长时它不会跟着到页脚。</li><li>页面宽度为 <code>--measure-page + 16rem</code>，若宿主项目另有页面框架，请按实际情况调整。</li></ul>
+<h2 id="s7">预览<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-bash">python -m http.server 8000        # 仓库根
+# http://127.0.0.1:8000/04-recipes/analysis-report/demo.html</code></pre>
+<h2 id="s8">数据说明<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
+<p>页面里的实验数据<strong>全部是演示用示例数据</strong>，不是真实实验结果。留出这条是因为：「长得像真实数据」的示例最容易被误引用。</p>
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      <a class="g-pager__link g-pager__link--prev" href="tree.html"><span>上一页</span>tree · 树形视图</a>
+      <a class="g-pager__link g-pager__link--next" href="detail-page.html"><span>下一页</span>detail-page · 实体详情页骨架</a>
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    <ul class="g-toc"><li><a href="#s2">用途</a></li><li><a href="#s3">文件</a></li><li><a href="#s4">依赖</a></li><li><a href="#s5">布局策略</a></li><li><a href="#s6">已知限制</a></li><li><a href="#s7">预览</a></li><li><a href="#s8">数据说明</a></li></ul>
+  </aside>
+</div>
+<footer class="g-foot">
+  <p>v0.11.4 · 零第三方运行时依赖 · 组件数 35</p>
+</footer>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>switch · 开关 · agentcss</title>
+<meta name="description" content="开关切换">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">switch · 开关</span>
+    <a class="g-jump" href="../02-primitives/switch/demo.html">打开示例<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">基础组件 · stable</p>
+    <h1>switch · 开关</h1>
+    <p class="lede">开关切换</p>
+    <ul class="g-meta"><li><a href="../02-primitives/switch/demo.html"><code>02-primitives/switch/demo.html</code></a></li><li><a href="../02-primitives/switch/switch.css"><code>02-primitives/switch/switch.css</code></a></li></ul>
+    <article class="g-doc">
+<p>用于<strong>立即生效的设置项</strong>（&quot;开/关通知&quot;）。</p>
+<h2 id="s2">它和 checkbox 的差别是<strong>语义</strong>，不是形状<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th></th><th>读屏播报</th><th>键盘</th>
+</tr></thead>
+<tbody>
+<tr><td><code>.choice--checkbox</code></td><td>「复选框，已勾选」</td><td>Space 切换</td></tr>
+<tr><td><code>.switch</code></td><td>「<strong>开关</strong>，已开启」</td><td><strong>Space 切换，Enter 不切换</strong></td></tr>
+</tbody>
+</table></div>
+<p>APG 把两者分成不同模式，正是因为这个 —— 复选框是&quot;待提交的选择&quot;，开关是&quot;已经生效的状态&quot;。</p>
+<h2 id="s3">类<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>类</th><th>作用</th>
+</tr></thead>
+<tbody>
+<tr><td><code>.switch</code></td><td>容器</td></tr>
+<tr><td><code>.switch__input</code></td><td><strong>原生 <code>&lt;input type=&quot;checkbox&quot; role=&quot;switch&quot;&gt;</code></strong></td></tr>
+<tr><td><code>.switch__track</code></td><td>滑块轨道（焦点环画在这里）</td></tr>
+<tr><td><code>.switch__thumb</code></td><td>滑块圆点</td></tr>
+<tr><td><code>.switch__label</code></td><td>标签（<code>&lt;label for&gt;</code> 关联）</td></tr>
+<tr><td><code>.switch__label--sr</code></td><td>视觉隐藏、语义保留（只有滑块时用）</td></tr>
+<tr><td><code>.switch--lg</code></td><td>较大一档（48×28）</td></tr>
+</tbody>
+</table></div>
+<h2 id="s4">用法<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-html">&lt;span class=&quot;switch&quot;&gt;
+  &lt;input class=&quot;switch__input&quot; type=&quot;checkbox&quot; role=&quot;switch&quot; id=&quot;s1&quot;&gt;
+  &lt;span class=&quot;switch__track&quot;&gt;&lt;span class=&quot;switch__thumb&quot;&gt;&lt;/span&gt;&lt;/span&gt;
+  &lt;label class=&quot;switch__label&quot; for=&quot;s1&quot;&gt;开启动价推送&lt;/label&gt;
+&lt;/span&gt;</code></pre>
+<h2 id="s5">为什么用原生 checkbox 而不是 div + role<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
+<p><strong>用原生控件 ⇒ 无障碍行为免费且必然正确</strong>：浏览器天生只响应 Space，<strong>不需要写 JS 去拦 Enter</strong> —— 也就不会有&quot;忘拦&quot;的风险。焦点环看不见原生控件，所以画在 <code>.switch__track</code> 上。</p>
+<p>对比：<code>&lt;div role=&quot;switch&quot; tabindex=&quot;0&quot; onclick&gt;</code> 要自己处理 Space 键、焦点样式、状态播报 —— <strong>三件事漏一件就坏</strong>，而且 axe 只看得见 DOM，看不见你的 JS 有没绑对。</p>
+<h2 id="s6">组件零 JS<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
+<p><code>switch.css</code> 不含任何 JavaScript。demo 里那个 <code>change</code> 监听器 <strong>只是用来显示当前状态的</strong>，不是组件的一部分。</p>
+<h2 id="s7">尺寸<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
+<p>默认 40×22 · 较大 48×28 —— 两档（与 card / badge 一致）。</p>
+<h2 id="s8">验证<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
+<p><code>switch-contract.js</code> 10 项全过（<strong>用真实按键</strong>，不是 dispatchEvent）：</p>
+<ul><li>可聚焦 · <code>role=&quot;switch&quot;</code> · 原生 checkbox · <code>label[for]</code> 关联</li><li>焦点环画在可见元素上</li><li><strong>Space 切换</strong>（真实按键）· <strong>Enter 不切换</strong>（APG 要求，真实按键）</li><li>滑块位移随状态变化 · axe 0 违规 / 24 条通过</li></ul>
+<p>判别力验证：去掉 <code>role</code> 与 <code>label</code> ⇒ 4 项立即被抓。</p>
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      <a class="g-pager__link g-pager__link--prev" href="skeleton.html"><span>上一页</span>skeleton · 骨架屏</a>
+      <a class="g-pager__link g-pager__link--next" href="accordion.html"><span>下一页</span>accordion · 折叠面板</a>
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    <ul class="g-toc"><li><a href="#s2">它和 checkbox 的差别是语义，不是形状</a></li><li><a href="#s3">类</a></li><li><a href="#s4">用法</a></li><li><a href="#s5">为什么用原生 checkbox 而不是 div + role</a></li><li><a href="#s6">组件零 JS</a></li><li><a href="#s7">尺寸</a></li><li><a href="#s8">验证</a></li></ul>
+  </aside>
+</div>
+<footer class="g-foot">
+  <p>v0.11.4 · 零第三方运行时依赖 · 组件数 35</p>
+</footer>
+</body>
+</html>

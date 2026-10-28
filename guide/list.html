@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>list —— 列表 · agentcss</title>
+<meta name="description" content="键值列表/条目列表">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">list —— 列表</span>
+    <a class="g-jump" href="../03-patterns/list/demo.html">打开示例<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">模式 · stable</p>
+    <h1>list —— 列表</h1>
+    <p class="lede">键值列表/条目列表</p>
+    <ul class="g-meta"><li><a href="../03-patterns/list/demo.html"><code>03-patterns/list/demo.html</code></a></li><li><a href="../03-patterns/list/list.css"><code>03-patterns/list/list.css</code></a></li><li><a href="../03-patterns/list/flip.js"><code>03-patterns/list/flip.js</code></a></li></ul>
+    <article class="g-doc">
+<div class="table"><table>
+<thead><tr>
+<th>字段</th><th>内容</th>
+</tr></thead>
+<tbody>
+<tr><td><strong>来源</strong></td><td>原创。FLIP 原理是公开技术，无第三方代码</td></tr>
+<tr><td><strong>实测</strong></td><td><code>demo.html</code> 四种交互可实际操作；JS 语法经 <code>node --check</code> 验证</td></tr>
+<tr><td><strong>适用</strong></td><td>精简档 / B / C，<code>flip.js</code> 为 ES5</td></tr>
+<tr><td><strong>依赖</strong></td><td><code>01-tokens/tokens.css</code> + <code>02-primitives/button/button.css</code> <code>03-patterns/states/states.css</code>（空状态用 <code>.state--empty</code>） + <code>01-tokens/typography.css</code>（<code>.note</code> 提示框） + <code>01-tokens/page.css</code>（页面骨架：<code>.wrap</code> / <code>.lede</code> / <code>.note</code>）</td></tr>
+</tbody>
+</table></div>
+<hr>
+<h2 id="s2">🔴 为什么不用 auto-animate<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<p>评估过 auto-animate（8 KB min+gzip，精简档 装得下，MIT 协议），但列表真正需要的只有<strong>&quot;增删时其余项平滑移动&quot;</strong>这一件事。</p>
+<div class="table"><table>
+<thead><tr>
+<th></th><th>auto-animate</th><th>自己写 FLIP</th>
+</tr></thead>
+<tbody>
+<tr><td>体积</td><td>~8 KB</td><td><strong>~1.5 KB</strong></td></tr>
+<tr><td>协议尽调</td><td>必需</td><td><strong>零风险</strong></td></tr>
+<tr><td>依赖风险</td><td>供应链 / 更新</td><td>无</td></tr>
+<tr><td>能力</td><td>增删改 + 颜色 + 尺寸 + 表单值</td><td>只做平滑移动</td></tr>
+</tbody>
+</table></div>
+<p><strong>为不需要的能力引入 8 KB 第三方，要承担协议尽调与供应链风险，不划算。</strong> （协议已核实：MIT，无条款冲突。但核实这件事本身就花掉了 70 行 + 3 波调研，而且对方发新版时还要重新判断——这是持续的维护成本，不是一次性的。）</p>
+<hr>
+<h2 id="s3">FLIP 四步<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code>First   记录变化前的位置（getBoundingClientRect）
+Last    DOM 变化后记录新位置
+Invert   用 transform 反向偏移回去（视觉上&quot;没动&quot;）
+Play    过渡到 transform: 0（看起来平滑滑过去）</code></pre>
+<h3 id="s4">用法<a class="anchor" href="#s4" aria-label="本节直链">#</a></h3>
+<pre class="code" tabindex="0"><code class="language-js">FLIP.flip(listEl, function () {
+  listEl.removeChild(row);          // 任意 DOM 改动
+});</code></pre>
+<pre class="code" tabindex="0"><code class="language-js">FLIP.remove(listEl, rowEl, function () {
+  // 退场动画结束、元素已从 DOM 移除，此时再触发其余项的 FLIP 重排
+});</code></pre>
+<p>🔴 <strong>顺序很关键</strong>：<code>FLIP.remove</code> 先让被删的行淡出<strong>并留在原位</strong>，等它退场完毕再重排。直接先删再动画，其余项会瞬间跳过去，没有补间。</p>
+<h3 id="s5">必须给每个项一个 <code>data-flip-id</code><a class="anchor" href="#s5" aria-label="本节直链">#</a></h3>
+<pre class="code" tabindex="0"><code class="language-html">&lt;li class=&quot;list__item&quot; data-flip-id=&quot;r42&quot;&gt;…&lt;/li&gt;</code></pre>
+<p>它是 FLIP 识别&quot;这是同一个项&quot;的<strong>唯一依据</strong>。缺了动画静默失效。</p>
+<hr>
+<h2 id="s6">三个关键判断<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
+<h3 id="s7">1. hover 绝不能让内容跳动<a class="anchor" href="#s7" aria-label="本节直链">#</a></h3>
+<pre class="code" tabindex="0"><code class="language-css">.list__item { border-left: 2px solid transparent; }   /* 预留位 */
+.list__item:hover { border-left-color: var(--border-decor-str); }  /* 只改颜色 */</code></pre>
+<p>如果写成&quot;hover 时才加 <code>border-left</code>&quot;，内容会<strong>横移 2px</strong>——列表&quot;在抖&quot;。 <strong>border 的宽度必须始终占位。</strong></p>
+<h3 id="s8">2. Tab 不为每一行多停一次<a class="anchor" href="#s8" aria-label="本节直链">#</a></h3>
+<pre class="code" tabindex="0"><code class="language-css">.list__item:focus-within { border-left-color: var(--accent); }</code></pre>
+<p><strong>不给整行加 <code>tabindex=&quot;0&quot;</code></strong>。那样 20 行的列表，键盘用户要按 20 次 Tab 才能穿过。行内按钮本身可聚焦就够了，用 <code>:focus-within</code> 给整行视觉反馈。</p>
+<p>🔴 <strong>配套要求</strong>：行内操作用 <code>opacity: 0</code> 隐藏，<strong>绝不能用 <code>display:none</code> / <code>visibility:hidden</code></strong> —— 那会让&quot;删除&quot;按钮从 tab 顺序消失，键盘用户永远到不了。</p>
+<h3 id="s9">3. 涨跌色用<strong>红涨绿跌</strong><a class="anchor" href="#s9" aria-label="本节直链">#</a></h3>
+<pre class="code" tabindex="0"><code class="language-css">.list__value--up   { color: var(--danger);  }  /* 涨 = 红 */
+.list__value--down { color: var(--success); }  /* 跌 = 绿 */</code></pre>
+<p>🔴 与欧美惯例相反，是<strong>刻意的</strong>——本库面向中国 A 股用户，做反了会被当成数据出错。</p>
+<hr>
+<h2 id="s10">reduced-motion：跳过，不是缩短<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-js">if (prefersReducedMotion()) { return; }   // 直接到最终态</code></pre>
+<p><strong>&quot;省略&quot;优于&quot;缩短&quot;</strong>。位置直接跳到最终态，不是&quot;用 1ms 过渡&quot;。</p>
+<p>CSS 里另外关掉 hover 等微交互过渡——那是<strong>不同层次</strong>，别漏。</p>
+<hr>
+<h2 id="s11">窄屏：行内操作必须常显<a class="anchor" href="#s11" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-css">@media (max-width: 34rem) {
+  .list__actions { width: 100%; opacity: 1; }
+}</code></pre>
+<p>触屏<strong>没有 hover</strong>，操作会彻底消失。</p>
+<hr>
+<h2 id="s12">反模式<a class="anchor" href="#s12" aria-label="本节直链">#</a></h2>
+<ul><li>❌ <strong>hover 时加 border / 改 padding</strong> —— 内容横移，列表在抖</li><li>❌ <strong>整行加 <code>tabindex=&quot;0&quot;</code></strong> —— Tab 为每行多停一次</li><li>❌ <strong>行内操作用 <code>display:none</code></strong> —— 从 tab 顺序消失，键盘到不了</li><li>❌ <strong>缺 <code>data-flip-id</code></strong> —— 动画静默失效，且<strong>不报错</strong></li><li>❌ <strong>先删元素再动画</strong> —— 其余项瞬间跳位，没有补间</li><li>❌ <strong>长文本直接换行</strong> —— 行高跳变，破坏列表节奏。用 <code>ellipsis</code> + <code>title</code></li><li>❌ <strong>涨跌色按欧美习惯</strong> —— 会被当成数据出错</li><li>❌ <strong>窄屏仍隐藏行内操作</strong> —— 触屏没有 hover</li><li>❌ <strong>reduced-motion 下&quot;缩短&quot;动画</strong> —— 应当完全跳过</li></ul>
+<hr>
+<h2 id="s13">门禁能查与查不到的<a class="anchor" href="#s13" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>项</th><th>能否机械检查</th>
+</tr></thead>
+<tbody>
+<tr><td>class 引用完整性</td><td>✅ <code>refs.py</code></td></tr>
+<tr><td>JS 语法</td><td>✅ <code>node --check</code>（<strong>不启动浏览器，零负载</strong>）</td></tr>
+<tr><td>动画是否真的顺</td><td>❌ <strong>必须真机看</strong></td></tr>
+<tr><td>hover 是否真的不抖</td><td>❌ <strong>必须真机看</strong></td></tr>
+<tr><td><code>data-flip-id</code> 是否齐全</td><td>❌ 目前靠人工，<code>refs.py</code> 查不了</td></tr>
+</tbody>
+</table></div>
+<p>🔴 <strong>诚实标注</strong>：本 pattern 的核心价值（动画顺不顺、抖不抖）<strong>静态检查查不出来</strong>。 <code>demo.html</code> 的第一屏就是让你自己看的。</p>
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      <a class="g-pager__link g-pager__link--prev" href="form-validation.html"><span>上一页</span>表单校验</a>
+      <a class="g-pager__link g-pager__link--next" href="nav.html"><span>下一页</span>nav —— 页头 / 目录 / 移动端抽屉</a>
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    <ul class="g-toc"><li><a href="#s2">🔴 为什么不用 auto-animate</a></li><li><a href="#s3">FLIP 四步</a></li><li><a href="#s6">三个关键判断</a></li><li><a href="#s10">reduced-motion：跳过，不是缩短</a></li><li><a href="#s11">窄屏：行内操作必须常显</a></li><li><a href="#s12">反模式</a></li><li><a href="#s13">门禁能查与查不到的</a></li></ul>
+  </aside>
+</div>
+<footer class="g-foot">
+  <p>v0.11.4 · 零第三方运行时依赖 · 组件数 35</p>
+</footer>
+</body>
+</html>

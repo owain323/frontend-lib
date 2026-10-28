@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>content —— 内容渲染样式 · agentcss</title>
+<meta name="description" content="长文排版容器（标题/段落/列表/引用/代码）">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">content —— 内容渲染样式</span>
+    <a class="g-jump" href="../03-patterns/content/demo.html">打开示例<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">模式 · stable</p>
+    <h1>content —— 内容渲染样式</h1>
+    <p class="lede">长文排版容器（标题/段落/列表/引用/代码）</p>
+    <ul class="g-meta"><li><a href="../03-patterns/content/demo.html"><code>03-patterns/content/demo.html</code></a></li><li><a href="../03-patterns/content/content.css"><code>03-patterns/content/content.css</code></a></li></ul>
+    <article class="g-doc">
+<div class="table"><table>
+<thead><tr>
+<th>字段</th><th>内容</th>
+</tr></thead>
+<tbody>
+<tr><td><strong>来源</strong></td><td>依据 CommonMark 0.31.2 与 GFM 扩展，<strong>不发明任何结构</strong></td></tr>
+<tr><td><strong>实测</strong></td><td>由 <code>05-audit/md-render.py</code> 渲染 <code>04-recipes/longform/content.md</code> 验证</td></tr>
+<tr><td><strong>适用</strong></td><td>精简档 / B / C，纯 CSS</td></tr>
+<tr><td><strong>依赖</strong></td><td><code>01-tokens/tokens.css</code> + <code>01-tokens/page.css</code>（页面骨架：<code>.wrap</code> / <code>.lede</code> / <code>.note</code>） + <code>01-tokens/typography.css</code></td></tr>
+<tr><td><strong>规范</strong></td><td>见本文件「内容渲染约定」一节</td></tr>
+</tbody>
+</table></div>
+<hr>
+<h2 id="s2">一句话原则<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<blockquote><p><strong>结构用标准，样式用 token。</strong></p></blockquote>
+<p>元素和类名由 CommonMark / GFM 决定；颜色、字号、间距由 token 决定。 <strong>两者之间不需要发明任何东西。</strong></p>
+<p>所以 <code>content.css</code> 按<strong>元素选择器</strong>接管，<strong>不给每个元素加类</strong>：</p>
+<pre class="code" tabindex="0"><code class="language-css">.prose &gt; h2 { ... }
+.prose &gt; pre &gt; code { ... }
+.prose &gt; table { ... }</code></pre>
+<p>结果：<strong>从任何 CommonMark 兼容渲染器拿到的 HTML，不需要任何后处理就能正确显示。</strong></p>
+<p>唯一的自定义类名是 <code>.prose</code>——它不改变语义，只是&quot;这块是正文&quot;的标记。</p>
+<hr>
+<h2 id="s3">三层能力，不能混为一谈<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>层</th><th>表格</th><th>删除线</th><th>任务列表</th>
+</tr></thead>
+<tbody>
+<tr><td><strong>CommonMark</strong></td><td>❌ 不支持</td><td>❌</td><td>❌</td></tr>
+<tr><td><strong>GFM</strong>（生态事实标准）</td><td>✅</td><td>✅</td><td>✅</td></tr>
+<tr><td>本库自定义</td><td>证据等级标记（<code>&lt;sup class=&quot;evi&quot;&gt;</code>）</td><td></td><td></td></tr>
+</tbody>
+</table></div>
+<p>🔴 <strong>纯 CommonMark 项目里表格会直接失效</strong>（渲染成 <code>&lt;p&gt;</code>）。要表格就必须用 GFM，这是硬依赖，不能假装有。</p>
+<p>本库的 CSS <strong>两层都支持</strong>，用不用由渲染器决定——<strong>样式不挑食</strong>。</p>
+<hr>
+<h2 id="s4">🔴 两个实测踩到的坑<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
+<h3 id="s5">1. 不同渲染器的输出<strong>不完全一致</strong><a class="anchor" href="#s5" aria-label="本节直链">#</a></h3>
+<div class="table"><table>
+<thead><tr>
+<th>语法</th><th>GitHub/GFM</th><th>markdown-it 实测</th>
+</tr></thead>
+<tbody>
+<tr><td><code>~~删除线~~</code></td><td><code>&lt;del&gt;</code></td><td><strong><code>&lt;s&gt;</code></strong></td></tr>
+</tbody>
+</table></div>
+<p>两者都合法但语义不同（<code>&lt;s&gt;</code>=不再准确，<code>&lt;del&gt;</code>=已删除），所以 CSS <strong>必须同时支持</strong>，否则换渲染器就掉样式。</p>
+<blockquote><p>这证明了一件事：<strong>不存在&quot;唯一正确的输出&quot;，只有&quot;规范允许的输出范围&quot;。</strong><br>CSS 要覆盖那个范围，而不是假设某一种。</p></blockquote>
+<h3 id="s6">2. <code>data:</code> URI 被渲染器拒绝 —— <strong>不要&quot;解决&quot;它</strong><a class="anchor" href="#s6" aria-label="本节直链">#</a></h3>
+<p>想把图片内联进单文件（精简档 硬要求），自然会想到 data URI。但 markdown-it 的默认 <code>validateLink</code> 把 <code>data:</code> 列入黑名单（防 XSS），于是 <code>![x](data:image/svg+xml;base64,...)</code> <strong>原样输出成文本</strong>。</p>
+<p>🔴 <strong>关掉 <code>validateLink</code> 就是降安全性</strong>，正是本规范反对的&quot;自己发挥&quot;。</p>
+<p>替代方案：图片用真实相对路径（<code>04-recipes/longform/agc-memory.svg</code> 就是例子），或在构建阶段把图片转 base64 注入 HTML（渲染后处理，不在 Markdown 里写 data URI）。</p>
+<hr>
+<h2 id="s7">怎么用<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-bash"># Markdown → 自包含单文件 HTML（精简档）
+python 05-audit/md-render.py 内容.md -o out.html --title &quot;标题&quot;
+
+# 只跑检查，不输出
+python 05-audit/md-render.py 内容.md --check</code></pre>
+<p><code>md-render.py</code> 做三件事：</p>
+<ol><li>用 markdown-it 渲染（commonmark preset + table + strikethrough）</li><li>检查标题层级 / <code>img</code> alt / 表格语义</li><li>内联 <code>tokens.css</code> + <code>content.css</code>，输出精简档 单文件</li></ol>
+<hr>
+<h2 id="s8">反模式<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
+<ul><li>❌ <strong>给每个元素加类</strong>（<code>.prose h2</code>、<code>.prose p2</code>…）—— 渲染器输出没有这些类</li><li>❌ <strong><code>&lt;div class=&quot;code-block&quot;&gt;</code> 装代码</strong> —— 用 <code>&lt;pre&gt;&lt;code class=&quot;language-x&quot;&gt;</code></li><li>🔴 <strong><code>&lt;div class=&quot;table&quot;&gt;</code> 模拟表格</strong> —— <strong>最严重</strong>：辅助技术会当普通 div 念，屏幕阅读器用户拿不到行列关系。必须用 <code>&lt;table&gt;</code></li><li>❌ <strong><code>&lt;div class=&quot;heading&quot;&gt;</code> 代替标题</strong> —— 文档大纲全废，&quot;跳到标题&quot;失效</li><li>❌ <strong>缩进代码块硬加 <code>class=&quot;language-&quot;</code></strong> —— CommonMark 规定它没有 class</li><li>❌ <strong><code>&lt;b&gt;</code> / <code>&lt;i&gt;</code> 代替 <code>&lt;strong&gt;</code> / <code>&lt;em&gt;</code></strong> —— <code>&lt;b&gt;</code> 只是视觉加粗，无语义</li><li>❌ <strong>hr 不清 <code>height</code> 和 <code>border-top</code></strong> —— 默认有 inset 边框，会出双线</li><li>❌ <strong>不排除代码块内的 <code>&lt;code&gt;</code></strong> —— 代码块每行都会带上行内代码的边框和底色</li></ul>
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      <a class="g-pager__link g-pager__link--prev" href="accordion.html"><span>上一页</span>accordion · 折叠面板</a>
+      <a class="g-pager__link g-pager__link--next" href="drawer.html"><span>下一页</span>drawer · 抽屉</a>
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    <ul class="g-toc"><li><a href="#s2">一句话原则</a></li><li><a href="#s3">三层能力，不能混为一谈</a></li><li><a href="#s4">🔴 两个实测踩到的坑</a></li><li><a href="#s7">怎么用</a></li><li><a href="#s8">反模式</a></li></ul>
+  </aside>
+</div>
+<footer class="g-foot">
+  <p>v0.11.4 · 零第三方运行时依赖 · 组件数 35</p>
+</footer>
+</body>
+</html>

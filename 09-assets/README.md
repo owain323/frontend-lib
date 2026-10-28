@@ -8,7 +8,7 @@
 <!-- ==== ASSET-LIST-BEGIN ==== -->
 | 目录 | 它解决什么 |
 |---|---|
-| `09-assets/bar/` | 柱状图，含 charter 13 图表规范的裁剪铁律 |
+| `09-assets/bar/` | 柱状图，含图表规范的裁剪铁律 |
 | `09-assets/echarts-adapter/` | 把令牌喂给 ECharts，按需引入；本库不含 ECharts |
 | `09-assets/model-viewer/` | 惰性加载的 3D 模型查看器 |
 | `09-assets/scientific-plot/` | 二维科学绘图：坐标轴 / 误差棒 / 置信区间带 / 对数轴 |

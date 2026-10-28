@@ -11,6 +11,14 @@
 ——可用的类名、状态怎么表达、哪些行为不能漏、成熟度到哪一步。
 人可以直接复制 CSS 用；AI 可以读契约避免凭空猜组件怎么写。
 
+## 在线演示与文档
+
+- **全部示例页，一个索引** —— https://owain323.github.io/frontend-lib/
+- **带搜索的组件文档** —— https://owain323.github.io/frontend-lib/guide/
+
+两者都由 `ai/components.json` 与各组件的 `README.md` **生成**：
+新增组件时索引不会悄悄漏掉它，文档页里的每条链接都指向真实存在的文件。
+
 ## 它解决什么问题
 
 移动端页面的三个反复出现的问题：
@@ -127,7 +135,7 @@ npm install github:owain323/frontend-lib
 
 | 组件 | 根类名 | 用途 |
 |---|---|---|
-| `bar` | `bar` | 柱状图（charter 13 图表规范）：堆叠/分组两种语义、超量程裁剪、图例 |
+| `bar` | `bar` | 柱状图：堆叠/分组两种语义、超量程裁剪、图例 |
 | `model-viewer` | `mv` | 3D 模型查看器：令牌驱动样式，不含渲染库本体 |
 | `scientific-plot` | `splot` | 二维科学绘图：折线/区间带/对数轴，纯令牌驱动、零依赖 |
 | `sparkline` | `sparkline` | 迷你趋势图：无坐标轴、纯形状，适合表格内嵌的一行走势 |

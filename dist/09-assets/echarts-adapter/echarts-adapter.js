@@ -117,7 +117,7 @@ if (y && y.min === undefined) y.min = 0;
 if (o.series.length > 5) {
 if (typeof console !== 'undefined' && console.warn) {
 console.warn('[frontend-lib] 系列数 ' + o.series.length +
-' 超过 5 —— 请改图表类型或分屏，见 charter 10。配色循环会让颜色撞车。');
+' 超过 5 —— 请改图表类型或分屏。配色循环会让颜色撞车。');
 }
 }
 

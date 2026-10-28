@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>progress · 进度条 · agentcss</title>
+<meta name="description" content="进度条与进度环">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">progress · 进度条</span>
+    <a class="g-jump" href="../02-primitives/progress/demo.html">打开示例<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">基础组件 · stable</p>
+    <h1>progress · 进度条</h1>
+    <p class="lede">进度条与进度环</p>
+    <ul class="g-meta"><li><a href="../02-primitives/progress/demo.html"><code>02-primitives/progress/demo.html</code></a></li><li><a href="../02-primitives/progress/progress.css"><code>02-primitives/progress/progress.css</code></a></li></ul>
+    <article class="g-doc">
+<blockquote><p>进度<strong>已知</strong>时用它；进度<strong>不知道</strong>时用 <a href="../02-primitives/skeleton/"><code>skeleton</code></a>。<br>⭐ 两者混用是常见错误：不知道进度却给一个假的百分比，<strong>比不给更糟</strong>。</p></blockquote>
+<h2 id="s2">用法<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-html">&lt;link rel=&quot;stylesheet&quot; href=&quot;progress.css&quot;&gt;
+
+&lt;!-- 线形（最常用）--&gt;
+&lt;span class=&quot;progress&quot; role=&quot;progressbar&quot; aria-valuenow=&quot;60&quot;
+      aria-valuemin=&quot;0&quot; aria-valuemax=&quot;100&quot; aria-label=&quot;上传进度&quot;
+      data-progress=&quot;60&quot;&gt;
+  &lt;span class=&quot;progress__bar&quot;&gt;&lt;/span&gt;
+&lt;/span&gt;
+
+&lt;!-- 语义色 --&gt;
+&lt;span class=&quot;progress progress--danger&quot; ...&gt;   &lt;!-- success / warning / danger --&gt;
+&lt;!-- 尺寸 --&gt;  &lt;span class=&quot;progress progress--lg&quot;&gt; / progress--sm
+
+&lt;!-- 环形（纯 CSS conic-gradient，零 SVG）--&gt;
+&lt;span class=&quot;progress-ring&quot; data-progress=&quot;72&quot; role=&quot;progressbar&quot; aria-valuenow=&quot;72&quot;&gt;
+  &lt;span class=&quot;progress-ring__label&quot; aria-hidden=&quot;true&quot;&gt;72%&lt;/span&gt;
+&lt;/span&gt;
+
+&lt;!-- 不确定进度（不知道要多久）--&gt;
+&lt;span class=&quot;progress progress--indeterminate&quot; aria-busy=&quot;true&quot; aria-label=&quot;正在处理&quot;&gt;
+  &lt;span class=&quot;progress__bar&quot;&gt;&lt;/span&gt;
+&lt;/span&gt;
+
+&lt;!-- 步骤分段（第 3 步 / 共 5 步）--&gt;
+&lt;span class=&quot;progress-steps&quot; role=&quot;progressbar&quot; aria-valuenow=&quot;3&quot; aria-valuemax=&quot;5&quot;&gt;
+  &lt;span class=&quot;progress-steps__seg progress-steps__seg--done&quot;&gt;&lt;/span&gt;
+  &lt;span class=&quot;progress-steps__seg progress-steps__seg--current&quot;&gt;&lt;/span&gt;
+  &lt;span class=&quot;progress-steps__seg&quot;&gt;&lt;/span&gt;
+&lt;/span&gt;</code></pre>
+<p><strong>动态进度用 JS 写</strong>（比行内 <code>style</code> 便宜，只改一个自定义属性）：</p>
+<pre class="code" tabindex="0"><code class="language-js">el.style.setProperty('--progress', '60%');</code></pre>
+<h2 id="s3">令牌<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>令牌</th><th>默认</th><th>说明</th>
+</tr></thead>
+<tbody>
+<tr><td><code>--progress</code></td><td><code>0%</code></td><td><strong>当前值</strong>。默认 0% 是正确默认，不是占位</td></tr>
+<tr><td><code>--progress-h</code></td><td><code>6px</code></td><td>线形高度（<code>--sm</code> 4px / <code>--lg</code> 10px）</td></tr>
+<tr><td><code>--progress-dur</code></td><td><code>240ms</code></td><td>宽度过渡</td></tr>
+<tr><td><code>--ease-out</code></td><td><code>cubic-bezier(.23,1,.32,1)</code></td><td>⭐ 独立于 <code>--ease</code>：进度要&quot;向前&quot;的 feel，匀速反而像卡住</td></tr>
+<tr><td><code>--r-full</code></td><td><code>999px</code></td><td>胶囊圆角</td></tr>
+<tr><td><code>--ring-size</code> / <code>--ring-thickness</code></td><td><code>64px</code> / <code>8px</code></td><td>环形尺寸</td></tr>
+</tbody>
+</table></div>
+<h2 id="s4">无障碍（<strong>红线</strong>）<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-html">&lt;!-- ✅ 确定进度 --&gt;
+role=&quot;progressbar&quot; + aria-valuenow/min/max + aria-label
+
+&lt;!-- ✅ 不确定进度：只标 aria-busy，**不要**给 valuenow --&gt;
+role=&quot;progressbar&quot; aria-busy=&quot;true&quot; aria-label=&quot;正在处理&quot;</code></pre>
+<p>⚠️ <strong>不确定时不要显示百分比</strong> —— 那是撒谎。读屏只会听到「正在处理，进度未知」，这才是事实。</p>
+<p>⚠️ <code>prefers-reduced-motion: reduce</code> 时扫光动画<strong>停掉，但条子仍可见</strong>（用户依然知道系统在忙）。</p>
+<h2 id="s5">何时<strong>不该</strong>用<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
+<ul><li>❌ <strong>不知道进度时</strong>（停在 0% 或乱跳的百分比）⇒ 用 <code>skeleton</code></li><li>❌ <strong>不足 ~1 秒就完成</strong>的操作 ⇒ 闪一下更伤体验，直接不显示</li><li>❌ <strong>代替&quot;还剩多久&quot;</strong> ⇒ 百分比给的是&quot;比例&quot;，不是&quot;时间&quot;</li><li>❌ <strong>环形用在极小尺寸</strong>（&lt; 32px）⇒ 环太细，读不出进度</li><li>❌ <strong>在一个页面里同时出现 3 个以上进度条</strong> ⇒ 用户不知道该看哪个</li></ul>
+<h2 id="s6">相关<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
+<ul><li>未知进度 ⇒ <a href="../02-primitives/skeleton/"><code>skeleton</code></a></li><li>短反馈（&quot;已保存&quot;）⇒ <code>toast</code>（<strong>尚未提供</strong>）</li></ul>
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      <a class="g-pager__link g-pager__link--prev" href="popover.html"><span>上一页</span>popover · 气泡卡片</a>
+      <a class="g-pager__link g-pager__link--next" href="select.html"><span>下一页</span>select · 自建下拉选择</a>
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    <ul class="g-toc"><li><a href="#s2">用法</a></li><li><a href="#s3">令牌</a></li><li><a href="#s4">无障碍（红线）</a></li><li><a href="#s5">何时不该用</a></li><li><a href="#s6">相关</a></li></ul>
+  </aside>
+</div>
+<footer class="g-foot">
+  <p>v0.11.4 · 零第三方运行时依赖 · 组件数 35</p>
+</footer>
+</body>
+</html>

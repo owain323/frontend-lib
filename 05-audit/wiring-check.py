@@ -109,6 +109,27 @@ def main():
             continue
         # 去掉注释（注释里提不算）
         body = re.sub(r'<!--.*?-->', '', s, flags=re.S)
+        # 🔴 去掉代码示例（`<pre>` 里的东西不是活标记）。
+        #   实测（2026-10-28）：文档站把 README 里的 HTML 示例渲染进 <pre>，
+        #   于是「用了 data-accordion 但没有 class="accordion"」
+        #   在 guide/accordion.html、guide/sparkline.html、guide/tabs.html
+        #   各报一次 —— 那三处是**讲解用的代码块**，页面上并不会运行。
+        #   ⚠️ 这与"注释里提不算"是同一条原则：判据对象是**会执行的结构**，
+        #      不是文本里出现过的字样。
+        body = re.sub(r'<pre\b.*?</pre>', '', body, flags=re.S)
+        # 行内代码同理：README 表格里写 `<code>data-accordion</code>` 是**名词**，
+        # 不是要跑的结构。实测去掉 <pre> 之后仍剩 guide/accordion 与
+        # guide/sparkline 两处，就是行内代码里的属性名。
+        body = re.sub(r'<code\b[^>]*>.*?</code>', '', body, flags=re.S)
+        # 数据块同理：`<script type="application/json">` 里装的是**数据**，
+        # 不是会执行的结构。实测（2026-10-29）：索引页把搜索键表放在这种
+        # 块里（键是从 README 反引号片段抽的类名/属性名），于是
+        # 「用了 data-spark 但没引 sparkline.js」等 5 条全指向索引页 ——
+        # 而那一页根本没有 sparkline，也没打算有。
+        #   ⚠️ 只剥 JSON 数据块，不剥普通 `<script>`：脚本正文里的字符串
+        #      是可能真的去 querySelector 的，剥掉就把判据的鉴别力削掉了。
+        body = re.sub(r'<script\b[^>]*\btype="application/(?:ld\+)?json"[^>]*>.*?</script>',
+                      '', body, flags=re.S)
         checked += 1
 
         srcs = '\n'.join(refs_in(body))
@@ -195,6 +216,21 @@ def _selftest():
         open(page, 'w', encoding='utf-8', newline='').write(
             '<html><body><div %s></div></body></html>\n' % mk[0].rstrip('>'))
         chk('③ 用了标记却没引脚本 ⇒ 报', main(), 1)
+
+        # ④ JSON 数据块里的键名不算结构（实测踩到的假红）
+        #    反方向也要有控制：数据块被剥掉，真标记还得照样报。
+        open(page, 'w', encoding='utf-8', newline='').write(
+            '<html><body>\n'
+            '<script type="application/json" id="kw">{"x":"%s"}</script>\n'
+            '</body></html>\n' % mk[0].rstrip('>'))
+        chk('④ JSON 键表不算结构（旧版在这里假红）', main(), 0)
+
+        open(page, 'w', encoding='utf-8', newline='').write(
+            '<html><body>\n'
+            '<script type="application/json" id="kw">{"x":"%s"}</script>\n'
+            '<div %s></div></body></html>\n'
+            % (mk[0].rstrip('>'), mk[0].rstrip('>')))
+        chk('④b 剥了数据块，真标记仍报', main(), 1)
     finally:
         ROOT = keep_root
 

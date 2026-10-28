@@ -1,5 +1,5 @@
 /**
- * bar.js — 柱状图（charter 13 图表规范 · 四条铁律全部落地）
+ * bar.js — 柱状图（图表规范 · 四条铁律全部落地）
  * ============================================================================
  * 设计依据：见 API.md「资产类组件」一节
  *   铁律一 · 超量程必须被**容器裁剪**      → CSS 侧 overflow:hidden（本文件不参与）
@@ -7,7 +7,7 @@
  *   铁律三 · **量程必须显式声明**          → max 是必填参数，无默认值
  *   铁律四 · **门禁要能证伪**              → 05-audit/chart-check.js 已覆盖本组件
  *
- * ⭐ 为什么量程不自动适配（charter 13 铁律三）：
+ * ⭐ 为什么量程不自动适配（铁律三）：
  *   一个 400 的异常值 + 30 个 0.35 的常态值，若 Y 轴自适应到 400
  *   ⇒ 所有常态值被压成**一条贴底的直线**
  *   ⇒ 读者会得出「这些天完全没有变化」的**错误结论**。
@@ -98,7 +98,7 @@
     if (opt.max === undefined || opt.max === null) {
       /* 🔴 铁律三：不替调用方决定量程。
          宁可报错，也不要悄悄自适应（那会让 400 的异常值把常态值压成直线）。 */
-      throw new Error('bar.draw: max 是必填项（charter 13 铁律三：量程不得自动适配）');
+      throw new Error('bar.draw: max 是必填项（铁律三：量程不得自动适配）');
     }
 
     var series = opt.series || [];
@@ -244,7 +244,7 @@
       var h2 = Math.min((v2 / max) * plotH, plotH);
       var yy2 = padT + plotH - h2;
       var lb = el('text', {
-        /* 🔴 charter 13 铁律二：标注画在柱顶**外侧**（yy - 5），
+        /* 🔴 铁律二：标注画在柱顶**外侧**（yy - 5），
            不画在柱子上；且顶外侧不够高时改画内侧底部（见下方 clamp）。
            描边用 paint-order（在字下面），保证深色柱子上也看得清。 */
         'class': 'bar__label bar__label--' + keys[k],
@@ -265,7 +265,7 @@
      * 🔴 为什么默认就出（不再由调用方记得开）：
      *    两种颜色 + 没有图例 ⇒ 读者只能猜哪块是哪个系列；
      *    在黑白打印 / 色觉障碍下这块就直接失读了。
-     *    这与 charter 13「重要结论不允许只存在于颜色里」是同一条。
+     *    这与「重要结论不允许只存在于颜色里」是同一条。
      * ⇒ 要关就显式传 `legend: false`，别指望"忘了传也没事"。 */
     var hasNames = series.every(function (se) { return !!se.name; });
     var wantLegend = opt.legend === undefined ? (nS >= 2 && hasNames) : !!opt.legend;

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>scientific-plot · 二维科学绘图 · agentcss</title>
+<meta name="description" content="二维科学绘图：折线/区间带/对数轴，纯令牌驱动、零依赖">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">scientific-plot · 二维科学绘图</span>
+    <a class="g-jump" href="../09-assets/scientific-plot/demo.html">打开示例<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">图表与资源 · stable</p>
+    <h1>scientific-plot · 二维科学绘图</h1>
+    <p class="lede">二维科学绘图：折线/区间带/对数轴，纯令牌驱动、零依赖</p>
+    <ul class="g-meta"><li><a href="../09-assets/scientific-plot/demo.html"><code>09-assets/scientific-plot/demo.html</code></a></li><li><a href="../09-assets/scientific-plot/scientific-plot.css"><code>09-assets/scientific-plot/scientific-plot.css</code></a></li><li><a href="../09-assets/scientific-plot/scientific-plot.js"><code>09-assets/scientific-plot/scientific-plot.js</code></a></li></ul>
+    <article class="g-doc">
+<p>原生 SVG 画的二维坐标系绘图模块。<strong>零第三方运行时依赖</strong>，ES5，和 <code>09-assets/sparkline</code> 同级。</p>
+<h2 id="s2">它和 BI 图表不是一回事<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th></th><th>BI / 营运图表（<code>sparkline</code>、<code>echarts-adapter</code>）</th><th>科学绘图（本模块）</th>
+</tr></thead>
+<tbody>
+<tr><td>回答的问题</td><td>「这个月比上个月好还是差」</td><td>「这些测量值落在哪、误差多大、有没有超模型」</td></tr>
+<tr><td>坐标</td><td>多为分类轴</td><td><strong>数值轴</strong>，线性 / 对数显式声明</td></tr>
+<tr><td>数据语义</td><td>趋势</td><td>值 + <strong>不确定性</strong>（误差棒 / 区间带）</td></tr>
+<tr><td>缺失</td><td>少见</td><td>常见，且<strong>必须与零区分</strong></td></tr>
+</tbody>
+</table></div>
+<p>两者共享设计令牌、字体、容器与响应式基础，但<strong>不共享</strong>坐标与数据格式规则 ⇒ 本模块不依赖 BI 图表的内部实现。</p>
+<h2 id="s3">用法<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-html">&lt;link rel=&quot;stylesheet&quot; href=&quot;01-tokens/tokens.css&quot;&gt;
+&lt;link rel=&quot;stylesheet&quot; href=&quot;09-assets/scientific-plot/scientific-plot.css&quot;&gt;
+&lt;script src=&quot;09-assets/scientific-plot/scientific-plot.js&quot;&gt;&lt;/script&gt;
+&lt;div id=&quot;fig&quot;&gt;&lt;/div&gt;
+&lt;script&gt;
+  ScientificPlot.render(document.getElementById('fig'), {
+    width: 680, height: 340,
+    title: '阻尼振荡位移',                       // 进 aria-label
+    x: { label: '时间', unit: 's', scale: 'linear', domain: [0, 4] },
+    y: { label: '位移', unit: 'm', scale: 'linear', domain: [-1.1, 1.1] },
+    series: [{ type: 'function', fn: function (t) {
+      return Math.exp(-0.35 * t) * Math.cos(2 * Math.PI * 1.2 * t);
+    }, domain: [0, 4], samples: 400 }],
+    refs: [{ axis: 'y', value: 0 }]
+  });
+&lt;/script&gt;</code></pre>
+<h2 id="s4">API<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
+<p><code>ScientificPlot.render(el, spec)</code> 返回 <code>{ svg, x, y, ticks, series }</code>（比例尺对象可用于后续交互）。</p>
+<p><strong>坐标轴</strong> <code>spec.x</code> / <code>spec.y</code></p>
+<div class="table"><table>
+<thead><tr>
+<th>字段</th><th>说明</th>
+</tr></thead>
+<tbody>
+<tr><td><code>label</code></td><td>轴名。<strong>不给会退化成 &quot;x&quot;/&quot;y&quot;</strong>，正式图请给</td></tr>
+<tr><td><code>unit</code></td><td>单位，会拼到轴名后（如「时间 / s」）</td></tr>
+<tr><td><code>scale</code></td><td><code>'linear'</code>（默认）或 <code>'log'</code></td></tr>
+<tr><td><code>domain</code></td><td><code>[min, max]</code>，必填。对数轴必须 <code>&gt; 0</code>，否则<strong>抛错</strong></td></tr>
+</tbody>
+</table></div>
+<p><strong>数据系列</strong> <code>spec.series[]</code></p>
+<div class="table"><table>
+<thead><tr>
+<th><code>type</code></th><th><code>data</code> 形状</th><th>说明</th>
+</tr></thead>
+<tbody>
+<tr><td><code>line</code></td><td><code>[[x, y], ...]</code></td><td>折线；<code>null</code> 处<strong>断开</strong></td></tr>
+<tr><td><code>scatter</code></td><td><code>[[x, y], ...]</code></td><td>散点</td></tr>
+<tr><td><code>function</code></td><td>传 <code>fn</code> + <code>domain</code> + <code>samples</code></td><td>采样成点后画线，<strong>不做表达式求值</strong></td></tr>
+<tr><td><code>errorbar</code></td><td><code>[[x, y, yerr], ...]</code> 或 <code>[[x, y, lo, hi], ...]</code></td><td>误差棒，只画给定边界</td></tr>
+<tr><td><code>band</code></td><td><code>[[x, lo, hi], ...]</code></td><td>置信区间带（填充多边形）</td></tr>
+</tbody>
+</table></div>
+<p>其他：<code>refs[]</code>（参考线 <code>{axis, value, label}</code>）、<code>annotations[]</code>（点标注 <code>{x, y, text}</code>）、 <code>grid</code>（默认开）、<code>truncated</code>（轴截断时置 <code>true</code>，图上会打提示）、<code>margin</code>、<code>className</code>。</p>
+<h2 id="s5">它<strong>不</strong>做什么（诚实边界）<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
+<ul><li><strong>不计算任何统计量</strong>：均值、标准误、标准差、置信区间都由调用方算好传进来。本模块也<strong>不宣称</strong>显著性 —— 那是调用方的判断，不是绘图的职责。</li><li><strong>不做表达式求值</strong>：函数曲线只接受真函数。传字符串会被忽略，<strong>绝不 <code>eval</code></strong>。</li><li><strong>不做插值 / 回归 / 平滑</strong>：只连你给的点。</li><li><strong>不做</strong>直方图 / 箱线图 / 小提琴图 / 热力图 / 等高线 —— 这些留待后续，确有需要时接入成熟绘图库，不打包进本库必选运行时。</li><li><strong>不做大规模交互</strong>（缩放、框选、十字线）—— 第一版聚焦&quot;画对&quot;。</li></ul>
+<h2 id="s6">颜色与线型<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
+<p>分类色 5 个（<code>--accent / --danger / --success / --warning / --info</code>，与 <code>echarts-adapter</code> 同一套）。 <strong>第 6 条曲线不会循环回第 1 个颜色</strong>，而是切换线型（虚线 / 点线…）—— 因为两条同色曲线读者分不清谁是谁。</p>
+<h2 id="s7">预览<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-bash"># 仓库根起静态服务
+python -m http.server 8000
+# 打开
+http://127.0.0.1:8000/09-assets/scientific-plot/demo.html</code></pre>
+<h2 id="s8">已知限制<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
+<ul><li>未在 iOS / Android 真机 WebView 上验证（与库整体一致）。</li><li>刻度标签未做&quot;相邻标签重叠时自动抽稀&quot;（对数轴跨大数量级时已按 10 的幂简化）。</li><li>无数据点级别的无障碍替代（图表整体有 <code>aria-label</code>，逐点值需调用方在页面上另给文本等价说明， demo.html 第 5 节演示了做法）。</li></ul>
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      <a class="g-pager__link g-pager__link--prev" href="model-viewer.html"><span>上一页</span>model-viewer — 惰性加载的 3D 模型查看器</a>
+      <a class="g-pager__link g-pager__link--next" href="sparkline.html"><span>下一页</span>sparkline · 迷你趋势图</a>
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    <ul class="g-toc"><li><a href="#s2">它和 BI 图表不是一回事</a></li><li><a href="#s3">用法</a></li><li><a href="#s4">API</a></li><li><a href="#s5">它不做什么（诚实边界）</a></li><li><a href="#s6">颜色与线型</a></li><li><a href="#s7">预览</a></li><li><a href="#s8">已知限制</a></li></ul>
+  </aside>
+</div>
+<footer class="g-foot">
+  <p>v0.11.4 · 零第三方运行时依赖 · 组件数 35</p>
+</footer>
+</body>
+</html>

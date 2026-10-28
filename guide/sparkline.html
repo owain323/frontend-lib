@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>sparkline · 迷你趋势图 · agentcss</title>
+<meta name="description" content="迷你趋势图：无坐标轴、纯形状，适合表格内嵌的一行走势">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">sparkline · 迷你趋势图</span>
+    <a class="g-jump" href="../09-assets/sparkline/demo.html">打开示例<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">图表与资源 · stable</p>
+    <h1>sparkline · 迷你趋势图</h1>
+    <p class="lede">迷你趋势图：无坐标轴、纯形状，适合表格内嵌的一行走势</p>
+    <ul class="g-meta"><li><a href="../09-assets/sparkline/demo.html"><code>09-assets/sparkline/demo.html</code></a></li><li><a href="../09-assets/sparkline/sparkline.css"><code>09-assets/sparkline/sparkline.css</code></a></li><li><a href="../09-assets/sparkline/sparkline.js"><code>09-assets/sparkline/sparkline.js</code></a></li></ul>
+    <article class="g-doc">
+<p>在一行里显示&quot;最近走势&quot;。<strong>它是辅助，不是图表。</strong></p>
+<h2 id="s2">用法<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-html">&lt;span class=&quot;sparkline&quot; data-spark=&quot;12,18,15,24,22,31,28&quot;&gt;&lt;/span&gt;</code></pre>
+<div class="table"><table>
+<thead><tr>
+<th>属性</th><th>值</th><th>默认</th>
+</tr></thead>
+<tbody>
+<tr><td><code>data-spark</code></td><td>逗号分隔的数字</td><td>—</td></tr>
+<tr><td><code>data-spark-type</code></td><td><code>line</code> / <code>bar</code> / <code>area</code></td><td><code>line</code></td></tr>
+<tr><td><code>data-spark-height</code></td><td>像素</td><td><code>32</code></td></tr>
+<tr><td><code>data-spark-color</code></td><td>CSS 颜色或 <code>var(--x)</code></td><td><code>var(--accent)</code></td></tr>
+<tr><td><code>data-spark-fill</code></td><td><code>no</code> 关闭面积填充</td><td>填</td></tr>
+<tr><td><code>data-spark-last</code></td><td><code>yes</code> 标出最后一个点</td><td>不标</td></tr>
+<tr><td><code>data-spark-animate</code></td><td><code>no</code> 关闭入场动画</td><td>开</td></tr>
+</tbody>
+</table></div>
+<p>更新数据：</p>
+<pre class="code" tabindex="0"><code class="language-js">el.setAttribute('data-spark', '1,2,3');
+Chart.emit(el);          // 重画这一个
+Chart.update(container); // 重画某区域内全部</code></pre>
+<h2 id="s3">🔴 无障碍：它没有可读的文本等价物<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
+<p>纯 SVG 路径对读屏<strong>没有意义</strong> —— 读屏只会说&quot;图像&quot;。</p>
+<p>⇒ 本组件<strong>刻意不加 <code>role=&quot;img&quot;</code></strong>（那会让人以为它有可读的替代文本，而它没有） ⇒ SVG 标了 <code>aria-hidden=&quot;true&quot;</code> + <code>focusable=&quot;false&quot;</code> ⇒ <strong>要给出可读的值</strong>：在旁边放数字，或用「名字 + 当前值 + 涨跌」的组合 ⇒ <strong>必须</strong>配文字的场景：数值重要时（如&quot;营收 128 万，同比 +3.2%&quot;）。纯装饰的小图可以不配。</p>
+<p><strong>只放 sparkline 不放数字 = 把视觉当成唯一通道</strong>，这是反例。</p>
+<h2 id="s4">动画<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
+<p>用 <code>stroke-dasharray</code> 做&quot;从左往右画出来&quot;的效果。</p>
+<p><strong>为什么不用 JS 逐帧</strong>： ① 零 JS 帧循环，动画交给合成器 ② <strong>可被 <code>prefers-reduced-motion</code> 一行 CSS 关掉</strong> ③ 几十个同时动画也不掉帧</p>
+<p><strong>关掉动画的三种情况</strong>（CSS 里都做了）： ① 用户在系统里说了&quot;减少动态效果&quot;（WCAG 2.3.3，前庭功能障碍者会眩晕） ② 打印时（<code>@media print</code>） ③ 元素上写 <code>data-spark-animate=&quot;no&quot;</code></p>
+<h2 id="s5">为什么自己写而不引库<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
+<p>调研了 GitHub 上几个零依赖方案，最小的 <code>mitjafelicijan/sparklines</code> 是 <strong>6390 字节 / 195 行 / gzip 1675 字节</strong>、<strong>BSD-2 许可</strong>（可商用）—— <strong>它做得很好，值得参考</strong>。</p>
+<p>但没有直接引，两个原因（都不是嫌它差）：</p>
+<div class="table"><table>
+<thead><tr>
+<th></th><th>它</th><th>本库要求</th>
+</tr></thead>
+<tbody>
+<tr><td>语法</td><td><code>const</code> + 箭头函数（ES6）</td><td><strong>ES5</strong>（精简档 跑在 某项目 的 WebView，版本不确定）</td></tr>
+<tr><td>颜色</td><td>data 属性传 HEX / 颜色名</td><td><strong>令牌驱动</strong>（换主题要跟着变）</td></tr>
+</tbody>
+</table></div>
+<p>⇒ <strong>借鉴它的接口设计</strong>（data 属性驱动、零依赖、BSD 思路），实现按本库约束重写。</p>
+<p><strong>当前体量</strong>：<code>sparkline.js</code> 约 8 KB · <code>sparkline.css</code> 约 2 KB · 零依赖。</p>
+<h2 id="s6">🔴 修两个把线画坏的 bug（真机实测截图指出）<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
+<h3 id="s7">① <code>preserveAspectRatio=&quot;none&quot;</code> ⇒ 横向拉伸<a class="anchor" href="#s7" aria-label="本节直链">#</a></h3>
+<p>它允许 <strong>x/y 独立缩放</strong>。本组件 viewBox 宽度已经是容器<strong>实际像素宽</strong>， <code>width:100%</code> 渲染到同一宽度 ⇒ <strong>横向本来就不该缩放</strong>，但 <code>none</code> 仍会在容器宽 ≠ viewBox 宽时（整数舍入 / 滚动条 / flex 未稳定）把图形<strong>拉变形</strong>。</p>
+<p>⇒ 删掉，走默认 <code>xMidYMid meet</code>：<strong>1px 就是 1px</strong>，比例有出入也只等比留边。</p>
+<h3 id="s8">② 🔴 CSS 的 <code>fill</code> 覆盖了 <code>fill=&quot;none&quot;</code> 属性<a class="anchor" href="#s8" aria-label="本节直链">#</a></h3>
+<p>我原来写「path / rect / circle 一律 <code>fill: var(--spark-c)</code>」—— <strong>CSS 优先级高于 SVG presentation attribute</strong>， JS 里写的 <code>fill=&quot;none&quot;</code> <strong>被完全无视</strong>。</p>
+<p>实测：<code>fill</code> 属性 = <code>none</code>，<strong>计算值 = <code>rgb(27,77,143)</code></strong> ⇒ <strong>折线被填成实心多边形</strong> ⇒ 看起来是「扁平的色带」而不是趋势线。</p>
+<p><strong>这才是&quot;色带&quot;的直接原因</strong>（① 只是让它更扁）。</p>
+<p>⇒ 修法：<strong>按类型分四类</strong>，不靠属性覆盖（属性打不过 CSS）： <code>.spark-line</code> 描边 / <code>.spark-area</code> 填充 / <code>.spark-bar</code> 填充 / <code>.spark-dot</code> 填充。</p>
+<h3 id="s9">③ 连带发现：动画类被牵连（真 bug）<a class="anchor" href="#s9" aria-label="本节直链">#</a></h3>
+<p>重写外观后 <code>spark-line</code> 必须<strong>常驻</strong>（它负责 <code>fill:none</code>），于是旧逻辑「没动画就不加 <code>spark-line</code> 类」<strong>形同虚设</strong> —— <strong>动画会无视设置照播</strong>。</p>
+<p>⇒ 拆出独立的 <code>.spark-anim</code> 专管动画。契约测试已改判据并锁住。</p>
+<h2 id="s10">🔴 MISSING != ZERO（最重要的一条）<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
+<p><strong>空值和 0 是两件事。</strong></p>
+<div class="table"><table>
+<thead><tr>
+<th>写法</th><th>含义</th><th>画成什么</th>
+</tr></thead>
+<tbody>
+<tr><td><code>data-spark=&quot;1,0,3&quot;</code></td><td>1、<strong>真的 0</strong>、3</td><td>一条连续的线，中间有个低谷</td></tr>
+<tr><td><code>data-spark=&quot;1,,3&quot;</code></td><td>1、<strong>没数据</strong>、3</td><td><strong>两段线，中间断开</strong></td></tr>
+<tr><td><code>data-spark=&quot;1,2,3,4,&quot;</code></td><td>末点没数据</td><td>两段线，<strong>不画末点圆点</strong></td></tr>
+</tbody>
+</table></div>
+<p><strong>为什么这么重要</strong>：一条横跨缺失点的线，等于在说&quot;从 1 平滑升到 3，中间一切正常&quot; —— 而真相是&quot;中间没数据&quot;。 <strong>数据缺失被画成了平稳过渡</strong>，这是图表最容易忽略、最会误导人的一种错。</p>
+<p><strong>契约来源</strong>（不是我想的）：<code>ChartsPage.tsx</code> 第 10 行自己写着</p>
+<blockquote><p>「MISSING != ZERO / INVALID != MISSING / 过滤必须可见」</p></blockquote>
+<p>它自己做到了 <code>connectNulls={false}</code> 且 0 处遗漏 —— 本库照它做，并在自己的契约测试里锁死这六条。</p>
+<p><strong>实现要点</strong>：</p>
+<ul><li><code>parsePoints</code> 把空值 / <code>-</code> / <code>null</code> / <code>NaN</code> 都保留成 <code>null</code>（<strong>不是 0</strong>）</li><li><code>scale</code> 求最值时<strong>排除 null</strong>（否则 <code>Math.min(1, null, 3) === 1</code> 会把图压扁）</li><li><code>draw</code> 把序列切成<strong>连续段</strong>，每段画一条 path，<strong>段间留空</strong></li><li>柱状图：缺失点<strong>不画柱</strong>（画成 0 高度等于假装&quot;这里是 0&quot;）</li></ul>
+<h2 id="s11">边界情况（都实测过）<a class="anchor" href="#s11" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>输入</th><th>行为</th>
+</tr></thead>
+<tbody>
+<tr><td>少于 2 个<strong>有效</strong>点</td><td>不画（画不出趋势）</td></tr>
+<tr><td><strong>全部缺失</strong>（<code>,,,,</code>）</td><td>不画，且<strong>不崩</strong>（<code>scale</code> 返回 null 有防护）</td></tr>
+<tr><td>中间缺失</td><td><strong>断开成两段</strong>，不连线</td></tr>
+<tr><td><strong>全部相同</strong>（<code>10,10,10</code>）</td><td>人工造上下界，<strong>不除零</strong>，画成一条水平线</td></tr>
+<tr><td>单点成段</td><td>画成一个小圆点（否则那段&quot;什么都不画&quot;，用户以为图坏了）</td></tr>
+<tr><td>元素宽度为 0（隐藏中）</td><td>用 <code>data-spark-width</code> 或等布局就绪</td></tr>
+</tbody>
+</table></div>
+<h2 id="s12">验证<a class="anchor" href="#s12" aria-label="本节直链">#</a></h2>
+<p><strong>28 项全过</strong>，含 <code>MISSING != ZERO</code> 六条：连续=1 段 · 中间缺失=2 段 · <strong>两段有真实间隔（381px）</strong> · 中间是 0 仍 1 段 · 全缺失不崩 · 末点缺失不画圆点。</p>
+<p>另：<code>aria-hidden</code> 9/9 · <code>role=img</code> 0 个 · axe 0 违规 / 19 通过。</p>
+<p><strong>两个判别力验证</strong>： ① 复现&quot;类名不一致&quot;那个真 bug ⇒ 8 项 FAIL ② 注入&quot;空值丢弃&quot;老写法 ⇒ 3 项 FAIL</p>
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      <a class="g-pager__link g-pager__link--prev" href="scientific-plot.html"><span>上一页</span>scientific-plot · 二维科学绘图</a>
+      
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    <ul class="g-toc"><li><a href="#s2">用法</a></li><li><a href="#s3">🔴 无障碍：它没有可读的文本等价物</a></li><li><a href="#s4">动画</a></li><li><a href="#s5">为什么自己写而不引库</a></li><li><a href="#s6">🔴 修两个把线画坏的 bug（真机实测截图指出）</a></li><li><a href="#s10">🔴 MISSING != ZERO（最重要的一条）</a></li><li><a href="#s11">边界情况（都实测过）</a></li><li><a href="#s12">验证</a></li></ul>
+  </aside>
+</div>
+<footer class="g-foot">
+  <p>v0.11.4 · 零第三方运行时依赖 · 组件数 35</p>
+</footer>
+</body>
+</html>
