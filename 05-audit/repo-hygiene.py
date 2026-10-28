@@ -80,6 +80,11 @@ ROOT_ALLOWED_FILES = {
     'LICENSE', 'README.md', 'README.zh-CN.md', 'SECURITY.md',
     'START-HERE.md', 'SUPPORT.md',
     'VERSION', 'index.html', 'package-lock.json', 'package.json',
+    # `404.html`（0.11.6 加）：GitHub Pages 的兜底页，生成物，不进 npm 包
+    #   （`files` 白名单里没有它）。它必须待在**仓库根**才能被 Pages 认；
+    #   引资源用站内绝对路径，前缀从 `homepage` 推 —— 因为它的"当前目录"
+    #   是用户敲错的那个目录，相对路径会二次 404、整页裸奔。
+    '404.html',
 }
 
 
