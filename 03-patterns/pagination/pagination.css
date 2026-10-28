@@ -67,7 +67,7 @@
   font-variant-numeric: tabular-nums;   /* 数字等宽，小数点才能对齐 */
   color: var(--text-primary);
   text-decoration: none;
-  /* 🔴 评审指出「不高级」。真因（实测）：
+  /* 🔴 普通态不能只是裸文字。真因（实测）：
      普通页 `background: transparent` + `border: transparent`
      ⇒ 整排只剩**裸文字**，没有"按钮"的实体感。
      通行做法（USWDS / GitHub / Stripe 一致）：

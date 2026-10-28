@@ -149,7 +149,7 @@ def table(manifest, perturb=None):
                  % (kb(tg_src or 0), kb(tg),
                     (100.0 * (1 - tg / float(tg_src))) if tg_src else 0))
     lines.append('  源码多的那部分**全是注释**（全库 CSS 有 %.0f%% 是注释'
-                 '，字节口径），而注释是给我们的，不是给使用者浏览器的。'
+                 '，字节口径），而注释是给维护者的，不是给浏览器的。'
                  % comment_ratio_of_sources())
     lines.append('- tokens 的 min 版 %s **比任何一个组件自己都贵** ⇒'
                  % kb(tg))

@@ -77,7 +77,7 @@ ROOT_ALLOWED_FILES = {
     #   文件里没有任何 token（凭据走 `npm login`，存用户主目录），leak-scan 也过。
     '.npmrc',
     'API.md', 'CHANGELOG.md', 'CODE_OF_CONDUCT.md', 'CONTRIBUTING.md',
-    'ERRORS.md', 'LICENSE', 'README.md', 'SECURITY.md',
+    'LICENSE', 'README.md', 'README.zh-CN.md', 'SECURITY.md',
     'START-HERE.md', 'SUPPORT.md',
     'VERSION', 'index.html', 'package-lock.json', 'package.json',
 }

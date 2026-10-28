@@ -146,7 +146,7 @@
 
   <h2 class="rule-top">4 · 单选与复选（<strong>这两个不是一回事</strong>）</h2>
   <p class="note">
-    🔴 评审指出并纠正的：<strong>我原来只演示了 radio，
+    🔴 已纠正的：<strong>我原来只演示了 radio，
     导致"点一下没反应"看起来像 bug。</strong>
     <br>真相：<strong>radio 选中后本来就无法取消</strong>（HTML 原生行为），这是**正确的**。
     <br>⇒ 下面把两种场景都摆出来，点一下就知道区别。
@@ -427,7 +427,7 @@
       if (btn) btn.setAttribute('aria-label', ARIA[m] || ARIA.auto);
     }
     sync();
-    // 🔴 评审指出「明暗 跟随」语义不清。
+    // 🔴 「明暗 跟随」语义不清。
     //    除了改文案，还要保证**点完立刻变** —— 原来只在初始化时 sync()，
     //    文案永远停在「跟随系统」，点三次都不变（实测发现的）。
     fab.addEventListener('click', function () { Theme.cycle(); sync(); });

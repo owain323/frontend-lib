@@ -66,12 +66,12 @@
 
 ## 为什么**没有**「动画进行中不打断」的守卫（实测结论）
 
-参考实现（huxx.me）有一条经验：进场动画在跑的时候不要被打断，
+有一种常见的加固做法：进场动画在跑的时候不要被打断，
 用 `getAnimations().some(a => a.playState === 'running')` 判断，
 说"快速滚动时这条决定了顺滑还是闪"。
 
-**那条针对的是它自己的 JS 动画**（Web Animations API 重启动画会跳）。
-我们用的是 CSS transition —— 被打断时是 **retarget**：从当前值继续插值，不重头再来。
+**那条针对的是 JS 驱动的动画**（Web Animations API 重启动画会跳）。
+CSS transition 被打断时是 **retarget**：从当前值继续插值，不重头再来。
 
 `05-audit/motion-concurrency.js` 在真浏览器里量过，结论：
 

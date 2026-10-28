@@ -6,7 +6,7 @@ const REPO = path.resolve(__dirname, '..');
 const DIR = REPO + '/04-recipes/report';
 
 /**
- * report-check.js — 报告版式系统 v1 契约（VIZ-REPORT-01 工作包 C + D）
+ * report-check.js — 报告版式系统 v1 契约
  *
  * ============================================================================
  * 这个 recipe 的**失败模式**不是"样式丑"，而是**声称由变量驱动的版式，
