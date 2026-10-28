@@ -244,3 +244,32 @@ npm install agentcss
    本库真踩过：README 当时写 `npm install frontend-lib`，而那个名字是别人 2017 年的包。
    `release-gate` 的 `[12] 发布前自检` 现在会核对**README 里的裸包名必须等于
    `package.json.name`**。
+
+---
+
+## 七、发布受阻时：GitHub Release 降级分发
+
+**2026-10-28 的实况**：账号 2FA 是 `auth-and-writes` ⇒ `npm publish` 需要一次性
+验证码（`EOTP`）。历史上能发是因为本机存着 token（token 免 2FA），而那两个 token
+在 **10-25 全部过期**（granular token 有效期 7 天）；**新建 token 本身也要过一次 2FA**
+⇒ 闭环，只能由账号持有人给一次因子。
+
+在"暂时发不上去"和"交付不能停"之间，用 GitHub Release 附件分发。装法与 npm 包
+**完全一致**（同样是 `npm pack` 产出的 tgz，`package.json` 里的 `name` 仍是 `agentcss`）：
+
+```bash
+npm pack                                  # 产 agentcss-<ver>.tgz
+gh release create v<ver> agentcss-<ver>.tgz --notes-file <notes.md>
+# 使用者：
+npm install https://github.com/owain323/frontend-lib/releases/download/v<ver>/agentcss-<ver>.tgz
+```
+
+三条纪律：
+
+1. **tarball 必须来自 `npm pack`**，不要手工打 zip —— 否则发到 registry 的那一份和
+   Release 那一份不是同一个东西，"验证过"就失去意义。
+2. **上传后独立核一次**：`gh api repos/.../releases/tags/v<ver>` 看 asset 的 `size`
+   与本地一致；再**从另一台机器**下载算 sha256。本机网络会把它拖成半截
+   （实测 739,543 字节只下到 48,418 就断了，而 `curl` 退出码仍是 0）。
+3. **README 必须写"registry 上没有"**，不能因为发了 Release 就写成已发布 ——
+   那是下一个人装错东西的起点。

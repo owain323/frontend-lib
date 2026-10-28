@@ -40,17 +40,21 @@
 
 ## 安装
 
-**当前状态：尚未发布到 npm。** 包名 `agentcss` 已实测未被占用，但还没发上去
-（发布流程与"还差哪一步"见 `docs/RELEASING.md`）。
+**当前状态：npm registry 上没有可安装版本。** 包名 `agentcss` 归本账号
+（0.9.0 曾发布成功、两分钟后被误删，见 `ERRORS.md` E55；0.11.2 的发布卡在
+账号 2FA 的一次性验证码上，见 `docs/RELEASING.md`「发布受阻时」）。
 所以现在有两条**真实可用**的路：
 
 ```bash
-# ① 从 git 装 —— 装出来的目录名仍是 agentcss，导入写法与将来发 npm 后完全一致
-npm install github:owain323/frontend-lib
+# ① 装**和我们验证过的那一份逐字节一致**的包（GitHub Release 附件，v0.11.2）
+npm install https://github.com/owain323/frontend-lib/releases/download/v0.11.2/agentcss-0.11.2.tgz
 
-# ①b 想装**和我们验证过的那一份逐字节一致**的包（Release 里的 tarball）
-npm install https://github.com/owain323/frontend-lib/releases/download/v0.9.0/agentcss-0.9.0.tgz
+# ①b 想跟着 master 走
+npm install github:owain323/frontend-lib
 ```
+
+装出来的目录名仍是 `agentcss`，导入写法与将来发 npm 后**完全一致** ——
+换回 `npm install agentcss` 时不用改任何代码。
 
 **② 源码复制**（不想装依赖）：把 `01-tokens/` 和需要的组件目录复制进你的项目。
 ⚠️ 复制 `dist/` 里的版本，**别复制源码版** —— 源码版有一半以上是给人和 AI 读的注释
@@ -63,7 +67,7 @@ npm install https://github.com/owain323/frontend-lib/releases/download/v0.9.0/ag
 
 ## 组件一览
 
-共 **33** 个（stable 29 / beta 4）。每个组件目录下有 `README.md`（为什么这么做）和 `demo.html`（能直接抄的结构）。
+共 **35** 个（stable 31 / beta 4）。每个组件目录下有 `README.md`（为什么这么做）和 `demo.html`（能直接抄的结构）。
 
 ### primitives · 基础件（13）
 
@@ -83,7 +87,7 @@ npm install https://github.com/owain323/frontend-lib/releases/download/v0.9.0/ag
 | `skeleton` | `skeleton` | 加载占位骨架 |
 | `switch` | `switch` | 开关切换 |
 
-### patterns · 组合模式（13）
+### patterns · 组合模式（14）
 
 | 组件 | 根类名 | 用途 |
 |---|---|---|
@@ -96,16 +100,18 @@ npm install https://github.com/owain323/frontend-lib/releases/download/v0.9.0/ag
 | `nav` | `nav` | 顶部导航与目录 |
 | `overlay` | `toast` | 吐司提示与模态遮罩 |
 | `pagination` | `pagination` | 分页控件 |
+| `reveal` | `reveal` | 入场动效：一个 `data-reveal` 属性管六个方向，**零 JS 也能看** |
 | `states` | `state` | 空/加载/错误/成功四种整块状态 |
 | `tabs` | `tabs` | 选项卡切换 |
 | `tooltip` | `tooltip` | 悬停/聚焦提示 |
 | `tree` | `tree` | 可展开树形结构 |
 
-### recipes · 整页配方（3）
+### recipes · 整页配方（4）
 
 | 组件 | 根类名 | 用途 |
 |---|---|---|
 | `analysis-report` | `report` | 组合型研究报告页面：正文与辅助栏并排，窄屏自然退回单栏 |
+| `detail-page` | `detail-page` | 实体详情页骨架：字段齐全 / 部分缺失 / 一条数据都没有，三态共用同一套 DOM |
 | `report` | `rep` | 报告版式系统 v1：共享基础 + 三套版式（杂志/科研技术/金融研究），只换一个 … |
 | `table` | `table` | 数据表格：排序/加载/空/错误四态；三种用途预设（财务/学术/统计） |
 
