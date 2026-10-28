@@ -1,0 +1,24 @@
+# switch — 开关：switch 角色 + checked
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "switch · 开关"
+  main
+    heading "switch · 开关" [level=1]
+    paragraph "开关用于 立即生效的设置项 （"开/关通知"）。 它与 checkbox 的差别不是形状，是 语义 —— 读屏会播报「开"
+    heading "基本用法" [level=2]
+    switch "开启动价推送"
+    heading "只有滑块（文字视觉隐藏，语义保留）" [level=2]
+    switch "暗色模式" [checked=true]
+    heading "两档尺寸" [level=2]
+    switch "默认 22px"
+    switch "较大 28px" [checked=true]
+    heading "禁用态" [level=2]
+    switch "不可用（未开通）" [disabled=true]
+    heading "键盘行为（APG Switch Pattern）" [level=2]
+    paragraph "Space 切换 —— 这是唯一能切换的键。 Enter 不切换 （button 默认行为会切，但 switch 不是 "
+    paragraph "本组件用 原生 checkbox 实现，所以浏览器天然只响应 Space —— 不需要写 JS 去拦 Enter ，也就"
+    heading "反例" [level=2]
+    heading "反例：用 div + role="switch"，自己管所有状态" [level=3]
+    paragraph "常见写法是 <div role="switch" tabindex="0" onclick="..."> ， 然后手写 "
+    heading "反例：给 label 加 display:none" [level=3]
+    paragraph "为了"只留滑块"而把 <label> 隐藏掉， 开关就 失去了可点击的文字区域 ，也失去了语义名字 —— 读屏只会念「开"

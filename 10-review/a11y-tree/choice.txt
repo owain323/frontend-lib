@@ -1,0 +1,50 @@
+# choice — 单选/复选：checked + group
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "checkbox / radio / select · 键盘行为验证"
+  main
+    heading "checkbox / radio / select" [level=1]
+    paragraph "全库里最容易做坏的一组。浏览器的键盘行为是 无障碍的地基 —— 改坏了用鼠标完全测不出来，只有键盘用户会知道。"
+    heading "checkbox" [level=2]
+    checkbox "导入时跳过表头行"
+    LabelText "导入时跳过表头行"
+    paragraph "整个 label 都能点（input 透明铺满了它），但视觉方框只有 20px—— 触摸目标是 44px 。"
+    heading "indeterminate（第三态）" [level=2]
+    checkbox "全选（下面 3 项）" [checked=mixed]
+    LabelText "全选（下面 3 项）"
+    checkbox "收入" [checked=true]
+    LabelText "收入"
+    checkbox "成本"
+    LabelText "成本"
+    checkbox "费用" [checked=true]
+    LabelText "费用"
+    paragraph ""全选"框初始是 半选 （横线），因为下面只选了 2 个。 不做这个态，"全选"复选框就无法正确表达中间状态。"
+    heading "radio 组（fieldset + legend）" [level=2]
+    group "时间范围"
+      Legend "时间范围"
+      radio "最近 30 天" [checked=true]
+      LabelText "最近 30 天"
+      radio "最近 90 天"
+      LabelText "最近 90 天"
+      radio "最近一年"
+      LabelText "最近一年"
+    paragraph "用 ↑ ↓ 在组内移动， 移动即选中 ——这是原生 radio 行为， <div> 模拟不出来。 fieldset + "
+    heading "select" [level=2]
+    LabelText "时间范围"
+    combobox "时间范围" [hasPopup=menu]
+      option "最近 30 天" [selected=true]
+      option "最近 90 天"
+      option "最近一年"
+      option "自定义区间…"
+    paragraph "用原生 select，不做自定义下拉。 移动端会弹出系统带 wheel 的原生选择器、语言跟随系统、无障碍由系统保证。 "
+    heading "disabled" [level=2]
+    checkbox "导出 PDF（需要专业版）" [disabled=true]
+    LabelText "导出 PDF（需要专业版）"
+    paragraph "不用 opacity ，用明确的低对比色组（对比度会变成不可控的随机数）。 disabled 之后 hover 不能有任"
+    heading "反例：用 display:none 隐藏原生控件" [level=2]
+    LabelText "我看起来正常，但 Tab 到不了这里"
+    paragraph "用 Tab 试试——焦点会直接跳过它。 display:none 把它从 tab 顺序里移除了，键盘用户彻底到不了这里。"
+    heading "焦点环必须画在看得见的地方" [level=2]
+    paragraph "input 是 opacity:0 的，所以它自己的 outline 你 根本看不见 。 焦点环必须画在紧邻的可见标记上"
+    checkbox "Tab 过来看焦点环"
+    LabelText "Tab 过来看焦点环"

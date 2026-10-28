@@ -41,6 +41,10 @@ WHITELIST = {
     #   SubprocessError = TimeoutExpired / CalledProcessError 的基类
     'RuntimeError', 'ValueError', 'TypeError', 'KeyError', 'OSError',
     'SubprocessError', 'CalledProcessError', 'FileNotFoundError',
+    # 平台 / 标准 API 名（2026-10-29 补：文档站脚本与判据工具里出现，
+    #   全部是规范里的名字，不是内部代号）
+    'GoTo', 'InlineTextBox', 'LineBreak', 'NodeFilter', 'StaticText',
+    'PngError',
     # NameError（2026-08-16 补）
     #   起因：ERRORS.md E41 记「批量插零文件守卫时守卫插到 return 之后
     #   ⇒ NameError: total」，那是我自己踩的真实报错，不是内部代号。

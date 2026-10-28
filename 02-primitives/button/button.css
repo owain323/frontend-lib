@@ -58,9 +58,13 @@
   user-select: none;
   text-decoration: none;
 
-  /* 🔴 兜底：即使内容异常长也不许溢出边界 */
-  overflow: hidden;
-  max-width: 100%;
+  /* 🔴 0.11.9 改：原来是 `overflow: hidden; max-width: 100%`（"内容再长也不
+     许溢出"）。副作用：`overflow: hidden` 把 flex/grid 项的**自动最小尺寸**
+     变成 0 ⇒ 窄容器里按钮被压得比自己的文字还窄 ⇒ 文字被裁。
+     实测 200% 字号下按钮 200px、文字 232px，裁掉 32px（WCAG 1.4.4 违规）。
+     而它要防的"label 与 spinner 重叠"已由 grid 叠放解决（同一格不会重叠）。
+     ⇒ 换成 `min-width: max-content`：按钮不窄于自己的文字。 */
+  min-width: max-content;
 
   /* 动效只用 token 里的那一组 —— 一源原则 */
   transition: background-color var(--dur-fast) var(--ease-out),

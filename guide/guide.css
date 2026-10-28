@@ -357,3 +357,54 @@
   .g-side { display: none; }
   .g-main { max-width: none; }
 }
+
+/* ---------- 活标本 (g-live) ----------
+   组件页顶部内嵌那页 demo。为什么是 iframe、取舍写在哪，
+   见 gen-docs.py 的 live_block()。这里只管：默认高度、同层视觉、呼吸。
+
+   默认高度 320px 有具体含义：JS 没跑起来（file:// 或脚本被禁）时
+   框架仍在、内容仍能内部滚动看到。低于它读者会以为标本坏了。 */
+.g-live {
+  margin: 0 0 var(--sp-6);
+  border: 1px solid var(--border-decor);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  overflow: hidden;          /* 圆角裁掉 iframe 的方角 */
+}
+
+.g-live__cap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--border-decor);
+  background: var(--surface-sunken);
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.g-live__cap a { color: var(--accent); }
+
+.g-live__tag {
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
+}
+
+.g-live__frame {
+  display: block;
+  width: 100%;
+  border: 0;
+  height: 320px;
+  background: var(--paper);
+}
+
+/* 被高度上限截断时由 live.js 追加的一句话。
+   放在题注里，而不是覆盖在内容上 —— 覆盖层会挡住第一行标本。 */
+.g-live__hint {
+  color: var(--text-secondary);
+  border-inline-start: 2px solid var(--border-decor);
+  padding-inline-start: var(--sp-2);
+}

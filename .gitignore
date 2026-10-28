@@ -38,6 +38,9 @@ node_modules/
 # 暗色那两套同理（`_baseline-dark/` 是判据，必须入库）
 10-review/shots/_current-dark/
 10-review/shots/_diff-dark/
+# RTL 那两套同理（`_baseline-rtl/` 是判据，必须入库）
+10-review/shots/_current-rtl/
+10-review/shots/_diff-rtl/
 
 # --- 一次性验证截图（7MB+ 纯本地留档，对使用者没有价值）---
 #    需要时重跑对应门禁即可重新生成。
@@ -52,6 +55,9 @@ node_modules/
 #   `_walk_all()` 的兜底视野就会漏掉整个 `_baseline-dark/`
 #   —— 而 git 的规则不跨目录 ⇒ 两种视野不一致 ⇒ gate-fixture 红。
 !10-review/shots/_baseline-dark/
+# RTL 基线同理。⚠️ 这条**忘了写**的后果与上一条一模一样：兜底视野漏掉
+#   整个 `_baseline-rtl/`，gate-fixture 立刻红（2026-10-29 实测踩过一次）。
+!10-review/shots/_baseline-rtl/
 10-review/ios/shot-*.png
 
 # 引擎证据是**生成物**：每台机器上跑出来的引擎/版本都不一样，

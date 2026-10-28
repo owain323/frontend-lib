@@ -21,8 +21,8 @@
       "raw": 5477
     },
     "01-tokens/focus-ring.css": {
-      "gzip": 2122,
-      "raw": 5653
+      "gzip": 2108,
+      "raw": 5633
     },
     "01-tokens/page.css": {
       "gzip": 5282,
@@ -41,8 +41,8 @@
       "raw": 4647
     },
     "01-tokens/tokens.css": {
-      "gzip": 18499,
-      "raw": 49224
+      "gzip": 18487,
+      "raw": 49203
     },
     "01-tokens/typography.css": {
       "gzip": 3401,
@@ -53,8 +53,8 @@
       "raw": 6274
     },
     "02-primitives/button/button.css": {
-      "gzip": 6338,
-      "raw": 15559
+      "gzip": 6541,
+      "raw": 16032
     },
     "02-primitives/card/card.css": {
       "gzip": 3596,
@@ -177,8 +177,8 @@
       "raw": 24552
     },
     "03-patterns/pagination/pagination.css": {
-      "gzip": 3422,
-      "raw": 7851
+      "gzip": 3407,
+      "raw": 7834
     },
     "03-patterns/pagination/pagination.js": {
       "gzip": 7107,
@@ -213,12 +213,12 @@
       "raw": 11752
     },
     "03-patterns/tree/tree.css": {
-      "gzip": 1647,
-      "raw": 3462
+      "gzip": 1958,
+      "raw": 4058
     },
     "03-patterns/tree/tree.js": {
-      "gzip": 6120,
-      "raw": 16821
+      "gzip": 6403,
+      "raw": 17436
     },
     "04-recipes/analysis-report/analysis-report.css": {
       "gzip": 2884,
@@ -233,15 +233,15 @@
       "raw": 16085
     },
     "04-recipes/table/table.css": {
-      "gzip": 6169,
-      "raw": 15796
+      "gzip": 6136,
+      "raw": 15761
     },
     "04-recipes/tierA-tokens.css": {
-      "gzip": 2015,
-      "raw": 5157
+      "gzip": 2000,
+      "raw": 5136
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 248299,
-  "total_raw": 625593
+  "total_gzip": 249007,
+  "total_raw": 627163
 }

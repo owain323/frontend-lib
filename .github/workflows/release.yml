@@ -1,0 +1,107 @@
+# ============================================================================
+# release —— 打 tag 即发版（含 npm provenance 签名）
+# ============================================================================
+# 为什么需要这个工作流
+# ---------------------------------------------------------------------------
+#   发布此前是**手工**的：本地 `npm publish`，谁发、从哪个提交发、
+#   发出去的包是不是 HEAD，全靠人记得。而发版恰恰是最不能靠记性的动作。
+#
+#   两件事只能在这里做：
+#     ① **provenance**：`npm publish --provenance` 让 npm 用 OIDC 给包签名，
+#        使用者可以查「这个 tarball 确实由这个仓库、这个提交、这条工作流构建」。
+#        本地发不出这个签名 —— 本机不是受信任的构建环境。
+#     ② 把 tag、版本号、CHANGELOG、Release 四者绑成一次原子动作。
+#
+# 前置条件（**控制台层，只能人工做一次**）
+# ---------------------------------------------------------------------------
+#   仓库 Settings → Secrets and variables → Actions 新建 `NPM_TOKEN`
+#   （npmjs.com → Access Tokens → Automation token）。
+#   缺这个 secret 时下面的"检查 secret"步骤会给出明确报错，
+#   而不是让 `npm publish` 回一句 401 让人猜。
+# ============================================================================
+
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write     # 建 GitHub Release
+  id-token: write     # ✅ provenance 必需：OIDC 令牌由这里签
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: 校验 → 门禁 → 发布
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # 🔴 fetch-depth: 0 + fetch-tags 是**必须的**：
+          #    release-gate 要核"版本有没有 tag 锚点"，而 depth=1 时
+          #    抓下来的 tag 指向的是祖先提交，判据会凭空变红。
+          fetch-depth: 0
+          fetch-tags: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: 校验 tag 与 package.json 版本一致
+        run: |
+          set -eu
+          TAG="${GITHUB_REF_NAME#v}"
+          PKG="$(node -p "require('./package.json').version")"
+          echo "tag=$TAG  package.json=$PKG"
+          if [ "$TAG" != "$PKG" ]; then
+            echo "::error::tag v$TAG 与 package.json 的 $PKG 不一致 —— 拒绝发布（发出去的包会带着错的版本号）"
+            exit 1
+          fi
+
+      - name: 检查 NPM_TOKEN
+        env:
+          TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "${TOKEN:-}" ]; then
+            echo "::error::缺少仓库 secret NPM_TOKEN。到 Settings → Secrets and variables → Actions 添加（Automation token）。"
+            exit 1
+          fi
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 发布前门禁（与 prepublishOnly 同一套）
+        run: npm run publish:check
+
+      - name: 发布到 npm（带 provenance）
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: 建 GitHub Release（正文取自 CHANGELOG 对应一节）
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          V="${GITHUB_REF_NAME#v}"
+          # 从 `## [V]` 取到下一个 `## [` 之前
+          awk -v v="$V" '
+            $0 ~ "^## \\[" v "\\]" { f = 1; next }
+            f && /^## \[/ { exit }
+            f { print }
+          ' CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "::error::CHANGELOG 里找不到 $V 这一节 —— Release 正文会是空的，拒绝创建"
+            exit 1
+          fi
+          gh release create "$GITHUB_REF_NAME" \
+            --title "v$V" \
+            --notes-file release-notes.md

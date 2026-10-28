@@ -1,0 +1,47 @@
+# input — 输入：label 关联 + 错误描述
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "input · 五态矩阵"
+  main
+    heading "input · 五态矩阵" [level=1]
+    paragraph "输入框取五态，不是七态—— input 没有 active 态 ，输入框不响应按压。"
+    heading "五态" [level=2]
+    heading "1. hover" [level=3]
+    paragraph "边框加深。鼠标移上来。"
+    LabelText "默认"
+    textbox "默认"
+    heading "2. focus" [level=3]
+    paragraph "边框变 accent + 外圈 ring。点进去或用 Tab 切过来。"
+    LabelText "聚焦"
+    textbox "聚焦"
+    heading "3. disabled" [level=3]
+    paragraph "不可聚焦、 值不提交 。试着 Tab 过去——跳过的。"
+    LabelText "禁用"
+    textbox "禁用" [disabled=true]
+    heading "4. readonly" [level=3]
+    paragraph "可聚焦、 可以选中复制 、值会提交。Tab 能到，试试复制这段字。"
+    LabelText "只读"
+    textbox "只读" [readonly=true]
+    heading "5. error" [level=3]
+    paragraph "红边框 + 叹号图标 + 错误文字， 三条线索 。不只靠颜色。"
+    LabelText "金额"
+    textbox "金额" [invalid=true]
+    alert "请输入有效金额" [live=assertive atomic=true]
+    heading "带说明" [level=3]
+    paragraph "aria-describedby 把说明挂到输入框，聚焦时屏幕阅读器会一起读出来。"
+    LabelText "金额"
+    textbox "金额"
+    heading "对比：常见写法 vs 本库写法" [level=2]
+    heading "常见写法" [level=3]
+    paragraph "placeholder 当 label —— 一输入就消失 只把边框变红 —— WCAG 1.4.1 禁止只靠颜色传达信"
+    heading "本库写法" [level=3]
+    LabelText "金额"
+    textbox "金额" [invalid=true]
+    alert "请输入有效金额" [live=assertive atomic=true]
+    paragraph "有可见 label，不会消失 红边框 + 图标 + 文字，三条线索 font-size: 16px —— iOS 不缩放"
+    heading "交互演示：校验" [level=2]
+    paragraph "这里是 分层校验 ：逐个输入试，每种错误会得到 各自对应的 提示。 1111aaa → 「只能输入数字」· 12.345"
+    LabelText "金额"
+    textbox "金额"
+    button "校验"
+    heading "iOS 那条 16px 不是审美" [level=2]

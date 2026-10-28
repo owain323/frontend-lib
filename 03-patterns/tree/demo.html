@@ -107,8 +107,16 @@
       '</ul>';
 
     if (collapsed) {
+      /* 🔴 判据必须查 `.tree__item`（类名），不能查 `role="treeitem"`。
+         原因：这段跑在 `Tree.create()` **之前**，而 `role="treeitem"` 正是
+         `create()` 补上去的 —— 上面手写的 `<li>` 只有类名、没有 role。
+         ⇒ 按 role 查时，每一个 `g.parentElement.getAttribute('role')` 都是
+           `null`，条件恒假，**一个都没收起**，
+           而页面小标题写着「2 · 默认全部收起」⇒ 演示与实物相反。
+         （0.11.9 由 rtl-render 的方向性字形探针发现：
+           探针找 `.tree__item[aria-expanded="false"]` 一个都找不到。） */
       document.querySelectorAll('#' + id + ' [role="group"]').forEach(function (g) {
-        if (g.parentElement.getAttribute && g.parentElement.getAttribute('role') === 'treeitem') {
+        if (g.parentElement.classList.contains('tree__item')) {
           g.hidden = true;
           g.parentElement.setAttribute('aria-expanded', 'false');
         }

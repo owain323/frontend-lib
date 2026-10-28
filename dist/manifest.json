@@ -8,8 +8,8 @@
   ],
   "totals": {
     "sourceFiles": 69,
-    "sourceBytes": 740491,
-    "distGzip": 95291
+    "sourceBytes": 742175,
+    "distGzip": 95295
   },
   "files": [
     {
@@ -203,15 +203,15 @@
     },
     {
       "source": "02-primitives/button/button.css",
-      "sourceSha256": "7c515a4cd306442821af2ac88643773e794f2ce6113fe15ee8183c0807864830",
-      "sourceBytes": 15559,
-      "sourceGzip": 6338,
+      "sourceSha256": "94d9e9bfee7b2053b17018166e2834e388815245c1bf4dca7446d7aa8766bf0e",
+      "sourceBytes": 16032,
+      "sourceGzip": 6541,
       "outputs": [
         {
           "path": "dist/02-primitives/button/button.css",
           "kind": "minified",
-          "bytes": 3029,
-          "gzip": 997
+          "bytes": 3020,
+          "gzip": 986
         }
       ]
     },
@@ -778,29 +778,29 @@
     },
     {
       "source": "03-patterns/tree/tree.css",
-      "sourceSha256": "983dfeae876d5f7857712f98c642a1221334f20132feb87ae3bc9bfd5ed0ac60",
-      "sourceBytes": 3462,
-      "sourceGzip": 1647,
+      "sourceSha256": "d239098b4d21f58a9e416cb2ac929b45c8b2ed2db4e33abb899fb54a1708e340",
+      "sourceBytes": 4058,
+      "sourceGzip": 1958,
       "outputs": [
         {
           "path": "dist/03-patterns/tree/tree.css",
           "kind": "minified",
-          "bytes": 1465,
-          "gzip": 604
+          "bytes": 1566,
+          "gzip": 621
         }
       ]
     },
     {
       "source": "03-patterns/tree/tree.js",
-      "sourceSha256": "cb285223dc13204f034da0cacc7a14d583fcba8da721c54220ce2795ee04a486",
-      "sourceBytes": 16821,
-      "sourceGzip": 6120,
+      "sourceSha256": "59abf511fb8bd8020d26d65b1fb71d994702f7163c6b944b0bc2e09f29323d38",
+      "sourceBytes": 17436,
+      "sourceGzip": 6403,
       "outputs": [
         {
           "path": "dist/03-patterns/tree/tree.js",
           "kind": "stripped",
-          "bytes": 9186,
-          "gzip": 3003
+          "bytes": 9189,
+          "gzip": 3001
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"

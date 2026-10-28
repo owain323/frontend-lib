@@ -1,0 +1,60 @@
+# button — 按钮：名字 + disabled/busy 状态
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "button · 七态矩阵"
+  main
+    heading "button · 七态矩阵" [level=1]
+    paragraph "按钮取七态，不是九态。另外两态（empty / error）属于容器，按钮没有"空"的概念。"
+    heading "七态" [level=2]
+    heading "1. default" [level=3]
+    paragraph "静止。accent 底 + 白字，实测 5.87 AA。"
+    button "提交"
+    heading "2. hover" [level=3]
+    paragraph "明确的 --accent-hover 色值（白字 7.73 AAA），不是 brightness 计算。"
+    button "鼠标移上来"
+    heading "3. active" [level=3]
+    paragraph "下沉 1px。 只用 1px ——用 4px/6px 会有果冻感，那是廉价感的主要来源。"
+    button "按住不放"
+    heading "4. focus-visible" [level=3]
+    paragraph "键盘 Tab 到这里才出现。 :focus 会让鼠标点击也冒框，所以用 -visible 。"
+    button "Tab 键切过来"
+    heading "5. disabled" [level=3]
+    paragraph "明确色值， 不用 opacity ——opacity 让对比度变成不可控的随机数。hover 无任何变化。"
+    button "已禁用" [disabled=true]
+    heading "6. loading" [level=3]
+    paragraph "宽度不变（label 与 spinner 同一 grid 单元，容器宽 = max(两者)）。 pointer-even"
+    button "提交" [busy=1]
+    heading "7. success" [level=3]
+    paragraph "仅用于不可逆动作（提交、支付）。普通操作加这个是噪音。"
+    button "已提交"
+    heading "交互演示" [level=3]
+    paragraph "点一下：default → loading（1.4s）→ success（1.2s）→ 复位。注意宽度全程不变。"
+    button "点我走一遍"
+    heading "变体" [level=2]
+    button "primary"
+    button "secondary"
+    button "ghost"
+    button "danger"
+    paragraph "一个视图里只能有一个 primary。danger 不应该做得和 primary 一样显眼。"
+    heading "尺寸" [level=2]
+    button "sm 32"
+    button "md 44"
+    button "lg 52"
+    paragraph "md = 44px 是 WCAG 2.5.5 增强级的触摸目标尺寸，来自手指物理尺寸，不是审美。 sm 只在表格行内等鼠"
+    heading "对比：常见的错写法 vs 本库写法" [level=2]
+    heading "常见写法（某项目 现状）" [level=3]
+    button "hover 看我"
+    button "disabled 看我" [disabled=true]
+    paragraph "filter: brightness(1.08) —— hover 色是算出来的，无法验证对比度，不同底色表现不一致。 "
+    heading "本库写法" [level=3]
+    button "hover 看我"
+    button "disabled 看我" [disabled=true]
+    paragraph "明确的 --accent-hover 色值，实测 7.73 AAA。 active 只下沉 1px。 disabled "
+    heading "一个容易被跳过的判断：disabled 还是 aria-disabled" [level=2]
+    heading "disabled 属性" [level=3]
+    paragraph "从 Tab 顺序移除，键盘用户永远找不到它。适合 永久 不可用（权限不足）。"
+    button "功能未开放" [disabled=true]
+    heading "aria-disabled="true"" [level=3]
+    paragraph "保留可聚焦，屏幕阅读器读"不可用"。表单提交按钮 应该用这个 ——用户 Tab 到它才知道"还差点什么"。"
+    button "请先填写金额" [disabled=true]
+    heading "spinner 与 prefers-reduced-motion" [level=2]
