@@ -50,9 +50,9 @@ jobs:
   # ① PR 快门禁 —— 纯静态，零浏览器，秒级
   # ==================================================================
   quick:
-    name: 快门禁（静态，跨平台）
+    name: 快门禁（静态 + 视觉，Linux）
     runs-on: ubuntu-latest
-    timeout-minutes: 6 # 兜底：卡住就掐掉，不烧额度
+    timeout-minutes: 10 # 兜底：卡住就掐掉，不烧额度（视觉那三套跑完约 40s）
     steps:
       - uses: actions/checkout@v4
         with:
@@ -66,6 +66,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+
+      # 🔴 视觉基线**锚在字体上**，而 ubuntu 默认没有 CJK/阿拉伯/希伯来字体。
+      #   不装 ⇒ 文字整段变方框 ⇒ 像素比对全红，且红的原因与代码无关。
+      #   ⚠️ 这个 job 原本叫"静态，跨平台"——那是个**假声明**：
+      #      视觉门禁在 MODE=fast 里跑，而它既不是纯静态、也不跨平台
+      #      （基线按平台分集，见 05-audit/shot-baseline.py 顶部）。
+      #      2026-10-29 门禁第一次在 CI 上跑，42 张基线全红就是这么发现的。
+      - name: 装 CI 字体（视觉基线锚在它上面）
+        run: bash 05-audit/ci-fonts.sh
 
       # 🔴 必须装依赖：否则 lockfile 的可复现性从未被验证
       - name: 按锁文件安装（验证 lockfile 真能装）
@@ -103,6 +112,20 @@ jobs:
 
       - name: 打包实装冒烟（npm pack → 装进空项目 → 核对）
         run: bash 05-audit/pack-smoke.sh
+
+      # 🔴 视觉门禁红了必须能**看图**：diff 图和当前截图都在这里。
+      #   没有它，CI 上的 "FAIL 03-patterns_tree.png 7.6%" 只能靠猜
+      #   （本机看不到那台机器的渲染结果）。
+      - name: 失败时上传视觉证据
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-evidence-${{ github.run_id }}
+          path: |
+            10-review/shots/_current-*/
+            10-review/shots/_diff-*/
+          retention-days: 7
+          if-no-files-found: ignore
 
   # ==================================================================
   # ② API 契约 —— 需要浏览器，但只要本地静态服务

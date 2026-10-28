@@ -72,6 +72,38 @@ SKIP_DIRS = ('node_modules', 'dist', '.git', '05-audit', '06-vendor',
              '10-review')
 
 
+# ===========================================================================
+# 站点根绝对路径（`/frontend-lib/01-tokens/tokens.css`）
+# ---------------------------------------------------------------------------
+# 🔴 为什么必须单独处理（2026-10-29 · 门禁第一次在 CI 跑就红 3 处）
+#
+#   `404.html` 用的是 Pages **站点根**路径 —— 404 页会在任意层级被服务，
+#   只能写绝对路径，写相对路径一定指错地方。而判据原来把它当
+#   **文件系统绝对路径**：
+#       os.path.join(dirname, '/frontend-lib/01-tokens/tokens.css')
+#   `join` 遇到前导 `/` 会丢掉前面所有参数 ⇒ 结果是 '/frontend-lib/...'；
+#   而这台机器的仓库**正好**放在 `E:\frontend-lib` ⇒ Windows 把它解析成
+#   `E:\frontend-lib\01-tokens\tokens.css` ⇒ **碰巧命中真实文件** ⇒ 本机永远绿。
+#   换到 Linux（CI）上，`/frontend-lib/` 是根目录下的另一个东西 ⇒ 红 3 处。
+#
+#   ⚠️ 这是"环境顺手掩盖了判据缺陷"的典型：**能过 ≠ 判对了**。
+#      同源纪律：判据不许依赖"仓库刚好放在哪个路径"。
+# ===========================================================================
+SITE_BASES = ('/frontend-lib/',)
+
+
+def resolve_ref(page, src):
+    """页面里的引用 → 磁盘路径（相对该页面，或相对仓库根）。"""
+    s = src.split('?')[0].split('#')[0]
+    for base in SITE_BASES:
+        if s.startswith(base):
+            return os.path.normpath(os.path.join(ROOT, s[len(base):]))
+    if s.startswith('/'):
+        # 其它站点根写法：按「站点根 = 仓库根」解析（Pages 项目站点约定）
+        return os.path.normpath(os.path.join(ROOT, s.lstrip('/')))
+    return os.path.normpath(os.path.join(os.path.dirname(page), s))
+
+
 def page_files():
     """仓库里本库自己的页面。
 
@@ -150,7 +182,7 @@ def main():
                 continue
             if src.startswith(('http:', 'https:', '//', 'data:')):
                 continue
-            p = os.path.normpath(os.path.join(os.path.dirname(f), src))
+            p = resolve_ref(f, src)
             if not os.path.isfile(p):
                 bad.append((rel, '引用的文件不存在: %s' % src))
 
@@ -231,6 +263,24 @@ def _selftest():
             '<div %s></div></body></html>\n'
             % (mk[0].rstrip('>'), mk[0].rstrip('>')))
         chk('④b 剥了数据块，真标记仍报', main(), 1)
+
+        # ⑤ 站点根绝对路径必须按**仓库根**解析，不是按文件系统根。
+        #    这里直接钉解析结果、不看退出码 —— 因为在 Windows 上
+        #    「仓库恰好位于 E:\frontend-lib」会让 main() 假绿（10-29 的事故），
+        #    退出码那一层已经没有鉴别力了。
+        os.makedirs(os.path.join(tmp, '01-tokens'), exist_ok=True)
+        open(os.path.join(tmp, '01-tokens', 'ok.css'), 'w').write('/* */')
+        want = os.path.normpath(os.path.join(tmp, '01-tokens', 'ok.css'))
+        chk('⑤ 站点根路径 → ROOT 下（旧版解到文件系统根，只在 Windows 假绿）',
+            resolve_ref(page, '/frontend-lib/01-tokens/ok.css') == want, True)
+        chk('⑤b 相对路径仍相对所在页面解析',
+            resolve_ref(page, 'x.css') ==
+            os.path.normpath(os.path.join(os.path.dirname(page), 'x.css')), True)
+
+        open(page, 'w', encoding='utf-8', newline='').write(
+            '<html><head><link rel="stylesheet" '
+            'href="/frontend-lib/01-tokens/nope.css"></head></html>\n')
+        chk('⑤c 站点根路径指向不存在的文件 ⇒ 照样报', main(), 1)
     finally:
         ROOT = keep_root
 

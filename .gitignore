@@ -33,14 +33,23 @@ node_modules/
 
 # --- 视觉回归的中间产物 ---
 # 基线要进库（它是判据），current / diff 是每次跑出来的中间图，不进。
-10-review/shots/_current/
-10-review/shots/_diff/
-# 暗色那两套同理（`_baseline-dark/` 是判据，必须入库）
-10-review/shots/_current-dark/
-10-review/shots/_diff-dark/
-# RTL 那两套同理（`_baseline-rtl/` 是判据，必须入库）
-10-review/shots/_current-rtl/
-10-review/shots/_diff-rtl/
+# 🔴 基线**按平台分集**（0.11.10 加，理由见 05-audit/shot-baseline.py 顶部）：
+#    目录名 = `_baseline-<平台>[-<scheme>][-rtl]`。
+#    ⇒ 下面必须**逐平台逐套**写清，不能用通配：git 的规则不跨目录，
+#      而兜底视野（fnmatch）的 `*` 能吃 `/` —— 两种视野一旦不一致，
+#      gate-fixture 立刻红（这一条历史上已经踩过两次）。
+10-review/shots/_current-win32/
+10-review/shots/_diff-win32/
+10-review/shots/_current-win32-dark/
+10-review/shots/_diff-win32-dark/
+10-review/shots/_current-win32-rtl/
+10-review/shots/_diff-win32-rtl/
+10-review/shots/_current-linux/
+10-review/shots/_diff-linux/
+10-review/shots/_current-linux-dark/
+10-review/shots/_diff-linux-dark/
+10-review/shots/_current-linux-rtl/
+10-review/shots/_diff-linux-rtl/
 
 # --- 一次性验证截图（7MB+ 纯本地留档，对使用者没有价值）---
 #    需要时重跑对应门禁即可重新生成。
@@ -49,15 +58,20 @@ node_modules/
 #    ⇒ 改成逐个排除 _baseline 子目录。
 10-review/progress-*.png
 10-review/shots/*.png
-!10-review/shots/_baseline/
-# 暗色基线同理要入库。⚠️ 必须显式写：上一条 `10-review/shots/*.png` 在
-#   **fnmatch 语义**下会跨目录匹配（`*` 能吃 `/`），不写这条否定规则，
-#   `_walk_all()` 的兜底视野就会漏掉整个 `_baseline-dark/`
+!10-review/shots/_baseline-win32/
+# 暗色 / RTL 基线同理要入库。⚠️ 必须显式写：上一条 `10-review/shots/*.png`
+#   在 **fnmatch 语义**下会跨目录匹配（`*` 能吃 `/`），不写这条否定规则，
+#   `_walk_all()` 的兜底视野就会漏掉整个目录
 #   —— 而 git 的规则不跨目录 ⇒ 两种视野不一致 ⇒ gate-fixture 红。
-!10-review/shots/_baseline-dark/
-# RTL 基线同理。⚠️ 这条**忘了写**的后果与上一条一模一样：兜底视野漏掉
-#   整个 `_baseline-rtl/`，gate-fixture 立刻红（2026-10-29 实测踩过一次）。
-!10-review/shots/_baseline-rtl/
+!10-review/shots/_baseline-win32-dark/
+# RTL 那条**忘了写**的后果与上一条一模一样：兜底视野漏掉整个
+#   `_baseline-rtl/`，gate-fixture 立刻红（2026-10-29 实测踩过一次）。
+!10-review/shots/_baseline-win32-rtl/
+# Linux 那三套同样入库：CI 跑的就是 Linux —— 没有它，
+#   这门门禁在 CI 上无基线可判，只能红（那正是 0.11.10 要修的事）。
+!10-review/shots/_baseline-linux/
+!10-review/shots/_baseline-linux-dark/
+!10-review/shots/_baseline-linux-rtl/
 10-review/ios/shot-*.png
 
 # 引擎证据是**生成物**：每台机器上跑出来的引擎/版本都不一样，

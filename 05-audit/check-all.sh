@@ -152,23 +152,38 @@ run() {  # run <名字> <命令...>
     t1=$(date +%s); dt=$((t1-t0))
     printf '  %-16s FAIL  %3ds\n' "$name" "$dt"
     [ -n "$TIMING" ] && echo "$dt $name" >> "$TIMING"
-    echo "$out" | grep -E '^\s*\[|不达标|不符|未定义|未门控|需人工|超' | head -6 | sed 's/^/       /'
+    # 🔴 失败就把门禁**自己的话**原样打出来（0.11.9 修 · 门禁第一次在 CI 上跑时踩到）
+    #   旧写法是 `grep -E '^\s*\[' | head -6`，有两个致命盲点：
+    #     ① `head -6` 截断 ⇒ 结论是**错的**：
+    #        release-gate 有 13 节，日志里只剩 `[1]`…`[6]`，
+    #        看起来像"前六节全挂了"，实际挂的是第 10 节。
+    #        **一个会给出错误结论的诊断，比没有诊断更坏。**
+    #     ② grep 只认 `[...]` 开头的行，把明细行（`· 文件 原因`）全丢了 ⇒
+    #        wiring 明明报了 3 处、每处都带着文件名，日志里**一处都看不见**。
+    #   ⇒ 判据：失败的完整输出才是证据。要截断只能因为太长，
+    #     并且必须**说清楚截了多少**；末尾必须保留（崩溃栈在末尾）。
+    local _total
+    _total=$(printf '%s\n' "$out" | wc -l | tr -d ' ')
+    if [ "$_total" -le 160 ]; then
+      printf '%s\n' "$out" | sed 's/^/       │ /'
+    else
+      printf '%s\n' "$out" | head -120 | sed 's/^/       │ /'
+      printf '       │ …（共 %s 行，此处省略中间部分；下面贴末尾 40 行，崩溃栈通常在那里）\n' "$_total"
+      printf '%s\n' "$out" | tail -40 | sed 's/^/       │ /'
+    fi
+    if [ -z "$out" ]; then
+      printf '       🔴 门禁零输出却退出非 0 ⇒ 视为崩溃，不是"检查不通过"。\n'
+    fi
     # 🔴 环境类失败要说清（0.8.9 修 · 外部审计修复过程中撞到）：
-    #   上面那行grep 只显示**门禁自己的判词**，于是
+    #   上面那行只显示**门禁自己的判词**，于是
     #   「Cannot find module 'puppeteer-core'」这类**环境问题**
     #   一个字都不显示 ⇒ 只剩 60 多个光秃秃的 FAIL，
     #   看起来像"产品坏了 60 处"，实际是"依赖没装"。
     #   ⚠️ 这与 P0-1 是同一个病根的另一面：
     #      **门禁失败时必须说清是"检查没过"还是"根本没跑起来"。**
-    if echo "$out" | grep -qE "Cannot find module|MODULE_NOT_FOUND|ECONNREFUSED|找不到浏览器|找不到 Chrome|Traceback \(most recent call last\)"; then
-      echo "       🔴 环境问题（不是检查不通过）："
-      echo "$out" | grep -E "Cannot find module|MODULE_NOT_FOUND|ECONNREFUSED|找不到|Error:|\.js:[0-9]+" \
-        | head -3 | sed 's/^/          /'
-      echo "       ⇒ 先把环境修好（装依赖 / 起静态服务），否则这一批的结果没有意义。"
-    elif ! echo "$out" | grep -qE '^\s*\[|^\s*!|^\s*=+>|不达标|不符|未定义|未门控|需人工|超|驼峰词不在白名单'; then
-      # 连判词都没有 ⇒ 多半是崩了
-      echo "       🔴 无判词输出（门禁可能崩溃），原始输出前 3 行："
-      echo "$out" | head -3 | sed 's/^/          /'
+    if printf '%s\n' "$out" | grep -qE "Cannot find module|MODULE_NOT_FOUND|ECONNREFUSED|找不到浏览器|找不到 Chrome|Traceback \(most recent call last\)"; then
+      printf '       🔴 上面出现了**环境类**报错（不是检查不通过）：\n'
+      printf '       ⇒ 先把环境修好（装依赖 / 起静态服务），否则这一批的结果没有意义。\n'
     fi
     fail=$((fail+1))
   fi

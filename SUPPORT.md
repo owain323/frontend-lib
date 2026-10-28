@@ -24,7 +24,8 @@
 
 ## 自动化覆盖的环境
 
-证据文件：`10-review/engine-evidence.json`（由 `05-audit/engine-gate.js` 生成，可复跑）。
+下面这张表由 `05-audit/engine-gate.js` 在本机跑出来：`node 05-audit/engine-gate.js`。
+产物是**你这台机器**的结果，不入库，也不该入库 —— 别人的环境不是你的环境。
 
 | 平台 | 引擎 | 状态 | 覆盖内容 |
 |---|---|---|---|
