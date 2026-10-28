@@ -67,6 +67,26 @@ SITE_ONLY = [
 
 SKIP_LINK_SCHEMES = ('http://', 'https://', 'mailto:', '#', 'data:')
 
+# 跨组件的**约定页**：源文件是 markdown（随 npm 包一起发），生成到 guide/<slug>.html。
+#
+# 🔴 为什么需要这一类（2026-10-29）
+#   令牌怎么用、焦点环多大、动效多久、暗色怎么切、能不能写 margin-left ——
+#   这些规则**不属于任何组件**，所以原来的生成器（只认组件目录）没有地方放它们。
+#   症状不是"少一页"，是搜索里搜「减少动效」命中 0 项：用户问的是意思，
+#   而全站没有一个页面承载那个意思。补搜索词只是止痛，页面才是器官。
+#
+#   为什么源文件放 `docs/`：那三个 .md 本来就在 `files` 白名单里（随包发），
+#   使用者 `npm i` 之后能直接读到原文；`guide/` 不在白名单，只活在文档站上。
+CONCEPT_PAGES = [
+    ('conventions', '全局约定',
+     '令牌三层、间距台阶、焦点环、动效时长、暗色三态、逻辑属性、'
+     '能不能用 @layer 与 !important',
+     'docs/CONVENTIONS.md'),
+    ('accessibility', '无障碍',
+     '目标等级、验过的范围与手段、已知缺口、自测命令',
+     'docs/ACCESSIBILITY.md'),
+]
+
 
 # ===========================================================================
 # 一 · Markdown 子集 → HTML
@@ -599,7 +619,7 @@ TOP_TPL = '''<a href="#main" class="skip">跳到主内容</a>
     <a class="g-brand" href="index.html">agentcss</a>
     <span class="g-sep" aria-hidden="true">/</span>
     <span class="g-where">%(where)s</span>
-    <a class="g-jump" href="%(demo_href)s">打开示例<span aria-hidden="true"> →</span></a>
+    <a class="g-jump" href="%(demo_href)s">%(jump)s<span aria-hidden="true"> →</span></a>
   </div>
 </header>
 '''
@@ -613,6 +633,30 @@ COMP_PAGE = HEAD_TPL + '''<body class="page">
 ''' + TOP_TPL + '''<div class="g-layout">
   <main id="main" class="g-main">
     <p class="g-kicker">%(tier)s · %(maturity)s</p>
+    <h1>%(h1)s</h1>
+    <p class="lede">%(purpose)s</p>
+    <ul class="g-meta">%(meta)s</ul>
+    <article class="g-doc">
+%(body)s
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      %(prev)s
+      %(next)s
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    %(toc)s
+  </aside>
+</div>
+''' + FOOT_TPL + '''</body>
+</html>
+'''
+
+CONCEPT_PAGE = HEAD_TPL + '''<body class="page">
+''' + TOP_TPL + '''<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">%(kicker)s</p>
     <h1>%(h1)s</h1>
     <p class="lede">%(purpose)s</p>
     <ul class="g-meta">%(meta)s</ul>
@@ -719,6 +763,7 @@ def render_component(c, page_ids, ver, n_total, prev_c, next_c):
         'up': '../',
         'where': esc(h1),
         'demo_href': ('../' + c['files']['demo']) if c['files'].get('demo') else 'index.html',
+        'jump': '打开示例',
         'ver': 'v' + ver,
         'n': n_total,
         'tier': esc(tier[1]),
@@ -731,6 +776,90 @@ def render_component(c, page_ids, ver, n_total, prev_c, next_c):
         'next': nxt,
         'toc': toc_html(heads),
     }
+
+
+def make_concept_resolver():
+    """概念页的链接解析：`docs/*.md` 之间的互链要指向**生成后的页面**。
+
+    为什么不能复用 `make_resolver`：它只认「`X/README.md` → `x.html`」这一种映射
+    （组件页的规矩）。概念页的源文件是 `docs/CONVENTIONS.md`，写成
+    `[全局约定](CONVENTIONS.md)` 时，通用解析器会给出 `../docs/CONVENTIONS.md`
+    —— 那是一个 `.md` 文件，点开是源码，不是页面。读者在站点里被送去读源码，
+    是"文档站少了一页"的另一种表现。
+    """
+    ids = set(s for s, _l, _d, _m in CONCEPT_PAGES)
+
+    def resolve(target):
+        if not target or target.startswith(SKIP_LINK_SCHEMES):
+            return target
+        path, _, frag = target.partition('#')
+        tail = ('#' + frag) if frag else ''
+        if not path:
+            return tail or '#'
+        stem = path.rsplit('/', 1)[-1]
+        if stem.endswith('.md') and stem[:-3] in ids:
+            return stem[:-3] + '.html' + tail
+        abs_repo = norm_rel(os.path.join('docs', path))
+        if os.path.isdir(os.path.join(ROOT, abs_repo)):
+            return '../' + abs_repo + '/' + tail
+        return '../' + abs_repo + tail
+
+    return resolve
+
+
+def render_concept(slug, label, desc, rel_md, ver, n_total, prev_c, next_c):
+    md = read(rel_md)
+    heads = []
+
+    def grab(level, text, hid):
+        if level == 2:
+            heads.append((re.sub(r'<[^>]+>', '', text), hid))
+
+    body, _ = md_to_html(md, make_concept_resolver(), on_heading=grab)
+    h1 = title_of(md, label)
+
+    def pager(kind, target):
+        if not target:
+            return ''
+        cls = 'g-pager__link g-pager__link--' + kind
+        word = '上一页' if kind == 'prev' else '下一页'
+        return ('<a class="%s" href="%s.html"><span>%s</span>%s</a>'
+                % (cls, target[0], word, esc(target[1])))
+
+    return CONCEPT_PAGE % {
+        'fav': FAVICON,
+        'title': esc(h1) + ' · agentcss',
+        'desc': esc(desc),
+        'up': '../',
+        'where': esc(label),
+        'demo_href': 'index.html',
+        'jump': '回到索引',
+        'ver': 'v' + ver,
+        'n': n_total,
+        'kicker': '全局约定 · 跨组件',
+        'h1': esc(h1),
+        'purpose': esc(desc),
+        'meta': ('<li><a href="../%s"><code>%s</code></a></li>'
+                 '<li>规则由 <code>01-tokens/</code> 实现，判据见文末对应表</li>'
+                 % (esc(rel_md), esc(rel_md))),
+        'body': body,
+        'prev': pager('prev', prev_c),
+        'next': pager('next', next_c),
+        'toc': toc_html(heads),
+    }
+
+
+def render_concept_row(slug, label, desc, rel_md):
+    """索引页里的一行。键表要含正文词 —— 搜「减少动效」「强制暗」是搜意思，不是搜目录名。"""
+    md = read(rel_md)
+    keys = ' '.join([slug, label, desc, ' '.join(code_tokens(md)),
+                     ' '.join(headings_of(md)), prose_words(md)])
+    html = ('<li class="g-item" data-id="%s">'
+            '<a class="g-item__link" href="%s.html">'
+            '<span class="g-item__name">%s</span>'
+            '<span class="g-item__desc">%s</span></a></li>'
+            % (esc(slug), esc(slug), esc(label), esc(desc)))
+    return html, slug, keys.lower()
 
 
 def render_row(c, page_ids):
@@ -950,8 +1079,8 @@ INDEX_JS = r'''
 '''
 
 
-def render_index(comps, page_ids, ver, extras, site_rows):
-    """索引页。`extras` / `site_rows` 都是 `(row, id, keys)` 三元组 ——
+def render_index(comps, page_ids, ver, extras, site_rows, concepts=()):
+    """索引页。`extras` / `site_rows` / `concepts` 都是 `(row, id, keys)` 三元组 ——
     **键表由构造方一并交回**，不在这里重新拼：早先这里只收 HTML 字符串，
     行里的搜索键只好塞进 `data-k` 属性，于是 ① 读屏会把键念出来
     ② 按结构扫 HTML 的判据（wiring-check）把它们当成真在用那些属性。
@@ -962,9 +1091,17 @@ def render_index(comps, page_ids, ver, extras, site_rows):
         row, cid, keys = render_row(c, page_ids)
         kws[cid] = keys
         rows_by_tier.setdefault(c['tier'], []).append(row)
-    for row, rid, keys in list(extras) + list(site_rows):
+    for row, rid, keys in list(extras) + list(site_rows) + list(concepts):
         kws[rid] = keys
     sections = []
+    # 概念页排在最前：先读约定，再看组件。它是"怎么用这套东西"的前提，
+    #   不是附录 —— 放在页尾等于承认"没人会读"。
+    if concepts:
+        sections.append(render_section(
+            '全局约定（不属于任何组件）',
+            '令牌用法、焦点环、动效时长、暗色切换、逻辑属性 —— 这些规则跨全部组件，'
+            '改一处影响全站。',
+            [r for r, _i, _k in concepts]))
     for _d, slug, label, desc in TIERS:
         rows = rows_by_tier.get(slug)
         if rows:
@@ -986,6 +1123,7 @@ def render_index(comps, page_ids, ver, extras, site_rows):
         'up': '../',
         'where': '组件文档',
         'demo_href': '../index.html',
+        'jump': '打开示例',
         'ver': 'v' + ver,
         'n': len(comps),
         'sections': '\n'.join(sections),
@@ -1205,7 +1343,18 @@ def build(out_dir):
             % (esc(sid), esc(norm_rel(rel)), esc(label), esc(desc)),
             sid, ' '.join([sid, label, desc]).lower()))
 
-    files['guide/index.html'] = render_index(comps, page_ids, ver, extras, site_rows)
+    # 概念页：不像组件那样有 demo / 上下篇按组件顺序排，它们自成一小串链条。
+    concepts = []
+    for i, (slug, label, desc, rel_md) in enumerate(CONCEPT_PAGES):
+        prev_c = (CONCEPT_PAGES[i - 1][0], CONCEPT_PAGES[i - 1][1]) if i > 0 else None
+        next_c = ((CONCEPT_PAGES[i + 1][0], CONCEPT_PAGES[i + 1][1])
+                  if i + 1 < len(CONCEPT_PAGES) else None)
+        files['guide/%s.html' % slug] = render_concept(
+            slug, label, desc, rel_md, ver, len(comps), prev_c, next_c)
+        concepts.append(render_concept_row(slug, label, desc, rel_md))
+
+    files['guide/index.html'] = render_index(comps, page_ids, ver, extras,
+                                             site_rows, concepts)
     files['guide/guide.css'] = GUIDE_CSS
     files['index.html'] = render_root_index(comps, page_ids, ver)
     files['404.html'] = render_404(comps, ver)

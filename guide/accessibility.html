@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>无障碍 · agentcss</title>
+<meta name="description" content="目标等级、验过的范围与手段、已知缺口、自测命令">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%227%22%20fill%3D%22%231b4d8f%22%2F%3E%3Crect%20x%3D%228%22%20y%3D%228%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%221.6%22%20fill%3D%22%23fff%22%2F%3E%3Crect%20x%3D%2217%22%20y%3D%228%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%221.6%22%20fill%3D%22%23fff%22%20opacity%3D%22.5%22%2F%3E%3Crect%20x%3D%228%22%20y%3D%2217%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%221.6%22%20fill%3D%22%23fff%22%20opacity%3D%22.5%22%2F%3E%3Crect%20x%3D%2217%22%20y%3D%2217%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%221.6%22%20fill%3D%22%23fff%22%2F%3E%3C%2Fsvg%3E">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">无障碍</span>
+    <a class="g-jump" href="index.html">回到索引<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">全局约定 · 跨组件</p>
+    <h1>无障碍</h1>
+    <p class="lede">目标等级、验过的范围与手段、已知缺口、自测命令</p>
+    <ul class="g-meta"><li><a href="../docs/ACCESSIBILITY.md"><code>docs/ACCESSIBILITY.md</code></a></li><li>规则由 <code>01-tokens/</code> 实现，判据见文末对应表</li></ul>
+    <article class="g-doc">
+<p>目标等级是 <strong>WCAG 2.2 AA</strong>。本文说清三件事：<strong>验过什么、怎么验的、还差什么</strong>。没说到的，就当作没验过 —— 这份文件的用处是让人不必猜。</p>
+<h2 id="s2">一 · 已验证的范围<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<p>最近一次运行（<code>node 05-audit/a11y-scan.js</code>）：</p>
+<div class="table"><table>
+<thead><tr>
+<th>项目</th><th>手段</th><th>结果</th>
+</tr></thead>
+<tbody>
+<tr><td>自动审计</td><td><code>axe-core</code>，跑 18 个页面（组件 demo + 文档页 + 长文页）</td><td><strong>0 类违规 / 991 条规则通过</strong>；另有 <strong>9 处</strong>标记「待人工」</td></tr>
+<tr><td>「0 违规」可信吗</td><td>反向控制：注入 5 类典型违规，看它抓不抓得到</td><td>5 类全部抓到。<strong>没有反向控制的 0 违规不算证据</strong></td></tr>
+<tr><td>对比度（浅色）</td><td><code>contrast.py</code> 从 <code>tokens.css</code> 读实色值逐对计算</td><td>正文 ≥ 4.5:1、控件边界 ≥ 3:1、装饰线不强制</td></tr>
+<tr><td>对比度（暗色）</td><td><code>dark-contrast.js</code> 单独算一遍</td><td>同上；暗色不是浅色取反，独立验收</td></tr>
+<tr><td>组件级对比度</td><td><code>component-contrast.py</code></td><td>每个组件自己的配色再算一次</td></tr>
+<tr><td>焦点可见</td><td><code>focus-ring-check.js</code></td><td>有焦点环，且不是 <code>outline: none</code> 代替品</td></tr>
+<tr><td>焦点归还</td><td><code>focus-return-check.js</code></td><td>关闭弹层/抽屉后焦点回到触发元素</td></tr>
+<tr><td>键盘可达</td><td><code>keyboard-nav.js</code></td><td>Tab 顺序、Esc 关闭、不困在浮层里</td></tr>
+<tr><td>触控目标</td><td><code>a11y.py</code> + 行为脚本</td><td>热区 44×44（WCAG 2.5.5）</td></tr>
+<tr><td>减少动效</td><td><code>motion.py --reduced-audit</code></td><td>位移关、真实进度留（3 处登记例外）、双向核对</td></tr>
+<tr><td>页面结构</td><td>文档站门禁逐页判</td><td>每页有 <code>lang</code>、单一 <code>h1</code>、<code>main</code>、跳转链接、无重复 <code>id</code></td></tr>
+</tbody>
+</table></div>
+<p>目标尺寸、对比度阈值、动效分档这些<strong>规则本身</strong>写在 <a href="../docs/CONVENTIONS.md">全局约定</a> 里，这里只报结论。</p>
+<h2 id="s3">二 · 已知缺口<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
+<p>这一节比上一节重要。以下都是<strong>没做到</strong>的，不是&quot;应该没问题&quot;：</p>
+<ol><li><strong>没有真机读屏记录。</strong> NVDA、VoiceOver、TalkBack 一个都没录过。 axe 只覆盖 WCAG 问题的约 30–40%，它查不出&quot;alt 写得有没有意义&quot;&quot;阅读顺序对不对&quot; &quot;屏幕阅读器实际听到的是什么&quot;—— 那几项只能用耳朵听。所以本库目前能说的是「<strong>自动检查能覆盖的部分是干净的</strong>」，不能说得更多。</li><li><strong>RTL 只有静态检查。</strong> 交付 CSS 里物理方向属性 0 处、全部逻辑属性（<code>rtl-check.js</code> 守），但没有一张 <code>dir=&quot;rtl&quot;</code> 的渲染基线，也没跑过阿拉伯语/希伯来语的文字膨胀案例。</li><li><strong>强制色板（forced-colors）只覆盖了一部分。</strong> 6 个 CSS 写了 <code>forced-colors</code> / <code>prefers-contrast</code> 的处理，不是全部组件。 Windows 高对比度模式下的表现没有逐组件验证。</li><li><strong>Android 系统 WebView 未验证。</strong> 真机矩阵里它是 ❌（见 <a href="../SUPPORT.md">浏览器支持矩阵</a>），已验的是微信内置内核、iOS/macOS Safari 等 7 行。</li><li><strong>没有 VPAT / ACR 正式符合性报告。</strong> 采购流程里要的那种文档，本库没有出。</li><li><strong>9 处「待人工」还没有人工结论。</strong> 自动审计把它们标出来了（需要人判断，比如图表的替代文本是否描述了数据），目前仍挂着。</li></ol>
+<h2 id="s4">三 · 怎么自己验<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-bash"># 单个 demo 页的可访问性（结构、语言、标题层级、跳转链接…）
+python3 05-audit/a11y.py 02-primitives/button/demo.html
+
+# axe 审计（跑全部已登记的页面）
+node 05-audit/a11y-scan.js
+
+# 证明上面那个&quot;0 违规&quot;不是因为没查
+node 05-audit/_a11y-reverse-control.js
+
+# 亮色 / 暗色两套对比度
+python3 05-audit/contrast.py
+node 05-audit/dark-contrast.js
+
+# 键盘与焦点
+node 05-audit/keyboard-nav.js
+node 05-audit/focus-ring-check.js
+node 05-audit/focus-return-check.js</code></pre>
+<p><code>python3 05-audit/a11y.py --dir .</code> 会连 <code>node_modules</code> 一起扫，那里面的第三方 HTML 会报一堆与你无关的问题 —— 门禁里用的是逐目录调用，别用 <code>--dir .</code>。</p>
+<h2 id="s5">四 · 报告问题<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
+<p>无障碍问题按<strong>缺陷</strong>处理，不按&quot;改进建议&quot;处理：请开 issue 并写清 <strong>控件 + 输入方式（键盘 / 读屏 / 触摸）+ 期望行为</strong>。已知缺口里列的那些（读屏实测、RTL 渲染、高对比度）如果能提供你机器上的实际结果，比任何自动化都值钱。</p>
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      <a class="g-pager__link g-pager__link--prev" href="conventions.html"><span>上一页</span>全局约定</a>
+      
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    <ul class="g-toc"><li><a href="#s2">一 · 已验证的范围</a></li><li><a href="#s3">二 · 已知缺口</a></li><li><a href="#s4">三 · 怎么自己验</a></li><li><a href="#s5">四 · 报告问题</a></li></ul>
+  </aside>
+</div>
+<footer class="g-foot">
+  <p>v0.11.8 · 零第三方运行时依赖 · 组件数 35</p>
+</footer>
+</body>
+</html>

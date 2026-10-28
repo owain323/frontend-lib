@@ -92,9 +92,9 @@ node ai/cli.js check <doc.json>   # 校验契约文档（读 JSON，不解析原
 |---|---|---|
 | 不变式 | `docs/INVARIANT.md` | 客观事实，有门禁守边界 |
 | 契约 | `ai/*.json` | 版本化约定 |
-| 建议 | `docs/GUIDANCE.md` | 工作建议，可整份推翻 |
+| 建议 | `CONTRIBUTING.md` | 工作方式建议，可整份推翻 |
 
-> `docs/GUIDANCE.md` 里「贴进 system prompt 的极简版」的适用范围是
+> 本文件（就是那份贴进 system prompt 的极简版）的适用范围是
 > **维护 frontend-lib 自身或严格按本库范式写页面**，不是所有 HTML 任务的通用规则。
 
 ## 7 · 三句话版本

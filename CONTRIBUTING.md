@@ -8,7 +8,7 @@ npm run gate           # 全量：含浏览器类
 npm run gate:fast      # 只跑静态层，不用装浏览器
 ```
 
-全量是 **181 道门禁**（本机约 12 分钟）。
+全量是 **183 道门禁**（本机约 12 分钟）。
 
 ⚠️ 上面的数字写在**代码块外**是有意的：`doc-facts-gate` 会核对
 「文档里的门禁数」与 `check-all.sh` 的真实注册数，而**代码块内的内容被豁免**
@@ -79,7 +79,7 @@ fix: <一句话说清改了什么、为什么>
 - **JS 必须过 ES5 门禁**：不用 `const` `let`、箭头函数、模板串、`class`、`async`、
   `?.`、`??`。范围是 `01-tokens` ~ `09-assets`（`es5-gate.py` 守着）。
 - **状态写在 DOM 属性上**，不写在 class 里（INVARIANT I-8）。
-- **CSS 用 `@layer` 吗？** 现在不用，理由与切换判据见 `docs/GUIDANCE.md`。
+- **CSS 用 `@layer` 吗？** 现在不用，理由与切换判据见 `docs/CONVENTIONS.md` 的「不用 `@layer`」一节。
 - 注释写**为什么**，不写是什么。取舍理由、踩过的坑、放弃的方案 ——
   这些半年后有用；`.foo { color: red }` 没有。
 
