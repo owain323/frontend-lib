@@ -7,9 +7,9 @@
 set -u
 cd "$(dirname "$0")/.." || exit 2
 # ⭐ 允许外部指定解释器：`PY=/path/to/python bash 05-audit/check-all.sh`
-#   为什么必须能覆盖：写死 `python` 时，若默认那个没装 Pillow，
-#   `visual`（视觉回归）会**永远 SKIP** —— 跳过不是通过，
-#   而外人根本看不出自己少跑了一道（见 ERRORS「无法实测的必须保留为未验证」）。
+#   为什么必须能覆盖：写死 `python` 时，若默认那个是版本过低或缺某个标准库模块，
+#   成批门禁会**假报 FAIL**，而外人看不出是环境问题还是代码问题。
+#   （2026-10-29 起视觉回归已零依赖，不再需要为 Pillow 单独指定解释器。）
 PY="${PY:-python}"
 # ⭐ 优先用环境变量；否则在常见位置里探测（只用相对位置，不写死绝路径）。
 if [ -z "${NODE_DIR:-}" ]; then
@@ -201,7 +201,7 @@ run() {  # run <名字> <命令...>
 skip() {
   # 🔴 计数放在这里（0.8.9）：跳过有两种来源，都要算进"本轮跳过 M 道"：
   #     ① 分层跳过（MODE=fast 不跑组件层）
-  #     ② 环境缺失（缺 Pillow / typescript）
+  #     ② 环境缺失（缺 typescript / 浏览器）
   #   放在 skip() 里就一处覆盖两种；分散在各调用点必然漏（实测漏过 17 道）。
   _skipped=$((_skipped+1))
   printf '  %-16s SKIP  （%s）\n' "$1" "$2"
@@ -486,6 +486,18 @@ run "sparkline"  node 05-audit/sparkline-contract.js
 # 科学绘图（09-assets）：判据与 BI 图表不同 —— 缺失去零、对数轴、单位、不算统计量
 run "scientific-plot" node 05-audit/scientific-plot-check.js
 run "a11y-scan"   node 05-audit/a11y-scan.js
+# 🔴 可访问性树（2026-10-29 加）：axe 回答的是"有没有踩规则"，
+#   回答不了"屏幕阅读器会念出什么"。这条把每页的朗读序列存成快照并逐行比对，
+#   同时硬判 WCAG 4.1.2：每个可交互控件必须有非空 accessible name。
+#   它是 `docs/ACCESSIBILITY.md` 里「名称/角色/值」那一行的**唯一**证据来源。
+run "a11y-ax"     node 05-audit/a11y-ax.js
+run "a11y-ax-rev" node 05-audit/a11y-ax.js --selftest
+# 🔴 缩放 / 重排 / 焦点遮挡（2026-10-29 加）：WCAG 2.2 AA 的三条硬项
+#   （1.4.4 文本 200% / 1.4.10 320px 重排 / 2.4.11 焦点不被吸顶栏遮挡）
+#   此前**没有任何门禁**在管，而无障碍声明里却写着"按 AA 做"。
+#   ⇒ 加了它，声明里那三行才有对应的判据，而不是"应该没问题"。
+run "zoom-reflow"     node 05-audit/zoom-reflow.js
+run "zoom-reflow-rev" node 05-audit/zoom-reflow.js --selftest
 # 🔴 「按用到生成」出口的自检（0.8.9 · 审计 P2-1）：
 #   证明 purge-css 真的在读 DOM（注入一条被删的规则 ⇒ 它必须变回保留），
 #   而不是在查表或扫空 DOM —— 那两种错都会给出漂亮的省体积数字。
@@ -548,6 +560,13 @@ run "beh-reverse" bash 05-audit/behavior-reverse.sh
 run "form-validation"       node 05-audit/form-validation-check.js
   # N1：RTL 双向布局（只报告：物理属性在 LTR 页里是正确的）
   run "rtl"         node 05-audit/rtl-check.js
+# 🔴 RTL **渲染**判据（2026-10-29 加）：rtl-check 只证明"CSS 里没有物理方向属性"，
+#   那不等于 RTL 下渲染正确 —— 逻辑属性摆对了框，字形不会跟着翻；
+#   汉字换成阿拉伯语会变长，可能装不下。这两件事都只能在渲染后量。
+#   判的是：37 页 RTL 下不横滚 + 阿/希文字膨胀 1.3× 不破相 + 方向性字形镜像
+#   （收起态 ▶→◀ 必须翻，展开态 ▼ 与叶子 · 必须不翻）。
+run "rtl-render"     node 05-audit/rtl-render.js
+run "rtl-render-rev" node 05-audit/rtl-render.js --selftest
 run "separator"   node 05-audit/separator-check.js
   # N2：键盘导航（只报告：先量基线，达标后升级 fail）
   run "kbd"         node 05-audit/keyboard-nav.js
@@ -623,16 +642,13 @@ fi
 run "perf"         $PY 05-audit/perf-gate.py
 run "coverage"    $PY 05-audit/coverage-gate.py
 # ---------- 视觉回归（ G2 · 最慢，放最后）----------
-# ⚠️ 需要 Pillow；没装就跳过（不 fail-closed，理由见脚本头注释）
+# 零依赖：比对走 05-audit/pngdiff.py（纯标准库，已与 Pillow 逐字节对齐）
 #
 # 🔴 明暗**两套**基线，两套都要跑（0.9.0 加）：
 #   在此之前只拍浅色 ⇒ 暗色下"整页看不清"这类回归**没有任何门禁能抓**，
 #   而 D1/D3/D5 三项改造都要动 CSS。
 #   浅色仍是默认（目录不带后缀），暗色走 `--scheme dark`。
 #
-# ⚠️ 解释器选择：`$PY` 没装 Pillow 时，允许用 `PY_PIL` 显式指定一个装了的：
-#      PY_PIL=/path/to/python bash 05-audit/check-all.sh
-#   这样"哪台机器上能跑视觉回归"是**写明**的，而不是靠碰运气。
 # 🔴 视觉门禁的两道**前置守卫**（2026-10-23）：
 #   ① visual-coverage：视野内的 demo.html 必须都在 PAGES 里。
 #      实测事故：PAGES 是硬编码 34 条 ⇒ 新页面**永远不被拍**，
@@ -640,30 +656,31 @@ run "coverage"    $PY 05-audit/coverage-gate.py
 #   ② visual-stamp：基线指纹必须等于当前代码的指纹。
 #      实测事故：浅色基线录于 6f045ff、暗色录于 4962b2c，而 HEAD 已到 208782f，
 #      两页红着过了 5 天 —— 因为指纹不符**只是 WARN**，像素比对仍是唯一判据。
-#   两条都不依赖 Pillow ⇒ 放在 SKIP 判断**之前**，视觉回归跳过时它们照样跑。
+#   两条都是秒级静态判据 ⇒ 放在视觉回归之前，先拦住没有被拍到的页面。
 # 🔴 财务示例页的勾稽门禁（2026-10-27 加）：
 #   示例页存在的意义是"证明本库能拼出产品级的一页"。第一次交付时
 #   33 条勾稽错了 6 条（利润表加不出营业利润、BS 少了少数股东权益、
 #   五年表研发费用与利润表差 6 倍、ROE 与权益对不上、估值三数互斥）
 #   —— 而它**通过了所有既有门禁**，因为没有任何一道在看"数对不对"。
 #   读者判断一页财务报告可不可信，第一件事是拿计算器加一遍。
-#   这条不依赖 Pillow、不启动浏览器，秒级 ⇒ 放在 SKIP 判断之前。
+#   这条不启动浏览器，秒级。
 run "fin-ties" $PY 05-audit/finance-example-ties.py
 run "visual-coverage" $PY 05-audit/visual-coverage-gate.py
 run "visual-stamp"    $PY 05-audit/visual-stamp-gate.py
 
-PY_VIS=""
-for _c in "${PY_PIL:-}" "$PY"; do
-  [ -z "$_c" ] && continue
-  if "$_c" -c "from PIL import Image" 2>/dev/null; then PY_VIS="$_c"; break; fi
-done
-if [ -n "$PY_VIS" ]; then
-  run "visual"      $PY_VIS 05-audit/shot-baseline.py --check
-  run "visual-dark" $PY_VIS 05-audit/shot-baseline.py --check --scheme dark
-else
-  skip "visual" "缺 Pillow，装了才会跑（可用 PY_PIL=<解释器> 指定）"
-  skip "visual-dark" "同上（暗色基线需要 Pillow）"
-fi
+# 🔴 2026-10-29：这里原来按"装没装 Pillow"决定跑还是跳过。
+#   后果是：没装的机器上这两道门禁**永远 SKIP**，而本仓库的规矩是
+#   "跳过不是通过" —— 也就是说"日常改样式有没有防线"取决于运气。
+#   现在比对逻辑换成 05-audit/pngdiff.py（纯标准库，已与 Pillow 逐字节对齐），
+#   依赖没了，**跳过这条路径也就不存在了**。PY_PIL 变量随之退休。
+run "visual"      $PY 05-audit/shot-baseline.py --check
+run "visual-dark" $PY 05-audit/shot-baseline.py --check --scheme dark
+# 🔴 RTL 视觉基线（2026-10-29 加）：`rtl-render` 能抓到"横向溢出"和"字形没翻"，
+#   但抓不到第三种坏法 —— 镜像**错了但不溢出不改字形**（抽屉从错误的一侧滑入、
+#   栅格左右互换、上/下一页位置反了）。这类只能靠像素比对。
+#   ⚠️ 只覆盖 13 页（左右不对称/有方向性字形/顺序有语义的那些），
+#      纯文本与纯色块页在 RTL 下与 LTR 是同一套盒模型，多录不增加判据。
+run "visual-rtl"  $PY 05-audit/shot-baseline.py --check --dir rtl
 
 echo ""
 # 🔴 与 css-imports 同类：只报告不判失败，但**必须把报告打出来**且计入注册数（N16）

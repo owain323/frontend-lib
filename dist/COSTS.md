@@ -19,7 +19,7 @@
 | 档 | 组件 | tokens（必付） | CSS | JS | **合计** | 源码版合计 | 差 |
 |---|---|---:|---:|---:|---:|---:|---:|
 | primitive | `badge` | 2.6 KB | 0.5 KB | — | **3.1 KB** | 20.8 KB | −17.7 KB |
-| primitive | `button` | 2.6 KB | 1.0 KB | — | **3.6 KB** | 24.2 KB | −20.6 KB |
+| primitive | `button` | 2.6 KB | 1.0 KB | — | **3.6 KB** | 24.4 KB | −20.8 KB |
 | primitive | `card` | 2.6 KB | 0.9 KB | — | **3.6 KB** | 21.6 KB | −18.0 KB |
 | primitive | `choice` | 2.6 KB | 1.1 KB | — | **3.7 KB** | 23.4 KB | −19.7 KB |
 | primitive | `combobox` | 2.6 KB | 1.0 KB | 5.4 KB | **9.0 KB** | 27.7 KB | −18.8 KB |
@@ -44,12 +44,12 @@
 | pattern | `states` | 2.6 KB | 0.8 KB | — | **3.5 KB** | 22.1 KB | −18.6 KB |
 | pattern | `tabs` | 2.6 KB | 0.7 KB | 2.0 KB | **5.3 KB** | 25.0 KB | −19.7 KB |
 | pattern | `tooltip` | 2.6 KB | 0.5 KB | 1.9 KB | **5.0 KB** | 24.7 KB | −19.7 KB |
-| pattern | `tree` | 2.6 KB | 0.6 KB | 2.9 KB | **6.2 KB** | 25.6 KB | −19.5 KB |
+| pattern | `tree` | 2.6 KB | 0.6 KB | 2.9 KB | **6.2 KB** | 26.2 KB | −20.1 KB |
 
 ## 三、全库
 
 - 全部组件都用上（min，含 tokens 一份）：**60.0 KB**
-- 源码版（带注释）全库 gzip：288.2 KB
+- 源码版（带注释）全库 gzip：289.0 KB
 
 > ⚠️ 源码版那个数字**不是**要付的钱：它包含我们的注释（全库 CSS 有 66% 是注释，字节口径）。
 > 它的用途只有一个 —— 让人看清"dist 到底省了多少"。

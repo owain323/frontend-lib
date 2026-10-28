@@ -87,6 +87,15 @@
   content: "\00B7";                  /* · 叶子节点 */
 }
 
+/* ---------- 书写方向（RTL）----------
+   ⚠️ 逻辑属性只能翻「框的位置」，翻不了**字形**：▼/▶ 是文字符号，不是边框
+   画出来的三角（select 的 caret 用 border，天然对称，不用管）。
+   ⇒ RTL 里"收起"的箭头必须指向左，否则阿拉伯语用户看到的是一个指错方向的
+   箭头 —— 这种错不报错、也不溢出，只能靠一条显式规则或一张基线图发现。 */
+[dir="rtl"] .tree__item[aria-expanded="false"] > .tree__node .tree__marker::before {
+  content: "\25C0";                 /* ◀ */
+}
+
 /* ---------- 层级缩进（用左边框引导线）---------- */
 .tree ul ul {
   padding-inline-start: var(--sp-5);

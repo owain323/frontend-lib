@@ -1,0 +1,14 @@
+# select — 下拉：combobox 角色 + expanded
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "select · 下拉选择 · frontend-lib"
+  main
+    heading "select · 下拉选择" [level=1]
+    paragraph "依据 APG Select-Only Combobox 。四条最容易漏的： ① 打开后焦点落在 选中项 （不是第一项） "
+    heading "1 · 基本（默认选中第二项）" [level=2]
+    LabelText "投资主体"
+    button "投资主体" [hasPopup=listbox]
+    heading "2 · 多选" [level=2]
+    button "请选择板块" [hasPopup=listbox]
+    heading "3 · 禁用 + 靠右对齐" [level=2]
+    button "请选择" [disabled=true hasPopup=listbox]

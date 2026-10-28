@@ -8,14 +8,32 @@ npm run gate           # 全量：含浏览器类
 npm run gate:fast      # 只跑静态层，不用装浏览器
 ```
 
-全量是 **183 道门禁**（本机约 12 分钟）。
+全量是 **190 道门禁**（本机约 12 分钟）。
 
-两道环境依赖要自己装，否则对应的门禁会**跳过**（跳过不算通过）：
+环境依赖只有一套（Node + Chromium），缺了对应的门禁会**跳过**（跳过不算通过）：
 
 | 依赖 | 少了会怎样 | 装法 |
 |---|---|---|
-| Node + Chromium | `unit` / `responsive` / `firefox` 与全部行为脚本跳过 | 按 `package.json` 的 `engines` 装 Node，浏览器由脚本自己拉起 |
-| Pillow | `visual` 与 `visual-dark` 跳过 ⇒ **视觉回归一次都不跑** | `pip install pillow`（或用 `PY_PIL=<解释器>` 指一个装了 Pillow 的） |
+| **Node ≥ 22 + Chromium** | `unit` / `responsive` / `firefox` 与全部行为、渲染类门禁（无障碍 / RTL / 键盘 / 视觉基线 / 活标本）**跳过** | 按 `package.json` 的 `engines` 装 Node；浏览器由 `05-audit/browser.js` 自己拉起（`puppeteer-core` 已在 devDependencies） |
+
+Python 侧**没有第三方依赖**了：视觉比对的 PNG 解码是本仓库自己的
+`05-audit/pngdiff.py`（zlib + 行过滤，与 Pillow 做过逐字节对齐）。
+Pillow 只在你想复核那次对齐时才有用，装了不加分、不装也不跳过。
+
+RTL 有**两套**证据，需要分别跑、分别更新：
+
+```bash
+node 05-audit/rtl-render.js                          # 渲染判据（37 页）
+python 05-audit/shot-baseline.py --check --dir rtl   # 视觉基线（13 页）
+```
+
+**加新组件时请注意**：若它含有 **方向性字形**（箭头、指示符）、
+**左右不对称的槽位/边框/滑入方向**、或**顺序有语义**（上一页/下一页、首列），
+就必须把它的 demo 加进 `shot-baseline.py` 的 `RTL_PAGES`。
+RTL 视觉基线**故意不是全量**（纯文本页在 RTL 下与 LTR 是同一套盒模型，
+多录不增加判据），但反过来 —— 命中上面三条却没进表的页面，
+它的 RTL 观感**没有任何门禁看着**：`rtl-render` 只抓溢出与字形，
+`rtl-check` 只查物理属性，两者都看不见"镜像错了"。
 
 ⚠️ 上面的数字写在**代码块外**是有意的：`doc-facts-gate` 会核对
 「文档里的门禁数」与 `check-all.sh` 的真实注册数，而**代码块内的内容被豁免**

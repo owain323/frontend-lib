@@ -1,0 +1,32 @@
+# states — 状态消息：status/alert 播报
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "容器四态 · 真实场景"
+  main
+    heading "加载中和没有数据，是两件事" [level=1]
+    paragraph "视觉上它们都是"一片空白"，但含义完全相反。前者是"在动"，后者是"没东西"。 混成一个，用户会以为系统坏了 —— 而他"
+    group "切换状态"
+      button "有数据" [pressed=true]
+      button "加载中"
+      button "空"
+      button "出错"
+    paragraph "切换时注意两件事： 只有数据行在动，页头和工具条不动 （布局稳定）； 从"出错"点回"有数据" ，内容出现的位置正好是它"
+    separator [orientation=horizontal]
+    heading "每态都必须给出口" [level=2]
+    paragraph "只描述现状不给动作，等于把用户卡死在那儿。这是四态里最容易漏的一条。"
+    paragraph "空 —— 必须说明 为什么 是空的，并给下一步。 "还没有导入任何公司" 比 "暂无数据" 有用得多：前者告诉用户他在哪"
+    paragraph "出错 —— 必须能恢复。只写"出错了"是死路，而且刷新往往解决不了问题 （参数错了、文件格式不对）。要告诉用户 哪里错了"
+    paragraph "成功 —— 是过渡态不是停留态。普通操作的成功反馈用按钮的 data-state="success" （1.2 秒自动消"
+    separator [orientation=horizontal]
+    heading "骨架屏还是 spinner：看结构是否已知" [level=2]
+    status "正在加载内容" [live=polite atomic=true]
+    paragraph "知道会来"标题 + 三行 + 一张图"，就照这个结构画占位。 价值不在好看，在于 内容到位时不跳动 。"
+    paragraph "🔴 别在结构未知时用骨架屏。画出来的结构跟实际不一致， 内容到位时布局会剧烈跳动 —— 那是在撒谎 。"
+    separator [orientation=horizontal]
+    heading "300ms：不显示比闪一下好" [level=2]
+    paragraph "请求在 300ms 内返回时 不要显示加载态 。骨架屏闪一下比不显示更糟 —— 那是一次无意义的闪烁，反而让人觉得卡。正"
+    separator [orientation=horizontal]
+    heading "reduced-motion 下，两个动画处理相反" [level=2]
+    paragraph "同样是"加载中的动画"，一个保留一个去掉。 判断依据是去掉后是否损失信息 ："
+    paragraph "spinner 保留但放慢 —— 它停了用户会以为页面卡死。 reduced-motion 针对的是大幅位移（前庭功能障"
+    paragraph "骨架屏扫光停止 —— 静态占位块仍然传达"这里有内容正在来"， 不损失信息；而扫光恰好是横向位移，正是要减少的那类。"

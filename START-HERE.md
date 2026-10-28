@@ -34,7 +34,7 @@
 
 | 组件 | 文件 | 行数 | JS | 什么时候要 |
 |---|---|---|---|---|
-| 按钮 | `02-primitives/button/button.css` | 353 | — | 几乎总要 |
+| 按钮 | `02-primitives/button/button.css` | 357 | — | 几乎总要 |
 | 输入框 | `02-primitives/input/input.css` | 239 | — | 有表单就要 |
 | 标签 / 徽章 | `02-primitives/badge/badge.css` | 141 | — | 有状态标记就要（"已披露""停牌"） |
 | 卡片 | `02-primitives/card/card.css` | 246 | — | 有分组内容就要 |
@@ -52,7 +52,7 @@
 | 动作菜单（beta） | `03-patterns/dropdown/dropdown.css` | 135 | **必需 451** (`dropdown.js`) | 要一组动作（新建 / 导出 / 删除）就要 |
 | 文字提示 | `03-patterns/tooltip/tooltip.css` | 89 | **必需 288** (`tooltip.js`) | 图标按钮或缩写需要一句话解释就要 |
 | 分页 | `03-patterns/pagination/pagination.css` | 195 | **必需 395** (`pagination.js`) | 数据多到要翻页就要 |
-| 树形 | `03-patterns/tree/tree.css` | 113 | **必需 456** (`tree.js`) | 层级数据（文件 / 组织 / 分类）要展开就要 |
+| 树形 | `03-patterns/tree/tree.css` | 122 | **必需 464** (`tree.js`) | 层级数据（文件 / 组织 / 分类）要展开就要 |
 | 侧边抽屉（beta） | `03-patterns/drawer/drawer.css` | 129 | **必需 258** (`drawer.js`) | 要从侧边滑出面板就要 |
 | 弹窗 / 吐司（beta） | `03-patterns/overlay/overlay.css` | 319 | **必需 563** (`overlay.js`) | 需要弹层（吐司 / 模态）就要 |
 | 状态（空 / 加载 / 错 / 成功） | `03-patterns/states/states.css` | 252 | — | **凡是会异步取数就要** |

@@ -446,7 +446,27 @@ def main():
     else:
         print('      OK private 未设 · access=public · prepublishOnly 就位'
               ' · 无 prepack · files 无通配 · README 包名一致')
+    # ---------- ⑬ 发版自动化（0.11.9 加）----------
+    #  这一节挡的是"**发得出去，但发得不可信**"：
+    #  手工 publish 无法产生 provenance（本机不是受信任构建环境），
+    #  而 provenance 是使用者能独立核对"这个包确实来自这个提交"的唯一手段。
+    print('  [13] 发版工作流（tag → 签名发布 → Release）')
+    wf = read_text('.github/workflows/release.yml')
+    if wf is None:
+        print('      X 没有 .github/workflows/release.yml'
+              ' ⇒ 发版仍是手工动作，且不可能有 provenance')
+        bad += 1
+    else:
+        wp = workflow_problems(wf)
+        if wp:
+            for m in wp:
+                print('      X %s' % m)
+            bad += len(wp)
+        else:
+            print('      OK tag 触发 · id-token 就位 · --provenance · '
+                  'tag==version · secret 缺失有明确报错')
     print('')
+
     if bad:
         print('  => 有 %d 项发布契约未闭环' % bad)
         return 1
@@ -508,6 +528,30 @@ def publish_problems(pkg, files, readme):
 # 自检（本库纪律：没有反向控制的判据不算门禁）
 #  6 个反样本（每个都必须被抓）+ 4 个正样本（不许误报）
 # ---------------------------------------------------------------------------
+
+def workflow_problems(text):
+    """发版工作流必须具备的五件事。→ [问题描述]，空列表 = 通过。
+
+    为什么是这五条而不是"有没有这个文件"：
+      文件存在但缺任意一条，等于**看起来自动化了、实际上发不出可信的包** ——
+      这比手工发布更危险，因为没人会再去核对。
+    """
+    out = []
+    if 'tags:' not in text or 'v*' not in text:
+        out.append('没在 tag（v*）上触发 ⇒ 打标签不会发版')
+    if 'id-token: write' not in text:
+        out.append('缺 `id-token: write` 权限 ⇒ npm 无法签发 provenance')
+    if '--provenance' not in text:
+        out.append('`npm publish` 没有 `--provenance` ⇒ 包没有来源签名')
+    if 'package.json' not in text or 'GITHUB_REF_NAME' not in text:
+        out.append('没有校验 tag 与 package.json 版本一致 ⇒ 可能发出错版本号的包')
+    if 'secrets.NPM_TOKEN' not in text:
+        out.append('没引用 NPM_TOKEN secret ⇒ 发不出去（且报错会是难懂的 401）')
+    if 'contents: write' not in text:
+        out.append('缺 `contents: write` ⇒ 建不了 Release')
+    return out
+
+
 def _selftest():
     OK_PKG = {
         'name': 'agentcss',
@@ -553,6 +597,29 @@ def _selftest():
         ('不误报：没写安装段', '# 安装\n\n见 docs/RELEASING.md'),
     ]:
         chk(label, publish_problems(OK_PKG, OK_FILES, rd), False)
+
+    # ---- 发版工作流判据（同样要既能过、也能抓到缺项）----
+    # 用 chr(10) 拼行而不是写转义换行：这段已经是「生成 Python 的 Python」，
+    # 再叠一层反斜杠转义就会写出一份语法坏掉的门禁脚本（实际发生过一次）。
+    NL = chr(10)
+    GOOD_WF = NL.join([
+        'on:', '  push:', '    tags:', "      - 'v*'",
+        'permissions:', '  contents: write', '  id-token: write',
+        'jobs:', '  publish:', '    steps:',
+        '      - run: |', '          TAG="${GITHUB_REF_NAME#v}"',
+        "          PKG=$(node -p \"require('./package.json').version\")",
+        '      - run: npm publish --provenance --access public',
+        '        env:', '          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}',
+    ])
+    chk('正：工作流五条齐备', workflow_problems(GOOD_WF), False)
+    chk('反：去掉 --provenance',
+        workflow_problems(GOOD_WF.replace('--provenance ', '')), True)
+    chk('反：去掉 id-token',
+        workflow_problems(GOOD_WF.replace('  id-token: write' + NL, '')), True)
+    chk('反：不校验 tag 与版本',
+        workflow_problems(GOOD_WF.replace("require('./package.json')", 'x')), True)
+    chk('反：没引用 NPM_TOKEN',
+        workflow_problems(GOOD_WF.replace('{{ secrets.NPM_TOKEN }}', 'token')), True)
 
     print('')
     print('  ' + ('🔴 %d 条自检未通过' % bad if bad

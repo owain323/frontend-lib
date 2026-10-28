@@ -23,13 +23,14 @@ visual-stamp-gate.py — 基线必须录在当前代码上（指纹过期即红�
 ===========================================================================
 判据
 ---------------------------------------------------------------------------
-  ① `_baseline/_stamp.json` / `_baseline-dark/_stamp.json` 必须存在
+  ① `_baseline*/_stamp.json`（浅 / 暗 / RTL 三套）必须都存在
   ② 其 `fingerprint` 必须等于当前 `css_fingerprint()`
-  ③ 两个方案（浅/暗）分别判定，缺一个也红
+  ③ 三套分别判定，缺一套也红
 
 修复方式（不许在代码里放行）：
     python 05-audit/shot-baseline.py --update                # 浅色
     python 05-audit/shot-baseline.py --update --scheme dark  # 暗色
+    python 05-audit/shot-baseline.py --update --dir rtl      # RTL
 
 用法：
     python 05-audit/visual-stamp-gate.py
@@ -45,9 +46,14 @@ import importlib.util
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SHOTS = os.path.join(ROOT, '10-review', 'shots')
 
-SCHEMES = [
-    ('浅色', '_baseline'),
-    ('暗色', '_baseline-dark'),
+# 🔴 三套，不是两套（2026-10-29 加 RTL）：新加的 `_baseline-rtl` 如果不在
+#   这张表里，它就会成为**唯一没人看守的基线** —— 改了 CSS 不重录，
+#   像素比对照样绿，而"绿"的意思是"和一份过期基线一样"。
+#   一份基线只要存在，就必须进这张表。
+CASES = [
+    ('浅色',   '_baseline',     ''),
+    ('暗色',   '_baseline-dark', ' --scheme dark'),
+    ('RTL',    '_baseline-rtl', ' --dir rtl'),
 ]
 
 
@@ -122,7 +128,7 @@ def main():
         return 2
 
     bad = False
-    for label, dirname in SCHEMES:
+    for label, dirname, flag in CASES:
         stamp = read_stamp(os.path.join(SHOTS, dirname))
         state, msg = evaluate(stamp, now)
         if state == 'ok':
@@ -132,14 +138,13 @@ def main():
         print('  FAIL %s  %s' % (label, msg))
         if state in ('stale', 'missing', 'norecord'):
             print('       → 若这些 CSS/JS/HTML 改动是有意的：')
-            print('         python 05-audit/shot-baseline.py --update%s'
-                  % ('' if dirname == '_baseline' else ' --scheme dark'))
+            print('         python 05-audit/shot-baseline.py --update%s' % flag)
             print('       → 若不是有意的，说明源码被改坏了，先看 visual 的 diff 图')
 
     if bad:
         print('  ⇒ 基线不是当前代码拍的：像素比对此刻**不能证明任何事**')
         return 1
-    print('  两份基线都录在当前代码上')
+    print('  %d 份基线都录在当前代码上' % len(CASES))
     return 0
 
 

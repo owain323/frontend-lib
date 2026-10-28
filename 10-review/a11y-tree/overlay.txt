@@ -1,0 +1,33 @@
+# overlay — 浮层：dialog + modal + 名字
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "Toast vs Dialog · 反馈层"
+  main
+    heading "Toast vs Dialog" [level=1]
+    paragraph "这一块的核心是一条判断，不是样式。判据只有一条： 用户不做任何操作，任务能不能继续？ 能 → toast；不能 → di"
+    heading "Toast — 通知一下，你不需要做任何事" [level=2]
+    button "普通提示"
+    button "成功"
+    button "错误（不自动消失）"
+    button "连发 4 个（看堆叠）"
+    paragraph "Toast 绝不抢焦点。 按上面按钮时，看顶部面板的"焦点所在"—— 它一直停在触发按钮上。 role="status""
+    heading "Dialog — 必须处理完才能继续" [level=2]
+    button "普通确认"
+    button "删除这份报告（危险）"
+    paragraph "打开后请做三件事： 1. 连按 Tab —— 焦点在两个按钮之间循环， 不会跑到背后页面 （focus trap） 2."
+    heading "危险操作的两个特殊处理" [level=2]
+    heading "本库做法" [level=3]
+    paragraph "初始焦点给"取消"按钮 （ initialFocus:'cancel' ）。 用户条件反射按 Enter 时不会把文件删"
+    heading "常见做法" [level=3]
+    paragraph "焦点默认落在"删除"上，用户看清标题之前就按了 Enter。 点遮罩就关闭，手滑一下文件没了。"
+    heading "滚动锁定：容易漏的那个细节" [level=2]
+    heading "用错比做丑严重得多" [level=2]
+    heading "❌ 错用" [level=3]
+    paragraph "把"确认删除"做成 toast 用户可能根本没看见就把文件删了，而且没法撤销。"
+    paragraph "把"已保存"做成 dialog 打断用户没在做别的事，白白多一次点击。"
+    heading "✅ 判据" [level=3]
+    paragraph "不做任何操作能继续吗？ 能 → toast（4 秒后自己走） 不能 → dialog（困住焦点等你处理）"
+    paragraph "错误 toast 默认不自动消失 3 秒后悄悄消失 = 用户还没读完就等于没说。"
+    heading "进场动效的克制" [level=2]
+    paragraph "scale 只到 0.98 ，位移只有 8px 。 大幅缩放 + 回弹是廉价感的来源 —— 模态是"出现"，不是"跳出来"
+    button "看进场"

@@ -127,7 +127,57 @@ PAGES = [
     ('examples/finance-report',    'index.html', '金融分析示例页'),
 ]
 
+# ---------------------------------------------------------------------------
+# RTL 受管页面（`--dir rtl`）
+# ---------------------------------------------------------------------------
+# 🔴 为什么**不**是全部 41 页
+# ---------------------------------------------------------------------------
+#   视觉基线只有一个职责：拦住"观感回归"。而在 RTL 下，回归的形态只有两类
+#   会**随书写方向改变**：
+#     · 布局镜像错了（侧栏跑到另一边、箭头留在错的一侧、上/下一页顺序反了）
+#     · 字形没翻（▶ 仍指向右）
+#   而纯文本页、纯色块页（separator / skeleton / progress / sparkline /
+#   model-viewer …）在 RTL 下与 LTR 是同一套盒模型 —— 多录一张只是把仓库
+#   再撑大一倍，不会多抓到任何一个 bug。**基线数量不是覆盖率。**
+#
+#   反过来，左右不对称的页面一旦镜像错，**既不横向溢出、也不改字形** ——
+#   `rtl-render.js` 的三条判据全都看不见它；`rtl-check.js` 只查物理属性，
+#   也查不到"属性用对了但摆错了"。这才是 RTL 视觉基线唯一能补的那块。
+#
+#   ⇒ 收录规则（三条任一命中就收，每行注明命中的是哪条）：
+#       (a) 含方向性字形                (b) 左右不对称的槽位/边框/圆角/滑入方向
+#       (c) 顺序有语义（上/下一页、首列、步骤）
+#   ⚠️ 新增组件命中 (a)(b)(c) 时**必须**加进这张表，否则它的 RTL 观感
+#      没有任何门禁看着。这条写进了 CONTRIBUTING。
+#
+#   ⚠️ 基线只能证明"没变"，不能证明"本来就对"。第一次录制会把**当前状态**
+#      一并祝福下来。所以下面这 13 页录完做了一次人工目检（结论见
+#      docs/ACCESSIBILITY.md 的 RTL 段），目检能看出"镜像错了"，
+#      而基线永远看不出来。
+RTL_PAGES = [
+    ('03-patterns/tree',          'demo.html',   '树形视图',   'a 方向性字形 ▶/◀ + 层级引导线'),
+    ('03-patterns/list',          'demo.html',   '列表',       'b 前置/后置槽位'),
+    ('03-patterns/nav',           'demo.html',   '导航',       'b 侧栏在左'),
+    ('03-patterns/pagination',    'demo.html',   '分页',       'c 上一页/下一页顺序'),
+    ('03-patterns/tabs',          'demo.html',   '选项卡',     'c 顺序 + 指示条位置'),
+    ('03-patterns/accordion',     'demo.html',   '折叠面板',   'a 展开箭头 + b 标题侧'),
+    ('03-patterns/dropdown',      'demo.html',   '下拉菜单',   'b 菜单对齐边'),
+    ('03-patterns/drawer',        'demo.html',   '抽屉',       'b 从哪一侧滑入'),
+    ('04-recipes/table',          'demo.html',   '表格',       'c 首列/数字列对齐'),
+    ('04-recipes/detail-page',    'full.html',   '详情页-完整数据', 'b 侧栏栅格'),
+    ('10-review/composition',     'demo.html',   '组合页',     'b 多栏栅格'),
+    ('02-primitives/button',      'demo.html',   '按钮',       'b 图标与文字间距（最小样本）'),
+    ('09-assets/bar',             'demo.html',   '柱状图',     'c 坐标轴方向'),
+]
+
+DIRN = 'ltr'               # 'ltr' | 'rtl'，由 `--dir` 指定
 VIEWPORT = (393, 852)      # iPhone 尺寸：移动端是这个尺寸
+
+
+def managed():
+    """本次运行真正受管的页面（LTR 全集 / RTL 子集）"""
+    return RTL_PAGES if DIRN == 'rtl' else PAGES
+
 
 
 def _which_node():
@@ -182,7 +232,8 @@ def shot_name(d, f):
 
 def _pages_exist():
     out = []
-    for d, f, label in PAGES:
+    for row in managed():
+        d, f, label = row[0], row[1], row[2]
         p = os.path.join(ROOT, d, f)
         if os.path.exists(p):
             out.append((d, f, label, p))
@@ -262,6 +313,18 @@ const TASKS = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
         await p.evaluate(() => {
           document.documentElement.setAttribute('data-theme', 'dark');
         });
+      }
+
+      /* 🔴 RTL 基线（--dir rtl）：在 goto **之后**改 dir，只让 CSS 反应。
+         ----------------------------------------------------------------
+         为什么不改 HTML：这一维要验的是"**样式表**在另一种书写方向下渲染成
+         什么样"，不是"页面作者会不会写 dir"。改动 HTML 会连带触发页面脚本
+         重跑，测出来的东西就说不清是谁的责任了。
+
+         ⚠️ 改 dir 会让整页重排 ⇒ 必须重走一遍"字体就位 + 两帧"，
+            否则会截到重排中途的一帧，RTL 基线从此偶发假红。 */
+      if (t.dirn === 'rtl') {
+        await p.evaluate(() => { document.documentElement.dir = 'rtl'; });
       }
 
       /* 🔴 0.8.0：把"猜一个 300ms"换成"等一个确定条件"（原本是 t.wait || 300）
@@ -426,7 +489,7 @@ def shoot(outdir):
                 'out': os.path.join(outdir, shot_name(d, f)),
                 'w': VIEWPORT[0], 'h': VIEWPORT[1],
                 'label': label, 'wait': 300,
-                'scheme': SCHEME,
+                'scheme': SCHEME, 'dirn': DIRN,
             })
         tmp_js = os.path.join(outdir, '_shoot.js')
         tmp_jsn = os.path.join(outdir, '_shoot.json')
@@ -480,21 +543,25 @@ def shoot(outdir):
     return ok
 
 
-def _try_pil():
-    try:
-        from PIL import Image
-        return Image
-    except ImportError:
-        return None
+# ============================================================================
+# 比对：零依赖（pngdiff）
+# ============================================================================
+# 🔴 2026-10-29 换掉 Pillow。
+#   旧实现是 `_try_pil()` → 没有 Pillow 就 `return None, ['缺少 Pillow…']`，
+#   而 check-all 把这条当成"跳过"。于是**日常改样式的那道防线在多数环境里根本不存在**，
+#   而本仓库自己的规矩是"跳过不是通过" —— 装一次 Pillow 只是让某台机器不跳过，
+#   判据本体仍然挂在可选依赖上。
+#   ⇒ 正确修法是把依赖拿掉：pngdiff.py 用 zlib + 行过滤解 PNG，
+#     并与 Pillow 做过逐字节交叉验证（393×1744 的基线图，解码结果完全相同）。
+#   ⇒ 现在 diff_all 只有两种结局：通过 / 失败。**没有"缺依赖"这条路了。**
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import pngdiff  # noqa: E402
 
 
 def diff_all(threshold=1.0, tolerance=12):
     """逐像素 diff 当前 vs 基线。返回 (通过数, 失败列表)"""
     if not os.path.isdir(BASELINE):
         return None, ['没有基线 —— 请先跑 --record']
-    Image = _try_pil()
-    if not Image:
-        return None, ['缺少 Pillow（pip install pillow）才能做逐像素 diff']
 
     bfiles = {os.path.basename(x) for x in glob.glob(os.path.join(BASELINE, '*.png'))}
     passed, failed = 0, []
@@ -516,77 +583,38 @@ def diff_all(threshold=1.0, tolerance=12):
             failed.append((name, 100.0, '当前截图缺失'))
             continue
         try:
-            a = Image.open(bp).convert('RGB')
-            b = Image.open(cp).convert('RGB')
-        except Exception as e:
-            failed.append((name, 100.0, '打不开：%s' % e))
+            r = pngdiff.compare(bp, cp, os.path.join(DIFFS, name),
+                                tile=32, tile_pct=3.0, page_pct=0.5,
+                                tolerance=tolerance)
+        except pngdiff.PngError as e:
+            # 解不了就说解不了 —— 不许当成"通过"
+            failed.append((name, 100.0, 'PNG 解不了：%s' % e))
             continue
-        if a.size != b.size:
+
+        if r['size_mismatch']:
             # ⚠️ 尺寸不符**通常不是 CSS 回归**，而是截图设置变了
             #    （deviceScaleFactor / viewport）⇒ 必须把这层意思说出来，
             #    否则读报告的人会去 CSS 里找一个根本不存在的问题。
-            if (b.size[0] % a.size[0] == 0 and b.size[1] % a.size[1] == 0
-                    and b.size[0] // a.size[0] == b.size[1] // a.size[1]
-                    and b.size[0] // a.size[0] > 1):
-                k = b.size[0] // a.size[0]
+            a, b = r['size']
+            if (b[0] % a[0] == 0 and b[1] % a[1] == 0
+                    and b[0] // a[0] == b[1] // a[1] and b[0] // a[0] > 1):
+                k = b[0] // a[0]
                 why = ('截图倍率不一致（当前是基线的 %d 倍）⇒ 检查 '
                        'deviceScaleFactor，不是 CSS 回归' % k)
             else:
-                why = ('尺寸变了（viewport 或页面高度改了）'
-                       '：%s → %s' % (a.size, b.size))
+                why = '尺寸变了（viewport 或页面高度改了）：%s → %s' % (a, b)
             failed.append((name, 100.0, why))
             continue
-        w, h = a.size
-        # ⭐⭐ 判据的核心：**分块（tile）检测，不是全页百分比**。
-        #
-        #   🔴 踩坑记录（这是本脚本最重要的一次修正）：
-        #     判别力验证里把按钮圆角改成 0（**明显变丑**），
-        #     结果「全页差异 0.065%」⇒ 被阈值放过了。
-        #
-        #   ⭐ 原因：视觉退化通常是**局部集中**的
-        #     （一个按钮的几个圆角 ≈ 几百像素）
-        #     而页面有 150 万像素 ⇒ 摊到全页就微不足道。
-        #
-        #   ⭐ 解法：把页面切成 32×32 的块，**任一块**变化超阈值就 fail。
-        #     实测同一个改动：全页 0.065% ⇒ 最差块 **10.5%**（放大 160 倍）。
-        #
-        #   TILE=32 的理由：圆角半径（--r-sm=6px）的尺度就是这个量级，
-        #     块太大会把"局部退化"摊薄，块太小会被字体抗锯齿噪声干扰。
-        TILE = 32
-        # 每块的容差：块小 ⇒ 允许的比例略高（否则纯噪声会天天假红）
-        TILE_PCT = 3.0      # 任一块变化 > 3% ⇒ fail
-        PAGE_PCT = 0.5      # 全页变化 > 0.5% ⇒ fail（捕捉大面积改动）
 
-        diff = Image.new('RGB', (w, h))
-        dp = diff.load(); ap = a.load(); bp2 = b.load()
-        n = 0
-        # 标记 tile 是否超阈值
-        bad_tiles = []
-        for ty in range(0, h, TILE):
-            for tx in range(0, w, TILE):
-                tn = 0; ttot = 0
-                for y in range(ty, min(ty + TILE, h)):
-                    for x in range(tx, min(tx + TILE, w)):
-                        ttot += 1
-                        r1, g1, b1 = ap[x, y]
-                        r2, g2, b2 = bp2[x, y]
-                        if (abs(r1 - r2) > tolerance or abs(g1 - g2) > tolerance
-                                or abs(b1 - b2) > tolerance):
-                            tn += 1
-                            n += 1
-                            dp[x, y] = (255, 0, 0)          # 标红
-                        else:
-                            dp[x, y] = (b1, b1, b1)          # 灰度底
-                tp = 100.0 * tn / max(1, ttot)
-                if tp > TILE_PCT:
-                    bad_tiles.append((tx, ty, tp))
-        pct = 100.0 * n / (w * h)
-        diff.save(os.path.join(DIFFS, name))
-        if bad_tiles or pct > PAGE_PCT:
-            worst = max(bad_tiles, key=lambda t: t[2]) if bad_tiles else (0, 0, 0)
-            why = ('%d 个块变化超 %.1f%%（最差 %s 处 %.1f%%）；全页 %.3f%%'
-                   % (len(bad_tiles), TILE_PCT, str(worst[:2]), worst[2], pct))
-            failed.append((name, pct, why))
+        if not r['ok']:
+            # 分块（tile）判据的语义保留在 pngdiff 里：
+            #   视觉退化通常是**局部集中**的（一个按钮的圆角 ≈ 几百像素），
+            #   摊到 150 万像素的全页就微不足道（实测 0.065% 被放过），
+            #   所以判据是"任一块变化 > 3%"而不是"全页 > x%"。
+            worst = max(r['bad_tiles'], key=lambda t: t[2]) if r['bad_tiles'] else (0, 0, 0)
+            why = ('%d 个块变化超 3.0%%（最差 %s 处 %.1f%%）；全页 %.3f%%'
+                   % (len(r['bad_tiles']), str(worst[:2]), worst[2], r['pct']))
+            failed.append((name, r['pct'], why))
         else:
             passed += 1
     return passed, failed
@@ -716,15 +744,31 @@ def main():
         if scheme not in ('light', 'dark'):
             print('  --scheme 只接受 light / dark')
             return 2
-    global BASELINE, CURRENT, DIFFS, SCHEME
+    dirn = 'ltr'
+    if '--dir' in argv:
+        i = argv.index('--dir')
+        dirn = argv[i + 1] if i + 1 < len(argv) else ''
+        if dirn not in ('ltr', 'rtl'):
+            print('  --dir 只接受 ltr / rtl')
+            return 2
+    global BASELINE, CURRENT, DIFFS, SCHEME, DIRN
     SCHEME = scheme
+    DIRN = dirn
+    # 目录后缀：light+ltr 沿用原名（现有基线与路径**一个字节不变**），
+    # 其余组合各占一套，互不覆盖。
+    suffix = ''
     if scheme != 'light':
-        BASELINE = os.path.join(SHOTS, '_baseline-' + scheme)
-        CURRENT = os.path.join(SHOTS, '_current-' + scheme)
-        DIFFS = os.path.join(SHOTS, '_diff-' + scheme)
+        suffix += '-' + scheme
+    if dirn != 'ltr':
+        suffix += '-' + dirn
+    if suffix:
+        BASELINE = os.path.join(SHOTS, '_baseline' + suffix)
+        CURRENT = os.path.join(SHOTS, '_current' + suffix)
+        DIFFS = os.path.join(SHOTS, '_diff' + suffix)
 
     if '--list' in argv:
-        for d, f, label in PAGES:
+        for row in managed():
+            d, f, label = row[0], row[1], row[2]
             p = os.path.join(ROOT, d, f)
             print('  %s  %s/%s' % ('OK ' if os.path.exists(p) else '缺 ', d, f))
         return 0
@@ -818,16 +862,17 @@ def main():
         print('  [FAIL] %s' % (failed[0] if failed else '未知错误'))
         return 1
 
-    print('  === 视觉回归（阈值 %.2f%%）===' % threshold)
+    print('  === 视觉回归（阈值 %.2f%%%s）==='
+          % (threshold, '，dir=rtl' if DIRN == 'rtl' else ''))
     compared = passed + len(failed)
     print('  OK   %d / %d 个页面观感一致' % (passed, compared))
     # 🔴 诚实报告：截了但**没有基线可比**的页面 = 本轮**没被验证**。
     #    不写出来就会被当成"也通过了"（默认信任是最常见的假绿来源）。
     bnames = {os.path.basename(x)
               for x in glob.glob(os.path.join(BASELINE, '*.png'))}
-    unverified = [shot_name(d, f) for d, f, _ in PAGES
-                  if os.path.exists(os.path.join(ROOT, d, f))
-                  and shot_name(d, f) not in bnames]
+    unverified = [shot_name(r[0], r[1]) for r in managed()
+                  if os.path.exists(os.path.join(ROOT, r[0], r[1]))
+                  and shot_name(r[0], r[1]) not in bnames]
     if unverified:
         print('  ⚠️ %d 个页面**截了但没有基线**，本轮未验证（跑 --update 录基线）：'
               % len(unverified))

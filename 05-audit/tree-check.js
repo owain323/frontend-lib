@@ -117,79 +117,138 @@ const REPO = path.resolve(__dirname, '..');
         return { ok: a !== b, note: '↓：' + a + ' → ' + b + (a !== b ? ' ✅' : ' 🔴 没动') };
       },
 
-      /* ② → 展开时先展开、再按才进子节点（APG 的两段式）*/
+      /* ② → 两段式：收起态按 → 只展开、不动焦点；再按一次才进子节点 */
       '→ 两段式（先展开，再进入）': async (p) => {
-        /* 找当前是收起的父节点 */
+        /* 🔴 2026-10-29 重写（起因是 E86：demo 的「默认全部收起」其实全展开）。
+           旧版在这里**手动把 aria-expanded 改成 'true'** 再按 →，
+           于是它测的其实是"已展开的节点按 → 进子节点"，而断言里用
+           `after1.expanded === 'true'` 当"焦点没动"的证据 ——
+           这只有在子节点**恰好也展开**的时候才成立。
+           demo 一修好（子节点真的是 false），断言立刻红，而它红的原因
+           不是组件坏了，是这条判据一直在测别的东西。
+
+           ⇒ 现在：前置状态**不手动改**，直接找真实收起节点；
+             焦点是否移动用**元素标记**判，不用 aria / label 猜。 */
         const setup = await p.evaluate(() => {
-          /* 🔴 改查**全页**的收起节点。
-             之前只查 #t1（默认展开），导致这条永远跳过 ⇒ 等于没测。
-             ⇒ 现在用 #t2（默认全收起）来测 ←→ 的两段式行为。 */
-          /* 🔴 这条**自己准备前提**，不依赖上一条测过什么。
-             之前它靠「← 的测试里先用 → 展开」⇒ 一旦单独跑就"跳过"，
-             等于**这条契约形同虚设**。
-             ⚠️ 判据之间**不能有隐藏的顺序依赖** —— 那会让契约在
-                单独运行时悄悄退化成"永远通过"。
-             ⇒ 正解：在这里显式把 #t2 的第一个父节点展开。 */
-          const n = [...document.querySelectorAll('#t2 .tree__node')][0];
-          if (!n) return null;
-          const li = n.closest('[role="treeitem"]');
-          if (li) li.setAttribute('aria-expanded', 'true');
-          const g = li && li.querySelector(':scope > [role="group"]');
-          if (g) g.hidden = false;
+          function walk(li, fn) {
+            var cur = li && li.parentElement ? li.parentElement.closest('[role="treeitem"]') : null;
+            while (cur) { fn(cur); cur = cur.parentElement ? cur.parentElement.closest('[role="treeitem"]') : null; }
+          }
+          const li = Array.prototype.slice
+            .call(document.querySelectorAll('#t2 [role="treeitem"]'))
+            .filter(function (i) {
+              return i.getAttribute('aria-expanded') === 'false' &&
+                     i.querySelector(':scope > [role="group"]');
+            })[0];
+          if (!li) return null;
+          /* 祖先展开只是为了"它可见、能聚焦"，不改它自己的收起态 */
+          walk(li, function (a) {
+            a.setAttribute('aria-expanded', 'true');
+            const g = a.querySelector(':scope > [role="group"]');
+            if (g) g.hidden = false;
+          });
+          const n = li.querySelector(':scope > .tree__node');
           n.focus();
-          return { label: (n.textContent || '').trim().slice(0, 8), id: li ? 1 : 0 };
+          n.setAttribute('data-fl-probe', '1');
+          return { label: (n.textContent || '').trim().slice(0, 8) };
         });
-        if (!setup) return { ok: true, note: '无收起节点（跳过）' };
+        if (!setup) {
+          return { ok: false,
+                   note: '🔴 #t2 里找不到收起的父节点 ⇒ 两段式判据无法执行，' +
+                         '这是红不是跳过（demo 的第 2 例本该是全收起）' };
+        }
         await p.keyboard.press('ArrowRight');
         await new Promise((r) => setTimeout(r, 250));
         const after1 = await p.evaluate(() => {
           const a = document.activeElement;
           const li = a.closest('[role="treeitem"]');
-          return { expanded: li ? li.getAttribute('aria-expanded') : null,
-                   label: (a.textContent || '').trim().slice(0, 8) };
+          return { same: a.getAttribute('data-fl-probe') === '1',
+                   expanded: li ? li.getAttribute('aria-expanded') : null };
         });
-        /* 再按一次应该进入子节点 */
         await p.keyboard.press('ArrowRight');
         await new Promise((r) => setTimeout(r, 250));
-        const after2 = await p.evaluate(() =>
-          (document.activeElement.textContent || '').trim().slice(0, 8));
-        return { ok: after1.expanded === 'true' && after2 !== after1.label,
-                 note: '第一次→：展开=' + after1.expanded + '（焦点未动）· ' +
-                       '第二次→：焦点到「' + after2 + '」' +
-                       (after2 !== after1.label ? ' ✅' : ' 🔴 没进子节点') };
+        const after2 = await p.evaluate(() => {
+          const a = document.activeElement;
+          const probe = document.querySelector('[data-fl-probe="1"]');
+          const li = probe ? probe.closest('[role="treeitem"]') : null;
+          const g = li ? li.querySelector(':scope > [role="group"]') : null;
+          return { same: a.getAttribute('data-fl-probe') === '1',
+                   inChild: !!(g && g.contains(a)) };
+        });
+        const ok = after1.same && after1.expanded === 'true' && !after2.same && after2.inChild;
+        return { ok,
+                 note: '第一次→：焦点未动=' + after1.same + '、展开=' + after1.expanded +
+                       ' · 第二次→：焦点进子节点=' + after2.inChild +
+                       (ok ? ' ✅' : ' 🔴 两段式没成立') };
       },
 
-      /* ③ ← 收起时先收起、再按才回父节点 */
+      /* ③ ← 两段式：展开态按 ← 只收起、不动焦点；再按一次才回父节点 */
       '← 两段式（先收起，再回父）': async (p) => {
+        /* 旧版取"全页第一个收起项"，E86 修好之后第一个是**顶层** src ——
+           顶层没有父可回，断言自然永远不成立。
+           ⇒ 现在只挑**有父 treeitem** 的收起项，并自己把祖先展开（可见性），
+             两段式用两次 ← 现场走完，不依赖上一条测过什么。 */
         const setup = await p.evaluate(() => {
-          /* 先用 → 展开某个节点，并聚焦它 */
-          const n = [...document.querySelectorAll('.tree__node')]
-            .find((x) => {
-              const li = x.closest('[role="treeitem"]');
-              return li && li.getAttribute('aria-expanded') === 'false';
-            });
-          if (!n) return null;
+          function walk(li, fn) {
+            var cur = li && li.parentElement ? li.parentElement.closest('[role="treeitem"]') : null;
+            while (cur) { fn(cur); cur = cur.parentElement ? cur.parentElement.closest('[role="treeitem"]') : null; }
+          }
+          const li = Array.prototype.slice
+            .call(document.querySelectorAll('#t2 [role="treeitem"]'))
+            .filter(function (i) {
+              return i.getAttribute('aria-expanded') === 'false' &&
+                     i.querySelector(':scope > [role="group"]') &&
+                     i.parentElement && i.parentElement.closest('[role="treeitem"]');
+            })[0];
+          if (!li) return null;
+          walk(li, function (a) {
+            a.setAttribute('aria-expanded', 'true');
+            const g = a.querySelector(':scope > [role="group"]');
+            if (g) g.hidden = false;
+          });
+          const n = li.querySelector(':scope > .tree__node');
           n.focus();
-          n.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
-          return (n.textContent || '').trim().slice(0, 8);
+          n.setAttribute('data-fl-probe', '2');
+          return { label: (n.textContent || '').trim().slice(0, 8) };
         });
-        if (!setup) return { ok: true, note: '无收起节点（跳过）' };
-        await new Promise((r) => setTimeout(r, 250));
+        if (!setup) {
+          return { ok: false,
+                   note: '🔴 #t2 里找不到"有父节点且收起"的节点 ⇒ 判据无法执行，这是红不是跳过' };
+        }
+        /* 先按 → 把它展开（此时焦点应仍在本节点） */
+        await p.keyboard.press('ArrowRight');
+        await new Promise((r) => setTimeout(r, 220));
+        const pre = await p.evaluate(() => ({
+          same: document.activeElement.getAttribute('data-fl-probe') === '2',
+          expanded: (document.activeElement.closest('[role="treeitem"]') || {})
+            .getAttribute ? document.activeElement.closest('[role="treeitem"]').getAttribute('aria-expanded') : null,
+        }));
+        /* 第一次 ←：收起，焦点不动 */
         await p.keyboard.press('ArrowLeft');
-        await new Promise((r) => setTimeout(r, 250));
-        const a1 = await p.evaluate(() => {
-          const li = document.activeElement.closest('[role="treeitem"]');
-          return { exp: li ? li.getAttribute('aria-expanded') : null,
-                   lbl: (document.activeElement.textContent || '').trim().slice(0, 8) };
+        await new Promise((r) => setTimeout(r, 220));
+        const a1 = await p.evaluate(() => ({
+          same: document.activeElement.getAttribute('data-fl-probe') === '2',
+          exp: (document.activeElement.closest('[role="treeitem"]') || {})
+            .getAttribute ? document.activeElement.closest('[role="treeitem"]').getAttribute('aria-expanded') : null,
+        }));
+        /* 第二次 ←：回到父节点 */
+        await p.keyboard.press('ArrowLeft');
+        await new Promise((r) => setTimeout(r, 220));
+        const a2 = await p.evaluate(() => {
+          const a = document.activeElement;
+          const probe = document.querySelector('[data-fl-probe="2"]');
+          const li = probe ? probe.closest('[role="treeitem"]') : null;
+          const parentLi = li && li.parentElement ? li.parentElement.closest('[role="treeitem"]') : null;
+          return { same: a.getAttribute('data-fl-probe') === '2',
+                   toParent: !!(parentLi && parentLi.contains(a)) };
         });
-        await p.keyboard.press('ArrowLeft');
-        await new Promise((r) => setTimeout(r, 250));
-        const a2 = await p.evaluate(() =>
-          (document.activeElement.textContent || '').trim().slice(0, 8));
-        return { ok: a1.exp === 'false' && a2 !== a1.lbl,
-                 note: '第一次←：收起=' + a1.exp + '（焦点未动）· ' +
-                       '第二次←：回到「' + a2 + '」' +
-                       (a2 !== a1.lbl ? ' ✅' : ' 🔴 没回父节点') };
+        const ok = pre.same && pre.expanded === 'true' &&
+                   a1.same && a1.exp === 'false' && !a2.same && a2.toParent;
+        return { ok,
+                 note: '→ 展开：焦点未动=' + pre.same + '·展开=' + pre.expanded +
+                       ' · 第一次←：焦点未动=' + a1.same + '·收起=' + a1.exp +
+                       ' · 第二次←：回到父=' + a2.toParent +
+                       (ok ? ' ✅' : ' 🔴 两段式没成立') };
       },
 
       /* ⑤ Home / End 跳首末 */
@@ -259,23 +318,73 @@ const REPO = path.resolve(__dirname, '..');
                                          : ' 🔴 只按单字符匹配（没累积）') };
       },
 
-      /* ③ `*` 展开本层同级（APG 特有）*/
+      /* ③ `*` 展开本层同级 —— 只展开**同一层**，不动更深层（APG 特有） */
       '` * ` 展开本层全部同级': async (p) => {
-        const r = await p.evaluate(() => {
-          const collapsed = [...document.querySelectorAll('#t2 [role="treeitem"]')]
-            .filter((i) => i.getAttribute('aria-expanded') === 'false');
-          if (!collapsed.length) return { ok: true, note: '无收起节点（跳过）' };
-          collapsed[0].querySelector('.tree__node').focus();
-          return { n: collapsed.length, ok: true };
+        /* 🔴 2026-10-29 重写：旧版断言"按 * 之后 **整棵树**没有收起节点"，
+           而 `*` 的语义是**只展开当前层同级**（tree.js 里 `levelOf(x) === lvl`）。
+           旧版之所以一直是绿，是因为 E86 让 #t2 里根本没有收起节点 ⇒ 整条跳过。
+           ⇒ 现在把同层全部收起来做前置，判"同层全展开"，
+             并且**顺便判"更深的层没被动过"** —— 两件事一起才叫"本层"语义。 */
+        const pre = await p.evaluate(() => {
+          const all = Array.prototype.slice.call(
+            document.querySelectorAll('#t2 [role="treeitem"]'));
+          function level(li) {
+            let n = 0;
+            let cur = li.parentElement ? li.parentElement.closest('[role="treeitem"]') : null;
+            while (cur) { n++; cur = cur.parentElement ? cur.parentElement.closest('[role="treeitem"]') : null; }
+            return n;
+          }
+          const lv0 = all.filter(function (i) {
+            return level(i) === 0 && i.querySelector(':scope > [role="group"]');
+          });
+          if (!lv0.length) return null;
+          /* 允许聚焦：把祖先（这里没有）+ 自己设为收起 */
+          lv0.forEach(function (i) {
+            i.setAttribute('aria-expanded', 'false');
+            const g = i.querySelector(':scope > [role="group"]');
+            if (g) g.hidden = true;
+          });
+          /* 深层随便留几个收起的，用来验证"没被动" —— 若本来就都展开，
+             手动收起一个二级父节点 */
+          const lv1 = all.filter(function (i) {
+            return level(i) === 1 && i.querySelector(':scope > [role="group"]');
+          });
+          if (lv1.length) {
+            lv1[0].setAttribute('aria-expanded', 'false');
+            const g = lv1[0].querySelector(':scope > [role="group"]');
+            if (g) g.hidden = true;
+          }
+          const n = lv0[0].querySelector(':scope > .tree__node');
+          n.focus();
+          return { lv0: lv0.length, lv1: lv1.length };
         });
-        if (r.note && r.note.indexOf('跳过') >= 0) return { ok: true, note: r.note };
+        if (!pre) {
+          return { ok: false, note: '🔴 #t2 里没有带子节点的顶层项 ⇒ 判据无法执行，这是红不是跳过' };
+        }
         await p.keyboard.press('*');
-        await new Promise((x) => setTimeout(x, 300));
-        const after = await p.evaluate(() =>
-          document.querySelectorAll('#t2 [role="treeitem"][aria-expanded="false"]').length);
-        return { ok: after === 0,
-                 note: '按 * 后仍收起的节点：' + after + ' 个' +
-                       (after === 0 ? ' ✅' : ' 🔴 没展开') };
+        await new Promise((r) => setTimeout(r, 300));
+        const after = await p.evaluate(() => {
+          const all = Array.prototype.slice.call(
+            document.querySelectorAll('#t2 [role="treeitem"]'));
+          function level(li) {
+            let n = 0;
+            let cur = li.parentElement ? li.parentElement.closest('[role="treeitem"]') : null;
+            while (cur) { n++; cur = cur.parentElement ? cur.parentElement.closest('[role="treeitem"]') : null; }
+            return n;
+          }
+          const still = function (lv) {
+            return all.filter(function (i) {
+              return level(i) === lv && i.querySelector(':scope > [role="group"]') &&
+                     i.getAttribute('aria-expanded') === 'false';
+            }).length;
+          };
+          return { lv0: still(0), lv1: still(1) };
+        });
+        const ok = after.lv0 === 0 && after.lv1 === pre.lv1;
+        return { ok,
+                 note: '按 * 后：同层仍收起 ' + after.lv0 + ' 个（应 0）· ' +
+                       '更深层仍收起 ' + after.lv1 + ' 个（应 ' + pre.lv1 + '，即没被动）' +
+                       (ok ? ' ✅' : ' 🔴 本层语义不成立') };
       },
 
       /* 收起的节点其子树必须不可聚焦 */

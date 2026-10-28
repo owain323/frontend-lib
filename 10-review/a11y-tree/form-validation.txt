@@ -1,0 +1,40 @@
+# form-validation — 表单校验：invalid + 描述
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "表单校验 · 时机 / 汇总 / 焦点"
+  main
+    heading "表单校验" [level=1]
+    paragraph "核心不是"标红"，而是 什么时候报、报给谁看、焦点去哪 。 这三件事决定了用户觉得表单"聪明"还是"烦人"。"
+    heading "一、校验时机：别在 oninput 报错" [level=2]
+    paragraph "下面两个输入框规则完全一样， 只有校验时机不同 。都试着打几个字看差别。"
+    heading "反例：oninput 立即报错" [level=3]
+    LabelText "金额"
+    textbox "金额"
+    paragraph "刚敲下 1 就开始红了 —— 但 1 可能是合法的中间状态。 用户打到一半满屏红字，不敢继续打，甚至放弃填表。 这是纯噪"
+    heading "正例：blur 才首次校验" [level=3]
+    LabelText "金额"
+    textbox "金额"
+    paragraph "打字时安安静静。 失焦那一刻 才校验； 之后你回来修改才会实时提示（因为你已经知道它的规则了）。 这时才叫"帮助"而不是"
+    heading "二、完整表单：提交后出错误汇总" [level=2]
+    paragraph "什么都不填，直接点提交。焦点会移到汇总上，汇总里每条可点击跳转。"
+    form "公司名称 金额 备注 提交 重置"
+      LabelText "公司名称"
+      textbox "公司名称"
+      LabelText "金额"
+      textbox "金额"
+      LabelText "备注"
+      textbox "备注"
+      button "提交"
+      button "重置"
+    heading "三、错误文案：给建议，不给判断" [level=2]
+    heading "反例" [level=3]
+    paragraph "格式错误"
+    paragraph "非法输入"
+    paragraph "值不合法"
+    paragraph "WCAG 3.3.3 要求给修正建议。这三句用户读完还是不知道该改成什么。"
+    heading "正例" [level=3]
+    paragraph "金额最多两位小数，例如 12.34"
+    paragraph "请填写公司名称，2 到 40 个字"
+    paragraph "这个日期在未来，请检查"
+    paragraph "每条都 具体、可执行 ，还带一个正例。"
+    heading "四、无障碍要点" [level=2]

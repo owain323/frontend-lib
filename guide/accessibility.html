@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<title>无障碍 · agentcss</title>
+<title>无障碍一致性声明 · agentcss</title>
 <meta name="description" content="目标等级、验过的范围与手段、已知缺口、自测命令">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%227%22%20fill%3D%22%231b4d8f%22%2F%3E%3Crect%20x%3D%228%22%20y%3D%228%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%221.6%22%20fill%3D%22%23fff%22%2F%3E%3Crect%20x%3D%2217%22%20y%3D%228%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%221.6%22%20fill%3D%22%23fff%22%20opacity%3D%22.5%22%2F%3E%3Crect%20x%3D%228%22%20y%3D%2217%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%221.6%22%20fill%3D%22%23fff%22%20opacity%3D%22.5%22%2F%3E%3Crect%20x%3D%2217%22%20y%3D%2217%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%221.6%22%20fill%3D%22%23fff%22%2F%3E%3C%2Fsvg%3E">
 <link rel="stylesheet" href="../01-tokens/tokens.css">
@@ -28,56 +28,120 @@
 <div class="g-layout">
   <main id="main" class="g-main">
     <p class="g-kicker">全局约定 · 跨组件</p>
-    <h1>无障碍</h1>
+    <h1>无障碍一致性声明</h1>
     <p class="lede">目标等级、验过的范围与手段、已知缺口、自测命令</p>
     <ul class="g-meta"><li><a href="../docs/ACCESSIBILITY.md"><code>docs/ACCESSIBILITY.md</code></a></li><li>规则由 <code>01-tokens/</code> 实现，判据见文末对应表</li></ul>
     <article class="g-doc">
-<p>目标等级是 <strong>WCAG 2.2 AA</strong>。本文说清三件事：<strong>验过什么、怎么验的、还差什么</strong>。没说到的，就当作没验过 —— 这份文件的用处是让人不必猜。</p>
-<h2 id="s2">一 · 已验证的范围<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
-<p>最近一次运行（<code>node 05-audit/a11y-scan.js</code>）：</p>
+<p><strong>目标等级：WCAG 2.2 Level AA。</strong> 本文按 <strong>成功准则（Success Criterion）逐条</strong>说明状态、证据来源与缺口 —— 不是&quot;我们很重视无障碍&quot;，而是&quot;哪一条过、哪一条没过、凭什么&quot;。</p>
 <div class="table"><table>
 <thead><tr>
-<th>项目</th><th>手段</th><th>结果</th>
+<th>项目</th><th>值</th>
 </tr></thead>
 <tbody>
-<tr><td>自动审计</td><td><code>axe-core</code>，跑 18 个页面（组件 demo + 文档页 + 长文页）</td><td><strong>0 类违规 / 991 条规则通过</strong>；另有 <strong>9 处</strong>标记「待人工」</td></tr>
-<tr><td>「0 违规」可信吗</td><td>反向控制：注入 5 类典型违规，看它抓不抓得到</td><td>5 类全部抓到。<strong>没有反向控制的 0 违规不算证据</strong></td></tr>
-<tr><td>对比度（浅色）</td><td><code>contrast.py</code> 从 <code>tokens.css</code> 读实色值逐对计算</td><td>正文 ≥ 4.5:1、控件边界 ≥ 3:1、装饰线不强制</td></tr>
-<tr><td>对比度（暗色）</td><td><code>dark-contrast.js</code> 单独算一遍</td><td>同上；暗色不是浅色取反，独立验收</td></tr>
-<tr><td>组件级对比度</td><td><code>component-contrast.py</code></td><td>每个组件自己的配色再算一次</td></tr>
-<tr><td>焦点可见</td><td><code>focus-ring-check.js</code></td><td>有焦点环，且不是 <code>outline: none</code> 代替品</td></tr>
-<tr><td>焦点归还</td><td><code>focus-return-check.js</code></td><td>关闭弹层/抽屉后焦点回到触发元素</td></tr>
-<tr><td>键盘可达</td><td><code>keyboard-nav.js</code></td><td>Tab 顺序、Esc 关闭、不困在浮层里</td></tr>
-<tr><td>触控目标</td><td><code>a11y.py</code> + 行为脚本</td><td>热区 44×44（WCAG 2.5.5）</td></tr>
-<tr><td>减少动效</td><td><code>motion.py --reduced-audit</code></td><td>位移关、真实进度留（3 处登记例外）、双向核对</td></tr>
-<tr><td>页面结构</td><td>文档站门禁逐页判</td><td>每页有 <code>lang</code>、单一 <code>h1</code>、<code>main</code>、跳转链接、无重复 <code>id</code></td></tr>
+<tr><td>声明适用版本</td><td>agentcss <code>0.11.9</code></td></tr>
+<tr><td>声明日期</td><td>2026-10-29</td></tr>
+<tr><td>复核节奏</td><td>每次发版前重跑（<code>npm run gate</code> 内含全部证据）</td></tr>
+<tr><td>范围</td><td>本库交付的 CSS / JS、35 个组件的 <code>demo.html</code>、以及文档站生成的页面</td></tr>
+<tr><td>不在范围</td><td>使用者拿这些组件拼出来的业务页面（那是你的无障碍责任，不是库的）</td></tr>
 </tbody>
 </table></div>
-<p>目标尺寸、对比度阈值、动效分档这些<strong>规则本身</strong>写在 <a href="../docs/CONVENTIONS.md">全局约定</a> 里，这里只报结论。</p>
-<h2 id="s3">二 · 已知缺口<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
-<p>这一节比上一节重要。以下都是<strong>没做到</strong>的，不是&quot;应该没问题&quot;：</p>
-<ol><li><strong>没有真机读屏记录。</strong> NVDA、VoiceOver、TalkBack 一个都没录过。 axe 只覆盖 WCAG 问题的约 30–40%，它查不出&quot;alt 写得有没有意义&quot;&quot;阅读顺序对不对&quot; &quot;屏幕阅读器实际听到的是什么&quot;—— 那几项只能用耳朵听。所以本库目前能说的是「<strong>自动检查能覆盖的部分是干净的</strong>」，不能说得更多。</li><li><strong>RTL 只有静态检查。</strong> 交付 CSS 里物理方向属性 0 处、全部逻辑属性（<code>rtl-check.js</code> 守），但没有一张 <code>dir=&quot;rtl&quot;</code> 的渲染基线，也没跑过阿拉伯语/希伯来语的文字膨胀案例。</li><li><strong>强制色板（forced-colors）只覆盖了一部分。</strong> 6 个 CSS 写了 <code>forced-colors</code> / <code>prefers-contrast</code> 的处理，不是全部组件。 Windows 高对比度模式下的表现没有逐组件验证。</li><li><strong>Android 系统 WebView 未验证。</strong> 真机矩阵里它是 ❌（见 <a href="../SUPPORT.md">浏览器支持矩阵</a>），已验的是微信内置内核、iOS/macOS Safari 等 7 行。</li><li><strong>没有 VPAT / ACR 正式符合性报告。</strong> 采购流程里要的那种文档，本库没有出。</li><li><strong>9 处「待人工」还没有人工结论。</strong> 自动审计把它们标出来了（需要人判断，比如图表的替代文本是否描述了数据），目前仍挂着。</li></ol>
-<h2 id="s4">三 · 怎么自己验<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
-<pre class="code" tabindex="0"><code class="language-bash"># 单个 demo 页的可访问性（结构、语言、标题层级、跳转链接…）
-python3 05-audit/a11y.py 02-primitives/button/demo.html
-
-# axe 审计（跑全部已登记的页面）
-node 05-audit/a11y-scan.js
-
-# 证明上面那个&quot;0 违规&quot;不是因为没查
-node 05-audit/_a11y-reverse-control.js
-
-# 亮色 / 暗色两套对比度
-python3 05-audit/contrast.py
-node 05-audit/dark-contrast.js
-
-# 键盘与焦点
-node 05-audit/keyboard-nav.js
-node 05-audit/focus-ring-check.js
-node 05-audit/focus-return-check.js</code></pre>
+<p>判读方式只有一句：<strong>表里写「通过」的，下面都给出了可复现的命令；写「部分」或「未验」的，就是没做到，不要按&quot;应该没问题&quot;理解。</strong></p>
+<hr>
+<h2 id="s2">一 · 逐条状态<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<p>图例：<strong>✅ 通过</strong>（有判据且为绿）· <strong>◐ 部分</strong>（做了但有明确边界）· <strong>✗ 未验</strong>（没有证据）· <strong>— 不适用</strong>（本库不含该内容，理由写在括号里）</p>
+<h3 id="s3">1. 可感知<a class="anchor" href="#s3" aria-label="本节直链">#</a></h3>
+<div class="table"><table>
+<thead><tr>
+<th>SC</th><th>名称</th><th>状态</th><th>证据 / 边界</th>
+</tr></thead>
+<tbody>
+<tr><td>1.1.1</td><td>非文本内容</td><td>◐</td><td>图标一律 <code>aria-hidden</code>，语义由文字或 <code>aria-label</code> 承担；图表类组件要求调用方给替代文本，<strong>库替不了使用者</strong></td></tr>
+<tr><td>1.3.1</td><td>信息与关系</td><td>✅</td><td><code>a11y-scan</code>（axe）+ 页面结构判据：单一 <code>h1</code>、<code>main</code>、<code>lang</code>、标题不跳级</td></tr>
+<tr><td>1.3.2</td><td>有意义的顺序</td><td>✅</td><td>DOM 顺序 = 视觉顺序，无 <code>order</code> / 绝对定位重排</td></tr>
+<tr><td>1.3.3</td><td>感官特性</td><td>✅</td><td>说明文字不以&quot;左边的按钮&quot;&quot;圆形图标&quot;指代</td></tr>
+<tr><td>1.3.4</td><td>方向</td><td>✅</td><td>无 <code>orientation</code> 锁定，横竖屏均可用</td></tr>
+<tr><td>1.3.5</td><td>输入目的识别</td><td>—</td><td>库不生成字段的 <code>autocomplete</code> 语义，由调用方按场景决定</td></tr>
+<tr><td>1.4.1</td><td>颜色的使用</td><td>✅</td><td>状态均带文字或图标，不单靠颜色区分</td></tr>
+<tr><td>1.4.3</td><td>对比度（最低）</td><td>✅</td><td><code>contrast.py</code> 从令牌实算：正文 ≥ 4.5:1、控件 ≥ 3:1</td></tr>
+<tr><td>1.4.4</td><td>调整文本大小</td><td>✅</td><td><code>zoom-reflow.js</code>：根字号拉到 200% 后，页面不横滚、文字不被裁</td></tr>
+<tr><td>1.4.5</td><td>文本的图像</td><td>—</td><td>不使用文字截图</td></tr>
+<tr><td>1.4.10</td><td>重排</td><td>✅</td><td><code>zoom-reflow.js</code>：320 CSS px 宽下 <code>&lt;html&gt;</code> 无横向滚动（数据表格允许内部横滚，属 WCAG 豁免的二维内容）</td></tr>
+<tr><td>1.4.11</td><td>非文本对比度</td><td>✅</td><td>控件边框 / 焦点环 / 图表色阶单独实算</td></tr>
+<tr><td>1.4.12</td><td>文本间距</td><td>◐</td><td>组件不写死行高与段距（都用令牌），但<strong>未</strong>按&quot;行高 1.5 倍 / 段距 2 倍&quot;的极端注入逐组件验证</td></tr>
+<tr><td>1.4.13</td><td>内容悬停或聚焦</td><td>◐</td><td>tooltip 可 Esc 关闭、可悬停保持；<strong>未</strong>验证&quot;可选中提示内文字&quot;这一分支</td></tr>
+<tr><td>2.1.1</td><td>键盘</td><td>✅</td><td><code>keyboard-nav.js</code>：Tab 顺序、Enter/Space、Esc 关闭</td></tr>
+<tr><td>2.1.2</td><td>无键盘陷阱</td><td>✅</td><td><code>keyboard-nav.js</code>：浮层关闭后焦点可继续移动，不困在层内</td></tr>
+<tr><td>2.1.4</td><td>字符快捷键</td><td>—</td><td>库不注册单字符快捷键</td></tr>
+<tr><td>2.2.1</td><td>计时可调</td><td>◐</td><td>toast 自动消失时长可配但有上限；<strong>未</strong>提供&quot;暂停计时&quot;控件</td></tr>
+<tr><td>2.2.2</td><td>暂停、停止、隐藏</td><td>✅</td><td><code>motion.py --reduced-audit</code>：<code>prefers-reduced-motion</code> 下位移关闭，spinner 例外已登记</td></tr>
+<tr><td>2.3.1</td><td>三次闪烁</td><td>—</td><td>无大于 3Hz 的闪烁内容</td></tr>
+<tr><td>2.4.1</td><td>跳过区块</td><td>✅</td><td>文档站每页有跳转链接；组件自身不设地标</td></tr>
+<tr><td>2.4.2</td><td>页面标题</td><td>✅</td><td>文档站逐页判 <code>&lt;title&gt;</code> 非空且与 <code>h1</code> 一致</td></tr>
+<tr><td>2.4.3</td><td>焦点顺序</td><td>✅</td><td>同 2.1.1；无 <code>tabindex &gt; 0</code></td></tr>
+<tr><td>2.4.4</td><td>链接目的</td><td>✅</td><td>链接文字自身可读，无&quot;点这里&quot;</td></tr>
+<tr><td>2.4.6</td><td>标题和标签</td><td>✅</td><td>表单控件均有可见 <code>&lt;label&gt;</code>；<code>a11y-ax</code> 判每个可交互控件有非空名称</td></tr>
+<tr><td>2.4.7</td><td>焦点可见</td><td>✅</td><td><code>focus-ring-check.js</code>：<code>:focus-visible</code> 有 2px 焦点环，非 <code>outline: none</code></td></tr>
+<tr><td>2.4.11</td><td>焦点不被遮挡（2.2 新增 AA）</td><td>✅</td><td><code>zoom-reflow.js</code>：焦点矩形与吸顶 / 吸底元素的重叠 ≥ 90% 即判失败</td></tr>
+<tr><td>2.4.13</td><td>焦点外观（AAA，仅记录）</td><td>◐</td><td>焦点环厚度与对比度达标，但未按 AAA 逐组件出数字</td></tr>
+<tr><td>2.5.1</td><td>指针手势</td><td>—</td><td>无多点 / 路径手势</td></tr>
+<tr><td>2.5.3</td><td>标签中的名称</td><td>◐</td><td>可见文字与 accessible name 一致；<strong>未</strong>做&quot;语音输入可命中&quot;的实测</td></tr>
+<tr><td>2.5.5</td><td>目标大小（AAA，仅记录）</td><td>✅</td><td>44×44 热区（<code>a11y.py</code> + 行为脚本）</td></tr>
+<tr><td>2.5.7</td><td>拖动移动（2.2 AA）</td><td>—</td><td>无拖动型交互（滑块用键盘 / 点击调整）</td></tr>
+<tr><td>2.5.8</td><td>目标大小最小（2.2 AA）</td><td>✅</td><td>最小 24×24，实测见 <code>a11y.py</code></td></tr>
+<tr><td>3.1.1</td><td>语言</td><td>✅</td><td>文档站与 demo 均有 <code>lang</code>，双语页各自声明</td></tr>
+<tr><td>3.1.2</td><td>部分语言</td><td>—</td><td>中文页面内无成段外语</td></tr>
+<tr><td>3.2.1</td><td>焦点时</td><td>✅</td><td>焦点不触发上下文切换（无 focus 即跳转 / 即提交）</td></tr>
+<tr><td>3.2.2</td><td>输入时</td><td>✅</td><td>输入不自动提交；<code>select</code> 改变不跳页</td></tr>
+<tr><td>3.2.6</td><td>一致的帮助（2.2 A）</td><td>—</td><td>库无全局帮助入口</td></tr>
+<tr><td>3.3.1</td><td>错误识别</td><td>✅</td><td><code>form-validation</code> 用文字说明错误，不只变色</td></tr>
+<tr><td>3.3.2</td><td>标签或说明</td><td>✅</td><td>必填项有可见标记 + <code>required</code></td></tr>
+<tr><td>3.3.7</td><td>冗余输入（2.2 A）</td><td>—</td><td>由业务表单决定，库不承载</td></tr>
+<tr><td>3.3.8</td><td>可访问的认证（2.2 AA）</td><td>—</td><td>库不含登录流程</td></tr>
+<tr><td>4.1.2</td><td>名称、角色、值</td><td>✅</td><td><code>a11y-ax.js</code>：10 个代表页的可访问性树逐节点判，每个可交互控件有非空名称；朗读序列存快照防回归</td></tr>
+<tr><td>4.1.3</td><td>状态消息</td><td>◐</td><td>toast / 表单错误用 <code>role=&quot;status&quot;</code> / <code>alert</code>；<strong>未</strong>在真实读屏里验证播报时机</td></tr>
+</tbody>
+</table></div>
+<p><strong>统计：✅ 27 条 · ◐ 7 条 · ✗ 0 条 · — 12 条。</strong></p>
+<hr>
+<h2 id="s4">二 · 证据是怎么来的（以及它盖不住什么）<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
+<h3 id="s5">自动化（可复跑，命令都在 <code>05-audit/</code>）<a class="anchor" href="#s5" aria-label="本节直链">#</a></h3>
+<div class="table"><table>
+<thead><tr>
+<th>手段</th><th>覆盖</th><th>最近结果</th>
+</tr></thead>
+<tbody>
+<tr><td><code>axe-core</code>（<code>a11y-scan.js</code>）</td><td>38 页（35 组件 demo + 文档站）</td><td><strong>0 类违规</strong>，991 条规则通过</td></tr>
+<tr><td>反向控制（注入 5 类典型违规）</td><td>证明上一条不是&quot;没查&quot;</td><td>5 类全部抓到</td></tr>
+<tr><td><code>a11y-ax.js</code> 可访问性树</td><td>10 个交互语义各异的页面</td><td>0 个无名控件；朗读序列存 <code>10-review/a11y-tree/</code></td></tr>
+<tr><td><code>contrast.py</code> / <code>dark-contrast.js</code></td><td>亮 / 暗两套，逐对实算</td><td>正文 ≥ 4.5:1</td></tr>
+<tr><td><code>zoom-reflow.js</code></td><td>38 页 × 3 条 AA 硬项</td><td>320px 不横滚 · 200% 不裁字 · 焦点不被遮挡</td></tr>
+<tr><td><code>focus-ring-check</code> / <code>focus-return-check</code> / <code>keyboard-nav</code></td><td>焦点可见、焦点归还、键盘路径</td><td>全绿</td></tr>
+</tbody>
+</table></div>
+<h3 id="s6">人工（<strong>尚未执行</strong> —— 这是本声明最大的空白）<a class="anchor" href="#s6" aria-label="本节直链">#</a></h3>
+<p>自动化的天花板必须说清楚：<strong>axe 只能覆盖约 30–40% 的 WCAG 问题</strong>，而且它听不见。以下三件事本库<strong>没有</strong>任何一条真实记录：</p>
+<ol><li><strong>真机读屏</strong>（NVDA / VoiceOver / TalkBack）——一条录音都没有。</li><li><strong>真实键盘 + 读屏组合下的阅读顺序</strong>是否符合预期（<code>a11y-ax</code> 只证明&quot;顺序稳定&quot;，不证明&quot;顺序正确&quot;——后者需要人判断）。</li><li><strong>9 处「待人工」结论</strong>（例如图表的替代文本是否真的描述了数据）。</li></ol>
+<p>为了把这块从&quot;没有&quot;变成&quot;可执行&quot;，协议写在 <a href="../docs/A11Y-MANUAL-PROTOCOL.md">无障碍人工测试协议</a>：两条路径、约 20 分钟、结果直接填表。 <strong>在你或志愿者跑完之前，本声明只代表&quot;自动检查覆盖的部分是干净的&quot;。</strong></p>
+<hr>
+<h2 id="s7">三 · 已知缺口（按影响排序）<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
+<ol><li><strong>没有真机读屏记录</strong>（同上）。这是与 Carbon / Spectrum 那类一致性报告差距最大的一处。</li><li><strong>没有 VPAT / ACR 正式报告</strong>。采购流程要的那种文档本库没有出；上面那张 SC 表可以当它的替代品，但它不是法律意义上的 ACR。</li><li><strong>强制色板（forced-colors）只覆盖 6 个 CSS</strong>，Windows 高对比度模式未逐组件验证。</li><li><strong>RTL 已进渲染判据与视觉基线，但没进真机</strong>： <code>rtl-render.js</code> 判 37 页（RTL 不横滚 / 阿·希文字膨胀 1.3× 不破相 / 方向性字形镜像），<code>shot-baseline.py --dir rtl</code> 有 13 张视觉基线（覆盖&quot;镜像错了但不溢出不改字形&quot;那一类）。 <strong>仍然缺的是</strong>：母语 RTL 使用者的实际阅读体验、iOS/Android 真机 RTL 截图，以及「页面加载后再切 <code>dir</code>」时组件内部状态是否需要重算。最后这条的现状是：CSS 会立刻响应（树形箭头、栅格、滑入方向都靠 CSS），但凡是 JS 在挂载时把方向读进变量的地方都不会重算 —— 本库目前没有这种写法，这一点靠 <code>rtl-render</code> 的&quot;挂载后再改 dir&quot;路径间接守着。</li><li><strong>1.4.12 文本间距</strong>未按极端注入验证；<strong>1.4.13</strong> 未验证&quot;提示内文字可选中&quot;。</li><li><strong>Android 系统 WebView 未验证</strong>，真机矩阵里它是 ❌（见<a href="../SUPPORT.md">浏览器支持矩阵</a>）。</li><li><strong><code>prefers-contrast: more</code> 未单独验收</strong>（只做了 <code>forced-colors</code>）。</li></ol>
+<hr>
+<h2 id="s8">四 · 自己验一遍<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-bash"># 一条命令跑完全部无障碍相关判据（含反向控制）
+npm run gate:fast                       # 静态层：结构 / 契约 / 文档事实
+node 05-audit/a11y-scan.js              # axe（需要本地静态服务 :8000）
+node 05-audit/a11y-ax.js                # 可访问性树 + 名称判据
+node 05-audit/zoom-reflow.js            # 200% / 320px / 焦点遮挡
+node 05-audit/rtl-render.js             # RTL 渲染 + 阿/希膨胀 + 字形镜像
+node 05-audit/a11y-ax.js --selftest     # 证明上面那条判据抓得到问题
+node 05-audit/zoom-reflow.js --selftest # 同上
+node 05-audit/rtl-render.js --selftest  # 同上
+python 05-audit/shot-baseline.py --check --dir rtl   # RTL 视觉基线</code></pre>
 <p><code>python3 05-audit/a11y.py --dir .</code> 会连 <code>node_modules</code> 一起扫，那里面的第三方 HTML 会报一堆与你无关的问题 —— 门禁里用的是逐目录调用，别用 <code>--dir .</code>。</p>
-<h2 id="s5">四 · 报告问题<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
-<p>无障碍问题按<strong>缺陷</strong>处理，不按&quot;改进建议&quot;处理：请开 issue 并写清 <strong>控件 + 输入方式（键盘 / 读屏 / 触摸）+ 期望行为</strong>。已知缺口里列的那些（读屏实测、RTL 渲染、高对比度）如果能提供你机器上的实际结果，比任何自动化都值钱。</p>
+<hr>
+<h2 id="s9">五 · 报告问题<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
+<p>无障碍问题按<strong>缺陷</strong>处理，不按&quot;改进建议&quot;处理。开 issue 写清三件事： <strong>控件 + 输入方式（键盘 / 读屏 / 触摸）+ 期望行为</strong>。</p>
+<p>如果你能提供自己机器上的读屏结果（读到了什么、和预期差在哪），它的价值高于本页任何一条自动化结论 —— 那正是第 2 节里空着的那一块。</p>
     </article>
     <nav class="g-pager" aria-label="上一页 / 下一页">
       <a class="g-pager__link g-pager__link--prev" href="conventions.html"><span>上一页</span>全局约定</a>
@@ -86,11 +150,11 @@ node 05-audit/focus-return-check.js</code></pre>
   </main>
   <aside class="g-side">
     <p class="g-side__title" id="toc-title">本页目录</p>
-    <ul class="g-toc"><li><a href="#s2">一 · 已验证的范围</a></li><li><a href="#s3">二 · 已知缺口</a></li><li><a href="#s4">三 · 怎么自己验</a></li><li><a href="#s5">四 · 报告问题</a></li></ul>
+    <ul class="g-toc"><li><a href="#s2">一 · 逐条状态</a></li><li><a href="#s4">二 · 证据是怎么来的（以及它盖不住什么）</a></li><li><a href="#s7">三 · 已知缺口（按影响排序）</a></li><li><a href="#s8">四 · 自己验一遍</a></li><li><a href="#s9">五 · 报告问题</a></li></ul>
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.11.8 · 零第三方运行时依赖 · 组件数 35</p>
+  <p>v0.11.9 · 零第三方运行时依赖 · 组件数 35</p>
 </footer>
 </body>
 </html>

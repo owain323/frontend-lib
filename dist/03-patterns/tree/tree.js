@@ -297,9 +297,9 @@ if (it.ul && it.li.getAttribute('aria-expanded') === 'true') {
 setExpanded(it, false);
 } else {
 
-for (var i = cur; i > 0; i--) {
-var cand = visible()[i];
-if (it.li.contains(cand.li)) { focusAt(i); return; }
+var vis = visible();
+for (var i = cur - 1; i >= 0; i--) {
+if (vis[i].li.contains(it.li)) { focusAt(i); return; }
 }
 }
 return;

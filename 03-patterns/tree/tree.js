@@ -357,10 +357,18 @@
         if (it.ul && it.li.getAttribute('aria-expanded') === 'true') {
           setExpanded(it, false);                /* 先收起，不动焦点 */
         } else {
-          /* 找到父节点并聚焦它（← 在收起状态下要"往回走"）*/
-          for (var i = cur; i > 0; i--) {
-            var cand = visible()[i];
-            if (it.li.contains(cand.li)) { focusAt(i); return; }
+          /* 找到父节点并聚焦它（← 在收起状态下要"往回走"）
+             🔴 0.11.9 修：循环原来从 `cur` **本身**开始，而
+             `it.li.contains(it.li)` 恒为 true ⇒ 第一次迭代就 focusAt(cur)
+             然后 return ⇒「已收起时按 ← 回到父节点」**从来没生效过**，
+             焦点原地不动，看起来像"按键没反应"。
+
+             ⚠️ 它一直没被发现，是因为 tree-check 那条断言在 demo 出现
+                真实的收起节点之前一直走"跳过"分支 —— 跳过不算通过。
+             现在从 cur - 1 往回找第一个包含本节点的可见项 = 最近的祖先。 */
+          var vis = visible();
+          for (var i = cur - 1; i >= 0; i--) {
+            if (vis[i].li.contains(it.li)) { focusAt(i); return; }
           }
         }
         return;

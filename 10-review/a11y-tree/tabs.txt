@@ -1,0 +1,38 @@
+# tabs — 标签页：tablist/tab + selected + controls
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "tabs · 标签页"
+  main
+    heading "tabs · 标签页" [level=1]
+    paragraph "标签页用于在同一位置切换 同层级的几块内容 。 键盘行为完全按 APG Tabs Pattern：方向键切换、Home/"
+    heading "基本用法（自动激活）" [level=2]
+    tablist "设置分组" [orientation=horizontal]
+      tab "基本信息" [selected=true]
+      tab "高级设置"
+      tab "日志"
+    tabpanel "基本信息"
+      paragraph "公司名称、代码、行业分类。"
+      paragraph "面板里的按钮（可 Tab 到）"
+        button "面板里的按钮（可 Tab 到）"
+    paragraph "切到哪个： 基本信息"
+    heading "禁用某个 tab" [level=2]
+    tablist "带禁用" [orientation=horizontal]
+      tab "可用" [selected=true]
+      tab "未开通" [disabled=true]
+      tab "可用"
+    tabpanel "可用"
+      paragraph "方向键会 跳过 禁用的 tab。"
+    heading "手动激活（面板内容重时用）" [level=2]
+    tablist "手动激活" [orientation=horizontal]
+      tab "第一段" [selected=true]
+      tab "第二段"
+    tabpanel "第一段"
+      paragraph "方向键 只移动焦点 ，需按 Enter 才切 —— 读屏不会不停播报。"
+    heading "键盘契约（APG / Radix）" [level=2]
+    paragraph "Tab 进入组时落在 当前选中 的 tab；再按 Tab 进面板 ← → 上一个 / 下一个 tab（并激活） Home"
+    paragraph "roving tabindex ：一组 tab 里只有一个是 tabindex="0" ， 其余全是 -1 。否则 Ta"
+    heading "反例" [level=2]
+    heading "反例：用 div 当 tab" [level=3]
+    paragraph "<div role="tab"> 键盘上根本 Tab 不到 （除非手写 tabindex ），也不会响应 Enter/S"
+    heading "反例：每个 tab 都写 tabindex="0"" [level=3]
+    paragraph "看起来"都能 Tab 到"，但一排 5 个 tab 就要按 5 次 Tab 才能进内容区。Tab 键应该是 进出 控件的"
