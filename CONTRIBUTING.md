@@ -10,6 +10,13 @@ npm run gate:fast      # 只跑静态层，不用装浏览器
 
 全量是 **183 道门禁**（本机约 12 分钟）。
 
+两道环境依赖要自己装，否则对应的门禁会**跳过**（跳过不算通过）：
+
+| 依赖 | 少了会怎样 | 装法 |
+|---|---|---|
+| Node + Chromium | `unit` / `responsive` / `firefox` 与全部行为脚本跳过 | 按 `package.json` 的 `engines` 装 Node，浏览器由脚本自己拉起 |
+| Pillow | `visual` 与 `visual-dark` 跳过 ⇒ **视觉回归一次都不跑** | `pip install pillow`（或用 `PY_PIL=<解释器>` 指一个装了 Pillow 的） |
+
 ⚠️ 上面的数字写在**代码块外**是有意的：`doc-facts-gate` 会核对
 「文档里的门禁数」与 `check-all.sh` 的真实注册数，而**代码块内的内容被豁免**
 （那是示例、不是事实声明）—— 所以写在块里等于没人守它。
