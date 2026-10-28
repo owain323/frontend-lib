@@ -11,54 +11,131 @@
     "   只是它用 <slot name>，我们用 class —— 因为我们不用 Shadow DOM。"
   ],
   "type": "object",
-  "required": ["schemaVersion", "components"],
+  "required": [
+    "schemaVersion",
+    "components"
+  ],
   "properties": {
-    "schemaVersion": { "type": "string" },
-    "generatedBy": { "type": "string" },
-    "libraryVersion": { "type": "string" },
-    "maturityCriteria": { "type": "object" },
-    "summary": { "type": "object" },
+    "schemaVersion": {
+      "type": "string"
+    },
+    "generatedBy": {
+      "type": "string"
+    },
+    "libraryVersion": {
+      "type": "string"
+    },
+    "maturityCriteria": {
+      "type": "object"
+    },
+    "summary": {
+      "type": "object"
+    },
     "components": {
       "type": "array",
-      "items": { "$ref": "#/definitions/component" }
+      "items": {
+        "$ref": "#/definitions/component"
+      }
     }
   },
   "definitions": {
     "component": {
       "type": "object",
-      "required": ["id", "tier", "rootClass", "maturity", "slots", "states"],
+      "required": [
+        "id",
+        "tier",
+        "rootClass",
+        "maturity",
+        "slots",
+        "states"
+      ],
       "properties": {
-        "id": { "type": "string" },
-        "tier": { "type": "string", "enum": ["primitive", "pattern", "recipe", "asset"] },
-        "purpose": { "type": "string" },
-        "rootClass": { "type": "string" },
-        "maturity": { "type": "string", "enum": ["alpha", "beta", "stable"] },
+        "id": {
+          "type": "string"
+        },
+        "tier": {
+          "type": "string",
+          "enum": [
+            "primitive",
+            "pattern",
+            "recipe",
+            "asset"
+          ]
+        },
+        "purpose": {
+          "type": "string"
+        },
+        "rootClass": {
+          "type": "string"
+        },
+        "maturity": {
+          "type": "string",
+          "enum": [
+            "alpha",
+            "beta",
+            "stable"
+          ]
+        },
         "maturityReasons": {
           "type": "object",
           "properties": {
-            "hasDemo": { "type": "boolean" },
-            "hasDedicatedGate": { "type": "boolean" },
-            "statesOnDomAttributes": { "type": "boolean" }
+            "hasDemo": {
+              "type": "boolean"
+            },
+            "hasDedicatedGate": {
+              "type": "boolean"
+            },
+            "statesOnDomAttributes": {
+              "type": "boolean"
+            }
           },
           "$comment": "成熟度是算出来的，不是拍的。改了这些信号，成熟度必须跟着变。"
         },
-        "gates": { "type": "array", "items": { "type": "string" } },
+        "gates": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "files": {
           "type": "object",
           "properties": {
-            "css": { "type": "string" },
-            "js": { "type": ["string", "null"] },
-            "demo": { "type": ["string", "null"] }
+            "css": {
+              "type": "string"
+            },
+            "js": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "jsAlso": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "$comment": "同目录下的**其他** .js（主文件在 js 里）。没有这个字段时，第二个文件在契约里彻底消失 —— 而 AI 消费者读的就是这份契约。"
+            },
+            "demo": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
           }
         },
         "slots": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "$comment": "BEM 元素名，即具名插入点。"
         },
         "variants": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
         "states": {
           "type": "object",
@@ -67,10 +144,17 @@
               "type": "object",
               "$comment": "data-* 属性名 → 全部可能取值。状态是枚举字符串，不是布尔（I-9）。"
             },
-            "boolean": { "type": "array", "items": { "type": "string" } },
+            "boolean": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
             "legacyClass": {
               "type": "array",
-              "items": { "type": "string" },
+              "items": {
+                "type": "string"
+              },
               "$comment": [
                 "仍未收敛到 data 属性的 .is-* 状态类。",
                 "非空 ⇒ 该组件违反 I-8（状态不在 DOM 上）⇒ 成熟度上限为 beta。"
@@ -81,13 +165,55 @@
         "aria": {
           "type": "object",
           "properties": {
-            "roles": { "type": "array", "items": { "type": "string" } },
-            "attrs": { "type": "array", "items": { "type": "string" } }
+            "roles": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "attrs": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
           }
         },
-        "usesOtherNamespaces": { "type": "array", "items": { "type": "string" } },
-        "global": { "type": ["string", "null"] },
-        "behaviorRef": { "type": "string" }
+        "usesOtherNamespaces": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "global": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "globalAlso": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "global",
+              "js"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "global": {
+                "type": "string"
+              },
+              "js": {
+                "type": "string"
+              }
+            }
+          },
+          "$comment": "同目录下**主文件之外**导出的全局（0.11.2：nav/ 里 nav.js 导 Nav、toc.js 导 Toc）。只记主文件那个 ⇒ 第二个全局在量具眼里不存在 ⇒ 文档写了它反而被报成\"库里没有\"。"
+        },
+        "behaviorRef": {
+          "type": "string"
+        }
       }
     }
   }

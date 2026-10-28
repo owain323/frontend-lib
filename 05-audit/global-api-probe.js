@@ -36,6 +36,9 @@ const TARGETS = {
   Drawer: '/03-patterns/drawer/demo.html',
   Tooltip: '/03-patterns/tooltip/demo.html',
   Toc: '/03-patterns/nav/demo.html',
+  /* 抽屉行为层（0.11.2 新增）：attach 形态，实例挂 el.navInstance。
+     和 Toc 同一个 demo 页 —— 一个页面查两个全局，天然验证"同目录多全局" */
+  Nav: '/03-patterns/nav/demo.html',
   Bar: '/09-assets/bar/demo.html',
   FLIP: '/03-patterns/list/demo.html',
   /* 入场动效（0.9.1 新增）：direct 形态，enable/disable/replay */

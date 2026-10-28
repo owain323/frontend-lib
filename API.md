@@ -34,7 +34,10 @@
 | **direct** | 直接调用 `X.xxx(root, options)` | 一次性动作，无需持有实例 |
 
 ⚠️ 早期版本的本文档写「所有脚本遵循 `.create()`」——
-实际 18 个全局里只有 5 个是create。**按 create 写其余的会直接报错。**
+实际 22 个全局里只有 7 个是create。**按 create 写其余的会直接报错。**
+（数字由 `05-audit/api-form-gate.py` 扫出来的实测形态算，不是手数的 ——
+ 它每次都会打印 `attach N · construct N · create N · direct N`，
+ 四个数加起来必须等于下表行数。）
 
 ### 全部全局对象
 
@@ -53,6 +56,7 @@
 | `Overlay` | ✅ | direct | `dialog` `toast` |
 | `Drawer` | ✅ | direct | `open` |
 | `Toc` | ✅ | direct | `init` |
+| `Nav` | ✅ | attach | `attach`（抽屉行为层；实例方法在原型上：`open` `close` `isOpen` `destroy`）|
 | `Reveal` | ✅ | direct | `enable` `disable` `replay`（入场动效；默认不接管，见 `03-patterns/reveal/README.md`）|
 | `Chart` | ✅ | direct | `draw` `update` `emit` `observe` |
 | `Bar` | ✅ | direct | `draw` |
@@ -96,6 +100,7 @@ window.ScientificPlot.render(el, {
 | `Pagination` | 是 | 扫 `[data-pagination]` |
 | `Chart` | 是 | sparkline：扫 `.sparkline[data-spark]`（resize / 内容变化时重画） |
 | `Reveal` | 条件 | **只有** `<html data-reveal-auto>` 才 `enable()`；不写就完全不动 |
+| `Nav` | 是 | 扫 `[data-nav]`，实例挂在 `el.navInstance`（抽屉：Esc / 焦点归位 / 背景锁 / 变宽自关） |
 | `Select` | 否 | 必须 `Select.create(root, opts)` |
 | `Combobox` | 否 | 必须 `Combobox.create(root, opts)` |
 | `DateRange` | 否 | 必须 `DateRange.create(root, opts)` |

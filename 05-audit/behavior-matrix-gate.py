@@ -233,6 +233,10 @@ def selftest():
 def main():
     if '--selftest' in sys.argv:
         sys.exit(selftest())
+    # ⚠️ 组件数**不许写字面量**：这里原先是「OK 18 个组件」，
+    #    0.11.2 加 nav 之后实际是 19，而那行字照样打印 18 ——
+    #    「数字对不上」和「数字对得上」在终端里长得一模一样（ERRORS E61）。
+    n_comp = len(set(name_of(c) for c in comp_js()))
     errs, counts = run()
     print('')
     print('  === 行为覆盖矩阵 ===')
@@ -240,7 +244,8 @@ def main():
         for e in errs:
             print('    X ' + e)
     else:
-        print('    OK 18 个组件 × 4 种行为全部登记（不许靠省略跳过）')
+        print('    OK %d 个组件 × %d 种行为全部登记（不许靠省略跳过）'
+              % (n_comp, len(json.loads(io.open(MATRIX, encoding='utf-8').read())['behaviors'])))
         print('    OK core %d · manual %d（待收编）· gap %d（应做未做）· n/a %d'
               % (counts['core'], counts['manual'], counts['gap'], counts['n/a']))
     print('')

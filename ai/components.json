@@ -43,6 +43,7 @@
       "files": {
         "css": "09-assets/bar/bar.css",
         "js": "09-assets/bar/bar.js",
+        "jsAlso": [],
         "demo": "09-assets/bar/demo.html"
       },
       "slots": [
@@ -81,6 +82,7 @@
       },
       "usesOtherNamespaces": [],
       "global": "Bar",
+      "globalAlso": [],
       "behaviorRef": "API.md#bar"
     },
     {
@@ -102,6 +104,7 @@
       "files": {
         "css": "09-assets/model-viewer/model-viewer.css",
         "js": "09-assets/model-viewer/model-viewer.js",
+        "jsAlso": [],
         "demo": "09-assets/model-viewer/demo.html"
       },
       "slots": [
@@ -126,6 +129,7 @@
       },
       "usesOtherNamespaces": [],
       "global": "ModelViewer",
+      "globalAlso": [],
       "behaviorRef": "API.md#model-viewer"
     },
     {
@@ -146,6 +150,7 @@
       "files": {
         "css": "09-assets/scientific-plot/scientific-plot.css",
         "js": "09-assets/scientific-plot/scientific-plot.js",
+        "jsAlso": [],
         "demo": "09-assets/scientific-plot/demo.html"
       },
       "slots": [
@@ -189,6 +194,7 @@
       },
       "usesOtherNamespaces": [],
       "global": "ScientificPlot",
+      "globalAlso": [],
       "behaviorRef": "API.md#scientific-plot"
     },
     {
@@ -210,6 +216,7 @@
       "files": {
         "css": "09-assets/sparkline/sparkline.css",
         "js": "09-assets/sparkline/sparkline.js",
+        "jsAlso": [],
         "demo": "09-assets/sparkline/demo.html"
       },
       "slots": [],
@@ -227,6 +234,7 @@
       },
       "usesOtherNamespaces": [],
       "global": "Chart",
+      "globalAlso": [],
       "behaviorRef": "API.md#sparkline"
     },
     {
@@ -249,6 +257,7 @@
       "files": {
         "css": "03-patterns/accordion/accordion.css",
         "js": "03-patterns/accordion/accordion.js",
+        "jsAlso": [],
         "demo": "03-patterns/accordion/demo.html"
       },
       "slots": [
@@ -288,6 +297,7 @@
       },
       "usesOtherNamespaces": [],
       "global": "Accordion",
+      "globalAlso": [],
       "behaviorRef": "API.md#accordion"
     },
     {
@@ -308,6 +318,7 @@
       "files": {
         "css": "03-patterns/content/content.css",
         "js": null,
+        "jsAlso": [],
         "demo": "03-patterns/content/demo.html"
       },
       "slots": [],
@@ -323,6 +334,7 @@
       },
       "usesOtherNamespaces": [],
       "global": null,
+      "globalAlso": [],
       "behaviorRef": "API.md#content"
     },
     {
@@ -345,6 +357,7 @@
       "files": {
         "css": "03-patterns/drawer/drawer.css",
         "js": "03-patterns/drawer/drawer.js",
+        "jsAlso": [],
         "demo": "03-patterns/drawer/demo.html"
       },
       "slots": [
@@ -375,6 +388,7 @@
       },
       "usesOtherNamespaces": [],
       "global": "Drawer",
+      "globalAlso": [],
       "behaviorRef": "API.md#drawer"
     },
     {
@@ -397,6 +411,7 @@
       "files": {
         "css": "03-patterns/dropdown/dropdown.css",
         "js": "03-patterns/dropdown/dropdown.js",
+        "jsAlso": [],
         "demo": "03-patterns/dropdown/demo.html"
       },
       "slots": [
@@ -432,6 +447,7 @@
       },
       "usesOtherNamespaces": [],
       "global": "Dropdown",
+      "globalAlso": [],
       "behaviorRef": "API.md#dropdown"
     },
     {
@@ -452,6 +468,7 @@
       "files": {
         "css": "03-patterns/form-validation/form-validation.css",
         "js": null,
+        "jsAlso": [],
         "demo": "03-patterns/form-validation/demo.html"
       },
       "slots": [
@@ -487,6 +504,7 @@
         "field__input"
       ],
       "global": null,
+      "globalAlso": [],
       "behaviorRef": "API.md#form-validation"
     },
     {
@@ -507,6 +525,7 @@
       "files": {
         "css": "03-patterns/list/list.css",
         "js": "03-patterns/list/flip.js",
+        "jsAlso": [],
         "demo": "03-patterns/list/demo.html"
       },
       "slots": [
@@ -536,6 +555,7 @@
       },
       "usesOtherNamespaces": [],
       "global": "FLIP",
+      "globalAlso": [],
       "behaviorRef": "API.md#list"
     },
     {
@@ -555,7 +575,10 @@
       ],
       "files": {
         "css": "03-patterns/nav/nav.css",
-        "js": "03-patterns/nav/toc.js",
+        "js": "03-patterns/nav/nav.js",
+        "jsAlso": [
+          "03-patterns/nav/toc.js"
+        ],
         "demo": "03-patterns/nav/demo.html"
       },
       "slots": [
@@ -590,7 +613,13 @@
         "toc__list",
         "toc__title"
       ],
-      "global": "Toc",
+      "global": "Nav",
+      "globalAlso": [
+        {
+          "global": "Toc",
+          "js": "03-patterns/nav/toc.js"
+        }
+      ],
       "behaviorRef": "API.md#nav"
     },
     {
@@ -614,6 +643,7 @@
       "files": {
         "css": "03-patterns/overlay/overlay.css",
         "js": "03-patterns/overlay/overlay.js",
+        "jsAlso": [],
         "demo": "03-patterns/overlay/demo.html"
       },
       "slots": [
@@ -653,6 +683,7 @@
         "dialog__title"
       ],
       "global": "Overlay",
+      "globalAlso": [],
       "behaviorRef": "API.md#overlay"
     },
     {
@@ -673,6 +704,7 @@
       "files": {
         "css": "03-patterns/pagination/pagination.css",
         "js": "03-patterns/pagination/pagination.js",
+        "jsAlso": [],
         "demo": "03-patterns/pagination/demo.html"
       },
       "slots": [
@@ -705,6 +737,7 @@
       },
       "usesOtherNamespaces": [],
       "global": "Pagination",
+      "globalAlso": [],
       "behaviorRef": "API.md#pagination"
     },
     {
@@ -725,6 +758,7 @@
       "files": {
         "css": "03-patterns/reveal/reveal.css",
         "js": "03-patterns/reveal/reveal.js",
+        "jsAlso": [],
         "demo": "03-patterns/reveal/demo.html"
       },
       "slots": [],
@@ -754,6 +788,7 @@
       },
       "usesOtherNamespaces": [],
       "global": "Reveal",
+      "globalAlso": [],
       "behaviorRef": "API.md#reveal"
     },
     {
@@ -774,6 +809,7 @@
       "files": {
         "css": "03-patterns/states/states.css",
         "js": null,
+        "jsAlso": [],
         "demo": "03-patterns/states/demo.html"
       },
       "slots": [
@@ -809,6 +845,7 @@
       },
       "usesOtherNamespaces": [],
       "global": null,
+      "globalAlso": [],
       "behaviorRef": "API.md#states"
     },
     {
@@ -829,6 +866,7 @@
       "files": {
         "css": "03-patterns/tabs/tabs.css",
         "js": "03-patterns/tabs/tabs.js",
+        "jsAlso": [],
         "demo": "03-patterns/tabs/demo.html"
       },
       "slots": [
@@ -863,6 +901,7 @@
       },
       "usesOtherNamespaces": [],
       "global": "Tabs",
+      "globalAlso": [],
       "behaviorRef": "API.md#tabs"
     },
     {
@@ -883,6 +922,7 @@
       "files": {
         "css": "03-patterns/tooltip/tooltip.css",
         "js": "03-patterns/tooltip/tooltip.js",
+        "jsAlso": [],
         "demo": "03-patterns/tooltip/demo.html"
       },
       "slots": [],
@@ -911,6 +951,7 @@
       },
       "usesOtherNamespaces": [],
       "global": "Tooltip",
+      "globalAlso": [],
       "behaviorRef": "API.md#tooltip"
     },
     {
@@ -931,6 +972,7 @@
       "files": {
         "css": "03-patterns/tree/tree.css",
         "js": "03-patterns/tree/tree.js",
+        "jsAlso": [],
         "demo": "03-patterns/tree/demo.html"
       },
       "slots": [
@@ -957,6 +999,7 @@
       },
       "usesOtherNamespaces": [],
       "global": "Tree",
+      "globalAlso": [],
       "behaviorRef": "API.md#tree"
     },
     {
@@ -977,6 +1020,7 @@
       "files": {
         "css": "02-primitives/badge/badge.css",
         "js": null,
+        "jsAlso": [],
         "demo": "02-primitives/badge/demo.html"
       },
       "slots": [],
@@ -1003,6 +1047,7 @@
       },
       "usesOtherNamespaces": [],
       "global": null,
+      "globalAlso": [],
       "behaviorRef": "API.md#badge"
     },
     {
@@ -1023,6 +1068,7 @@
       "files": {
         "css": "02-primitives/button/button.css",
         "js": null,
+        "jsAlso": [],
         "demo": "02-primitives/button/demo.html"
       },
       "slots": [
@@ -1058,6 +1104,7 @@
       },
       "usesOtherNamespaces": [],
       "global": null,
+      "globalAlso": [],
       "behaviorRef": "API.md#button"
     },
     {
@@ -1078,6 +1125,7 @@
       "files": {
         "css": "02-primitives/card/card.css",
         "js": null,
+        "jsAlso": [],
         "demo": "02-primitives/card/demo.html"
       },
       "slots": [
@@ -1112,6 +1160,7 @@
       },
       "usesOtherNamespaces": [],
       "global": null,
+      "globalAlso": [],
       "behaviorRef": "API.md#card"
     },
     {
@@ -1132,6 +1181,7 @@
       "files": {
         "css": "02-primitives/choice/choice.css",
         "js": null,
+        "jsAlso": [],
         "demo": "02-primitives/choice/demo.html"
       },
       "slots": [
@@ -1165,6 +1215,7 @@
         "select__control--auto"
       ],
       "global": null,
+      "globalAlso": [],
       "behaviorRef": "API.md#choice"
     },
     {
@@ -1186,6 +1237,7 @@
       "files": {
         "css": "02-primitives/combobox/combobox.css",
         "js": "02-primitives/combobox/combobox.js",
+        "jsAlso": [],
         "demo": "02-primitives/combobox/demo.html"
       },
       "slots": [
@@ -1223,6 +1275,7 @@
       },
       "usesOtherNamespaces": [],
       "global": "Combobox",
+      "globalAlso": [],
       "behaviorRef": "API.md#combobox"
     },
     {
@@ -1243,6 +1296,7 @@
       "files": {
         "css": "02-primitives/date-range/date-range.css",
         "js": "02-primitives/date-range/date-range.js",
+        "jsAlso": [],
         "demo": "02-primitives/date-range/demo.html"
       },
       "slots": [
@@ -1277,6 +1331,7 @@
       },
       "usesOtherNamespaces": [],
       "global": "DateRange",
+      "globalAlso": [],
       "behaviorRef": "API.md#date-range"
     },
     {
@@ -1297,6 +1352,7 @@
       "files": {
         "css": "02-primitives/input/input.css",
         "js": null,
+        "jsAlso": [],
         "demo": "02-primitives/input/demo.html"
       },
       "slots": [
@@ -1332,6 +1388,7 @@
       },
       "usesOtherNamespaces": [],
       "global": null,
+      "globalAlso": [],
       "behaviorRef": "API.md#input"
     },
     {
@@ -1352,6 +1409,7 @@
       "files": {
         "css": "02-primitives/popover/popover.css",
         "js": "02-primitives/popover/popover.js",
+        "jsAlso": [],
         "demo": "02-primitives/popover/demo.html"
       },
       "slots": [
@@ -1385,6 +1443,7 @@
       },
       "usesOtherNamespaces": [],
       "global": "Popover",
+      "globalAlso": [],
       "behaviorRef": "API.md#popover"
     },
     {
@@ -1405,6 +1464,7 @@
       "files": {
         "css": "02-primitives/progress/progress.css",
         "js": null,
+        "jsAlso": [],
         "demo": "02-primitives/progress/demo.html"
       },
       "slots": [
@@ -1444,6 +1504,7 @@
         "progress-steps__seg--done"
       ],
       "global": null,
+      "globalAlso": [],
       "behaviorRef": "API.md#progress"
     },
     {
@@ -1464,6 +1525,7 @@
       "files": {
         "css": "02-primitives/select/select.css",
         "js": "02-primitives/select/select.js",
+        "jsAlso": [],
         "demo": "02-primitives/select/demo.html"
       },
       "slots": [
@@ -1501,6 +1563,7 @@
       },
       "usesOtherNamespaces": [],
       "global": "Select",
+      "globalAlso": [],
       "behaviorRef": "API.md#select"
     },
     {
@@ -1521,6 +1584,7 @@
       "files": {
         "css": "02-primitives/separator/separator.css",
         "js": null,
+        "jsAlso": [],
         "demo": "02-primitives/separator/demo.html"
       },
       "slots": [],
@@ -1544,6 +1608,7 @@
       },
       "usesOtherNamespaces": [],
       "global": null,
+      "globalAlso": [],
       "behaviorRef": "API.md#separator"
     },
     {
@@ -1565,6 +1630,7 @@
       "files": {
         "css": "02-primitives/skeleton/skeleton.css",
         "js": null,
+        "jsAlso": [],
         "demo": "02-primitives/skeleton/demo.html"
       },
       "slots": [],
@@ -1591,6 +1657,7 @@
         "skeleton-list__row"
       ],
       "global": null,
+      "globalAlso": [],
       "behaviorRef": "API.md#skeleton"
     },
     {
@@ -1612,6 +1679,7 @@
       "files": {
         "css": "02-primitives/switch/switch.css",
         "js": null,
+        "jsAlso": [],
         "demo": "02-primitives/switch/demo.html"
       },
       "slots": [
@@ -1638,6 +1706,7 @@
       },
       "usesOtherNamespaces": [],
       "global": null,
+      "globalAlso": [],
       "behaviorRef": "API.md#switch"
     },
     {
@@ -1658,6 +1727,7 @@
       "files": {
         "css": "04-recipes/analysis-report/analysis-report.css",
         "js": null,
+        "jsAlso": [],
         "demo": "04-recipes/analysis-report/demo.html"
       },
       "slots": [
@@ -1690,6 +1760,7 @@
         "kf__title"
       ],
       "global": null,
+      "globalAlso": [],
       "behaviorRef": "API.md#analysis-report"
     },
     {
@@ -1710,6 +1781,7 @@
       "files": {
         "css": "04-recipes/detail-page/detail-page.css",
         "js": null,
+        "jsAlso": [],
         "demo": "04-recipes/detail-page/demo.html"
       },
       "slots": [],
@@ -1740,6 +1812,7 @@
         "detail-null__title"
       ],
       "global": null,
+      "globalAlso": [],
       "behaviorRef": "API.md#detail-page"
     },
     {
@@ -1760,6 +1833,7 @@
       "files": {
         "css": "04-recipes/report/report.css",
         "js": null,
+        "jsAlso": [],
         "demo": "04-recipes/report/demo.html"
       },
       "slots": [
@@ -1781,7 +1855,8 @@
         "rep__source",
         "rep__sources",
         "rep__standfirst",
-        "rep__title"
+        "rep__title",
+        "rep__wide"
       ],
       "variants": [
         "rep--finance",
@@ -1799,6 +1874,7 @@
       },
       "usesOtherNamespaces": [],
       "global": null,
+      "globalAlso": [],
       "behaviorRef": "API.md#report"
     },
     {
@@ -1819,6 +1895,7 @@
       "files": {
         "css": "04-recipes/table/table.css",
         "js": null,
+        "jsAlso": [],
         "demo": "04-recipes/table/demo.html"
       },
       "slots": [
@@ -1860,6 +1937,7 @@
         "stat__se"
       ],
       "global": null,
+      "globalAlso": [],
       "behaviorRef": "API.md#table"
     }
   ]

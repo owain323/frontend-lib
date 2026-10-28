@@ -160,6 +160,10 @@
       "gzip": 4640,
       "raw": 12430
     },
+    "03-patterns/nav/nav.js": {
+      "gzip": 6778,
+      "raw": 18038
+    },
     "03-patterns/nav/toc.js": {
       "gzip": 2075,
       "raw": 4271
@@ -225,8 +229,8 @@
       "raw": 5797
     },
     "04-recipes/report/report.css": {
-      "gzip": 5419,
-      "raw": 13742
+      "gzip": 6400,
+      "raw": 16085
     },
     "04-recipes/table/table.css": {
       "gzip": 6169,
@@ -238,6 +242,6 @@
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 240540,
-  "total_raw": 605212
+  "total_gzip": 248299,
+  "total_raw": 625593
 }

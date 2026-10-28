@@ -2,11 +2,75 @@
 
 | 字段 | 内容 |
 |---|---|
-| **来源** | 原创。`toc.js` 是从 `04-recipes/longform` 内联脚本**提取并加固**的 |
-| **实测** | demo 三件事都能真机验证（页头/目录/抽屉） |
-| **适用** | 精简档 / B / C，`toc.js` 为 ES5 |
+| **来源** | 原创。`toc.js` 是从 `04-recipes/longform` 内联脚本**提取并加固**的；`nav.js` 是从 demo/示例页**手抄了两遍**的抽屉逻辑抽出来的 |
+| **实测** | demo 三件事都能真机验证（页头/目录/抽屉）；抽屉的 22 条行为由 `05-audit/nav-drawer.js` 在浏览器里跑 |
+| **适用** | 精简档 / B / C，`toc.js` 与 `nav.js` 均为 ES5 |
 | **依赖** | `01-tokens/tokens.css` + `02-primitives/button/button.css` + `01-tokens/page.css`（页面骨架：`.wrap` / `.lede` / `.note`） + `01-tokens/typography.css` |
 | **规范** | 见本文件「状态切换」一节|
+
+---
+
+## 一个目录，两个全局
+
+`nav/` 里有**两个独立脚本、两个全局**：
+
+| 文件 | 全局 | 形态 | 自动初始化 |
+|---|---|---|---|
+| `nav.js` | `Nav` | attach（`Nav.attach(root)`） | **是**，扫 `[data-nav]` |
+| `toc.js` | `Toc` | direct（`Toc.init(opts)`） | 否，必须自己调 |
+
+它们**共用同一份 HTML**（页头 + 目录 + 抽屉）但**生命周期无关**：
+抽屉常常用不上目录，目录也可能出现在没有抽屉的长文页里。所以不合并成一个脚本。
+
+⚠️ AI 契约（`ai/components.json`）里 `nav` 这个组件记的是 `global: "Nav"` +
+`globalAlso: [{Toc}]` —— 一个组件目录可以导出第二个全局。
+`05-audit/autoinit-gate.py` 会按这张清单核对 `API.md` 的表，
+少记一个就会报「表里出现了库里没有的全局」。
+
+---
+
+## 抽屉行为层：`nav.js`（可选，但没有它抽屉就是死的）
+
+```html
+<header class="nav" data-nav>
+  <button class="nav__toggle" aria-expanded="false" aria-controls="nav-list">…</button>
+  <ul class="nav__list" id="nav-list">…</ul>
+  <div class="nav__scrim"></div>      <!-- 可省，缺了 JS 自己建 -->
+</header>
+<script src="nav.js"></script>         <!-- 有 data-nav 就自动初始化 -->
+```
+
+`nav.css` 只定义了**状态长什么样**（`[data-state="open"]` / `aria-expanded`），
+从没规定**谁来切**。所以在这之前，每个使用者都要抄 60 行 —— 抄出来的版本
+各有各的漏。现在这一层在库里，并且被门禁按 22 条判据盯着。
+
+### 🔴 抄出来的版本里那个 bug：`aria-hidden` 打在了祖先上
+
+旧 demo 的写法是「把 body 的每个子元素都 `aria-hidden`，跳过 list/scrim/toggle」。
+问题：`<header class="nav">` 是 list 的**祖先**，它不在跳过名单里 ⇒
+整块 `<header>` 被 `aria-hidden="true"` 包住，**抽屉自己也跟着对读屏消失**。
+
+而它"看起来完全正常"：截图正常、像素比对正常、键盘 Tab 也正常。
+**只有用读屏打开菜单才会发现里面一个字都读不出来。**
+
+`nav.js` 的判据是「跳过**包含**导航自身的节点」，而不是「跳过这三个元素」。
+
+### 🔴 为什么复用 `drawer.js` 会错
+
+`03-patterns/drawer/drawer.js` 的 `Drawer.open()` **自己建 DOM**（new aside、
+塞进 body、关了就删）。而导航列表在文档里本来就有一份，桌面端还要用它横排。
+**生命周期相反**（即用即毁 vs 常驻），所以不共用实现，只共用**核**：
+`emit` / `focus-return` / `dismissable` 三块与 `drawer.js` 逐行同源（`gen-behavior.py` 保证）。
+
+### 🔴 断点不写数字
+
+"窗口变宽就关掉"的判据是**汉堡按钮还在不在**（`offsetParent !== null`），
+不是 `window.innerWidth > 768`。CSS 里改一个断点值，写死数字的 JS 会**静默错位**。
+
+### 事件
+
+`fl-nav-open` / `fl-nav-close`（`detail = { root }`）。自动初始化不接回调
+—— 要收通知请听事件（与 `tabs.js` 同一条纪律）。
 
 ---
 
@@ -150,8 +214,12 @@ Toc.init({ links: '#toc-list .toc__link', sections: 'main h2[id]' });
 |---|---|
 | CSS 引用完整性 | ✅ `refs.py` |
 | 状态切换的叠放/占位/溢出 | ✅ `switch.py` |
-| 焦点管理、Esc、背景锁 | ❌ **必须真机** |
+| 焦点管理、Esc、背景锁、点遮罩、变宽自关 | ✅ `05-audit/nav-drawer.js`（浏览器 + 键盘，22 条） |
+| 读屏里到底听到了什么 | ❌ **必须真机开读屏** |
 | 视觉上别扭不别扭 | ❌ **必须真机** |
 
-🔴 **诚实标注**：抽屉最难的三件事（焦点、Esc、背景锁）**静态检查一个都查不出来**。
-demo 的第一屏就是让你自己试的。
+🟡 0.11.2 之前这里写的是「焦点、Esc、背景锁**静态检查一个都查不出来**，必须真机」。
+那句话当时是对的，但它描述的是一种**可以修的**状态 —— 现在这三件事由
+`nav-drawer.js` 在真浏览器里跑（含连续 8 次 Tab 的焦点陷阱、Esc 后焦点归位、
+`aria-hidden` 是否误伤祖先）。**仍然查不出来的是"读屏实际播报什么"**：
+无头浏览器没有语音输出，`accessibility.snapshot()` 也只能读到树，读不到播报。

@@ -546,6 +546,15 @@ run "form-validation"       node 05-audit/form-validation-check.js
 run "separator"   node 05-audit/separator-check.js
   # N2：键盘导航（只报告：先量基线，达标后升级 fail）
   run "kbd"         node 05-audit/keyboard-nav.js
+# 🔴 导航抽屉行为（0.11.2 加）：kbd 是"只报告"，抓不到"抽屉开了但读屏读不到"这种硬伤。
+#   nav.css 定义了三个状态，却没规定谁来切 —— 于是每个使用者抄一份，
+#   抄出来的版本把 aria-hidden 打在了抽屉的**祖先**上（截图/像素全绿，读屏全哑）。
+#   这条门禁带键盘和视口变化，44 条判据、两个页面，红了就是真的坏了。
+run "nav-drawer"  node 05-audit/nav-drawer.js
+# 🔴 宽图 / 宽表通道（0.11.2 加）：视觉基线只拍 393 宽，而这个功能**只在桌面才有区别**
+#   ⇒ 它的回归没有任何门禁看得见。判据全是量的数字（正文 ≤ 列、宽图 = 列、图内字号高度），
+#   不是看截图 —— 因为"class 没生效"和"没写这个 class"在截图上长得一模一样。
+run "rep-wide"    node 05-audit/rep-wide-channel.js
 run "deco-clip" node 05-audit/deco-clip-check.js
 run "fab-opaque" node 05-audit/fab-opaque-check.js
 run "focus-ring" node 05-audit/focus-ring-check.js

@@ -61,8 +61,15 @@ const DIR = REPO + '/04-recipes/report';
         const m = await p.evaluate(() => {
           const ratio = (id) => {
             const art = document.querySelector(id);
-            const el = document.querySelector(id + ' .rep__body');
-            if (!el || !art) return NaN;
+            if (!art) return NaN;
+            /* 🔴 0.11.2：行长从**列容器**挪到了**内容块**上
+               （否则宽图永远越不出正文列 ⇒ `.rep__fig--wide` 成了空类）。
+               容器 `.rep__body` 现在算出来是 `max-width: none`，
+               直接读它会得到 NaN —— 本判据就是这么假红过一次。
+               ⇒ 读正文块（第一个 p），容器只作兜底。 */
+            const el = art.querySelector('.rep__body p')
+                    || art.querySelector('.rep__body');
+            if (!el) return NaN;
             /* 🔴 必须换算成 **em** 再比，不能直接比 px：
                行长本来就是用 em 声明的，而各 profile 的正文字号不同
                （杂志/科研 18px、金融 14px）⇒ 34em 在金融版只有 476px。
@@ -71,6 +78,7 @@ const DIR = REPO + '/04-recipes/report';
                （反向控制 RC-2 就是这样全绿的）。 */
             const mw = parseFloat(getComputedStyle(el).maxWidth);
             const fs = parseFloat(getComputedStyle(art).fontSize);
+            if (!isFinite(mw) || !isFinite(fs) || fs <= 0) return NaN;
             return Math.round((mw / fs) * 10) / 10;
           };
           return { mag: ratio('#mag'), tech: ratio('#tech'), fin: ratio('#fin') };
