@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>table · 专业数据表格 · agentcss</title>
+<meta name="description" content="数据表格：排序/加载/空/错误四态；三种用途预设（财务/学术/统计）">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">table · 专业数据表格</span>
+    <a class="g-jump" href="../04-recipes/table/demo.html">打开示例<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">版式模板 · stable</p>
+    <h1>table · 专业数据表格</h1>
+    <p class="lede">数据表格：排序/加载/空/错误四态；三种用途预设（财务/学术/统计）</p>
+    <ul class="g-meta"><li><a href="../04-recipes/table/demo.html"><code>04-recipes/table/demo.html</code></a></li><li><a href="../04-recipes/table/table.css"><code>04-recipes/table/table.css</code></a></li></ul>
+    <article class="g-doc">
+<p>一套表格基础 + 三种用途预设。<strong>数字怎么显示由列定义决定</strong>，不由数值大小猜测。</p>
+<h2 id="s2">文件<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>文件</th><th>说明</th>
+</tr></thead>
+<tbody>
+<tr><td><code>table.css</code></td><td>表格基础样式 + 三种预设 + 多级表头 / 表题 / 脚注</td></tr>
+<tr><td><code>demo.html</code></td><td>可运行示例（含格式自证区）</td></tr>
+<tr><td><code>README.md</code></td><td>本文件</td></tr>
+</tbody>
+</table></div>
+<p>无 JS 依赖：所有交互逻辑在示例页里演示，组件本身是纯 CSS。</p>
+<h2 id="s3">三种预设<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>预设</th><th>用于</th><th>关键差异</th>
+</tr></thead>
+<tbody>
+<tr><td>（默认 / <code>.table--financial</code>）</td><td>业务与财务数据</td><td>粘性表头、数字右对齐 + 等宽数字、行高亮</td></tr>
+<tr><td><code>.table--academic</code></td><td>学术出版</td><td><strong>三线表</strong>：去掉竖线/斑马纹/行分隔线，只留顶线、表头下线、底线</td></tr>
+<tr><td><code>.table--stats</code></td><td>统计与实验结果</td><td>估计值 / 标准误 / 置信区间 / p 值各有位置与样式</td></tr>
+</tbody>
+</table></div>
+<h2 id="s4">列定义（示例页里的用法）<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-js">var COLS = [
+  { key: 'revenue',   label: '营业收入', format: 'currency',       precision: 0, unit: '万元' },
+  { key: 'margin',    label: '毛利率',   format: 'percent',        precision: 1 },
+  { key: 'change',    label: '同比',     format: 'signed-percent', precision: 1 },
+  { key: 'temp',      label: '温度',     format: 'decimal',        precision: 2, unit: '°C' }
+];</code></pre>
+<div class="table"><table>
+<thead><tr>
+<th><code>format</code></th><th>输入 → 显示</th><th>正数加 <code>+</code>？</th>
+</tr></thead>
+<tbody>
+<tr><td><code>text</code></td><td>原样</td><td>—</td></tr>
+<tr><td><code>integer</code></td><td><code>1505600</code> → <code>1,505,600</code></td><td>否</td></tr>
+<tr><td><code>decimal</code></td><td><code>0.25</code> → <code>0.25</code>（<strong>绝不</strong>乘 100）</td><td>否</td></tr>
+<tr><td><code>currency</code></td><td><code>1505600</code> → <code>1,505,600</code>（金额）</td><td><strong>否</strong></td></tr>
+<tr><td><code>percent</code></td><td><code>0.854</code> → <code>85.4%</code>（输入是比例）</td><td><strong>否</strong></td></tr>
+<tr><td><code>signed-percent</code></td><td><code>0.163</code> → <code>+16.3%</code> / <code>-0.008</code> → <code>−0.8%</code></td><td><strong>是</strong></td></tr>
+</tbody>
+</table></div>
+<p>两条硬规则：</p>
+<ol><li><strong>不按数值大小推断语义</strong>。<code>0.25</code> 是比例还是普通测量值，只能由列定义说，不能靠「小于 1 就乘以 100」。示例页第 4 节就是这条的自证。</li><li><strong>正负号只按列语义</strong>。营收、成本、毛利率这类「量」的正数<strong>没有</strong> <code>+</code>；只有 <code>signed-*</code>（同比/变化量）才加。负数一律用真减号 <code>−</code>（不是连字符 <code>-</code>）。</li></ol>
+<h2 id="s5">无障碍<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
+<ul><li>数据表用 <code>&lt;th scope=&quot;col&quot;&gt;</code> / <code>&lt;th scope=&quot;row&quot;&gt;</code>；多级表头第一层用 <code>scope=&quot;colgroup&quot;</code>。复杂表格可用 <code>id</code> + <code>headers</code> 建立显式关联（本示例未用到，但结构支持）。</li><li>排序状态放在 <code>&lt;th aria-sort=&quot;ascending|descending&quot;&gt;</code>，<strong>不是</strong>放在按钮上。</li><li>正负<strong>不只靠颜色</strong>：颜色之外还有 <code>+</code> / <code>−</code> 符号（WCAG 1.4.1）。</li><li>粘性表头的 <code>z-index</code> 走令牌；<code>border-collapse: separate</code> 是 sticky 生效的前提。</li></ul>
+<h2 id="s6">已知限制<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
+<ul><li>不做虚拟滚动。行数上限交给调用方（&gt; 200 行请配合分页）。</li><li>排序 / 筛选 / 分页行为<strong>不与样式层捆绑</strong> —— 需要时由调用方接自己的数据层。</li><li>单位默认标在<strong>列头</strong>，不是每格重复（一列 20 个「万元」只会增加噪音）。若某列确需逐格带单位，调用方自行在格式化时拼接。</li></ul>
+<h3 id="s7">🔴 单位的写法：列名 +（单位），括号不能省<a class="anchor" href="#s7" aria-label="本节直链">#</a></h3>
+<pre class="code" tabindex="0"><code>✅ 抗拉强度 (MPa)     伸长率 (%)     时效 (100 °C)
+❌ 抗拉强度 MPa       伸长率 %       时效 100 °C</code></pre>
+<p><strong>这不是审美选择，是学科规范要求</strong>，五处权威口径一致：</p>
+<div class="table"><table>
+<thead><tr>
+<th>来源</th><th>要求</th>
+</tr></thead>
+<tbody>
+<tr><td><strong>GB/T 7713.2-2022</strong>《学术论文编写规则》</td><td>同时用量与单位表示时，采用「<strong>量的符号或名称/单位符号</strong>」的标准化形式</td></tr>
+<tr><td><strong>CY/T 170—2019</strong>《学术出版规范 表格》</td><td>表头用「量的名称或符号/单位符号」；且表身单元格内<strong>不宜带单位</strong></td></tr>
+<tr><td><strong>Science</strong> Author Guidelines</td><td>every column should have a heading, <strong>followed by a unit of measure (if any) in parentheses</strong></td></tr>
+<tr><td><strong>IEEE</strong> Standards Style Manual 14.3.1</td><td>units shall be provided <strong>in parentheses</strong>, or preceded by a solidus（<code>E (V)</code> / <code>E/V</code>）</td></tr>
+</tbody>
+</table></div>
+<p>另外两条同源要求，本组件一并遵守：</p>
+<ul><li><strong>同栏单位不得变化</strong>（IEEE：不得把 Ω 与 MΩ 混用、mm 与 cm 混用）</li><li><strong>表身单元格内不带单位</strong>——只在列头标一次</li></ul>
+<h3 id="s8">为什么括号和同字号都很重要<a class="anchor" href="#s8" aria-label="本节直链">#</a></h3>
+<ul><li><strong>括号</strong>：它把&quot;列名&quot;与&quot;单位&quot;在语法上分成两截。裸写 <code>抗拉强度 MPa</code> 读起来是两个并列的词，读者要停下来判断哪个是量名。</li><li><strong>同字号</strong>（<code>font-size: inherit</code>）：单位若比列名小一号，视觉上就成了 &quot;另一行的小注&quot;而不是&quot;这一列的量纲&quot;。规范里单位与列名同字号，只用<strong>括号</strong>（或可选斜体）区分即可。</li></ul>
+<p><code>.table__unit</code> 自带 <code>margin-inline-start</code>，所以源码里写 <code>&lt;span class=&quot;table__unit&quot;&gt;MPa&lt;/span&gt;</code> 渲染出来就是 <code>抗拉强度 (MPa)</code> —— <strong>组件负责加括号，不要求每个调用方记得加</strong>（要求调用方做，迟早漏一处）。</p>
+<h2 id="s9">预览<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-bash">python -m http.server 8000
+# http://127.0.0.1:8000/04-recipes/table/demo.html</code></pre>
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      <a class="g-pager__link g-pager__link--prev" href="report.html"><span>上一页</span>report · 报告版式系统 v1</a>
+      <a class="g-pager__link g-pager__link--next" href="bar.html"><span>下一页</span>bar · 柱状图</a>
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    <ul class="g-toc"><li><a href="#s2">文件</a></li><li><a href="#s3">三种预设</a></li><li><a href="#s4">列定义（示例页里的用法）</a></li><li><a href="#s5">无障碍</a></li><li><a href="#s6">已知限制</a></li><li><a href="#s9">预览</a></li></ul>
+  </aside>
+</div>
+<footer class="g-foot">
+  <p>v0.11.4 · 零第三方运行时依赖 · 组件数 35</p>
+</footer>
+</body>
+</html>

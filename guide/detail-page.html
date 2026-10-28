@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>detail-page · 实体详情页骨架 · agentcss</title>
+<meta name="description" content="实体详情页骨架：字段齐全 / 部分缺失 / 无数据三种状态同构，无数据是一等状态">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">detail-page · 实体详情页骨架</span>
+    <a class="g-jump" href="../04-recipes/detail-page/demo.html">打开示例<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">版式模板 · stable</p>
+    <h1>detail-page · 实体详情页骨架</h1>
+    <p class="lede">实体详情页骨架：字段齐全 / 部分缺失 / 无数据三种状态同构，无数据是一等状态</p>
+    <ul class="g-meta"><li><a href="../04-recipes/detail-page/demo.html"><code>04-recipes/detail-page/demo.html</code></a></li><li><a href="../04-recipes/detail-page/detail-page.css"><code>04-recipes/detail-page/detail-page.css</code></a></li></ul>
+    <article class="g-doc">
+<p>同一张图纸装三种数据状态：<strong>字段齐全 / 部分缺失 / 一条数据都没有</strong>。三个变体的 DOM 结构<strong>完全一致</strong>，差异只在文案、数值、说明块。</p>
+<h2 id="s2">为什么需要它<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<p>产品里&quot;同一类对象、字段多少不一&quot;是常态：有的字段齐全，有的只接了一半，有的还没接。常见做法是每遇到一种情况就改一版结构 —— 结果是同一类页面越改越不像，最后没人能说清&quot;这页到底应该长什么样&quot;。</p>
+<p>这张配方把结构钉死，把差异收进三个变量层：</p>
+<div class="table"><table>
+<thead><tr>
+<th>允许变的</th><th>不许变的</th>
+</tr></thead>
+<tbody>
+<tr><td>文案 / 数值 / 说明块写什么</td><td>DOM 结构（节点数量与嵌套）</td></tr>
+<tr><td>色对（换肤挂在 <code>section</code> 上）</td><td>组件层级与语义标签</td></tr>
+<tr><td>媒体策略（缺图时的占位方式）</td><td>类名</td></tr>
+</tbody>
+</table></div>
+<h2 id="s3">三个变体<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>文件</th><th>状态</th><th>关键点</th>
+</tr></thead>
+<tbody>
+<tr><td><code>full.html</code></td><td>字段齐全</td><td>说明块承担&quot;数据完整度&quot;的告知</td></tr>
+<tr><td><code>partial.html</code></td><td>部分缺失</td><td>缺的那项写「未披露」+ 弱化色，<strong>不是 0，也不是删节点</strong></td></tr>
+<tr><td><code>null.html</code></td><td>无数据</td><td>不隐藏、不冒充零、必须写清原因</td></tr>
+<tr><td><code>demo.html</code></td><td>入口页</td><td>三者的索引 + 规则摘要</td></tr>
+</tbody>
+</table></div>
+<h2 id="s4">用法<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-html">&lt;link rel=&quot;stylesheet&quot; href=&quot;agentcss/recipes/detail-page/detail-page.css&quot;&gt;
+
+&lt;section class=&quot;detail-page&quot;&gt;
+  &lt;div class=&quot;detail-hero&quot;&gt;
+    &lt;div class=&quot;detail-hero__deco&quot; aria-hidden=&quot;true&quot;&gt;&lt;/div&gt;
+    &lt;div class=&quot;detail-hero__body&quot;&gt;
+      &lt;p class=&quot;detail-hero__eyebrow&quot;&gt;分类 · 编号&lt;/p&gt;
+      &lt;h1 class=&quot;detail-hero__title&quot;&gt;对象名&lt;/h1&gt;
+      &lt;p class=&quot;detail-hero__meta&quot;&gt;&lt;span&gt;属性一&lt;/span&gt;&lt;span&gt;属性二&lt;/span&gt;&lt;/p&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;div class=&quot;detail-kpis&quot;&gt;
+    &lt;div class=&quot;detail-kpi&quot;&gt;
+      &lt;span class=&quot;detail-kpi__label&quot;&gt;指标名&lt;/span&gt;
+      &lt;span class=&quot;num detail-kpi__value&quot;&gt;128&lt;/span&gt;
+      &lt;span class=&quot;num detail-kpi__delta&quot;&gt;较上月 +6%&lt;/span&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;div class=&quot;detail-null&quot;&gt;
+    &lt;p class=&quot;detail-null__title&quot;&gt;数据完整度：3 / 3&lt;/p&gt;
+    &lt;p class=&quot;detail-null__reason&quot;&gt;三项指标均已接入，更新至 2026-10-22。&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/section&gt;</code></pre>
+<p>数值一律带 <code>num</code> 类（来自 <code>01-tokens/typography.css</code>）——本库只有一套等宽数字规则，组件不许自己写 <code>font-variant-numeric</code>（<code>numeric-gate</code> 会查）。</p>
+<h2 id="s5">三条结构规则<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
+<ol><li><strong>装饰层与内容层是平级兄弟</strong>，不是父子。装饰层必须 <code>pointer-events: none</code> 且不含内容 —— 否则它会吃掉点击、挤走内容。</li><li><strong>皮肤挂在 <code>section</code>（<code>.detail-page</code>）上，不挂 <code>body</code></strong>。同一页不同区块可以各自换肤，这是&quot;每块长得不一样但共用一套 CSS&quot;的结构前提。</li><li><strong>DOM 不许变</strong>。字段缺失是&quot;值缺失&quot;，不是&quot;节点缺失&quot;。</li></ol>
+<h2 id="s6">无数据态的三条硬规则<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>规则</th><th>为什么</th>
+</tr></thead>
+<tbody>
+<tr><td>不隐藏</td><td>整块消失会让读者以为&quot;这页没有这项&quot;，而不是&quot;这项没有数据&quot;</td></tr>
+<tr><td>不用 0 冒充</td><td>0 是&quot;确实是零&quot;，缺失是&quot;没有数据&quot;，语义相反，会直接导致错误结论</td></tr>
+<tr><td>必须给理由</td><td>读者要知道&quot;为什么看不到&quot;；只留白等于让人猜</td></tr>
+</tbody>
+</table></div>
+<h2 id="s7">校验收口<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-bash">python 04-recipes/detail-page/verify-skeleton.py    # 三变体同构 + 都进视觉基线
+python 05-audit/no-data-gate.py                     # 无数据态三条规则</code></pre>
+<p><code>verify-skeleton.py</code> 是转发入口，实现在 <code>05-audit/detail-page-contract.py</code> —— <strong>同一份代码</strong>，避免门禁与配方各写一套然后慢慢漂移。</p>
+<h2 id="s8">边界<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
+<ul><li><strong>不含业务字段</strong>：示例用中性的&quot;对象 / 指标&quot;，不写营收、净利这类字段。一旦把某个业务的字段写进通用库，库的边界就没了。</li><li><strong>不做图表</strong>：指标卡只放数字。要图请用 <code>09-assets/</code> 的图表组件。</li><li><strong>不做标签页 / 折叠</strong>：那是 <code>03-patterns/</code> 的组件，这里只给骨架。</li></ul>
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      <a class="g-pager__link g-pager__link--prev" href="analysis-report.html"><span>上一页</span>analysis-report · 组合型研究报告</a>
+      <a class="g-pager__link g-pager__link--next" href="report.html"><span>下一页</span>report · 报告版式系统 v1</a>
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    <ul class="g-toc"><li><a href="#s2">为什么需要它</a></li><li><a href="#s3">三个变体</a></li><li><a href="#s4">用法</a></li><li><a href="#s5">三条结构规则</a></li><li><a href="#s6">无数据态的三条硬规则</a></li><li><a href="#s7">校验收口</a></li><li><a href="#s8">边界</a></li></ul>
+  </aside>
+</div>
+<footer class="g-foot">
+  <p>v0.11.4 · 零第三方运行时依赖 · 组件数 35</p>
+</footer>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>separator · 分隔线 · agentcss</title>
+<meta name="description" content="分隔线，可带中间文字">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">separator · 分隔线</span>
+    <a class="g-jump" href="../02-primitives/separator/demo.html">打开示例<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">基础组件 · stable</p>
+    <h1>separator · 分隔线</h1>
+    <p class="lede">分隔线，可带中间文字</p>
+    <ul class="g-meta"><li><a href="../02-primitives/separator/demo.html"><code>02-primitives/separator/demo.html</code></a></li><li><a href="../02-primitives/separator/separator.css"><code>02-primitives/separator/separator.css</code></a></li></ul>
+    <article class="g-doc">
+<h2 id="s2">两种，必须分清<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th></th><th>类</th><th>用途</th><th>读屏</th>
+</tr></thead>
+<tbody>
+<tr><td><strong>装饰性</strong></td><td><code>.separator</code></td><td>只把内容分成块</td><td><strong>不播报</strong></td></tr>
+<tr><td><strong>语义性</strong></td><td><code>.separator--label</code></td><td>分开<strong>不同的东西</strong></td><td><strong>播报&quot;分隔符&quot;</strong></td></tr>
+</tbody>
+</table></div>
+<p><strong>为什么必须分</strong>：两者视觉上都是一条线，但<strong>对辅助技术的意义相反</strong> —— 装饰性的播报是噪音，语义性的不播报则丢信息。</p>
+<h2 id="s3">类<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>类</th><th>作用</th>
+</tr></thead>
+<tbody>
+<tr><td><code>.separator</code></td><td>装饰性（<code>&lt;hr&gt;</code>）</td></tr>
+<tr><td><code>.separator--tight</code></td><td>间距更小（同组内部）</td></tr>
+<tr><td><code>.separator--label</code></td><td>语义性，文字<strong>前</strong>画线</td></tr>
+<tr><td><code>.separator--both</code></td><td>两侧都画线</td></tr>
+</tbody>
+</table></div>
+<h2 id="s4">用法<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-html">&lt;!-- 装饰性 --&gt;
+&lt;hr class=&quot;separator&quot;&gt;
+
+&lt;!-- 语义性：必须有名字 --&gt;
+&lt;hr class=&quot;separator separator--label&quot; role=&quot;separator&quot; aria-label=&quot;高级设置&quot;&gt;</code></pre>
+<h2 id="s5">为什么用两档颜色（实测，不是拍脑袋）<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
+<p>本库实测（vs <code>--surface</code>，WCAG 1.4.11 非文字对比要 ≥ 3:1）：</p>
+<div class="table"><table>
+<thead><tr>
+<th>令牌</th><th>浅色</th><th>暗色</th><th>判定</th>
+</tr></thead>
+<tbody>
+<tr><td><code>--border-decor</code></td><td>1.26</td><td>1.23</td><td>&lt; 3</td></tr>
+<tr><td><code>--border-decor-str</code></td><td>1.60</td><td>1.61</td><td>&lt; 3</td></tr>
+<tr><td><code>--border-control</code></td><td><strong>3.42</strong></td><td><strong>4.34</strong></td><td>✅ ≥ 3</td></tr>
+</tbody>
+</table></div>
+<p><strong>差 2.7 倍。</strong> 所以：</p>
+<ul><li><strong>装饰性</strong>用 <code>--border-decor</code> —— 1.4.11 <strong>不适用于它</strong>（不承担语义）</li><li><strong>语义性</strong>用 <code>--border-control</code> —— 它是读屏用户<strong>唯一能看到的线索</strong>，视觉上必须够明显</li></ul>
+<p><strong>这就是&quot;不要一档打天下&quot;的实测依据。</strong></p>
+<h2 id="s6">两个反例<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
+<p><strong>① 语义分隔用装饰色</strong> —— 分隔&quot;基本信息&quot;与&quot;高级设置&quot;是两类不同的东西，但 1.26:1 的线在低视力与暗色下几乎看不见，而读屏只念&quot;分隔符&quot;、不解释两边是什么 ⇒ 该线是唯一线索时必须用达标的档。</p>
+<p><strong>② 用 div + border-bottom 代替 hr</strong> —— <code>&lt;div class=&quot;line&quot;&gt;</code> 对读屏 <strong>什么都没有</strong>。语义分隔必须用 <code>&lt;hr&gt;</code> 或 <code>role=&quot;separator&quot;</code>，装饰性的才可以用纯 div。</p>
+<h2 id="s7">细节<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
+<p>用 <code>border</code> 而不是 <code>box-shadow</code> 画线 —— 1px 的线用 box-shadow 在某些浏览器上会渲染成 2px（亚像素取整）。</p>
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      <a class="g-pager__link g-pager__link--prev" href="select.html"><span>上一页</span>select · 自建下拉选择</a>
+      <a class="g-pager__link g-pager__link--next" href="skeleton.html"><span>下一页</span>skeleton · 骨架屏</a>
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    <ul class="g-toc"><li><a href="#s2">两种，必须分清</a></li><li><a href="#s3">类</a></li><li><a href="#s4">用法</a></li><li><a href="#s5">为什么用两档颜色（实测，不是拍脑袋）</a></li><li><a href="#s6">两个反例</a></li><li><a href="#s7">细节</a></li></ul>
+  </aside>
+</div>
+<footer class="g-foot">
+  <p>v0.11.4 · 零第三方运行时依赖 · 组件数 35</p>
+</footer>
+</body>
+</html>

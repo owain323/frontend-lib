@@ -175,7 +175,7 @@
   .pagination__status { margin-inline-start: 0; width: 100%; }
 }
 
-/* 🔴 尊重 reduced-motion（见 charter 07） */
+/* 🔴 尊重 reduced-motion */
 @media (prefers-reduced-motion: reduce) {
   .pagination__link { transition: none; }
 }

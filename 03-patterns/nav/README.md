@@ -138,7 +138,7 @@ Toc.init({ links: '#toc-list .toc__link', sections: 'main h2[id]' });
 
 ---
 
-## 抽屉：五条判据（都来自 08 规范）
+## 抽屉：五条判据
 
 ### 1. 只动 `transform`，不动 `width/left/top`
 

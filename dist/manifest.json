@@ -8,8 +8,8 @@
   ],
   "totals": {
     "sourceFiles": 69,
-    "sourceBytes": 740799,
-    "distGzip": 95316
+    "sourceBytes": 740491,
+    "distGzip": 95291
   },
   "files": [
     {
@@ -89,9 +89,9 @@
     },
     {
       "source": "01-tokens/focus-ring.css",
-      "sourceSha256": "54f8c732afe9101635b42a8989d98635a641f5171ab90650503d91a5a66c5880",
-      "sourceBytes": 5653,
-      "sourceGzip": 2122,
+      "sourceSha256": "e2c4dcb0bd3bf3b9a36f7ac6ec84417aa356b07c21b6925425d3edd808e43f7a",
+      "sourceBytes": 5633,
+      "sourceGzip": 2108,
       "outputs": [
         {
           "path": "dist/01-tokens/focus-ring.css",
@@ -161,9 +161,9 @@
     },
     {
       "source": "01-tokens/tokens.css",
-      "sourceSha256": "1cbd65db006717a1074020acb9ad51d42c8f3579962fc2b4712e1e86e12c5872",
-      "sourceBytes": 49224,
-      "sourceGzip": 18499,
+      "sourceSha256": "794c7e8c82a4519afb471eddf80561255b5ec12e75194d1db468a37c65e6ee72",
+      "sourceBytes": 49203,
+      "sourceGzip": 18487,
       "outputs": [
         {
           "path": "dist/01-tokens/tokens.css",
@@ -648,9 +648,9 @@
     },
     {
       "source": "03-patterns/pagination/pagination.css",
-      "sourceSha256": "b4e17f903e40f0a643c9f6b3b7176584317143d8e2f5f9653831aa08f785e914",
-      "sourceBytes": 7854,
-      "sourceGzip": 3418,
+      "sourceSha256": "4f92edeb586e4b48a8f706ee5d0f4ab2c60a09951f4b52213fcfda139207b81f",
+      "sourceBytes": 7834,
+      "sourceGzip": 3407,
       "outputs": [
         {
           "path": "dist/03-patterns/pagination/pagination.css",
@@ -863,9 +863,9 @@
     },
     {
       "source": "04-recipes/tierA-tokens.css",
-      "sourceSha256": "0a0bd6a1826a9d7c8d28f48ba16a87ff120969d57a416413963d67edb1172f9f",
-      "sourceBytes": 5157,
-      "sourceGzip": 2015,
+      "sourceSha256": "ccccbdf82f355c349cbb2ea1776f68261e72fbf9433138ffbef14f780b8b2614",
+      "sourceBytes": 5136,
+      "sourceGzip": 2000,
       "outputs": [
         {
           "path": "dist/04-recipes/tierA-tokens.css",
@@ -877,9 +877,9 @@
     },
     {
       "source": "09-assets/bar/bar.css",
-      "sourceSha256": "f875f2e04175cd42a607d907a1ae2d97216793c039aa01f0f4b4fd0d392272ee",
-      "sourceBytes": 5426,
-      "sourceGzip": 2504,
+      "sourceSha256": "dd71f7fbc38df212ca2aef280c3bfda6ed54e189e46301e016397e644ca011d3",
+      "sourceBytes": 5403,
+      "sourceGzip": 2493,
       "outputs": [
         {
           "path": "dist/09-assets/bar/bar.css",
@@ -891,39 +891,39 @@
     },
     {
       "source": "09-assets/bar/bar.js",
-      "sourceSha256": "cbb67fb8084172d1f385b7966fd0d43f53c16b2bfe9102e8f5ac1a335ad9cd41",
-      "sourceBytes": 15077,
-      "sourceGzip": 6395,
+      "sourceSha256": "566ebc27e7205f9c600d51c73fe81f841f16a60f9ab49cc1a6e5963d8c72a2b2",
+      "sourceBytes": 15022,
+      "sourceGzip": 6379,
       "outputs": [
         {
           "path": "dist/09-assets/bar/bar.js",
           "kind": "stripped",
-          "bytes": 5606,
-          "gzip": 2341
+          "bytes": 5595,
+          "gzip": 2331
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
     },
     {
       "source": "09-assets/echarts-adapter/echarts-adapter.js",
-      "sourceSha256": "cfe8a6dc7e25692e81233faa6c45c5fac3e5548a72de1f8ba90f680749305e87",
-      "sourceBytes": 10430,
-      "sourceGzip": 4148,
+      "sourceSha256": "2a242e350750705518aab6d99697263cf32921756b70e44a3213d1cdcef459b9",
+      "sourceBytes": 10322,
+      "sourceGzip": 4116,
       "outputs": [
         {
           "path": "dist/09-assets/echarts-adapter/echarts-adapter.js",
           "kind": "stripped",
-          "bytes": 4642,
-          "gzip": 1890
+          "bytes": 4625,
+          "gzip": 1875
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
     },
     {
       "source": "09-assets/model-viewer/model-viewer.css",
-      "sourceSha256": "91b6f1d8bd939c423af46328209351309d4c830c0f4a6ec20d0db0f748f354ff",
-      "sourceBytes": 4110,
-      "sourceGzip": 1767,
+      "sourceSha256": "7982b1a4f8f3b69ef99851e8f486d636bb7ccc30aa9f712db6d81931735571b5",
+      "sourceBytes": 4070,
+      "sourceGzip": 1748,
       "outputs": [
         {
           "path": "dist/09-assets/model-viewer/model-viewer.css",

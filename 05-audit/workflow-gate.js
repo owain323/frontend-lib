@@ -173,6 +173,11 @@ function check(dir) {
       var steps = job.steps || [];
       if (!Array.isArray(steps)) steps = [];
       var seenScript = false;
+      /* 🔴 「是否跑仓库脚本」与「是否需要 node_modules」是两件事。
+         实测（2026-10-28）：pages 的 build job 只跑
+         `python3 05-audit/docs-site-gate.py`（纯标准库），判据却要求它
+         npm ci —— 为了哄判据去加一句空跑，会让「装了依赖」失去含义。 */
+      var needsDeps = false;
       steps.forEach(function (st) {
         if (!st || typeof st.run !== 'string') return;
         scriptRefs(st.run).forEach(function (ref) {
@@ -184,6 +189,7 @@ function check(dir) {
               ' ⇒ 这道门禁在 CI 上根本不会被执行');
           } else {
             seenScript = true;
+            if (/[.](js|mjs|cjs)$/.test(ref)) needsDeps = true;
           }
         });
       });
@@ -205,8 +211,18 @@ function check(dir) {
       var blob = steps.map(function (st) {
         return (st && (st.run || st.uses)) || '';
       }).join('\n');
+      /* 直接调 node / npx 的也算需要依赖（哪怕脚本名是动态拼的）。
+         ⚠️ 必须按"独立单词"匹配：`--exclude 'node_modules/'` 这种
+         rsync 参数里也含 node，宽松匹配会把"复制文件"的步骤判成"跑 JS"。
+         实测第一版就是被这句判红的。 */
+      if (/(^|[\s;&|()"'=])(node|npx|tsx|ts-node)(?=[\s;&|()"']|$)/.test(blob)) {
+        needsDeps = true;
+      }
+
       if (!seenScript) {
         oks.push(tag + ' 不执行仓库脚本 ⇒ 无需装依赖');
+      } else if (!needsDeps) {
+        oks.push(tag + ' 只跑 Python / 系统命令 ⇒ 无需装依赖');
       } else if (!/\bnpm\s+(ci|install)\b/.test(blob)) {
         errs.push(tag + '：没有 `npm ci` / `npm install`' +
           ' ⇒ 「锁文件可复现」这个承诺从未被验证');
@@ -274,6 +290,21 @@ function selftest() {
     try { fs.rmSync(d, { recursive: true, force: true }); } catch (e) { /* 忽略 */ }
   }
 
+  /* 反向方向：样本**必须绿**。
+     ⚠️ 只测"会红"是不够的 —— 一道永远红的门禁也能"抓到问题"。
+        这里专门测"不该红的时候不许红"，否则加严判据时会把合格配置误伤。 */
+  function expectGreen(why, content) {
+    var d = tmpDirWith(content);
+    var r = check(path.join(d, '.github', 'workflows'));
+    var ok = r.errs.length === 0;
+    process.stdout.write('  [' + (ok ? 'OK  ' : 'FAIL') + '] ' + why + '\n');
+    if (!ok) {
+      bad++;
+      process.stdout.write('         误报了：' + JSON.stringify(r.errs) + '\n');
+    }
+    try { fs.rmSync(d, { recursive: true, force: true }); } catch (e) { /* 忽略 */ }
+  }
+
   /* ⭐ 第一条就是评审发现的那个真实缺陷 —— 必须永远能复现它 */
   expect('`timeout-minutes: 6#注释`（# 前无空格）⇒ 必须红',
     GOOD.replace('timeout-minutes: 6 # 兜底', 'timeout-minutes: 6# 兜底'),
@@ -285,9 +316,18 @@ function selftest() {
     /* ⚠️ 错别字必须用 ASCII：非 ASCII 字符进不了路径正则 ⇒ 突变体根本打不到判据 */
     GOOD.replace('05-audit/leak-scan.py', '05-audit/leak-scan-typo.py'),
     '不存在的脚本');
-  expect('没有 npm ci ⇒ 必须红',
-    GOOD.replace('      - run: npm ci\n', ''),
+  /* ⚠️ 这条样本必须**跑 JS**：只跑 Python 的 job 不装依赖是合格的，
+     拿它当「没有 npm ci 必须红」的样本会让判据倒退回「每个 job 都要装」。 */
+  expect('跑 JS 脚本但没有 npm ci ⇒ 必须红',
+    GOOD.replace('python3 05-audit/leak-scan.py', 'node 05-audit/pack-closure.js')
+        .replace('      - run: npm ci\n', ''),
     '锁文件可复现');
+  expectGreen('只跑 Python、没有 npm ci ⇒ 不许红（不装依赖是合格的）',
+    GOOD.replace('      - run: npm ci\n', ''));
+  expectGreen('rsync 参数里出现 node_modules/ ⇒ 不许当成"跑 JS"',
+    GOOD.replace('      - run: python3 05-audit/leak-scan.py',
+                 '      - run: rsync -a --exclude \'node_modules/\' ./ out/')
+        .replace('      - run: npm ci\n', ''));
   expect('缩进错误的坏 YAML ⇒ 必须红',
     'jobs:\n  a:\n    b: 1\n   c: 2\n',
     '不是合法 YAML');

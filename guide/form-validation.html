@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>表单校验 · agentcss</title>
+<meta name="description" content="表单校验反馈与错误汇总">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">表单校验</span>
+    <a class="g-jump" href="../03-patterns/form-validation/demo.html">打开示例<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">模式 · stable</p>
+    <h1>表单校验</h1>
+    <p class="lede">表单校验反馈与错误汇总</p>
+    <ul class="g-meta"><li><a href="../03-patterns/form-validation/demo.html"><code>03-patterns/form-validation/demo.html</code></a></li><li><a href="../03-patterns/form-validation/form-validation.css"><code>03-patterns/form-validation/form-validation.css</code></a></li></ul>
+    <article class="g-doc">
+<div class="table"><table>
+<thead><tr>
+<th>字段</th><th>内容</th>
+</tr></thead>
+<tbody>
+<tr><td><strong>来源</strong></td><td>原创（依据 WCAG 3.3.1 / 3.3.3）</td></tr>
+<tr><td><strong>实测</strong></td><td><code>demo.html</code> 里两种校验时机并排可直接对比</td></tr>
+<tr><td><strong>适用</strong></td><td>精简档 / B / C（延迟/实时校验需 ~40 行 JS）</td></tr>
+<tr><td><strong>依赖</strong></td><td><code>01-tokens/tokens.css</code> + <code>02-primitives/input/input.css</code>  + <code>01-tokens/typography.css</code>（<code>.note</code> 提示框） + <code>02-primitives/button/button.css</code> + <code>01-tokens/page.css</code>（页面骨架：<code>.wrap</code> / <code>.lede</code> / <code>.note</code>）</td></tr>
+<tr><td><strong>门禁</strong></td><td>✅ <code>states.py</code> 零 HIGH</td></tr>
+</tbody>
+</table></div>
+<hr>
+<h2 id="s2">一、校验时机（本组件最关键的判断）<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<p>🔴 <strong>不要在 <code>oninput</code> 时报错。</strong></p>
+<p>用户刚敲下 <code>1</code>，字段就变红——但 <code>1</code> 可能是合法的中间状态。打到一半满屏红字，用户不知道自己哪里错了，也不敢继续打，<strong>甚至放弃填表</strong>。这是纯噪音。</p>
+<p><strong>三层时机：</strong></p>
+<div class="table"><table>
+<thead><tr>
+<th>时机</th><th>行为</th>
+</tr></thead>
+<tbody>
+<tr><td><code>onblur</code></td><td>失焦时校验一次（用户已经输完一段了）</td></tr>
+<tr><td>之后才实时</td><td>字段&quot;脏&quot;过之后（用户回来改）才实时提示</td></tr>
+<tr><td><code>onsubmit</code></td><td>全量校验，并弹出错误汇总</td></tr>
+</tbody>
+</table></div>
+<p><code>demo.html</code> 第一屏就是这两种做法的并排对比，都试着打几个字。</p>
+<h3 id="s3">刻意不用 <code>:has()</code><a class="anchor" href="#s3" aria-label="本节直链">#</a></h3>
+<p>第一版用了 <code>:has(.field__input:focus)</code> 来控制错误显隐，<strong>是错的</strong>：</p>
+<ol><li>把&quot;何时校验&quot;这个<strong>逻辑</strong>硬塞进样式层，行为不可测</li><li><code>:has()</code> 属 CSS Level 4，兼容性不稳 —— <strong>某项目 上的 WebView 版本不确定，精简档 不能冒这个险</strong></li></ol>
+<p>改成 JS 加 <code>data-dirty</code> 属性，CSS 只认这个属性。</p>
+<hr>
+<h2 id="s4">二、错误汇总（提交失败时必做）<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
+<p>WCAG <strong>3.3.1 错误识别</strong> + <strong>3.3.3 错误建议</strong>的落点。</p>
+<p><strong>为什么必须有</strong>：12 个字段错 3 个，错误分散在各字段下方时，用户要上下扫、自己数&quot;还错几个&quot;、猜&quot;上面那个是不是也错了&quot;。汇总一次说清三件事：<strong>有几处错了 / 分别是哪里 / 怎么改</strong>。</p>
+<p>汇总里每条用 <code>&lt;a href=&quot;#字段id&quot;&gt;</code>：</p>
+<ul><li>天然支持键盘</li><li>能&quot;复制链接&quot;给别人</li><li>用 <code>div onclick</code> 的话键盘不可达</li></ul>
+<hr>
+<h2 id="s5">三、焦点管理（最容易漏）<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>时机</th><th>焦点去哪</th><th>不做的后果</th>
+</tr></thead>
+<tbody>
+<tr><td>提交失败</td><td>移到<strong>错误汇总</strong>上</td><td>焦点留在提交按钮，用户按 Enter 又提交一次</td></tr>
+<tr><td>提交成功</td><td>移到<strong>成功提示</strong>上</td><td>同上，会重复提交</td></tr>
+</tbody>
+</table></div>
+<p>汇总要 <code>role=&quot;alert&quot;</code> + <code>tabindex=&quot;-1&quot;</code>，否则屏幕阅读器不知道页面出现了新东西。</p>
+<hr>
+<h2 id="s6">四、错误文案：给建议，不给判断<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code>❌ 格式错误 / 非法输入 / 值不合法
+✅ 金额最多两位小数，例如 12.34
+✅ 请填写公司名称，2 到 40 个字
+✅ 这个日期在未来，请检查</code></pre>
+<p>3.3.3 要求给修正建议。&quot;格式错误&quot;用户读完还是不知道该改成什么。 <strong>每条都要具体、可执行，最好带一个正例。</strong></p>
+<h3 id="s7">🔴 提示必须与<strong>实际那一种错误</strong>对应（分层校验）<a class="anchor" href="#s7" aria-label="本节直链">#</a></h3>
+<p>实测的真实 bug：金额输入框里输入 <code>1111aaa</code>（<strong>含英文字母</strong>），弹出的提示却是「最多两位小数，例如 12.34」。</p>
+<p><strong>根因不是文案写得不好，是校验只写了一条正则 + 一句固定提示</strong>：</p>
+<pre class="code" tabindex="0"><code class="language-js">var ok = /^\d+(\.\d{1,2})?$/.test(v);
+e.textContent = v === '' ? '金额不能为空' : '最多两位小数，例如 12.34';</code></pre>
+<p>于是 <code>1111aaa</code>、<code>abc</code>、<code>1.2.3</code>、<code>.5</code>……<strong>全都得到同一句提示</strong>。用户输入字母却被告知小数位，<strong>提示与实际错误完全对不上</strong>，唯一的效果是让他反复猜。</p>
+<p><strong>正确做法：分层判断，顺序从根本到细节。</strong></p>
+<div class="table"><table>
+<thead><tr>
+<th>层</th><th>检查</th><th>提示</th>
+</tr></thead>
+<tbody>
+<tr><td>1</td><td>为空</td><td>金额不能为空</td></tr>
+<tr><td>2</td><td><strong>含非数字字符</strong></td><td>只能输入数字，<code>a</code> 不是有效字符</td></tr>
+<tr><td>3</td><td>小数点超过一个</td><td>只能有一个小数点</td></tr>
+<tr><td>4</td><td>小数位超过两位</td><td>最多两位小数，例如 12.34</td></tr>
+<tr><td>5</td><td>兜底（半截输入）</td><td>格式不对，示例：12.34</td></tr>
+</tbody>
+</table></div>
+<p>🔴 <strong>顺序不能乱</strong>：含字母时<strong>先说&quot;只能输入数字&quot;</strong>，而不是先说小数位 —— 用户要先解决&quot;有字母&quot;这个障碍，才谈得上小数位。先报后面的错误等于没报。</p>
+<p><strong>能指名道姓就别泛泛而谈</strong>：<code>a 不是有效字符</code> 比 <code>包含无效字符</code> 更有用，用户立刻知道要删哪一个。</p>
+<hr>
+<h2 id="s8">五、无障碍要点<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
+<ol><li>错误汇总：<code>role=&quot;alert&quot;</code> + 提交后焦点移到它</li><li>汇总条目：<code>&lt;a href=&quot;#id&quot;&gt;</code>，不要 <code>div onclick</code></li><li>错误文案：<code>role=&quot;alert&quot;</code>（动态出现时读出）+ <code>aria-describedby</code>（聚焦时听到）</li><li>字段加 <code>aria-invalid=&quot;true&quot;</code></li><li><strong>异步校验时不要禁用输入框</strong> —— 用户会以为不能打字了。保持可输入，旁边给小提示</li></ol>
+<hr>
+<h2 id="s9">反例<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
+<ul><li>❌ <strong>oninput 实时报错</strong> —— 噪音，会让人放弃填表</li><li>❌ <strong>没有错误汇总</strong> —— WCAG 3.3.1 要求错误可识别</li><li>❌ <strong>汇总条目用 <code>div onclick</code></strong> —— 键盘不可达</li><li>❌ <strong>提交失败/成功后焦点不动</strong> —— 会重复提交</li><li>❌ <strong>异步校验时禁用输入框</strong> —— 用户以为不能打字了</li><li>❌ <strong>错误文案只说&quot;格式错误&quot;</strong> —— 3.3.3 要求给建议</li><li>❌ <strong>用 <code>:has()</code> 做校验时机控制</strong> —— 逻辑塞进样式层，不可测；且兼容性不稳</li></ul>
+<hr>
+<h2 id="s10">门禁<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-bash">python3 05-audit/states.py 01-tokens 02-primitives 03-patterns 04-recipes</code></pre>
+<p>⚠️ <strong>必须 <code>--dir</code> 扫全目录，不能只扫单个文件。</strong> <code>.field</code> 的态定义在 <code>input.css</code> 里，只扫 <code>form-validation.css</code> 会误报&quot;缺 disabled/focus&quot;。</p>
+<h3 id="s11">库内两处反模式钩子<a class="anchor" href="#s11" aria-label="本节直链">#</a></h3>
+<p><code>form-validation.css</code> 末尾的反模式清单里，<strong>刻意用注释写了几条真实的错误写法</strong> （<code>oninput</code> 报错、没有汇总等）。<code>states.py</code> 的反模式扫描已改成在去注释后的文本上跑，所以那些注释<strong>不会</strong>被误判成真代码。改这个脚本时别把这个修复弄丢了。</p>
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      <a class="g-pager__link g-pager__link--prev" href="dropdown.html"><span>上一页</span>dropdown · 下拉菜单</a>
+      <a class="g-pager__link g-pager__link--next" href="list.html"><span>下一页</span>list —— 列表</a>
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    <ul class="g-toc"><li><a href="#s2">一、校验时机（本组件最关键的判断）</a></li><li><a href="#s4">二、错误汇总（提交失败时必做）</a></li><li><a href="#s5">三、焦点管理（最容易漏）</a></li><li><a href="#s6">四、错误文案：给建议，不给判断</a></li><li><a href="#s8">五、无障碍要点</a></li><li><a href="#s9">反例</a></li><li><a href="#s10">门禁</a></li></ul>
+  </aside>
+</div>
+<footer class="g-foot">
+  <p>v0.11.4 · 零第三方运行时依赖 · 组件数 35</p>
+</footer>
+</body>
+</html>

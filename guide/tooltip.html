@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>tooltip · 文字提示 · agentcss</title>
+<meta name="description" content="悬停/聚焦提示">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">tooltip · 文字提示</span>
+    <a class="g-jump" href="../03-patterns/tooltip/demo.html">打开示例<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">模式 · stable</p>
+    <h1>tooltip · 文字提示</h1>
+    <p class="lede">悬停/聚焦提示</p>
+    <ul class="g-meta"><li><a href="../03-patterns/tooltip/demo.html"><code>03-patterns/tooltip/demo.html</code></a></li><li><a href="../03-patterns/tooltip/tooltip.css"><code>03-patterns/tooltip/tooltip.css</code></a></li><li><a href="../03-patterns/tooltip/tooltip.js"><code>03-patterns/tooltip/tooltip.js</code></a></li></ul>
+    <article class="g-doc">
+<p>补充说明，<strong>不是</strong>主要信息的载体。</p>
+<h2 id="s2">🔴 一条铁律：tooltip 不承载必要信息<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<p>触屏设备<strong>没有 hover</strong> ⇒ tooltip 在手机上等于不存在。凡是&quot;用户必须知道&quot;的内容，绝不能只放在 tooltip 里。</p>
+<p><strong>怎么自己查</strong>：tooltip 里的文字必须与触发元素的可见文字或 <code>aria-label</code> <strong>不重复</strong>。重复了，就说明它本该直接可见。</p>
+<blockquote><p>这是本库唯一一条&quot;用法约束&quot;级别的规则，也是最常被违反的一条。</p></blockquote>
+<h2 id="s3">结构（JS 生成，不要手写）<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-js">Tooltip.attach(按钮, '说明文字', 'top');</code></pre>
+<p>生成的结构：</p>
+<pre class="code" tabindex="0"><code class="language-html">&lt;button data-tooltip=&quot;说明文字&quot; aria-describedby=&quot;tt1&quot;&gt;…&lt;/button&gt;
+&lt;div id=&quot;tt1&quot; class=&quot;tooltip tooltip--top&quot; role=&quot;tooltip&quot;&gt;说明文字&lt;/div&gt;</code></pre>
+<div class="table"><table>
+<thead><tr>
+<th>参数</th><th>取值</th><th>说明</th>
+</tr></thead>
+<tbody>
+<tr><td><code>el</code></td><td>Element</td><td>触发元素</td></tr>
+<tr><td><code>text</code></td><td>string</td><td>纯文本（用 <code>textContent</code> 写入，<strong>天然免疫注入</strong>）</td></tr>
+<tr><td><code>place</code></td><td><code>top</code>（默认）/ <code>bottom</code> / <code>inset-inline-start</code> / <code>inset-inline-end</code></td><td>方位</td></tr>
+</tbody>
+</table></div>
+<p>公开 API 只有 <code>Tooltip.attach()</code>，<strong>没有</strong> <code>show</code> / <code>hide</code> —— 显隐由 hover / focus / click 自动驱动。</p>
+<h2 id="s4">🔴 用 <code>aria-describedby</code>，不是 <code>aria-label</code><a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
+<p>tooltip 与触发元素的关系是<strong>描述</strong>，不是<strong>命名</strong>。 <code>aria-label</code> 会<strong>覆盖</strong>元素本来的可访问名——按钮上的文字会被抹掉。</p>
+<pre class="code" tabindex="0"><code class="language-js">el.setAttribute('aria-describedby', cur ? (cur + ' ' + id) : id);</code></pre>
+<p>⚠️ 已有 <code>aria-describedby</code> 时是<strong>追加空格</strong>，不是覆盖 —— 可能同时有多个描述。</p>
+<p><code>role=&quot;tooltip&quot;</code> + <code>aria-live=&quot;polite&quot;</code>：内容变化时读屏会念出来。</p>
+<h2 id="s5">键盘与触屏<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>输入</th><th>行为</th>
+</tr></thead>
+<tbody>
+<tr><td>键盘 <code>focus</code></td><td>出（<strong>键盘必须可达</strong>，只做 hover 等于对键盘用户不存在）</td></tr>
+<tr><td><code>Esc</code></td><td>关（WCAG 1.4.13 Content on Hover or Focus）</td></tr>
+<tr><td>触屏 <code>click</code></td><td>切换开/关</td></tr>
+</tbody>
+</table></div>
+<h2 id="s6">🔴 定位前必须先入 DOM<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
+<p>游离元素的 <code>getBoundingClientRect()</code> <strong>全是 0</strong>。</p>
+<p>实测踩过：<code>top</code> 方位的气泡与锚点完全重叠 —— 原因就是先量尺寸、后插进 DOM。正确顺序是<strong>先挂上去、藏起来量，量完再显示</strong>。</p>
+<h2 id="s7">显隐靠 <code>data-state</code>，别写 <code>display</code><a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-css">.tooltip[data-state=&quot;open&quot;] { … }</code></pre>
+<p>JS 只切<code>data-state</code>，显隐与动画全交给 CSS。写 <code>style.display</code> 会把过渡动画彻底干掉。</p>
+<h2 id="s8">降级<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>场景</th><th>处理</th>
+</tr></thead>
+<tbody>
+<tr><td><code>prefers-color-scheme: dark</code></td><td>已适配</td></tr>
+<tr><td><code>prefers-reduced-motion: reduce</code></td><td>已关闭动效</td></tr>
+<tr><td>无 <code>(hover: hover) and (pointer: fine)</code></td><td>只保留点击触发</td></tr>
+</tbody>
+</table></div>
+<h2 id="s9">成熟度：beta（两条行为债，如实列出）<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
+<p>契约里标的是 <code>beta</code>，两条债都记在这儿，<strong>别当stable 用</strong>：</p>
+<div class="table"><table>
+<thead><tr>
+<th>债</th><th>含义</th><th>现在能做什么</th>
+</tr></thead>
+<tbody>
+<tr><td><code>dismissable:manual</code></td><td>关闭逻辑是手写的，不是统一机制</td><td>点击/<code>Esc</code> 能关，但<strong>点击外部空白不关</strong></td></tr>
+<tr><td><code>focus-return:manual</code></td><td>焦点归位是手写的</td><td>关闭后焦点<strong>不一定</strong>回到触发元素</td></tr>
+</tbody>
+</table></div>
+<p>要接统一行为层，得先清这两条债。</p>
+<h2 id="s10">门禁<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
+<p><code>05-audit/tooltip-check.js</code>（契约 <code>gates</code> 里登记的唯一一道）—— 覆盖 <code>aria-describedby</code> 关联、<code>Esc</code> 关闭、触屏点击三条。</p>
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      <a class="g-pager__link g-pager__link--prev" href="tabs.html"><span>上一页</span>tabs · 标签页</a>
+      <a class="g-pager__link g-pager__link--next" href="tree.html"><span>下一页</span>tree · 树形视图</a>
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    <ul class="g-toc"><li><a href="#s2">🔴 一条铁律：tooltip 不承载必要信息</a></li><li><a href="#s3">结构（JS 生成，不要手写）</a></li><li><a href="#s4">🔴 用 aria-describedby，不是 aria-label</a></li><li><a href="#s5">键盘与触屏</a></li><li><a href="#s6">🔴 定位前必须先入 DOM</a></li><li><a href="#s7">显隐靠 data-state，别写 display</a></li><li><a href="#s8">降级</a></li><li><a href="#s9">成熟度：beta（两条行为债，如实列出）</a></li><li><a href="#s10">门禁</a></li></ul>
+  </aside>
+</div>
+<footer class="g-foot">
+  <p>v0.11.4 · 零第三方运行时依赖 · 组件数 35</p>
+</footer>
+</body>
+</html>

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Toast / Dialog（反馈层） · agentcss</title>
+<meta name="description" content="吐司提示与模态遮罩">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">Toast / Dialog（反馈层）</span>
+    <a class="g-jump" href="../03-patterns/overlay/demo.html">打开示例<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">模式 · beta</p>
+    <h1>Toast / Dialog（反馈层）</h1>
+    <p class="lede">吐司提示与模态遮罩</p>
+    <ul class="g-meta"><li><a href="../03-patterns/overlay/demo.html"><code>03-patterns/overlay/demo.html</code></a></li><li><a href="../03-patterns/overlay/overlay.css"><code>03-patterns/overlay/overlay.css</code></a></li><li><a href="../03-patterns/overlay/overlay.js"><code>03-patterns/overlay/overlay.js</code></a></li></ul>
+    <article class="g-doc">
+<div class="table"><table>
+<thead><tr>
+<th>字段</th><th>内容</th>
+</tr></thead>
+<tbody>
+<tr><td><strong>来源</strong></td><td>原创。判据部分来自 WCAG 2.1 与原生 <code>&lt;dialog&gt;</code> 行为</td></tr>
+<tr><td><strong>实测</strong></td><td><code>demo.html</code> 顶部面板<strong>实时显示焦点位置</strong>，可直接验证 focus trap</td></tr>
+<tr><td><strong>适用</strong></td><td>精简档 / B / C（JS 用 ES5 写，见下）</td></tr>
+<tr><td><strong>依赖</strong></td><td><code>01-tokens/tokens.css</code> + <code>02-primitives/button/button.css</code>  + <code>01-tokens/typography.css</code>（<code>.note</code> 提示框） + <code>01-tokens/page.css</code>（页面骨架：<code>.wrap</code> / <code>.lede</code> / <code>.note</code>）</td></tr>
+</tbody>
+</table></div>
+<hr>
+<h2 id="s2">核心是一条判断，不是样式<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<h3 id="s3">类清单<a class="anchor" href="#s3" aria-label="本节直链">#</a></h3>
+<div class="table"><table>
+<thead><tr>
+<th>类</th><th>作用</th>
+</tr></thead>
+<tbody>
+<tr><td><code>.overlay</code></td><td>遮罩层（<code>role=&quot;dialog&quot;</code> 的宿主）</td></tr>
+<tr><td><code>.dialog</code></td><td>弹窗面板</td></tr>
+<tr><td><code>.dialog__title</code> / <code>__body</code> / <code>__actions</code></td><td>弹窗内部结构</td></tr>
+<tr><td><code>.toast-region</code></td><td>通知容器（<code>role=&quot;status&quot; aria-live=&quot;polite&quot;</code>）</td></tr>
+<tr><td><code>.toast</code></td><td>单条通知</td></tr>
+<tr><td><code>.toast__icon</code> / <code>__body</code></td><td>通知内部结构</td></tr>
+<tr><td><code>.toast--success</code> / <code>--error</code> / <code>--warning</code></td><td>三种变体（<strong>靠底色 + 图标双编码</strong>，不只靠颜色）</td></tr>
+</tbody>
+</table></div>
+<p>⚠️ <strong>三种 toast 变体在本 demo 里没有演示</strong> —— 它们是给复用者的钩子，样式已备好，需要你自己触发。 <code>[data-state=&quot;valid&quot;]</code> 同理（见 <code>states/README.md</code>）。</p>
+<div class="table"><table>
+<thead><tr>
+<th></th><th>toast</th><th>dialog</th>
+</tr></thead>
+<tbody>
+<tr><td>语义</td><td>通知一下</td><td>必须处理完</td></tr>
+<tr><td>用户不做任何操作</td><td><strong>能继续</strong></td><td><strong>不能继续</strong></td></tr>
+<tr><td>焦点</td><td>不抢</td><td>困住</td></tr>
+<tr><td>关闭</td><td>自动消失</td><td>Esc / 按钮</td></tr>
+<tr><td>role</td><td><code>status</code></td><td><code>dialog</code> + <code>aria-modal</code></td></tr>
+</tbody>
+</table></div>
+<p><strong>判据只有一条：用户不做任何操作，任务能不能继续？</strong></p>
+<p>用错比做丑严重得多：</p>
+<ul><li>❌ <strong>把&quot;确认删除&quot;做成 toast</strong> —— 用户可能根本没看见就把文件删了</li><li>❌ <strong>把&quot;已保存&quot;做成 dialog</strong> —— 打断用户没在做别的事，白白多一次点击</li></ul>
+<hr>
+<h2 id="s4">三件 CSS 做不到的事<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
+<h3 id="s5">1. focus trap<a class="anchor" href="#s5" aria-label="本节直链">#</a></h3>
+<p>Tab 在弹层内循环，<strong>绝不跑到背后的页面去</strong>。不做的后果：Tab 跑到背景按钮上，屏幕阅读器读到&quot;你在模态框里，但按钮在背景上&quot;，彻底混乱。</p>
+<p>实现：监听 <code>keydown</code>，到边界时 <code>preventDefault()</code> 并折回。</p>
+<p><strong>并加一层保险</strong>：支持 <code>inert</code> 的浏览器上，把背景节点整体 <code>inert = true</code>—— 比 focus trap 更彻底（鼠标点击也失效）。不支持就靠 focus trap 兜。</p>
+<h3 id="s6">2. 焦点归还<a class="anchor" href="#s6" aria-label="本节直链">#</a></h3>
+<p><strong>关闭后焦点必须回到触发它的那个元素。</strong> 不还的话焦点掉到 <code>&lt;body&gt;</code>，键盘用户要重新 Tab 一遍才能回到原处。</p>
+<p>触发元素可能已被移除（用户点了别处），所以要有 fallback。</p>
+<h3 id="s7">3. 滚动锁定 + 滚动条补偿<a class="anchor" href="#s7" aria-label="本节直链">#</a></h3>
+<p>锁背景滚动时<strong>必须把滚动条宽度补到 body 上</strong>。</p>
+<p>🔴 补偿要<strong>叠加</strong>在宿主原有值上，<strong>不是替换</strong>（实测踩过）：</p>
+<pre class="code" tabindex="0"><code class="language-js">var sbw = window.innerWidth - document.documentElement.clientWidth;
+// 基准取**计算样式**：宿主的 padding 也可能来自样式表，不只是内联样式
+var cur = parseFloat(getComputedStyle(document.body).paddingRight) || 0;
+document.body.style.paddingRight = (cur + sbw) + 'px';</code></pre>
+<p>写成 <code>= sbw + 'px'</code> 会把宿主原有的 <code>padding-right</code> 覆盖掉—— 宿主一有左右 padding，关掉弹层后排版就变了。</p>
+<p>滚动条消失后内容会横向跳一下——<strong>弹层&quot;闪&quot;的感觉大半来自这里。</strong> 最容易被忽略、也最容易被当成&quot;动画没做好&quot;。</p>
+<p><strong>不用 <code>scrollbar-gutter: stable</code></strong>（两种写法都在真机量过，都放弃）：</p>
+<div class="table"><table>
+<thead><tr>
+<th>写法</th><th>流式内容</th><th><code>100vw</code> 元素</th><th>代价</th>
+</tr></thead>
+<tbody>
+<tr><td>无条件 <code>html { scrollbar-gutter: stable }</code></td><td>稳</td><td>稳</td><td><strong>导入即生效</strong>：一个弹层没开过，宿主的 <code>100vw</code> 也被压窄</td></tr>
+<tr><td>状态级 <code>html[data-scroll-locked] { … }</code></td><td>稳</td><td><strong>跳</strong>（393→378）</td><td>抖动只是从流式内容转移到了 <code>100vw</code> 元素上</td></tr>
+</tbody>
+</table></div>
+<p>它要稳就必须&quot;一直&quot;占位，而&quot;一直&quot;与&quot;组件只影响自己&quot;冲突。</p>
+<p><strong>页面里有 <code>position: fixed</code> 的元素怎么办</strong></p>
+<p><code>fixed</code> 相对<strong>视口</strong>定位，body 的 padding 管不到它 ⇒ 锁定后吸底条会往右挪。本库在锁定期间把滚动条宽度公开成变量，宿主自己补：</p>
+<pre class="code" tabindex="0"><code class="language-css">.my-bar { right: var(--overlay-scrollbar-width, 0px); }</code></pre>
+<p>（只在弹层打开期间存在，关闭即清除；与 Radix 的 <code>--removed-body-scroll-bar-size</code> 同款契约。）</p>
+<hr>
+<h2 id="s8">危险操作的两个特殊处理<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
+<p><strong>1. 初始焦点给&quot;取消&quot;按钮</strong></p>
+<pre class="code" tabindex="0"><code class="language-js">Overlay.dialog({ danger: true, initialFocus: 'cancel', ... })</code></pre>
+<p>默认初始焦点是弹层容器（<code>tabindex=&quot;-1&quot;</code>，让屏幕阅读器读出标题和描述）。但<strong>破坏性操作必须给&quot;取消&quot;</strong>——用户看清标题之前条件反射按 Enter，不该把文件删掉。</p>
+<p><strong>2. 点遮罩不关闭</strong></p>
+<p><code>closeOnBackdrop: false</code>。误点遮罩的代价太大。</p>
+<hr>
+<h2 id="s9">错误 toast 不自动消失<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-js">if (auto === undefined) auto = (opts.variant === 'error') ? 0 : 4000;</code></pre>
+<p><strong>3 秒后悄悄消失 = 用户还没读完就等于没说。</strong> 错误要么不自动消失，要么给足时间 + 保留手动关闭。</p>
+<hr>
+<h2 id="s10">动效克制<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>属性</th><th>值</th><th>理由</th>
+</tr></thead>
+<tbody>
+<tr><td>dialog <code>scale</code></td><td>0.98 → 1</td><td>大幅缩放 + 回弹 = 廉价感</td></tr>
+<tr><td>dialog 位移</td><td>8px</td><td>模态是&quot;出现&quot;，不是&quot;跳出来&quot;</td></tr>
+<tr><td>backdrop</td><td>纯半透明，<strong>不用 blur</strong></td><td>旧 WebView 上要么无效要么掉帧</td></tr>
+</tbody>
+</table></div>
+<p><code>prefers-reduced-motion</code> 下：进场动画全关，<strong><code>toast__timer</code> 进度条也停住</strong>—— 不假装还在倒计时。</p>
+<hr>
+<h2 id="s11">无障碍要点<a class="anchor" href="#s11" aria-label="本节直链">#</a></h2>
+<ol><li>toast region 标 <code>role=&quot;status&quot; aria-live=&quot;polite&quot;</code> —— 不用 focus</li><li>dialog 标 <code>role=&quot;dialog&quot; aria-modal=&quot;true&quot;</code> + <code>aria-labelledby</code> / <code>aria-describedby</code></li><li>dialog 容器 <code>tabindex=&quot;-1&quot;</code> 让它本身可聚焦，作为初始焦点</li><li>背景 <code>inert</code>（支持就用）</li><li>关闭按钮要有 <code>aria-label</code></li></ol>
+<hr>
+<h2 id="s12">🔴 库代码用 ES5<a class="anchor" href="#s12" aria-label="本节直链">#</a></h2>
+<p><code>overlay.js</code> <strong>不使用箭头函数 / const / let / 模板字符串</strong>。精简档 是 某项目 上的 WebView，版本不确定。demo 可以用现代语法（跑在用户浏览器上）， <strong>库代码不行</strong>。</p>
+<p>提交前可自查：</p>
+<pre class="code" tabindex="0"><code class="language-bash">grep -n '=&gt;\|\bconst\b\|\blet\b' 03-patterns/overlay/overlay.js   # 应无输出</code></pre>
+<hr>
+<h2 id="s13">一个诚实的说明<a class="anchor" href="#s13" aria-label="本节直链">#</a></h2>
+<p>本库用 <code>div + role=&quot;dialog&quot; + aria-modal</code> 而不是原生 <code>&lt;dialog&gt;</code> 元素—— 为了动画和样式完全可控。</p>
+<p><strong>如果不需要自定义动画，<code>&lt;dialog&gt;</code> 的 focus trap 和 Esc 是浏览器免费提供的，应该优先用它。</strong> 手写 focus trap 的代码永远不如原生可靠。</p>
+<hr>
+<h2 id="s14">反例<a class="anchor" href="#s14" aria-label="本节直链">#</a></h2>
+<ul><li>❌ <strong>toast 抢焦点</strong> —— 通知不该打断当前操作</li><li>❌ <strong>用 toast 做需要确认的操作</strong> —— 见上</li><li>❌ <strong>dialog 不困住焦点</strong> —— 混乱</li><li>❌ <strong>dialog 关闭后焦点不回去</strong> —— 键盘用户要重新 Tab</li><li>❌ <strong>锁滚动不补偿滚动条宽度</strong> —— 页面&quot;闪&quot;一下</li><li>❌ <strong>错误 toast 3 秒消失</strong> —— 还没读完就走了</li><li>❌ <strong>危险操作初始焦点在&quot;删除&quot;上</strong> —— 条件反射误触</li><li>❌ <strong>危险操作点遮罩即关闭</strong> —— 手滑就完了</li><li>❌ <strong>dialog 大幅缩放/回弹</strong> —— 廉价感</li><li>❌ <strong>backdrop 加 <code>backdrop-filter: blur</code></strong> —— 旧 WebView 掉帧</li><li>❌ <strong>用自定义 div 替代 <code>&lt;dialog&gt;</code> 且不需要自定义动画</strong> —— 原生的 focus trap 更可靠</li></ul>
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      <a class="g-pager__link g-pager__link--prev" href="nav.html"><span>上一页</span>nav —— 页头 / 目录 / 移动端抽屉</a>
+      <a class="g-pager__link g-pager__link--next" href="pagination.html"><span>下一页</span>pagination · 分页</a>
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    <ul class="g-toc"><li><a href="#s2">核心是一条判断，不是样式</a></li><li><a href="#s4">三件 CSS 做不到的事</a></li><li><a href="#s8">危险操作的两个特殊处理</a></li><li><a href="#s9">错误 toast 不自动消失</a></li><li><a href="#s10">动效克制</a></li><li><a href="#s11">无障碍要点</a></li><li><a href="#s12">🔴 库代码用 ES5</a></li><li><a href="#s13">一个诚实的说明</a></li><li><a href="#s14">反例</a></li></ul>
+  </aside>
+</div>
+<footer class="g-foot">
+  <p>v0.11.4 · 零第三方运行时依赖 · 组件数 35</p>
+</footer>
+</body>
+</html>

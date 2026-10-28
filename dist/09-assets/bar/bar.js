@@ -32,7 +32,7 @@ var host = opt.host;
 if (!host) throw new Error('bar.draw: 缺少 host');
 if (opt.max === undefined || opt.max === null) {
 
-throw new Error('bar.draw: max 是必填项（charter 13 铁律三：量程不得自动适配）');
+throw new Error('bar.draw: max 是必填项（铁律三：量程不得自动适配）');
 }
 
 var series = opt.series || [];

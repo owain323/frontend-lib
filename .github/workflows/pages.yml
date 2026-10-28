@@ -20,6 +20,12 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      # 文档站与根索引页是**生成物**（真值 = ai/components.json + 各组件 README），
+      # 产物本身入库。这里只核一件事：入库的产物是不是现算的。
+      # 不一致就失败 —— 改了 README 忘了重跑，不该原样发到线上。
+      # ⚠️ 门禁是**只读**的（现算到内存再比），所以这一步不会改工作区。
+      - name: Docs up to date
+        run: python3 05-audit/docs-site-gate.py
       - name: Assemble site
         run: |
           mkdir -p _site

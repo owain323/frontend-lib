@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>card · agentcss</title>
+<meta name="description" content="内容容器：媒体+正文+操作区三段">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">card</span>
+    <a class="g-jump" href="../02-primitives/card/demo.html">打开示例<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">基础组件 · stable</p>
+    <h1>card</h1>
+    <p class="lede">内容容器：媒体+正文+操作区三段</p>
+    <ul class="g-meta"><li><a href="../02-primitives/card/demo.html"><code>02-primitives/card/demo.html</code></a></li><li><a href="../02-primitives/card/card.css"><code>02-primitives/card/card.css</code></a></li></ul>
+    <article class="g-doc">
+<div class="table"><table>
+<thead><tr>
+<th>字段</th><th>内容</th>
+</tr></thead>
+<tbody>
+<tr><td><strong>来源</strong></td><td>原创。2px 抬起一条来自对 <code>animal-island-ui</code> 的观察（那套设计里最认同的一条）</td></tr>
+<tr><td><strong>实测</strong></td><td><code>states.py</code> 零缺失（card 形态：focus HIGH / hover LOW）</td></tr>
+<tr><td><strong>适用</strong></td><td>精简档 / B / C，纯 CSS</td></tr>
+<tr><td><strong>依赖</strong></td><td><code>01-tokens/tokens.css</code>  + <code>01-tokens/typography.css</code>（<code>.note</code> 提示框） + <code>01-tokens/page.css</code>（页面骨架：<code>.wrap</code> / <code>.lede</code> / <code>.note</code>）</td></tr>
+</tbody>
+</table></div>
+<hr>
+<h2 id="s2">用法<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-html">&lt;div class=&quot;card&quot;&gt;
+  &lt;div class=&quot;card__body&quot;&gt;
+    &lt;h3&gt;标题&lt;/h3&gt;
+    &lt;p class=&quot;small&quot;&gt;说明文字&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+<p><strong><code>.card__body</code> 不是可选的。</strong> <code>.card</code> 自身 <code>padding: 0</code>，内边距全在 <code>.card__body</code> 上（<code>padding: var(--sp-5)</code>）。直接往 <code>.card</code> 里放内容，文字会<strong>贴边</strong>。</p>
+<p><strong><code>.card</code> 是 <code>display: flex; flex-direction: column</code></strong>，子元素默认被拉伸到整宽。所以<strong>行内小元素会被拉成一条整宽的色带</strong>（实测：一个本该 54px 宽的状态标签被拉到 355px）。这不是 bug，是 flex 的默认 <code>align-items: stretch</code>。</p>
+<p>两种解法：</p>
+<pre class="code" tabindex="0"><code class="language-html">&lt;!-- ① 包一层（推荐，语义更清楚） --&gt;
+&lt;div class=&quot;card&quot;&gt;&lt;div class=&quot;card__body&quot;&gt;
+  &lt;h3&gt;标题&lt;/h3&gt;
+  &lt;div&gt;&lt;span&gt;状态&lt;/span&gt;&lt;/div&gt;
+&lt;/div&gt;&lt;/div&gt;
+
+&lt;!-- ② 直接给那个元素 align-self: flex-start --&gt;
+&lt;div class=&quot;card&quot;&gt;&lt;div class=&quot;card__body&quot;&gt;
+  &lt;h3&gt;标题&lt;/h3&gt;
+  &lt;span style=&quot;align-self:flex-start&quot;&gt;状态&lt;/span&gt;
+&lt;/div&gt;&lt;/div&gt;</code></pre>
+<blockquote><p>若要在卡片里放<strong>状态标签</strong>，请同时引入 <code>02-primitives/badge/badge.css</code> ——<br>它不在 card 的依赖里，本目录的 <code>demo.html</code> 也没有演示它。</p></blockquote>
+<div class="table"><table>
+<thead><tr>
+<th>变体</th><th>用途</th>
+</tr></thead>
+<tbody>
+<tr><td><code>.card--interactive</code></td><td>可点击（hover 抬起 2px + 阴影）</td></tr>
+<tr><td><code>.card--linked</code></td><td>整卡可点，语义由 <code>&lt;a&gt;</code> 承担</td></tr>
+<tr><td><code>.card--flat</code></td><td>无边框，靠背景区分</td></tr>
+<tr><td><code>.card--elevated</code></td><td>常驻阴影</td></tr>
+<tr><td><code>.card--compact</code></td><td>紧凑内边距</td></tr>
+<tr><td><code>.card--row</code></td><td>横向排列（图左文右）</td></tr>
+<tr><td><code>.card--selected</code></td><td>选中态</td></tr>
+</tbody>
+</table></div>
+<p>依赖：<code>01-tokens/tokens.css</code> + <code>01-tokens/typography.css</code>（正文）+ <code>01-tokens/page.css</code>（<code>.wrap</code> / <code>.small</code> 等页面骨架）。</p>
+<hr>
+<h2 id="s3">唯一的核心判据：hover 不能有布局跳动<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
+<p>hover 只改 <strong><code>transform</code></strong> 和 <strong><code>box-shadow</code></strong>，这两个属性不触发回流。改 <code>border-width</code> / <code>margin</code> / <code>padding</code> / <code>height</code> 任何一项都会引起重排，相邻卡片跟着抖。</p>
+<p>那个抖动很轻——1px 左右，轻到说不清哪里不对——<strong>但整页会显得廉价</strong>。 <code>demo.html</code> 把它放大到 4px，鼠标移上去一次就能记住。</p>
+<p><strong>要&quot;加粗&quot;边框怎么办</strong>：用 <code>box-shadow: inset 0 0 0 2px</code>，不要改 <code>border-width</code>。 <code>--selected</code> 变体就是这么做的。</p>
+<hr>
+<h2 id="s4">变体<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>变体</th><th>用途</th><th>注意</th>
+</tr></thead>
+<tbody>
+<tr><td><code>.card</code></td><td>默认，1px 边框</td><td>一排卡片时边框会显得重</td></tr>
+<tr><td><code>.card--flat</code></td><td>无边框，靠明度差分层</td><td><strong>列表首选</strong>，比全都有边框干净</td></tr>
+<tr><td><code>.card--elevated</code></td><td>默认带阴影</td><td>只给浮层/弹窗；列表全用它阴影会打架</td></tr>
+<tr><td><code>.card--interactive</code></td><td>可点，hover 抬 2px</td><td>需要整卡可点时配 <code>--linked</code></td></tr>
+<tr><td><code>.card--linked</code></td><td>整卡可点</td><td>内部必须有真实 <code>&lt;a&gt;</code>/<code>&lt;button&gt;</code></td></tr>
+<tr><td><code>.card--selected</code></td><td>选中态</td><td>inset shadow，不是改 border</td></tr>
+<tr><td><code>.card--compact</code></td><td>紧凑</td><td>两档够了，第三档说明密度没规划</td></tr>
+<tr><td><code>.card--row</code></td><td>横向</td><td>560px 以下自动回退纵向</td></tr>
+</tbody>
+</table></div>
+<hr>
+<h2 id="s5">🔴 整卡可点：正确做法 vs 错误做法<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
+<p><strong>错误</strong>：给 <code>&lt;div&gt;</code> 加 <code>onclick</code>。键盘 Tab 不到、屏幕阅读器不认、不能中键新开、不能复制链接。</p>
+<p><strong>正确</strong>：卡片内放一个真实的 <code>&lt;a&gt;</code>，用它的 <code>::after</code> 铺满整卡。</p>
+<pre class="code" tabindex="0"><code class="language-html">&lt;div class=&quot;card card--linked card--interactive&quot;&gt;
+  &lt;div class=&quot;card__body&quot;&gt;
+    &lt;h3 class=&quot;card__title&quot;&gt;&lt;a class=&quot;card__link&quot; href=&quot;/x&quot;&gt;标题&lt;/a&gt;&lt;/h3&gt;
+    &lt;p class=&quot;card__desc&quot;&gt;摘要&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+<p>焦点用 <code>:focus-within</code>——内部链接获焦时<strong>整张卡</strong>显示 ring，而不是只有标题那一小块。链接本身的 <code>:focus-visible</code> 要关掉，否则会出现两个框。</p>
+<p>卡片里如果有其他可点元素（按钮、标签），要 <code>z-index: 1</code> 盖在热区之上。</p>
+<hr>
+<h2 id="s6">抬起 2px，不是 8px<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
+<p>卡片是&quot;被拿起&quot;，不是&quot;被弹起&quot;。8px 以上会有游戏感—— <strong>长文和数据类界面不能要那种感觉</strong>。</p>
+<p>这条来自对 <code>animal-island-ui</code> 的观察：卡片 20px 圆角、无投影、hover 只抬 2px。那套库整体画风跟严肃内容不搭，但这一条是对的。</p>
+<hr>
+<h2 id="s7">反例 —— 什么时候不该用<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
+<ul><li>❌ <strong>一排卡片全用 <code>--elevated</code></strong> —— 阴影互相打架，整页发灰。列表用 <code>--flat</code></li><li>❌ <strong>hover 抬起 8px 以上</strong> —— 游戏感</li><li>❌ <strong>整卡套 <code>div onclick</code></strong> —— 键盘不可达，见上</li><li>❌ <strong>给链接本身再画焦点环</strong> —— 会变成两个框</li><li>❌ <strong>用 JS 截断描述文字</strong> —— 会留下半个词或半个字，用 <code>-webkit-line-clamp</code></li><li>❌ <strong>手动覆盖 <code>--row</code> 在窄屏的回退</strong> —— 那个回退是必要的</li></ul>
+<hr>
+<h2 id="s8">门禁<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-bash">python 05-audit/states.py 02-primitives/card/card.css</code></pre>
+<p>card 形态查两项：<code>focus</code>（HIGH，整卡可点时键盘不可达）、<code>hover</code>（LOW）。不查 <code>disabled</code> / <code>active</code>——卡片没有禁用态，也不响应按压。</p>
+<p>跑在 某项目 上立刻抓出 <code>.card</code> / <code>.card-grid</code> / <code>.side-card</code> 三个类全缺 focus。</p>
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      <a class="g-pager__link g-pager__link--prev" href="button.html"><span>上一页</span>button</a>
+      <a class="g-pager__link g-pager__link--next" href="choice.html"><span>下一页</span>checkbox / radio / select</a>
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    <ul class="g-toc"><li><a href="#s2">用法</a></li><li><a href="#s3">唯一的核心判据：hover 不能有布局跳动</a></li><li><a href="#s4">变体</a></li><li><a href="#s5">🔴 整卡可点：正确做法 vs 错误做法</a></li><li><a href="#s6">抬起 2px，不是 8px</a></li><li><a href="#s7">反例 —— 什么时候不该用</a></li><li><a href="#s8">门禁</a></li></ul>
+  </aside>
+</div>
+<footer class="g-foot">
+  <p>v0.11.4 · 零第三方运行时依赖 · 组件数 35</p>
+</footer>
+</body>
+</html>

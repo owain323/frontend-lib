@@ -32,7 +32,7 @@
     "bar": {
       "rootClass": "bar",
       "tier": "asset",
-      "purpose": "柱状图（charter 13 图表规范）：堆叠/分组两种语义、超量程裁剪、图例"
+      "purpose": "柱状图：堆叠/分组两种语义、超量程裁剪、图例"
     },
     "button": {
       "rootClass": "btn",

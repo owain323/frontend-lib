@@ -118,12 +118,12 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* 🔴 尊重 reduced-motion：不用动画掩盖（见 charter 07） */
+/* 🔴 尊重 reduced-motion：不用动画掩盖 */
 @media (prefers-reduced-motion: reduce) {
   .mv__btn { transition: none; }
 }
 
-/* 🔴 打印时不该出现 3D（见 charter 09） */
+/* 🔴 打印时不该出现 3D */
 @media print {
   .mv__btn, .mv__hint { display: none; }
 }

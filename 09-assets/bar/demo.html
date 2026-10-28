@@ -25,7 +25,7 @@
 <h1>bar · 柱状图</h1>
 
 <p class="note">
-  按 <strong>charter 13 图表规范</strong>四条铁律实现。
+  按 <strong>图表规范</strong>四条铁律实现。
   <br>① 超量程被容器裁剪（<code>.bar</code> + <code>.bar__svg</code> 两道
      <code>overflow:hidden</code>，缺一不可）
   <br>② 标注只标关键点（<strong>永远 ≤ 4 个</strong>）且画在柱顶外侧
@@ -73,7 +73,7 @@
 
 <h2>4 · 🔴 量程必填：不给 max 会直接报错</h2>
 <p class="note">
-  charter 13 铁律三：<b>量程不得自动适配</b>。
+  铁律三：<b>量程不得自动适配</b>。
   <br>一个 400 的异常值 + 30 个 0.35 的常态值，若 Y 轴自适应到 400
   ⇒ 所有常态值被压成<b>一条贴底的直线</b>
   ⇒ 读者会得出「这些天完全没有变化」的<b>错误结论</b>。

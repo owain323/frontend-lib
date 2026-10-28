@@ -81,7 +81,7 @@
    四、只在键盘时"上浮"（可选的增强）
    ----------------------------------------------------------------------------
    聚焦时轻微提亮，帮助用户追踪焦点在长内容里的位置。
-   ⚠️ 用 `transition` 且尊重 reduced-motion（见 charter 07）。
+   ⚠️ 用 `transition` 且尊重 reduced-motion。
    ========================================================================== */
 @media (prefers-reduced-motion: no-preference) {
   :where(a, button, [role="button"], [role="tab"]) {

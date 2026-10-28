@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>dropdown · 下拉菜单 · agentcss</title>
+<meta name="description" content="下拉菜单">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">dropdown · 下拉菜单</span>
+    <a class="g-jump" href="../03-patterns/dropdown/demo.html">打开示例<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">模式 · beta</p>
+    <h1>dropdown · 下拉菜单</h1>
+    <p class="lede">下拉菜单</p>
+    <ul class="g-meta"><li><a href="../03-patterns/dropdown/demo.html"><code>03-patterns/dropdown/demo.html</code></a></li><li><a href="../03-patterns/dropdown/dropdown.css"><code>03-patterns/dropdown/dropdown.css</code></a></li><li><a href="../03-patterns/dropdown/dropdown.js"><code>03-patterns/dropdown/dropdown.js</code></a></li></ul>
+    <article class="g-doc">
+<p>依据 <strong>APG（ARIA Authoring Practices）Menu Button</strong> 模式。</p>
+<h2 id="s2">🔴 APG 的四条键盘契约（缺一条就不算合规）<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>键</th><th>行为</th>
+</tr></thead>
+<tbody>
+<tr><td><code>↑</code> <code>↓</code></td><td>在<strong>项</strong>之间移动</td></tr>
+<tr><td><code>Esc</code></td><td>关闭，并把焦点<strong>还给按钮</strong></td></tr>
+<tr><td><code>Tab</code></td><td>关闭菜单（焦点移到下一个元素）</td></tr>
+<tr><td><code>Enter</code> / <code>Space</code></td><td>激活当前项</td></tr>
+</tbody>
+</table></div>
+<h2 id="s3">⚠️ 另有两条容易漏的<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
+<ul><li><strong>关闭后焦点必须归位</strong> —— 不归位，键盘用户在页面里迷路</li><li><strong>菜单项命中区 ≥ 44px</strong> —— 密集列表也必须够大（WCAG 2.5.5AAA）</li></ul>
+<h2 id="s4">结构<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
+<p>⚠️ <strong>类名前缀是 <code>dd__</code>，不是 <code>dropdown__</code></strong>；标记是 <code>data-dd-*</code>。</p>
+<pre class="code" tabindex="0"><code class="language-html">&lt;div class=&quot;dd&quot;&gt;
+  &lt;button class=&quot;dd__btn&quot; data-dd-btn aria-haspopup=&quot;menu&quot; aria-expanded=&quot;false&quot;&gt;
+    &lt;span&gt;操作&lt;/span&gt;&lt;span class=&quot;dd__caret&quot; aria-hidden=&quot;true&quot;&gt;&lt;/span&gt;
+  &lt;/button&gt;
+  &lt;div class=&quot;dd__menu&quot; data-dd-menu role=&quot;menu&quot;&gt;
+    &lt;button class=&quot;dd__item&quot; role=&quot;menuitem&quot; data-value=&quot;edit&quot;&gt;编辑&lt;/button&gt;
+    &lt;hr class=&quot;dd__sep&quot; data-dd-sep role=&quot;separator&quot;&gt;
+    &lt;button class=&quot;dd__item&quot; role=&quot;menuitem&quot; data-value=&quot;del&quot;&gt;删除&lt;/button&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+<div class="table"><table>
+<thead><tr>
+<th>部件</th><th>说明</th>
+</tr></thead>
+<tbody>
+<tr><td><code>.dd</code></td><td>根</td></tr>
+<tr><td><code>.dd__btn</code> / <code>[data-dd-btn]</code></td><td>触发按钮</td></tr>
+<tr><td><code>.dd__menu</code> / <code>[data-dd-menu]</code></td><td>菜单本体，<strong>必需</strong></td></tr>
+<tr><td><code>.dd__item</code></td><td>菜单项，带 <code>data-value</code></td></tr>
+<tr><td><code>.dd__sep</code> / <code>[data-dd-sep]</code></td><td>分隔线</td></tr>
+<tr><td><code>.dd__check</code></td><td>多选勾选位</td></tr>
+<tr><td><code>.dd--end</code></td><td>菜单右对齐</td></tr>
+</tbody>
+</table></div>
+<h2 id="s5">启用<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-js">const dd = Dropdown.create(元素);</code></pre>
+<ul><li><code>[data-dd-btn]</code> 找不到时<strong>退回第一个 <code>&lt;button&gt;</code></strong>（省事的写法也能跑）</li><li><code>[data-dd-menu]</code> 找不到 → <strong>直接抛错</strong></li></ul>
+<h2 id="s6">🔴 <code>role=&quot;menu&quot;</code> 要么全设要么全不设<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-js">// APG：菜单要么全 aria-hidden，要么全不设 —— 不能半吊子
+menu.setAttribute('role', 'menu');</code></pre>
+<p><code>aria-hidden</code> 打了一半在个别项上，读屏会读到一半就断掉。</p>
+<h2 id="s7">状态写在 DOM 属性上<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
+<p><code>data-state</code> / <code>data-value</code>，<strong>不用 class 切换</strong> —— 这是全库 INVARIANT I-8 （状态必须活在 DOM 属性上），也是门禁会查的东西。</p>
+<h2 id="s8">成熟度：beta（两条行为债，如实列出）<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>债</th><th>现在的后果</th>
+</tr></thead>
+<tbody>
+<tr><td><code>focus-return:manual</code></td><td>关闭后归位是手写的，不是统一机制</td></tr>
+<tr><td><code>typeahead:gap</code></td><td><strong>没有类型搜索</strong> —— APG 的 Menu Button 不硬性要求，但列表长时体验缺失</td></tr>
+</tbody>
+</table></div>
+<h2 id="s9">门禁<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
+<p><code>05-audit/dropdown-check.js</code></p>
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      <a class="g-pager__link g-pager__link--prev" href="drawer.html"><span>上一页</span>drawer · 抽屉</a>
+      <a class="g-pager__link g-pager__link--next" href="form-validation.html"><span>下一页</span>表单校验</a>
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    <ul class="g-toc"><li><a href="#s2">🔴 APG 的四条键盘契约（缺一条就不算合规）</a></li><li><a href="#s3">⚠️ 另有两条容易漏的</a></li><li><a href="#s4">结构</a></li><li><a href="#s5">启用</a></li><li><a href="#s6">🔴 role=&quot;menu&quot; 要么全设要么全不设</a></li><li><a href="#s7">状态写在 DOM 属性上</a></li><li><a href="#s8">成熟度：beta（两条行为债，如实列出）</a></li><li><a href="#s9">门禁</a></li></ul>
+  </aside>
+</div>
+<footer class="g-foot">
+  <p>v0.11.4 · 零第三方运行时依赖 · 组件数 35</p>
+</footer>
+</body>
+</html>

@@ -40,7 +40,7 @@ import subprocess
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # 内部目录（内部思考的容器）
-INTERNAL_DIRS = ('00-charter', '07-notes', '08-plan')
+INTERNAL_DIRS = ('internal',)
 
 # 内部文件（按文件名模式）
 INTERNAL_PATTERNS = [
@@ -65,8 +65,8 @@ INTERNAL_PATTERNS = [
 ROOT_ALLOWED_DIRS = {
     '.github',
     '01-tokens', '02-primitives', '03-patterns', '04-recipes', '05-audit',
-    '06-vendor', '09-assets', '10-review',
-    'adapters', 'ai', 'benchmark', 'dist', 'docs', 'examples',
+    '09-assets', '10-review',
+    'adapters', 'ai', 'benchmark', 'dist', 'docs', 'examples', 'guide',
     'type-tests', 'types',
 }
 ROOT_ALLOWED_FILES = {
@@ -135,7 +135,7 @@ def main():
     #    这一条是本门禁存在的意义：它抓的就是"看起来有、其实没有"。
     gi_path = os.path.join(ROOT, '.gitignore')
     missing_rules = []
-    for probe in ('00-charter/x.md', '07-notes/x.md', '08-plan/x.md',
+    for probe in ('internal/x.md', 'internal/x.py',
                   'PLAN.md', 'WORK-NOTES.md'):
         r = subprocess.run(['git', 'check-ignore', '-q', probe],
                            cwd=ROOT, capture_output=True)
@@ -162,7 +162,7 @@ def main():
         print('        （写成 "07-notes/   # 说明" 会被当字面路径 ⇒ 规则失效，')
         print('          而 git status 仍显示 ?? 07-notes/，很容易被骗过去）')
         print('     ⇒ 注释必须写在**独立行**。用 git check-ignore 验一下：')
-        print('        git check-ignore -q 07-notes/x.md && echo OK')
+        print('        git check-ignore -q internal/x.md && echo OK')
     else:
         print('  ✅ gitignore 规则实测生效（check-ignore 全部命中）')
 

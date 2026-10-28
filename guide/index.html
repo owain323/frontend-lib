@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>组件文档 · agentcss</title>
+<meta name="description" content="35 个组件的索引与文档。">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page g-index">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">组件文档</span>
+    <a class="g-jump" href="../index.html">打开示例<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout g-layout--index">
+  <main id="main" class="g-main">
+    <h1>组件文档</h1>
+    <p class="lede">35 个组件，按「基础件 → 模式 → 版式模板 → 图表」排列。
+      每一项都能点开示例，样式与行为脚本可以整段复制走。</p>
+
+    <div class="g-search">
+      <label class="g-search__label" for="q">搜索组件、状态、选择器</label>
+      <input class="g-search__input" id="q" type="search" autocomplete="off"
+             spellcheck="false" placeholder="例如：抽屉 / 表格 / badge--dot" aria-describedby="hits">
+      <p class="g-search__hint" id="hits" aria-live="polite">共 35 项</p>
+    </div>
+
+    <section class="g-sec" aria-labelledby="h-基础组件">
+      <h2 id="h-基础组件">基础组件</h2>
+      <p class="g-sec__desc">单一控件。拷一段 CSS 就能用。</p>
+      <ul class="g-list">
+<li class="g-item" data-id="badge"><a class="g-item__link" href="badge.html"><span class="g-item__name">badge · 状态标记</span><span class="g-item__desc">状态标签：计数、分类、结果标记</span></a><a class="g-item__demo" href="../02-primitives/badge/demo.html">示例</a></li>
+<li class="g-item" data-id="button"><a class="g-item__link" href="button.html"><span class="g-item__name">button</span><span class="g-item__desc">动作触发：主/次/危险/纯文字四档</span></a><a class="g-item__demo" href="../02-primitives/button/demo.html">示例</a></li>
+<li class="g-item" data-id="card"><a class="g-item__link" href="card.html"><span class="g-item__name">card</span><span class="g-item__desc">内容容器：媒体+正文+操作区三段</span></a><a class="g-item__demo" href="../02-primitives/card/demo.html">示例</a></li>
+<li class="g-item" data-id="choice"><a class="g-item__link" href="choice.html"><span class="g-item__name">checkbox / radio / select</span><span class="g-item__desc">单选/多选/原生 select 外观的统一控件</span></a><a class="g-item__demo" href="../02-primitives/choice/demo.html">示例</a></li>
+<li class="g-item" data-id="combobox"><a class="g-item__link" href="combobox.html"><span class="g-item__name">combobox · 组合框 / 标签输入</span><span class="g-item__desc">可搜索 + 可多选标签的输入控件</span></a><a class="g-item__demo" href="../02-primitives/combobox/demo.html">示例</a></li>
+<li class="g-item" data-id="date-range"><a class="g-item__link" href="date-range.html"><span class="g-item__name">date-range · 日期区间</span><span class="g-item__desc">日期区间选择，含预设快捷范围</span></a><a class="g-item__demo" href="../02-primitives/date-range/demo.html">示例</a></li>
+<li class="g-item" data-id="input"><a class="g-item__link" href="input.html"><span class="g-item__name">input / field</span><span class="g-item__desc">文本输入及其标签/帮助/错误三件套</span></a><a class="g-item__demo" href="../02-primitives/input/demo.html">示例</a></li>
+<li class="g-item" data-id="popover"><a class="g-item__link" href="popover.html"><span class="g-item__name">popover · 气泡卡片</span><span class="g-item__desc">锚定到触发元素的浮层</span></a><a class="g-item__demo" href="../02-primitives/popover/demo.html">示例</a></li>
+<li class="g-item" data-id="progress"><a class="g-item__link" href="progress.html"><span class="g-item__name">progress · 进度条</span><span class="g-item__desc">进度条与进度环</span></a><a class="g-item__demo" href="../02-primitives/progress/demo.html">示例</a></li>
+<li class="g-item" data-id="select"><a class="g-item__link" href="select.html"><span class="g-item__name">select · 自建下拉选择</span><span class="g-item__desc">自定义下拉选择（非原生）</span></a><a class="g-item__demo" href="../02-primitives/select/demo.html">示例</a></li>
+<li class="g-item" data-id="separator"><a class="g-item__link" href="separator.html"><span class="g-item__name">separator · 分隔线</span><span class="g-item__desc">分隔线，可带中间文字</span></a><a class="g-item__demo" href="../02-primitives/separator/demo.html">示例</a></li>
+<li class="g-item" data-id="skeleton"><a class="g-item__link" href="skeleton.html"><span class="g-item__name">skeleton · 骨架屏</span><span class="g-item__desc">加载占位骨架</span></a><a class="g-item__demo" href="../02-primitives/skeleton/demo.html">示例</a></li>
+<li class="g-item" data-id="switch"><a class="g-item__link" href="switch.html"><span class="g-item__name">switch · 开关</span><span class="g-item__desc">开关切换</span></a><a class="g-item__demo" href="../02-primitives/switch/demo.html">示例</a></li>
+      </ul>
+    </section>
+    <section class="g-sec" aria-labelledby="h-模式">
+      <h2 id="h-模式">模式</h2>
+      <p class="g-sec__desc">由多个控件组成的一种交互，通常带行为脚本。</p>
+      <ul class="g-list">
+<li class="g-item" data-id="accordion"><a class="g-item__link" href="accordion.html"><span class="g-item__name">accordion · 折叠面板</span><span class="g-item__desc">可折叠分组</span></a><a class="g-item__demo" href="../03-patterns/accordion/demo.html">示例</a></li>
+<li class="g-item" data-id="content"><a class="g-item__link" href="content.html"><span class="g-item__name">content —— 内容渲染样式</span><span class="g-item__desc">长文排版容器（标题/段落/列表/引用/代码）</span></a><a class="g-item__demo" href="../03-patterns/content/demo.html">示例</a></li>
+<li class="g-item" data-id="drawer"><a class="g-item__link" href="drawer.html"><span class="g-item__name">drawer · 抽屉</span><span class="g-item__desc">侧边抽屉，含遮罩</span></a><a class="g-item__demo" href="../03-patterns/drawer/demo.html">示例</a></li>
+<li class="g-item" data-id="dropdown"><a class="g-item__link" href="dropdown.html"><span class="g-item__name">dropdown · 下拉菜单</span><span class="g-item__desc">下拉菜单</span></a><a class="g-item__demo" href="../03-patterns/dropdown/demo.html">示例</a></li>
+<li class="g-item" data-id="form-validation"><a class="g-item__link" href="form-validation.html"><span class="g-item__name">表单校验</span><span class="g-item__desc">表单校验反馈与错误汇总</span></a><a class="g-item__demo" href="../03-patterns/form-validation/demo.html">示例</a></li>
+<li class="g-item" data-id="list"><a class="g-item__link" href="list.html"><span class="g-item__name">list —— 列表</span><span class="g-item__desc">键值列表/条目列表</span></a><a class="g-item__demo" href="../03-patterns/list/demo.html">示例</a></li>
+<li class="g-item" data-id="nav"><a class="g-item__link" href="nav.html"><span class="g-item__name">nav —— 页头 / 目录 / 移动端抽屉</span><span class="g-item__desc">顶部导航与目录</span></a><a class="g-item__demo" href="../03-patterns/nav/demo.html">示例</a></li>
+<li class="g-item" data-id="overlay"><a class="g-item__link" href="overlay.html"><span class="g-item__name">Toast / Dialog（反馈层）</span><span class="g-item__desc">吐司提示与模态遮罩</span></a><a class="g-item__demo" href="../03-patterns/overlay/demo.html">示例</a></li>
+<li class="g-item" data-id="pagination"><a class="g-item__link" href="pagination.html"><span class="g-item__name">pagination · 分页</span><span class="g-item__desc">分页控件</span></a><a class="g-item__demo" href="../03-patterns/pagination/demo.html">示例</a></li>
+<li class="g-item" data-id="reveal"><a class="g-item__link" href="reveal.html"><span class="g-item__name">reveal · 入场动效</span><span class="g-item__desc">入场动效：一个 data-reveal 属性六个方向，无 JS 时内容全可见</span></a><a class="g-item__demo" href="../03-patterns/reveal/demo.html">示例</a></li>
+<li class="g-item" data-id="states"><a class="g-item__link" href="states.html"><span class="g-item__name">容器四态：empty / loading / error / success</span><span class="g-item__desc">空/加载/错误/成功四种整块状态</span></a><a class="g-item__demo" href="../03-patterns/states/demo.html">示例</a></li>
+<li class="g-item" data-id="tabs"><a class="g-item__link" href="tabs.html"><span class="g-item__name">tabs · 标签页</span><span class="g-item__desc">选项卡切换</span></a><a class="g-item__demo" href="../03-patterns/tabs/demo.html">示例</a></li>
+<li class="g-item" data-id="tooltip"><a class="g-item__link" href="tooltip.html"><span class="g-item__name">tooltip · 文字提示</span><span class="g-item__desc">悬停/聚焦提示</span></a><a class="g-item__demo" href="../03-patterns/tooltip/demo.html">示例</a></li>
+<li class="g-item" data-id="tree"><a class="g-item__link" href="tree.html"><span class="g-item__name">tree · 树形视图</span><span class="g-item__desc">可展开树形结构</span></a><a class="g-item__demo" href="../03-patterns/tree/demo.html">示例</a></li>
+      </ul>
+    </section>
+    <section class="g-sec" aria-labelledby="h-版式模板">
+      <h2 id="h-版式模板">版式模板</h2>
+      <p class="g-sec__desc">一整页的排版约定，给&quot;有结论、有数据&quot;的材料用。</p>
+      <ul class="g-list">
+<li class="g-item" data-id="analysis-report"><a class="g-item__link" href="analysis-report.html"><span class="g-item__name">analysis-report · 组合型研究报告</span><span class="g-item__desc">组合型研究报告页面：正文与辅助栏并排，窄屏自然退回单栏</span></a><a class="g-item__demo" href="../04-recipes/analysis-report/demo.html">示例</a></li>
+<li class="g-item" data-id="detail-page"><a class="g-item__link" href="detail-page.html"><span class="g-item__name">detail-page · 实体详情页骨架</span><span class="g-item__desc">实体详情页骨架：字段齐全 / 部分缺失 / 无数据三种状态同构，无数据是一等状态</span></a><a class="g-item__demo" href="../04-recipes/detail-page/demo.html">示例</a></li>
+<li class="g-item" data-id="report"><a class="g-item__link" href="report.html"><span class="g-item__name">report · 报告版式系统 v1</span><span class="g-item__desc">报告版式系统 v1：共享基础 + 三套版式（杂志/科研技术/金融研究），只换一个 rep--* 类即可切换取舍</span></a><a class="g-item__demo" href="../04-recipes/report/demo.html">示例</a></li>
+<li class="g-item" data-id="table"><a class="g-item__link" href="table.html"><span class="g-item__name">table · 专业数据表格</span><span class="g-item__desc">数据表格：排序/加载/空/错误四态；三种用途预设（财务/学术/统计）</span></a><a class="g-item__demo" href="../04-recipes/table/demo.html">示例</a></li>
+      </ul>
+    </section>
+    <section class="g-sec" aria-labelledby="h-图表与资源">
+      <h2 id="h-图表与资源">图表与资源</h2>
+      <p class="g-sec__desc">数据可视化与可选的第三方适配层。</p>
+      <ul class="g-list">
+<li class="g-item" data-id="bar"><a class="g-item__link" href="bar.html"><span class="g-item__name">bar · 柱状图</span><span class="g-item__desc">柱状图：堆叠/分组两种语义、超量程裁剪、图例</span></a><a class="g-item__demo" href="../09-assets/bar/demo.html">示例</a></li>
+<li class="g-item" data-id="model-viewer"><a class="g-item__link" href="model-viewer.html"><span class="g-item__name">model-viewer — 惰性加载的 3D 模型查看器</span><span class="g-item__desc">3D 模型查看器：令牌驱动样式，不含渲染库本体</span></a><a class="g-item__demo" href="../09-assets/model-viewer/demo.html">示例</a></li>
+<li class="g-item" data-id="scientific-plot"><a class="g-item__link" href="scientific-plot.html"><span class="g-item__name">scientific-plot · 二维科学绘图</span><span class="g-item__desc">二维科学绘图：折线/区间带/对数轴，纯令牌驱动、零依赖</span></a><a class="g-item__demo" href="../09-assets/scientific-plot/demo.html">示例</a></li>
+<li class="g-item" data-id="sparkline"><a class="g-item__link" href="sparkline.html"><span class="g-item__name">sparkline · 迷你趋势图</span><span class="g-item__desc">迷你趋势图：无坐标轴、纯形状，适合表格内嵌的一行走势</span></a><a class="g-item__demo" href="../09-assets/sparkline/demo.html">示例</a></li>
+      </ul>
+    </section>
+    <section class="g-sec" aria-labelledby="h-另有两个整页示例">
+      <h2 id="h-另有两个整页示例">另有两个整页示例</h2>
+      <p class="g-sec__desc">不是组件，是两套完整版式的示范。</p>
+      <ul class="g-list">
+<li class="g-item" data-id="data-showcase"><a class="g-item__link" href="../04-recipes/data-showcase/demo.html"><span class="g-item__name">能力对照页</span><span class="g-item__desc">把同一批数据用不同图表与版式各画一遍，横向看差别。</span></a></li>
+<li class="g-item" data-id="longform"><a class="g-item__link" href="../04-recipes/longform/content.html"><span class="g-item__name">长文阅读页</span><span class="g-item__desc">精简档的长文版式：目录、行宽、脚注、引用。</span></a></li>
+      </ul>
+    </section>
+    <section class="g-sec" aria-labelledby="h-只在本站有的页面">
+      <h2 id="h-只在本站有的页面">只在本站有的页面</h2>
+      <p class="g-sec__desc">这三个页面不随 npm 包发布，只在文档站上。</p>
+      <ul class="g-list">
+<li class="g-item" data-id="10-review-ios-index"><a class="g-item__link" href="../10-review/ios/index.html"><span class="g-item__name">iOS 真机验证页</span><span class="g-item__desc">十项，每项写了「该看到什么」，Safari 专用。</span></a></li>
+<li class="g-item" data-id="10-review-composition-demo"><a class="g-item__link" href="../10-review/composition/demo.html"><span class="g-item__name">组合页</span><span class="g-item__desc">把多个模式拼在同一页，看它们互相干扰。</span></a></li>
+<li class="g-item" data-id="examples-react-vite-index"><a class="g-item__link" href="../examples/react-vite/index.html"><span class="g-item__name">React + Vite 示例</span><span class="g-item__desc">在框架里引本库的最小工程。</span></a></li>
+      </ul>
+    </section>
+
+    <p class="g-empty" id="empty" hidden>没有匹配项。换个词试试。</p>
+  </main>
+</div>
+<footer class="g-foot">
+  <p>v0.11.4 · 零第三方运行时依赖 · 组件数 35</p>
+</footer>
+<script type="application/json" id="kw">{"10-review-composition-demo":"10-review-composition-demo 组合页 把多个模式拼在同一页，看它们互相干扰。","10-review-ios-index":"10-review-ios-index ios 真机验证页 十项，每项写了「该看到什么」，safari 专用。","accordion":"accordion accordion · 折叠面板 可折叠分组 accordion__heading accordion__hint accordion__item accordion__label accordion__marker accordion__panel accordion__panel-inner accordion__trigger aria-controls aria-labelledby data-accordion-multi accordion--many accordion__item accordion__heading accordion__trigger accordion__panel tabs--manual max-height accordion-contract aria-hidden aria-disabled 结构（apg 原文要求，不是我的设计） 类 两种模式 为什么多开是 data 属性而不是 class 键盘（apg 原文） 🔴 本组件刻意没有方向键 / home / end 🔴 本组件刻意不监听 keydown role=\"region\" 的 ≤6 上限 折叠必须用 hidden 语法约束 验证","analysis-report":"analysis-report analysis-report · 组合型研究报告 组合型研究报告页面：正文与辅助栏并排，窄屏自然退回单栏 report__aside report__body report__code report__fig report__foot report__kicker report__main report__meta report__quote analysis-report align-self bp-lg measure-page 用途 文件 依赖 布局策略 已知限制 预览 数据说明","badge":"badge badge · 状态标记 状态标签：计数、分类、结果标记  badge--neutral badge--success badge--warning badge--danger badge--info badge--lg badge--clickable forced-colors component-contrast a11y-scan 类 用法 三条硬规矩 为什么是「淡底 + 深字」 两档尺寸 强制高对比模式 尺寸 验证","bar":"bar bar · 柱状图 柱状图：堆叠/分组两种语义、超量程裁剪、图例 bar__bar bar__grid bar__label bar__label--clip bar__label--max bar__legend bar__legend-item bar__legend-swatch bar__note bar__s0 bar__s1 bar__s2 bar__s3 bar__s4 bar__svg bar__threshold bar__xlabel bar__ytick chart-check data-clipped bar__note bar__svg bar__bar bar__s0 bar__s4 bar__grid bar__ytick bar__xlabel bar__label bar__threshold bar__legend legend-item legend-swatch 🔴 四条铁律 铁律一：为什么两道裁剪都不能删 铁律三：max 必填，因为自动适配是最隐蔽的谎报 铁律二：只标关键点 启用 🔴 堆叠 vs 分组：语义必须显式选择 类名 依赖 成熟度：stable（无行为债） 门禁","button":"button button 动作触发：主/次/危险/纯文字四档 btn__label btn__spinner btn--primary accent-hover focus-visible aria-busy pointer-events data-state aria-disabled btn--block prefers-reduced-motion 七态清单（按钮取的是这七个，不是九个） 用法 🔴 最关键的一个判断：disabled 还是 aria-disabled 反例 —— 什么时候不该用 两个容易被跳过的细节 已记录的废弃写法","card":"card card 内容容器：媒体+正文+操作区三段 card__body card__desc card__footer card__link card__media card__title animal-island-ui card__body sp-5 flex-direction align-items card--interactive card--linked card--flat card--elevated card--compact card--row card--selected box-shadow border-width focus-within focus-visible z-index webkit-line-clamp card-grid side-card 用法 唯一的核心判据：hover 不能有布局跳动 变体 🔴 整卡可点：正确做法 vs 错误做法 抬起 2px，不是 8px 反例 —— 什么时候不该用 门禁","choice":"choice checkbox / radio / select 单选/多选/原生 select 外观的统一控件 choice__group choice__hint choice__input choice__label choice__legend choice__mark choice__options field__label field__hint focus-visible choice__group choice-group choice__mark pointer-events 三条铁律 实现手法 checkbox radio 组：必须 fieldset + legend select：用原生的，别自做 disabled 🔴 结构选型：两种写法都安全 门禁 反例","combobox":"combobox combobox · 组合框 / 标签输入 可搜索 + 可多选标签的输入控件 combo__empty combo__field combo__input combo__list combo__opt combo__tag combo__tag-del combo__tag-text combo__tags data-combo-input data-combo-list data-combo-tags combo__field aria-controls combobox-check combobox-instance-check ⭐ 与 select 的区别 结构 启用 🔴 已选项列表必须有两个入口 🔴 一个实测教训：序号必须每个实例都领 成熟度：beta（一条行为债，如实列出） 门禁","content":"content content —— 内容渲染样式 长文排版容器（标题/段落/列表/引用/代码）  md-render agc-memory code-block language-x border-top 一句话原则 三层能力，不能混为一谈 🔴 两个实测踩到的坑 1. 不同渲染器的输出不完全一致 2. data: uri 被渲染器拒绝 —— 不要\"解决\"它 怎么用 反模式","data-showcase":"data-showcase 能力对照页 把同一批数据用不同图表与版式各画一遍，横向看差别。 scientific-plot 文件 依赖 预览 说明","date-range":"date-range date-range · 日期区间 日期区间选择，含预设快捷范围 drange__clear drange__error drange__field drange__input drange__label drange__preset drange__presets drange__sep drange__summary flex-wrap data-dr-from data-dr-to data-dr-error data-dr-summary data-dr-clear drange--disabled data-dr data-drange aria-invalid aria-describedby date-range-check 🔴 三件容易做错的事（写在最前面） 结构 启用 校验做了什么 🔴 错误要同时落到字段上，不只是显示一句话 成熟度：stable（无行为债） 门禁","detail-page":"detail-page detail-page · 实体详情页骨架 实体详情页骨架：字段齐全 / 部分缺失 / 无数据三种状态同构，无数据是一等状态  font-variant-numeric numeric-gate pointer-events detail-page verify-skeleton detail-page-contract 为什么需要它 三个变体 用法 三条结构规则 无数据态的三条硬规则 校验收口 边界","drawer":"drawer drawer · 抽屉 侧边抽屉，含遮罩 drawer__body drawer__close drawer__foot drawer__head drawer__title focus-return aria-hidden drawer__head drawer__body drawer__foot drawer-check 🔴 三条硬要求（一条都不能少） ⚠️ 抽屉是模态：背景必须 inert 结构 启用 🔴 焦点必须在插入 dom 之前记 嵌套用锁计数 成熟度：beta（两条行为债，如实列出） 门禁","dropdown":"dropdown dropdown · 下拉菜单 下拉菜单 dd__btn dd__caret dd__check dd__item dd__menu dd__sep data-dd dd__btn data-dd-btn dd__menu data-dd-menu dd__item data-value dd__sep data-dd-sep dd__check dd--end aria-hidden data-state focus-return dropdown-check 🔴 apg 的四条键盘契约（缺一条就不算合规） ⚠️ 另有两条容易漏的 结构 启用 🔴 role=\"menu\" 要么全设要么全不设 状态写在 dom 属性上 成熟度：beta（两条行为债，如实列出） 门禁","examples-react-vite-index":"examples-react-vite-index react + vite 示例 在框架里引本库的最小工程。","form-validation":"form-validation 表单校验 表单校验反馈与错误汇总 form__actions form__notice form__row form__summary form__summary-link form__summary-title field__input data-dirty aria-describedby aria-invalid form-validation 一、校验时机（本组件最关键的判断） 刻意不用 :has() 二、错误汇总（提交失败时必做） 三、焦点管理（最容易漏） 四、错误文案：给建议，不给判断 🔴 提示必须与实际那一种错误对应（分层校验） 五、无障碍要点 反例 门禁 库内两处反模式钩子","input":"input input / field 文本输入及其标签/帮助/错误三件套 field__error field__hint field__input field__input--sm field__input--textarea field__label field__req field__input aria-invalid focus-visible aria-describedby aria-live font-size field--row min-height field__input--sm 五态（input 不是七态） 🔴 与 button 最关键的一处不同，别照抄 无障碍清单（缺一条就不算做对） 三个容易踩的坑 反例 —— 什么时候不该用 门禁 备好的能力（demo 里没演示，但可以直接用） 🔴 移动端必填：inputmode 与 autocomplete 1 · inputmode —— 决定弹出哪种键盘 2 · autocomplete —— 决定浏览器是否自动填充 3 · required 与原生校验","list":"list list —— 列表 键值列表/条目列表 list__actions list__item list__main list__meta list__note list__title list__value list__value--down list__value--up state--empty data-flip-id border-left focus-within 🔴 为什么不用 auto-animate flip 四步 用法 必须给每个项一个 data-flip-id 三个关键判断 1. hover 绝不能让内容跳动 2. tab 不为每一行多停一次 3. 涨跌色用红涨绿跌 reduced-motion：跳过，不是缩短 窄屏：行内操作必须常显 反模式 门禁能查与查不到的","longform":"longform 长文阅读页 精简档的长文版式：目录、行宽、脚注、引用。 max-width font-weight overflow-x 为什么先做这个（不是先做列表） 精简档 硬约束（本库最严的验收环境） 品味取舍 几个具体做法 反例 —— 什么时候不该用它 它验证了什么（对库的意义）","model-viewer":"model-viewer model-viewer — 惰性加载的 3d 模型查看器 3d 模型查看器：令牌驱动样式，不含渲染库本体 mv__btn mv__cap mv__err mv__hint mv__ph mv__stage mv__stage--err mv__status data-mv touch-action model-viewer-contract gltf-transform model-viewer 定位与边界 用法 🔴🔴 部署前提：服务器 csp 必须允许 blob: 三条硬指标（最终定的，逐条对应） 已验证的行为 调试用的 url 参数 🔴 todo —— 需要持续优化（明确要求标注） 素材现状（内置素材目录） 相关","nav":"nav nav —— 页头 / 目录 / 移动端抽屉 顶部导航与目录 nav__brand nav__inner nav__link nav__list nav__scrim nav__toggle nav-drawer data-nav autoinit-gate data-state aria-expanded aria-hidden focus-return gen-behavior fl-nav-open fl-nav-close align-self nav__list aria-current 一个目录，两个全局 抽屉行为层：nav.js（可选，但没有它抽屉就是死的） 🔴 抄出来的版本里那个 bug：aria-hidden 打在了祖先上 🔴 为什么复用 drawer.js 会错 🔴 断点不写数字 事件 目录高亮：toc.js 🔴 为什么不用 intersectionobserver（实测到 bug） ⚠️ offsettop 的前提 前提：目录项与标题 id 一一对应 目录的 sticky 必须在库里，不在 demo 里 抽屉：五条判据 1. 只动 transform，不动 width/left/top 2. 打开时背景必须锁 3. 焦点必须移进抽屉，并且关闭后回到汉堡按钮 4. esc 必须能关 5. 窗口变宽时自动关掉 三个无障碍细节 汉堡按钮的三条线怎么变 x 反模式 门禁","overlay":"overlay toast / dialog（反馈层） 吐司提示与模态遮罩 toast__body toast__close toast__desc toast__timer toast__title dialog__title toast-region aria-live toast__icon toast--success data-state aria-modal padding-right scrollbar-gutter data-scroll-locked removed-body-scroll-bar-size prefers-reduced-motion toast__timer aria-labelledby aria-describedby aria-label backdrop-filter 核心是一条判断，不是样式 类清单 三件 css 做不到的事 1. focus trap 2. 焦点归还 3. 滚动锁定 + 滚动条补偿 危险操作的两个特殊处理 错误 toast 不自动消失 动效克制 无障碍要点 🔴 库代码用 es5 一个诚实的说明 反例","pagination":"pagination pagination · 分页 分页控件 pagination__ellipsis pagination__item pagination__link pagination__list pagination__live pagination__sr pagination__status aria-label aria-current aria-selected aria-live pagination__list data-pg-list pagination__item pagination__link pagination__ellipsis aria-hidden pagination__live data-pg-live pagination__sr pagination__status data-total data-page-size data-page data-pg-param pagination-check 🔴 六条结构硬要求（不是\"最佳实践\"） 1. 必须包在 <nav> 里，且 aria-label 唯一 2. 用 <ul> + <li>，不要用松散的 <a> 3. 当前页用 aria-current=\"page\" 4. 每个页码的 aria-label 要说人话 5. 上一页/下一页要有明确的 aria-label 6. ⭐ 客户端翻页必须有 aria-live=\"polite\"，且元素常驻 dom 结构 启用：配置全部从 dom 属性读 ⭐ 从 url 恢复页码 成熟度：stable（无行为债） 门禁","popover":"popover popover · 气泡卡片 锚定到触发元素的浮层 popover__arrow popover__desc popover__footer popover__title popover-anchor aria-label popover__title popover__arrow aria-modal prefers-reduced-motion ⭐ 该用哪一个（记不住就问这句） 启用：dom 由 js 建，不用自己写 内部结构（js 生成，供你放内容） 🔴 四个最容易做错的地方 动画","progress":"progress progress · 进度条 进度条与进度环 progress__bar progress-h progress-dur ease-out cubic-bezier r-full ring-size ring-thickness prefers-reduced-motion 用法 令牌 无障碍（红线） 何时不该用 相关","report":"report report · 报告版式系统 v1 报告版式系统 v1：共享基础 + 三套版式（杂志/科研技术/金融研究），只换一个 rep--* 类即可切换取舍 rep__aside rep__body rep__cap rep__cap--table rep__fig rep__fig--wide rep__grid rep__keyline rep__kicker rep__lede rep__meta rep__note rep__pull rep__risk rep__sec rep__source rep__sources rep__standfirst rep__title rep__wide rep-measure measure-prose rep-body-fs fs-base rep-title-fs fs-2xl rep-lead-fs fs-lg rep-body-lh lh-base rep-sec-num rep__kicker rep__meta rep__cap rep__source rep__note rep__risk rep--magazine rep--technical rep--finance fs-sm lh-loose rep__cap--table analysis-report break-after measure-aside rep__fig--wide rep__wide max-width report-check contract-kit rep__title 它不是什么（边界先划清，免得当万能模板用） 文件 依赖 一 · 共享基础：六个可变量 标记骨架 二 · 三种版式的取舍 编号：为什么用 css counter 三 · 与 04-recipes/analysis-report 的分工 四 · 🔴 本轮明确不做 五 · 已知限制（实测记录，不是\"也许\"） 六 · 门禁","reveal":"reveal reveal · 入场动效 入场动效：一个 data-reveal 属性六个方向，无 js 时内容全可见  data-reveal data-reveal-children data-reveal-delay data-reveal-repeat dur-base data-reveal-ready prefers-reduced-motion motion-concurrency 用法 属性协议 参数（不是随手定的） 三条硬约束 类名 边界 为什么没有「动画进行中不打断」的守卫（实测结论）","scientific-plot":"scientific-plot scientific-plot · 二维科学绘图 二维科学绘图：折线/区间带/对数轴，纯令牌驱动、零依赖 splot__anno splot__anno-dot splot__axis splot__axis-label splot__band splot__err splot__grid splot__legend splot__legend-item splot__legend-mark splot__line splot__note splot__pt splot__ref splot__ref-label splot__s0 splot__s1 splot__s2 splot__s3 splot__s4 splot__tick splot__tick-label echarts-adapter aria-label 它和 bi 图表不是一回事 用法 api 它不做什么（诚实边界） 颜色与线型 预览 已知限制","select":"select select · 自建下拉选择 自定义下拉选择（非原生） select__btn select__caret select__check select__list select__opt select__opt-text select__value select__value--placeholder data-select-btn data-select-list select__value select__check select--block min-width select--end select-list-n aria-multiselectable aria-label select-check focus-return ⭐ 什么场景用、什么场景别用 结构 启用 🔴 apg 的键盘契约（三条最容易漏） 类型搜索（typeahead） 成熟度：beta（两条行为债，如实列出） 门禁","separator":"separator separator · 分隔线 分隔线，可带中间文字  separator--label separator--tight separator--both border-decor border-decor-str border-control box-shadow 两种，必须分清 类 用法 为什么用两档颜色（实测，不是拍脑袋） 两个反例 细节","skeleton":"skeleton skeleton · 骨架屏 加载占位骨架  skeleton-bg skeleton-shimmer skeleton-h skeleton-size skeleton-duration prefers-reduced-motion 用法 令牌 无障碍（必读） 何时不该用 相关","sparkline":"sparkline sparkline · 迷你趋势图 迷你趋势图：无坐标轴、纯形状，适合表格内嵌的一行走势  data-spark data-spark-type data-spark-height data-spark-color data-spark-fill data-spark-last data-spark-animate aria-hidden stroke-dasharray prefers-reduced-motion spark-c spark-line spark-area spark-bar spark-dot spark-anim data-spark-width 用法 🔴 无障碍：它没有可读的文本等价物 动画 为什么自己写而不引库 🔴 修两个把线画坏的 bug（真机实测截图指出） ① preserveaspectratio=\"none\" ⇒ 横向拉伸 ② 🔴 css 的 fill 覆盖了 fill=\"none\" 属性 ③ 连带发现：动画类被牵连（真 bug） 🔴 missing != zero（最重要的一条） 边界情况（都实测过） 验证","states":"states 容器四态：empty / loading / error / success 空/加载/错误/成功四种整块状态 state__action state__desc state__detail state__icon state__title aria-hidden aria-busy aria-live data-state state__detail field__input state--delayed 四态各自必须有什么 骨架屏 vs spinner：按结构是否已知选 300ms 延迟（需要 js，约 10 行） reduced-motion 下：两个动画，处理相反 无障碍三条 反例 验收清单（替代自动门禁） 钩子（css 有，js 需你自己加类） 移除记录：.state--delayed（0.7.7 登记，0.8.0 移除）","switch":"switch switch · 开关 开关切换 switch__input switch__label switch__label--sr switch__thumb switch__track choice--checkbox switch__input switch__track switch__thumb switch__label switch__label--sr switch--lg switch-contract 它和 checkbox 的差别是语义，不是形状 类 用法 为什么用原生 checkbox 而不是 div + role 组件零 js 尺寸 验证","table":"table table · 专业数据表格 数据表格：排序/加载/空/错误四态；三种用途预设（财务/学术/统计） table__bar table__cap table__empty table__error table__foot table__loading table__sort table__unit table--financial table--academic table--stats signed-percent aria-sort z-index border-collapse font-size table__unit margin-inline-start 文件 三种预设 列定义（示例页里的用法） 无障碍 已知限制 🔴 单位的写法：列名 +（单位），括号不能省 为什么括号和同字号都很重要 预览","tabs":"tabs tabs · 标签页 选项卡切换 tabs__list tabs__panel tabs__panel--enter tabs__tab tabs--manual aria-orientation tabs--vertical tabs-contract aria-controls aria-disabled 结构（apg 要求，不是我的设计） 键盘契约 🔴 roving tabindex（本组件最容易写错的地方） 两种激活模式 纵向 一个规范与现实的张力 语法约束 验证","tooltip":"tooltip tooltip · 文字提示 悬停/聚焦提示  aria-label inset-inline-start inset-inline-end aria-describedby aria-live data-state prefers-color-scheme prefers-reduced-motion focus-return tooltip-check 🔴 一条铁律：tooltip 不承载必要信息 结构（js 生成，不要手写） 🔴 用 aria-describedby，不是 aria-label 键盘与触屏 🔴 定位前必须先入 dom 显隐靠 data-state，别写 display 降级 成熟度：beta（两条行为债，如实列出） 门禁","tree":"tree tree · 树形视图 可展开树形结构 tree__count tree__item tree__label tree__marker tree__node tree__item aria-expanded tree__node tree__marker tree__label tree__count aria-label tree-check ⭐ 树是键盘契约最严的组件（apg 列了 12 条） 🔴 roving tabindex —— 整棵树只占一个 tab 位 结构 标记符号跟着 aria-expanded 走 启用 缩进用 padding，不是 margin 成熟度：stable（无行为债） 门禁"}</script>
+<script>
+
+(function () {
+  var q = document.getElementById('q');
+  var hits = document.getElementById('hits');
+  var empty = document.getElementById('empty');
+  var items = [].slice.call(document.querySelectorAll('.g-item'));
+  var secs = [].slice.call(document.querySelectorAll('.g-sec'));
+  var total = items.length;
+  var KW = {};
+  try {
+    KW = JSON.parse(document.getElementById('kw').textContent || '{}');
+  } catch (e) {
+    KW = {};            /* 键表坏了只该让搜索变弱，不该让整页脚本停摆 */
+  }
+
+  function norm(s) {
+    return String(s || '').toLowerCase().replace(/\s+/g, '');
+  }
+
+  function keyOf(li) {
+    return norm(KW[li.getAttribute('data-id')] || '');
+  }
+
+  function apply() {
+    var terms = norm(q.value);
+    var shown = 0;
+    items.forEach(function (li) {
+      var hit = !terms || keyOf(li).indexOf(terms) !== -1;
+      li.hidden = !hit;
+      if (hit) shown++;
+    });
+    secs.forEach(function (sec) {
+      var any = sec.querySelectorAll('.g-item:not([hidden])').length;
+      sec.hidden = any === 0;
+    });
+    hits.textContent = shown === total
+      ? '共 ' + total + ' 项'
+      : '匹配 ' + shown + ' / ' + total + ' 项';
+    empty.hidden = shown !== 0;
+  }
+
+  q.addEventListener('input', apply);
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === '/' && document.activeElement !== q) {
+      e.preventDefault();
+      q.focus();
+      q.select();
+    } else if (e.key === 'Escape' && document.activeElement === q) {
+      q.value = '';
+      apply();
+      q.blur();
+    } else if (e.key === 'Enter' && document.activeElement === q) {
+      var first = document.querySelector('.g-item:not([hidden]) .g-item__link');
+      if (first) first.click();
+    }
+  });
+
+  var prefilled = new URLSearchParams(location.search).get('q');
+  if (prefilled) { q.value = prefilled; }
+  apply();
+})();
+
+</script>
+</body>
+</html>

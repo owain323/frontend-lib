@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>tree · 树形视图 · agentcss</title>
+<meta name="description" content="可展开树形结构">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">tree · 树形视图</span>
+    <a class="g-jump" href="../03-patterns/tree/demo.html">打开示例<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">模式 · stable</p>
+    <h1>tree · 树形视图</h1>
+    <p class="lede">可展开树形结构</p>
+    <ul class="g-meta"><li><a href="../03-patterns/tree/demo.html"><code>03-patterns/tree/demo.html</code></a></li><li><a href="../03-patterns/tree/tree.css"><code>03-patterns/tree/tree.css</code></a></li><li><a href="../03-patterns/tree/tree.js"><code>03-patterns/tree/tree.js</code></a></li></ul>
+    <article class="g-doc">
+<p>依据 <strong>APG（ARIA Authoring Practices）Tree View</strong> 模式。</p>
+<h2 id="s2">⭐ 树是键盘契约最严的组件（APG 列了 12 条）<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>键</th><th>行为</th>
+</tr></thead>
+<tbody>
+<tr><td><code>↑</code> <code>↓</code></td><td>移动焦点</td></tr>
+<tr><td><code>←</code> <code>→</code></td><td>收起 / 展开（并移动焦点）</td></tr>
+<tr><td><code>Home</code> / <code>End</code></td><td>跳首 / 末</td></tr>
+<tr><td><code>*</code></td><td>展开当前层全部同级</td></tr>
+<tr><td><code>Enter</code></td><td>激活</td></tr>
+<tr><td><code>Space</code></td><td>选中</td></tr>
+<tr><td><code>a</code>–<code>z</code></td><td>首字母跳转</td></tr>
+</tbody>
+</table></div>
+<h2 id="s3">🔴 roving tabindex —— 整棵树只占一个 Tab 位<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-css">/* 只有&quot;当前节点&quot; tabindex=&quot;0&quot;，其余 -1 */</code></pre>
+<p><strong>为什么</strong>：若每个节点都 <code>tabindex=&quot;0&quot;</code>，<strong>Tab 30 次才能穿过一棵树</strong>。</p>
+<p>⚠️ 那个 <code>&quot;0&quot;</code> <strong>必须跟着焦点走</strong>。只在初始化时设一次是最常见的 bug —— 用户走到第 3 层后，按 Shift+Tab 回退会回到第 1 个节点。</p>
+<p>实现走共享微行为核 <code>01-tokens/behavior/roving.js</code>，首字母跳转接<code>typeahead</code> 核 —— 不是各组件各写一遍游走逻辑。</p>
+<h2 id="s4">结构<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-html">&lt;ul class=&quot;tree&quot; role=&quot;tree&quot; aria-label=&quot;目录&quot;&gt;
+  &lt;li class=&quot;tree__item&quot; role=&quot;treeitem&quot; aria-expanded=&quot;true&quot; tabindex=&quot;0&quot;&gt;
+    &lt;span class=&quot;tree__node&quot;&gt;
+      &lt;span class=&quot;tree__marker&quot; aria-hidden=&quot;true&quot;&gt;&lt;/span&gt;
+      &lt;span class=&quot;tree__label&quot;&gt;…&lt;/span&gt;
+      &lt;span class=&quot;tree__count&quot;&gt;12&lt;/span&gt;
+    &lt;/span&gt;
+    &lt;ul role=&quot;group&quot;&gt;
+      &lt;li class=&quot;tree__item&quot; role=&quot;treeitem&quot; tabindex=&quot;-1&quot;&gt;…&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;</code></pre>
+<div class="table"><table>
+<thead><tr>
+<th>部件</th><th>说明</th>
+</tr></thead>
+<tbody>
+<tr><td><code>.tree</code></td><td>根，<code>role=&quot;tree&quot;</code></td></tr>
+<tr><td><code>.tree__item</code></td><td>节点，<code>role=&quot;treeitem&quot;</code> + <code>aria-expanded</code></td></tr>
+<tr><td><code>.tree__node</code></td><td>节点内层（marker + label + count）</td></tr>
+<tr><td><code>.tree__marker</code></td><td>展开/收起标记位（<strong>符号由 CSS <code>::before</code> 生成</strong>，不是文本）</td></tr>
+<tr><td><code>.tree__label</code></td><td>文字</td></tr>
+<tr><td><code>.tree__count</code></td><td>计数徽标</td></tr>
+<tr><td><code>&lt;ul role=&quot;group&quot;&gt;</code></td><td>子层</td></tr>
+</tbody>
+</table></div>
+<h3 id="s5">标记符号跟着 <code>aria-expanded</code> 走<a class="anchor" href="#s5" aria-label="本节直链">#</a></h3>
+<pre class="code" tabindex="0"><code class="language-css">.tree__item[aria-expanded=&quot;true&quot;] &gt; .tree__node .tree__marker::before {
+  content: &quot;\25BC&quot;;       /* ▼ */
+}
+/* 收起是 ▸，叶子是 · （表示&quot;这里没有子节点&quot;）*/</code></pre>
+<p>符号是 <strong>CSS 生成的，不是塞进 HTML 的文本</strong> ⇒ 状态一变，符号自动跟着变，不需要 JS 去同步两处。<code>.tree__marker</code> 本身固定占 <code>1em</code> 宽并居中，切换时不会引起文字抖动。</p>
+<h2 id="s6">启用<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-js">const t = Tree.create(元素, { label: '目录' });</code></pre>
+<p><code>create()</code> 会自己补齐 <code>role=&quot;tree&quot;</code> 与 <code>aria-label</code>（<strong>只在没写时</strong>补，不覆盖你已有的）。</p>
+<h2 id="s7">缩进用 padding，不是 margin<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-css">.tree ul { padding: 0; }   /* 嵌套层级靠 padding 体现 */</code></pre>
+<p>用 margin 的话，嵌套结构在视觉上&quot;飘&quot;着，层级读不出来。</p>
+<h2 id="s8">成熟度：stable（无行为债）<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
+<p><code>ai/components.json</code> 里 <code>tree</code> 的 <code>behaviorDebt</code> 为空。</p>
+<h2 id="s9">门禁<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
+<p><code>05-audit/tree-check.js</code></p>
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      <a class="g-pager__link g-pager__link--prev" href="tooltip.html"><span>上一页</span>tooltip · 文字提示</a>
+      <a class="g-pager__link g-pager__link--next" href="analysis-report.html"><span>下一页</span>analysis-report · 组合型研究报告</a>
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    <ul class="g-toc"><li><a href="#s2">⭐ 树是键盘契约最严的组件（APG 列了 12 条）</a></li><li><a href="#s3">🔴 roving tabindex —— 整棵树只占一个 Tab 位</a></li><li><a href="#s4">结构</a></li><li><a href="#s6">启用</a></li><li><a href="#s7">缩进用 padding，不是 margin</a></li><li><a href="#s8">成熟度：stable（无行为债）</a></li><li><a href="#s9">门禁</a></li></ul>
+  </aside>
+</div>
+<footer class="g-foot">
+  <p>v0.11.4 · 零第三方运行时依赖 · 组件数 35</p>
+</footer>
+</body>
+</html>

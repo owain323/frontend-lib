@@ -441,7 +441,7 @@ RECIPE_DESC = {
     'table': '专业数据表格：列级格式与单位，三种用途预设',
 }
 ASSET_DESC = {
-    'bar': '柱状图，含 charter 13 图表规范的裁剪铁律',
+    'bar': '柱状图，含图表规范的裁剪铁律',
     'echarts-adapter': '把令牌喂给 ECharts，按需引入；本库不含 ECharts',
     'model-viewer': '惰性加载的 3D 模型查看器',
     'scientific-plot': '二维科学绘图：坐标轴 / 误差棒 / 置信区间带 / 对数轴',

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>button · agentcss</title>
+<meta name="description" content="动作触发：主/次/危险/纯文字四档">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">button</span>
+    <a class="g-jump" href="../02-primitives/button/demo.html">打开示例<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">基础组件 · stable</p>
+    <h1>button</h1>
+    <p class="lede">动作触发：主/次/危险/纯文字四档</p>
+    <ul class="g-meta"><li><a href="../02-primitives/button/demo.html"><code>02-primitives/button/demo.html</code></a></li><li><a href="../02-primitives/button/button.css"><code>02-primitives/button/button.css</code></a></li></ul>
+    <article class="g-doc">
+<div class="table"><table>
+<thead><tr>
+<th>字段</th><th>内容</th>
+</tr></thead>
+<tbody>
+<tr><td><strong>来源</strong></td><td>原创（依据 WCAG 2.1 + 实测诊断）</td></tr>
+<tr><td><strong>实测</strong></td><td>对比度见下，全部由 <code>05-audit/contrast.py</code> 得出；44px 依据 WCAG 2.5.5</td></tr>
+<tr><td><strong>适用</strong></td><td>精简档 / B / C，纯 CSS，可整段复制</td></tr>
+<tr><td><strong>依赖</strong></td><td><code>01-tokens/tokens.css</code>  + <code>01-tokens/typography.css</code>（<code>.note</code> 提示框） + <code>01-tokens/page.css</code>（页面骨架：<code>.wrap</code> / <code>.lede</code> / <code>.note</code>）</td></tr>
+</tbody>
+</table></div>
+<hr>
+<h2 id="s2">七态清单（按钮取的是这七个，不是九个）<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>#</th><th>状态</th><th>实现</th><th>不做会怎样</th>
+</tr></thead>
+<tbody>
+<tr><td>1</td><td>default</td><td><code>.btn--primary</code></td><td>—</td></tr>
+<tr><td>2</td><td>hover</td><td><code>:hover</code> + <code>--accent-hover</code></td><td>用户不知道能点</td></tr>
+<tr><td>3</td><td>active</td><td><code>:active</code> 下沉 1px</td><td>点了没反馈</td></tr>
+<tr><td>4</td><td><strong>focus-visible</strong></td><td><code>:focus-visible</code> 2px outline</td><td><strong>键盘用户彻底迷失</strong></td></tr>
+<tr><td>5</td><td><strong>disabled</strong></td><td><code>:disabled</code> 明确色值（不用 opacity）</td><td><strong>点了没反应，以为坏了</strong></td></tr>
+<tr><td>6</td><td><strong>loading</strong></td><td><code>[aria-busy]</code> + <code>pointer-events:none</code></td><td><strong>重复提交</strong></td></tr>
+<tr><td>7</td><td>success</td><td><code>data-state=&quot;success&quot;</code>（约 1.2s）</td><td>不知道成没成</td></tr>
+</tbody>
+</table></div>
+<p>🔴 实测动机：某项目 的按钮<strong>只有 default + hover 两态</strong>，<code>:disabled</code> 0 处。用户不会抱怨&quot;你缺 disabled 态&quot;，只会觉得&quot;这个按钮点了没反应，是不是坏了&quot;。</p>
+<hr>
+<h2 id="s3">用法<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-html">&lt;button class=&quot;btn btn--md btn--primary&quot;&gt;提交&lt;/button&gt;
+
+&lt;!-- loading：宽度不变，防重复点击 --&gt;
+&lt;button class=&quot;btn btn--md btn--primary&quot; aria-busy=&quot;true&quot;&gt;
+  &lt;span class=&quot;btn__label&quot;&gt;提交&lt;/span&gt;
+  &lt;span class=&quot;btn__spinner&quot;&gt;&lt;/span&gt;
+&lt;/button&gt;
+
+&lt;!-- 图标按钮必须带 aria-label --&gt;
+&lt;button class=&quot;btn btn--icon btn--ghost&quot; aria-label=&quot;关闭&quot;&gt;
+  &lt;svg ...&gt;&lt;/svg&gt;
+&lt;/button&gt;</code></pre>
+<p>变体：<code>primary</code> / <code>secondary</code> / <code>ghost</code> / <code>danger</code> 尺寸：<code>sm</code>(32) / <code>md</code>(44) / <code>lg</code>(52)</p>
+<hr>
+<h2 id="s4">🔴 最关键的一个判断：<code>disabled</code> 还是 <code>aria-disabled</code><a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
+<p>这两个不是同义词，选错会直接伤到键盘用户。</p>
+<div class="table"><table>
+<thead><tr>
+<th></th><th><code>disabled</code> 属性</th><th><code>aria-disabled=&quot;true&quot;</code></th>
+</tr></thead>
+<tbody>
+<tr><td>Tab 能聚焦</td><td>❌ 不能，从 tab 顺序移除</td><td>✅ 能</td></tr>
+<tr><td>屏幕阅读器</td><td>直接跳过，用户不知道有这个按钮</td><td>读到&quot;不可用&quot;</td></tr>
+<tr><td>适用</td><td><strong>永久</strong>不可用（权限不足、功能下线）</td><td><strong>暂时</strong>不可用（表单没填完）</td></tr>
+</tbody>
+</table></div>
+<p><strong>表单提交按钮应该用 <code>aria-disabled</code></strong>。理由：用户 Tab 到它，才知道&quot;哦，还差点什么&quot;；用 <code>disabled</code> 的话他永远找不到这个按钮，也不知道为什么提交不了。</p>
+<p>两个都不要的情况：<strong>别用视觉上的&quot;灰掉&quot;来假装禁用</strong>。灰了但还能点，是欺骗。</p>
+<hr>
+<h2 id="s5">反例 —— 什么时候不该用<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
+<ul><li>❌ <strong>一个视图里出现两个 <code>primary</code></strong> —— 有两个就等于没有重点。其余全降为 secondary/ghost。</li><li>❌ <strong><code>danger</code> 做成和 <code>primary</code> 一样大</strong> —— 破坏性动作不该被引导去点。</li><li>❌ <strong>普通操作加 <code>success</code> 态</strong> —— 只有不可逆动作（提交、支付）需要确认反馈，其余是噪音。</li><li>❌ <strong>桌面端用 <code>btn--block</code></strong> —— 全宽按钮把视觉动线压成一条竖线。它是移动端方案。</li><li>❌ <strong><code>ghost</code> 用在主路径上</strong> —— ghost 的语义是&quot;我不建议你点这个&quot;，不是&quot;这个比较淡&quot;。</li></ul>
+<hr>
+<h2 id="s6">两个容易被跳过的细节<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
+<p><strong>1. loading 时宽度不能变</strong></p>
+<p>常见做法是把文字换成 spinner，结果按钮缩窄 → 整行布局跳动。解法：文字 <code>visibility: hidden</code> 保留占位，spinner 绝对定位居中。</p>
+<p><strong>2. spinner 要豁免 <code>prefers-reduced-motion</code></strong></p>
+<p>全局兜底会把动画压到 0.01ms，spinner 就停了 —— 用户会以为页面卡死。 WCAG 的 reduced-motion 针对<strong>大幅位移</strong>（前庭功能障碍），小幅度原地旋转不属于此类。<strong>放慢但保留，不要停。</strong></p>
+<p>这是&quot;照抄规范&quot;和&quot;理解规范&quot;的区别。</p>
+<hr>
+<h2 id="s7">已记录的废弃写法<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
+<p>详见 <code>button.css</code> 末尾。要点： <code>filter: brightness()</code> 当 hover / <code>transition: all</code> / <code>opacity</code> 当 disabled / loading 换文字 / hover 用 <code>scale()</code>。</p>
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      <a class="g-pager__link g-pager__link--prev" href="badge.html"><span>上一页</span>badge · 状态标记</a>
+      <a class="g-pager__link g-pager__link--next" href="card.html"><span>下一页</span>card</a>
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    <ul class="g-toc"><li><a href="#s2">七态清单（按钮取的是这七个，不是九个）</a></li><li><a href="#s3">用法</a></li><li><a href="#s4">🔴 最关键的一个判断：disabled 还是 aria-disabled</a></li><li><a href="#s5">反例 —— 什么时候不该用</a></li><li><a href="#s6">两个容易被跳过的细节</a></li><li><a href="#s7">已记录的废弃写法</a></li></ul>
+  </aside>
+</div>
+<footer class="g-foot">
+  <p>v0.11.4 · 零第三方运行时依赖 · 组件数 35</p>
+</footer>
+</body>
+</html>

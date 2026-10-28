@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>badge · 状态标记 · agentcss</title>
+<meta name="description" content="状态标签：计数、分类、结果标记">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">badge · 状态标记</span>
+    <a class="g-jump" href="../02-primitives/badge/demo.html">打开示例<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">基础组件 · stable</p>
+    <h1>badge · 状态标记</h1>
+    <p class="lede">状态标签：计数、分类、结果标记</p>
+    <ul class="g-meta"><li><a href="../02-primitives/badge/demo.html"><code>02-primitives/badge/demo.html</code></a></li><li><a href="../02-primitives/badge/badge.css"><code>02-primitives/badge/badge.css</code></a></li></ul>
+    <article class="g-doc">
+<p>承载<strong>一个短状态词</strong>（&quot;已披露&quot;&quot;已停牌&quot;&quot;审计中&quot;）。</p>
+<h2 id="s2">类<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>类</th><th>作用</th>
+</tr></thead>
+<tbody>
+<tr><td><code>.badge</code></td><td>基础（不带变体时是中性色）</td></tr>
+<tr><td><code>.badge--neutral</code></td><td>中性：草稿 / 归档 / 草稿态</td></tr>
+<tr><td><code>.badge--success</code></td><td>成功 / 已披露</td></tr>
+<tr><td><code>.badge--warning</code></td><td>警告 / 审计中</td></tr>
+<tr><td><code>.badge--danger</code></td><td>危险 / 已停牌</td></tr>
+<tr><td><code>.badge--info</code></td><td>信息 / 待复核</td></tr>
+<tr><td><code>.badge--lg</code></td><td>较大一档（13px）</td></tr>
+<tr><td><code>.badge--clickable</code></td><td>可点 —— <strong>必须配合 <code>&lt;button&gt;</code> 或 <code>&lt;a&gt;</code></strong></td></tr>
+</tbody>
+</table></div>
+<h2 id="s3">用法<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-html">&lt;!-- 不可点（默认） --&gt;
+&lt;span class=&quot;badge badge--success&quot;&gt;已披露&lt;/span&gt;
+
+&lt;!-- 可点：语义由元素承担，样式照抄 .badge --&gt;
+&lt;button class=&quot;badge badge--info badge--clickable&quot;&gt;待复核&lt;/button&gt;</code></pre>
+<h2 id="s4">三条硬规矩<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
+<p><strong>1. 不可点就别用 button。</strong> 要能点必须用 <code>&lt;button&gt;</code> 或 <code>&lt;a&gt;</code> —— <code>div + onclick</code> 对读屏是「没有角色的按钮」：读不出能点，键盘也 Tab 不到。</p>
+<p><strong>2. 一定要有文字。</strong> WCAG 1.4.1 要求不能只靠颜色区分。本组件的颜色是<strong>冗余线索</strong>，不是唯一编码 —— 去掉颜色也必须能读懂。</p>
+<p><strong>3. 不要数字角标。</strong> badge 是&quot;状态词&quot;，不是&quot;数字气泡&quot;。</p>
+<h2 id="s5">为什么是「淡底 + 深字」<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
+<p>小字号（11–12px）在饱和底上白字对比度普遍不够。本库五组实测：</p>
+<div class="table"><table>
+<thead><tr>
+<th>变体</th><th>浅色</th><th>暗色</th>
+</tr></thead>
+<tbody>
+<tr><td><code>--neutral</code></td><td>6.76</td><td>10.59</td></tr>
+<tr><td><code>--success</code></td><td>5.58</td><td>5.92</td></tr>
+<tr><td><code>--danger</code></td><td>4.82</td><td>5.37</td></tr>
+<tr><td><code>--warning</code></td><td>5.29</td><td>6.05</td></tr>
+<tr><td><code>--info</code></td><td>6.01</td><td>5.25</td></tr>
+</tbody>
+</table></div>
+<p><strong>全部 ≥ 4.5</strong> ⇒ 不需要为 badge 单独调一套色（省一次决策，也少一套漂移风险）。</p>
+<p><strong>反例的真实数字</strong>：暗色下白字在 <code>--success</code> 上只有 <strong>2.72:1</strong>（浅色是 6.39 达标）—— <strong>看浅色时完全发现不了这个失效</strong>。这就是为什么每组都要两套都算。</p>
+<h2 id="s6">两档尺寸<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
+<p>出现第三档说明信息密度没规划好 —— 与 <code>card</code> 的判断标准一致。</p>
+<h2 id="s7">强制高对比模式<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
+<p><code>@media (forced-colors: active)</code> 下边框改用 <code>currentColor</code> —— <strong>靠边框保住边界，不靠底色</strong>。这一段本机无法验证（需系统级开关）。</p>
+<h2 id="s8">尺寸<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
+<p>高度 24px（默认）· 字号 12px —— 达 WCAG 2.2 的 24×24 最小目标。</p>
+<h2 id="s9">验证<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
+<ul><li><code>component-contrast.py</code>：5 组字/底组合两套配色全过</li><li><code>a11y-scan</code>：本 demo axe 0 违规 / 16 条通过</li></ul>
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      
+      <a class="g-pager__link g-pager__link--next" href="button.html"><span>下一页</span>button</a>
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    <ul class="g-toc"><li><a href="#s2">类</a></li><li><a href="#s3">用法</a></li><li><a href="#s4">三条硬规矩</a></li><li><a href="#s5">为什么是「淡底 + 深字」</a></li><li><a href="#s6">两档尺寸</a></li><li><a href="#s7">强制高对比模式</a></li><li><a href="#s8">尺寸</a></li><li><a href="#s9">验证</a></li></ul>
+  </aside>
+</div>
+<footer class="g-foot">
+  <p>v0.11.4 · 零第三方运行时依赖 · 组件数 35</p>
+</footer>
+</body>
+</html>

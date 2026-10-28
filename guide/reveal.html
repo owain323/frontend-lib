@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>reveal · 入场动效 · agentcss</title>
+<meta name="description" content="入场动效：一个 data-reveal 属性六个方向，无 JS 时内容全可见">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">reveal · 入场动效</span>
+    <a class="g-jump" href="../03-patterns/reveal/demo.html">打开示例<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">模式 · stable</p>
+    <h1>reveal · 入场动效</h1>
+    <p class="lede">入场动效：一个 data-reveal 属性六个方向，无 JS 时内容全可见</p>
+    <ul class="g-meta"><li><a href="../03-patterns/reveal/demo.html"><code>03-patterns/reveal/demo.html</code></a></li><li><a href="../03-patterns/reveal/reveal.css"><code>03-patterns/reveal/reveal.css</code></a></li><li><a href="../03-patterns/reveal/reveal.js"><code>03-patterns/reveal/reveal.js</code></a></li></ul>
+    <article class="g-doc">
+<p>一个属性 <code>data-reveal</code>，六个方向的入场。<strong>零 JS 也能看</strong>，JS 只是让它动起来。</p>
+<h2 id="s2">用法<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-html">&lt;!-- ① 引样式（必需） --&gt;
+&lt;link rel=&quot;stylesheet&quot; href=&quot;agentcss/patterns/reveal/reveal.css&quot;&gt;
+
+&lt;!-- ② 想自动接管，在 &lt;html&gt; 上写一个属性 --&gt;
+&lt;html lang=&quot;zh-CN&quot; data-reveal-auto&gt;
+
+&lt;!-- ③ 内容上标方向 --&gt;
+&lt;section data-reveal=&quot;up&quot;&gt;…&lt;/section&gt;</code></pre>
+<p>不想自动接管，就手动调：<code>Reveal.enable()</code> / <code>Reveal.disable()</code> / <code>Reveal.replay()</code>。</p>
+<h2 id="s3">属性协议<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>属性</th><th>作用</th><th>取值</th>
+</tr></thead>
+<tbody>
+<tr><td><code>data-reveal</code></td><td>方向</td><td><code>up</code> / <code>down</code> / <code>left</code> / <code>right</code> / <code>scale</code> / <code>none</code></td></tr>
+<tr><td><code>data-reveal-children</code></td><td>容器内子元素依次入场，不用逐个标</td><td>方向名（省略按 <code>up</code>）</td></tr>
+<tr><td><code>data-reveal-delay</code></td><td>单独延迟</td><td><code>120ms</code></td></tr>
+<tr><td><code>data-reveal-repeat</code></td><td>滚出后再次进入可重播（默认只播一次）</td><td>空属性</td></tr>
+</tbody>
+</table></div>
+<blockquote><p><code>data-reveal-repeat</code> 是本库与参考实现的<strong>不同之处</strong>：默认<strong>只播一次</strong>。<br>理由：产品页里内容&quot;滚出去再藏起来&quot;会让回看变成负担；<br>作品集那种一次性深度浏览的页面才需要重播，所以做成显式开启。</p></blockquote>
+<h2 id="s4">参数（不是随手定的）<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>参数</th><th>值</th><th>为什么</th>
+</tr></thead>
+<tbody>
+<tr><td>位移</td><td><strong>8px</strong></td><td>移动端信息密度高，24px 位移会把视线带离内容</td></tr>
+<tr><td>时长</td><td><code>--dur-base</code>（180ms）</td><td>UI 动效超 300ms 会觉得卡（<code>motion.py</code> 会查）</td></tr>
+<tr><td>错峰</td><td>40ms</td><td>6 个元素 240ms 播完</td></tr>
+<tr><td>错峰封顶</td><td>6 个</td><td>不封顶时第 20 个要等 800ms，用户滚到那儿它还在播</td></tr>
+<tr><td>出场动画</td><td><strong>不做</strong></td><td>产品元素不该&quot;消失再出现&quot;</td></tr>
+</tbody>
+</table></div>
+<h2 id="s5">三条硬约束<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
+<ol><li><strong>无 JS 必须全可见。</strong> 隐藏只在 <code>&lt;html data-reveal-ready&gt;</code> 存在时生效，而这个标记由引擎在接管<strong>之后</strong>才加。没有 JS / JS 报错 / 没有 <code>IntersectionObserver</code> ⇒ 内容就是普通内容：透明度 1、位置不偏。</li><li><strong>降级是分级的。</strong> <code>prefers-reduced-motion</code> 下位移与缩放<strong>关掉</strong>，内容直接出现（不做淡入）。全库那条 <code>0.01ms !important</code> 兜底会把一切灭掉，本文件用更具体的规则覆盖它 —— 因为&quot;关掉位移&quot;不等于&quot;关掉可见性&quot;。</li><li><strong>只用于区块级入场。</strong> 不要给表格行、列表项逐行加：那是扫读场景，用户要在半秒内横向比三行数字，逐行错峰会让比较变成&quot;等动画&quot;。</li></ol>
+<h2 id="s6">类名<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>类名</th><th>是什么</th>
+</tr></thead>
+<tbody>
+<tr><td><code>.reveal</code></td><td>本组件在契约里的根名（属性驱动，<strong>不需要</strong>真的写这个类）</td></tr>
+</tbody>
+</table></div>
+<h2 id="s7">边界<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
+<ul><li><strong>不做</strong>：视差、滚动进度驱动（scroll-driven animations）、无限循环装饰动画。</li><li><strong>不做</strong>：出场动画。元素不该为了&quot;好看&quot;先消失。</li><li>老 WebView：<code>IntersectionObserver</code> 缺失时全部直接显示，不降级成 <code>scroll</code> 监听（那会把主线程拖住，是比&quot;没有动效&quot;更差的交换）。</li></ul>
+<h2 id="s8">为什么<strong>没有</strong>「动画进行中不打断」的守卫（实测结论）<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
+<p>有一种常见的加固做法：进场动画在跑的时候不要被打断，用 <code>getAnimations().some(a =&gt; a.playState === 'running')</code> 判断，说&quot;快速滚动时这条决定了顺滑还是闪&quot;。</p>
+<p><strong>那条针对的是 JS 驱动的动画</strong>（Web Animations API 重启动画会跳）。 CSS transition 被打断时是 <strong>retarget</strong>：从当前值继续插值，不重头再来。</p>
+<p><code>05-audit/motion-concurrency.js</code> 在真浏览器里量过，结论：</p>
+<div class="table"><table>
+<thead><tr>
+<th>判据</th><th>实测</th>
+</tr></thead>
+<tbody>
+<tr><td>切状态是否产生动画对象</td><td>✅ 显示态 2 个（opacity + transform）、隐藏态 2 个</td></tr>
+<tr><td>同属性同时运行的动画数</td><td>✅ 最多 <strong>1</strong>（快速触发 5 次、采样 39 帧）</td></tr>
+<tr><td><code>prefers-reduced-motion: reduce</code></td><td>✅ 动画 <strong>0</strong> 个，opacity 恒为 1</td></tr>
+</tbody>
+</table></div>
+<p>⇒ <strong>不需要加守卫。</strong> 加了反而会有害：隐藏方向若&quot;等动画播完再执行&quot;，元素已经在离场，总位移变大，看起来是&quot;走的时候还亮一下&quot;。（我第一版就是这么改的，被同一条判据算出来的总位移否掉了，已撤回。）</p>
+<p><strong>重开条件</strong>：某天 reveal 改用 Web Animations API（或换成 <code>@keyframes</code> 重启动画），这条结论立即失效 —— 那时必须重新量，并且很可能需要守卫。</p>
+<p>⚠️ 这属于<strong>负面结论入档</strong>：写下来是为了下次不要再&quot;看到别人有就照抄一遍&quot;。</p>
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      <a class="g-pager__link g-pager__link--prev" href="pagination.html"><span>上一页</span>pagination · 分页</a>
+      <a class="g-pager__link g-pager__link--next" href="states.html"><span>下一页</span>容器四态：empty / loading / error / success</a>
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    <ul class="g-toc"><li><a href="#s2">用法</a></li><li><a href="#s3">属性协议</a></li><li><a href="#s4">参数（不是随手定的）</a></li><li><a href="#s5">三条硬约束</a></li><li><a href="#s6">类名</a></li><li><a href="#s7">边界</a></li><li><a href="#s8">为什么没有「动画进行中不打断」的守卫（实测结论）</a></li></ul>
+  </aside>
+</div>
+<footer class="g-foot">
+  <p>v0.11.4 · 零第三方运行时依赖 · 组件数 35</p>
+</footer>
+</body>
+</html>

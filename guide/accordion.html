@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>accordion · 折叠面板 · agentcss</title>
+<meta name="description" content="可折叠分组">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">accordion · 折叠面板</span>
+    <a class="g-jump" href="../03-patterns/accordion/demo.html">打开示例<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">模式 · beta</p>
+    <h1>accordion · 折叠面板</h1>
+    <p class="lede">可折叠分组</p>
+    <ul class="g-meta"><li><a href="../03-patterns/accordion/demo.html"><code>03-patterns/accordion/demo.html</code></a></li><li><a href="../03-patterns/accordion/accordion.css"><code>03-patterns/accordion/accordion.css</code></a></li><li><a href="../03-patterns/accordion/accordion.js"><code>03-patterns/accordion/accordion.js</code></a></li></ul>
+    <article class="g-doc">
+<h2 id="s2">结构（APG 原文要求，不是我的设计）<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-html">&lt;div class=&quot;accordion&quot; data-accordion&gt;
+  &lt;div class=&quot;accordion__item&quot;&gt;
+    &lt;h3 class=&quot;accordion__heading&quot;&gt;
+      &lt;button class=&quot;accordion__trigger&quot; aria-expanded=&quot;true&quot;&gt;
+        &lt;span class=&quot;accordion__label&quot;&gt;标题&lt;/span&gt;
+        &lt;span class=&quot;accordion__marker&quot; aria-hidden=&quot;true&quot;&gt;&lt;/span&gt;
+      &lt;/button&gt;
+    &lt;/h3&gt;
+    &lt;div class=&quot;accordion__panel&quot;&gt;内容&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+<p><strong>button 必须在 heading 里面</strong>，不能写反。APG 原文：</p>
+<blockquote><p>&quot;Make sure to place the heading tag around the button, <strong>not inside it</strong>,<br>as this would prevent some screen readers (such as VoiceOver and TalkBack)<br>from reading it.&quot;</p></blockquote>
+<p>写反了（<code>&lt;button&gt;&lt;h3&gt;标题&lt;/h3&gt;&lt;/button&gt;</code>）VoiceOver / TalkBack <strong>读不出标题</strong>。</p>
+<p><strong><code>aria-controls</code> / <code>aria-labelledby</code> / <code>role=&quot;region&quot;</code> 由 JS 自动补齐</strong> —— 这三处是机械的对应关系，让人手写只会写错。</p>
+<h2 id="s3">类<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>类</th><th>作用</th>
+</tr></thead>
+<tbody>
+<tr><td><code>.accordion</code></td><td>容器（<strong>默认单开</strong>）</td></tr>
+<tr><td><code>data-accordion-multi</code></td><td>多个可同时展开（<strong>data 属性</strong>）</td></tr>
+<tr><td><code>.accordion--many</code></td><td>面板 &gt; 6 时<strong>不给</strong> <code>role=&quot;region&quot;</code></td></tr>
+<tr><td><code>.accordion__item</code></td><td>一项</td></tr>
+<tr><td><code>.accordion__heading</code></td><td>heading 包装（真实 <code>&lt;h2&gt;</code>–<code>&lt;h6&gt;</code>）</td></tr>
+<tr><td><code>.accordion__trigger</code></td><td>原生 <code>&lt;button&gt;</code></td></tr>
+<tr><td><code>.accordion__panel</code></td><td>内容区</td></tr>
+</tbody>
+</table></div>
+<h2 id="s4">两种模式<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>模式</th><th>类</th><th>行为</th>
+</tr></thead>
+<tbody>
+<tr><td><strong>单开</strong>（默认）</td><td>—</td><td>开一个时自动关其他</td></tr>
+<tr><td><strong>多开</strong></td><td><code>data-accordion-multi</code>（<strong>data 属性，不是 class</strong>）</td><td>各自独立</td></tr>
+</tbody>
+</table></div>
+<p>判断依据：<strong>同一个问题的不同答案</strong>用单开；<strong>各自独立的信息块</strong>用多开。</p>
+<h3 id="s5">为什么多开是 data 属性而不是 class<a class="anchor" href="#s5" aria-label="本节直链">#</a></h3>
+<p>它<strong>不是样式变体，是行为开关</strong> —— 多开模式下展开的那一项，和单开模式下展开的那一项<strong>视觉上完全一样</strong>（都是真的展开了）。没有任何东西需要用样式去表达&quot;这是多开模式&quot;。</p>
+<p>（对比 <code>tabs--manual</code>：那个我<strong>给了</strong>真实视觉差异 —— 选中项不加粗，因为&quot;还没生效的事不该看起来已生效&quot;。两个决定标准是同一个： <strong>有没有真实的视觉差异需要表达</strong>。）</p>
+<h2 id="s6">键盘（APG 原文）<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>键</th><th>行为</th>
+</tr></thead>
+<tbody>
+<tr><td><code>Enter</code> / <code>Space</code></td><td>切换</td></tr>
+<tr><td><code>Tab</code> / <code>Shift+Tab</code></td><td>在<strong>所有</strong>可聚焦元素间移动（含面板内）</td></tr>
+</tbody>
+</table></div>
+<h3 id="s7">🔴 本组件刻意<strong>没有</strong>方向键 / Home / End<a class="anchor" href="#s7" aria-label="本节直链">#</a></h3>
+<p>APG 明确写：</p>
+<blockquote><p>&quot;arrow / Home / End key navigation is <strong>no longer part of the<br>APG Accordion keyboard interaction</strong>.&quot;</p></blockquote>
+<p>那是 <strong>tabs</strong> 的契约（roving tabindex）。 <strong>照抄给 accordion 是把两个模式混了。</strong></p>
+<h3 id="s8">🔴 本组件刻意<strong>不监听</strong> <code>keydown</code><a class="anchor" href="#s8" aria-label="本节直链">#</a></h3>
+<p>原生 <code>&lt;button&gt;</code> <strong>本身就响应</strong> Enter/Space 并触发 click。手写 keydown 会造成<strong>双触发</strong>（keydown 切一次、click 又切一次）。</p>
+<p>判别力已验证：注入 keydown 监听 ⇒ 契约测试 2 项立即被抓。</p>
+<h2 id="s9">role=&quot;region&quot; 的 ≤6 上限<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
+<p>APG 警告：</p>
+<blockquote><p>&quot;…in an accordion that contains more than <strong>approximately 6</strong> panels that<br>can be expanded at the same time.&quot; ⇒ &quot;landmark region proliferation&quot;</p></blockquote>
+<p>地标泛滥时，读屏用户的地标列表会被几十个&quot;分区&quot;淹没。 <strong>面板 &gt; 6 时不要加</strong> <code>role=&quot;region&quot;</code> —— 用 <code>.accordion--many</code>。</p>
+<h2 id="s10">折叠必须用 <code>hidden</code><a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
+<p>收起时用 <code>hidden</code> 属性 + <code>display:none</code>， <strong>不能只用 <code>max-height:0</code></strong> —— 那样内容仍在无障碍树里，读屏会念出折叠区域的全部文字，键盘也能 Tab 进去。</p>
+<h2 id="s11">语法约束<a class="anchor" href="#s11" aria-label="本节直链">#</a></h2>
+<p><code>accordion.js</code> <strong>ES5</strong>（无箭头函数 / const / let / 模板字符串），也<strong>不用 <code>Element.closest</code> / <code>Array.filter</code></strong> —— 理由与 <code>tabs.js</code> / <code>list.js</code> / <code>overlay.js</code> 一致：精简档 的 WebView 版本不确定， <strong>一致比方便重要</strong>。</p>
+<h2 id="s12">验证<a class="anchor" href="#s12" aria-label="本节直链">#</a></h2>
+<p><code>accordion-contract.js</code> <strong>18 项全过</strong>（真实按键）：</p>
+<ul><li>结构：heading 包 button（非里面套）· 原生 button · ARIA 双向互指 · <code>role=region</code> · marker <code>aria-hidden</code></li><li>单开：Enter 切换 · <strong>原项自动收起</strong> · 始终只有一项展开</li><li><strong>收起的面板真正 <code>display:none</code></strong>（离开无障碍树）</li><li>Space 切换（证明不监听 keydown 也对）· 点击切换</li><li>多开：两项可同时展开</li><li><code>aria-disabled</code> 点不开</li><li><strong>&gt;6 且加 <code>--many</code> ⇒ 不给 <code>role=region</code></strong>（实测 0/8）</li><li>axe 0 违规 / 29 条通过</li></ul>
+<p>判别力验证：注入 keydown 双触发 ⇒ <strong>2 项立即被抓</strong>。</p>
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      <a class="g-pager__link g-pager__link--prev" href="switch.html"><span>上一页</span>switch · 开关</a>
+      <a class="g-pager__link g-pager__link--next" href="content.html"><span>下一页</span>content —— 内容渲染样式</a>
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    <ul class="g-toc"><li><a href="#s2">结构（APG 原文要求，不是我的设计）</a></li><li><a href="#s3">类</a></li><li><a href="#s4">两种模式</a></li><li><a href="#s6">键盘（APG 原文）</a></li><li><a href="#s9">role=&quot;region&quot; 的 ≤6 上限</a></li><li><a href="#s10">折叠必须用 hidden</a></li><li><a href="#s11">语法约束</a></li><li><a href="#s12">验证</a></li></ul>
+  </aside>
+</div>
+<footer class="g-foot">
+  <p>v0.11.4 · 零第三方运行时依赖 · 组件数 35</p>
+</footer>
+</body>
+</html>

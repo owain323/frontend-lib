@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>tabs · 标签页 · agentcss</title>
+<meta name="description" content="选项卡切换">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">tabs · 标签页</span>
+    <a class="g-jump" href="../03-patterns/tabs/demo.html">打开示例<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">模式 · stable</p>
+    <h1>tabs · 标签页</h1>
+    <p class="lede">选项卡切换</p>
+    <ul class="g-meta"><li><a href="../03-patterns/tabs/demo.html"><code>03-patterns/tabs/demo.html</code></a></li><li><a href="../03-patterns/tabs/tabs.css"><code>03-patterns/tabs/tabs.css</code></a></li><li><a href="../03-patterns/tabs/tabs.js"><code>03-patterns/tabs/tabs.js</code></a></li></ul>
+    <article class="g-doc">
+<p>同一位置切换<strong>同层级</strong>的几块内容。</p>
+<h2 id="s2">结构（APG 要求，不是我的设计）<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-html">&lt;div class=&quot;tabs&quot; data-tabs&gt;
+  &lt;div class=&quot;tabs__list&quot; role=&quot;tablist&quot; aria-orientation=&quot;horizontal&quot; aria-label=&quot;…&quot;&gt;
+    &lt;button class=&quot;tabs__tab&quot; role=&quot;tab&quot; id=&quot;t1&quot;
+            aria-controls=&quot;p1&quot; aria-selected=&quot;true&quot;&gt;基本信息&lt;/button&gt;
+    &lt;button class=&quot;tabs__tab&quot; role=&quot;tab&quot; id=&quot;t2&quot;
+            aria-controls=&quot;p2&quot; aria-selected=&quot;false&quot;&gt;高级设置&lt;/button&gt;
+  &lt;/div&gt;
+  &lt;div class=&quot;tabs__panel&quot; role=&quot;tabpanel&quot; id=&quot;p1&quot; aria-labelledby=&quot;t1&quot;&gt;…&lt;/div&gt;
+  &lt;div class=&quot;tabs__panel&quot; role=&quot;tabpanel&quot; id=&quot;p2&quot; aria-labelledby=&quot;t2&quot; hidden&gt;…&lt;/div&gt;
+&lt;/div&gt;</code></pre>
+<p><strong>tab 必须是 <code>&lt;button&gt;</code></strong> —— APG 明确要求。用 <code>&lt;div role=&quot;tab&quot;&gt;</code> 键盘上根本 Tab 不到，也不响应 Enter/Space。</p>
+<h2 id="s3">键盘契约<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>键</th><th>行为</th>
+</tr></thead>
+<tbody>
+<tr><td><code>Tab</code></td><td>进入组时落在<strong>当前选中</strong>的 tab；再按 Tab 进入面板内容</td></tr>
+<tr><td><code>← →</code></td><td>上一个 / 下一个 tab（并激活）</td></tr>
+<tr><td><code>Home</code> / <code>End</code></td><td>第一个 / 最后一个 tab</td></tr>
+<tr><td><code>Enter</code> / <code>Space</code></td><td>仅<strong>手动模式</strong>下用于激活</td></tr>
+</tbody>
+</table></div>
+<h2 id="s4">🔴 roving tabindex（本组件最容易写错的地方）<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
+<p>一组 tab 里<strong>只有一个</strong>是 <code>tabindex=&quot;0&quot;</code>，其余 <code>-1</code>。</p>
+<p><strong>为什么要这样</strong>：否则 Tab 键会<strong>逐个穿过所有 tab</strong> —— 一排 5 个 tab 要按 5 次 Tab 才能进内容区。</p>
+<p><strong>更关键</strong>：那个 <code>&quot;0&quot;</code> <strong>必须跟着选中项走</strong>。只在初始化时设一次是最常见的 bug（用户激活第 3 个 tab 后，Tab 键还会回到第 1 个）。</p>
+<h2 id="s5">两种激活模式<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>模式</th><th>类</th><th>方向键</th><th>何时用</th>
+</tr></thead>
+<tbody>
+<tr><td><strong>自动</strong>（默认）</td><td>—</td><td>移动即切换</td><td>面板轻</td></tr>
+<tr><td><strong>手动</strong></td><td><code>.tabs--manual</code></td><td>只移动焦点，Enter 才切</td><td>面板重（避免读屏不停播报）</td></tr>
+</tbody>
+</table></div>
+<h2 id="s6">纵向<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
+<p><code>aria-orientation=&quot;vertical&quot;</code> + <code>.tabs--vertical</code>。</p>
+<h2 id="s7">一个规范与现实的张力<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
+<p>APG 要求「在 tab 上按 Tab ⇒ 焦点进入面板内容」。 <strong>但全是静态文字的面板没有任何可聚焦元素</strong> ⇒ Tab 会直接跳过整个面板。</p>
+<p>实测确认（<code>tabs-contract.js</code> 里就是用这个测的）： demo 的面板里放了按钮，<code>Tab</code> 序列是 <code>t1 → 面板内按钮 → 下一个 tab 组</code> —— <strong>符合规范</strong>。</p>
+<p>⚠️ 纯文字面板请自己加可聚焦元素（链接、按钮、或 <code>tabindex=&quot;-1&quot;</code> 的容器）。</p>
+<h2 id="s8">语法约束<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
+<p><code>tabs.js</code> <strong>刻意用 ES5</strong>（无箭头函数 / const / let / 模板字符串）—— 精简档（某项目 上的 WebView）版本不确定。</p>
+<p>也<strong>刻意不用 <code>Element.closest</code> / <code>Array.filter</code></strong>（ES5 之后才有），自己写了 15 行等价实现 —— 与同目录的 <code>list.js</code> / <code>overlay.js</code> 保持一致。 <strong>一致比方便重要。</strong></p>
+<h2 id="s9">验证<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
+<p><code>tabs-contract.js</code> <strong>28 项全过</strong>（用 <code>page.keyboard.press()</code> 真实按键）：</p>
+<ul><li>结构：<code>&lt;button&gt;</code> · <code>role=tablist</code> · <code>aria-controls</code> 双向互指 · <code>aria-orientation</code></li><li>roving：唯一 <code>0</code> · <strong>跟着选中项走</strong> · 循环后仍唯一</li><li>键盘：<code>←→</code> · <code>Home</code>/<code>End</code> · <strong>循环</strong> · <strong>跳过 <code>aria-disabled</code></strong></li><li>Tab 进出：进组落在选中项 · 进面板内容 · <strong>不逐个穿过同组</strong></li><li>手动模式：方向键不切面板但移焦点 · Enter 才激活</li><li>axe 0 违规 / 30 条通过</li></ul>
+<p>判别力验证：破坏 roving（全部设成 <code>0</code>）⇒ <strong>5 项立即被抓</strong>。</p>
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      <a class="g-pager__link g-pager__link--prev" href="states.html"><span>上一页</span>容器四态：empty / loading / error / success</a>
+      <a class="g-pager__link g-pager__link--next" href="tooltip.html"><span>下一页</span>tooltip · 文字提示</a>
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    <ul class="g-toc"><li><a href="#s2">结构（APG 要求，不是我的设计）</a></li><li><a href="#s3">键盘契约</a></li><li><a href="#s4">🔴 roving tabindex（本组件最容易写错的地方）</a></li><li><a href="#s5">两种激活模式</a></li><li><a href="#s6">纵向</a></li><li><a href="#s7">一个规范与现实的张力</a></li><li><a href="#s8">语法约束</a></li><li><a href="#s9">验证</a></li></ul>
+  </aside>
+</div>
+<footer class="g-foot">
+  <p>v0.11.4 · 零第三方运行时依赖 · 组件数 35</p>
+</footer>
+</body>
+</html>
