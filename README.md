@@ -40,21 +40,27 @@
 
 ## 安装
 
-**当前状态：npm registry 上没有可安装版本。** 包名 `agentcss` 归本账号
-（0.9.0 曾发布成功、两分钟后被误删，见 `ERRORS.md` E55；0.11.2 的发布卡在
-账号 2FA 的一次性验证码上，见 `docs/RELEASING.md`「发布受阻时」）。
-所以现在有两条**真实可用**的路：
+**已发布到 npm registry。** 包名 `agentcss`（scoped 名不需要，直接用下面这条）：
 
 ```bash
-# ① 装**和我们验证过的那一份逐字节一致**的包（GitHub Release 附件，v0.11.2）
-npm install https://github.com/owain323/frontend-lib/releases/download/v0.11.2/agentcss-0.11.2.tgz
+npm install agentcss
+```
 
-# ①b 想跟着 master 走
+装出来的目录名就是 `agentcss`，`dist-tags.latest` 指向当前版本。
+
+另外两条**同样真实可用**的路（内容与 registry 上那一份同源）：
+
+```bash
+# ① 钉住某一版、且拿到与我们验证过的那一份**逐字节一致**的 tarball
+npm install https://github.com/owain323/frontend-lib/releases/download/v0.11.3/agentcss-0.11.3.tgz
+
+# ② 想跟着 master 走（未发布的最新提交）
 npm install github:owain323/frontend-lib
 ```
 
-装出来的目录名仍是 `agentcss`，导入写法与将来发 npm 后**完全一致** ——
-换回 `npm install agentcss` 时不用改任何代码。
+> 历史说明：0.9.0 曾发布成功、两分钟后被误删（`ERRORS.md` E55）；此后一段时间
+> registry 上没有可安装版本，靠 GitHub Release 附件分发（`docs/RELEASING.md`
+> 「发布受阻时」）。自 0.11.2 起这条通路已恢复。
 
 **② 源码复制**（不想装依赖）：把 `01-tokens/` 和需要的组件目录复制进你的项目。
 ⚠️ 复制 `dist/` 里的版本，**别复制源码版** —— 源码版有一半以上是给人和 AI 读的注释

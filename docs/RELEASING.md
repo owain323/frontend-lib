@@ -271,5 +271,41 @@ npm install https://github.com/owain323/frontend-lib/releases/download/v<ver>/ag
 2. **上传后独立核一次**：`gh api repos/.../releases/tags/v<ver>` 看 asset 的 `size`
    与本地一致；再**从另一台机器**下载算 sha256。本机网络会把它拖成半截
    （实测 739,543 字节只下到 48,418 就断了，而 `curl` 退出码仍是 0）。
-3. **README 必须写"registry 上没有"**，不能因为发了 Release 就写成已发布 ——
-   那是下一个人装错东西的起点。
+3. **README 必须写真实状态**（两个方向都算）：没能发上去就不能写成已发布；
+   发上去了也不能继续挂着"registry 上没有"。本次就是后半句踩过的坑 ——
+   0.11.2 已经上了 registry，包内 README 却还写着"没有可安装版本"，
+   装下来的人第一眼读到一句自我否定的话（0.11.3 修）。
+
+### 本节状态：**已解除**（0.11.2 起）
+
+这一节保留是因为降级路径本身仍然有效（GitHub 被墙时 npm 也可能挂），
+但它不再是**唯一**通路。
+
+**真根因（此前判断错了两次）**
+
+| 我当时的判断 | 实际 |
+|---|---|
+| "npm 登录失效（401）" | 登录没问题；本机 token 在 **10-25 到期**（granular 默认 7 天） |
+| "账号开了 TOTP，找用户要 6 位码" | 2FA 页只登记了**一把 security key**（`agentc`），**没有 TOTP 设备** —— 手机上任何验证器都不会有 npm 条目，"等推送"永远等不到 |
+| "新建 token 也要 2FA ⇒ 闭环" | 网页端生成 **bypass-2FA 的 granular token** 只需要在网页里勾选，CLI 侧不需要任何一次性码 |
+
+**现在怎么做**（可重复，不依赖任何人给验证码）
+
+1. 网页 `Settings → Access Tokens → Generate New Token`
+   （直达：`/settings/<user>/tokens/granular-access-tokens/new`）
+2. 勾 **Bypass two-factor authentication (2FA)**
+3. Packages and scopes → 权限选 **Read and write (publish and stage)**
+   → Select packages 选 **All packages**
+4. Generate token → 把 `npm_…` 写进 `~/.npmrc`：
+   `//registry.npmjs.org/:_authToken=npm_…`
+5. `npm whoami` 必须回账号名，再 `npm publish <tarball> --ignore-scripts`
+6. **轮询 registry 直到目标版本出现**（本次实测：第 7 次、约 50 秒后出现；
+   前 6 次都只有旧版本）。不要在第一次查询就下结论。
+
+**当前机器上的凭据**（0.11.2 / 0.11.3 就是用它在发）：
+`~/.npmrc` 里的 `agentcss-publish`，创建于 2026-10-28，**到期 2026-11-04**（npm 对带写权限的 token 默认只给 7 天，上限 90 天）。
+到期前重新生成一枚（同样勾 bypass + Read and write + All packages），
+否则 CICD 会以 `401` 的形式失败 —— 而 `401` 很容易被误读成"没登录"。
+
+⚠️ npm 公告：**带 bypass-2FA 的 token 直接发布能力将在 2027 年 1 月移除**
+（之后要改走 stage + 2FA 审批）。届时本节要重写，不能照抄。
