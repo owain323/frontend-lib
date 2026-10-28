@@ -723,6 +723,13 @@ fi
 run "pack-closure" @static node 05-audit/pack-closure.js
 run "pack-smoke"       bash 05-audit/pack-smoke.sh
 run "leak"        $PY 05-audit/leak-scan.py
+# 🔴 outsider-rev（2026-10-29 加 · 起因是"什么都没读就宣布干净"）
+#   外人视角审查要联网读 GitHub（本机 `raw.githubusercontent.com` 被断连过），
+#   不适合天天进日常门禁；但**它的判据**必须天天验 —— 旧实现里
+#   "读到 0 个文件"和"读到全部文件"走到同一个 ✅，于是通道一被墙，
+#   报告就从「未取证」变成「零泄漏」。
+#   ⇒ 只跑 `--selftest`：纯离线、~0ms，专验「0 个文件必须红」这条。
+run "outsider-rev" $PY 05-audit/outsider-audit.py --selftest
 run "proper-noun" $PY 05-audit/proper-noun-scan.py
 run "hype"        $PY 05-audit/hype-scan.py
 # ⚠️ 直接调 node，不套 with-server.sh ——

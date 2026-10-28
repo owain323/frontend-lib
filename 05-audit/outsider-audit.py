@@ -15,8 +15,11 @@ outsider-audit.py — **外人视角**审查 GitHub 上的仓库
 ===========================================================================
 """
 import sys
+import io
 import re
 import json
+import zipfile
+import urllib.error
 import urllib.parse
 import urllib.request
 import os
@@ -63,6 +66,79 @@ HDR = {'Authorization': 'Bearer ' + TOKEN} if TOKEN else {}
 API = 'https://api.github.com/repos/%s/%s' % (OWNER, REPO)
 COMMIT = os.environ.get("AUDIT_COMMIT", "")
 RAW = 'https://raw.githubusercontent.com/%s/%s/master/' % (OWNER, REPO)
+CONTENTS = 'https://api.github.com/repos/%s/%s/contents/' % (OWNER, REPO)
+
+# 🔴 2026-10-29：读取方式改成「一次取整库快照」。
+#    事故：本机 `raw.githubusercontent.com` 被强制断连（WinError 10054），
+#    而脚本只有它一条通道 ⇒ 每个文件都抛异常 ⇒ `checked` 停在 0，
+#    末尾照样打印「✅ 零泄漏」。**一个文件都没读到，却宣布干净。**
+#
+#    逐文件抓还有两个隐患，就算通道通着也不该这么干：
+#      · 配额：匿名 60 次/小时，几百个文件必然 403
+#      · 一致性：边抓边有人推 ⇒ 扫的是"拼接出来的半新旧混合体"
+#    ⇒ 主路径改成 zipball：**一条请求**拿到同一个 commit 的完整树
+#      （实测 1.9s / 12.2MB / 757 个条目，且返回的顶层目录名自带 commit sha）。
+#    逐文件通道保留为**降级路径**：zipball 万一被挡，仍能逐个取，
+#    只是要显式说明"现在是降级模式"，且覆盖率判据一样生效。
+def _channels(p):
+    q = urllib.parse.quote(p)
+    ref = ('?ref=' + urllib.parse.quote(COMMIT)) if COMMIT else ''
+    return [
+        ('raw', RAW + q + ref, HDR),
+        ('api', CONTENTS + q + ref,
+         dict(HDR, Accept='application/vnd.github.raw')),
+    ]
+
+
+def fetch_text(p, tries=2):
+    """返回 (内容, None) 或 (None, 失败原因)。失败原因要能看出是哪条通道、什么事。"""
+    last = 'no-channel'
+    for _ in range(tries):
+        for tag, url, hdr in _channels(p):
+            try:
+                with urllib.request.urlopen(
+                        urllib.request.Request(url, headers=hdr), timeout=25) as r:
+                    return r.read().decode('utf-8', 'replace'), None
+            except urllib.error.HTTPError as e:
+                last = '%s:HTTP%s' % (tag, e.code)
+            except Exception as e:
+                last = '%s:%s' % (tag, type(e).__name__)
+    return None, last
+
+
+def fetch_snapshot():
+    """整库快照。返回 (paths, read_fn, note)；失败返回 (None, None, 原因)。
+
+    read_fn(path) -> 文本（只对调用方要的文件读，避免把 12MB 全解码）。
+    """
+    ref = COMMIT or 'master'
+    url = '%s/zipball/%s' % (API, urllib.parse.quote(ref))
+    try:
+        with urllib.request.urlopen(
+                urllib.request.Request(url, headers=HDR), timeout=120) as r:
+            blob = r.read()
+        z = zipfile.ZipFile(io.BytesIO(blob))
+        names = [n for n in z.namelist() if not n.endswith('/')]
+        if not names:
+            return None, None, 'zipball 是空的'
+        # 顶层目录形如 `<owner>-<repo>-<sha7>/` ⇒ 顺手把远端 commit 记下来，
+        # 报告里能写清"验的是哪一版"，而不是"某个时刻的 master"。
+        prefix = names[0].split('/')[0] + '/'
+        sha = prefix.rstrip('/').rsplit('-', 1)[-1]
+        rel = {n[len(prefix):]: n for n in names}
+        cache = {}
+
+        def read_fn(p):
+            if p not in rel:
+                raise KeyError(p)
+            if p not in cache:
+                cache[p] = z.read(rel[p]).decode('utf-8', 'replace')
+            return cache[p]
+
+        return rel, read_fn, 'zipball %s（%.1f MB / %d 个文件）' % (
+            sha, len(blob) / 1048576.0, len(rel))
+    except Exception as e:
+        return None, None, 'zipball 失败：%s' % str(e)[:70]
 
 # ============================================================================
 # 词表（全部是"外人看到就会觉得奇怪"的东西）
@@ -140,46 +216,131 @@ TEXT_EXT = ('.md', '.html', '.css', '.js', '.mjs', '.py', '.json',
             '.sh', '.ts', '.tsx', '.yml', '.yaml', '.txt', '.tpl')
 
 # ⭐ 门禁自身的文件：它们**必须**含被禁词才能扫描 ⇒ 豁免。
-#    ⚠️ 门禁本身是可审计的公开工具，"它检查哪些词"属于规则说明，不是内部机密。
-SELF_FILES = {
-    'terms.py', 'leak-scan.py', 'leak-clean.py',
-    'outsider-audit.py', 'publish-guard.py', 'proper-noun-scan.py',
-    'repo-hygiene.py', '_common.py',
-}
+#    ⚠️ 判据不在这里写 —— 调 `terms.is_tool_file`（单一来源）。
+#    本文件曾经自带一份"只按文件名豁免"的版本，于是同一个仓库
+#    本地 leak-scan 报干净、这里报 43 处，两边谁对说不清（见 terms.py 那段注释）。
+
+
+def scannable(p):
+    """这个远端路径要不要扫。返回 (要不要, 不计入分母的理由)。"""
+    if terms.is_tool_file(p):
+        return False, 'tool'
+    if p.lower().endswith(SKIP_EXT):
+        return False, 'binary'
+    if not p.lower().endswith(TEXT_EXT):
+        return False, 'binary'
+    if '_baseline' in p:
+        return False, 'baseline'
+    return True, ''
+
+
+def coverage_verdict(eligible, checked):
+    """覆盖率判据：**没读到文件 ≠ 干净**。
+
+    🔴 起因（2026-10-29）：旧实现只打印「扫了 0 个文本文件」，
+       随后照样输出「✅ 零泄漏」。分母和结论之间没有绑定关系，
+       于是"一条通道被墙"就能变成"全部干净"。
+       ⇒ 分母 > 0 时必须 100% 读到，少一个都不许下结论。
+    """
+    if eligible <= 0:
+        return 2, '分母为 0：没有可扫的文本文件，判据本身失效'
+    if checked == 0:
+        return 2, '一个文件都没读到 —— 无法取证，不等于干净'
+    if checked < eligible:
+        return 2, '只读到 %d/%d 个文件，%d 个未取证' % (
+            checked, eligible, eligible - checked)
+    return 0, '全部 %d 个文本文件均已读取' % eligible
+
+
+def selftest():
+    cases = [
+        ((0, 0), 2, '分母为 0'),
+        ((400, 0), 2, '全都没读到'),      # ← 本次事故，旧实现在这里返回 0
+        ((400, 1), 2, '差一个也算未取证'),
+        ((400, 399), 2, '差一个也算未取证'),
+        ((400, 400), 0, '读全了'),
+    ]
+    bad = 0
+    for args, want, why in cases:
+        got, msg = coverage_verdict(*args)
+        ok = got == want
+        bad += 0 if ok else 1
+        print('  %s %-14s → %d  %s' % ('OK ' if ok else 'RED', '%d/%d' % args, got, why))
+    if bad:
+        print('  ⇒ 🔴 判据自身有 %d 条不成立' % bad)
+    else:
+        print('  ⇒ ✅ 覆盖率判据 5/5 成立（含"0 个文件必须红"）')
+    # 再加一条反向控制：全读到但发现泄漏，不能被覆盖率判据洗白
+    if coverage_verdict(10, 10)[0] != 0:
+        print('  ⇒ 🔴 反向控制失败'); bad += 1
+    return 1 if bad else 0
+
+
+def _paths_from_tree():
+    """降级路径用：拿不到 zipball 时先列清单。读不到 ⇒ None（判红，不是跳过）。"""
+    try:
+        with urllib.request.urlopen(urllib.request.Request(
+                API + '/git/trees/' + (COMMIT or 'master') + '?recursive=1',
+                headers=HDR), timeout=25) as r:
+            tree = json.loads(r.read().decode('utf-8'))
+    except Exception as e:
+        print('  🔴 读不到仓库清单：%s' % str(e)[:70])
+        return None
+    return [t['path'] for t in tree.get('tree', []) if t['type'] == 'blob']
 
 
 def main():
+    if '--selftest' in sys.argv:
+        return selftest()
+
     print('  === 外人视角审查（直接读 GitHub）===')
     print('')
-    try:
-        with urllib.request.urlopen(urllib.request.Request(API + '/git/trees/master?recursive=1', headers=HDR), timeout=20) as r:
-            tree = json.loads(r.read().decode('utf-8'))
-    except Exception as e:
-        print('  🔴 读不到仓库：%s' % str(e)[:60])
-        return 2
+    rel, read_fn, note = fetch_snapshot()
+    if rel is not None:
+        # 主路径：一个 commit 的完整快照 —— 原子、且只烧 1 次配额
+        paths = list(rel.keys())
+        print('  快照：%s' % note)
+        getter = lambda p: read_fn(p)  # noqa: E731
+    else:
+        # 降级：逐文件抓。**必须显式说明现在是降级模式**，
+        # 否则"少扫了一半"会被读成"全都干净"（本次事故就是这种读法）。
+        print('  ⚠️ %s' % note)
+        print('  ⚠️ 降级为逐文件读取（易受配额/一致性影响）')
+        paths = _paths_from_tree()
+        if paths is None:
+            return 2
 
-    paths = [t['path'] for t in tree.get('tree', []) if t['type'] == 'blob']
-    print('  远端文件数：%d' % len(paths))
+        def getter(p, _c={}):
+            if p not in _c:
+                _c[p] = fetch_text(p)
+            t, why = _c[p]
+            if t is None:
+                raise IOError(why)
+            return t
+
+    eligible = []
+    skipped = {}
+    for p in paths:
+        keep, why = scannable(p)
+        if keep:
+            eligible.append(p)
+        else:
+            skipped[why] = skipped.get(why, 0) + 1
+    print('  远端文件 %d 个：需扫 %d 个，不计入分母 %d 个（%s）' % (
+        len(paths), len(eligible), sum(skipped.values()),
+        '，'.join('%s %d' % (k, v) for k, v in sorted(skipped.items()))))
+    # ⚠️ 豁免要**打出来**，不能静默：`tool` 那一项意味着 `05-audit/` 整个不在
+    #    本次覆盖范围内（理由见 terms.is_tool_file）。不打印就等于
+    #    "少扫了 200 个文件但报告看起来像扫了全部"。
 
     bad = {}
+    fails = {}
     checked = 0
-    for p in paths:
-        # ⭐ 门禁自身**必须豁免**：它们为了检测这些词，词表里就得含它们
-        #    （terms.py 已是拼接写法，但正则与示例里仍会露出片段）。
-        #    这是「工具属性」，不是「内容泄漏」——
-        #    外人看到的是"一条扫描规则"，不是我们的代号。
-        if p.split('/')[-1] in SELF_FILES:
-            continue
-        if p.lower().endswith(SKIP_EXT):
-            continue
-        if not p.lower().endswith(TEXT_EXT):
-            continue
-        if '_baseline' in p:
-            continue
+    for p in eligible:
         try:
-            with urllib.request.urlopen(urllib.request.Request(RAW + urllib.parse.quote(p) + '?v=' + COMMIT, headers=HDR), timeout=12) as r:
-                t = r.read().decode('utf-8', 'replace')
-        except Exception:
+            t = getter(p)
+        except Exception as e:
+            fails.setdefault(str(e)[:22] or 'unknown', []).append(p)
             continue
         checked += 1
         for name, pat in PATTERNS:
@@ -192,23 +353,31 @@ def main():
             if n:
                 bad.setdefault(name, []).append((p, n))
 
-    print('  扫了 %d 个文本文件' % checked)
+    code, cov_msg = coverage_verdict(len(eligible), checked)
+    print('  已读 %d / %d 个文本文件' % (checked, len(eligible)))
     print('')
-    if not bad:
-        print('  ✅ 外人视角：零泄漏 —— 干净')
-        return 0
+    if fails:
+        print('  ⚠️ 未取证 %d 个文件（读不到，不当作干净）：' % sum(len(v) for v in fails.values()))
+        for why, ps in sorted(fails.items(), key=lambda kv: -len(kv[1])):
+            print('     %-22s x%d  例：%s' % (why, len(ps), ps[0][:44]))
 
-    total = 0
-    for name, _ in PATTERNS:
-        if name in bad:
-            tot = sum(n for _, n in bad[name])
-            total += tot
-            print('  🔴 %-12s %d 处 / %d 个文件' % (name, tot, len(bad[name])))
-            for p, n in bad[name][:6]:
-                print('       %s  x%d' % (p[:54], n))
-    print('')
-    print('  ⇒ 🔴 共 %d 处' % total)
-    return 1
+    if not bad and code == 0:
+        print('  ✅ 外人视角：零泄漏 —— 干净（%s）' % cov_msg)
+        return 0
+    if bad:
+        total = 0
+        for name, _ in PATTERNS:
+            if name in bad:
+                tot = sum(n for _, n in bad[name])
+                total += tot
+                print('  🔴 %-12s %d 处 / %d 个文件' % (name, tot, len(bad[name])))
+                for p, n in bad[name][:6]:
+                    print('       %s  x%d' % (p[:54], n))
+        print('')
+        print('  ⇒ 🔴 共 %d 处' % total)
+    if code != 0:
+        print('  ⇒ 🔴 %s' % cov_msg)
+    return 1 if bad else 2
 
 
 if __name__ == '__main__':

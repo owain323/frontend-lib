@@ -123,11 +123,6 @@ COLLAB_RE_STRICT = re.compile(
 # 工作日期戳单独判：只在注释/文档里查，且必须命中 2026-09 / 2026-10
 CHECK_STAMP = ('工作日期戳', re.compile(terms.WORK_STAMP_RE))
 
-# 门禁目录：内部目录名在这些文件里出现是合理的
-AUDIT_PREFIX = '05-audit/'
-
-# ⭐ 门禁自身**必须豁免**：它们为了检测这些词，词表里就得含它们。
-#    这是「工具属性」，不是「内容泄漏」—— 外人看到的是一条扫描规则。
 # ⭐ 门禁自身**必须豁免**：它们为了检测这些词，词表里就得含它们。
 #    这是「工具属性」，不是「内容泄漏」—— 外人看到的是一条扫描规则。
 #
@@ -137,16 +132,13 @@ AUDIT_PREFIX = '05-audit/'
 #    它们先因为含词表里的词被判红，接着 fixture 的「正常样本」用例
 #    全部连锁失败 —— 一道门禁的措辞能拖垮另一道门禁的判据。
 #    ⇒ 只要在 05-audit/ 下，就是门禁工具，按工具对待。
-#    （对外的价值：门禁脚本本身是可读的自证材料，不该被自己的规则扫）
-SELF_DIR_PREFIX = '05-audit/'
-
-# 仍需单独豁免的（不在 05-audit/ 下的）
-SELF_FILES = {'迁移脚本'}
-
-
+#
+# 🔴 2026-10-29：判据**搬进 terms.py**（`terms.is_tool_file`）。
+#    原因：outsider-audit.py 自己写了一份**只按文件名**的版本，
+#    于是同一个仓库本地报干净、外网报 43 处。现在两边都调同一个函数。
 def is_self_tool(rel):
-    """门禁工具自身（要含禁词才能检测它们）。"""
-    return rel.startswith(SELF_DIR_PREFIX) or rel.split('/')[-1] in SELF_FILES
+    """门禁工具自身（要含禁词才能检测它们）。判据实现见 terms.is_tool_file。"""
+    return terms.is_tool_file(rel)
 
 # ⭐ 补 `.ts` —— 判别力验证抓到**门禁自己漏了类型定义文件**：
 #   往 types/index.d.ts 注入内部代号，leak-scan 报"无敏感信息"。
@@ -190,10 +182,14 @@ def main():
                 hits.setdefault(name, []).append((rel, n))
 
         # ---- 公开可用性三条 --------------------------------------------
-        # 只在非门禁目录里查内部目录名：门禁脚本提到这些目录是正常的。
+        # 🔴 2026-10-29 删掉两处**永远走不到**的分支：
+        #    原来这里有 `if name == '内部目录引用' and rel.startswith('05-audit/'): continue`
+        #    与 `if name == '未替换占位符' and rel.startswith('05-audit/'): continue`。
+        #    但循环开头已经 `if is_self_tool(rel): continue` —— 门禁目录根本到不了这里，
+        #    两个分支恒假。它们不只是废码：**读起来像"门禁目录也被扫了"**，
+        #    而实际是被整目录跳过的（这正是本地干净、外网 43 处的原因之一）。
+        #    ⇒ 分支删掉，豁免只留 `is_self_tool`（= terms.is_tool_file）一处。
         for name, pat in CHECKS_EXTRA:
-            if name == '内部目录引用' and rel.startswith(AUDIT_PREFIX):
-                continue
             if name == '内部协作痕迹':
                 # 用区分大小写的严格版，避开 CLASS_OWNER / owners 这类变量名
                 # ⭐ repository / homepage / bugs 里的账号名是**仓库身份**
@@ -204,12 +200,6 @@ def main():
                 n = len(found)
                 if n:
                     hits.setdefault(name, []).append((rel, n))
-                continue
-            # 占位符：只查**用户会照抄的文档**。
-            #   门禁脚本里的 ${REPO} / ${HOME} 是它自己 docstring 里的示例，
-            #   没人会去复制那些，不是缺陷。
-            if name == '未替换占位符' and (
-                    rel.startswith(AUDIT_PREFIX) or rel == 'CHANGELOG.md'):
                 continue
             found = pat.findall(t)
             n = len(found)
