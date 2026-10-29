@@ -27,11 +27,15 @@
 
 它**不判**什么（判不了就说不判，不假装判了）
 ===========================================
-· 反例是不是**真的**错 —— 这是判断题。写错的反例比没写更糟，
-  但那需要人读源码核对（`internal/ERRORS.md` 里有专门一条）。
-· 反例与本库说法是否一致 —— 同上。
-· 反例的坏样子是否**看得出来** —— "看起来一样"要靠人眼，
-  自动化只能保证块在、可见、有标题。
+· 反例是不是**真的**错 —— 这是判断题，这一道不判。
+  "块里那两栏到底有没有差别"由 `05-audit/demo-claim-gate.js` 判：
+  两栏各写一条可证伪的数字断言，量它，并要求两栏断言互斥。
+  ⇒ 本节说的"判不了"只针对**价值判断**（这个做法该不该算坏），
+    不针对"演示物在不在、两栏是不是真不一样"—— 后者已经能判了。
+· 反例与本库说法是否一致 —— 文案对不对只能人读。
+· 反例的坏样子是否**看得出来** —— 视觉显著性要靠人眼，
+  自动化只能保证块在、可见、有标题、且断言量的那条差异确实存在。
+· `box bad` 单栏反例（10 页）也没有成对结构可量，`demo-claim` 会把条数打出来。
 
 判据的边界写在上面，是因为一道判据最危险的时刻，
 是它绿了之后有人以为它证明了更多东西。
@@ -81,8 +85,24 @@ def is_bad_block(tag):
     return ('box' in cls and 'bad' in cls) or 'cmp__bad' in cls
 
 
+def is_hidden(tag):
+    """这个开始标签是不是把反例块藏起来了。
+
+    🔴 原来写的是 `re.search(r'\\bhidden\\b', tag)` —— 对**整个标签**做子串匹配。
+    给对照块加上 `data-bad=".rv-card|hidden|=1"`（断言的指标名叫 hidden）之后，
+    `reveal` 立刻被误判成「反例块被藏起来了」：
+    判据认的是**词**，不是**属性**。属性值里出现 hidden 这个词，
+    跟"块被藏起来"没有任何关系。
+
+    ⇒ 只认两种真正的隐藏：`hidden` 属性本身、`style="display:none"`。
+    """
+    if re.search(r'\shidden(?=[\s/>])', tag, re.I):
+        return True
+    m = re.search(r'\sstyle\s*=\s*"([^"]*)"', tag, re.I)
+    return bool(m and re.search(r'display\s*:\s*none', m.group(1), re.I))
+
+
 def check_html(html):
-    """返回问题列表（空 = 通过）。"""
     blocks = [m for m in TAG_RE.finditer(html) if is_bad_block(m.group(0))]
     if not blocks:
         return ['没有任何可见的反例块（`class="box bad"` 或 `cmp__bad`）'
@@ -94,8 +114,7 @@ def check_html(html):
         snippet = re.sub(r'\s+', ' ', tag)[:70]
 
         # ③ 可见性：藏起来的反例等于没有
-        if re.search(r'\bhidden\b', tag, re.I) or \
-           re.search(r'display\s*:\s*none', tag, re.I):
+        if is_hidden(tag):
             problems.append('反例块被藏起来了：%s' % snippet)
 
         # ④ 必须有标题，否则读者不知道这块错在哪
@@ -188,6 +207,13 @@ GOOD_PANE_ONLY = '''<div class="cmp">
   </div>
 </div>
 '''
+# 断言里带 `hidden` 这个词，但块本身没被藏 —— 必须放行。
+# 这是上面那次误报的反向控制：判据认属性，不认词。
+HIDDEN_WORD_IN_ATTR = '''<div class="cmp__pane cmp__bad" data-bad=".rv-card|hidden|=1">
+  <h3>反例：藏了但没兜底</h3>
+  <div class="rv-card rv-hidden"></div>
+</div>
+'''
 
 
 def selftest():
@@ -199,6 +225,7 @@ def selftest():
         ('⑤ 反例块没有标题 → 要红',               NO_HEAD,       True),
         ('⑥ 反例块标题是空白 → 要红',             EMPTY_HEAD,    True),
         ('⑦ 只有 cmp__good 那半边 → 要红',        GOOD_PANE_ONLY, True),
+        ('⑧ 断言里带 hidden 字样 → 必须放行',      HIDDEN_WORD_IN_ATTR, False),
     ]
     fail = 0
     for label, html, want_bad in cases:

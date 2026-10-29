@@ -61,7 +61,7 @@
 
   <h2 class="rule-bottom">对比：错写法 vs 本库写法</h2>
   <div class="cmp">
-    <div class="cmp__pane cmp__bad">
+    <div class="cmp__pane cmp__bad" data-bad=".dp-kpi__v|fs|>=24">
       <h3>❌ 常见写法：缺的字段写 0</h3>
         <div class="dp-kpi" aria-hidden="true">
           <span class="dp-kpi__k">研发投入</span>
@@ -69,7 +69,7 @@
         </div>
       <p class="cmp__why"><code>0</code> 是一个真实的值：读者会拿它去算"研发强度 = 0"，也会拿它去比同比 —— 而这一格其实<b>没有</b>数据。</p>
     </div>
-    <div class="cmp__pane cmp__good">
+    <div class="cmp__pane cmp__good" data-good=".detail-null__v|fs|<=22">
       <h3>✅ 本库：写「未披露」+ 弱化色</h3>
         <div class="dp-kpi" aria-hidden="true">
           <span class="dp-kpi__k">研发投入</span>

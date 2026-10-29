@@ -160,7 +160,7 @@ demo('bad1', 'bottom',
 
   <h2 class="rule-bottom">对比：错写法 vs 本库写法</h2>
   <div class="cmp">
-    <div class="cmp__pane cmp__bad">
+    <div class="cmp__pane cmp__bad" data-bad=".popover|count|>=2">
       <h3>❌ 常见写法：两个浮层同时开着</h3>
         <div class="pp-stage" aria-hidden="true">
           <button class="btn btn--sm btn--ghost" type="button" tabindex="-1">筛选</button>
@@ -177,7 +177,7 @@ demo('bad1', 'bottom',
         </div>
       <p class="cmp__why">两个都开着：点空白处到底关的是哪一个？读屏用户按 Esc 也不知道关掉的是哪个，而两个浮层的内容还叠在一起。</p>
     </div>
-    <div class="cmp__pane cmp__good">
+    <div class="cmp__pane cmp__good" data-good=".popover|count|=1">
       <h3>✅ 本库：同一时刻只开一个</h3>
         <div class="pp-stage" aria-hidden="true">
           <button class="btn btn--sm btn--ghost" type="button" tabindex="-1">筛选</button>

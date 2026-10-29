@@ -227,7 +227,7 @@
 
   <h2 class="rule-bottom">对比：错写法 vs 本库写法</h2>
   <div class="cmp">
-    <div class="cmp__pane cmp__bad">
+    <div class="cmp__pane cmp__bad" data-bad=".ds-u|fs|>=20">
       <h3>❌ 常见写法：单位与数字同字号同色</h3>
         <div class="ds-stat" aria-hidden="true">
           <span class="ds-k">营业收入</span>
@@ -235,7 +235,7 @@
         </div>
       <p class="cmp__why">"亿元"只是个量级标记，却和 1,284.6 抢同一层注意力：读者先读到的是四个字，而不是那个数。</p>
     </div>
-    <div class="cmp__pane cmp__good">
+    <div class="cmp__pane cmp__good" data-good=".ds-u|fs|<=16">
       <h3>✅ 本库：数字当主角，单位退一档</h3>
         <div class="ds-stat" aria-hidden="true">
           <span class="ds-k">营业收入</span>

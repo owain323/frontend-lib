@@ -43,7 +43,7 @@ p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6
   </div>
 
   <div class="cmp cmp--wide-first">
-    <div class="cmp__pane cmp__bad">
+    <div class="cmp__pane cmp__bad" data-bad=".card-bad|gh|>=2">
       <h3>反例：hover 改 border-width</h3>
       <p class="small" style="margin:0 0 var(--sp-3)">
         移上来 —— 里面那把尺子和文字整体往下挪了，卡片也变高了。
@@ -61,7 +61,7 @@ p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6
       </div>
     </div>
 
-    <div class="cmp__pane cmp__good">
+    <div class="cmp__pane cmp__good" data-good=".card|gh|=0">
       <h3>本库：transform + box-shadow</h3>
       <p class="small" style="margin:0 0 var(--sp-3)">
         移上来 —— 卡片整体抬起 2px，<strong>里面的内容一个像素都不动</strong>，

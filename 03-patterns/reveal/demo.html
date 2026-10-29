@@ -91,12 +91,12 @@
 
   <h2 class="rule-bottom">对比：错写法 vs 本库写法</h2>
   <div class="cmp">
-    <div class="cmp__pane cmp__bad">
+    <div class="cmp__pane cmp__bad" data-bad=".rv-card|hidden|=1">
       <h3>❌ 常见写法：藏了但没兜底</h3>
         <div class="rv-card rv-hidden" aria-hidden="true"></div>
       <p class="cmp__why">内容真被 <code>opacity: 0</code> 藏着，而脚本没跑起来（被拦、报错、CSP）—— 这一块就永远是空的，读者不知道这里有东西。</p>
     </div>
-    <div class="cmp__pane cmp__good">
+    <div class="cmp__pane cmp__good" data-good=".rv-card|hidden|=0">
       <h3>✅ 本库：只有 <code>data-reveal-ready</code> 时才藏</h3>
         <div class="rv-card" aria-hidden="true">
           <p class="rv-card__t">2026 年三季度回顾</p>

@@ -68,7 +68,7 @@ ul.demo-list li { margin: var(--sp-1) 0; }
 
   <h2 class="rule-bottom">对比：错写法 vs 本库写法</h2>
   <div class="cmp">
-    <div class="cmp__pane cmp__bad">
+    <div class="cmp__pane cmp__bad" data-bad="button.dr-tiny|h|<=24">
       <h3>❌ 常见写法：关闭按钮做小</h3>
         <div class="dr-bar" aria-hidden="true">
           <span class="dr-bar__title">筛选</span>
@@ -76,7 +76,7 @@ ul.demo-list li { margin: var(--sp-1) 0; }
         </div>
       <p class="cmp__why">关闭是**独立目标**：抽屉滑进来之后，用户第一件事就是找它。24px 的叉在触屏上要瞄准，点偏了就点到了背后的内容。</p>
     </div>
-    <div class="cmp__pane cmp__good">
+    <div class="cmp__pane cmp__good" data-good="button.drawer__close|h|>=44">
       <h3>✅ 本库：<code>drawer__close</code> 44px</h3>
         <div class="dr-bar" aria-hidden="true">
           <span class="dr-bar__title">筛选</span>

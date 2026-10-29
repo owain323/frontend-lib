@@ -30,6 +30,7 @@
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
+const { safeListen } = require('./safe-listen.js');
 
 const ROOT = path.dirname(__dirname);
 const { launch } = require(process.env.FL_BROWSER || path.join(__dirname, 'browser.js'));
@@ -57,7 +58,7 @@ function serve(cssText) {
       }
       res.writeHead(404); res.end('');
     });
-    srv.listen(0, '127.0.0.1', () => resolve(srv));
+    safeListen(srv).then(() => resolve(srv));
   });
 }
 

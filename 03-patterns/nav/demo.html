@@ -32,6 +32,10 @@ p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.7
 
           /* 让目录高亮有滚动空间 */
 .toc-clip { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* 🔴 反例栏要演示的是"不写 nowrap 会怎样"。.toc__link 自带 nowrap，
+   所以只在反例栏里把它取消掉 —— 不取消的话两栏都是 1 行，
+   反例就变成"被裁掉"，而标题说的是"换行"（实测：这个错犯过）。 */
+.toc-wrap { white-space: normal; }
 </style>
 </head>
 <body class="page page">
@@ -120,24 +124,24 @@ p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.7
        （`href="#x"`）点下去会跳到页面顶部，读者以为"目录坏了"。
        第一条故意写得长 —— 真实文档的长章节名就是这样，能不能单行是这条的判据。 -->
   <div class="cmp">
-    <div class="cmp__pane cmp__bad">
+    <div class="cmp__pane cmp__bad" data-bad="a.toc__link|lines|>=2">
       <h3>❌ 常见写法：目录项允许换行</h3>
         <nav class="toc" aria-label="示例目录" aria-hidden="true">
           <p class="toc__title">本页</p>
           <ul class="toc__list">
-            <li><a class="toc__link" href="#mem" tabindex="-1">存储器构成与 2026 年三季度的产能爬坡节奏</a></li>
+            <li><a class="toc__link toc-wrap" href="#mem" tabindex="-1">存储器构成与 2026 年三季度的产能爬坡节奏与毛利口径拆解</a></li>
             <li><a class="toc__link" href="#sched" tabindex="-1">优先级与准入</a></li>
             <li><a class="toc__link" href="#sim" tabindex="-1">把它跑起来</a></li>
           </ul>
         </nav>
       <p class="cmp__why">一条目录折成两行，下面两条就都被推下去了 —— 目录的价值是"一眼看到全文结构"，行高一变，结构感就没了。</p>
     </div>
-    <div class="cmp__pane cmp__good">
+    <div class="cmp__pane cmp__good" data-good="a.toc__link|lines|<=1">
       <h3>✅ 本库：单行、超出省略</h3>
         <nav class="toc" aria-label="示例目录">
           <p class="toc__title">本页</p>
           <ul class="toc__list">
-            <li><a class="toc__link toc-clip" href="#mem">存储器构成与 2026 年三季度的产能爬坡节奏</a></li>
+            <li><a class="toc__link toc-clip" href="#mem">存储器构成与 2026 年三季度的产能爬坡节奏与毛利口径拆解</a></li>
             <li><a class="toc__link" href="#sched">优先级与准入</a></li>
             <li><a class="toc__link" href="#sim">把它跑起来</a></li>
           </ul>

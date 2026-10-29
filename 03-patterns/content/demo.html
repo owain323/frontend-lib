@@ -87,14 +87,14 @@
 
   <h2 class="rule-bottom">对比：错写法 vs 本库写法</h2>
   <div class="cmp">
-    <div class="cmp__pane cmp__bad">
+    <div class="cmp__pane cmp__bad" data-bad="hr|h|>=2">
       <h3>❌ 常见写法：裸 <code>&lt;hr&gt;</code></h3>
         <div aria-hidden="true">        <p class="ct-p">本季应收账款周转天数下降 6 天。</p>
         <hr>
         <p class="ct-p">下一节：存货跌价准备的计提口径。</p></div>
       <p class="cmp__why">默认 <code>&lt;hr&gt;</code> 自带上下两条 inset 边框，不清 <code>height</code> 和 <code>border-top</code> 出来就是一条粗双线 —— 而且不同浏览器的厚度还不一样。</p>
     </div>
-    <div class="cmp__pane cmp__good">
+    <div class="cmp__pane cmp__good" data-good="hr|h|<=1">
       <h3>✅ 本库：<code>.prose &gt; hr</code></h3>
         <div class="prose" aria-hidden="true">        <p class="ct-p">本季应收账款周转天数下降 6 天。</p>
         <hr>

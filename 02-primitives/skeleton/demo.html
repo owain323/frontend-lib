@@ -113,7 +113,7 @@
 
   <h2 class="rule-bottom">对比：错写法 vs 本库写法</h2>
   <div class="cmp">
-    <div class="cmp__pane cmp__bad">
+    <div class="cmp__pane cmp__bad" data-bad=".progress|count|=0">
       <h3>❌ 常见写法：有确切进度却用骨架屏</h3>
         <p class="sk-label">上传 素材包.zip（3.1 MB）</p>
         <div class="sk-box" aria-hidden="true">
@@ -123,7 +123,7 @@
         </div>
       <p class="cmp__why">文件大小是已知的、进度是算得出来的，却只给一片灰条：用户等了 40 秒也不知道还差 3 秒还是 3 分钟。</p>
     </div>
-    <div class="cmp__pane cmp__good">
+    <div class="cmp__pane cmp__good" data-good=".progress|count|>=1">
       <h3>✅ 本库：确定进度用 progress，不确定才用 skeleton</h3>
         <p class="sk-label">上传 素材包.zip（3.1 MB）</p>
         <p class="sk-pct">已传 1.9 MB / 3.1 MB</p>

@@ -155,7 +155,7 @@ document.querySelectorAll('.progress, .progress-ring, .progress-steps').forEach(
 
   <h2 class="rule-bottom">对比：错写法 vs 本库写法</h2>
   <div class="cmp">
-    <div class="cmp__pane cmp__bad">
+    <div class="cmp__pane cmp__bad" data-bad=".progress--success|count|=1">
       <h3>❌ 常见写法：到 100% 就变绿</h3>
         <p class="pr-label">导出 6 个文件 · 100%</p>
         <span class="progress progress--success" role="progressbar" aria-valuenow="100"
@@ -164,7 +164,7 @@ document.querySelectorAll('.progress, .progress-ring, .progress-steps').forEach(
         <p class="pr-note">界面写"导出完成"，条是绿的。</p>
       <p class="cmp__why">100% 说的是"走到头了"，不是"成功了"。这一批实际有 2 个文件失败，绿条仍然亮着 —— 用户以为可以走了。</p>
     </div>
-    <div class="cmp__pane cmp__good">
+    <div class="cmp__pane cmp__good" data-good=".progress--success|count|=0">
       <h3>✅ 本库：颜色讲结果，数值只讲进度</h3>
         <p class="pr-label">导出 6 个文件 · 100%</p>
         <span class="progress progress--danger" role="progressbar" aria-valuenow="100"

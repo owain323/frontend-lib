@@ -91,7 +91,7 @@
 
   <h2 class="rule-bottom">对比：错写法 vs 本库写法</h2>
   <div class="cmp">
-    <div class="cmp__pane cmp__bad">
+    <div class="cmp__pane cmp__bad" data-bad="li.dd-bug|h|<=24">
       <h3>❌ 常见写法：菜单项只有 24px</h3>
         <p class="dd-cap">下拉菜单 · 每项高度</p>
         <ul class="dd-demo" aria-hidden="true">
@@ -101,7 +101,7 @@
         </ul>
       <p class="cmp__why">24px 一行：手指点下去会压到隔壁，触屏用户每点错一次就得重来。本库在这块踩过更隐蔽的坑 —— 写 <code>min-height: 44px</code>，量出来只有 24px（<code>&lt;li&gt;</code> 是 <code>display:list-item</code>），所以现在用的是显式 <code>height</code>。</p>
     </div>
-    <div class="cmp__pane cmp__good">
+    <div class="cmp__pane cmp__good" data-good="li.dd__item|h|>=44">
       <h3>✅ 本库：显式 <code>height: 44px</code></h3>
         <p class="dd-cap">下拉菜单 · 每项高度</p>
         <ul class="dd-demo" aria-hidden="true">

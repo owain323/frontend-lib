@@ -20,6 +20,14 @@ p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6
 .ls-demo { list-style: none; margin: 0; padding: 0; background: var(--surface-raised);
            border: 1px solid var(--border-decor); border-radius: var(--r-sm); }
 .ls-clip { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* 🔴 反例栏演示的是"长文本直接换行"。.list__title 自带 ellipsis，
+   不把 nowrap 取消掉，两栏就一模一样（实测：这个错犯过）。 */
+.ls-wrap { white-space: normal; }
+/* 🔴 对照块里的列表必须**和栏宽无关**：这一块演示的是"长文本折行"，
+   而折行取决于行宽 —— 宽屏（1440px，栏约 490px）下它就不折了，
+   反例在那种宽度上根本不成立（实测：900px 折成 2 行，1440px 只有 1 行）。
+   钉住 300px 之后，任何视口宽度下都是同一个样子。 */
+.cmp .ls-demo { max-width: 300px; }
 </style>
 </head>
 <body class="page page">
@@ -92,12 +100,12 @@ p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6
 
   <h2 class="rule-bottom">对比：错写法 vs 本库写法</h2>
   <div class="cmp">
-    <div class="cmp__pane cmp__bad">
+    <div class="cmp__pane cmp__bad" data-bad="li.list__item|h|>=80">
       <h3>❌ 常见写法：长文本直接换行</h3>
         <ul class="ls-demo" aria-hidden="true">
           <li class="list__item">
             <span class="list__main">
-              <span class="list__title">长鑫存储技术有限公司（合肥）2026 年三季报</span>
+              <span class="list__title ls-wrap">长鑫存储技术有限公司（合肥）2026 年三季报</span>
               <span class="list__meta">12 条记录 · 半导体</span>
             </span>
             <span class="list__value num list__value--up">+3.21%</span>
@@ -112,7 +120,7 @@ p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6
         </ul>
       <p class="cmp__why">第一行折成两行，行高就不一样了：一屏能扫到的条目从 8 条掉到 5 条，而且"哪一行对应哪个数字"要重新对。</p>
     </div>
-    <div class="cmp__pane cmp__good">
+    <div class="cmp__pane cmp__good" data-good="li.list__item|h|<=70">
       <h3>✅ 本库：单行省略 + <code>title</code></h3>
         <ul class="ls-demo" aria-hidden="true">
           <li class="list__item">

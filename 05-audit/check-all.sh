@@ -799,9 +799,25 @@ run "do-dont-rev"  $PY 05-audit/do-dont-gate.py --selftest
 #   读者看不见"错的样子"，就还是"渲染出来的 README"。
 #   判据：每个组件的 demo 至少要有一个可见、带标题的反例块
 #   （`class="box bad"` 或 `cmp__bad`）。**藏起来**（hidden / display:none）也算红。
-#   "反例是不是真的错"判不了 —— 写在脚本头部，不假装判了。
+#   "反例是不是真的错"这道判不了（价值判断）—— 但"两栏到底有没有差别"
+#   是能判的，见下面 demo-claim。
 run "demo-counter"  $PY 05-audit/demo-counterexample-gate.py
 run "demo-counter-rev" $PY 05-audit/demo-counterexample-gate.py --selftest
+# 🔴 demo-claim（2026-10-29 加）—— 补上面那句话留下的缺口
+#   光判"块在不在"时，下面三处**全是绿的**：
+#     nav  反例栏的长标题其实没换行（.toc__link 自带 nowrap，只是被裁掉）
+#     list 同上（.list__title 自带 ellipsis，两栏一模一样）
+#     dropdown 反例写了 display:flex，恰好绕开真实的 24px 坑
+#   判据：每个 cmp 块的两栏各写一条可证伪的数字断言
+#   （`data-bad="选择器|指标|>=44"`），两栏断言必须**互斥**且各自成立。
+#   互斥是关键：能同时成立的两条断言，证明不了两栏有任何不同。
+# 🔴 port-safe —— 5 道门禁都靠 `listen(0)` 拿临时端口，而 Chrome 有一张
+#   禁用端口表（ERR_UNSAFE_PORT，3659/4045/6000/6665-6669/10080…）。
+#   实测：token-resolved 随机撞到 3659，全量门禁从"196 全绿"变成 195/196，
+#   而报错跟被测代码毫无关系 —— 这种红最容易被当成环境抖动放过。
+run "port-safe"     node 05-audit/safe-listen.js --selftest
+run "demo-claim"    node 05-audit/demo-claim-gate.js
+run "demo-claim-rev" node 05-audit/demo-claim-gate.js --selftest
 run "api-contract"     $PY 05-audit/api-contract-gate.py
 run "api-form"       $PY 05-audit/api-form-gate.py
 run "api-form-rev"   $PY 05-audit/api-form-gate.py --selftest
