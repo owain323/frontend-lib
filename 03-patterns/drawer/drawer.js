@@ -255,4 +255,4 @@
   }
 
   global.Drawer = { open: open };
-})(window);
+})(typeof window !== 'undefined' ? window : globalThis);

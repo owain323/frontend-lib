@@ -298,4 +298,4 @@
     iso: iso, addDays: addDays, addMonths: addMonths,
     quarterOf: quarterOf, quarterRange: quarterRange,
   };
-})(window);
+})(typeof window !== 'undefined' ? window : globalThis);

@@ -59,7 +59,7 @@
  *   手动：new Nav(rootEl, { labels: { open: '打开菜单', close: '关闭菜单' } })
  *   事件：fl-nav-open / fl-nav-close（detail = { root: <nav> }）
  */
-(function () {
+(function (global) {
   'use strict';
 
   /* ==== BEHAVIOR INJECT BEGIN: emit ==== */
@@ -413,7 +413,7 @@
     return root.navInstance;
   };
 
-  window.Nav = Nav;
+  global.Nav = Nav;
 
   function init() {
     each(document.querySelectorAll('[data-nav]'), function (el) {
@@ -422,9 +422,12 @@
   }
 
   // @autoinit: [data-nav] —— 扫属性自动建实例（详见 README「自动初始化」）
+  // ⚠️ 无 DOM 环境（SSR / 构建期 / Node 里 import）不自动初始化。
+  //    之前这里直接摸 document ⇒ Next.js 等 SSR 里 import 即 ReferenceError。
+  if (typeof document === 'undefined') return;
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
     init();
   }
-})();
+})(typeof window !== 'undefined' ? window : globalThis);

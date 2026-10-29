@@ -328,4 +328,4 @@
   };
 
   global.Popover = Popover;
-})(window);
+})(typeof window !== 'undefined' ? window : globalThis);

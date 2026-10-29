@@ -436,4 +436,4 @@ return String(s).replace(/[&<>"]/g, function (c) {
   }
 
   global.Combobox = { create: create };
-})(window);
+})(typeof window !== 'undefined' ? window : globalThis);

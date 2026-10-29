@@ -254,4 +254,4 @@ get current() { return current; },
 };
 
 global.Popover = Popover;
-})(window);
+})(typeof window !== 'undefined' ? window : globalThis);

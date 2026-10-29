@@ -395,4 +395,4 @@ return { el: box, close: close };
 
 global.Overlay = { toast: toast, dialog: dialog };
 
-})(window);
+})(typeof window !== 'undefined' ? window : globalThis);

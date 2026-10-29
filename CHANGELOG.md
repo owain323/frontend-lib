@@ -16,6 +16,127 @@
 
 （无）
 
+## [0.11.15] - 2026-10-29
+
+**「在真实项目里能不能用」这件事，现在有证据了。**
+
+前几版把验证工程做到了很高的水准：174 道门禁、可证伪的反例断言、变异探针。
+但有一类问题它一直抓不到 —— **这些检查全是对自家 demo 页做的**。
+一个 React / Next.js 项目把库装进去会怎样，仓库里没有任何东西回答过。
+
+这一版补的是那一半。查的时候发现三个**不会报错**的坑，每个都足以让
+接入者在第一步就放弃。
+
+### ① SSR 里 `import` 就崩（16/16 全崩）
+
+16 个行为脚本的收尾都是 `(function (global) { … })(window)`。
+在浏览器里没问题，在 Node / Next.js / Nuxt / Astro 里：
+
+```text
+ReferenceError: window is not defined
+    at Object.<anonymous> (03-patterns/accordion/accordion.js:485:3)
+```
+
+实测记录（修之前，逐个 `require`）：
+
+| 脚本 | 崩在 |
+|---|---|
+| 11 个 `… })(window)` | IIFE 调用处 |
+| `accordion` | 顶层 `typeof window.requestAnimationFrame`（会**先解引用** window） |
+| `nav` / `tabs` / `pagination` / `reveal` | 顶层 `document.readyState` |
+
+修法：IIFE 收尾统一为
+`})(typeof window !== 'undefined' ? window : globalThis);`，
+顶层 `document` 访问前加 `if (typeof document === 'undefined') return;`。
+现在 16/16 在 Node 里 `require` 成功，且 `globalThis.X` 拿到真 API。
+
+### ② 重复初始化会「点了没反应」（静默双触发）
+
+`init()` 没有幂等守卫。被调用两次时（SPA 路由切换、HMR、重复引入脚本）：
+
+- 旧实例的 click 监听**还挂在 root 上**（它的闭包还活着）
+- 新实例又挂一份 ⇒ 一次点击 toggle **两次** ⇒ 展开又收起
+
+肉眼看到的是「按钮点了没反应」，控制台干干净净。
+
+修法两条：`init()` 跳过已初始化的节点；构造器 `if (root.accordionInstance) return root.accordionInstance;`
+（返回对象覆盖 `this` 是 JS 合法行为）。`tabs` 同样处理。
+
+### ③ 有 `.d.ts`，却没有模块入口
+
+`types/index.d.ts` 声明了 `export declare const Select …`，
+而 `package.json` 的 `exports` 里**没有任何路径指向 JS 模块** ——
+`.` 指向 `index.html`，组件只能靠 `<script src>` 挂全局。
+类型在说谎：`import { Select } from 'agentcss'` 编译通过、运行时 undefined。
+
+修法：
+
+- 新增 `esm/`（**生成物**，17 个 `.mjs`：16 个组件 + `index.mjs`），
+  由 `05-audit/gen-esm.py` 从源码的 `global.X = …` 机械生成。
+  内容是「导入副作用 + 把 global 上的对象 re-export」，
+  **不复制实现** —— 门禁会断言 `esm` 导出与 `window.X` 是同一个对象。
+- `package.json` 新增 `"./esm"` 与 `"./esm/*"`，`files` 加 `esm/`。
+- `types/index.d.ts` 从 5 个组件补到 **16 个**（新增 Accordion / Tabs / Nav /
+  Pagination / Drawer / Overlay / Tooltip / Popover / Toc / Reveal / FLIP），
+  每条都对照过源码的真实赋值与原型方法名；收不窄的参数写 `object` 并注明，
+  不给假签名。
+- `sideEffects` 从 `["*.css", "*.js"]` 改为 `["**/*.css", "**/*.js", "**/*.mjs"]`。
+  **这是个真实的打包坑**：只匹配根目录的 glob 会让 bundler 把
+  `02-primitives/**/*.js` 当作无副作用模块 tree-shake 掉 —— 行为静默消失。
+
+### ④ 接入样板真的能跑了
+
+`examples/react-vite/README.md` 曾写着「这是 T-01 的交付物：证明这个库能被
+真实项目用上」，但那个目录里只有 `index.html` + `README.md` ——
+没有 `package.json`、没有构建、从没被执行过。**声称的证明不是证明。**
+
+新增 `examples/esm-native/`：原生 `<script type="module">`，零依赖零构建，
+由 `05-audit/example-esm-gate.js` 真打开、真点击、真量 computed style。
+不用 Vite 是因为装依赖的样板在别人机器上会因网络/版本差异跑不起来，
+「证明」就退化成「我机器上曾经证明过」。
+
+### ⑤ 门禁从 20 分钟降到 5–7 分钟（同一套判据）
+
+`check-all.sh` 改为「先入队、后并发执行、按序打印」：
+
+- 默认 4 路并发（`--parallel=N` 可调，`--serial` 回到逐条）。
+- 输出**顺序不变**：每条门禁的输出落到临时文件，全部跑完按注册顺序打印。
+  并发最容易毁掉「日志还能不能读」，而失败诊断是门禁存在的一半理由。
+- 会临时改工作区文件的门禁标 `@serial` 独占跑（`selftest-all` / `mutation-leak` /
+  `beh-reverse` / `pack-smoke` 等 9 条）。不标就互相污染 —— 实测出现过
+  「6 个自检弄脏工作区」的假红。
+- 实测：4 道最重的（zoom-reflow / rtl-render / beh-reverse / demo-claim）
+  串行 354s → 并发 142s，全部返回 0。
+- 全量实测：**203 道串行等价 1422 秒（23.7 分钟）→ 实际 9 分钟**，202 PASS
+  （唯一红的是 `release`，它要求先有 tag）。最慢的五道：`dark-cont` 142s、
+  `responsive` 140s、`zoom-reflow` 122s、`rtl-render` 89s、`visual-dark` 83s。
+
+### 门禁 197 → 203
+
+| 新增 | 判据 |
+|---|---|
+| `esm-gen` / `esm-gen-rev` | `esm/` 与源码的 `global.X =` 一一对应（生成物不漂移） |
+| `behavior-api` / `-rev` | A 无 DOM 加载 · B 重复构造返回同一实例且单击只切换一次 · C ESM 覆盖 |
+| `example-esm` / `-rev` | 样板页真能被浏览器打开、import 成功、行为与样式都生效 |
+
+另外两处判据升级：
+
+- `wiring` 现在认识 ESM：`import … from '../../esm/x.mjs'` 算作「引用了行为脚本」。
+  之前它只会看 `<script src>`，一个正确使用 ESM 的页面会被判「用了标记但没引脚本」
+  （自检加了 ⑥/⑥b 两条反向控制）。
+- `tsc-gate` 反例新增 4 条（无参 toggle / 字符串喂 pagesOf / attach 返回值当句柄 /
+  Nav 的静态 open），断言从 8 条增至 12 条。
+
+### 已知边界（如实写下来）
+
+- `esm/` 只覆盖 `02-primitives` 与 `03-patterns` 的行为脚本。
+  `09-assets` 的绘图脚本（Chart / Bar / ScientificPlot）与
+  `01-tokens/theme-toggle.js` 仍是 script 形态 —— 它们一个文件挂多个全局，
+  与「一文件一 API」的生成规则不同，硬套会生成名字打架的入口。
+- `Pagination.create()` 的实例成员未在类型层收窄（源码只挂了内部状态），
+  需要时读 `03-patterns/pagination/README.md`。
+- 真机读屏（NVDA / VoiceOver）仍需人工执行，`docs/A11Y-MANUAL-PROTOCOL.md` 的表格仍是空的。
+
 ## [0.11.14] - 2026-10-29
 
 **「键盘到不了」这句话，现在能量了。**

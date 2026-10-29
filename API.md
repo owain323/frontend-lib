@@ -24,6 +24,30 @@
 各有各的调用方式。下表由`05-audit/global-api-probe.js`在真实浏览器里
 探测生成，门禁 `api-doc` 会核对本文与实现是否一致。
 
+### 模块化引入（ESM）
+
+除了 `<script src>`，16 个交互组件的脚本还有一个 ESM 入口：
+
+```js
+// 只要一个
+import { Accordion } from 'agentcss/esm/accordion.mjs';
+
+// 或者一次拿全（体积更大，Vite/Rollup 会按需摇树）
+import { Accordion, Tabs, Select } from 'agentcss/esm';
+```
+
+三条容易踩的：
+
+1. **入口是包装，不是第二份实现**。`esm/*.mjs` 只做
+   「导入副作用 + 把全局上那个对象 re-export」，所以
+   `Accordion === window.Accordion` 恒成立（门禁 `behavior-api` 断言这一点）。
+   它由 `05-audit/gen-esm.py` 生成，改源码后要重新生成，`esm-gen` 门禁会拦住漂移。
+2. **无 DOM 环境可以直接 import**（SSR 安全）。但自动初始化会被跳过 ——
+   服务端没有 DOM 可扫，到浏览器里再调 `init()`/构造函数。16 个脚本
+   在 Node 里 `require` 全部成功（门禁的判据 A）。
+3. **重复初始化是安全的**。`init()` 与构造函数都做了幂等处理：
+   同一 root 只会有一个实例，不会出现「点一次切换两次」。
+
 ### 四种接入形态
 
 | 形态 | 调用方式 | 适合 |

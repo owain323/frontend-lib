@@ -100,6 +100,17 @@ NEGATIVE_EXPECT = [
     #      报错文本里并不会出现属性名onChange（实测踩过）。
     ('onChange: (from: string',    "not assignable"),
     ('const bad: string = tree.selected', 'HTMLElement'),
+    # ---- 0.11.15：新声明的 11 个组件，四种最典型的误用 ----
+    # ⑩ 无参 toggle：以为"切当前项"。期望串用 'but got 0' 而不是
+    #    'Expected 1 arguments' —— 上面 setPreset 那条也是 Expected 1 arguments，
+    #    只用前半句的话两条断言会互相冒充（判别力归零）。
+    ('new window.Accordion(root).toggle()', 'but got 0'),
+    # ⑪ 从 DOM 拿 value 直接喂 pagesOf
+    ("window.Pagination.pagesOf('100')", "Argument of type 'string'"),
+    # ⑫ 以为 attach 返回句柄
+    ("window.Tooltip.attach(root, 'x').close()", "does not exist on type 'void'"),
+    # ⑬ 以为 Nav 有静态 open
+    ('window.Nav.open(root)',            "does not exist on type '{ attach"),
 ]
 
 

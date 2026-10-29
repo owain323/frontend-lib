@@ -446,4 +446,4 @@ set value(v) { selected = v == null ? null : String(v); paint(); },
 }
 
 global.Select = { create: create };
-})(window);
+})(typeof window !== 'undefined' ? window : globalThis);

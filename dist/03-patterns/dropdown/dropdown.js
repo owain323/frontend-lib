@@ -362,4 +362,4 @@ destroy: function () { roving.destroy(); dismiss.destroy(); menu.hidden = true; 
 }
 
 global.Dropdown = { create: create };
-})(window);
+})(typeof window !== 'undefined' ? window : globalThis);

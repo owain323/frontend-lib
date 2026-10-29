@@ -1,4 +1,4 @@
-(function () {
+(function (global) {
 'use strict';
 
 var uid = 0;
@@ -28,7 +28,8 @@ return ev;
 
 function toArray(x) { return Array.prototype.slice.call(x); }
 
-var raf = (typeof window.requestAnimationFrame === 'function')
+var raf = (typeof window !== 'undefined' &&
+typeof window.requestAnimationFrame === 'function')
 ? window.requestAnimationFrame.bind(window)
 : function (fn) { return setTimeout(fn, 16); };
 
@@ -51,6 +52,8 @@ return null;
 }
 
 function Accordion(root, opts) {
+
+if (root && root.accordionInstance) return root.accordionInstance;
 this.root = root;
 this.opts = opts || {};
 this.items = toArray(root.querySelectorAll('.accordion__item'));
@@ -202,18 +205,21 @@ if (item) self.toggle(item);
 
 };
 
-window.Accordion = Accordion;
+global.Accordion = Accordion;
 
 function init() {
 var nodes = document.querySelectorAll('[data-accordion]');
 for (var i = 0; i < nodes.length; i++) {
+
+if (nodes[i].accordionInstance) continue;
 nodes[i].accordionInstance = new Accordion(nodes[i]);
 }
 }
 
+if (typeof document === 'undefined') return;
 if (document.readyState === 'loading') {
 document.addEventListener('DOMContentLoaded', init);
 } else {
 init();
 }
-})();
+})(typeof window !== 'undefined' ? window : globalThis);

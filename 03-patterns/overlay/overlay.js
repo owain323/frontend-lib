@@ -560,4 +560,4 @@
 
   global.Overlay = { toast: toast, dialog: dialog };
 
-})(window);
+})(typeof window !== 'undefined' ? window : globalThis);

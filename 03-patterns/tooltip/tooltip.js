@@ -285,4 +285,4 @@ var flDismissable = function (opts) {
   }
 
   global.Tooltip = { attach: attach };
-})(window);
+})(typeof window !== 'undefined' ? window : globalThis);

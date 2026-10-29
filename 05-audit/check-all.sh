@@ -34,6 +34,16 @@ fi
 [ -z "${NODE_MODULES:-}" ] && NODE_MODULES=node_modules
 export NODE_PATH="$NODE_MODULES"
 
+# 🔴 浏览器 profile 落到**仓库同一块盘**（2026-10-29 实测）
+#   本机 C 盘 476G 被占满时，puppeteer 建临时 profile 会直接失败
+#   ⇒ 一批浏览器门禁集体报错，而代码一个字都没改。
+#   browser.js 早就有 FL_TMPDIR 这个口子，这里给它一个默认值；
+#   已经设了就不动（陌生环境里 os.tmpdir() 是对的）。
+if [ -z "${FL_TMPDIR:-}" ] && [ -d "$PWD/.git" ]; then
+  FL_TMPDIR="$PWD/.git/tmp"
+  mkdir -p "$FL_TMPDIR" 2>/dev/null && export FL_TMPDIR
+fi
+
 fail=0
 TIMING="${TIMING:-}"
 # =========================================================
@@ -87,6 +97,9 @@ for _arg in "$@"; do
     # cmd.exe 里会崩（和 MODE 是同一个原因）。默认路径见 --timing 无值时。
     --timing)    TIMING="${TMPDIR:-/tmp}/gate-timing.txt" ;;
     --timing=*)  TIMING="${_arg#--timing=}" ;;
+    # 并发执行（0.11.15）：默认 4 路；--serial 回到逐条，用于排查"并发才出现"的怪问题。
+    --serial)    PARALLEL=1 ;;
+    --parallel=*) PARALLEL="${_arg#--parallel=}" ;;
   esac
 done
 MODE="${MODE:-full}"
@@ -131,62 +144,188 @@ _exec_args() { # 去掉命令行里的层标记，回显真正的命令
   printf '%s\n' "${out[*]}"
 }
 
+# =========================================================
+# 并发执行框架（0.11.15）
+# ---------------------------------------------------------
+# 动机：全量串行约 20 分钟，而最慢的 10 道占 12.5 分钟 ——
+#   它们都是"各自另开一个浏览器、重走一遍全部页面"。
+#   实测 4 道同时跑（zoom-reflow / rtl-render / beh-reverse / demo-claim）：
+#   串行 354s → 并发 142s，全部返回 0，互不干扰。
+#
+# 🔴 两条纪律，缺一条这个改造就是负收益：
+#   ① **输出顺序不变**：每条门禁的输出落到临时文件，全部跑完再按注册顺序打印。
+#      并发最容易毁掉的是"日志还能不能读" —— 交错输出会让失败诊断失效，
+#      而失败诊断正是门禁存在的一半理由。
+#   ② **写盘 / 独占资源的门禁必须串行**：命令里写 @serial。
+#      判定不靠人记名单，靠标记（与 @component 同构，同一个理由）。
+#
+# 回退：--serial 或 PARALLEL=1 回到逐条执行。
+# =========================================================
+# 🔴 缓冲目录放在**仓库同一块盘**上，不是 $TMPDIR。
+#   实测教训：本机 C 盘被别的程序占满（476G/476G），而仓库在 E 盘。
+#   203 道门禁的完整输出如果落在 C 盘，会在"没空间"时集体失败 ——
+#   那看起来像"203 处代码坏了"，实际是盘满了。
+#   放进 .git/ 是为了不污染工作区（repo-hygiene 会扫未跟踪文件）。
+if [ -d "$PWD/.git" ]; then _GATE_BASE="$PWD/.git"; else _GATE_BASE="${TMPDIR:-/tmp}"; fi
+GATE_TMP=$(mktemp -d "$_GATE_BASE/gate.XXXXXX") || { echo "无法创建临时目录"; exit 2; }
+trap 'rm -rf "$GATE_TMP"' EXIT
+T_NAME=(); T_CMD=(); T_KIND=(); T_SER=(); T_TEXT=()
+_ran=0
+_skipped=0
+
+_serial_of() { # 命令里带 @serial ⇒ 独占跑
+  local a
+  for a in "$@"; do
+    if [ "$a" = "@serial" ]; then echo 1; return; fi
+  done
+  echo 0
+}
+
+_enqueue() { # _enqueue <名字> <层> <kind: run|report> <serial> <命令...>
+  local name="$1" layer="$2" kind="$3" ser="$4"; shift 4
+  local i=${#T_NAME[@]}
+  T_NAME[$i]="$name"; T_KIND[$i]="$kind"; T_SER[$i]="$ser"
+  T_CMD[$i]=$(printf '%q ' "$@")
+  _ran=$((_ran+1))
+}
+
+_start() { # _start <idx> —— 执行一条，只落 rc / 耗时 / 原始输出
+  local i="$1" t0 t1 r
+  t0=$(date +%s)
+  eval "${T_CMD[$i]}" > "$GATE_TMP/out.$i" 2>&1
+  r=$?
+  t1=$(date +%s)
+  printf '%s\n' "$r" > "$GATE_TMP/rc.$i"
+  printf '%s\n' "$((t1 - t0))" > "$GATE_TMP/dt.$i"
+}
+
+_print() { # _print <idx> —— 按注册顺序打印，诊断逻辑与旧版逐字相同
+  local i="$1" name="${T_NAME[$i]:-}" kind="${T_KIND[$i]:-run}"
+  local rcv dtv out
+  if [ "$kind" = echo ]; then printf '%s\n' "${T_TEXT[$i]:-}"; return 0; fi
+  if [ "$kind" = skip ]; then
+    printf '  %-16s SKIP  （%s）\n' "$name" "${T_TEXT[$i]:-}"
+    return 0
+  fi
+  rcv=$(cat "$GATE_TMP/rc.$i" 2>/dev/null || echo 1)
+  dtv=$(cat "$GATE_TMP/dt.$i" 2>/dev/null || echo 0)
+  out=$(cat "$GATE_TMP/out.$i" 2>/dev/null || true)
+  [ -n "$TIMING" ] && echo "$dtv $name" >> "$TIMING"
+
+  if [ "$rcv" -eq 0 ]; then
+    if [ "$kind" = report ]; then
+      printf '  %-16s 报告（发现项不判失败）  %3ss\n' "$name" "$dtv"
+      [ -n "$out" ] && printf '%s\n' "$out" | head -8 | sed 's/^/       /'
+    else
+      printf '  %-16s PASS  %3ds\n' "$name" "$dtv"
+    fi
+    return 0
+  fi
+
+  printf '  %-16s FAIL  %3ds\n' "$name" "$dtv"
+  # 🔴 失败就把门禁**自己的话**原样打出来（0.11.9 修 · 门禁第一次在 CI 上跑时踩到）
+  #   旧写法是 `grep -E '^\s*\[' | head -6`，有两个致命盲点：
+  #     ① `head -6` 截断 ⇒ 结论是**错的**：
+  #        release-gate 有 13 节，日志里只剩 `[1]`…`[6]`，
+  #        看起来像"前六节全挂了"，实际挂的是第 10 节。
+  #        **一个会给出错误结论的诊断，比没有诊断更坏。**
+  #     ② grep 只认 `[...]` 开头的行，把明细行（`· 文件 原因`）全丢了 ⇒
+  #        wiring 明明报了 3 处、每处都带着文件名，日志里**一处都看不见**。
+  #   ⇒ 判据：失败的完整输出才是证据。要截断只能因为太长，
+  #     并且必须**说清楚截了多少**；末尾必须保留（崩溃栈在末尾）。
+  local _total
+  _total=$(printf '%s\n' "$out" | wc -l | tr -d ' ')
+  if [ "$_total" -le 160 ]; then
+    printf '%s\n' "$out" | sed 's/^/       │ /'
+  else
+    printf '%s\n' "$out" | head -120 | sed 's/^/       │ /'
+    printf '       │ …（共 %s 行，此处省略中间部分；下面贴末尾 40 行，崩溃栈通常在那里）\n' "$_total"
+    printf '%s\n' "$out" | tail -40 | sed 's/^/       │ /'
+  fi
+  if [ -z "$out" ]; then
+    printf '       🔴 门禁零输出却退出非 0 ⇒ 视为崩溃，不是"检查不通过"。\n'
+  fi
+  # 🔴 环境类失败要说清（0.8.9 修 · 外部审计修复过程中撞到）
+  #   上面那行只显示**门禁自己的判词**，于是
+  #   「Cannot find module 'puppeteer-core'」这类**环境问题**
+  #   一个字都不显示 ⇒ 只剩 60 多个光秃秃的 FAIL，
+  #   看起来像"产品坏了 60 处"，实际是"依赖没装"。
+  if printf '%s\n' "$out" | grep -qE "Cannot find module|MODULE_NOT_FOUND|ECONNREFUSED|找不到浏览器|找不到 Chrome|Traceback \(most recent call last\)"; then
+    printf '       🔴 上面出现了**环境类**报错（不是检查不通过）：\n'
+    printf '       ⇒ 先把环境修好（装依赖 / 起静态服务），否则这一批的结果没有意义。\n'
+  fi
+  fail=$((fail+1))
+}
+
+flush_all() { # 串行独占的先跑 → 其余并发 → 全部跑完再按序打印
+  local total=${#T_NAME[@]}
+  [ "$total" -eq 0 ] && return 0
+  local par="${PARALLEL:-4}"
+  case "$par" in ''|*[!0-9]*) par=4 ;; esac
+  local i
+
+  # 串行门禁（@serial）：先独占执行完
+  for ((i = 0; i < total; i++)); do
+    [ "${T_KIND[$i]:-}" = echo ] && continue
+    [ "${T_KIND[$i]:-}" = skip ] && continue
+    if [ "${T_SER[$i]:-0}" = 1 ]; then _start "$i"; fi
+  done
+
+  if [ "$par" -gt 1 ]; then
+    local -a pid
+    for ((i = 0; i < total; i++)); do
+      [ "${T_KIND[$i]:-}" = echo ] && continue
+      [ "${T_KIND[$i]:-}" = skip ] && continue
+      [ "${T_SER[$i]:-0}" = 1 ] && continue
+      _start "$i" &
+      pid[$i]=$!
+      while :; do
+        local alive=0 k
+        for k in "${!pid[@]}"; do
+          if kill -0 "${pid[$k]}" 2>/dev/null; then alive=$((alive + 1)); fi
+        done
+        [ "$alive" -lt "$par" ] && break
+        sleep 0.2
+      done
+    done
+    wait
+  else
+    for ((i = 0; i < total; i++)); do
+      [ "${T_KIND[$i]:-}" = echo ] && continue
+      [ "${T_KIND[$i]:-}" = skip ] && continue
+      [ "${T_SER[$i]:-0}" = 1 ] && continue
+      _start "$i"
+    done
+  fi
+
+  for ((i = 0; i < total; i++)); do _print "$i"; done
+}
+
+section() { # section 标题 —— 也进队列，保证日志顺序与源码顺序一致
+  local i=${#T_NAME[@]}
+  T_NAME[$i]=""; T_KIND[$i]="echo"; T_SER[$i]=0; T_CMD[$i]=""
+  T_TEXT[$i]="$1"
+}
+
 run() {  # run <名字> <命令...>
   local name="$1"; shift
   # ---------- 分层 ----------
   local _layer
   _layer=$(_layer_of "$@")
   if _should_skip "$_layer"; then
-    skip "$name" "$_layer 层 —— MODE=$MODE 不跑"   # 计数在 skip() 里
+    skip "$name" "$_layer 层 —— MODE=$MODE 不跑"
     return 0
   fi
-  set -- $(_exec_args "$@")      # 去掉 @component / @static 标记
-  _ran=$((_ran+1))
-  local t0 t1 dt
-  t0=$(date +%s)
-  if out=$("$@" 2>&1); then
-    t1=$(date +%s); dt=$((t1-t0))
-    printf '  %-16s PASS  %3ds\n' "$name" "$dt"
-    [ -n "$TIMING" ] && echo "$dt $name" >> "$TIMING"
-  else
-    t1=$(date +%s); dt=$((t1-t0))
-    printf '  %-16s FAIL  %3ds\n' "$name" "$dt"
-    [ -n "$TIMING" ] && echo "$dt $name" >> "$TIMING"
-    # 🔴 失败就把门禁**自己的话**原样打出来（0.11.9 修 · 门禁第一次在 CI 上跑时踩到）
-    #   旧写法是 `grep -E '^\s*\[' | head -6`，有两个致命盲点：
-    #     ① `head -6` 截断 ⇒ 结论是**错的**：
-    #        release-gate 有 13 节，日志里只剩 `[1]`…`[6]`，
-    #        看起来像"前六节全挂了"，实际挂的是第 10 节。
-    #        **一个会给出错误结论的诊断，比没有诊断更坏。**
-    #     ② grep 只认 `[...]` 开头的行，把明细行（`· 文件 原因`）全丢了 ⇒
-    #        wiring 明明报了 3 处、每处都带着文件名，日志里**一处都看不见**。
-    #   ⇒ 判据：失败的完整输出才是证据。要截断只能因为太长，
-    #     并且必须**说清楚截了多少**；末尾必须保留（崩溃栈在末尾）。
-    local _total
-    _total=$(printf '%s\n' "$out" | wc -l | tr -d ' ')
-    if [ "$_total" -le 160 ]; then
-      printf '%s\n' "$out" | sed 's/^/       │ /'
-    else
-      printf '%s\n' "$out" | head -120 | sed 's/^/       │ /'
-      printf '       │ …（共 %s 行，此处省略中间部分；下面贴末尾 40 行，崩溃栈通常在那里）\n' "$_total"
-      printf '%s\n' "$out" | tail -40 | sed 's/^/       │ /'
-    fi
-    if [ -z "$out" ]; then
-      printf '       🔴 门禁零输出却退出非 0 ⇒ 视为崩溃，不是"检查不通过"。\n'
-    fi
-    # 🔴 环境类失败要说清（0.8.9 修 · 外部审计修复过程中撞到）：
-    #   上面那行只显示**门禁自己的判词**，于是
-    #   「Cannot find module 'puppeteer-core'」这类**环境问题**
-    #   一个字都不显示 ⇒ 只剩 60 多个光秃秃的 FAIL，
-    #   看起来像"产品坏了 60 处"，实际是"依赖没装"。
-    #   ⚠️ 这与 P0-1 是同一个病根的另一面：
-    #      **门禁失败时必须说清是"检查没过"还是"根本没跑起来"。**
-    if printf '%s\n' "$out" | grep -qE "Cannot find module|MODULE_NOT_FOUND|ECONNREFUSED|找不到浏览器|找不到 Chrome|Traceback \(most recent call last\)"; then
-      printf '       🔴 上面出现了**环境类**报错（不是检查不通过）：\n'
-      printf '       ⇒ 先把环境修好（装依赖 / 起静态服务），否则这一批的结果没有意义。\n'
-    fi
-    fail=$((fail+1))
-  fi
+  local _ser
+  _ser=$(_serial_of "$@")
+  # 🔴 用数组过滤而不是 `set -- $(_exec_args ...)` —— 后者把命令重新拆成单词，
+  #    任何带空格的参数都会被拆坏。0.11.15 加 @serial 时正好一起改掉。
+  local -a _cmd=()
+  local _a
+  for _a in "$@"; do
+    case "$_a" in @component|@static|@serial) ;; *) _cmd+=("$_a") ;; esac
+  done
+  _enqueue "$name" "$_layer" run "$_ser" "${_cmd[@]}"
 }
 
 # 🔴 run_report <名字> <命令...> —— **报告模式**（N16）
@@ -194,7 +333,7 @@ run() {  # run <名字> <命令...>
 #  但：① 脚本**自身出错**仍然判失败；② 报告**必须打出来**。
 #
 #  ⚠️ 0.8.9 状态：**当前没有使用者**。
-#     它的两个原使用者（css-imports / dead-class）都已升为真门禁 `run`——
+#     它的两个原使用者（css-imports / dead-class）都已升为真门禁 run——
 #     因为判据收紧后误报降到 0，而"永远 PASS 的门禁等于没有门禁"（I-10）。
 #     ⇒ 保留这个机制本身（它是一种**正当的过渡态**：
 #       新写的门禁误报率高时，先挂在这里报告、积累样本、再升 run），
@@ -208,42 +347,42 @@ run() {  # run <名字> <命令...>
 #
 #  ⚠️ 用 run_report 的门禁**仍然计入总数**（doc-facts-gate 认这个名字），
 #     但它不会让整套变红 —— 文档里写总数时要知道这一点。
-# 🔴 skip <名字> <原因> —— **显式登记"这条门禁存在，但本机跑不了"**
-#  为什么必须有它：以前缺环境时只是 `echo "... SKIP"`，
-#  那行**不在门禁名单里** ⇒ 门禁总数随机器变化（有 node 的机器多 3 条）。
-#  ⇒ 文档里写"共 N 道"就必须跟机器绑定，否则必有一条是错的。
-#  ⇒ 改成显式登记：**注册数在任何机器上都是同一个数**，变的只是"执行了几条"。
-skip() {
-  # 🔴 计数放在这里（0.8.9）：跳过有两种来源，都要算进"本轮跳过 M 道"：
-  #     ① 分层跳过（MODE=fast 不跑组件层）
-  #     ② 环境缺失（缺 typescript / 浏览器）
-  #   放在 skip() 里就一处覆盖两种；分散在各调用点必然漏（实测漏过 17 道）。
-  _skipped=$((_skipped+1))
-  printf '  %-16s SKIP  （%s）\n' "$1" "$2"
-}
-
 run_report() {
   local name="$1"; shift
   local _layer
   _layer=$(_layer_of "$@")
   if _should_skip "$_layer"; then
-    skip "$name" "$_layer 层 —— MODE=$MODE 不跑"   # 计数在 skip() 里
+    skip "$name" "$_layer 层 —— MODE=$MODE 不跑"
     return 0
   fi
-  set -- $(_exec_args "$@")
-  _ran=$((_ran+1))
-  local out
-  if out=$("$@" 2>&1); then
-    printf '  %-16s 报告（发现项不判失败）\n' "$name"
-    [ -n "$out" ] && echo "$out" | head -8 | sed 's/^/       /'
-  else
-    printf '  %-16s FAIL（脚本自身出错）\n' "$name"
-    echo "$out" | head -8 | sed 's/^/       /'
-    fail=$((fail+1))
-  fi
+  local _ser
+  _ser=$(_serial_of "$@")
+  local -a _cmd=()
+  local _a
+  for _a in "$@"; do
+    case "$_a" in @component|@static|@serial) ;; *) _cmd+=("$_a") ;; esac
+  done
+  _enqueue "$name" "$_layer" report "$_ser" "${_cmd[@]}"
 }
 
-echo "=== 静态门禁 ==="
+# 🔴 skip <名字> <原因> —— **显式登记"这条门禁存在，但本机跑不了"**
+#  为什么必须有它：以前缺环境时只是 `echo "... SKIP"`，
+#  那行**不在门禁名单里** ⇒ 门禁总数随机器变化（有 node 的机器多 3 条）。
+#  ⇒ 文档里写"共 N 道"就必须跟机器绑定，否则必有一条是错的。
+#  ⇒ 改成显式登记：**注册数在任何机器上都是同一个数**，变的只是"执行了几条"。
+#
+#  🔴 计数放在这里（0.8.9）：跳过有两种来源，都要算进"本轮跳过 M 道"：
+#     ① 分层跳过（MODE=fast 不跑组件层）
+#     ② 环境缺失（缺 typescript / 浏览器）
+#   放在 skip() 里就一处覆盖两种；分散在各调用点必然漏（实测漏过 17 道）。
+skip() {
+  local i=${#T_NAME[@]}
+  T_NAME[$i]="$1"; T_KIND[$i]="skip"; T_SER[$i]=0; T_CMD[$i]=""
+  T_TEXT[$i]="$2"
+  _skipped=$((_skipped+1))
+}
+
+section "=== 静态门禁 ==="
 run "contrast"   $PY 05-audit/contrast.py
 run "cmp-contrast" $PY 05-audit/component-contrast.py
 run "tierA-sync" $PY 05-audit/make-tiersnippet.py --check
@@ -381,7 +520,10 @@ if curl -s -o /dev/null --max-time 2 "http://127.0.0.1:8000/index.html"; then
   fi
 else
   echo "  [启动] 本地静态服务 :8000"
-  $PY -m http.server 8000 --bind 127.0.0.1 --directory . >/dev/null 2>&1 &
+  # ⚠️ 不用 `-m http.server`：它的 listen backlog 默认 5，
+  #    4 个浏览器并发拉资源时会被内核拒绝（ERR_CONNECTION_REFUSED），
+  #    表现为工具门禁偶发失败、单跑却通过。见 05-audit/http-serve.py 头。
+  $PY 05-audit/http-serve.py 8000 >/dev/null 2>&1 &
   _SRV_PID=$!
   trap 'kill $_SRV_PID 2>/dev/null' EXIT
   for _i in 1 2 3 4 5 6 7 8 9 10; do
@@ -451,7 +593,7 @@ for g in tierA-gate icon-gate hover-gate measure-gate license-gate numeric-gate 
 done
 
 echo ""
-echo "=== 浏览器门禁（需要 127.0.0.1:8000）==="
+section "=== 浏览器门禁（需要 127.0.0.1:8000）==="
 echo ""
 # 令牌在真浏览器里的计算值复核（fast 模式只跑静态的一半，这里补全）
 # @component：同一个脚本的**浏览器那一半**
@@ -516,13 +658,13 @@ run "zoom-reflow-rev" node 05-audit/zoom-reflow.js --selftest
 # 🔴 「按用到生成」出口的自检（0.8.9 · 审计 P2-1）：
 #   证明 purge-css 真的在读 DOM（注入一条被删的规则 ⇒ 它必须变回保留），
 #   而不是在查表或扫空 DOM —— 那两种错都会给出漂亮的省体积数字。
-run "purge-selftest" node 05-audit/purge-css-selftest.js
+run "purge-selftest" @serial node 05-audit/purge-css-selftest.js
 # 🔴 变异串泄漏检测（0.8.9 · 从 P0-1 事故反推出来的门禁）：
 #   反向控制的机制是「原地改写源码 → 跑门禁 → 还原」。
 #   中断时源码留在**被变异的状态** ⇒ 没有报错、门禁照样绿、
 #   下一次 git add -A 就提交了（P0-1 就是这样进 HEAD 的）。
 #   ⇒ 每轮都核一遍：变异串不许出现在目标源码里。
-run "mutation-leak" $PY 05-audit/mutation-leak-gate.py
+run "mutation-leak" @serial $PY 05-audit/mutation-leak-gate.py
 # 🔴 门禁判红路径检测（0.8.9 · 防「输出说失败、退出码说成功」）：
 #   本库已发生过两次同类事故 ——
 #     ① css-imports / dead-class 挂在 run_report 下 ⇒ 退出码恒为 0
@@ -571,7 +713,7 @@ run "emit" node 05-audit/emit-check.js
 #    理由（今天一天踩了两次）：突变体的正则是硬编码的，源码一改形状它就匹配不上
 #    ⇒ 那条"反例"根本没生效 ⇒ 自检报"突变没生效"，但**没人看** ⇒ 门禁看起来是好的、
 #      实际上已经没牙了。⇒ 让它每次都跑，掉了牙自己会叫。
-run "beh-reverse" bash 05-audit/behavior-reverse.sh
+run "beh-reverse" @serial bash 05-audit/behavior-reverse.sh
 run "form-validation"       node 05-audit/form-validation-check.js
   # N1：RTL 双向布局（只报告：物理属性在 LTR 页里是正确的）
   run "rtl"         node 05-audit/rtl-check.js
@@ -637,7 +779,7 @@ run "css-imports"   $PY 05-audit/css-imports.py
 run "comment-bal" $PY 05-audit/comment-balance.py
 run "dark-cont"   node 05-audit/dark-contrast.js
 run "admission"   $PY 05-audit/admission-gate.py
-run "selftest"    $PY 05-audit/selftest.py
+run "selftest"    @serial $PY 05-audit/selftest.py
 
 # ----------  H4/H5/H8：响应式 · 单元测试 · 性能预算 ----------
 # ⚠️ 单元测试放最前：它只要 100ms，是"每次改代码后都该跑"的那一层。
@@ -753,7 +895,7 @@ fi
 #   实测：修复前 `npm pack` 出 269 个文件、`index.html` 0 个，而 package.json
 #   的 `exports["."].default` 正指向它 ⇒ 包根导入必然失效。
 run "pack-closure" @static node 05-audit/pack-closure.js
-run "pack-smoke"       bash 05-audit/pack-smoke.sh
+run "pack-smoke"       @serial bash 05-audit/pack-smoke.sh
 run "leak"        $PY 05-audit/leak-scan.py
 # 🔴 outsider-rev（2026-10-29 加 · 起因是"什么都没读就宣布干净"）
 #   外人视角审查要联网读 GitHub（本机 `raw.githubusercontent.com` 被断连过），
@@ -829,6 +971,21 @@ run "demo-counter-rev" $PY 05-audit/demo-counterexample-gate.py --selftest
 run "port-safe"     node 05-audit/safe-listen.js --selftest
 run "demo-claim"    node 05-audit/demo-claim-gate.js
 run "demo-claim-rev" node 05-audit/demo-claim-gate.js --selftest
+# 🔴 行为层的「可编程接口」（0.11.15）
+#   三个不会报错的接入坑，各一条判据：
+#     A 无 DOM 加载   —— 16 个脚本曾经 16/16 在 Node 里 import 即崩（SSR 用户第一步就卡）
+#     B 幂等          —— 重复 init 会留两份 root 监听 ⇒ 单击 toggle 偶数次 ⇒"点了没反应"
+#     C ESM 入口      —— types 声明了 `export declare const Accordion`，包里却没有模块导出它
+#   esm/ 是生成物：改源码后必须跑 gen-esm.py 重新生成，--check 拦住漂移。
+run "esm-gen"       $PY 05-audit/gen-esm.py --check
+run "esm-gen-rev"   $PY 05-audit/gen-esm.py --selftest
+run "behavior-api"  node 05-audit/behavior-api-gate.js
+run "behavior-api-rev" node 05-audit/behavior-api-gate.js --selftest
+# 🔴 接入样板（0.11.15）：examples/esm-native 必须真的能打开、能点、能量。
+#   之前 examples/react-vite 的 README 自称"证明能被真实项目用上"，
+#   但那份样板没有 package.json、没有构建、从没被执行过 —— 声称的证明不是证明。
+run "example-esm"   node 05-audit/example-esm-gate.js
+run "example-esm-rev" node 05-audit/example-esm-gate.js --selftest
 run "api-contract"     $PY 05-audit/api-contract-gate.py
 run "api-form"       $PY 05-audit/api-form-gate.py
 run "api-form-rev"   $PY 05-audit/api-form-gate.py --selftest
@@ -858,14 +1015,14 @@ run "orphan-rev"  $PY 05-audit/orphan-gate.py --selftest
 # 与 release-gate 判据重叠但**入口不同**：这个给的是"哪一处不一致"的定位，
 # 而 release-gate 给的是"发布前还缺什么"。两者都要，不是重复。
 run "version-sync" $PY 05-audit/bump-version.py --check
-run "gate-self"   $PY 05-audit/gate-selfcheck.py
+run "gate-self"   @serial $PY 05-audit/gate-selfcheck.py
 # 受版本控制的文本文件必须是 LF（D4 的**防守**，不只是搬运）。
 #   D4 当时做的是"把现有 CRLF 转成 LF"，但没堵住"生成器会翻回去"——
 #   实测撞到三次（theme-sync / make-tiersnippet / shot-baseline 写 _stamp.json）。
 #   反向控制用**伪造的** `git ls-files --eol` 输出，不依赖仓库里恰好有坏文件。
 run "eol"         $PY 05-audit/eol-gate.py
 run "eol-rev"     $PY 05-audit/eol-gate.py --selftest
-run "gate-fixture" $PY 05-audit/gate-selfcheck-fixtures.py
+run "gate-fixture" @serial $PY 05-audit/gate-selfcheck-fixtures.py
 # 🔴 所有门禁的反向控制，一次性跑（0.8.9 加 · 自查发现）：
 #   实测本库 **26 个脚本支持 --selftest，而 check-all 里只注册了 1 个**
 #   ⇒ 其余 25 个的反向控制从来没在门禁里跑过 ——
@@ -873,15 +1030,17 @@ run "gate-fixture" $PY 05-audit/gate-selfcheck-fixtures.py
 #   判据 ③ 还会断言**跑完工作区不许被弄脏**：
 #   实测它抓到 gen-behavior.py 的自检用文本模式备份（CRLF→LF 在读取时就丢了），
 #   还原写回去就把两个源文件的行尾永久改成了 LF（git diff 为空，只有 status 能看出）。
-run "selftest-all"  $PY 05-audit/selftest-all.py
+run "selftest-all"  @serial $PY 05-audit/selftest-all.py
 # 🔴 2026-10-27：元门禁自己也要有牙。
 #   事故：`MODE=fast` 下 selftest-all 报红，真因是它内部的
 #   `motion-concurrency --selftest` 要连 :8000，而 fast 档不起服务。
 #   修法两条：① selftest-all 自己确保 :8000（canary 校验 + 退出时关掉）；
 #             ② 判定抽成 `verdict()` 并用合成样本自检 —— 其中一条样本就是
 #                「RC=0 但输出说跑不起来 ⇒ 必须判红」（判据 ④）。
-run "selftest-all-rev" $PY 05-audit/selftest-all.py --selftest
+run "selftest-all-rev" @serial $PY 05-audit/selftest-all.py --selftest
 # ---------------------------------------------------------------------------
+flush_all
+
 # 🔴 结论必须放在**最后**（0.8.9 修）
 #   原先它在中段（后面还有约 20 道门禁），于是日志里会先打「全部通过。」
 #   再接着出现 FAIL 行 —— 读到的人不会往下看。这是最坏的一种报告错位。

@@ -164,9 +164,12 @@
   }
 
   // @autoinit: conditional[data-reveal-auto] —— 只有 <html data-reveal-auto> 才 enable()；不写则完全不动
+  // ⚠️ 无 DOM 环境（SSR / 构建期 / Node 里 import）不自动初始化。
+  //    之前这里直接摸 document ⇒ Next.js 等 SSR 里 import 即 ReferenceError。
+  if (typeof document === 'undefined') return;
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', auto, false);
   } else {
     auto();
   }
-}(this));
+})(typeof window !== 'undefined' ? window : globalThis);

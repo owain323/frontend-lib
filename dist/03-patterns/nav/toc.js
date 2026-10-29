@@ -73,4 +73,4 @@ global.removeEventListener('hashchange', update);
 
 global.Toc = { init: init };
 
-})(window);
+})(typeof window !== 'undefined' ? window : globalThis);

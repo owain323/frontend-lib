@@ -288,6 +288,109 @@ export interface Tree {
 }
 
 /* ============================================================================
+ * 另外 11 个组件（0.11.15 补）
+ * ---------------------------------------------------------------------------
+ * 🔴 之前本文件只声明了 5 个组件（Select / Combobox / DateRange / Dropdown /
+ *    Tree），而 API.md 的「全部全局对象」表列了 22 个。
+ *    于是 `import { Accordion } from 'agentcss'` 在 TS 里直接报错，
+ *    使用者只能写 `(window as any).Accordion` —— 类型层等于不存在。
+ *
+ * ⭐ 下面每一条都对照过源码里的真实赋值（`global.X = …`）与原型方法名，
+ *    **不是照 README 猜的**。参数形状只在源码可确证的地方收窄；
+ *    收不窄的写 `object` 并在注释里说明 —— 宁可不精确，也不给假签名。
+ * ========================================================================== */
+
+/** `new Accordion(root, opts)` —— construct 形态（注意是 `new`）。 */
+export interface AccordionOptions {
+  /** 展开/收起动画时长 ms；默认 240（源码里写进 `--acc-dur`） */
+  duration?: number;
+}
+
+export interface AccordionInstance {
+  readonly root: HTMLElement;
+  /** 面板项（`.accordion__item`），不是 trigger */
+  readonly items: HTMLElement[];
+  /** 切换一项。item 是 `.accordion__item`，**不是** trigger。 */
+  toggle(item: HTMLElement): void;
+  set(item: HTMLElement, open: boolean): void;
+  /** trigger → 它所属的 `.accordion__item`；找不到返回 null */
+  itemOf(trigger: Element): HTMLElement | null;
+}
+
+/** `new Tabs(root, opts)` —— construct 形态。 */
+export interface TabsInstance {
+  readonly root: HTMLElement;
+  readonly tabs: HTMLElement[];
+  readonly panels: HTMLElement[];
+  /** 选中某个 tab（`aria-disabled="true"` 的会被忽略） */
+  select(tab: HTMLElement, focusIt?: boolean): void;
+  enabled(tab: HTMLElement): boolean;
+  /** 当前可聚焦（未 disabled）的 tab 列表 */
+  focusables(): HTMLElement[];
+}
+
+export interface NavInstance {
+  open(): void;
+  close(): void;
+  isOpen(): boolean;
+  destroy(): void;
+}
+
+export interface PaginationApi {
+  /** 为一个 `[data-pagination]` 节点建实例；同一节点重复调用返回同一个。
+   *  ⚠️ 实例成员未在本文件收窄（源码里只挂了内部状态），需要时读
+   *  `03-patterns/pagination/README.md`。 */
+  create(node: HTMLElement): object | null;
+  /** 扫描并初始化（默认整个 document） */
+  update(root?: HTMLElement): void;
+  /** 总条数 ÷ 每页条数 → 页数（至少 1） */
+  pagesOf(total: number, pageSize?: number): number;
+}
+
+/** `Drawer.open()` / `Overlay.dialog()` 的返回值：能编程关闭 */
+export interface DismissableOverlay {
+  el: HTMLElement;
+  close(): void;
+}
+
+export interface OverlayApi {
+  /** 顶部提示条。参数形状见 `03-patterns/overlay/README.md` */
+  toast(opts: object): void;
+  /** 模态对话框 —— 返回句柄，可编程关闭 */
+  dialog(opts: object): DismissableOverlay;
+}
+
+export interface TooltipApi {
+  /** 给元素挂一个提示。`place` 决定方向（源码默认值以 README 为准） */
+  attach(el: HTMLElement, text: string, place?: string): void;
+}
+
+export interface PopoverApi {
+  attach(trigger: HTMLElement, opts?: object): void;
+  closeAll(): void;
+  readonly current: unknown;
+}
+
+export interface TocApi {
+  /** 绑定目录与正文的联动。参数形状见 `03-patterns/nav/README.md` */
+  init(opts?: object): void;
+}
+
+export interface RevealApi {
+  /** 开启入场动效（默认**不**接管） */
+  enable(): void;
+  disable(): void;
+  replay(): void;
+}
+
+export interface FlipApi {
+  /** 记录前后布局并做过渡；`mutate` 里改 DOM */
+  flip(container: HTMLElement, mutate: () => void, opts?: object): void;
+  /** 带过渡地移除一个元素 */
+  remove(container: HTMLElement, el: HTMLElement, done?: () => void): void;
+}
+
+/* ============================================================================
  * 全局命名空间（组件脚本是 IIFE，挂到 window）
  * ========================================================================== */
 export interface FrontendLibGlobal {
@@ -296,6 +399,19 @@ export interface FrontendLibGlobal {
   Combobox: { create(root: HTMLElement, opt: ComboboxOptions): Combobox };
   Dropdown: { create(root: HTMLElement, opt?: object): Dropdown };
   Tree: { create(root: HTMLElement, opt?: TreeOptions): Tree };
+  /** construct 形态：`new window.Accordion(root, opts)` */
+  Accordion: new (root: HTMLElement, opts?: AccordionOptions) => AccordionInstance;
+  /** construct 形态：`new window.Tabs(root, opts)` */
+  Tabs: new (root: HTMLElement, opts?: object) => TabsInstance;
+  Nav: { attach(root: HTMLElement, opts?: object): NavInstance };
+  Pagination: PaginationApi;
+  Drawer: { open(opt?: object): DismissableOverlay };
+  Overlay: OverlayApi;
+  Tooltip: TooltipApi;
+  Popover: PopoverApi;
+  Toc: TocApi;
+  Reveal: RevealApi;
+  FLIP: FlipApi;
 }
 
 declare global {
@@ -308,3 +424,17 @@ export declare const Combobox: FrontendLibGlobal['Combobox'];
 export declare const DateRange: DateRangeStatics;
 export declare const Dropdown: FrontendLibGlobal['Dropdown'];
 export declare const Tree: FrontendLibGlobal['Tree'];
+/* 与 `global.X = …` 一一对应（16 个行为脚本全部覆盖）。
+   证据：`esm/` 下的 16 个 .mjs 由 `05-audit/gen-esm.py` 从源码生成，
+   `behavior-api` 门禁核对「源码导出 / esm 入口 / 本文件声明」三者集合相等。 */
+export declare const Accordion: FrontendLibGlobal['Accordion'];
+export declare const Tabs: FrontendLibGlobal['Tabs'];
+export declare const Nav: FrontendLibGlobal['Nav'];
+export declare const Pagination: PaginationApi;
+export declare const Drawer: FrontendLibGlobal['Drawer'];
+export declare const Overlay: OverlayApi;
+export declare const Tooltip: TooltipApi;
+export declare const Popover: PopoverApi;
+export declare const Toc: TocApi;
+export declare const Reveal: RevealApi;
+export declare const FLIP: FlipApi;

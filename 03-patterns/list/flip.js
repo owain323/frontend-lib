@@ -198,4 +198,4 @@
 
   global.FLIP = { flip: flip, remove: removeWithAnimation };
 
-})(window);
+})(typeof window !== 'undefined' ? window : globalThis);

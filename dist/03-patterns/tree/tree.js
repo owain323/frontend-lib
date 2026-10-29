@@ -380,4 +380,4 @@ return n;
 }
 
 global.Tree = { create: create };
-})(window);
+})(typeof window !== 'undefined' ? window : globalThis);

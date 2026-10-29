@@ -28,7 +28,7 @@
  *      否则造成 "landmark region proliferation"（地标泛滥）。
  *    ⇒ 加 .accordion--many 即可关闭。
  */
-(function () {
+(function (global) {
   'use strict';
   // 🔴 手风琴实例序号（保证 id 全局唯一，见 init 里的说明）
   var uid = 0;
@@ -60,8 +60,13 @@
 
   function toArray(x) { return Array.prototype.slice.call(x); }
 
-  /* requestAnimationFrame 的 ES5 安全版 */
-  var raf = (typeof window.requestAnimationFrame === 'function')
+  /* requestAnimationFrame 的 ES5 安全版
+     ⚠️ 必须先判 `window` 存在再摸 `.requestAnimationFrame`：
+        `typeof window.requestAnimationFrame` 会**先解引用 window**，
+        在 Node / SSR 里直接 ReferenceError（不是返回 'undefined'）。
+        这条曾经让本文件在 Next.js 里 import 即崩。 */
+  var raf = (typeof window !== 'undefined' &&
+             typeof window.requestAnimationFrame === 'function')
     ? window.requestAnimationFrame.bind(window)
     : function (fn) { return setTimeout(fn, 16); };
 
@@ -85,6 +90,12 @@
   }
 
   function Accordion(root, opts) {
+    /* 🔴 同一 root 只允许一个实例。
+       不加这条时 `new Accordion(root)` 两次会留下**两份** click 监听
+       （旧实例不会被回收：它的监听器闭包referencing this，还挂在 root 上）
+       ⇒ 一次点击 toggle 两次，肉眼看到的是"点了没反应"。
+       构造器返回对象是 JS 合法行为，会覆盖 `this`，调用方拿到的就是旧实例。 */
+    if (root && root.accordionInstance) return root.accordionInstance;
     this.root = root;
     this.opts = opts || {};
     this.items = toArray(root.querySelectorAll('.accordion__item'));
@@ -351,19 +362,28 @@
     //    这是「用原生控件」的又一处收益：**无障碍行为免费且必然正确**。
   };
 
-  window.Accordion = Accordion;
+  global.Accordion = Accordion;
 
   function init() {
     var nodes = document.querySelectorAll('[data-accordion]');
     for (var i = 0; i < nodes.length; i++) {
+      /* 🔴 幂等：已经初始化过就跳过。
+         不加守卫的后果是**静默的**：第二次 new 会把 accordionInstance 覆盖成新实例，
+         而**旧实例挂在 root 上的 click 监听还在** ⇒ 一次点击 toggle 两次
+         （展开又收起，看上去"点了没反应"）。
+         SPA 路由切换、HMR、重复引入同一份脚本都会触发这条路。 */
+      if (nodes[i].accordionInstance) continue;
       nodes[i].accordionInstance = new Accordion(nodes[i]);
     }
   }
 
   // @autoinit: [data-accordion] —— 自动初始化；与 API.md「自动初始化」表由 autoinit-gate 双向校验
+  // ⚠️ 无 DOM 环境（SSR / 构建期 / Node 里 import）不自动初始化。
+  //    之前这里直接摸 document ⇒ Next.js 等 SSR 里 import 即 ReferenceError。
+  if (typeof document === 'undefined') return;
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
     init();
   }
-})();
+})(typeof window !== 'undefined' ? window : globalThis);
