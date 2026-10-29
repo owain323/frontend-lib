@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
   "generatedBy": "05-audit/gen-ai-contract.py",
-  "libraryVersion": "0.11.10",
+  "libraryVersion": "0.11.11",
   "$comment": "机器可读的组件契约。slots = BEM 元素名（在本库里元素名就是插槽名），states.enum = 组件会在 DOM 上写出的 data-* 取值，states.legacyClass = 仍未收敛到 data 属性的历史状态类（INVARIANT I-8 未达标）。",
   "maturityCriteria": {
     "alpha": "缺 demo.html 或缺 05-audit 下的专属门禁 ⇒ 还没被机器验证过，不要用",
@@ -330,7 +330,9 @@
       },
       "aria": {
         "roles": [],
-        "attrs": []
+        "attrs": [
+          "hidden"
+        ]
       },
       "usesOtherNamespaces": [],
       "global": null,
@@ -384,7 +386,10 @@
       },
       "aria": {
         "roles": [],
-        "attrs": []
+        "attrs": [
+          "hidden",
+          "label"
+        ]
       },
       "usesOtherNamespaces": [],
       "global": "Drawer",
@@ -442,7 +447,8 @@
         ],
         "attrs": [
           "disabled",
-          "expanded"
+          "expanded",
+          "hidden"
         ]
       },
       "usesOtherNamespaces": [],
@@ -605,6 +611,7 @@
           "controls",
           "current",
           "expanded",
+          "hidden",
           "label"
         ]
       },
@@ -731,6 +738,7 @@
           "controls",
           "current",
           "disabled",
+          "hidden",
           "label",
           "live"
         ]
@@ -784,7 +792,9 @@
       },
       "aria": {
         "roles": [],
-        "attrs": []
+        "attrs": [
+          "hidden"
+        ]
       },
       "usesOtherNamespaces": [],
       "global": "Reveal",
@@ -947,7 +957,9 @@
         "roles": [
           "tooltip"
         ],
-        "attrs": []
+        "attrs": [
+          "hidden"
+        ]
       },
       "usesOtherNamespaces": [],
       "global": "Tooltip",
@@ -991,10 +1003,13 @@
       "aria": {
         "roles": [
           "group",
+          "tree",
           "treeitem"
         ],
         "attrs": [
           "expanded",
+          "hidden",
+          "label",
           "selected"
         ]
       },
@@ -1270,6 +1285,7 @@
         ],
         "attrs": [
           "disabled",
+          "hidden",
           "label",
           "selected"
         ]
@@ -1559,6 +1575,7 @@
         "attrs": [
           "disabled",
           "expanded",
+          "hidden",
           "selected"
         ]
       },
@@ -1647,11 +1664,16 @@
       },
       "aria": {
         "roles": [
-          "main"
+          "main",
+          "progressbar"
         ],
         "attrs": [
           "busy",
-          "hidden"
+          "hidden",
+          "label",
+          "valuemax",
+          "valuemin",
+          "valuenow"
         ]
       },
       "usesOtherNamespaces": [
@@ -1753,6 +1775,7 @@
           "region"
         ],
         "attrs": [
+          "hidden",
           "label"
         ]
       },
@@ -1794,7 +1817,9 @@
       },
       "aria": {
         "roles": [],
-        "attrs": []
+        "attrs": [
+          "hidden"
+        ]
       },
       "usesOtherNamespaces": [
         "detail-body__heading",
@@ -1871,7 +1896,9 @@
       },
       "aria": {
         "roles": [],
-        "attrs": []
+        "attrs": [
+          "hidden"
+        ]
       },
       "usesOtherNamespaces": [],
       "global": null,
@@ -1926,6 +1953,7 @@
           "status"
         ],
         "attrs": [
+          "hidden",
           "label",
           "live",
           "sort"

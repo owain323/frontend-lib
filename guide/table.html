@@ -106,7 +106,22 @@
 <h2 id="s9">预览<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
 <pre class="code" tabindex="0"><code class="language-bash">python -m http.server 8000
 # http://127.0.0.1:8000/04-recipes/table/demo.html</code></pre>
-<h2 id="s10">反例<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
+<h2 id="s10">配色：与本库 <code>list</code> 的约定<strong>不同</strong>（已知，未统一）<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>组件</th><th>类名</th><th>约定</th>
+</tr></thead>
+<tbody>
+<tr><td><code>table</code></td><td><code>num--pos</code> / <code>num--neg</code></td><td><strong>会计约定</strong>：正 = 绿、负 = 红（负数即&quot;红字&quot;）</td></tr>
+<tr><td><code>list</code></td><td><code>list__value--up</code> / <code>--down</code></td><td><strong>市场约定</strong>：涨 = 红、跌 = 绿（A 股惯例）</td></tr>
+</tbody>
+</table></div>
+<p>两种约定并存不是笔误，是因为两处的数是两种东西：</p>
+<ul><li>表格里多是<strong>量</strong>（营收、毛利率、净利润）—— 负数是&quot;红字&quot;，会计惯例；</li><li>列表里多是<strong>涨跌</strong>（涨跌幅、日变动）—— A 股惯例是涨红跌绿。</li></ul>
+<p>⚠️ <strong>真正的麻烦在这里</strong>：把「涨跌幅」这一列塞进 <code>table</code> 时，两种约定会打架 —— 负的涨跌幅被渲染成红色，读者第一眼读成&quot;涨&quot;。目前<strong>没有解</strong>：</p>
+<ul><li>加一套 <code>num--up</code> / <code>num--down</code>（市场约定）是候选，但那会让 <code>table</code> 有四组颜色类；</li><li>或者由调用方显式指定语义（<code>data-polarity=&quot;market&quot;</code>），但那要改契约。</li></ul>
+<p>在决定之前，这一条就写在这儿 —— 一个库里有两种配色约定而不说明，比约定本身选错更糟。</p>
+<h2 id="s11">反例<a class="anchor" href="#s11" aria-label="本节直链">#</a></h2>
 <ul><li>❌ <strong>靠数值大小猜语义</strong> —— 不能用&quot;小于 1 就乘 100&quot;。<code>0.25</code> 是比例还是普通测量值，只能由列定义的 <code>format</code> 说</li><li>❌ <strong>给&quot;量&quot;的正数加 <code>+</code></strong> —— 营收、成本、毛利率这类量没有 <code>+</code>；只有 <code>signed-percent</code> 这类&quot;变化量&quot;才加。满屏 <code>+</code> 会让读者以为每个数都在变</li><li>❌ <strong>负数用连字符 <code>-</code></strong> —— 用真减号 <code>−</code>；连字符在等宽数字里对不齐，也容易被当成项目符号</li><li>❌ <strong>排序状态放在按钮上</strong> —— 要放 <code>&lt;th aria-sort=&quot;ascending|descending&quot;&gt;</code>；放在按钮上读屏不会报告&quot;这一列正按什么排序&quot;</li><li>❌ <strong>正负只靠红绿</strong> —— 颜色之外必须有 <code>+</code> / <code>−</code> 符号（WCAG 1.4.1）</li><li>❌ <strong>粘性表头配 <code>border-collapse: collapse</code></strong> —— <code>separate</code> 是 sticky 生效的前提，用 collapse 表头不会粘住</li><li>❌ <strong>拿它当虚拟滚动表格用</strong> —— 本组件不做虚拟滚动；超过 200 行请配分页</li></ul>
 <hr>
     </article>
@@ -117,11 +132,11 @@
   </main>
   <aside class="g-side">
     <p class="g-side__title" id="toc-title">本页目录</p>
-    <ul class="g-toc"><li><a href="#s2">文件</a></li><li><a href="#s3">三种预设</a></li><li><a href="#s4">列定义（示例页里的用法）</a></li><li><a href="#s5">无障碍</a></li><li><a href="#s6">已知限制</a></li><li><a href="#s9">预览</a></li><li><a href="#s10">反例</a></li></ul>
+    <ul class="g-toc"><li><a href="#s2">文件</a></li><li><a href="#s3">三种预设</a></li><li><a href="#s4">列定义（示例页里的用法）</a></li><li><a href="#s5">无障碍</a></li><li><a href="#s6">已知限制</a></li><li><a href="#s9">预览</a></li><li><a href="#s10">配色：与本库 list 的约定不同（已知，未统一）</a></li><li><a href="#s11">反例</a></li></ul>
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.11.10 · 零第三方运行时依赖 · 组件数 35</p>
+  <p>v0.11.11 · 零第三方运行时依赖 · 组件数 35</p>
 </footer>
 </body>
 </html>

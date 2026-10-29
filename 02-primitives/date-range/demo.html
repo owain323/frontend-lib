@@ -18,6 +18,8 @@
     font-family: var(--mono); font-size: var(--fs-xs);
     color: var(--text-secondary); min-height: 2.8em;
   }
+/* 反例专用：只改颜色 */
+.dr-bad-field .drange__input { border-color: var(--danger); }
 </style>
 </head>
 <body class="page page">
@@ -74,6 +76,40 @@
   <div class="log" id="log2">（试着填一个 2019 年或 2027 年 ⇒ 会报错）</div>
 </div>
 
+
+
+  <h2 class="rule-bottom">对比：错写法 vs 本库写法</h2>
+  <div class="cmp">
+    <div class="cmp__pane cmp__bad">
+      <h3>❌ 常见写法：错误只改边框颜色</h3>
+        <div class="drange" aria-hidden="true">
+          <div class="drange__field">
+            <label class="drange__label" for="dr-b1">开始</label>
+            <input id="dr-b1" class="drange__input" type="date" value="2026-01-10" readonly tabindex="-1">
+          </div>
+          <div class="drange__field dr-bad-field">
+            <label class="drange__label" for="dr-b2">结束</label>
+            <input id="dr-b2" class="drange__input" type="date" value="2026-01-03" readonly tabindex="-1">
+          </div>
+        </div>
+      <p class="cmp__why">结束日期早于开始日期，界面上只是"红了一圈"：色觉障碍用户看不出来，灰度打印也看不出来，而且<b>没有一句话</b>告诉你错在哪。</p>
+    </div>
+    <div class="cmp__pane cmp__good">
+      <h3>✅ 本库：左侧竖线 + 一句话说明</h3>
+        <div class="drange" aria-hidden="true">
+          <div class="drange__field">
+            <label class="drange__label" for="dr-g1">开始</label>
+            <input id="dr-g1" class="drange__input" type="date" value="2026-01-10" readonly tabindex="-1">
+          </div>
+          <div class="drange__field">
+            <label class="drange__label" for="dr-g2">结束</label>
+            <input id="dr-g2" class="drange__input" type="date" value="2026-01-03" readonly tabindex="-1">
+          </div>
+          <div class="drange__error">结束日期早于开始日期</div>
+        </div>
+      <p class="cmp__why">形状（左侧竖线）与文字一起承担信息，颜色只是辅助 —— 这是 WCAG 1.4.1 的要求。同时 JS 会给两个字段打 <code>aria-invalid</code> 并用 <code>aria-describedby</code> 指到这句话。</p>
+    </div>
+  </div>
 </main>
 
 <script src="date-range.js"></script>

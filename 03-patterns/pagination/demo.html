@@ -30,6 +30,7 @@ th { font-size: var(--fs-xs); color: var(--text-secondary); font-weight: 500; }
 .row .v { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 .live-echo { margin: var(--sp-3) 0 0; font-size: var(--fs-xs); color: var(--text-tertiary); }
 .live-echo b { color: var(--text-secondary); font-family: var(--mono); }
+.pagination__list { flex-wrap: wrap; }
 </style>
 </head>
 <body class="page page">
@@ -118,6 +119,45 @@ th { font-size: var(--fs-xs); color: var(--text-secondary); font-weight: 500; }
     ⇒ <b>不产生横向溢出</b>。
   </p>
 
+
+
+  <h2 class="rule-bottom">对比：错写法 vs 本库写法</h2>
+  <div class="cmp">
+    <div class="cmp__pane cmp__bad">
+      <h3>❌ 常见写法：页码全铺开</h3>
+        <nav aria-label="分页示例" aria-hidden="true">
+          <ul class="pagination__list">
+            <li class="pagination__item"><a class="pagination__link" href="?page=1" aria-label="第 1 页" tabindex="-1">1</a></li>
+            <li class="pagination__item"><a class="pagination__link" href="?page=2" aria-label="第 2 页" tabindex="-1">2</a></li>
+            <li class="pagination__item"><a class="pagination__link" href="?page=3" aria-label="第 3 页" tabindex="-1">3</a></li>
+            <li class="pagination__item"><a class="pagination__link" href="?page=4" aria-label="第 4 页" tabindex="-1">4</a></li>
+            <li class="pagination__item"><a class="pagination__link" href="?page=5" aria-label="第 5 页" tabindex="-1">5</a></li>
+            <li class="pagination__item"><a class="pagination__link" href="?page=6" aria-label="第 6 页" tabindex="-1">6</a></li>
+            <li class="pagination__item"><a class="pagination__link" href="?page=7" aria-label="第 7 页" tabindex="-1">7</a></li>
+            <li class="pagination__item"><a class="pagination__link" href="?page=8" aria-label="第 8 页" tabindex="-1">8</a></li>
+            <li class="pagination__item"><a class="pagination__link" href="?page=9" aria-label="第 9 页" tabindex="-1">9</a></li>
+            <li class="pagination__item"><a class="pagination__link" href="?page=10" aria-label="第 10 页" tabindex="-1">10</a></li>
+            <li class="pagination__item"><a class="pagination__link" href="?page=11" aria-label="第 11 页" tabindex="-1">11</a></li>
+            <li class="pagination__item"><a class="pagination__link" href="?page=12" aria-label="第 12 页" tabindex="-1">12</a></li>
+          </ul>
+        </nav>
+      <p class="cmp__why">12 个页码硬塞进一行，窄屏上要么换行、要么每个都挤到点不中。而 4~10 页其实是读者最不会去点的区间。</p>
+    </div>
+    <div class="cmp__pane cmp__good">
+      <h3>✅ 本库：7 个槽位封顶 + 省略号</h3>
+        <nav aria-label="分页示例">
+          <ul class="pagination__list">
+            <li class="pagination__item"><a class="pagination__link" href="?page=1" aria-label="第 1 页">1</a></li>
+            <li class="pagination__item"><a class="pagination__link" href="?page=2" aria-label="第 2 页">2</a></li>
+            <li class="pagination__item"><a class="pagination__link" href="?page=3" aria-label="第 3 页">3</a></li>
+            <li class="pagination__item"><span class="pagination__ellipsis">…</span></li>
+            <li class="pagination__item"><a class="pagination__link" href="?page=11" aria-label="第 11 页">11</a></li>
+            <li class="pagination__item"><a class="pagination__link" href="?page=12" aria-label="第 12 页">12</a></li>
+          </ul>
+        </nav>
+      <p class="cmp__why">USWDS 的上限是 7 个槽位：首尾两页 + 当前页邻域，中间用 <code>pagination__ellipsis</code> 收掉。省略号不是装饰，是"这里还有页"的承诺 —— 所以没跳过页码时不许显示它。</p>
+    </div>
+  </div>
 </main>
 
 <script src="pagination.js"></script>

@@ -235,6 +235,30 @@ Array.prototype.forEach.call(document.querySelectorAll('.seg button'), function 
 });
 
 show('content');
-</script></main>
+</script>
+
+  <h2 class="rule-bottom">对比：错写法 vs 本库写法</h2>
+  <div class="cmp">
+    <div class="cmp__pane cmp__bad">
+      <h3>❌ 常见写法：empty 态没有出口</h3>
+        <div class="state state--empty" aria-hidden="true">
+          <div class="state__icon">□</div>
+          <p class="state__title">这个时间范围下还没有记录</p>
+          <p class="state__desc">把范围放宽到 2023 年试试。</p>
+        </div>
+      <p class="cmp__why">说明写得很清楚，然后呢？用户读完只剩一个动作：刷新，或者退出。一条"没有数据"的提示不构成一个状态，它只是死路。</p>
+    </div>
+    <div class="cmp__pane cmp__good">
+      <h3>✅ 本库：empty 态必须带动作</h3>
+        <div class="state state--empty" aria-hidden="true">
+          <div class="state__icon">□</div>
+          <p class="state__title">这个时间范围下还没有记录</p>
+          <p class="state__desc">把范围放宽到 2023 年试试。</p>
+          <div class="state__action"><button class="btn btn--sm btn--primary" type="button" tabindex="-1">放宽到 2023</button></div>
+        </div>
+      <p class="cmp__why"><code>state__action</code> 是 empty 态的一部分：要么给一条能走的路，要么别显示这个空状态。</p>
+    </div>
+  </div>
+</main>
 </body>
 </html>

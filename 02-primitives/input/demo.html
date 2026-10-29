@@ -22,17 +22,6 @@
 .cell h3 { margin: 0 0 var(--sp-1); font-size: var(--fs-sm); font-weight: 500; }
 .cell p { margin: 0 0 var(--sp-3); font-size: var(--fs-xs);
             color: var(--text-tertiary); line-height: 1.55; }
-.cmp { display: grid; gap: var(--sp-4); grid-template-columns: 1.55fr 1fr; }
-@media (max-width: 620px) {.cmp { grid-template-columns: 1fr; }
-
- }
-.cmp>div { padding: var(--sp-4); border-radius: var(--r-md); border: 1px solid var(--border-decor); }
-.bad { background: var(--surface-sunken); }
-.good { background: var(--surface-sunken); }
-.cmp h3 { margin: 0 0 var(--sp-3); font-size: var(--fs-sm); font-weight: 500; }
-.bad h3 { color: var(--danger); }
-.good h3 { color: var(--success); }
-.cmp p { font-size: var(--fs-xs); margin: var(--sp-3) 0 0; line-height: 1.6; }
 /* 反例演示 */
 .bad-input { width: 100%; box-sizing: border-box; height: 44px; padding: 0 var(--sp-3);
                font-size: 14px; border: 1px solid #ccc; border-radius: var(--r-sm); }
@@ -118,8 +107,8 @@
   </div>
 
   <h2 class="rule-bottom">对比：常见写法 vs 本库写法</h2>
-  <div class="cmp">
-    <div class="box bad">
+  <div class="cmp cmp--wide-first">
+    <div class="cmp__pane cmp__bad">
       <h3>常见写法</h3>
       <input class="bad-input err" value="abc" aria-hidden="true" tabindex="-1">
       <!-- 🔴 加 aria-hidden。
@@ -129,21 +118,21 @@
            反例对人要可见（不能 display:none），
            但对辅助技术应当隐藏 —— aria-hidden 正合适。 -->
       <p class="bad-err" aria-hidden="true">格式错误</p>
-      <p>
+      <p class="cmp__why">
         <code>placeholder 当 label</code> —— 一输入就消失<br>
         <code>只把边框变红</code> —— WCAG 1.4.1 禁止只靠颜色传达信息<br>
         <code>font-size: 14px</code> —— iOS Safari 会自动放大整个页面<br>
         错误文字没有 <code>aria-describedby</code> —— 屏幕阅读器读不到
       </p>
     </div>
-    <div class="good">
+    <div class="cmp__pane cmp__good">
       <h3>本库写法</h3>
       <div class="field">
         <label class="field__label" for="g1">金额</label>
         <input class="field__input" id="g1" value="abc" aria-invalid="true" aria-describedby="g1-err" inputmode="decimal" name="amount-g1" autocomplete="off"/>
         <span class="field__error" id="g1-err" role="alert">请输入有效金额</span>
       </div>
-      <p>
+      <p class="cmp__why">
         有可见 label，不会消失<br>
         红边框 + 图标 + 文字，三条线索<br>
         <code>font-size: 16px</code> —— iOS 不缩放<br>

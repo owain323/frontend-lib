@@ -12,16 +12,6 @@
 <style>
 p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6; }
 .grid3 { display: grid; gap: var(--sp-4); grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
-.cmp { display: grid; gap: var(--sp-5); grid-template-columns: 1.55fr 1fr; }
-@media (max-width: 700px) {.cmp { grid-template-columns: 1fr; }
-
- }
-.cmp>div { padding: var(--sp-5); border-radius: var(--r-md); border: 1px solid var(--border-decor); }
-.bad { background: var(--surface-sunken); }
-.good { background: var(--surface-sunken); }
-.cmp h3 { margin: 0 0 var(--sp-2); font-size: var(--fs-sm); font-weight: 500; }
-.bad h3 { color: var(--danger); }
-.good h3 { color: var(--success); }
 .cmp .stack { display: flex; flex-direction: column; gap: var(--sp-3); }
 /* ---- 反例卡片：hover 时改 border-width，引起回流 ---- */
 .card-bad { position: relative; background: var(--surface);
@@ -52,8 +42,8 @@ p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6
     下面<strong>故意放大到 4px</strong>，好让你一次看清楚。请分别把鼠标移到两张卡上。
   </div>
 
-  <div class="cmp">
-    <div class="box bad">
+  <div class="cmp cmp--wide-first">
+    <div class="cmp__pane cmp__bad">
       <h3>反例：hover 改 border-width</h3>
       <p class="small" style="margin:0 0 var(--sp-3)">
         移上来 —— 里面那把尺子和文字整体往下挪了，卡片也变高了。
@@ -71,7 +61,7 @@ p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6
       </div>
     </div>
 
-    <div class="good">
+    <div class="cmp__pane cmp__good">
       <h3>本库：transform + box-shadow</h3>
       <p class="small" style="margin:0 0 var(--sp-3)">
         移上来 —— 卡片整体抬起 2px，<strong>里面的内容一个像素都不动</strong>，

@@ -18,6 +18,17 @@
 <link rel="stylesheet" href="../../09-assets/scientific-plot/scientific-plot.css">
 
 <link rel="stylesheet" href="analysis-report.css">
+<style>
+.ar-g { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); }
+.ar-g--ok { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.ar-cell { padding: var(--sp-2); background: var(--surface-raised);
+           border: 1px solid var(--border-decor); border-radius: var(--r-xs);
+           font-size: var(--fs-xs); }
+/* 反例的关键：这里**不能**写 overflow:hidden —— 一写，min-content 就变 0，
+   那个"列被长内容撑开"的毛病就被自己抹平了（第一版就是这么写坏的） */
+.ar-long { font-family: var(--font-mono, monospace); white-space: nowrap; }
+.ar-g--ok .ar-long { overflow: hidden; text-overflow: ellipsis; }
+</style>
 </head>
 <body class="page">
 <main class="wrap report">
@@ -222,6 +233,29 @@
     </ol>
   </footer>
 
+
+
+  <h2 class="rule-bottom">对比：错写法 vs 本库写法</h2>
+  <!-- cmp--clip：这一块演示的就是"长串把列撑开"，栏内必须允许算得比栏宽更宽；
+       越出栏框的部分裁掉（不裁的话 320px 下整页横向溢出 64px，WCAG 1.4.10 红）。 -->
+  <div class="cmp cmp--clip">
+    <div class="cmp__pane cmp__bad">
+      <h3>❌ 常见写法：栅格列写 <code>1fr</code></h3>
+        <div class="ar-g" aria-hidden="true">
+          <div class="ar-cell">正文一栏：营收同比 +18%。</div>
+          <div class="ar-cell ar-long">SH600519-SH000001-SZ300750-SH601318-SZ000858</div>
+        </div>
+      <p class="cmp__why">右栏里一串不肯断的长代码把列撑开了：它不换行、也不省略，整页横向溢出 —— 而外层容器并<b>没有</b>写错，错的是列定义。</p>
+    </div>
+    <div class="cmp__pane cmp__good">
+      <h3>✅ 本库：<code>minmax(0, 1fr)</code></h3>
+        <div class="ar-g ar-g--ok" aria-hidden="true">
+          <div class="ar-cell">正文一栏：营收同比 +18%。</div>
+          <div class="ar-cell ar-long">SH600519-SH000001-SZ300750-SH601318-SZ000858</div>
+        </div>
+      <p class="cmp__why"><code>1fr</code> 的最小值是 <code>auto</code>（即"内容最小宽度"），所以挡不住长内容。<code>minmax(0, 1fr)</code> 把下限按到 0，列宽才真正受控；再配一句 <code>text-overflow: ellipsis</code>，内容就收在格子里。</p>
+    </div>
+  </div>
 </main>
 
 <script src="../../09-assets/scientific-plot/scientific-plot.js"></script>

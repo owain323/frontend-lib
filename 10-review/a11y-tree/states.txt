@@ -30,3 +30,8 @@ RootWebArea "容器四态 · 真实场景"
     paragraph "同样是"加载中的动画"，一个保留一个去掉。 判断依据是去掉后是否损失信息 ："
     paragraph "spinner 保留但放慢 —— 它停了用户会以为页面卡死。 reduced-motion 针对的是大幅位移（前庭功能障"
     paragraph "骨架屏扫光停止 —— 静态占位块仍然传达"这里有内容正在来"， 不损失信息；而扫光恰好是横向位移，正是要减少的那类。"
+    heading "对比：错写法 vs 本库写法" [level=2]
+    heading "❌ 常见写法：empty 态没有出口" [level=3]
+    paragraph "说明写得很清楚，然后呢？用户读完只剩一个动作：刷新，或者退出。一条"没有数据"的提示不构成一个状态，它只是死路。"
+    heading "✅ 本库：empty 态必须带动作" [level=3]
+    paragraph "state__action 是 empty 态的一部分：要么给一条能走的路，要么别显示这个空状态。"

@@ -14,6 +14,11 @@
 <style>
 .row { display: flex; gap: var(--sp-4); flex-wrap: wrap; align-items: center; }
 .pad { padding: var(--sp-9) 0; }
+.tt-field { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); }
+.tt-label { font-weight: 500; }
+.tt-icon { color: var(--text-tertiary); cursor: help; }
+.tt-real { font-size: var(--fs-xs); color: var(--text-secondary); }
+.tt-hint { margin: var(--sp-2) 0 0; font-size: var(--fs-xs); color: var(--text-tertiary); }
 </style>
 </head>
 <body class="page page">
@@ -57,6 +62,28 @@
   <button class="btn" id="good">导出 CSV</button>
 </div>
 
+
+
+  <h2 class="rule-bottom">对比：错写法 vs 本库写法</h2>
+  <div class="cmp">
+    <div class="cmp__pane cmp__bad">
+      <h3>❌ 常见写法：关键信息只放在气泡里</h3>
+        <div class="tt-field" aria-hidden="true">
+          <span class="tt-label">账期</span>
+          <span class="tt-icon" title="按合同约定的账期填写，自然日">ⓘ</span>
+        </div>
+        <p class="tt-hint">（把鼠标停在那颗 ⓘ 上才看得到说明）</p>
+      <p class="cmp__why">触屏没有 hover，键盘用户也未必会停留 —— 这条说明对一半以上的读者等于不存在。判断标准很硬：<b>气泡里的字不能是"必须知道才能填对"的信息</b>。</p>
+    </div>
+    <div class="cmp__pane cmp__good">
+      <h3>✅ 本库：该看见的写在页面上</h3>
+        <div class="tt-field" aria-hidden="true">
+          <span class="tt-label">账期</span>
+          <span class="tt-real">按合同约定的账期填写（自然日）</span>
+        </div>
+      <p class="cmp__why">tooltip 只用来<b>补一句</b>（快捷键、单位、来源），不用来补一个字段能不能填对。真的需要解释，就写在它旁边。</p>
+    </div>
+  </div>
 </main>
 
 <script src="tooltip.js"></script>

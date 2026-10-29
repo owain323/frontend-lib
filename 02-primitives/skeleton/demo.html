@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="../../01-tokens/typography.css">
 <link rel="stylesheet" href="../../01-tokens/page.css">
 <link rel="stylesheet" href="../button/button.css">
+<link rel="stylesheet" href="../progress/progress.css">
 <link rel="stylesheet" href="skeleton.css">
 <style>
 .demo {
@@ -22,6 +23,9 @@
 /* 反例演示：故意用深色底+白字，说明"骨架屏不该这样用" */
 .bad-demo { background: var(--danger-bg); border-color: var(--danger); }
 .bad { color: var(--danger); }
+.sk-label { margin: 0 0 var(--sp-2); font-size: var(--fs-sm); }
+.sk-pct { margin: 0 0 var(--sp-2); font-size: var(--fs-xs); color: var(--text-secondary); }
+.sk-box { display: flex; flex-direction: column; gap: var(--sp-2); }
 </style>
 </head>
 <body class="page page">
@@ -105,6 +109,30 @@
   </p>
 </div>
 
+
+
+  <h2 class="rule-bottom">对比：错写法 vs 本库写法</h2>
+  <div class="cmp">
+    <div class="cmp__pane cmp__bad">
+      <h3>❌ 常见写法：有确切进度却用骨架屏</h3>
+        <p class="sk-label">上传 素材包.zip（3.1 MB）</p>
+        <div class="sk-box" aria-hidden="true">
+          <span class="skeleton skeleton--text" style="width:82%"></span>
+          <span class="skeleton skeleton--text" style="width:61%"></span>
+          <span class="skeleton skeleton--text" style="width:44%"></span>
+        </div>
+      <p class="cmp__why">文件大小是已知的、进度是算得出来的，却只给一片灰条：用户等了 40 秒也不知道还差 3 秒还是 3 分钟。</p>
+    </div>
+    <div class="cmp__pane cmp__good">
+      <h3>✅ 本库：确定进度用 progress，不确定才用 skeleton</h3>
+        <p class="sk-label">上传 素材包.zip（3.1 MB）</p>
+        <p class="sk-pct">已传 1.9 MB / 3.1 MB</p>
+        <span class="progress" role="progressbar" aria-valuenow="61"
+              aria-valuemin="0" aria-valuemax="100" aria-label="上传进度"
+              style="--progress:61%"><span class="progress__bar"></span></span>
+      <p class="cmp__why"><code>skeleton</code> 的语义是"<b>不知道</b>要多久"。知道比例就用 <code>progress</code> —— 两者的区别不是好看，是诚实。</p>
+    </div>
+  </div>
 </main>
 </body>
 </html>

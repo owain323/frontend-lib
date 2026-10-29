@@ -793,6 +793,15 @@ run "md-links-rev"  $PY 05-audit/md-links.py --selftest
 #   "理由对不对"判不了，明确写在脚本头部 —— 不假装判了。
 run "do-dont"      $PY 05-audit/do-dont-gate.py
 run "do-dont-rev"  $PY 05-audit/do-dont-gate.py --selftest
+# 🔴 demo-counterexample（2026-10-30 加）—— "反例要摆出来，不能只写在 README 里"
+#   上一轮把文字反例补到 33/33，但**能看见的**只有 10/32
+#   （这道门禁第一次在 HEAD 快照上跑，报的是「22 / 32 个组件没有可见的反例块」）：
+#   读者看不见"错的样子"，就还是"渲染出来的 README"。
+#   判据：每个组件的 demo 至少要有一个可见、带标题的反例块
+#   （`class="box bad"` 或 `cmp__bad`）。**藏起来**（hidden / display:none）也算红。
+#   "反例是不是真的错"判不了 —— 写在脚本头部，不假装判了。
+run "demo-counter"  $PY 05-audit/demo-counterexample-gate.py
+run "demo-counter-rev" $PY 05-audit/demo-counterexample-gate.py --selftest
 run "api-contract"     $PY 05-audit/api-contract-gate.py
 run "api-form"       $PY 05-audit/api-form-gate.py
 run "api-form-rev"   $PY 05-audit/api-form-gate.py --selftest

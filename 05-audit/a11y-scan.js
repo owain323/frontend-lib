@@ -117,12 +117,18 @@ if (PAGES.length === 0) {
       await page.close();
       continue;
     }
-    // 反例区（.box.bad）是"故意的错误示范"，本来就不该通过 a11y 检查。
+    // 反例区（.box.bad / .cmp__bad）是"故意的错误示范"，本来就不该通过 a11y 检查。
     // 做法：在**扫描期间**临时隐藏它（不改页面本身），
     // 并把跳过了什么**公开打印** —— 绝不能变成"标记了就免检"的万能借口。
+    //
+    // 🔴 2026-10-30 补 `.cmp__bad`：新增的"对错对照块"用的是这个类名，
+    //    漏掉它的后果是**故意写坏的那一栏把整页判红** —— 于是没人再敢写反例。
+    //    同理，这一栏里的正确做法不会被豁免：只有 `.cmp__bad` 被隐藏，
+    //    `.cmp__good` 照常受检。
     const skipped = await page.evaluate(() => {
-      const n = document.querySelectorAll('.box.bad').length;
-      document.querySelectorAll('.box.bad').forEach((e) => {
+      const SEL = '.box.bad, .cmp__bad';
+      const n = document.querySelectorAll(SEL).length;
+      document.querySelectorAll(SEL).forEach((e) => {
         e.setAttribute('data-axe-skipped', '1');
         e.style.display = 'none';
       });

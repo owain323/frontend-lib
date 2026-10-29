@@ -102,6 +102,11 @@ Popover.current;      // 当前开着的实例（没有则null）</code></pre>
 <p>尊重 <code>prefers-reduced-motion</code> —— 用户在系统里关了动效，组件的过渡也要跟着关。</p>
 <h2 id="s7">反例<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
 <ul><li>❌ <strong>给 popover 加 focus trap</strong> —— 不做 trap 是刻意的：它没有&quot;确认/取消&quot;来放行， trap 住了人出不去。焦点<strong>进入</strong>浮层（键盘用户要能直接操作）就够了</li><li>❌ <strong>关闭态只用 <code>pointer-events: none</code></strong> —— Tab 仍能走进去，焦点会跑到看不见的地方；必须是 <code>inert</code>（<code>popover.js</code> 的 <code>open()</code> 里写明了这一条）</li><li>❌ <strong>同时开两个 popover</strong> —— 两个叠着，用户不知道该关哪个，也不知道点空白处关的是哪一个</li><li>❌ <strong>把箭头塞进带 <code>overflow: hidden</code> 的容器</strong> —— 箭头会被裁掉；所以本组件不用 overflow 方式隐藏</li></ul>
+<h2 id="s8">已知局限：不做落点检测<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
+<p>浮层靠 CSS 定位（<code>--bottom</code> / <code>--top</code> / <code>--start</code> / <code>--end</code> 四个方向类）， <strong>不测量、不在运行时判断空间够不够</strong>。这是刻意的取舍：</p>
+<ul><li>好处：没有布局抖动、没有&quot;打开瞬间先闪一下再翻位&quot;、不依赖 <code>getBoundingClientRect</code></li><li>代价：锚点右边真的没有空间时，<code>--end</code> / <code>--bottom</code> 仍会朝那个方向弹出去</li></ul>
+<p>所以<strong>调用方要给浮层留位置</strong>：靠边的按钮用 <code>--start</code> 而不是 <code>--end</code>；演示页里那一栏就是给气泡留了 <code>max-width</code> 的口子，而不是让气泡自己算。</p>
+<ul><li>❌ <strong>指望组件&quot;自动翻边&quot;</strong> —— 它不会。库里没有落点检测，也不会加：一旦按测量定位，滚动、旋转屏幕、软键盘弹起都要重新算，代价比收益大</li></ul>
 <hr>
     </article>
     <nav class="g-pager" aria-label="上一页 / 下一页">
@@ -111,11 +116,11 @@ Popover.current;      // 当前开着的实例（没有则null）</code></pre>
   </main>
   <aside class="g-side">
     <p class="g-side__title" id="toc-title">本页目录</p>
-    <ul class="g-toc"><li><a href="#s2">⭐ 该用哪一个（记不住就问这句）</a></li><li><a href="#s3">启用：DOM 由 JS 建，不用自己写</a></li><li><a href="#s4">内部结构（JS 生成，供你放内容）</a></li><li><a href="#s5">🔴 四个最容易做错的地方</a></li><li><a href="#s6">动画</a></li><li><a href="#s7">反例</a></li></ul>
+    <ul class="g-toc"><li><a href="#s2">⭐ 该用哪一个（记不住就问这句）</a></li><li><a href="#s3">启用：DOM 由 JS 建，不用自己写</a></li><li><a href="#s4">内部结构（JS 生成，供你放内容）</a></li><li><a href="#s5">🔴 四个最容易做错的地方</a></li><li><a href="#s6">动画</a></li><li><a href="#s7">反例</a></li><li><a href="#s8">已知局限：不做落点检测</a></li></ul>
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.11.10 · 零第三方运行时依赖 · 组件数 35</p>
+  <p>v0.11.11 · 零第三方运行时依赖 · 组件数 35</p>
 </footer>
 </body>
 </html>

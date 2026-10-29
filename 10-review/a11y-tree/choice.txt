@@ -42,6 +42,7 @@ RootWebArea "checkbox / radio / select · 键盘行为验证"
     LabelText "导出 PDF（需要专业版）"
     paragraph "不用 opacity ，用明确的低对比色组（对比度会变成不可控的随机数）。 disabled 之后 hover 不能有任"
     heading "反例：用 display:none 隐藏原生控件" [level=2]
+    heading "反例：把原生勾选框 display:none 藏掉" [level=3]
     LabelText "我看起来正常，但 Tab 到不了这里"
     paragraph "用 Tab 试试——焦点会直接跳过它。 display:none 把它从 tab 顺序里移除了，键盘用户彻底到不了这里。"
     heading "焦点环必须画在看得见的地方" [level=2]

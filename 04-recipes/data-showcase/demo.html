@@ -34,6 +34,14 @@
    屏幕阅读器会把它读成「图 1 的说明」，语义本身就是信息。 */
 .figbox figcaption { margin-top: var(--sp-2); font-size: var(--fs-xs);
                      color: var(--text-tertiary); }
+.ds-stat { display: flex; align-items: baseline; gap: var(--sp-2);
+           padding: var(--sp-3); background: var(--surface-raised);
+           border: 1px solid var(--border-decor); border-radius: var(--r-sm); }
+.ds-k { font-size: var(--fs-xs); color: var(--text-secondary); margin-inline-end: auto; }
+.ds-v { font-size: var(--fs-lg); font-weight: 600; }
+/* 反例专用：单位跟数字同字号同色（"抢同一层注意力"就是这个样子） */
+.ds-v .ds-u--flat { font-size: inherit; color: inherit; }   /* 特异性要比 .ds-u 高 */
+.ds-u { font-size: var(--fs-sm); color: var(--text-secondary); }
 </style>
 </head>
 <body class="page">
@@ -215,6 +223,27 @@
   </table>
 </div>
 
+
+
+  <h2 class="rule-bottom">对比：错写法 vs 本库写法</h2>
+  <div class="cmp">
+    <div class="cmp__pane cmp__bad">
+      <h3>❌ 常见写法：单位与数字同字号同色</h3>
+        <div class="ds-stat" aria-hidden="true">
+          <span class="ds-k">营业收入</span>
+          <span class="ds-v"><span class="num">1,284.6</span><span class="ds-u ds-u--flat">亿元</span></span>
+        </div>
+      <p class="cmp__why">"亿元"只是个量级标记，却和 1,284.6 抢同一层注意力：读者先读到的是四个字，而不是那个数。</p>
+    </div>
+    <div class="cmp__pane cmp__good">
+      <h3>✅ 本库：数字当主角，单位退一档</h3>
+        <div class="ds-stat" aria-hidden="true">
+          <span class="ds-k">营业收入</span>
+          <span class="ds-v"><span class="num">1,284.6</span><span class="ds-u">亿元</span></span>
+        </div>
+      <p class="cmp__why">数字用 <code>num</code>（等宽数字，纵向才对得齐），单位降一档字号与颜色。一屏里有十几个数字时，这个差别决定读者能不能扫。</p>
+    </div>
+  </div>
 </main>
 
 <script src="../../09-assets/sparkline/sparkline.js"></script>

@@ -23,6 +23,8 @@
          font-variant-numeric: tabular-nums; min-width: 3.2em; text-align: right; }
 .bad-demo { background: var(--danger-bg); border-color: var(--danger); }
 .bad { color: var(--danger); }
+.pr-label { margin: 0 0 var(--sp-2); font-size: var(--fs-sm); }
+.pr-note { margin: var(--sp-2) 0 0; font-size: var(--fs-xs); color: var(--text-secondary); }
 </style>
 </head>
 <body class="page page">
@@ -149,6 +151,29 @@ document.querySelectorAll('.progress, .progress-ring, .progress-steps').forEach(
   }
 });
 </script>
+
+
+  <h2 class="rule-bottom">对比：错写法 vs 本库写法</h2>
+  <div class="cmp">
+    <div class="cmp__pane cmp__bad">
+      <h3>❌ 常见写法：到 100% 就变绿</h3>
+        <p class="pr-label">导出 6 个文件 · 100%</p>
+        <span class="progress progress--success" role="progressbar" aria-valuenow="100"
+              aria-valuemin="0" aria-valuemax="100" aria-label="导出进度"
+              style="--progress:100%"><span class="progress__bar"></span></span>
+        <p class="pr-note">界面写"导出完成"，条是绿的。</p>
+      <p class="cmp__why">100% 说的是"走到头了"，不是"成功了"。这一批实际有 2 个文件失败，绿条仍然亮着 —— 用户以为可以走了。</p>
+    </div>
+    <div class="cmp__pane cmp__good">
+      <h3>✅ 本库：颜色讲结果，数值只讲进度</h3>
+        <p class="pr-label">导出 6 个文件 · 100%</p>
+        <span class="progress progress--danger" role="progressbar" aria-valuenow="100"
+              aria-valuemin="0" aria-valuemax="100" aria-label="导出失败"
+              style="--progress:100%"><span class="progress__bar"></span></span>
+        <p class="pr-note">同样 100%，红了：2 个文件失败。</p>
+      <p class="cmp__why"><code>progress--success</code> / <code>--danger</code> 由调用方按<b>业务结果</b>给，不按数值自动切换 —— 颜色是语义，不是刻度。</p>
+    </div>
+  </div>
 </main>
 </body>
 </html>

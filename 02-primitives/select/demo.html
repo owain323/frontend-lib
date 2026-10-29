@@ -19,6 +19,23 @@
     color: var(--text-secondary); min-height: 3em;
   }
 label.f { display: block; margin-bottom: var(--sp-1); font-size: var(--fs-sm); }
+/* 一次性演示用：把选项摆成静态列表 */
+.sl-wrap { display: grid; gap: var(--sp-1); }
+.sl-head { font-size: var(--fs-sm); color: var(--text-tertiary); padding: 0 0 var(--sp-1); }
+.sl-list {
+  list-style: none; margin: 0; padding: var(--sp-1);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-decor);
+  border-radius: var(--r-sm);
+}
+/* 反例专用：把命中区压到 28px */
+.sl-tight {
+  display: flex; align-items: center;
+  min-height: 28px; padding: 0 var(--sp-2);
+  border-radius: var(--r-xs);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
 </style>
 </head>
 <body class="page page">
@@ -94,6 +111,35 @@ label.f { display: block; margin-bottom: var(--sp-1); font-size: var(--fs-sm); }
   </div>
 </div>
 
+
+
+  <h2 class="rule-bottom">对比：错写法 vs 本库写法</h2>
+  <div class="cmp">
+    <div class="cmp__pane cmp__bad">
+      <h3>❌ 常见写法：选项挤在一起</h3>
+        <div class="sl-wrap" aria-hidden="true">
+          <div class="sl-head">所属板块</div>
+          <ul class="sl-list">
+            <li class="sl-tight">半导体设备</li>
+            <li class="sl-tight">半导体材料</li>
+            <li class="sl-tight">半导体封测</li>
+          </ul>
+        </div>
+      <p class="cmp__why">行高只有 28px：手指点下去必然压到隔壁那一行。鼠标用户感觉不到，触屏用户每点错一次就要重来。</p>
+    </div>
+    <div class="cmp__pane cmp__good">
+      <h3>✅ 本库：每项 44px 命中区</h3>
+        <div class="sl-wrap" aria-hidden="true">
+          <div class="sl-head">所属板块</div>
+          <ul class="sl-list">
+            <li class="select__opt">半导体设备</li>
+            <li class="select__opt">半导体材料</li>
+            <li class="select__opt">半导体封测</li>
+          </ul>
+        </div>
+      <p class="cmp__why">命中区 44px 是 AAA 的下限（<code>select.css</code> 里写着这条），与 <code>dropdown</code> 同规格 —— 两个控件的选项高度不该不一样。</p>
+    </div>
+  </div>
 </main>
 
 <script src="select.js"></script>
