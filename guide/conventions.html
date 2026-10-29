@@ -10,6 +10,10 @@
 <link rel="stylesheet" href="../01-tokens/tokens.css">
 <link rel="stylesheet" href="../01-tokens/typography.css">
 <link rel="stylesheet" href="../01-tokens/page.css">
+<!-- 文档页里会出现 `data-market="intl"` 的示例（delta / 约定 / 索引）。
+     不引这个文件，示例就是"写了但没生效"—— 而 `dir-check.js` 判据 ⑧ 会拦住。
+     它是可选增强，0.2 KB，对没有该属性的页面零影响。 -->
+<link rel="stylesheet" href="../01-tokens/market.css">
 <link rel="stylesheet" href="../03-patterns/nav/nav.css">
 <link rel="stylesheet" href="../04-recipes/table/table.css">
 <link rel="stylesheet" href="guide.css">
@@ -33,7 +37,7 @@
     <ul class="g-meta"><li><a href="../docs/CONVENTIONS.md"><code>docs/CONVENTIONS.md</code></a></li><li>规则由 <code>01-tokens/</code> 实现，判据见文末对应表</li></ul>
     <article class="g-doc">
 <p>这些规则不属于任何一个组件：令牌怎么用、焦点环多大、动效多久、暗色怎么切、能不能写 <code>margin-left</code>。它们由 <code>01-tokens/</code> 里的几个全局文件实现，由一批门禁守住。本文是它们的<strong>唯一说明书</strong> —— 规则写在这里，判据在仓库里，两边一一对应。</p>
-<p>读法：如果你只想知道「我该写哪个变量」，看第一节和第二节；如果你想改这套东西，看第十节，那里列了每条规则由什么挡住。</p>
+<p>读法：如果你只想知道「我该写哪个变量」，看第一节和第二节；如果你想改这套东西，看第十一节，那里列了每条规则由什么挡住。</p>
 <h2 id="s2">一 · 令牌分三层，你只用中间层<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
 <div class="table"><table>
 <thead><tr>
@@ -145,7 +149,21 @@
 :root { --accent: var(--brand-accent); }</code></pre>
 <p><code>--brand-accent</code> 由你自己定义（任意合法颜色值）。之所以不在这里写一个具体的十六进制：本库的对比度判据会把<strong>文档里的色值</strong>当成&quot;内联副本&quot;去核对，它分不清示例与真实用法 —— 与其教它开例外，不如让示例本来就不带字面值。</p>
 <ul><li>优先覆盖 <strong>语义令牌</strong>（第一节那张表）。</li><li>其次覆盖组件自己的槽位变量（如按钮的内边距），它们都以组件名为前缀。</li><li><strong>不要把 <code>!important</code> 当覆盖手段</strong>：赢了这一条，会把无障碍兜底一起压掉。</li><li>不要用更深的选择器去压（<code>.page .btn.btn--primary</code>）—— 那是把特异性当版本管理，下次改版必然打架。</li></ul>
-<h2 id="s11">十 · 每条规则由什么挡住<a class="anchor" href="#s11" aria-label="本节直链">#</a></h2>
+<h2 id="s11">十 · 涨跌：语义在令牌层，口径是全局的<a class="anchor" href="#s11" aria-label="本节直链">#</a></h2>
+<p>红绿有两个完全不同的来处，<strong>不许共用一个名字</strong>：</p>
+<div class="table"><table>
+<thead><tr>
+<th>令牌</th><th>语义</th><th>例子</th>
+</tr></thead>
+<tbody>
+<tr><td><code>--danger</code> / <code>--success</code></td><td><strong>评价</strong>：错了 / 成了</td><td>审计失败、已停牌</td></tr>
+<tr><td><code>--dir-up</code> / <code>--dir-down</code></td><td><strong>事实</strong>：涨了 / 跌了</td><td>同比 +12.4%</td></tr>
+</tbody>
+</table></div>
+<p>「研发费用同比 +38%」是涨，但那是坏消息 —— 用 <code>--danger</code> 渲染它，颜色说&quot;错了&quot;、语义说&quot;涨了&quot;，读者收到矛盾信号。</p>
+<p>三条规则：</p>
+<ul><li><strong>组件只写 <code>color: var(--dir-up)</code></strong>，不许出现 <code>[data-market]</code> 分支。口径切换改的是<strong>令牌指向</strong>，跟暗色同构（换底层值，语义名不动）。</li><li><strong>口径是全局约定</strong>：<code>data-market=&quot;intl&quot;</code> 加在任意祖先上，整块对调。交换规则在选配文件 <code>01-tokens/market.css</code>，<strong>不在 <code>tokens.css</code></strong> —— 条件规则进核心令牌会让六个靠词法读 CSS 的工具静默读错。</li><li><strong>方向必须有非颜色的载体</strong>：<code>delta</code> 用 <code>+</code> / <code>−</code>（U+2212）符号，且符号必须真的进可访问性树（CSS <code>::before</code> 生成的字符不在元素 name 里，但会作为独立 StaticText 出现 —— 换空串/背景图/<code>visibility:hidden</code> 就会没）。</li></ul>
+<h2 id="s12">十一 · 每条规则由什么挡住<a class="anchor" href="#s12" aria-label="本节直链">#</a></h2>
 <p>规则只有落到判据上才会被遵守。对应关系如下（文件都在 <code>05-audit/</code>）：</p>
 <div class="table"><table>
 <thead><tr>
@@ -163,6 +181,9 @@
 <tr><td><code>@layer</code> 计数与 <code>!important</code> 分类</td><td><code>cascade-layer-gate.py</code></td></tr>
 <tr><td>触控目标 44px</td><td><code>a11y.py</code>（静态） + 行为脚本（运行时）</td></tr>
 <tr><td>页面骨架只有一份（改令牌能牵动全部页面）</td><td><code>skeleton-lever-check.js</code></td></tr>
+<tr><td>涨跌方向色对、口径可切、符号进可访问性树</td><td><code>delta-check.js</code></td></tr>
+<tr><td>指标缺数是显式状态、数字等宽对齐</td><td><code>metric-check.js</code></td></tr>
+<tr><td>文档里的数字与实际一致（组件数/门禁数/精简档令牌数）</td><td><code>doc-facts-gate.py</code></td></tr>
 </tbody>
 </table></div>
 <p>想加一条新规则？先在门禁里加判据、确认它会红，再写进本文 —— <strong>顺序反了就会得到一条&quot;写在文档里、没人执行&quot;的规则。</strong></p>
@@ -174,11 +195,11 @@
   </main>
   <aside class="g-side">
     <p class="g-side__title" id="toc-title">本页目录</p>
-    <ul class="g-toc"><li><a href="#s2">一 · 令牌分三层，你只用中间层</a></li><li><a href="#s3">二 · 间距、圆角、层级：只准踩台阶</a></li><li><a href="#s4">三 · 焦点环：:focus-visible，2px + 2px</a></li><li><a href="#s5">四 · 动效：三档时长，三条规定</a></li><li><a href="#s6">五 · 暗色：三种状态，组件一律不许自判</a></li><li><a href="#s7">六 · 逻辑属性：不许写 margin-left</a></li><li><a href="#s8">七 · 不用 @layer；!important 必须说得清</a></li><li><a href="#s9">八 · 对比度与触控的硬线</a></li><li><a href="#s10">九 · 覆盖策略：改令牌，不要改组件</a></li><li><a href="#s11">十 · 每条规则由什么挡住</a></li></ul>
+    <ul class="g-toc"><li><a href="#s2">一 · 令牌分三层，你只用中间层</a></li><li><a href="#s3">二 · 间距、圆角、层级：只准踩台阶</a></li><li><a href="#s4">三 · 焦点环：:focus-visible，2px + 2px</a></li><li><a href="#s5">四 · 动效：三档时长，三条规定</a></li><li><a href="#s6">五 · 暗色：三种状态，组件一律不许自判</a></li><li><a href="#s7">六 · 逻辑属性：不许写 margin-left</a></li><li><a href="#s8">七 · 不用 @layer；!important 必须说得清</a></li><li><a href="#s9">八 · 对比度与触控的硬线</a></li><li><a href="#s10">九 · 覆盖策略：改令牌，不要改组件</a></li><li><a href="#s11">十 · 涨跌：语义在令牌层，口径是全局的</a></li><li><a href="#s12">十一 · 每条规则由什么挡住</a></li></ul>
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.11.16 · 零第三方运行时依赖 · 组件数 35</p>
+  <p>v0.12.0 · 零第三方运行时依赖 · 组件数 37</p>
 </footer>
 </body>
 </html>

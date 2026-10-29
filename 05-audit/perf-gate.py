@@ -53,7 +53,11 @@ KB = 1024.0
 
 # 预算
 MAX_ONE_CSS = 24 * KB
-MAX_ALL_CSS = 125 * KB
+# 🔴 0.12.0：125 → 132 KB。加的是 `delta`（≈1.5 KB 生效）+ `metric`（≈1.5 KB）
+#    + `01-tokens/market.css`（≈0.2 KB），实测合计从 125.0 涨到 127.0 KB。
+#    **这不是"顺手放宽"**：涨的是新组件的真实规则（剥注释后口径），
+#    不是注释膨胀。如果要省，能省的只有组件本身。
+MAX_ALL_CSS = 132 * KB
 MAX_INLINE_STYLE = 8 * KB
 
 

@@ -56,8 +56,8 @@ run "maturity"    $PY 05-audit/maturity-gate.py --selftest
 run "deprecation" $PY 05-audit/deprecation-gate.py --selftest
 run "deprec-doc"  $PY 05-audit/deprecation-doc-gate.py --selftest
 # 数值展示层（0.12.0）：口径交换与四条指标纪律。自检不需要浏览器（纯判据）。
-run "dir-color"   node 05-audit/dir-gate.js --selftest
-run "metric"      node 05-audit/metric-gate.js --selftest
+run "dir-color"   node 05-audit/delta-check.js --selftest
+run "metric"      node 05-audit/metric-check.js --selftest
 run "workflow"    node 05-audit/workflow-gate.js --selftest
 run "engine"      node 05-audit/engine-gate.js --selftest
 run "engine-probe" node 05-audit/engine-probe.js --selftest

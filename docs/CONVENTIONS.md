@@ -212,8 +212,8 @@
 | `@layer` 计数与 `!important` 分类 | `cascade-layer-gate.py` |
 | 触控目标 44px | `a11y.py`（静态） + 行为脚本（运行时） |
 | 页面骨架只有一份（改令牌能牵动全部页面） | `skeleton-lever-check.js` |
-| 涨跌方向色对、口径可切、符号进可访问性树 | `dir-gate.js` |
-| 指标缺数是显式状态、数字等宽对齐 | `metric-gate.js` |
+| 涨跌方向色对、口径可切、符号进可访问性树 | `delta-check.js` |
+| 指标缺数是显式状态、数字等宽对齐 | `metric-check.js` |
 | 文档里的数字与实际一致（组件数/门禁数/精简档令牌数） | `doc-facts-gate.py` |
 
 想加一条新规则？先在门禁里加判据、确认它会红，再写进本文 ——

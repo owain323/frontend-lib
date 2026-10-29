@@ -344,7 +344,7 @@ python3 05-audit/prefix-build.py --prefix fl
 | `<section data-market="intl">` | 只切这一块 |
 
 实现方式是**换令牌的指向**（`--dir-up` 永远表示"涨"），组件 CSS 里没有任何分支
-—— 与暗色同一手法。`05-audit/dir-gate.js` 在浏览器里读 computed color，
+—— 与暗色同一手法。`05-audit/delta-check.js` 在浏览器里读 computed color，
 四种组合（两种口径 × 明暗）各判一遍，并断言 `intl` 是**完整互换**而不是只改一边。
 
 ---

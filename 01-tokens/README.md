@@ -250,7 +250,7 @@ node ai/cli.js tree   [--set=light|dark] [--cat=color]   # 第二种
 交换只改**令牌的指向**（`--dir-up: var(--raw-dir-down)`），组件 CSS 里零分支 ——
 `delta` 只写 `color: var(--dir-up)`，两栏 HTML 逐字相同。
 
-⚠️ 三条硬要求（都有判据挡着，见 `05-audit/dir-gate.js`）：
+⚠️ 三条硬要求（都有判据挡着，见 `05-audit/delta-check.js`）：
 
 1. **必须排在 `tokens.css` 之后** —— 同权重靠顺序定胜负。
 2. **不许写进 `tokens.css`** —— 那会让六个靠词法读 CSS 的工具静默读错

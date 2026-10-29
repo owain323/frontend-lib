@@ -46,7 +46,11 @@
   align-items: baseline;      /* 与相邻数字基线对齐，不用 center（会错半像素）*/
   gap: 0.15em;                /* 符号与数字之间：随字号走，不用 --sp（那是布局间距）*/
   font-family: var(--mono);
-  font-variant-numeric: tabular-nums;   /* 竖排能比大小，这是财务数字的底线 */
+  /* 🔴 这里**故意不声明**「等宽数字」那个特性（`tabular-nums`）。
+     等宽字族每个字形同宽（含 `.` 与 `,`），数字天然对齐；
+     那个特性只对**比例字族**有意义，在等宽字族上是无效动作。
+     库里的 `.num` / `.num-lg` 是为「比例字体里的数字」准备的统一手段，
+     而 delta 已经用 `--mono` 从字族层面解决了 —— 再声明一次就是两套机制。 */
   white-space: nowrap;        /* 「+12.4%」不许断成两行 */
   font-weight: 500;           /* 比正文重半档：它是结论，不是叙述 */
   line-height: 1.4;

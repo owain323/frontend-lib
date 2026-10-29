@@ -291,14 +291,19 @@ def selftest():
                    declared, refs, readme)[0], '孤儿 + internal')
 
     # ⑤ 孤儿 + public 但不在受审名单里 ⇒ 必须红
-    pub = [t for t in orphans if audience_of(t, reg)[0] == 'public']
-    if not pub:
-        print('  [FAIL] 没有「公开孤儿」⇒ 造不出⑤的样本')
+    #   🔴 原来是从**真实孤儿**里挑一个 audience 为 public 的。0.12.0 之后
+    #      `--tracking-normal` 被 `metric` 引用了，剩下的三个孤儿都不是 public，
+    #      这条自检立刻变成「造不出样本」而假红 —— **自检不该依赖当天的仓库数据**。
+    #      ⇒ 改成合成：把真实孤儿强行登记成 public，再喂一个空的受审名单。
+    if not orphans:
+        print('  [FAIL] 仓库里没有孤儿 ⇒ 造不出⑤的样本')
         bad += 1
     else:
-        tgt = pub[0]
+        tgt = orphans[0]
+        synth = clone(lambda d: d['tokens'].__setitem__(
+            tgt, {'audience': 'public', 'why': '合成样本：这条自检要一个公开孤儿'}))
         expect('公开孤儿 %s 不在受审名单里 ⇒ 死重量' % tgt,
-               check(reg, declared, refs, '')[0], '孤儿 + public')
+               check(synth, declared, refs, '')[0], '孤儿 + public')
 
     # ⑤b 名单里写了一个其实有被引用的令牌 ⇒ 文档在撒谎
     used = [t for t in declared if t in refs]

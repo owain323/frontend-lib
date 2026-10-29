@@ -7,9 +7,9 @@
     "manifesto 里的 sourceSha256 变了而 dist 没重建 ⇒ dist-parity/dist-fresh 门禁会红"
   ],
   "totals": {
-    "sourceFiles": 69,
-    "sourceBytes": 751317,
-    "distGzip": 95930
+    "sourceFiles": 72,
+    "sourceBytes": 771289,
+    "distGzip": 96853
   },
   "files": [
     {
@@ -102,6 +102,20 @@
       ]
     },
     {
+      "source": "01-tokens/market.css",
+      "sourceSha256": "91508d42d5adf766ab5bd79af5f2b90ef459a577a72806758dece566d25b5880",
+      "sourceBytes": 2974,
+      "sourceGzip": 1509,
+      "outputs": [
+        {
+          "path": "dist/01-tokens/market.css",
+          "kind": "minified",
+          "bytes": 109,
+          "gzip": 87
+        }
+      ]
+    },
+    {
       "source": "01-tokens/page.css",
       "sourceSha256": "8ea23e1769ad2624fba7ca53725f048f21842c55d232d0c9c4185f00eb887a18",
       "sourceBytes": 17951,
@@ -161,15 +175,15 @@
     },
     {
       "source": "01-tokens/tokens.css",
-      "sourceSha256": "794c7e8c82a4519afb471eddf80561255b5ec12e75194d1db468a37c65e6ee72",
-      "sourceBytes": 49203,
-      "sourceGzip": 18487,
+      "sourceSha256": "e2ed5b31774ef60fdb6feeacd80140db9539922b9afd04e3a2df917202263778",
+      "sourceBytes": 53417,
+      "sourceGzip": 20092,
       "outputs": [
         {
           "path": "dist/01-tokens/tokens.css",
           "kind": "minified",
-          "bytes": 11338,
-          "gzip": 2694
+          "bytes": 11688,
+          "gzip": 2752
         }
       ]
     },
@@ -302,6 +316,20 @@
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
     },
     {
+      "source": "02-primitives/delta/delta.css",
+      "sourceSha256": "8c8e35c7b5d63cae0f0006f3da3e3490c9adfddb2c407709ab69b43dbdf90ccc",
+      "sourceBytes": 5627,
+      "sourceGzip": 2812,
+      "outputs": [
+        {
+          "path": "dist/02-primitives/delta/delta.css",
+          "kind": "minified",
+          "bytes": 594,
+          "gzip": 277
+        }
+      ]
+    },
+    {
       "source": "02-primitives/input/input.css",
       "sourceSha256": "880731bf6878893d67c70c8698832494669feb7f4d1e8a63d39ce631dd8d9865",
       "sourceBytes": 10141,
@@ -312,6 +340,20 @@
           "kind": "minified",
           "bytes": 3268,
           "gzip": 1043
+        }
+      ]
+    },
+    {
+      "source": "02-primitives/metric/metric.css",
+      "sourceSha256": "61b6143c0328d02b23094140203333feab2bd598fd496d03ab52268d55f31e6f",
+      "sourceBytes": 6962,
+      "sourceGzip": 3277,
+      "outputs": [
+        {
+          "path": "dist/02-primitives/metric/metric.css",
+          "kind": "minified",
+          "bytes": 1294,
+          "gzip": 479
         }
       ]
     },
@@ -863,15 +905,15 @@
     },
     {
       "source": "04-recipes/tierA-tokens.css",
-      "sourceSha256": "ccccbdf82f355c349cbb2ea1776f68261e72fbf9433138ffbef14f780b8b2614",
-      "sourceBytes": 5136,
-      "sourceGzip": 2000,
+      "sourceSha256": "e2822af7c356fd13fef01ddf4bc88a99e1ba3883fe1ad3d66627bda65123f7a4",
+      "sourceBytes": 5331,
+      "sourceGzip": 2079,
       "outputs": [
         {
           "path": "dist/04-recipes/tierA-tokens.css",
           "kind": "minified",
-          "bytes": 3257,
-          "gzip": 1313
+          "bytes": 3329,
+          "gzip": 1335
         }
       ]
     },

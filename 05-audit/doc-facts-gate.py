@@ -794,6 +794,12 @@ def selftest():
         GOOD = {'VERSION': '0.0.1',
                 'ai/components.json': CONF,
                 '05-audit/check-all.sh': SH,
+                # 🔴 F6 的夹具：不建这个文件，`real_tier_counts()` 返回 None，
+                #    「真值缺失」会把**基线**判红（新增判据后没跑 --selftest 就会这样）。
+                #    浅色 2 条（--a/--b）、暗色 1 条（--c）。
+                '04-recipes/tierA-tokens.css':
+                    ':root{--a:1;--b:2;}\n@media (prefers-color-scheme: dark)'
+                    '{:root{--c:3;}}\n',
                 'README.md': '共 3 道门禁、本版有 3 个组件。\n'}
 
         # ---- 基线：全对 ⇒ 必须绿 ----
@@ -820,6 +826,9 @@ def selftest():
             ('门禁重名（两条 run 同名）',
              {'05-audit/check-all.sh': SH + 'run "two" false\n'},
              '门禁重名'),
+            ('精简档令牌数写错（7+9 ≠ 2+1）',
+             {'README.md': '含浅色 7 + 暗色 9 个令牌。\n'},
+             '精简档令牌数与实际不符'),
         ]
         for why, patch, expect in cases:
             shutil.rmtree(base)

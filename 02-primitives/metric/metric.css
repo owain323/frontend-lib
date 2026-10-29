@@ -8,7 +8,7 @@
    ----------------------------------------------------------------------------
    因为“一个数”有四件事必须一起做对，少一件就会在真实报表里出错：
 
-     ① 数字要**等宽**（tabular-nums）—— 否则上下两行的数位对不齐，
+     ① 数字要**等宽**（用等宽字族，不靠比例字体的默认）—— 否则上下两行的数位对不齐，
         竖着扫一眼比大小这件事就废了；这是「财务表格」与「装饰表格」的分界
      ② 单位要**分离**成槽位 —— 拼进字符串后（"1,294.06亿元"）既不能单独调样式，
         也没法让数字右对齐时把单位甩在外面
@@ -64,14 +64,22 @@
 /* 值：这一块的全部意义所在 */
 .metric__value {
   margin: 0;
-  font-family: var(--mono);
-  font-variant-numeric: tabular-nums;   /* ① 等宽数字 —— 竖排能比大小 */
+  font-family: var(--mono);   /* 等宽字族 ⇒ 数字天然对齐，不需要 tabular-nums */
   font-size: var(--fs-xl);
   font-weight: 600;
   line-height: var(--lh-tight);
   color: var(--text-primary);
-  /* 数字不许换行；某一位数掉到第二行会让整个 KPI 行高度跳动 */
-  white-space: nowrap;
+  /* 🔴 数字**默认不换行**，但极端情况下必须能断，否则顶破视口。
+     第一版写的是 `white-space: nowrap`，RTL 下阿语膨胀 1.3× 后
+     整个值变成一串装不下的长词，横向溢出 212px（实测）。
+     `overflow-wrap: anywhere` 的语义正好是「只有当一个词装不下整行时才断」——
+     正常列宽下 `1,294.06` 绝不会被拆开，只有真的放不下才断。 */
+  white-space: normal;
+  overflow-wrap: anywhere;
+  /* 值 + 单位按 flex 排，**允许整体换行**（单位可以整块掉到下一行）。 */
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
 }
 
 /* 单位：与数字同基线、小一号、次要色
@@ -82,7 +90,14 @@
   font-size: var(--fs-sm);
   font-weight: 400;
   color: var(--text-secondary);
-  white-space: nowrap;
+  /* 🔴 单位**允许换行**。第一版给了 `nowrap`，结果 RTL 下阿语膨胀 1.3×
+     直接顶破列宽（实测溢出 379px）：`nowrap` 会把单位变成列的**最小内容宽度**，
+     网格再想收也收不了。
+     `overflow-wrap: anywhere` 是给「一个词长过整列」的兜底 ——
+     阿/希的单位词本来就比中文长，不加它还是会溢出。 */
+  white-space: normal;
+  overflow-wrap: anywhere;
+  min-width: 0;               /* flex 子项默认不缩 —— 不写这句上面的换行等于没写 */
 }
 
 /* 脚下那行：通常放一个 delta + 一个说明词（"同比" / "较上季"）*/

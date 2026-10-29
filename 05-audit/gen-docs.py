@@ -613,6 +613,10 @@ HEAD_TPL = '''<!DOCTYPE html>
 <link rel="stylesheet" href="%(up)s01-tokens/tokens.css">
 <link rel="stylesheet" href="%(up)s01-tokens/typography.css">
 <link rel="stylesheet" href="%(up)s01-tokens/page.css">
+<!-- 文档页里会出现 `data-market="intl"` 的示例（delta / 约定 / 索引）。
+     不引这个文件，示例就是"写了但没生效"—— 而 `dir-check.js` 判据 ⑧ 会拦住。
+     它是可选增强，0.2 KB，对没有该属性的页面零影响。 -->
+<link rel="stylesheet" href="%(up)s01-tokens/market.css">
 <link rel="stylesheet" href="%(up)s03-patterns/nav/nav.css">
 <link rel="stylesheet" href="%(up)s04-recipes/table/table.css">
 <link rel="stylesheet" href="guide.css">
