@@ -1,0 +1,32 @@
+# card — 卡片：标题层级 + 整块链接，标题不得被当成交互控件
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "card · hover 无跳动"
+  main
+    heading "card · hover 无布局跳动" [level=1]
+    paragraph "卡片的核心判据：hover 时只改 transform 和 box-shadow ， 绝不改 border-width "
+    heading "把 1px 的跳动放大给你看" [level=2]
+    heading "反例：hover 改 border-width" [level=3]
+    paragraph "移上来 —— 里面那把尺子和文字整体往下挪了，卡片也变高了。 一排卡片时，邻居会跟着抖。"
+    heading "本库：transform + box-shadow" [level=3]
+    paragraph "移上来 —— 卡片整体抬起 2px， 里面的内容一个像素都不动 ， 邻居也不会被推挤。"
+    heading "抬起 2px，不是 8px" [level=2]
+    paragraph "卡片是"被拿起"，不是"被弹起"。8px 以上会有游戏感 —— 长文和数据类界面不能要那种感觉。这也是森友会那套设计里我"
+    heading "变体" [level=2]
+    heading "flat" [level=3]
+    paragraph "无边框，靠背景色和纸底的明度差分层。一排卡片时用它最干净。"
+    heading "elevated" [level=3]
+    paragraph "默认带阴影。只用在浮层、弹窗。列表里全用它，阴影会互相打架。"
+    heading "selected" [level=3]
+    paragraph "用 inset box-shadow 做内描边，不是改 border-width —— 同样为了不跳动。"
+    heading "整卡可点：Tab 一下试试" [level=2]
+    heading "点标题，整卡可点" [level=3]
+      link "点标题，整卡可点"
+    paragraph "用键盘 Tab 到这里 —— 整张卡会出现焦点环，而不是只有标题那一小块。"
+    heading "对照：普通 div onclick" [level=3]
+    paragraph "（这张是正确实现的对照说明）给 div 加 onclick：键盘 Tab 不到、 屏幕阅读器不认、不能中键新开、不能复制"
+    paragraph "实现：卡内放一个真实的 <a> ，用它的 ::after 铺满整卡。 焦点样式用 :focus-within ，内部链接"
+    heading "横向卡片（窄屏自动回退）" [level=2]
+    heading "横向布局" [level=3]
+    paragraph "560px 以下自动变回纵向。别手动覆盖这个回退。"
+    heading "门禁抓到的真问题" [level=2]

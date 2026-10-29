@@ -39,7 +39,7 @@
         "required": ["id", "kind", "name", "deprecatedIn", "removeIn", "reason"],
         "properties": {
           "id": { "type": "string", "minLength": 1 },
-          "kind": { "enum": ["token", "class"] },
+          "kind": { "enum": ["token", "class", "api", "event"] },
           "name": { "type": "string", "minLength": 1 },
           "deprecatedIn": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
           "removeIn": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
@@ -61,7 +61,7 @@
         "type": "object",
         "required": ["kind", "name", "removedIn"],
         "properties": {
-          "kind": { "enum": ["token", "class"] },
+          "kind": { "enum": ["token", "class", "api", "event"] },
           "name": { "type": "string", "minLength": 1 },
           "removedIn": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
           "replacement": {

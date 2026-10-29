@@ -6,7 +6,7 @@ deprecation-gate.py — 废弃治理门禁（M9）
 ============================================================================
 🔴 为什么需要
 ----------------------------------------------------------------------------
-  移除一个**公开名字**（令牌 / 类名）是对下游的破坏性变更。
+  移除一个**公开名字**是对下游的破坏性变更。
   而在此前，这件事**不受任何门禁约束**：0.7.4 移除了 `--measure`，
   只在更新日志里记了一笔 ⇒ 没有一处机器可读的地方说清：
 
@@ -21,9 +21,16 @@ deprecation-gate.py — 废弃治理门禁（M9）
   所以「迁移窗口」只能用**版本号的距离**表达 —— 就是 policy.minLead。
 
 ============================================================================
+  🔴 0.11.16 起，`kind` 从两类扩到**三类**：token / class / **api**。
+     之前只看令牌名与类名，于是「删掉 `Select.open()`」这件事
+     **不在任何门禁的视野里** —— 而它比删一个类名更容易伤到下游：
+     类名删了样式塌了，看得见；方法删了是运行时 `undefined is not a function`，
+     往往在用户点击之后才炸。既然本文的标题是「移除公开名字必须走流程」，
+     那就得对"名字"的全部分支成立，不能只对能被 grep 到的那两类成立。
+
 判据（九条）
 ----------------------------------------------------------------------------
-  ① planned 条目字段齐备，`kind` ∈ token / class
+  ① planned 条目字段齐备，`kind` ∈ token / class / api
   ② `deprecatedIn` 不得是未来版本（不许"预告"一个还没发的版本）
   ③ `removeIn` 必须比 `deprecatedIn` 晚**至少一个次版本**（迁移窗口）
   ④ 已到期（VERSION ≥ removeIn）⇒ 名字**必须已经**从公开面消失（兑现承诺）
@@ -32,6 +39,26 @@ deprecation-gate.py — 废弃治理门禁（M9）
   ⑦ 基线里有、当前面里没有的名字 ⇒ **必须**有已到期的登记（不许无流程移除）
   ⑧ `retroactive` 条数 ≤ budget（棘轮：不许再出现没走流程的移除）
   ⑨ 已到期且已消失的登记名 ⇒ 必须在基线里（证明它**曾经存在**，不是打错字）
+
+============================================================================
+🔴 api 这一类名字从哪来（决定它抓得到什么、抓不到什么）
+----------------------------------------------------------------------------
+  两个来源，都是**静态文件**，不跑浏览器 —— 本门禁在 `MODE=fast` 那一层跑，
+  它要是依赖 :8000，`gate:fast` 就得等浏览器起来，45 秒变 3 分钟。
+
+  · **全局名**：源码里 `global.X = …` / `window.X = …`，只取**大写开头**的。
+    `window.__flDismiss` 这类内部共享对象不算公开面（小写/下划线开头）。
+  · **成员名**：`types/index.d.ts` 里每个 `export interface` 的成员，
+    记成 `接口名.成员名`（`Select.open`、`AccordionOptions.duration`）。
+    参数对象的字段也算 —— 删掉一个字段同样是破坏性变更。
+
+  ⚠️ 诚实边界（写在这里，因为不说清就等于假绿）：
+    ① 只有 `api-contract-gate` 覆盖的那几个组件，d.ts ↔ 运行时是**实测**过
+       一致的；其余组件的成员**仅有声明**，没有运行时探针。
+       ⇒ 本判据保证的是「删声明之前必须登记」，不是「运行时一定还有它」。
+    ② 组件实例上的**私有**成员、闭包里的函数、`data-*` 属性、事件名
+       都不在这里。事件名尤其重要（`fl:select`）—— 见 DEPRECATIONS.md
+       「不在覆盖范围的」一节，那是**没做**，不是**量不了**。
 
 ============================================================================
 🔴 基线为什么是「只增不减」
@@ -76,8 +103,10 @@ COMPONENTS = os.path.join(AI, 'components.json')
 
 REQUIRED_PLANNED = ('id', 'kind', 'name', 'deprecatedIn', 'removeIn', 'reason')
 REQUIRED_RETRO = ('kind', 'name', 'removedIn')
-KINDS = ('token', 'class')
+KINDS = ('token', 'class', 'api', 'event')
 RE_VER = re.compile(r'^(\d+)\.(\d+)\.(\d+)$')
+TYPES = os.path.join(ROOT, 'types', 'index.d.ts')
+SRC_DIRS = ('01-tokens', '02-primitives', '03-patterns', '04-recipes', '09-assets')
 
 
 # ---------------------------------------------------------------- 基础
@@ -98,7 +127,8 @@ def load(p):
 def current_surface():
     """现在的公开面。
 
-    ⚠️ 只含**有名字、能被下游引用**的两类：令牌名与类名（根类/变体/槽位）。
+    ⚠️ 只含有名字、能被下游引用**的四类**：
+       令牌名 / 类名（根类·变体·槽位）/ api（全局名 + 类型成员）/ 事件名。
        状态取值（data-state 的枚举值）不算 —— 变化时没有名字可引用，
        且另有 states 类门禁看住。
     """
@@ -113,7 +143,102 @@ def current_surface():
             cls.add(v)
         for s in (c.get('slots') or []):
             cls.add(s)
-    return {'token': sorted(tokens), 'class': sorted(cls)}
+    return {'token': sorted(tokens), 'class': sorted(cls),
+            'api': sorted(_api_names()), 'event': sorted(_event_names())}
+
+
+def _api_names():
+    """全局名（源码里的 `global.X =` / `window.X =`）+ 类型成员（d.ts）。"""
+    out = set()
+    RE_G = re.compile(r'(?<![\w.$])(?:global|window)\.([A-Za-z_$][\w$]*)\s*=[^=]')
+    for d in SRC_DIRS:
+        base = os.path.join(ROOT, d)
+        for dirpath, _dirs, files in os.walk(base):
+            if 'vendor' in dirpath.replace('\\', '/').split('/'):
+                continue
+            for fn in files:
+                if not fn.endswith('.js'):
+                    continue
+                txt = io.open(os.path.join(dirpath, fn), encoding='utf-8',
+                              errors='replace').read()
+                for m in RE_G.finditer(txt):
+                    n = m.group(1)
+                    # 只认**大写开头**：`__flDismiss` 这类是内部共享对象，
+                    # 小写开头的是本库自己的变量，都不是公开面。
+                    if n[0].isupper():
+                        out.add(n)
+    out |= _type_members()
+    return out
+
+
+def _type_members():
+    """`types/index.d.ts` 里每个 interface 的成员，记成 `接口.成员`。
+
+    ⚠️ 为什么以声明为准而不是以运行时探针为准：本门禁跑在 `MODE=fast`
+       那一层（纯静态、45 秒），不能为了拿一份成员表去起浏览器。
+       d.ts ↔ 运行时的一致性由 `api-contract-gate` 负责；这里管的是
+       「把声明删掉之前，必须先在登记册里登记」。
+    """
+    out = set()
+    if not os.path.isfile(TYPES):
+        return out
+    txt = io.open(TYPES, encoding='utf-8').read()
+    RE_IF = re.compile(r'^export interface (\w+)[^{]*\{', re.M)
+    # 🔴 必须带 re.M：漏了它 `^` 只匹配整个 body 的开头，
+    #    而 `^\s+` 会把开头的换行一并吃掉 ⇒ **每个接口只收到第一个成员**
+    #    （实测：`AccordionInstance` 只出了 `root`，toggle/set/itemOf 全丢，
+    #     而且门禁照样绿 —— 少收名字不会有任何提示，只会让判据变宽）。
+    RE_MEM = re.compile(r'^\s+(?:readonly\s+)?([A-Za-z_$][\w$]*)\s*'
+                        r'(?:\??\s*[:(<]|\[)', re.M)
+    for m in RE_IF.finditer(txt):
+        name = m.group(1)
+        # `FrontendLibGlobal` 的键就是全局名本身，已在源码那一支收过，
+        # 再收一遍只会让同一个名字有两个坐标（登记时容易只改一处）。
+        if name == 'FrontendLibGlobal':
+            continue
+        # 从 `{` 起做花括号配对，取整个接口体（接口里会有对象字面量类型，
+        # 只匹配到行尾会漏掉嵌套的成员）。
+        i = m.end()
+        depth = 1
+        while i < len(txt) and depth:
+            ch = txt[i]
+            if ch == '{':
+                depth += 1
+            elif ch == '}':
+                depth -= 1
+            i += 1
+        body = txt[m.end():i - 1]
+        # 先把注释剥掉：注释里写着 `open()` 这种示例时，会被当成成员。
+        body = re.sub(r'/\*.*?\*/', '', body, flags=re.S)
+        body = re.sub(r'//[^\n]*', '', body)
+        for lm in RE_MEM.finditer(body):
+            out.add(name + '.' + lm.group(1))
+    return out
+
+
+def _event_names():
+    """公开事件名：`flEmit(el, 'fl-xxx', …)` 里的字面量。
+
+    ⚠️ 事件名是**没有类型、没有类名、grep 得到但没人看**的那一类公开面：
+       改一个字母，所有 `addEventListener('fl-select')` 的调用方**静默失效**
+       —— 不报错、不警告，只是不再被调用。这正是"必须登记"的典型。
+    """
+    out = set()
+    RE_E = re.compile(r"flEmit\(\s*[^,]+,\s*'(fl-[a-z0-9-]+)'")
+    for d in SRC_DIRS:
+        base = os.path.join(ROOT, d)
+        for dirpath, _dirs, files in os.walk(base):
+            if 'vendor' in dirpath.replace('\\', '/').split('/'):
+                continue
+            for fn in files:
+                if not fn.endswith('.js'):
+                    continue
+                txt = io.open(os.path.join(dirpath, fn), encoding='utf-8',
+                              errors='replace').read()
+                for m in RE_E.finditer(txt):
+                    out.add(m.group(1))
+    return out
+
 
 
 def bucket_of(cur, kind):
@@ -126,8 +251,16 @@ def check(depr, base, cur, version):
     bad = []
     V = vkey(version)
     cur_by = {k: bucket_of(cur, k) for k in KINDS}
-    cur_all = cur_by['token'] | cur_by['class']
-    base_all = set(base.get('token', [])) | set(base.get('class', []))
+    # 🔴 汇总必须遍历 **KINDS**，不能手写 'token' | 'class'。
+    #    实测（0.11.16 扩 kind 时）：手写两个桶 ⇒ ⑦ 只在令牌/类名上有差集，
+    #    api 与 event 两类**删了也不报** —— 门禁看着更忙了，实际更宽了。
+    #    这种错不会崩、不会红，只会静默放行；只有逐类突变才打得出来。
+    cur_all = set()
+    for _k in KINDS:
+        cur_all |= cur_by[_k]
+    base_all = set()
+    for _k in KINDS:
+        base_all |= set(base.get(_k, []))
 
     planned = depr.get('planned', [])
     retro = depr.get('retroactive', [])
@@ -237,14 +370,17 @@ def do_update():
         base[k] = sorted(merged)
     base['schemaVersion'] = '1.0.0'
     base['$comment'] = [
-        '公开面基线：库里**曾经出现过**的公开名字（令牌名 / 类名）。',
+        '公开面基线：库里**曾经出现过**的公开名字。',
+        '四类：token（令牌名）· class（类名）· api（全局名与类型成员）· event（事件名）。',
         '🔴 只增不减 —— 由 05-audit/deprecation-gate.py --update 维护。',
         '   删条目会让"未登记的移除"永远查不出来（那正是这道门禁要抓的东西）。',
     ]
     with io.open(BASE, 'w', encoding='utf-8', newline='') as fh:
         fh.write(json.dumps(base, ensure_ascii=False, indent=2) + '\n')
-    print('  ✓ 基线已更新（只增不减）：新增 %d 个，合计 %d 个'
-          % (added, len(set(base['token']) | set(base['class']))))
+    _all = set()
+    for _k in KINDS:
+        _all |= set(base.get(_k, []))
+    print('  ✓ 基线已更新（只增不减）：新增 %d 个，合计 %d 个' % (added, len(_all)))
     return 0
 
 
@@ -263,12 +399,16 @@ def selftest():
         return d
 
     def clone_cur(fn):
-        c = {'token': list(cur['token']), 'class': list(cur['class'])}
+        # 🔴 必须把**全部** kind 都带上（含 api / event 的空桶）。
+        #    只带 token/class 的话，新加的两类在克隆体里会被 `bucket_of`
+        #    读成空集合 ⇒ 基线里的 api 名字全体"消失" ⇒ ⑦ 一片假红，
+        #    而自检会把它显示成"判据坏了"。加 kind 时最容易漏的就是这里。
+        c = {k: list(cur.get(k, [])) for k in KINDS}
         fn(c)
         return c
 
     def clone_base(fn):
-        b = {'token': list(base['token']), 'class': list(base['class'])}
+        b = {k: list(base.get(k, [])) for k in KINDS}
         fn(b)
         return b
 
@@ -321,7 +461,7 @@ def selftest():
             if rep:
                 taken.update(rep if isinstance(rep, list) else [rep])
         for kind in KINDS:
-            cand = [n for n in sorted(set(cur[kind]) & set(base[kind]))
+            cand = [n for n in sorted(set(cur.get(kind, [])) & set(base.get(kind, [])))
                     if n not in taken]
             if cand:
                 return kind, cand[0]
@@ -392,6 +532,20 @@ def selftest():
          run(json.loads(depr_raw), base,
              clone_cur(lambda c: c[SKIND].remove(SNAME))),
          '没走流程的移除')
+    # ⑦ · 新收的两类**逐类**打一遍。
+    # 🔴 为什么必须逐类打：扩 kind 的时候最典型的失效不是报错，而是
+    #    「新那一支悄悄取不到名字」—— 空集合 ⇒ ⑦ 永远没有差集 ⇒ 恒绿。
+    #    上面那条只打 token 类，它绿不能证明 api / event 也接上了。
+    for _k, _sample in (('api', 'Select.open'), ('event', 'fl-select')):
+        if _sample in base.get(_k, []):
+            only('%s 类里删掉一个名字（%s）⇒ 无流程移除 ⇒ 必须红' % (_k, _sample),
+                 run(json.loads(depr_raw), base,
+                     clone_cur(lambda c, k=_k: c[k].remove(_sample))),
+                 '没走流程的移除')
+        else:
+            print('  [FAIL] %s 类里找不到样例 %s ⇒ 这一支没有被验证（基线漏收）'
+                  % (_k, _sample))
+            bad += 1
     # ⑧ 历史欠账棘轮
     only('retroactive 再加一条（超出预算）⇒ 棘轮必须红',
          run(clone(lambda d: d['retroactive'].append(

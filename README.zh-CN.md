@@ -343,7 +343,7 @@ import 'agentcss/dist/02-primitives/button/button.css';
 | `ai/` | **机器可读契约**：`components.json` / `tokens.json` / schema / 校验器 / 命令行 |
 | `adapters/` | 场景适配层（如演示文稿），**不进核心** |
 | `benchmark/` | 兼容性基准（10 类编辑意图，当前无模型实测记录） |
-| `docs/` | `INVARIANT.md`（不变式）· `CONVENTIONS.md`（全局约定）· `ACCESSIBILITY.md`（无障碍）· `AI-CONTRACT.md`（与 AI 协作的契约）· `LAYER-BASELINE.md`（引擎能力基线） |
+| `docs/` | `INVARIANT.md`（不变式）· `CONVENTIONS.md`（全局约定）· `ACCESSIBILITY.md`（无障碍）· `DEPRECATIONS.md`（弃用与移除）· `AI-CONTRACT.md`（与 AI 协作的契约）· `LAYER-BASELINE.md`（引擎能力基线） |
 | `types/` | TypeScript 类型定义（描述 `window` 上的全局对象） |
 
 ## 示例与验证状态

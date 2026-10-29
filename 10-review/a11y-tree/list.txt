@@ -1,0 +1,41 @@
+# list — 列表：list/listitem + 可翻转卡片内部不得被朗读两遍
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "列表 · 增删的平滑过渡"
+  main
+    heading "删掉一行，其余行不该瞬移" [level=1]
+    paragraph "列表增删最容易做砸的地方不是动画本身，是 动画缺失 —— 项目瞬间跳位，用户还没看清删了哪条，下一秒已经找不到刚才在看的"
+    button "添加一条"
+    button "按记录数排序"
+    button "按名称倒序"
+    button "清空"
+    list
+      listitem "中国平安 26,831 条记录 · 金融 +2.41% 移除" [level=1]
+        button "移除"
+      listitem "宁德时代 19,204 条记录 · 工业 -0.87% 移除" [level=1]
+        button "移除"
+      listitem "招商银行 31,556 条记录 · 金融 +1.13% 移除" [level=1]
+        button "移除"
+      listitem "比亚迪 28,912 条记录 · 工业 +3.69% 移除" [level=1]
+        button "移除"
+      listitem "长江电力 17,443 条记录 · 公用事业 -1.24% 移除" [level=1]
+        button "移除"
+      listitem "中芯国际 15,827 条记录 · 半导体 +5.02% 移除" [level=1]
+        button "移除"
+      listitem "恒瑞医药 16,205 条记录 · 医药 -0.45% 移除" [level=1]
+        button "移除"
+      listitem "五粮液 14,188 条记录 · 消费 +1.87% 移除" [level=1]
+        button "移除"
+    heading "请试这四件事" [level=2]
+    paragraph "1. 删中间任意一条。 上下两行会 平滑滑过去 ， 不是瞬间跳位。盯着两行之间的缝隙看。"
+    paragraph "2. 点"按记录数排序"。 整列重排，每一行各自从旧位置滑到新位置—— 这也是 FLIP，只是位移不为零。"
+    paragraph "3. 鼠标横着扫过列表。 行 不会抖 。 做法是左侧线用 transparent 预留 2px，hover 时只改颜色；"
+    paragraph "4. 键盘 Tab 进列表。 整行会亮起左边线——但 Tab 不会为每一行多停一次 ， 只在行内按钮上停。这是 :foc"
+    heading "为什么不用 auto-animate" [level=2]
+    heading "涨跌色说明" [level=2]
+    paragraph "本库用 红涨绿跌 ，与中国 A 股用户习惯一致。 这一点与欧美惯例相反，是刻意的——做反了会被当成数据出错。"
+    heading "对比：错写法 vs 本库写法" [level=2]
+    heading "❌ 常见写法：长文本直接换行" [level=3]
+    paragraph "第一行折成两行，行高就不一样了：一屏能扫到的条目从 8 条掉到 5 条，而且"哪一行对应哪个数字"要重新对。"
+    heading "✅ 本库：单行省略 + title" [level=3]
+    paragraph "列表是"扫"的不是"读"的：标题单行截断，完整名称放 title ，悬停可看。行高一致，眼睛才能顺着往下扫。"

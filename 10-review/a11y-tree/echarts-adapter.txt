@@ -1,0 +1,131 @@
+# echarts-adapter — 图表适配：role=img + 数值表双通道，两条通道都得有名字
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "图表规范 · frontend-lib"
+  heading "图表规范" [level=1]
+  paragraph "下次画图照这里做就行 ，不用再反复微调。 全部规则来自本库的分析类可视化约定， 并且 大部分已经变成 echarts-a"
+  heading "0 · 边界：什么该用本库，什么该用 ECharts" [level=2]
+  table "能力边界：什么场景用本库、什么用 ECharts"
+    row
+      columnheader "场景"
+      columnheader "用什么"
+      columnheader "谁维护"
+    row
+      cell "列表右侧的迷你趋势（看走势）"
+      cell "本库 sparkline（1.5KB，零依赖）"
+      cell "我们"
+    row
+      cell "表格里的迷你条 / 状态点"
+      cell "本库"
+      cell "我们"
+    row
+      cell "多系列折线 / 柱 / 饼 / 桑基 / 热力 / 仪表盘"
+      cell "ECharts 或 Recharts"
+      cell "他们"
+  paragraph "判据一句话 ：「 看走势 」用本库；「 看数据、用它做判断 」用 ECharts。"
+  paragraph "⚠️ 精简档（某项目） 不要引 ECharts （约 1MB gzip）——那边继续用 sparkline。"
+  heading "1 · 本库负责的：迷你趋势（sparkline）" [level=2]
+  paragraph "🔴 旁边必须有数字 ——sparkline 本身 没有可读的信息 （读屏读不出路径）。这是它最容易出的错。"
+  heading "2 · ECharts 负责的：数据分析图表" [level=2]
+  paragraph "本页 没有引 ECharts （本库零依赖）。下面是 规范示例 —— 数字用本库的格式规则画出来，图表位留给 EChar"
+  heading "✅ 规范：柱状图（分类轴从 0）" [level=3]
+  table "示例数据：柱状图的分季度营收"
+    row
+      columnheader "季度"
+      columnheader "营收(亿)"
+      columnheader "同比"
+    row
+      cell "Q1"
+      cell "128.4"
+      cell "+12.4%"
+    row
+      cell "Q2"
+      cell "136.1"
+      cell "+8.1%"
+    row
+      cell "Q3"
+      cell "141.7"
+      cell "−2.3%"
+    row
+      cell "Q4"
+      cell "155.2"
+      cell "+9.5%"
+  paragraph "柱状图的 y 轴必须从 0 开始 —— 截断基线会夸大差异， 这是最容易骗人的一种图。 adapter.defaults"
+  heading "✅ 规范：多系列（≤ 5 条）" [level=3]
+  table "示例数据：A / B / C 三支股票的逐年对比"
+    row
+      columnheader "年份"
+      columnheader "A 股"
+      columnheader "B 股"
+      columnheader "C 股"
+    row
+      cell "2022"
+      cell "1,284"
+      cell "862"
+      cell "517"
+    row
+      cell "2023"
+      cell "1,506"
+      cell "747"
+      cell "603"
+    row
+      cell "2024"
+      cell "1,706"
+      cell "863"
+      cell "714"
+  paragraph "系列上限 5 。超过时 adapter 会 在控制台警告 —— 因为颜色循环会让第 6 条和第 1 条同色，用户分不清谁"
+  heading "3 · 数字格式（已经在用）" [level=2]
+  table "数字格式规则与例子"
+    row
+      columnheader "类型"
+      columnheader "规则"
+      columnheader "例子"
+    row
+      cell "千分位"
+      cell "每三位加逗号"
+      cell "1,234,567"
+    row
+      cell "百分比"
+      cell "固定 1–2 位小数"
+      cell "42.6%"
+    row
+      cell "大额"
+      cell "走「万 / 亿」，不写成 100,000,000"
+      cell "1.28 亿"
+    row
+      cell "缺失值"
+      cell "留空，不写 0"
+      cell "—"
+  paragraph "🔴 缺失 ≠ 0 ：这是本库的 MISSING != ZERO 契约，图表里同样适用 —— 缺失点应该 断开 ，不能画"
+  heading "4 · 明确禁止（这些是"看起来专业但会骗人"的）" [level=2]
+  table "明确禁止的做法与原因"
+    row
+      columnheader "不要做"
+      columnheader "为什么"
+    row
+      cell "3D 图表"
+      cell "透视扭曲会误导读数（Tufte 的核心结论）"
+    row
+      cell "双 Y 轴"
+      cell "两轴的交叉点可以被随意搬动 ⇒ 视觉在说谎"
+    row
+      cell "大面积渐变填充"
+      cell "只在面积图用，透明度 ≤ 0.15"
+    row
+      cell "只用颜色区分系列"
+      cell "色盲用户看不出 ⇒ 加虚线或标记点"
+    row
+      cell "平滑曲线（smooth）"
+      cell "会造出数据里没有的中间值，adapter 已默认关掉"
+  heading "5 · 无障碍" [level=2]
+  list
+    listitem "图表旁 必须有等价的数字或表格 （本页每个图都配了表）" [level=1]
+      ListMarker "• "
+    listitem "数据图表的 <svg> 加 role="img" + aria-label" [level=1]
+      ListMarker "• "
+    listitem "⚠️ 装饰性 sparkline 反而不要 加 role="img" ——它没有可读等价物，加了会误导" [level=1]
+      ListMarker "• "
+    listitem "不能只用颜色区分系列" [level=1]
+      ListMarker "• "
+  heading "6 · 怎么用（下次直接照抄）" [level=2]
+  paragraph "换主题时调 ChartAdapter.refresh(c) ，图表会跟着变 （配合 01-tokens/theme-to"

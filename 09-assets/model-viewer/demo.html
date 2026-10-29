@@ -59,7 +59,7 @@ td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabu
        data-mv-orbit="vendor/OrbitControls.js"></div>
 
   <h2 class="rule-top">为什么是这样设计的</h2>
-  <table>
+  <table aria-label="3D 模型页的设计要求与做法">
     <tr><th>要求</th><th>做法</th></tr>
     <tr><td>首屏要快</td>
         <td>3D 引擎<strong>点击后</strong>才 <code>&lt;script&gt;</code> 注入，
@@ -85,7 +85,7 @@ td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabu
   </ul>
 
   <h2 class="rule-top">体积现状</h2>
-  <table>
+  <table aria-label="各文件的体积与加载时机">
     <tr><th>文件</th><th class="num">体积</th><th>何时加载</th></tr>
     <tr><td><code>model-viewer.js</code>（本库）</td><td class="num">~9 KB</td><td><span class="ok">首屏</span></td></tr>
     <tr><td><code>models/fox.glb</code></td><td class="num">159 KB</td><td>点击后（可 XHR 显示进度）</td></tr>

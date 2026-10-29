@@ -1,0 +1,115 @@
+# data-showcase — 数据展示：多张表格并存时靠 caption/label 区分，不许都叫"表格"
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "data-showcase · 数据展示能力对照 · frontend-lib"
+  main
+    heading "数据展示能力对照" [level=1]
+    paragraph "同一套设计令牌，四种不同的表达方式。它们回答的问题不一样， 所以 不能用同一个组件凑合 。"
+    paragraph "本页用于对照"各自的适用场景"，不是组件大集合。每节只放该能力最典型的一种形态。"
+    heading "1 · BI 迷你趋势（经营指标）" [level=2]
+    paragraph "回答的问题： "这个指标最近是涨还是跌？" —— 只给形状，不给精确数值。适合放在标题旁、卡片角上，一屏能扫过十几个。"
+    paragraph "月活跃用户"
+    paragraph "128.4 万"
+    paragraph "近 12 个月"
+    paragraph "订单转化率"
+    paragraph "3.42%"
+    paragraph "近 12 个月"
+    paragraph "退款率"
+    paragraph "1.08%"
+    paragraph "近 12 个月"
+    paragraph "数据来源：示例数据，用于演示 sparkline 的三种形态（线 / 面积 / 柱）。"
+    heading "2 · 科学坐标图（数值 + 不确定性）" [level=2]
+    paragraph "回答的问题： "这些测量值落在哪？误差多大？" —— 需要真实坐标轴、单位、误差棒。BI 迷你趋势给不了这些： 它没有数"
+    figure "300 320 340 360 380 400 0 10 20 30 40 50 60 反应温度 / K 转化率 / %"
+      image "反应温度与转化率的关系。横轴：反应温度 / K。纵轴：转化率 / %。共 2 个数据系列。误差棒为 ±1 标准差"
+      Figcaption "图 1 · 反应温度与转化率的关系（散点为实测均值，误差棒为 ±1 标准差）。 示例数据，非真实实验结果。"
+    heading "3 · 学术出版表格" [level=2]
+    paragraph "回答的问题： "哪个方案在哪个指标上更好？" —— 需要逐格比对数值，所以去掉竖线与斑马纹，只留三条线。 多级表头用 s"
+    table "表 1 · 三种干燥工艺的成品性能对比（示例数据）"
+      caption "表 1 · 三种干燥工艺的成品性能对比（示例数据）"
+      row
+        columnheader "工艺"
+        columnheader "含水率"
+        columnheader "机械强度"
+      row
+        columnheader "均值 %"
+        columnheader "极差 %"
+        columnheader "抗压 MPa"
+        columnheader "抗折 MPa"
+      row
+        rowheader "热风干燥"
+        cell "4.2"
+        cell "1.8"
+        cell "38.4"
+        cell "7.1"
+      row
+        rowheader "微波干燥"
+        cell "2.7"
+        cell "0.9"
+        cell "41.2"
+        cell "7.6"
+      row
+        rowheader "真空冷冻干燥"
+        cell "1.4"
+        cell "0.3"
+        cell "35.8"
+        cell "6.9"
+    paragraph "注：每组 n = 5；含水率为干燥结束时的质量分数。示例数据。"
+    heading "4 · 统计结果表" [level=2]
+    paragraph "回答的问题： "这个效应有多大？有多确定？" —— 估计值、标准误、置信区间、p 值各有书写惯例， 不能用同一个数字格式"
+    table "表 2 · 干燥工艺对含水率的影响（OLS 估计，示例数据，n = 60）"
+      caption "表 2 · 干燥工艺对含水率的影响（OLS 估计，示例数据，n = 60）"
+      row
+        columnheader "变量"
+        columnheader "估计值 (标准误)"
+        columnheader "95% 置信区间"
+        columnheader "p 值"
+      row
+        rowheader "截距"
+        cell "4.186 (0.214)"
+        cell "[3.757, 4.615]"
+        cell "< .001"
+      row
+        rowheader "微波干燥"
+        cell "−1.492 (0.301)"
+        cell "[−2.095, −0.889]"
+        cell "< .001"
+      row
+        rowheader "真空冷冻干燥"
+        cell "−2.774 (0.301)"
+        cell "[−3.377, −2.171]"
+        cell "< .001"
+      row
+        rowheader "初始含水率"
+        cell "0.041 (0.058)"
+        cell "[−0.075, 0.157]"
+        cell ".482"
+    paragraph "注：参照组为「热风干燥」；括号内为标准误。 置信区间与 p 值由调用方计算并提供，本表只负责呈现。 示例数据，非真实研究"
+    heading "5 · 它们的分工" [level=2]
+    table "表 3 · 四种表达方式各自回答什么问题"
+      caption "表 3 · 四种表达方式各自回答什么问题"
+      row
+        columnheader "表达方式"
+        columnheader "回答的问题"
+        columnheader "不负责"
+      row
+        rowheader "迷你趋势"
+        cell "指标是涨还是跌"
+        cell "精确数值、单位、不确定性"
+      row
+        rowheader "科学坐标图"
+        cell "值落在哪、误差多大"
+        cell "统计推断、显著性"
+      row
+        rowheader "学术表格"
+        cell "哪个方案在哪个指标上更好"
+        cell "趋势形状、时间序列"
+      row
+        rowheader "统计结果表"
+        cell "效应大小与确定程度"
+        cell "原始测值的分布"
+    heading "对比：错写法 vs 本库写法" [level=2]
+    heading "❌ 常见写法：单位与数字同字号同色" [level=3]
+    paragraph ""亿元"只是个量级标记，却和 1,284.6 抢同一层注意力：读者先读到的是四个字，而不是那个数。"
+    heading "✅ 本库：数字当主角，单位退一档" [level=3]
+    paragraph "数字用 num （等宽数字，纵向才对得齐），单位降一档字号与颜色。一屏里有十几个数字时，这个差别决定读者能不能扫。"

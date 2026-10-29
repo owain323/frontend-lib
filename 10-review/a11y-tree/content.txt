@@ -1,0 +1,54 @@
+# content — 长文排版：标题层级与表格，正文段落不得被容器吞成一个名字
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "content · 正文渲染 · frontend-lib"
+  main
+    paragraph "content 接管 Markdown 渲染出来的元素： 结构用标准 （CommonMark/GFF 决定）， 样式用令"
+    heading "季度经营分析" [level=1]
+    paragraph "本节演示正文容器接管 <h1> ～ <h3> 、 段落、列表、表格、引用、代码块的样子。层级刻意按 h1→h2→h3 顺"
+    heading "1 · 关键指标" [level=2]
+    paragraph "下面是三个核心指标。 加粗 与 斜体 都走令牌，不写死样式。"
+    list
+      listitem "营业收入：同比 +12.4%" [level=1]
+        ListMarker "• "
+      listitem "毛利率： 62.1% （用等宽字体，数字对齐）" [level=1]
+        ListMarker "• "
+      listitem "经营现金流：转正" [level=1]
+        ListMarker "• "
+    heading "1.1 · 分季度明细" [level=3]
+    table "2025–2026 分季度经营数据（单位：万元）"
+      caption "2025–2026 分季度经营数据（单位：万元）"
+      row
+        columnheader "季度"
+        columnheader "收入"
+        columnheader "毛利率"
+      row
+        rowheader "2025 Q3"
+        cell "4,120"
+        cell "60.8%"
+      row
+        rowheader "2025 Q4"
+        cell "4,586"
+        cell "61.5%"
+      row
+        rowheader "2026 Q1"
+        cell "4,903"
+        cell "62.1%"
+    heading "2 · 风险提示" [level=2]
+    blockquote
+      paragraph "应收账款周转天数环比恶化 6 天，需在下季度收紧信用政策。"
+    list
+      listitem "对账期 > 60 天的新客户改为预付" [level=1]
+        ListMarker "1. "
+      listitem "逾期 > 30 天暂停发货" [level=1]
+        ListMarker "2. "
+    heading "3 · 术语" [level=2]
+    DescriptionList "EBITDA 息税折旧摊销前利润 CAC 客户获取成本"
+    heading "4 · 代码与链接" [level=2]
+    paragraph "详细口径见 内部数据字典 。"
+      link "内部数据字典"
+    heading "对比：错写法 vs 本库写法" [level=2]
+    heading "❌ 常见写法：裸 <hr>" [level=3]
+    paragraph "默认 <hr> 自带上下两条 inset 边框，不清 height 和 border-top 出来就是一条粗双线 —— "
+    heading "✅ 本库：.prose > hr" [level=3]
+    paragraph "content.css 把 height 归零、只留一条上边 —— 渲染器（markdown-it）产出的裸 <hr> "

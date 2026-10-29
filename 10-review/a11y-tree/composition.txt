@@ -1,0 +1,44 @@
+# composition — 组合页：多个模式同处一页时不得出现无法区分的同名控件
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "组合测试 · frontend-lib"
+  main
+    heading "组合测试（组合契约的宿主）" [level=1]
+    paragraph "这个页面存在的唯一理由： 让组件互相嵌套 。 单组件的 demo 里每个都对，放在一起才会暴露 z-index 打架 ·"
+    heading "1 · form-validation 里放 combobox（焦点互抢）" [level=2]
+    LabelText "关注板块 ＊"
+    combobox "关注板块" [invalid=true hasPopup=listbox]
+    paragraph "至少选 1 个"
+    heading "2 · tree 里放 badge（层级缩进）" [level=2]
+    tree "成本中心" [orientation=vertical]
+      group "成本中心 12 生产 3 研发 9"
+        treeitem "成本中心 12" [expanded=true level=2]
+          group "生产 3 研发 9"
+            treeitem "生产 3" [level=3]
+            treeitem "研发 9" [level=3]
+    heading "3 · dropdown 里放 badge（同上）" [level=2]
+    button "带徽标的菜单" [hasPopup=menu]
+    heading "4 · 🔴 select × drawer（z-index 打架 + Esc 冲突）" [level=2]
+    paragraph "这是 最容易出问题的一处 ： · drawer 打开后，里面的 select 再打开下拉 ⇒ 谁盖住谁？ · 两层都监听"
+    button "打开抽屉（含 select）"
+    heading "5 · 表格里放 badge + 按钮（密集布局）" [level=2]
+    table "密集布局中的 badge 与按钮"
+      row
+        columnheader "项"
+        columnheader "状态"
+        columnheader "操作"
+      row
+        cell "数据同步"
+        cell "正常"
+        cell "重试"
+          button "重试"
+      row
+        cell "成本核算"
+        cell "失败"
+        cell "查看"
+          button "查看"
+      row
+        cell "成本核算"
+        cell "待复核"
+        cell "查看"
+          button "查看"

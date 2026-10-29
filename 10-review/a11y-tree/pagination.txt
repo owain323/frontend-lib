@@ -1,0 +1,80 @@
+# pagination — 分页：每个页码按钮要有能区分的名字（"第 3 页"而不是"3"）
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "分页 ·· frontend-lib"
+  main
+    heading "分页" [level=1]
+    paragraph "。依据 W3C APG + USWDS + MDN + Component Gallery + Mironsoft（5 "
+    heading "1 · 基本用法" [level=2]
+    paragraph "共 248 条 ，每页 20 条 ⇒ 13 页 。 键盘试试 ：Tab 聚焦到分页后， ← → 翻页， Home End"
+    region "当前页数据"
+    navigation "搜索结果分页"
+      list
+        listitem "‹" [level=1]
+          button "上一页" [disabled=true]
+        listitem "1" [level=1]
+          button "第 1 页（当前页）" [disabled=true]
+        listitem "2" [level=1]
+          button "第 2 页"
+        listitem "3" [level=1]
+          button "第 3 页"
+        listitem "4" [level=1]
+          button "第 4 页"
+        listitem [level=1]
+        listitem "13" [level=1]
+          button "第 13 页"
+        listitem "›" [level=1]
+          button "下一页"
+      paragraph "第 1 页 / 共 13 页"
+      paragraph [live=polite]
+    paragraph "🔴 读屏播报区（ aria-live ）的内容："
+    heading "2 · 结构：六条硬要求" [level=2]
+    table "分页容器的六条结构要求与理由"
+      row
+        columnheader "要求"
+        columnheader "为什么"
+      row
+        cell "包在 <nav aria-label> 里"
+        cell "页面常有多个 nav（主导航/面包屑/分页）， 没有 aria-label 读屏器分不清"
+      row
+        cell "用 <ul>+<li>，不用松散的 <a>"
+        cell "列表能传达"共几项""当前在第几项""
+      row
+        cell "当前页 aria-current="page""
+        cell "⛔ 不用 aria-selected —— 那是给 tab/option/row 用的"
+      row
+        cell "页码 aria-label="第 4 页""
+        cell "孤零零的数字脱离上下文没有意义"
+      row
+        cell "首/末页用 disabled"
+        cell "看着能点却不工作是最糟的"
+      row
+        cell "翻页有 aria-live="polite""
+        cell "只改文字变化的话，视觉变化对读屏器是静默的"
+    paragraph "⛔ 常见错误 ：把 role="navigation" 直接放在 <ul> 上 —— 那会 覆盖 ul 的列表语义 （C"
+    heading "3 · 当前页仍然是按钮（不是纯文字）" [level=2]
+    paragraph "USWDS 的说明听起来反直觉： 当前页也要是链接/按钮 ， 只是用 aria-current 标记 + 视觉高亮。 理"
+    heading "4 · 槽位固定 7 个（USWDS 的规定）" [level=2]
+    paragraph "永远显示：首页 · 当前页 · 最后一页 · 当前页两侧各一页。 有遗漏就显示省略号， 且总数固定 —— 翻页时按钮位置"
+    heading "5 · 命中区" [level=2]
+    paragraph "每个按钮 44×44px ，走 --sz-touch 令牌 （ WCAG 2.5.5 Level AAA 的要求；AA "
+    heading "6 · 窄屏" [level=2]
+    paragraph "页码窗口会换行，状态文本另起一行 ⇒ 不产生横向溢出 。"
+    heading "对比：错写法 vs 本库写法" [level=2]
+    heading "❌ 常见写法：页码全铺开" [level=3]
+    paragraph "12 个页码硬塞进一行，窄屏上要么换行、要么每个都挤到点不中。而 4~10 页其实是读者最不会去点的区间。"
+    heading "✅ 本库：7 个槽位封顶 + 省略号" [level=3]
+    navigation "分页示例"
+      list
+        listitem "1" [level=1]
+          link "第 1 页"
+        listitem "2" [level=1]
+          link "第 2 页"
+        listitem "3" [level=1]
+          link "第 3 页"
+        listitem "…" [level=1]
+        listitem "11" [level=1]
+          link "第 11 页"
+        listitem "12" [level=1]
+          link "第 12 页"
+    paragraph "USWDS 的上限是 7 个槽位：首尾两页 + 当前页邻域，中间用 pagination__ellipsis 收掉。省略"

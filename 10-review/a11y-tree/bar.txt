@@ -1,0 +1,35 @@
+# bar — 柱状图：图形替身必须有非空名字（canvas 的文本读屏拿不到）
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "bar · 柱状图 · frontend-lib"
+  main
+    heading "bar · 柱状图" [level=1]
+    paragraph "按 图表规范 四条铁律实现。 ① 超量程被容器裁剪（ .bar + .bar__svg 两道 overflow:hidd"
+    heading "1 · 正常量程（两系列堆叠）" [level=2]
+    paragraph "堆叠（stack，默认） ：第二系列画在第一系列 顶端 ， 柱子的总高 = 该列的 合计 ，顶端标注写的也是合计。 🔴"
+    image "每日两系列堆叠柱状图"
+    list
+      listitem "夜间" [level=1]
+      listitem "日间" [level=1]
+    heading "1b · 并列分组（group）：同一个 ay，另一种语义" [level=2]
+    paragraph "分组用于"同一组数据要 比大小 "：每个系列各占一条窄柱，不看总高、看长短。 取舍： 堆叠 回答"合计是多少、由什么组成"
+    image "每日两系列并列分组柱状图"
+    list
+      listitem "夜间" [level=1]
+      listitem "日间" [level=1]
+    heading "1c · 🔴 堆叠合计超出量程：不能假装没超" [level=2]
+    paragraph "两个系列各自都没超上限，但 加起来超了 。 这里的行为是：超出部分 被裁掉 ，并且脚下写明"类目的合计超出量程"。 ⚠️"
+    image "堆叠合计超出量程的示例"
+    list
+      listitem "线上" [level=1]
+      listitem "线下" [level=1]
+    paragraph "有 3 个类目的合计超出量程（上限 12），已按上限截断显示。"
+    heading "2 · 🔴 超量程：09-01 那根超出上限" [level=2]
+    paragraph "这一张 故意 把 09-01 设成 0.42，而上限是 0.35 ⇒ 它会被裁到顶， 并标 data-clipped +"
+    image "每日空闲水平，第 1 天超出量程"
+    paragraph "09-01 为 0.42，超出量程上限 0.35，已按上限截断显示。"
+    heading "3 · 阈值线 + 标注只标关键点" [level=2]
+    image "每日 09:00 前的事项数，含阈值线 1"
+    heading "4 · 🔴 量程必填：不给 max 会直接报错" [level=2]
+    paragraph "铁律三： 量程不得自动适配 。 一个 400 的异常值 + 30 个 0.35 的常态值，若 Y 轴自适应到 400 ⇒"
+    button "不给 max，看会发生什么"

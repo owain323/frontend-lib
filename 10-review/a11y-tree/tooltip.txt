@@ -1,0 +1,26 @@
+# tooltip — 提示：aria-describedby 关联，提示文本不作为独立节点再念一遍
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "tooltip · 文字提示 · frontend-lib"
+  main
+    heading "tooltip · 文字提示" [level=1]
+    paragraph "⛔ tooltip 不承载必要信息 —— 触屏没有 hover， 只放在 tooltip 里的内容等于不存在。 ✅ 键盘"
+    heading "1 · 键盘可达（Tab 聚焦即出）" [level=2]
+    button "悬停/聚焦我"
+    heading "2 · 四个方位" [level=2]
+    button "上方"
+    button "下方"
+    button "左侧"
+    button "右侧"
+    heading "3 · 🔴 错误示范：把必要信息只放在 tooltip 里" [level=2]
+    paragraph "下面这个按钮的 tooltip 文字是「删除」，与按钮可见文字完全相同 ⇒ 说明它 没有提供额外信息 ，只是重复 ⇒ 应"
+    button "删除"
+    heading "4 · 正确示范：补充说明" [level=2]
+    button "导出 CSV"
+    heading "对比：错写法 vs 本库写法" [level=2]
+    heading "❌ 常见写法：关键信息只放在气泡里" [level=3]
+    paragraph "（把鼠标停在那颗 ⓘ 上才看得到说明）"
+    paragraph "触屏没有 hover，键盘用户也未必会停留 —— 这条说明对一半以上的读者等于不存在。判断标准很硬： 气泡里的字不能是""
+    heading "✅ 本库：该看见的写在页面上" [level=3]
+    paragraph "tooltip 只用来 补一句 （快捷键、单位、来源），不用来补一个字段能不能填对。真的需要解释，就写在它旁边。"
+  tooltip "组件提示" [live=polite atomic=true]

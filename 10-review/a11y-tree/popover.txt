@@ -1,0 +1,49 @@
+# popover — 气泡卡片：非模态浮层的名字来源与「点外面关掉」的可达性
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "气泡卡片 · popover"
+  main
+    heading "气泡卡片 · popover" [level=1]
+    paragraph "用户需要 在里面操作 ，但不该被强制中断时用。"
+    heading "1 · 四个方向" [level=2]
+    button "下方" [hasPopup=dialog]
+    button "上方" [hasPopup=dialog]
+    button "右侧" [hasPopup=dialog]
+    button "左侧" [hasPopup=dialog]
+    paragraph "方向用 逻辑方向 写的（ end / start ），所以在 RTL 下会自动镜像。"
+    heading "2 · 可以放交互内容（这是与 tooltip 的分界）" [level=2]
+    button "筛选条件" [hasPopup=dialog]
+    paragraph "点开后焦点 直接进入 浮层，可以立刻操作 —— 键盘用户不用先 Tab 一路走过来。"
+    heading "3 · 带表单的浮层" [level=2]
+    button "快速改备注" [hasPopup=dialog]
+    heading "怎么选？" [level=2]
+    table "tooltip / popover / dialog 三者的选择依据"
+      row
+        columnheader "组件"
+        columnheader "能放交互内容"
+        columnheader "背景是否锁死"
+        columnheader "用在哪"
+      row
+        cell "tooltip"
+        cell "❌ 只能纯文字"
+        cell "—"
+        cell "补充说明、术语解释"
+      row
+        cell "popover"
+        cell "✅"
+        cell "不锁"
+        cell "筛选、快捷设置、补充表单"
+      row
+        cell "dialog"
+        cell "✅"
+        cell "锁死"
+        cell "危险确认、必须处理完的事"
+    paragraph "记不住就问一句： 「用户需要在里面操作吗？」 不需要 → tooltip；需要但不打断 → popover；必须先处理完"
+    heading "反例 · 不该这样用" [level=2]
+    button "删除这份报告" [hasPopup=dialog]
+    paragraph "危险操作用 popover 是错的。 二次确认必须用 dialog （模态 + focus trap）—— 用了 pop"
+    heading "对比：错写法 vs 本库写法" [level=2]
+    heading "❌ 常见写法：两个浮层同时开着" [level=3]
+    paragraph "两个都开着：点空白处到底关的是哪一个？读屏用户按 Esc 也不知道关掉的是哪个，而两个浮层的内容还叠在一起。"
+    heading "✅ 本库：同一时刻只开一个" [level=3]
+    paragraph "popover.js 的 open() 会先关掉当前打开的那个 —— 不是"约定"，是写死在实现里的。"

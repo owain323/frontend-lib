@@ -67,6 +67,11 @@ ROOT_ALLOWED_DIRS = {
     '01-tokens', '02-primitives', '03-patterns', '04-recipes', '05-audit',
     '09-assets', '10-review',
     'adapters', 'ai', 'benchmark', 'dist', 'docs', 'examples', 'guide',
+    # `esm`（0.11.15 加，0.11.16 补登记）：16 个行为脚本的 ESM 单文件入口，
+    #   由 `05-audit/gen-esm.py` 从源码机械生成、`--check` 拦漂移。
+    #   ⚠️ 它是**发布物**（`files` 里有 `esm/`），不是产物垃圾 ——
+    #   上一版漏了这一步登记，本门禁隔了一整轮才叫，属于漏报而非误报。
+    'esm',
     'type-tests', 'types',
 }
 ROOT_ALLOWED_FILES = {

@@ -1,0 +1,33 @@
+# separator — 分隔线：separator 角色 + 分组名落在哪一层（放错层就等于没有）
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "separator · 分隔线"
+  main
+    heading "separator · 分隔线" [level=1]
+    paragraph "分隔线有两种， 必须分清 ：装饰性的只分开内容块， 语义性的分开 不同的东西 。对辅助技术的意义完全不同。"
+    heading "装饰性" [level=2]
+    separator [orientation=horizontal]
+    heading "装饰性（紧凑档）" [level=2]
+    separator [orientation=horizontal]
+    heading "语义性（带文字）" [level=2]
+    separator "高级设置" [orientation=horizontal]
+    separator "高级设置" [orientation=horizontal]
+    heading "两档颜色的实测差别" [level=2]
+    paragraph "本库实测（vs --surface ，WCAG 1.4.11 非文字对比要 ≥ 3:1）："
+    paragraph "--border-decor 浅 1.26 · 暗 1.23 → < 3 --border-control 浅 3.42"
+    paragraph "差 2.7 倍 。装饰性用 --border-decor —— 1.4.11 不适用于它（不承担语义）。语义性用 --b"
+    heading "反例" [level=2]
+    heading "反例：语义分隔用装饰色" [level=3]
+    paragraph "基本信息"
+    separator [orientation=horizontal]
+    paragraph "高级设置"
+    paragraph "分隔"基本信息"与"高级设置"——这是 两类不同的东西 ， 但如果用 --border-decor （1.26:1）， "
+    heading "❌ div + border-bottom" [level=3]
+    paragraph "基本信息"
+    paragraph "高级设置"
+    paragraph "线画得一模一样 —— 连颜色都对齐了。但读屏走到这里是 两段独立的文字，中间什么都没有 ： 它不知道这两段被分成了一组。"
+    heading "✅ hr（或 role="separator"）" [level=3]
+    paragraph "基本信息"
+    separator [orientation=horizontal]
+    paragraph "高级设置"
+    paragraph "同一条线，读屏会念「分隔符」。 0 个 <hr> 与 1 个 ， 就是"看得见"和"念得出"的全部差别。"

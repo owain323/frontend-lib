@@ -1,0 +1,52 @@
+# nav — 导航：同类地标多于一个时靠名字区分 + aria-current + 抽屉触发器
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "导航 · 页头 / 目录 / 移动端抽屉"
+  link "跳到主内容"
+  link "技术考古 / AGC"
+  list
+    listitem "制导计算机" [level=1]
+      link "制导计算机"
+    listitem "存储器" [level=1]
+      link "存储器"
+    listitem "调度" [level=1]
+      link "调度"
+    listitem "复现" [level=1]
+      link "复现"
+  navigation "本页目录"
+    paragraph "本页"
+    list
+      listitem "本页" [level=1]
+        link "本页"
+      listitem "存储器构成" [level=1]
+        link "存储器构成"
+      listitem "优先级与准入" [level=1]
+        link "优先级与准入"
+      listitem "把它跑起来" [level=1]
+        link "把它跑起来"
+  main
+    heading "导航的三件事" [level=1]
+    paragraph "页头告诉你 在哪 ，目录告诉你 读到哪 ，抽屉在窄屏上替你省掉横向空间。 三件事看起来简单，做错都会让用户"点了个寂寞""
+    heading "存储器构成" [level=2]
+    paragraph "AGC 的核心存储器是 2048 个 36 位字，总容量 73,728 位。指令与数据混在一起， 地址按字计。真正让人吃"
+    paragraph "换句话说：三个人可以各自在自己的 4 KB 里堆程序，哪怕会覆盖掉别人写的东西。 在那个年代这已经算是很大的宽容。"
+    heading "优先级与准入" [level=2]
+    paragraph "AGC 的调度靠优先级抢占：更高优先级的任务可以打断低优先级的任务。 这套机制加上准入控制，让关键任务（姿态、点火）不会"
+    paragraph "阿波罗 13 号在 33 万公里外反复报出的告警，就是这套机制在工作—— 它宁可一直报错，也不肯停机，因为停了机地面就失"
+    heading "把它跑起来" [level=2]
+    paragraph "工具链的成熟度足以支撑一次完整考古：从反汇编、到逐指令模拟、到和原厂手册对照。 这条路走过一遍之后的结论是——手册里的描"
+    paragraph "目录高亮 统一用 scroll 监听 + requestAnimationFrame 节流 ， 不依赖 Intersec"
+    heading "对比：错写法 vs 本库写法" [level=2]
+    heading "❌ 常见写法：目录项允许换行" [level=3]
+    paragraph "一条目录折成两行，下面两条就都被推下去了 —— 目录的价值是"一眼看到全文结构"，行高一变，结构感就没了。"
+    heading "✅ 本库：单行、超出省略" [level=3]
+    navigation "示例目录"
+      paragraph "本页"
+      list
+        listitem "存储器构成与 2026 年三季度的产能爬坡节奏与毛利口径拆解" [level=1]
+          link "存储器构成与 2026 年三季度的产能爬坡节奏与毛利口径拆解"
+        listitem "优先级与准入" [level=1]
+          link "优先级与准入"
+        listitem "把它跑起来" [level=1]
+          link "把它跑起来"
+    paragraph "目录项单行、超出省略：宁可截断，也要保住"三条等高"的节奏。读者扫的是结构，不是一个条目的全名。"

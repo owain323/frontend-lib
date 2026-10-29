@@ -44,7 +44,7 @@ td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabu
   </p>
 
   <h2 class="rule-top">0 · 边界：什么该用本库，什么该用 ECharts</h2>
-  <table>
+  <table aria-label="能力边界：什么场景用本库、什么用 ECharts">
     <tr><th>场景</th><th>用什么</th><th>谁维护</th></tr>
     <tr><td>列表右侧的<strong>迷你趋势</strong>（看走势）</td>
         <td class="ok">本库 <code>sparkline</code>（1.5KB，零依赖）</td><td>我们</td></tr>
@@ -94,7 +94,7 @@ td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabu
   <div class="flex">
     <div class="box">
       <h3 style="margin-top:0">✅ 规范：柱状图（分类轴从 0）</h3>
-      <table>
+      <table aria-label="示例数据：柱状图的分季度营收">
         <tr><th>季度</th><th class="num">营收(亿)</th><th class="num">同比</th></tr>
         <tr><td>Q1</td><td class="num">128.4</td><td class="num up">+12.4%</td></tr>
         <tr><td>Q2</td><td class="num">136.1</td><td class="num up">+8.1%</td></tr>
@@ -109,7 +109,7 @@ td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabu
 
     <div class="box">
       <h3 style="margin-top:0">✅ 规范：多系列（≤ 5 条）</h3>
-      <table>
+      <table aria-label="示例数据：A / B / C 三支股票的逐年对比">
         <tr><th>年份</th>
             <th class="num"><span class="swatch" style="background:var(--accent)"></span>A 股</th>
             <th class="num"><span class="swatch" style="background:var(--danger)"></span>B 股</th>
@@ -133,7 +133,7 @@ td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabu
   </div>
 
   <h2 class="rule-top">3 · 数字格式（已经在用）</h2>
-  <table>
+  <table aria-label="数字格式规则与例子">
     <tr><th>类型</th><th>规则</th><th>例子</th></tr>
     <tr><td>千分位</td><td>每三位加逗号</td><td class="num">1,234,567</td></tr>
     <tr><td>百分比</td><td>固定 1–2 位小数</td><td class="num">42.6%</td></tr>
@@ -148,7 +148,7 @@ td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabu
 
   <h2 class="rule-top">4 · 明确禁止（这些是"看起来专业但会骗人"的）</h2>
   <div class="box bad" data-claim-skip="这一块是「不要做」清单本身（一张表），不是某个组件的错写法 —— 要给它配正例栏，得先真的渲染一张 3D 图与一张 2D 图做对照，而本页没有图表实例可摆；表格尺寸量出来的是排版，不是观点">
-    <table>
+    <table aria-label="明确禁止的做法与原因">
       <tr><th>不要做</th><th>为什么</th></tr>
       <tr><td class="no">3D 图表</td><td>透视扭曲会<b>误导读数</b>（Tufte 的核心结论）</td></tr>
       <tr><td class="no">双 Y 轴</td><td>两轴的交叉点可以被随意搬动 ⇒ <b>视觉在说谎</b></td></tr>
