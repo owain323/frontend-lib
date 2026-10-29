@@ -993,14 +993,14 @@ run "example-esm"   node 05-audit/example-esm-gate.js
 run "example-esm-rev" node 05-audit/example-esm-gate.js --selftest
 # 🔴 数值展示层（0.12.0）：涨跌方向色的口径 + 指标块的四条纪律。
 #   这两条都必须起浏览器：
-#     · dir-gate  判「默认红涨绿跌」和「[data-market="intl"] 真的对调」——
+#     · delta-check  判「默认红涨绿跌」和「[data-market="intl"] 真的对调」——
 #       后者第一版写过但**从没生效**（`:where()` 特异性 0，抢不过 `:root`），
 #       CSS 合法、注释正确、静态怎么读都对，只有读 computed color 才现形。
-#     · metric-gate 判等宽数字 / 单位分离 / **缺数不填 0**（读文本，不看颜色）。
-run "dir-color"    node 05-audit/dir-gate.js
-run "dir-color-rev" node 05-audit/dir-gate.js --selftest
-run "metric"       node 05-audit/metric-gate.js
-run "metric-rev"   node 05-audit/metric-gate.js --selftest
+#     · metric-check 判等宽数字 / 单位分离 / **缺数不填 0**（读文本，不看颜色）。
+run "dir-color"    node 05-audit/delta-check.js
+run "dir-color-rev" node 05-audit/delta-check.js --selftest
+run "metric"       node 05-audit/metric-check.js
+run "metric-rev"   node 05-audit/metric-check.js --selftest
 run "api-contract"     $PY 05-audit/api-contract-gate.py
 run "api-form"       $PY 05-audit/api-form-gate.py
 run "api-form-rev"   $PY 05-audit/api-form-gate.py --selftest

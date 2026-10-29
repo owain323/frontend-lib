@@ -1,30 +1,35 @@
 /**
- * metric-gate.js — 指标块：等宽数字、单位分离、缺数不冒充 0
+ * metric-check.js — 指标块：等宽数字、单位分离、缺数不冒充 0
  *
  * ============================================================================
  * 🔴 这条门禁防的是什么
  * ---------------------------------------------------------------------------
  *  `metric` 的四条纪律，每一条都「写 CSS 时对、跑起来可能错」：
  *
- *   ① **数字必须等宽**（`tabular-nums`）。少了它，上下两行的数位对不齐，
- *      竖着扫一眼比大小这件事就废了 —— 而单看一屏是看不出来的，
- *      要两行数字并排才现形。CSS 里写 `font-variant-numeric` 也可能被
- *      后面某条 `font:` 简写重置掉。
- *   ② **单位字号必须小于数值**。若某条规则把 `.metric__unit` 的
+ *   ① **数字必须等宽**。少了它，上下两行的数位对不齐，竖着扫一眼比大小这件事
+ *      就废了 —— 而单看一屏是看不出来的，要两行数字并排才现形。
+ *      等宽有两条合法路径（`tabular-nums` 或等宽字族），所以判**量出来的宽度**，
+ *      不判声明（判声明会冤枉正确实现，见 E142）。
+ *   ② **正常列宽下不许换行**。一位数掉到第二行会让整行 KPI 高度跳动。
+ *      但"不换行"不等于 `white-space: nowrap` —— 那会把单位一起锁死，
+ *      RTL 膨胀后顶破视口（E143）。所以判**量出来的行数**。
+ *   ③ **单位字号必须小于数值**。若某条规则把 `.metric__unit` 的
  *      `font-size` 覆盖成 `inherit`，单位就跟数字一样大 ——
  *      读者会把「亿元」读成数值的一部分。
- *   ③ **缺数不能冒充 0**。这是本库最反对的一类：`0.00` 与 `—` 在报表上
+ *   ④ **缺数不能冒充 0**。这是本库最反对的一类：`0.00` 与 `—` 在报表上
  *      是两个不同结论。判据直接读文本，不看颜色。
- *   ④ **值里不许混 delta**。混进去等宽对齐就失效（两段数字位数不同）。
+ *   ⑤ **值里不许混 delta**。混进去等宽对齐就失效（两段数字位数不同）。
  *
- *  ⚠️ 这四条里 ③ 是**唯一必须读文本**的 —— 前三条都能读 computed 样式。
- *     这也是为什么它不能并进 `contrast.py` 或任何纯静态门禁。
+ *  ⚠️ 这五条里 ④ 是**唯一必须读文本**的；①② 是**量出来的**（宽度/行数），
+ *     其余读 computed 样式。这也是为什么它不能并进 `contrast.py` 这类纯静态门禁。
  *
  * ============================================================================
  * 判据（八条）
  * ---------------------------------------------------------------------------
- *  ① 值的 `font-variant-numeric` 含 `tabular-nums`
- *  ② 值 `white-space` 是 `nowrap`
+ *  ① "1111" 与 "8888" 的渲染宽度相等（等宽字族或 `tabular-nums` 至少一样）
+ *     量不到宽度 ⇒ 判失败（判据没跑 ≠ 通过）
+ *  ② 值在正常列宽下只占 1 行（量 clientHeight / 行高）
+ *     量不到高度 ⇒ 判失败
  *  ③ 值字号 > 单位字号（严格大于）
  *  ④ null 档的值颜色 == `--text-tertiary`（不是靠 opacity 压淡）
  *  ⑤ null 档的值**文本**是 `—`（U+2014），既不是 `0` 也不是空串
@@ -32,7 +37,7 @@
  *  ⑦ metric.css 里没有 `--dir-` 引用（方向是 delta 的事，职责不串）
  *  ⑧ 375px 视口下不横向溢出（`minmax(min(100%, 12rem), 1fr)` 那层 min 在起作用）
  *
- * 用法：node 05-audit/metric-gate.js [--selftest]
+ * 用法：node 05-audit/metric-check.js [--selftest]
  */
 'use strict';
 
@@ -56,16 +61,33 @@ function judge(s) {
   const errs = [];
   if (!s) return ['没有采样结果（页面可能没加载出来）'];
 
-  /* ① 等宽数字 */
-  if (!/tabular-nums/.test(String(s.valueFvn || ''))) {
-    errs.push(`① 值的 font-variant-numeric 是 ${JSON.stringify(s.valueFvn)}，`
-      + '不含 tabular-nums —— 上下两行数位对不齐');
+  /* ① 等宽数字 —— **量出来的**，不是读声明的
+     🔴 0.12.0 改法：原来判 `font-variant-numeric` 含 `tabular-nums`。
+        但等宽有两条合法路径：① 用 `tabular-nums`；② 用等宽字族（`--mono`）。
+        metric 现在走 ②（`tabular-nums` 在等宽字族上是无效动作，见 E142）
+        ⇒ 判"声明"会冤枉正确实现。判"渲染结果"才对：
+        两个同长度、不同字形的数字，宽度必须一样。 */
+  if (s.tnumWidth !== null && s.tnumWidth !== undefined) {
+    if (Math.abs(s.tnumWidth - s.widthOf8) > 0.5) {
+      errs.push(`① 数字不等宽："1111" 宽 ${s.tnumWidth}px、"8888" 宽 `
+        + `${s.widthOf8}px —— 上下两行数位对不齐（等宽字族或 tabular-nums 至少要有一样）`);
+    }
+  } else {
+    errs.push('① 量不到数字宽度（采样失败）—— 等宽这件事没有被检验');
   }
 
-  /* ② 不换行 */
-  if (String(s.valueWs) !== 'nowrap') {
-    errs.push(`② 值的 white-space 是 ${JSON.stringify(s.valueWs)}，应为 nowrap —— `
-      + '一位数掉到第二行会让整行 KPI 高度跳动');
+  /* ② 正常列宽下不换行 —— 也是量高度，不是读 `white-space`
+     🔴 0.12.0 改法：原来判 `white-space === "nowrap"`。但 `nowrap` 有个硬伤：
+        单位是值的子元素，父级 `nowrap` 会把单位一起锁死 ⇒ RTL 膨胀后顶破视口
+        （实测 212px，见 E143）。现在的写法是「默认不断行，装不下才断」，
+        正确判据是**量出来几行**：正常列宽下必须是 1 行。 */
+  if (s.valueLines !== null && s.valueLines !== undefined) {
+    if (s.valueLines > 1.05) {
+      errs.push(`② 正常列宽下值占了 ${s.valueLines.toFixed(2)} 行 —— `
+        + '应该是 1 行（数字掉行会让整行 KPI 高度跳动）');
+    }
+  } else {
+    errs.push('② 量不到值的高度（采样失败）—— 换行这件事没有被检验');
   }
 
   /* ③ 单位要比数值小 */
@@ -124,7 +146,8 @@ function selftest() {
   };
 
   const base = () => ({
-    valueFvn: 'tabular-nums', valueWs: 'nowrap',
+    valueFvn: 'normal', valueWs: 'normal',     /* 现在都不判了，留着只为看清现场 */
+    tnumWidth: 66.0, widthOf8: 66.0, valueLines: 1,
     valueFs: 30, unitFs: 14,
     nullColor: 'rgb(96, 103, 112)', plainColor: 'rgb(21, 24, 28)',
     nullText: '\u2014',
@@ -133,12 +156,18 @@ function selftest() {
 
   add('全对的样本不报错（判据不能恒红）', judge(base()).length === 0);
 
-  only('① 少了 tabular-nums 被抓', judge((() => {
-    const s = base(); s.valueFvn = 'normal'; return s;
-  })()), 'tabular-nums');
-  only('② 允许换行被抓', judge((() => {
-    const s = base(); s.valueWs = 'normal'; return s;
-  })()), 'nowrap');
+  only('① 数字不等宽被抓', judge((() => {
+    const s = base(); s.widthOf8 = s.tnumWidth + 3.2; return s;
+  })()), '不等宽');
+  only('① 量不到数字宽度被抓（判据没跑 ≠ 通过）', judge((() => {
+    const s = base(); s.tnumWidth = null; return s;
+  })()), '量不到数字宽度');
+  only('② 值占了多行被抓', judge((() => {
+    const s = base(); s.valueLines = 2.3; return s;
+  })()), '占了');
+  only('② 量不到高度被抓（判据没跑 ≠ 通过）', judge((() => {
+    const s = base(); s.valueLines = null; return s;
+  })()), '量不到值的高度');
   only('③ 单位与数字同字号被抓', judge((() => {
     const s = base(); s.unitFs = s.valueFs; return s;
   })()), '没有大于单位字号');
@@ -196,9 +225,37 @@ async function sample(page) {
     const scrollW = document.documentElement.scrollWidth;
     const innerW = window.innerWidth;
 
+    /* ① 等宽：把 "1111" 与 "8888" 塞进同一个值元素各量一次。
+       用 Range 量文本节点，避免插入 DOM 影响页面（也避免被别的判据看见）。 */
+    let tnumWidth = null;
+    let widthOf8 = null;
+    if (plainVal) {
+      const measure = (txt) => {
+        const span = document.createElement('span');
+        span.textContent = txt;
+        span.style.cssText = 'position:absolute;visibility:hidden;white-space:pre';
+        plainVal.appendChild(span);
+        const w = span.getBoundingClientRect().width;
+        span.remove();
+        return w;
+      };
+      tnumWidth = measure('1111');
+      widthOf8 = measure('8888');
+    }
+
+    /* ② 行数：clientHeight / 单行行高 */
+    let valueLines = null;
+    if (plainVal) {
+      const fs2 = parseFloat(getComputedStyle(plainVal).fontSize);
+      let lh = parseFloat(getComputedStyle(plainVal).lineHeight);
+      if (!isFinite(lh)) lh = fs2 * 1.2;
+      valueLines = plainVal.clientHeight / lh;
+    }
+
     return {
       valueFvn: cs(plainVal, 'fontVariantNumeric'),
       valueWs: cs(plainVal, 'whiteSpace'),
+      tnumWidth, widthOf8, valueLines,
       valueFs: parseFloat(cs(plainVal, 'fontSize')),
       unitFs: parseFloat(cs(plainUnit, 'fontSize')),
       nullColor: cs(nullVal, 'color'),

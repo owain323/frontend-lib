@@ -10,6 +10,10 @@
 <link rel="stylesheet" href="../01-tokens/tokens.css">
 <link rel="stylesheet" href="../01-tokens/typography.css">
 <link rel="stylesheet" href="../01-tokens/page.css">
+<!-- 文档页里会出现 `data-market="intl"` 的示例（delta / 约定 / 索引）。
+     不引这个文件，示例就是"写了但没生效"—— 而 `dir-check.js` 判据 ⑧ 会拦住。
+     它是可选增强，0.2 KB，对没有该属性的页面零影响。 -->
+<link rel="stylesheet" href="../01-tokens/market.css">
 <link rel="stylesheet" href="../03-patterns/nav/nav.css">
 <link rel="stylesheet" href="../04-recipes/table/table.css">
 <link rel="stylesheet" href="guide.css">
@@ -137,7 +141,7 @@ fetch(...).then(r =&gt; { clearTimeout(t); showResult(r); });</code></pre>
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.11.16 · 零第三方运行时依赖 · 组件数 35</p>
+  <p>v0.12.0 · 零第三方运行时依赖 · 组件数 37</p>
 </footer>
 </body>
 </html>

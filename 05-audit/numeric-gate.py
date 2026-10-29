@@ -168,6 +168,15 @@ def scan(roots):
                 is_data = tag in ('td', 'th') or any(
                     k in attrs for k in ('list__value', 'metric', 'stat',
                                          'kpi', 'amount', 'price', 'value'))
+                # 🔴 0.12.0：数字排印**原子**自己的数据槽（`metric__value` /
+                #    `.delta`）不需要再挂 `.num`。理由不是"给组件开小口"：
+                #    它们用 `font-family: var(--mono)` —— **等宽字族每个字形同宽**，
+                #    `tabular-nums` 只对比例字族有意义（在等宽字族上是无效动作）。
+                #    判据① 仍然管着它们（不许写 font-variant-numeric，已删）；
+                #    这里是判据② 的合理豁免：**等宽由字族保证，不由类名保证**。
+                # ⚠️ 与 `stat__se` 那类豁免同性质：判据要窄到只圈真病灶。
+                if 'metric__value' in attrs or 'delta' in attrs.split('class=')[-1]:
+                    continue
                 if not is_data:
                     continue
                 # 反例/说明段落里的数字不该强制

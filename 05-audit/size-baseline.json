@@ -24,6 +24,10 @@
       "gzip": 2108,
       "raw": 5633
     },
+    "01-tokens/market.css": {
+      "gzip": 1509,
+      "raw": 2974
+    },
     "01-tokens/page.css": {
       "gzip": 7563,
       "raw": 17951
@@ -41,8 +45,8 @@
       "raw": 4647
     },
     "01-tokens/tokens.css": {
-      "gzip": 18487,
-      "raw": 49203
+      "gzip": 20092,
+      "raw": 53417
     },
     "01-tokens/typography.css": {
       "gzip": 3401,
@@ -80,9 +84,17 @@
       "gzip": 4402,
       "raw": 11630
     },
+    "02-primitives/delta/delta.css": {
+      "gzip": 2812,
+      "raw": 5627
+    },
     "02-primitives/input/input.css": {
       "gzip": 3716,
       "raw": 10141
+    },
+    "02-primitives/metric/metric.css": {
+      "gzip": 3264,
+      "raw": 6929
     },
     "02-primitives/popover/popover.css": {
       "gzip": 2577,
@@ -237,11 +249,11 @@
       "raw": 15761
     },
     "04-recipes/tierA-tokens.css": {
-      "gzip": 2000,
-      "raw": 5136
+      "gzip": 2079,
+      "raw": 5331
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 253011,
-  "total_raw": 636305
+  "total_gzip": 262280,
+  "total_raw": 656244
 }

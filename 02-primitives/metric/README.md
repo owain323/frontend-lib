@@ -21,7 +21,7 @@
 |---|---|
 | `.metric` | 基础块（推荐 `<dl>`，用 `<div>` 也能渲染） |
 | `.metric__label` | 标签：12px、次要色 |
-| `.metric__value` | 值：等宽数字 + `tabular-nums` + 不换行 |
+| `.metric__value` | 值：等宽字族（`--mono`）+ 默认不换行（装不下才断） |
 | `.metric__unit` | 单位：与数字同基线，小一号 |
 | `.metric__foot` | 脚下那行：通常放 `delta` + 说明词 |
 | `.metric__note` | 说明词（“同比” / “较上季”） |
@@ -62,7 +62,7 @@ CSS 只认类名，所以 `<div>` 也能渲染（兼容既有页面），但文�
 
 内部是 `repeat(auto-fit, minmax(min(100%, 12rem), 1fr))`。
 那层 `min()` 不是冗余：窄容器下 12rem 会比可用宽度还大，没有它就会横向溢出
-（`05-audit/metric-gate.js` 判据 ⑧ 在 375px 视口下直接量 `scrollWidth`）。
+（`05-audit/metric-check.js` 判据 ⑧ 在 375px 视口下直接量 `scrollWidth`）。
 
 ## 缺数是一等状态
 
@@ -83,7 +83,7 @@ CSS 只认类名，所以 `<div>` 也能渲染（兼容既有页面），但文�
 - **不做数值格式化**。千分位、小数位、单位换算由数据侧决定；CSS 不知道
   `1,294.06` 与 `1294.06` 哪个对。库保证的是等宽对齐与不换行。
 - **不判断方向**。涨跌颜色交给 `delta`，本组件不含任何方向令牌引用
-  （`metric-gate` 判据 ⑦ 静态检查这件事）。
+  （`metric-check` 判据 ⑦ 静态检查这件事）。
 
 ## 预览
 

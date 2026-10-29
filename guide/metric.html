@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>metric · 指标块 · agentcss</title>
+<meta name="description" content="指标块：一个标签 + 一个值 + 一句上下文。数字等宽、单位分离、缺数是一等状态">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%227%22%20fill%3D%22%231b4d8f%22%2F%3E%3Crect%20x%3D%228%22%20y%3D%228%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%221.6%22%20fill%3D%22%23fff%22%2F%3E%3Crect%20x%3D%2217%22%20y%3D%228%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%221.6%22%20fill%3D%22%23fff%22%20opacity%3D%22.5%22%2F%3E%3Crect%20x%3D%228%22%20y%3D%2217%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%221.6%22%20fill%3D%22%23fff%22%20opacity%3D%22.5%22%2F%3E%3Crect%20x%3D%2217%22%20y%3D%2217%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%221.6%22%20fill%3D%22%23fff%22%2F%3E%3C%2Fsvg%3E">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<!-- 文档页里会出现 `data-market="intl"` 的示例（delta / 约定 / 索引）。
+     不引这个文件，示例就是"写了但没生效"—— 而 `dir-check.js` 判据 ⑧ 会拦住。
+     它是可选增强，0.2 KB，对没有该属性的页面零影响。 -->
+<link rel="stylesheet" href="../01-tokens/market.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">metric · 指标块</span>
+    <a class="g-jump" href="../02-primitives/metric/demo.html">打开示例<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">基础组件 · stable</p>
+    <h1>metric · 指标块</h1>
+    <p class="lede">指标块：一个标签 + 一个值 + 一句上下文。数字等宽、单位分离、缺数是一等状态</p>
+    <ul class="g-meta"><li><a href="../02-primitives/metric/demo.html"><code>02-primitives/metric/demo.html</code></a></li><li><a href="../02-primitives/metric/metric.css"><code>02-primitives/metric/metric.css</code></a></li></ul>
+<figure class="g-live"><figcaption class="g-live__cap"><span class="g-live__tag">在这页里直接跑</span>下面是 metric · 指标块 的真实示例页，全套状态都在里面；<a href="../02-primitives/metric/demo.html">单独打开</a>可以看到完整尺寸。</figcaption><iframe class="g-live__frame" src="../02-primitives/metric/demo.html" title="metric · 指标块 的可运行示例" loading="lazy"></iframe></figure><script src="live.js" defer></script>
+    <article class="g-doc">
+<p>报表里<strong>“一个数”的最小完整单元</strong>：一个标签、一个值、一句上下文。</p>
+<pre class="code" tabindex="0"><code class="language-html">&lt;link rel=&quot;stylesheet&quot; href=&quot;02-primitives/metric/metric.css&quot;&gt;
+
+&lt;dl class=&quot;metric&quot;&gt;
+  &lt;dt class=&quot;metric__label&quot;&gt;营业总收入&lt;/dt&gt;
+  &lt;dd class=&quot;metric__value&quot;&gt;1,294.06&lt;span class=&quot;metric__unit&quot;&gt;亿元&lt;/span&gt;&lt;/dd&gt;
+  &lt;dd class=&quot;metric__foot&quot;&gt;
+    &lt;span class=&quot;delta delta--up&quot;&gt;12.40%&lt;/span&gt;
+    &lt;span class=&quot;metric__note&quot;&gt;同比&lt;/span&gt;
+  &lt;/dd&gt;
+&lt;/dl&gt;</code></pre>
+<h2 id="s2">类<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>类</th><th>作用</th>
+</tr></thead>
+<tbody>
+<tr><td><code>.metric</code></td><td>基础块（推荐 <code>&lt;dl&gt;</code>，用 <code>&lt;div&gt;</code> 也能渲染）</td></tr>
+<tr><td><code>.metric__label</code></td><td>标签：12px、次要色</td></tr>
+<tr><td><code>.metric__value</code></td><td>值：等宽字族（<code>--mono</code>）+ 默认不换行（装不下才断）</td></tr>
+<tr><td><code>.metric__unit</code></td><td>单位：与数字同基线，小一号</td></tr>
+<tr><td><code>.metric__foot</code></td><td>脚下那行：通常放 <code>delta</code> + 说明词</td></tr>
+<tr><td><code>.metric__note</code></td><td>说明词（“同比” / “较上季”）</td></tr>
+<tr><td><code>.metric__spark</code></td><td>迷你走势槽位，放不放都行</td></tr>
+<tr><td><code>.metric--lg</code></td><td>主指标档</td></tr>
+<tr><td><code>.metric--sm</code></td><td>紧凑档（密集网格）</td></tr>
+<tr><td><code>.metric--null</code></td><td>缺数档：值降为 tertiary、去字重</td></tr>
+<tr><td><code>.metric-grid</code></td><td>KPI 行的自适应网格</td></tr>
+</tbody>
+</table></div>
+<h2 id="s3">三条硬规矩<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
+<ol><li><strong>缺数写 <code>—</code>（U+2014）并说明原因</strong>，不填 0、不留空、不只把字变淡。</li><li><strong>单位放 <code>metric__unit</code></strong>，不要拼进值字符串。</li><li><strong>变化量放 <code>metric__foot</code></strong>，不要混进 <code>metric__value</code>。</li></ol>
+<h2 id="s4">反例<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
+<ul><li>❌ <strong>缺数填 0</strong> —— <code>0.00</code> 与 <code>—</code> 在报表上是两个不同结论。填 0 会让读者把「未披露」读成「现金流为零」，而它其实可能只是没出报表</li><li>❌ <strong>把单位拼进值字符串</strong> —— <code>1,294.06亿元</code> 让单位跟着 30px 字号走、和数字一样重，读者第一眼会把“亿元”当成数值的一部分；而且没法单选单位调样式</li><li>❌ <strong>把 <code>delta</code> 塞进 <code>metric__value</code></strong> —— 值里混进变化量之后等宽对齐失效（两段数字位数不同），读屏也会念成一串。变化量属于 <code>metric__foot</code></li><li>❌ <strong>用 <code>opacity</code> 表达缺数</strong> —— <code>--text-tertiary</code> 的 5.33:1 已经是文字色地板，再乘一次透明度就跌破 4.5。缺数靠“不给数字”表达，不靠让它看不清</li><li>❌ <strong>把 <code>metric</code> 当卡片用</strong> —— 它没有边框、没有内边距、不承载操作区。要“一块带边框的内容”用 <code>card</code>；<code>metric</code> 只负责一个数</li></ul>
+<h2 id="s5">为什么推荐 <code>&lt;dl&gt;</code><a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
+<p>“标签—值”在 HTML 里有现成语义：术语 + 描述。读屏会念「营业总收入 1,294.06 亿元 +12.40% 同比」；用 <code>&lt;div&gt;</code> 只会念一串没有关系的词。 CSS 只认类名，所以 <code>&lt;div&gt;</code> 也能渲染（兼容既有页面），但文档一律示范 <code>&lt;dl&gt;</code>。</p>
+<h2 id="s6">网格<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-html">&lt;div class=&quot;metric-grid&quot;&gt;
+  &lt;dl class=&quot;metric&quot;&gt; … &lt;/dl&gt;
+  &lt;dl class=&quot;metric&quot;&gt; … &lt;/dl&gt;
+&lt;/div&gt;</code></pre>
+<p>内部是 <code>repeat(auto-fit, minmax(min(100%, 12rem), 1fr))</code>。那层 <code>min()</code> 不是冗余：窄容器下 12rem 会比可用宽度还大，没有它就会横向溢出（<code>05-audit/metric-check.js</code> 判据 ⑧ 在 375px 视口下直接量 <code>scrollWidth</code>）。</p>
+<h2 id="s7">缺数是一等状态<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-html">&lt;dl class=&quot;metric metric--null&quot;&gt;
+  &lt;dt class=&quot;metric__label&quot;&gt;经营活动现金流净额&lt;/dt&gt;
+  &lt;dd class=&quot;metric__value&quot;&gt;—&lt;/dd&gt;
+  &lt;dd class=&quot;metric__foot&quot;&gt;&lt;span class=&quot;metric__note&quot;&gt;本期未披露&lt;/span&gt;&lt;/dd&gt;
+&lt;/dl&gt;</code></pre>
+<p><code>metric--null</code> 只把值的颜色降到 tertiary、去掉字重，<strong>不隐藏这一块</strong> —— 版面塌掉比显示“没有”更糟。这是本库从 <code>04-recipes/detail-page</code> 的 null 变体继承下来的同一条纪律。</p>
+<h2 id="s8">对本组件不做的事<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
+<ul><li><strong>不做数值格式化</strong>。千分位、小数位、单位换算由数据侧决定；CSS 不知道 <code>1,294.06</code> 与 <code>1294.06</code> 哪个对。库保证的是等宽对齐与不换行。</li><li><strong>不判断方向</strong>。涨跌颜色交给 <code>delta</code>，本组件不含任何方向令牌引用（<code>metric-check</code> 判据 ⑦ 静态检查这件事）。</li></ul>
+<h2 id="s9">预览<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-bash">python -m http.server 8000
+# http://127.0.0.1:8000/02-primitives/metric/demo.html</code></pre>
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      <a class="g-pager__link g-pager__link--prev" href="input.html"><span>上一页</span>input / field</a>
+      <a class="g-pager__link g-pager__link--next" href="popover.html"><span>下一页</span>popover · 气泡卡片</a>
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    <ul class="g-toc"><li><a href="#s2">类</a></li><li><a href="#s3">三条硬规矩</a></li><li><a href="#s4">反例</a></li><li><a href="#s5">为什么推荐 &lt;dl&gt;</a></li><li><a href="#s6">网格</a></li><li><a href="#s7">缺数是一等状态</a></li><li><a href="#s8">对本组件不做的事</a></li><li><a href="#s9">预览</a></li></ul>
+  </aside>
+</div>
+<footer class="g-foot">
+  <p>v0.12.0 · 零第三方运行时依赖 · 组件数 37</p>
+</footer>
+</body>
+</html>

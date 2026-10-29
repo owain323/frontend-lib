@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>delta · 变化量 · agentcss</title>
+<meta name="description" content="变化量：涨跌方向 + 符号 + 颜色。只描述往哪边变，不判断好坏（等于好恶是 badge 的事，会计正负是 table 的事）">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%227%22%20fill%3D%22%231b4d8f%22%2F%3E%3Crect%20x%3D%228%22%20y%3D%228%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%221.6%22%20fill%3D%22%23fff%22%2F%3E%3Crect%20x%3D%2217%22%20y%3D%228%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%221.6%22%20fill%3D%22%23fff%22%20opacity%3D%22.5%22%2F%3E%3Crect%20x%3D%228%22%20y%3D%2217%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%221.6%22%20fill%3D%22%23fff%22%20opacity%3D%22.5%22%2F%3E%3Crect%20x%3D%2217%22%20y%3D%2217%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%221.6%22%20fill%3D%22%23fff%22%2F%3E%3C%2Fsvg%3E">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<!-- 文档页里会出现 `data-market="intl"` 的示例（delta / 约定 / 索引）。
+     不引这个文件，示例就是"写了但没生效"—— 而 `dir-check.js` 判据 ⑧ 会拦住。
+     它是可选增强，0.2 KB，对没有该属性的页面零影响。 -->
+<link rel="stylesheet" href="../01-tokens/market.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">delta · 变化量</span>
+    <a class="g-jump" href="../02-primitives/delta/demo.html">打开示例<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">基础组件 · stable</p>
+    <h1>delta · 变化量</h1>
+    <p class="lede">变化量：涨跌方向 + 符号 + 颜色。只描述往哪边变，不判断好坏（等于好恶是 badge 的事，会计正负是 table 的事）</p>
+    <ul class="g-meta"><li><a href="../02-primitives/delta/demo.html"><code>02-primitives/delta/demo.html</code></a></li><li><a href="../02-primitives/delta/delta.css"><code>02-primitives/delta/delta.css</code></a></li></ul>
+<figure class="g-live"><figcaption class="g-live__cap"><span class="g-live__tag">在这页里直接跑</span>下面是 delta · 变化量 的真实示例页，全套状态都在里面；<a href="../02-primitives/delta/demo.html">单独打开</a>可以看到完整尺寸。</figcaption><iframe class="g-live__frame" src="../02-primitives/delta/demo.html" title="delta · 变化量 的可运行示例" loading="lazy"></iframe></figure><script src="live.js" defer></script>
+    <article class="g-doc">
+<p>一个数相对某个基准<strong>变了多少、往哪边变</strong>。不判断好坏。</p>
+<pre class="code" tabindex="0"><code class="language-html">&lt;link rel=&quot;stylesheet&quot; href=&quot;02-primitives/delta/delta.css&quot;&gt;
+
+&lt;span class=&quot;delta delta--up&quot;&gt;3.21%&lt;/span&gt;    &lt;!-- 渲染 +3.21%，红 --&gt;
+&lt;span class=&quot;delta delta--down&quot;&gt;1.05%&lt;/span&gt;  &lt;!-- 渲染 −1.05%，绿 --&gt;
+&lt;span class=&quot;delta delta--flat&quot;&gt;0.00%&lt;/span&gt;  &lt;!-- 无符号，中性色 --&gt;</code></pre>
+<h2 id="s2">类<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>类</th><th>作用</th>
+</tr></thead>
+<tbody>
+<tr><td><code>.delta</code></td><td>基础：等宽字族（<code>--mono</code>）+ 不换行</td></tr>
+<tr><td><code>.delta--up</code></td><td>涨：默认红（口径见下）</td></tr>
+<tr><td><code>.delta--down</code></td><td>跌：默认绿</td></tr>
+<tr><td><code>.delta--flat</code></td><td>持平：中性色，<strong>不带符号</strong></td></tr>
+<tr><td><code>.delta--arrow</code></td><td>把符号换成 ▲ / ▼（与符号档互斥）</td></tr>
+<tr><td><code>.delta--sm</code></td><td>紧凑档，用于表格行内</td></tr>
+</tbody>
+</table></div>
+<h2 id="s3">三条硬规矩<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
+<ol><li><strong>HTML 里只写数值本体</strong>，不写 <code>+</code> / <code>−</code>。符号由 CSS 生成，手写就是两个符号。</li><li><strong>方向由你给，组件不推断</strong>。本组件没有 JS、不读数值 —— 类名写错就颜色错，且不报错。</li><li><strong>值为 0 用 <code>--flat</code></strong>，塞进 <code>--up</code> / <code>--down</code> 等于伪造方向。</li></ol>
+<h2 id="s4">反例<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
+<ul><li>❌ <strong>HTML 里手写符号</strong> —— 数据侧照着习惯写 <code>−1.05%</code>，组件再补一个减号，渲染成 <code>−−1.05%</code>；页面不崩、控制台不响，只是报表看起来像坏了。demo 里有两栏真实对照（字形 7 对 6），<code>05-audit/demo-claim-gate</code> 逐栏量</li><li>❌ <strong>拿它表达好坏</strong> —— <code>delta--up</code> 说的是方向，不是评价。「研发费用 +38%」确实是涨，但那是成本失控；要表达成功/失败/警告用 <code>badge</code> 的语义档</li><li>❌ <strong>把涨跌幅塞进表格的 <code>num--pos</code></strong> —— 那是<strong>会计约定</strong>（正 = 绿），套在涨跌幅上正好与 A 股习惯相反。表格里的涨跌幅列用 <code>delta</code>，不要用 <code>num--pos</code></li><li>❌ <strong>方向靠猜</strong> —— 本组件不读数值、也不推断正负。类名写错就颜色错，而且不报错；值为 0 必须用 <code>delta--flat</code>，塞进 <code>--up</code> 等于伪造方向</li><li>❌ <strong><code>delta--arrow</code> 与符号档同时加</strong> —— 两者抢同一个 <code>::before</code>。同时加不会双显，但说明你以为它们能叠加，按这个理解去写别的组合就会踩空</li></ul>
+<h2 id="s5">口径：红涨绿跌是缺省，不是唯一<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
+<p>默认 A 股口径。给任意祖先加 <code>data-market=&quot;intl&quot;</code> 切成国际口径（绿涨红跌）：</p>
+<pre class="code" tabindex="0"><code class="language-html">&lt;html data-market=&quot;intl&quot;&gt;
+&lt;!-- 或只切一块 --&gt;
+&lt;section data-market=&quot;intl&quot;&gt; … &lt;/section&gt;</code></pre>
+<p>实现方式与暗色同构：<code>--dir-up</code> 永远表示“涨”，口径切换只改<strong>令牌的指向</strong>，组件 CSS 里没有任何 <code>[data-market]</code> 分支。两栏 HTML 逐字相同，只差那个属性。</p>
+<h2 id="s6">与另外两组颜色的分工<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>想表达</th><th>用什么</th><th>语义</th>
+</tr></thead>
+<tbody>
+<tr><td>状态（已停牌 / 审计中）</td><td><code>badge</code> 的 <code>badge--success</code> 等</td><td>一个词，没有数值</td></tr>
+<tr><td>会计正负（营收 -3.2 亿）</td><td><code>table</code> 的 <code>num--pos</code> / <code>num--neg</code></td><td>正 = 绿，负 = 红（红字）</td></tr>
+<tr><td>变化方向（同比 +12.4%）</td><td><code>delta</code> 的 <code>delta--up</code> / <code>--down</code></td><td>只描述往哪边变</td></tr>
+</tbody>
+</table></div>
+<p>三者不可互换 —— 用错不会报错，只会让报表在某个具体场景里说出相反的结论。</p>
+<h2 id="s7">读屏拿到的是什么<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
+<p><code>+</code> / <code>−</code> 由 CSS 生成，所以它们<strong>不在</strong>元素的 <code>textContent</code> 里。但实测（Chromium + CDP 可访问性树）：它们是<strong>独立的 StaticText 节点</strong>，读屏会按顺序念「加」「3.21%」。也就是说方向对读屏用户是可用的，不是只靠颜色。</p>
+<p>⚠️ 这个机制很容易被改坏：把 <code>content</code> 换成空串、换成背景图、或让伪元素 <code>visibility: hidden</code>，视觉上可能仍有符号，可访问性树里就没了。 <code>05-audit/delta-check.js</code> 的判据 ⑦ 直接数十字树里的 <code>+</code> / <code>−</code> 节点（破坏实验证明它会红）。</p>
+<h2 id="s8">实测对比度<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
+<p><code>05-audit/contrast.py</code>，四组底（纸底 / 表面 / 内凹 / 卡片）各算一遍：</p>
+<div class="table"><table>
+<thead><tr>
+<th>令牌</th><th>浅色</th><th>暗色</th>
+</tr></thead>
+<tbody>
+<tr><td><code>--dir-up</code>（红）</td><td>4.89 – 5.44</td><td>5.60 – 6.15</td></tr>
+<tr><td><code>--dir-down</code>（绿）</td><td>5.75 – 5.96</td><td>6.01 – 6.60</td></tr>
+</tbody>
+</table></div>
+<p>全部 ≥ 4.5（AA）。最差的一格是红点在 <code>--surface-sunken</code> 上 4.89，12px 字号下仍达标。</p>
+<h2 id="s9">为什么强制高对比模式不用额外处理<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
+<p><code>+</code> / <code>−</code> 与配色无关，强制色抹掉红绿之后符号仍在表达方向 —— 1.4.1 要的 “信息不能只由颜色承载”本来就成立。这里<strong>故意没写</strong> <code>@media (forced-colors: active)</code> 块。</p>
+<h2 id="s10">预览<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-bash">python -m http.server 8000
+# http://127.0.0.1:8000/02-primitives/delta/demo.html</code></pre>
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      <a class="g-pager__link g-pager__link--prev" href="date-range.html"><span>上一页</span>date-range · 日期区间</a>
+      <a class="g-pager__link g-pager__link--next" href="input.html"><span>下一页</span>input / field</a>
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    <ul class="g-toc"><li><a href="#s2">类</a></li><li><a href="#s3">三条硬规矩</a></li><li><a href="#s4">反例</a></li><li><a href="#s5">口径：红涨绿跌是缺省，不是唯一</a></li><li><a href="#s6">与另外两组颜色的分工</a></li><li><a href="#s7">读屏拿到的是什么</a></li><li><a href="#s8">实测对比度</a></li><li><a href="#s9">为什么强制高对比模式不用额外处理</a></li><li><a href="#s10">预览</a></li></ul>
+  </aside>
+</div>
+<footer class="g-foot">
+  <p>v0.12.0 · 零第三方运行时依赖 · 组件数 37</p>
+</footer>
+</body>
+</html>
