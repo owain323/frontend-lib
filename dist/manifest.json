@@ -8,7 +8,7 @@
   ],
   "totals": {
     "sourceFiles": 69,
-    "sourceBytes": 746766,
+    "sourceBytes": 747241,
     "distGzip": 95505
   },
   "files": [
@@ -103,9 +103,9 @@
     },
     {
       "source": "01-tokens/page.css",
-      "sourceSha256": "000151b7fff7c9fb8e8f7ceacdb920da936f2bcf11076b55f4603c16ff26eaa2",
-      "sourceBytes": 17251,
-      "sourceGzip": 7236,
+      "sourceSha256": "f7b16ce57e20fd539cfe9bf15381c1cb705f4cf0457ed48537ab4fb317248410",
+      "sourceBytes": 17726,
+      "sourceGzip": 7450,
       "outputs": [
         {
           "path": "dist/01-tokens/page.css",

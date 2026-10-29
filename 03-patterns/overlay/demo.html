@@ -42,6 +42,7 @@ p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6
 </head>
 <body class="page page">
 <main class="wrap">
+  <!-- demo-claim:skip 焦点落点与「点遮罩关不关」都是运行时行为，静态块里摆不出「错的那一版」 -->
 
   <h1>Toast vs Dialog</h1>
   <p class="lede">
@@ -92,7 +93,7 @@ p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6
         <strong>点遮罩不关闭</strong>。误点遮罩的代价太大。
       </p>
     </div>
-    <div class="box bad">
+    <div class="box bad" data-prose="焦点落在哪颗按钮上、点遮罩关不关，都是运行时行为：要摆出「错的那一版」得真的渲染一个会抢焦点的对话框，而演示页里放一个真 modal 会盖住整页">
       <h3 style="margin:0 0 var(--sp-3); font-size:var(--fs-sm); font-weight:500">常见做法</h3>
       <p class="small" style="margin:0">
         焦点默认落在"删除"上，用户看清标题之前就按了 Enter。<br><br>
@@ -114,6 +115,12 @@ p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6
     <div class="box bad aside-col">
       <h3 style="margin:0 0 var(--sp-3); font-size:var(--fs-sm); font-weight:500; color:var(--danger)">
         ❌ 错用</h3>
+      <div class="toast toast--error" role="status" style="margin:0 0 var(--sp-3)">
+        <div class="toast__body">
+          <div class="toast__title">文件已删除</div>
+          <div class="toast__desc">3 秒后自动消失，没有撤销</div>
+        </div>
+      </div>
       <p class="small" style="margin:0 0 var(--sp-2)">
         <strong>把"确认删除"做成 toast</strong><br>
         用户可能根本没看见就把文件删了，而且没法撤销。

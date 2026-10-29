@@ -33,6 +33,13 @@ RootWebArea "tabs · 标签页"
     paragraph "roving tabindex ：一组 tab 里只有一个是 tabindex="0" ， 其余全是 -1 。否则 Ta"
     heading "反例" [level=2]
     heading "反例：用 div 当 tab" [level=3]
-    paragraph "<div role="tab"> 键盘上根本 Tab 不到 （除非手写 tabindex ），也不会响应 Enter/S"
+    tablist "基本信息 高级设置" [orientation=horizontal]
+      tab "基本信息" [selected=true]
+      tab "高级设置"
+    paragraph "上面这两个 tab 看起来完全正常 ，但 <div role="tab"> 键盘上根本 Tab 不到 （除非手写 tab"
     heading "反例：每个 tab 都写 tabindex="0"" [level=3]
-    paragraph "看起来"都能 Tab 到"，但一排 5 个 tab 就要按 5 次 Tab 才能进内容区。Tab 键应该是 进出 控件的"
+    tablist "基本信息 高级设置 日志" [orientation=horizontal]
+      tab "基本信息" [selected=true]
+      tab "高级设置"
+      tab "日志"
+    paragraph "看起来"都能 Tab 到"，但一排 3 个 tab 就要按 3 次 Tab 才能进内容区（真到 5 个 tab 的页面上"

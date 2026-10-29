@@ -15,6 +15,7 @@ p { margin: 0 0 var(--sp-3); }
 </head>
 <body class="page page">
 <main class="wrap">
+  <!-- demo-claim:skip 两块都可量（button 的个数、面板里链接的高度），但这一页仍是单栏结构，升级成 cmp 要重排整页 —— 本轮没做，已知欠账 -->
   <h1>accordion · 折叠面板</h1>
   <p class="lede">
     用于把长表单或长内容分成几段。<strong>默认只开一个</strong>（同一个问题的不同答案），
@@ -202,6 +203,13 @@ p { margin: 0 0 var(--sp-3); }
   <h2 class="rule-top">反例</h2>
   <div class="box bad">
     <h3>反例：用 div 当 trigger</h3>
+    <div class="accordion">
+      <div class="accordion__item">
+        <div class="accordion__heading">
+          <div class="accordion__trigger">用 div 写的标题（Tab 不到，也念不出状态）</div>
+        </div>
+      </div>
+    </div>
     <p class="small">
       <code>&lt;div class="accordion__trigger"&gt;</code> 键盘上 Tab 不到、
       也不响应 Enter/Space。<strong>APG 要求 header 里是
@@ -211,10 +219,16 @@ p { margin: 0 0 var(--sp-3); }
   </div>
   <div class="box bad">
     <h3>反例：折叠时只用 max-height: 0</h3>
+    <div id="acc-bad" style="max-height:0; overflow:hidden">
+      <p class="small" style="margin:0 0 var(--sp-2)">这一整段文字，读屏此刻仍然念得出来。</p>
+      <a href="#acc-bad">里面的这个链接，Tab 也仍然进得去</a>
+    </div>
     <p class="small">
-      内容在无障碍树里<strong>仍然存在</strong> —— 读屏会念出「折叠」区域里的全部文字，
-      键盘也能 Tab 进去。<strong>必须用 <code>hidden</code> 或
-      <code>display:none</code></strong>，让它真正离开无障碍树。
+      上面那块的高度被压成了 <code>0</code>，你<strong>看不见它</strong> ——
+      但按一下 Tab，焦点会停在里面的链接上；读屏也会把那句"仍然念得出来"念完。
+      内容在无障碍树里<strong>仍然存在</strong>，只是视觉上消失：
+      <strong>必须用 <code>hidden</code> 或 <code>display:none</code></strong>，
+      让它真正离开无障碍树。
     </p>
   </div>
 </main>

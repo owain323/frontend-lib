@@ -17,6 +17,7 @@
 </head>
 <body class="page page">
 <main class="wrap">
+  <!-- demo-claim:skip 两块都可量（button 的个数、tabindex="0" 的个数），但这一页仍是单栏结构，升级成 cmp 要重排整页 —— 本轮没做，已知欠账 -->
   <h1>tabs · 标签页</h1>
   <p class="lede">
     标签页用于在同一位置切换<strong>同层级的几块内容</strong>。
@@ -105,7 +106,14 @@
   <h2 class="rule-top">反例</h2>
   <div class="box bad">
     <h3>反例：用 div 当 tab</h3>
+    <div class="tabs">
+      <div class="tabs__list" role="tablist">
+        <div class="tabs__tab" role="tab" aria-selected="true">基本信息</div>
+        <div class="tabs__tab" role="tab" aria-selected="false">高级设置</div>
+      </div>
+    </div>
     <p class="small">
+      上面这两个 tab <strong>看起来完全正常</strong>，但
       <code>&lt;div role="tab"&gt;</code> 键盘上根本<strong>Tab 不到</strong>
       （除非手写 <code>tabindex</code>），也不会响应 Enter/Space。
       APG 明确要求 tab 是 <code>&lt;button role="tab"&gt;</code> ——
@@ -114,9 +122,16 @@
   </div>
   <div class="box bad">
     <h3>反例：每个 tab 都写 tabindex="0"</h3>
+    <div class="tabs">
+      <div class="tabs__list" role="tablist">
+        <button class="tabs__tab" role="tab" tabindex="0" aria-selected="true">基本信息</button>
+        <button class="tabs__tab" role="tab" tabindex="0">高级设置</button>
+        <button class="tabs__tab" role="tab" tabindex="0">日志</button>
+      </div>
+    </div>
     <p class="small">
-      看起来"都能 Tab 到"，但一排 5 个 tab 就要按 <strong>5 次 Tab</strong>
-      才能进内容区。Tab 键应该是<strong>进出</strong>控件的，
+      看起来"都能 Tab 到"，但一排 3 个 tab 就要按 <strong>3 次 Tab</strong>
+      才能进内容区（真到 5 个 tab 的页面上只会更糟）。Tab 键应该是<strong>进出</strong>控件的，
       组内移动是方向键的活。
     </p>
   </div>

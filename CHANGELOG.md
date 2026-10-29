@@ -16,6 +16,101 @@
 
 （无）
 
+## [0.11.13] - 2026-10-29
+
+**先得有东西可看，才谈得上「两栏不一样」。**
+
+0.11.12 让 24 个对照块各写了一条可证伪的数字断言。但那套判据有个前提：
+块里得有标本。发布后把全部 34 个 demo 页扫了一遍 —— **13 个反例块里
+一个标本都没有**，只有 `<p class="small">` 在**描述**一个反例。
+
+最刺眼的一处：`02-primitives/separator` 的标题写着
+「反例：用 div + border-bottom 代替 hr」，块里只有一段话说
+"`<div class="line">` 对读屏什么都没有"—— **那个 div 根本没被渲染**。
+读者在这一屏里学不到任何看得见的东西。`switch` / `accordion` / `tabs`
+各两处、`badge`、`sparkline`、`form-validation` 同形。
+
+`demo-counterexample-gate.py` 对它们全绿：它判的是"块在、没被藏、
+块后有标题"，一段纯文字全都满足。这是比"反例不成立"更早一层的漏洞 ——
+**没有反例**。
+
+### 新增的两条判据（`05-audit/demo-claim-gate.js`，同一道门禁）
+
+1. **反例块里必须有标本** —— 真渲染出来的控件或内容。判据看标签语义：
+   原生控件/绘图元素算；`h3 p code pre strong` 这些"天生是字"的标签，
+   带**非排版类**时才算（`p.rep-p` 是内容本身，`p.small` 是描述它的文字）。
+   摆不出来的写在块上：`data-prose="为什么摆不出来"`（理由 ≥8 字，
+   逐条打印，可以被反驳）。
+2. **单栏页必须逐页登记** —— 只有 `box bad`、没有 `cmp` 的页，页内要写
+   `<!-- demo-claim:skip 理由 -->`。以前只在末尾打一行"10 页未覆盖"，
+   现在每页的理由都打出来，并且**要求区分"量不了"和"可量但没做"**。
+   既有 `cmp` 又写 `skip` 也算矛盾，同样红。
+
+自检从 10 条加打到 32 条（21 条必须红 + 11 条必须绿）。
+
+### 判据本身走过的两条错路（都留在代码注释与 `internal/ERRORS.md` 里）
+
+- 第一版按「类名是否定义在组件样式里」判标本 → `sparkline.css` 里
+  `.row > .sparkline` 这种后代选择器把排版类收进了类名表（假绿）；
+  而 `separator` 那个 `<div class="line">` 的类定义在 **demo 自己的
+  `<style>`** 里，真标本被判成没标本（假红）。
+- 第二版按「有没有边框/底色」判 → `tooltip`（`div.tt-field`）、
+  `tree`（`div.tree__node`）、`report`（`<p class="rep-p">`）三处
+  **纯文字构成的真标本**被冤枉。这一库有大量反例的差别就在字号、
+  字重、行高、颜色上，这些东西不产生边框。
+
+### 补上的 10 处标本（另有 3 块实在摆不出来，写了 `data-prose`）
+
+`separator` ×2（真渲染 `<hr>` 与 `div` 分隔线）、`switch` ×2（假开关与
+丢了 label 的开关）、`accordion` ×2（div trigger、`max-height:0` 里仍可
+Tab 的链接）、`tabs` ×2（div 当 tab、三个 `tabindex="0"`）、`badge` ×1
+（长得一样但 Tab 不到的 div）、`overlay` ×1（一条「文件已删除」的真 toast）。
+
+### 登记的 10 页（不假装解决）
+
+- **可量但本轮没做（5 页）**：`choice` / `separator` / `switch` /
+  `accordion` / `tabs` —— 差别用 `count` / `h` 就能写成互斥断言
+  （`<hr>` 个数 0 vs 1、`input` 个数 0 vs 1…），缺的是把页面重排成 `cmp`。
+  **这是欠账，不是边界**，理由里原话写着。
+- **量不了（5 页）**：`badge`（对比度与焦点可达性，`demo-claim` 没有这两个
+  指标）、`form-validation`（时序与措辞）、`overlay`（运行时焦点落点）、
+  `echarts-adapter`（没有图表实例可摆）、`sparkline`（读屏输出与
+  `reduced-motion`）。
+
+### 契约变化（一处，如实记录）
+
+`ai/components.json` 里 `switch` 的 `aria.attrs` 从 `[]` 变成 `["checked"]`。
+原因是新加的反例真的写了 `aria-checked`（那一块讲的就是"手写这个属性"），
+而抽取器只取 `aria-` 后面的名字（与 `expanded` 同约定）。原生
+`<input role="switch">` 并不需要它 —— 这条是**反例带进契约**的。
+选择保留并写在这里，而不是悄悄让它躺在 diff 里（`internal/ERRORS.md` E122）。
+
+### 门禁
+
+条数不变（197 道，本轮没有新增门禁文件，只是同一道门禁多了两条判据）。
+
+两处**门禁自身**的改动：
+
+- `a11y-ax` 从 10 页扩到 **11 页**，新增 `accordion`（`button + expanded +
+  受控 region` 这一组关系，与 `tablist` 的 `selected/controls` 不同源；
+  而 `accordion-contract.js` 查的是"属性写得对不对"，查不到"读屏实际念出什么"）。
+  加进去之后顺带证实：`max-height:0` 那块里被裁掉的 `<a>` **仍在无障碍树里**
+  （快照里是 `link "里面的这个链接，Tab 也仍然进得去"`），反例不是嘴上说的。
+- 三页的朗读序列快照更新（`switch` / `tabs` / `overlay`）—— 都是因为新增了
+  真标本：假开关现在会被念成 `switch "开启动价推送"`，假 tablist 会被念成
+  `tablist "基本信息 高级设置"`，`「文件已删除」` 那条 toast 会被念成
+  `status [live=polite atomic=true]`。三处都逐条核过，不是照单全收。
+
+### 自己踩的坑（`internal/ERRORS.md` E119–E123）
+
+- **E119/E120**：判"有没有标本"的两条错路（类名定义表 / 边框底色），
+  两头都有误判实例，都留在代码注释里。
+- **E121**：自检结论把"必须绿"的用例算进了"反向控制"总数 —— 数字对、
+  措辞撒谎。
+- **E122**：反例把 `aria-checked` 带进了对外契约（见上一节）。
+- **E123**：给反例的 `div` 顺手补了 `aria-expanded`，`axe` 报
+  `aria-allowed-attr` —— 反例里写"正确答案"会让反例变成半成品正例。
+
 ## [0.11.12] - 2026-10-29
 
 **反例从「看得见」走到「量得出」**。0.11.11 把 24 个对照块摆了出来，
