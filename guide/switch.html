@@ -77,6 +77,9 @@
 <p><code>switch-contract.js</code> 10 项全过（<strong>用真实按键</strong>，不是 dispatchEvent）：</p>
 <ul><li>可聚焦 · <code>role=&quot;switch&quot;</code> · 原生 checkbox · <code>label[for]</code> 关联</li><li>焦点环画在可见元素上</li><li><strong>Space 切换</strong>（真实按键）· <strong>Enter 不切换</strong>（APG 要求，真实按键）</li><li>滑块位移随状态变化 · axe 0 违规 / 24 条通过</li></ul>
 <p>判别力验证：去掉 <code>role</code> 与 <code>label</code> ⇒ 4 项立即被抓。</p>
+<h2 id="s9">反例<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
+<ul><li>❌ <strong>让 Enter 也能切换</strong> —— APG 的 Switch 只认 Space。Enter 会<strong>双重切换</strong>：读屏自己会发一次，你的处理器再切一次，用户看到的是&quot;按了没反应&quot;</li><li>❌ <strong>用 <code>aria-label</code> 代替 <code>&lt;label for&gt;</code></strong> —— 视觉标签点了没反应，用户以为坏了。标签不可见时用 <code>switch__label--sr</code>：看得见可以没有，听得到必须有</li><li>❌ <strong>把 switch 当 checkbox 用</strong> —— switch 的语义是&quot;<strong>立刻生效</strong>&quot;，checkbox 是&quot;随表单一起提交&quot;。用开关做&quot;我已阅读条款&quot;，用户勾完就以为已经生效了</li><li>❌ <strong>给开关加 <code>error</code> 或 <code>readonly</code></strong> —— 开关没有中间态可校验；readonly 对开关等于 disabled（用户改不了），留着它只会让复用者以为&quot;这个能校验&quot;</li><li>❌ <strong>只把小滑块做成可点区域</strong> —— <code>switch__input</code> 要铺满整块；只点滑块，触屏上漏点率很高</li></ul>
+<hr>
     </article>
     <nav class="g-pager" aria-label="上一页 / 下一页">
       <a class="g-pager__link g-pager__link--prev" href="skeleton.html"><span>上一页</span>skeleton · 骨架屏</a>
@@ -85,11 +88,11 @@
   </main>
   <aside class="g-side">
     <p class="g-side__title" id="toc-title">本页目录</p>
-    <ul class="g-toc"><li><a href="#s2">它和 checkbox 的差别是语义，不是形状</a></li><li><a href="#s3">类</a></li><li><a href="#s4">用法</a></li><li><a href="#s5">为什么用原生 checkbox 而不是 div + role</a></li><li><a href="#s6">组件零 JS</a></li><li><a href="#s7">尺寸</a></li><li><a href="#s8">验证</a></li></ul>
+    <ul class="g-toc"><li><a href="#s2">它和 checkbox 的差别是语义，不是形状</a></li><li><a href="#s3">类</a></li><li><a href="#s4">用法</a></li><li><a href="#s5">为什么用原生 checkbox 而不是 div + role</a></li><li><a href="#s6">组件零 JS</a></li><li><a href="#s7">尺寸</a></li><li><a href="#s8">验证</a></li><li><a href="#s9">反例</a></li></ul>
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.11.9 · 零第三方运行时依赖 · 组件数 35</p>
+  <p>v0.11.10 · 零第三方运行时依赖 · 组件数 35</p>
 </footer>
 </body>
 </html>

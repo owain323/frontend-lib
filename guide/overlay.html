@@ -148,7 +148,7 @@ document.body.style.paddingRight = (cur + sbw) + 'px';</code></pre>
 <p><strong>如果不需要自定义动画，<code>&lt;dialog&gt;</code> 的 focus trap 和 Esc 是浏览器免费提供的，应该优先用它。</strong> 手写 focus trap 的代码永远不如原生可靠。</p>
 <hr>
 <h2 id="s14">反例<a class="anchor" href="#s14" aria-label="本节直链">#</a></h2>
-<ul><li>❌ <strong>toast 抢焦点</strong> —— 通知不该打断当前操作</li><li>❌ <strong>用 toast 做需要确认的操作</strong> —— 见上</li><li>❌ <strong>dialog 不困住焦点</strong> —— 混乱</li><li>❌ <strong>dialog 关闭后焦点不回去</strong> —— 键盘用户要重新 Tab</li><li>❌ <strong>锁滚动不补偿滚动条宽度</strong> —— 页面&quot;闪&quot;一下</li><li>❌ <strong>错误 toast 3 秒消失</strong> —— 还没读完就走了</li><li>❌ <strong>危险操作初始焦点在&quot;删除&quot;上</strong> —— 条件反射误触</li><li>❌ <strong>危险操作点遮罩即关闭</strong> —— 手滑就完了</li><li>❌ <strong>dialog 大幅缩放/回弹</strong> —— 廉价感</li><li>❌ <strong>backdrop 加 <code>backdrop-filter: blur</code></strong> —— 旧 WebView 掉帧</li><li>❌ <strong>用自定义 div 替代 <code>&lt;dialog&gt;</code> 且不需要自定义动画</strong> —— 原生的 focus trap 更可靠</li></ul>
+<ul><li>❌ <strong>toast 抢焦点</strong> —— 通知不该打断当前操作</li><li>❌ <strong>用 toast 做需要确认的操作</strong> —— toast 里没有按钮、也拿不到焦点：用户要么没看见，要么看见了却点不到</li><li>❌ <strong>dialog 不困住焦点</strong> —— Tab 会跑到背后的页面上，读屏用户一路读下去，读到的是 dialog 外面的内容</li><li>❌ <strong>dialog 关闭后焦点不回去</strong> —— 键盘用户要重新 Tab</li><li>❌ <strong>锁滚动不补偿滚动条宽度</strong> —— 页面&quot;闪&quot;一下</li><li>❌ <strong>错误 toast 3 秒消失</strong> —— 还没读完就走了</li><li>❌ <strong>危险操作初始焦点在&quot;删除&quot;上</strong> —— 条件反射误触</li><li>❌ <strong>危险操作点遮罩即关闭</strong> —— 手滑就完了</li><li>❌ <strong>dialog 大幅缩放/回弹</strong> —— 大面积位移让前庭敏感的用户不适，而且把注意力从内容移到了动画上</li><li>❌ <strong>backdrop 加 <code>backdrop-filter: blur</code></strong> —— 旧 WebView 掉帧</li><li>❌ <strong>用自定义 div 替代 <code>&lt;dialog&gt;</code> 且不需要自定义动画</strong> —— 原生的 focus trap 更可靠</li></ul>
     </article>
     <nav class="g-pager" aria-label="上一页 / 下一页">
       <a class="g-pager__link g-pager__link--prev" href="nav.html"><span>上一页</span>nav —— 页头 / 目录 / 移动端抽屉</a>
@@ -161,7 +161,7 @@ document.body.style.paddingRight = (cur + sbw) + 'px';</code></pre>
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.11.9 · 零第三方运行时依赖 · 组件数 35</p>
+  <p>v0.11.10 · 零第三方运行时依赖 · 组件数 35</p>
 </footer>
 </body>
 </html>

@@ -89,7 +89,7 @@ role=&quot;progressbar&quot; aria-busy=&quot;true&quot; aria-label=&quot;正在�
 <p>⚠️ <strong>不确定时不要显示百分比</strong> —— 那是撒谎。读屏只会听到「正在处理，进度未知」，这才是事实。</p>
 <p>⚠️ <code>prefers-reduced-motion: reduce</code> 时扫光动画<strong>停掉，但条子仍可见</strong>（用户依然知道系统在忙）。</p>
 <h2 id="s5">何时<strong>不该</strong>用<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
-<ul><li>❌ <strong>不知道进度时</strong>（停在 0% 或乱跳的百分比）⇒ 用 <code>skeleton</code></li><li>❌ <strong>不足 ~1 秒就完成</strong>的操作 ⇒ 闪一下更伤体验，直接不显示</li><li>❌ <strong>代替&quot;还剩多久&quot;</strong> ⇒ 百分比给的是&quot;比例&quot;，不是&quot;时间&quot;</li><li>❌ <strong>环形用在极小尺寸</strong>（&lt; 32px）⇒ 环太细，读不出进度</li><li>❌ <strong>在一个页面里同时出现 3 个以上进度条</strong> ⇒ 用户不知道该看哪个</li></ul>
+<ul><li>❌ <strong>不知道进度时</strong>（停在 0% 或乱跳的百分比）⇒ 用 <code>skeleton</code></li><li>❌ <strong>不足 ~1 秒就完成</strong>的操作 ⇒ 闪一下更伤体验，直接不显示</li><li>❌ <strong>代替&quot;还剩多久&quot;</strong> ⇒ 百分比给的是&quot;比例&quot;，不是&quot;时间&quot;</li><li>❌ <strong>环形用在极小尺寸</strong>（&lt; 32px）⇒ 环太细，读不出进度</li><li>❌ <strong>在一个页面里同时出现 3 个以上进度条</strong> ⇒ 用户不知道该看哪个</li><li>❌ <strong>用 <code>display: none</code> 隐藏进度条</strong> ⇒ 会留下 <code>::after</code> 参与合成的空盒，位置还占着；改宽度或改状态，别改可见性</li><li>❌ <strong>进度到 100% 就自动变绿</strong> ⇒ 颜色的语义是&quot;结果&quot;不是&quot;数值&quot;，100% 也可能是失败；<code>progress--success</code> 按业务给</li><li>❌ <strong>把超过 100 的值喂给 <code>progress-ring</code></strong> ⇒ 弧长按百分比算，超过就是绕圈或错位</li><li>❌ <strong>用 <code>progress-steps</code> 表达连续百分比</strong> ⇒ 它按离散阶段设计（<code>progress-steps__seg--done</code> / <code>--current</code>），用户会以为&quot;每段就是 25%&quot;</li></ul>
 <h2 id="s6">相关<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
 <ul><li>未知进度 ⇒ <a href="../02-primitives/skeleton/"><code>skeleton</code></a></li><li>短反馈（&quot;已保存&quot;）⇒ <code>toast</code>（<strong>尚未提供</strong>）</li></ul>
     </article>
@@ -104,7 +104,7 @@ role=&quot;progressbar&quot; aria-busy=&quot;true&quot; aria-label=&quot;正在�
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.11.9 · 零第三方运行时依赖 · 组件数 35</p>
+  <p>v0.11.10 · 零第三方运行时依赖 · 组件数 35</p>
 </footer>
 </body>
 </html>

@@ -89,7 +89,10 @@
 <tr><td><code>dismissable:manual</code></td><td>点遮罩关闭是手写的，不是统一机制</td></tr>
 </tbody>
 </table></div>
-<h2 id="s9">门禁<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
+<h2 id="s9">反例<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
+<ul><li>❌ <strong>打开抽屉时不给背景加 <code>inert</code> / <code>aria-hidden</code></strong> —— 抽屉是<strong>模态</strong>：读屏会把抽屉与背景一起念出来（&quot;双重朗读&quot;），用户听到两套内容叠在一起</li><li>❌ <strong>省掉焦点陷阱</strong> —— Tab 会跑到抽屉外面，键盘用户在看不见的内容上操作，还以为抽屉坏了</li><li>❌ <strong><code>drawer__close</code> 做得很小</strong> —— 它是独立目标，要 44px。抽屉滑进来之后，用户第一件事就是找关闭</li><li>❌ <strong>在插入 DOM 之后才记录 <code>document.activeElement</code></strong> —— 记到的是新节点，关闭时焦点&quot;归还&quot;到一个已经不存在的位置，等于没还</li><li>❌ <strong>嵌套抽屉不用锁计数</strong> —— 内层关掉时会把外层的滚动锁一起解开，外层还在，背景却能滚了</li></ul>
+<hr>
+<h2 id="s10">门禁<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
 <p><code>05-audit/drawer-check.js</code></p>
     </article>
     <nav class="g-pager" aria-label="上一页 / 下一页">
@@ -99,11 +102,11 @@
   </main>
   <aside class="g-side">
     <p class="g-side__title" id="toc-title">本页目录</p>
-    <ul class="g-toc"><li><a href="#s2">🔴 三条硬要求（一条都不能少）</a></li><li><a href="#s3">⚠️ 抽屉是模态：背景必须 inert</a></li><li><a href="#s4">结构</a></li><li><a href="#s5">启用</a></li><li><a href="#s7">嵌套用锁计数</a></li><li><a href="#s8">成熟度：beta（两条行为债，如实列出）</a></li><li><a href="#s9">门禁</a></li></ul>
+    <ul class="g-toc"><li><a href="#s2">🔴 三条硬要求（一条都不能少）</a></li><li><a href="#s3">⚠️ 抽屉是模态：背景必须 inert</a></li><li><a href="#s4">结构</a></li><li><a href="#s5">启用</a></li><li><a href="#s7">嵌套用锁计数</a></li><li><a href="#s8">成熟度：beta（两条行为债，如实列出）</a></li><li><a href="#s9">反例</a></li><li><a href="#s10">门禁</a></li></ul>
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.11.9 · 零第三方运行时依赖 · 组件数 35</p>
+  <p>v0.11.10 · 零第三方运行时依赖 · 组件数 35</p>
 </footer>
 </body>
 </html>

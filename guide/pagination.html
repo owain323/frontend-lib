@@ -106,7 +106,10 @@ if (q &gt; 0) this.page = Math.min(q, this.pages);</code></pre>
 <p>刷新页面、别人分享链接，都能回到同一页 —— 而且会被<strong>夹在合法页数范围内</strong>。这是&quot;翻页&quot;从一次性动作变成可分享状态的关键。</p>
 <h2 id="s12">成熟度：stable（无行为债）<a class="anchor" href="#s12" aria-label="本节直链">#</a></h2>
 <p><code>ai/components.json</code> 里 <code>pagination</code> 的 <code>behaviorDebt</code> 为空。</p>
-<h2 id="s13">门禁<a class="anchor" href="#s13" aria-label="本节直链">#</a></h2>
+<h2 id="s13">反例<a class="anchor" href="#s13" aria-label="本节直链">#</a></h2>
+<ul><li>❌ <strong>把 <code>role=&quot;navigation&quot;</code> 直接放在 <code>pagination__list</code> 上</strong> —— 会<strong>覆盖 <code>ul</code> 的列表语义</strong>，读屏不再报告&quot;共 N 项&quot;。要包在 <code>&lt;nav aria-label&gt;</code> 里</li><li>❌ <strong>用 <code>aria-selected</code> 标当前页</strong> —— 那是 tab / option / row 的语义；当前页用 <code>aria-current=&quot;page&quot;</code>，用错了读屏会说&quot;已选中&quot;，而用户以为自己只是停在第 3 页</li><li>❌ <strong>客户端翻页不放 <code>pagination__live</code></strong> —— 页码变了却没有任何播报，读屏用户不知道&quot;内容已经换了&quot;。而且这个 live 区必须<strong>常驻 DOM</strong>：新插入的节点很多读屏不播</li><li>❌ <strong>页码无限铺开</strong> —— 槽位一多就撑破窄屏（USWDS 的上限是 7）。该用 <code>pagination__ellipsis</code> 收中间</li><li>❌ <strong>没跳过页码也显示省略号</strong> —— 用户会以为中间少了页，去点它，什么也不会发生</li><li>❌ <strong>禁用态用纯透明表示</strong> —— 半透明会让人以为&quot;再点一下就行&quot;；本库是让它&quot;退到背景里&quot;</li></ul>
+<hr>
+<h2 id="s14">门禁<a class="anchor" href="#s14" aria-label="本节直链">#</a></h2>
 <p><code>05-audit/pagination-check.js</code></p>
     </article>
     <nav class="g-pager" aria-label="上一页 / 下一页">
@@ -116,11 +119,11 @@ if (q &gt; 0) this.page = Math.min(q, this.pages);</code></pre>
   </main>
   <aside class="g-side">
     <p class="g-side__title" id="toc-title">本页目录</p>
-    <ul class="g-toc"><li><a href="#s2">🔴 六条结构硬要求（不是&quot;最佳实践&quot;）</a></li><li><a href="#s9">结构</a></li><li><a href="#s10">启用：配置全部从 DOM 属性读</a></li><li><a href="#s12">成熟度：stable（无行为债）</a></li><li><a href="#s13">门禁</a></li></ul>
+    <ul class="g-toc"><li><a href="#s2">🔴 六条结构硬要求（不是&quot;最佳实践&quot;）</a></li><li><a href="#s9">结构</a></li><li><a href="#s10">启用：配置全部从 DOM 属性读</a></li><li><a href="#s12">成熟度：stable（无行为债）</a></li><li><a href="#s13">反例</a></li><li><a href="#s14">门禁</a></li></ul>
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.11.9 · 零第三方运行时依赖 · 组件数 35</p>
+  <p>v0.11.10 · 零第三方运行时依赖 · 组件数 35</p>
 </footer>
 </body>
 </html>

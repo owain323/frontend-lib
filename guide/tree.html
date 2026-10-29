@@ -95,7 +95,10 @@
 <p>用 margin 的话，嵌套结构在视觉上&quot;飘&quot;着，层级读不出来。</p>
 <h2 id="s8">成熟度：stable（无行为债）<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
 <p><code>ai/components.json</code> 里 <code>tree</code> 的 <code>behaviorDebt</code> 为空。</p>
-<h2 id="s9">门禁<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
+<h2 id="s9">反例<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
+<ul><li>❌ <strong>↑↓ 只移动焦点、←→ 只展开不移动焦点</strong> —— APG 是<strong>两段式</strong>：↑↓ 移动焦点，←→ 展开/收起 <strong>并带着焦点走</strong>。只做一半，键盘用户会觉得&quot;按了没反应&quot;</li><li>❌ <strong>每个 <code>tree__item</code> 都 <code>tabindex=&quot;0&quot;</code></strong> —— 整棵树只占<strong>一个</strong> Tab 位（roving tabindex）；否则穿过 200 个节点要按 200 次 Tab</li><li>❌ <strong>只靠旋转箭头表示展开/收起</strong> —— 必须有<strong>三态形状线索</strong>（<code>tree__marker</code>）：旋转只能看出&quot;变过&quot;，看不出&quot;现在是哪一态&quot;</li><li>❌ <strong>RTL 下收起箭头不翻向</strong> —— 阿拉伯语用户看到的是一个指错方向的符号； <code>tree.css</code> 里那条 <code>[dir=&quot;rtl&quot;]</code> 就是为此</li><li>❌ <strong>用 <code>margin</code> 做层级缩进</strong> —— 缩进用 padding：<code>margin</code> 会把点击区一起缩窄，深层的节点点不中</li><li>❌ <strong>把 ←→ 交给&quot;左右移动&quot;处理</strong> —— 树里 ←→ 是展开/收起（APG 两段式），当成左右移动会被方向键库先吃掉</li></ul>
+<hr>
+<h2 id="s10">门禁<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
 <p><code>05-audit/tree-check.js</code></p>
     </article>
     <nav class="g-pager" aria-label="上一页 / 下一页">
@@ -105,11 +108,11 @@
   </main>
   <aside class="g-side">
     <p class="g-side__title" id="toc-title">本页目录</p>
-    <ul class="g-toc"><li><a href="#s2">⭐ 树是键盘契约最严的组件（APG 列了 12 条）</a></li><li><a href="#s3">🔴 roving tabindex —— 整棵树只占一个 Tab 位</a></li><li><a href="#s4">结构</a></li><li><a href="#s6">启用</a></li><li><a href="#s7">缩进用 padding，不是 margin</a></li><li><a href="#s8">成熟度：stable（无行为债）</a></li><li><a href="#s9">门禁</a></li></ul>
+    <ul class="g-toc"><li><a href="#s2">⭐ 树是键盘契约最严的组件（APG 列了 12 条）</a></li><li><a href="#s3">🔴 roving tabindex —— 整棵树只占一个 Tab 位</a></li><li><a href="#s4">结构</a></li><li><a href="#s6">启用</a></li><li><a href="#s7">缩进用 padding，不是 margin</a></li><li><a href="#s8">成熟度：stable（无行为债）</a></li><li><a href="#s9">反例</a></li><li><a href="#s10">门禁</a></li></ul>
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.11.9 · 零第三方运行时依赖 · 组件数 35</p>
+  <p>v0.11.10 · 零第三方运行时依赖 · 组件数 35</p>
 </footer>
 </body>
 </html>

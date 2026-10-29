@@ -97,7 +97,7 @@ fetch(...).then(r =&gt; { clearTimeout(t); showResult(r); });</code></pre>
 <ol><li>loading 容器标 <code>aria-busy=&quot;true&quot;</code></li><li>error / success 动态出现时用 <code>role=&quot;alert&quot;</code> 或 <code>aria-live=&quot;polite&quot;</code>——否则屏幕阅读器用户不知道状态变了</li><li>骨架屏标 <code>aria-hidden=&quot;true&quot;</code></li></ol>
 <hr>
 <h2 id="s7">反例<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
-<ul><li>❌ <strong>empty 和 loading 用同一个样式</strong> —— 用户分不清是&quot;在加载&quot;还是&quot;真没有&quot;</li><li>❌ <strong>empty 态不放动作按钮</strong> —— 把用户卡死</li><li>❌ <strong>error 态没有重试出口</strong> —— 死路</li><li>❌ <strong>结构未知时用骨架屏</strong> —— 撒谎，且内容到位时跳动</li><li>❌ <strong>请求 &lt;300ms 也显示骨架屏</strong> —— 闪一下更糟</li><li>❌ <strong>把普通操作的成功做成整页 success</strong> —— 成功是过渡态，用 button 的 <code>data-state=&quot;success&quot;</code>（1.2s 自动消失）</li><li>❌ <strong>把技术细节（错误码、堆栈）写进主文案</strong> —— 用户要看的是&quot;我该怎么办&quot;。细节放 <code>.state__detail</code> 折叠</li></ul>
+<ul><li>❌ <strong>empty 和 loading 用同一个样式</strong> —— 用户分不清是&quot;在加载&quot;还是&quot;真没有&quot;</li><li>❌ <strong>empty 态不放动作按钮</strong> —— 把用户卡死</li><li>❌ <strong>error 态没有重试出口</strong> —— 用户唯一的动作只剩刷新页面，而刷新会把已经填好的内容一起丢掉</li><li>❌ <strong>结构未知时用骨架屏</strong> —— 撒谎，且内容到位时跳动</li><li>❌ <strong>请求 &lt;300ms 也显示骨架屏</strong> —— 闪一下更糟</li><li>❌ <strong>把普通操作的成功做成整页 success</strong> —— 成功是过渡态，用 button 的 <code>data-state=&quot;success&quot;</code>（1.2s 自动消失）</li><li>❌ <strong>把技术细节（错误码、堆栈）写进主文案</strong> —— 用户要看的是&quot;我该怎么办&quot;。细节放 <code>.state__detail</code> 折叠</li></ul>
 <hr>
 <h2 id="s8">验收清单（替代自动门禁）<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
 <p><code>states.py</code> 不检查容器态——它检查的是交互元素，容器不是。所以这一项<strong>目前靠人工检查</strong>，按下面七条过：</p>
@@ -137,7 +137,7 @@ fetch(...).then(r =&gt; { clearTimeout(t); showResult(r); });</code></pre>
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.11.9 · 零第三方运行时依赖 · 组件数 35</p>
+  <p>v0.11.10 · 零第三方运行时依赖 · 组件数 35</p>
 </footer>
 </body>
 </html>

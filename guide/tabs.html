@@ -85,6 +85,9 @@
 <p><code>tabs-contract.js</code> <strong>28 项全过</strong>（用 <code>page.keyboard.press()</code> 真实按键）：</p>
 <ul><li>结构：<code>&lt;button&gt;</code> · <code>role=tablist</code> · <code>aria-controls</code> 双向互指 · <code>aria-orientation</code></li><li>roving：唯一 <code>0</code> · <strong>跟着选中项走</strong> · 循环后仍唯一</li><li>键盘：<code>←→</code> · <code>Home</code>/<code>End</code> · <strong>循环</strong> · <strong>跳过 <code>aria-disabled</code></strong></li><li>Tab 进出：进组落在选中项 · 进面板内容 · <strong>不逐个穿过同组</strong></li><li>手动模式：方向键不切面板但移焦点 · Enter 才激活</li><li>axe 0 违规 / 30 条通过</li></ul>
 <p>判别力验证：破坏 roving（全部设成 <code>0</code>）⇒ <strong>5 项立即被抓</strong>。</p>
+<h2 id="s10">反例<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
+<ul><li>❌ <strong>每个 <code>tabs__tab</code> 都给 <code>tabindex=&quot;0&quot;</code></strong> —— Tab 键要逐个穿过一整排； roving tabindex 只留<strong>一个</strong> 0，其余 -1</li><li>❌ <strong><code>tabindex=&quot;0&quot;</code> 只在初始化时设一次</strong> —— 这是本组件最常见的 bug：用户切到第 3 个 tab 后，再按 Tab 又回到第 1 个。那个唯一的 0 必须<strong>跟着选中项走</strong></li><li>❌ <strong>禁用项也设 <code>tabindex=&quot;0&quot;</code></strong> —— Tab 会停在不可用的项上，用户按了没反应，以为页面卡了</li><li>❌ <strong>automatic 模式下 <code>preventDefault</code></strong> —— 会与 button 的默认行为打架，变成&quot;按一次跳两格&quot;；不拦，交给默认行为</li><li>❌ <strong>把 <code>tabs--manual</code> 当纯样式类用</strong> —— 它是<strong>行为开关</strong>：<code>tabs.js</code> 读它决定方向键要不要切面板。只加类不改语义，用户会以为方向键坏了</li><li>❌ <strong><code>overflow-y</code> 不写 <code>hidden</code></strong> —— 一个轴设 <code>auto</code> 会让另一轴也自动化，选中态的 <code>border-bottom</code> 被裁掉</li></ul>
+<hr>
     </article>
     <nav class="g-pager" aria-label="上一页 / 下一页">
       <a class="g-pager__link g-pager__link--prev" href="states.html"><span>上一页</span>容器四态：empty / loading / error / success</a>
@@ -93,11 +96,11 @@
   </main>
   <aside class="g-side">
     <p class="g-side__title" id="toc-title">本页目录</p>
-    <ul class="g-toc"><li><a href="#s2">结构（APG 要求，不是我的设计）</a></li><li><a href="#s3">键盘契约</a></li><li><a href="#s4">🔴 roving tabindex（本组件最容易写错的地方）</a></li><li><a href="#s5">两种激活模式</a></li><li><a href="#s6">纵向</a></li><li><a href="#s7">一个规范与现实的张力</a></li><li><a href="#s8">语法约束</a></li><li><a href="#s9">验证</a></li></ul>
+    <ul class="g-toc"><li><a href="#s2">结构（APG 要求，不是我的设计）</a></li><li><a href="#s3">键盘契约</a></li><li><a href="#s4">🔴 roving tabindex（本组件最容易写错的地方）</a></li><li><a href="#s5">两种激活模式</a></li><li><a href="#s6">纵向</a></li><li><a href="#s7">一个规范与现实的张力</a></li><li><a href="#s8">语法约束</a></li><li><a href="#s9">验证</a></li><li><a href="#s10">反例</a></li></ul>
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.11.9 · 零第三方运行时依赖 · 组件数 35</p>
+  <p>v0.11.10 · 零第三方运行时依赖 · 组件数 35</p>
 </footer>
 </body>
 </html>

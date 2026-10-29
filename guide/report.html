@@ -150,6 +150,9 @@ report.css                   ← 本系统</code></pre>
 <pre class="code" tabindex="0"><code class="language-bash">node 05-audit/report-check.js      # 单独跑
 bash 05-audit/check-all.sh         # 全量</code></pre>
 <p><code>report-check.js</code> 复用 <code>contract-kit.js</code>（通用 7 类判据）<strong>加 17 条本系统专属判据</strong>，全部读<strong>计算值/几何</strong>而不是 CSS 文本 —— 因为&quot;写了 ≠ 生效&quot;在本系统上翻过车： <code>.rep h2 / .rep h3</code>（特异度 0,1,1）曾经压过 <code>.rep__title</code>（0,1,0），使 <code>--rep-title-fs</code> 静默失效、三套版式的标题被钉死在同一个字号。</p>
+<h2 id="s13">反例<a class="anchor" href="#s13" aria-label="本节直链">#</a></h2>
+<ul><li>❌ <strong>拿它做分页 PDF / 印刷分页</strong> —— 页边距、页眉页脚、页码、跨页控制<strong>一律没有</strong>，也不假装有。需要印刷排版，用专门的工具链</li><li>❌ <strong>靠改选择器换版式</strong> —— 换版式只改那六个变量（<code>--rep-measure</code> / <code>--rep-body-fs</code> / <code>--rep-title-fs</code> / <code>--rep-lead-fs</code> / <code>--rep-body-lh</code> / <code>--rep-sec-num</code>），不改选择器</li><li>❌ <strong>再发明第七种字体角色</strong> —— 六个角色（眉题 / 元信息 / 图表说明 / 来源 / 编者注 / 风险披露）是<strong>不多不少</strong>的；多一种，读者就要重新学一遍&quot;这行字是什么身份&quot;</li><li>❌ <strong>把它当 CMS 或模板引擎</strong> —— 没有内容管理、没有模板继承、没有构建步骤，只有 CSS</li><li>❌ <strong>自己写表格样式</strong> —— 复用 <code>table.css</code>；两份表格样式在换主题时必然分叉</li></ul>
+<hr>
     </article>
     <nav class="g-pager" aria-label="上一页 / 下一页">
       <a class="g-pager__link g-pager__link--prev" href="detail-page.html"><span>上一页</span>detail-page · 实体详情页骨架</a>
@@ -158,11 +161,11 @@ bash 05-audit/check-all.sh         # 全量</code></pre>
   </main>
   <aside class="g-side">
     <p class="g-side__title" id="toc-title">本页目录</p>
-    <ul class="g-toc"><li><a href="#s2">它不是什么（边界先划清，免得当万能模板用）</a></li><li><a href="#s3">文件</a></li><li><a href="#s4">依赖</a></li><li><a href="#s5">一 · 共享基础：六个可变量</a></li><li><a href="#s7">二 · 三种版式的取舍</a></li><li><a href="#s9">三 · 与 04-recipes/analysis-report 的分工</a></li><li><a href="#s10">四 · 🔴 本轮明确不做</a></li><li><a href="#s11">五 · 已知限制（实测记录，不是&quot;也许&quot;）</a></li><li><a href="#s12">六 · 门禁</a></li></ul>
+    <ul class="g-toc"><li><a href="#s2">它不是什么（边界先划清，免得当万能模板用）</a></li><li><a href="#s3">文件</a></li><li><a href="#s4">依赖</a></li><li><a href="#s5">一 · 共享基础：六个可变量</a></li><li><a href="#s7">二 · 三种版式的取舍</a></li><li><a href="#s9">三 · 与 04-recipes/analysis-report 的分工</a></li><li><a href="#s10">四 · 🔴 本轮明确不做</a></li><li><a href="#s11">五 · 已知限制（实测记录，不是&quot;也许&quot;）</a></li><li><a href="#s12">六 · 门禁</a></li><li><a href="#s13">反例</a></li></ul>
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.11.9 · 零第三方运行时依赖 · 组件数 35</p>
+  <p>v0.11.10 · 零第三方运行时依赖 · 组件数 35</p>
 </footer>
 </body>
 </html>

@@ -82,7 +82,10 @@
 <p><code>@media (forced-colors: active)</code> 下边框改用 <code>currentColor</code> —— <strong>靠边框保住边界，不靠底色</strong>。这一段本机无法验证（需系统级开关）。</p>
 <h2 id="s8">尺寸<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
 <p>高度 24px（默认）· 字号 12px —— 达 WCAG 2.2 的 24×24 最小目标。</p>
-<h2 id="s9">验证<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
+<h2 id="s9">反例<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
+<ul><li>❌ <strong>用 <code>badge--danger</code> 当按钮</strong> —— badge 不可点；要可点必须换成 <code>&lt;button&gt;</code> / <code>&lt;a&gt;</code> 并加 <code>badge--clickable</code>， <code>div</code> + <code>onClick</code> 对读屏是&quot;没有角色的按钮&quot;（<code>badge.css</code> 里写明了这一条）</li><li>❌ <strong>只用颜色区分状态、不加文字</strong> —— WCAG 1.4.1 要求形状或文字参与区分；纯色块在灰度打印和色觉障碍下不传递任何信息。所以本库是「淡底 + 深字」而不是「饱和底 + 白字」</li><li>❌ <strong>用 badge 装数字角标</strong> —— 那是另一类设计：数字一变化读屏未必会念，用户不知道&quot;3 变成 4&quot;是发生了什么事</li><li>❌ <strong>给不可点的 badge 写 hover 过渡</strong> —— 光标和过渡都在暗示&quot;我能点&quot;，用户去点，什么也不会发生</li><li>❌ <strong>列表里每一行都挂 <code>badge--solid-warning</code></strong> —— 饱和底在长列表里会盖过正文；<code>solid</code> 那三档只留给&quot;这一行必须被看见&quot;的少数情况</li></ul>
+<hr>
+<h2 id="s10">验证<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
 <ul><li><code>component-contrast.py</code>：5 组字/底组合两套配色全过</li><li><code>a11y-scan</code>：本 demo axe 0 违规 / 16 条通过</li></ul>
     </article>
     <nav class="g-pager" aria-label="上一页 / 下一页">
@@ -92,11 +95,11 @@
   </main>
   <aside class="g-side">
     <p class="g-side__title" id="toc-title">本页目录</p>
-    <ul class="g-toc"><li><a href="#s2">类</a></li><li><a href="#s3">用法</a></li><li><a href="#s4">三条硬规矩</a></li><li><a href="#s5">为什么是「淡底 + 深字」</a></li><li><a href="#s6">两档尺寸</a></li><li><a href="#s7">强制高对比模式</a></li><li><a href="#s8">尺寸</a></li><li><a href="#s9">验证</a></li></ul>
+    <ul class="g-toc"><li><a href="#s2">类</a></li><li><a href="#s3">用法</a></li><li><a href="#s4">三条硬规矩</a></li><li><a href="#s5">为什么是「淡底 + 深字」</a></li><li><a href="#s6">两档尺寸</a></li><li><a href="#s7">强制高对比模式</a></li><li><a href="#s8">尺寸</a></li><li><a href="#s9">反例</a></li><li><a href="#s10">验证</a></li></ul>
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.11.9 · 零第三方运行时依赖 · 组件数 35</p>
+  <p>v0.11.10 · 零第三方运行时依赖 · 组件数 35</p>
 </footer>
 </body>
 </html>

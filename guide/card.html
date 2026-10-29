@@ -122,7 +122,7 @@
 <p>这条来自对 <code>animal-island-ui</code> 的观察：卡片 20px 圆角、无投影、hover 只抬 2px。那套库整体画风跟严肃内容不搭，但这一条是对的。</p>
 <hr>
 <h2 id="s7">反例 —— 什么时候不该用<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
-<ul><li>❌ <strong>一排卡片全用 <code>--elevated</code></strong> —— 阴影互相打架，整页发灰。列表用 <code>--flat</code></li><li>❌ <strong>hover 抬起 8px 以上</strong> —— 游戏感</li><li>❌ <strong>整卡套 <code>div onclick</code></strong> —— 键盘不可达，见上</li><li>❌ <strong>给链接本身再画焦点环</strong> —— 会变成两个框</li><li>❌ <strong>用 JS 截断描述文字</strong> —— 会留下半个词或半个字，用 <code>-webkit-line-clamp</code></li><li>❌ <strong>手动覆盖 <code>--row</code> 在窄屏的回退</strong> —— 那个回退是必要的</li></ul>
+<ul><li>❌ <strong>一排卡片全用 <code>--elevated</code></strong> —— 阴影互相打架，整页发灰。列表用 <code>--flat</code></li><li>❌ <strong>hover 抬起 8px 以上</strong> —— 鼠标扫过列表时整页都在晃，注意力从内容跑到动画上；悬停只需要&quot;轻微浮起&quot;这一点点反馈</li><li>❌ <strong>整卡套 <code>div onclick</code></strong> —— 键盘不可达，见上</li><li>❌ <strong>给链接本身再画焦点环</strong> —— 会变成两个框</li><li>❌ <strong>用 JS 截断描述文字</strong> —— 会留下半个词或半个字，用 <code>-webkit-line-clamp</code></li><li>❌ <strong>手动覆盖 <code>--row</code> 在窄屏的回退</strong> —— 那个回退是必要的</li></ul>
 <hr>
 <h2 id="s8">门禁<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
 <pre class="code" tabindex="0"><code class="language-bash">python 05-audit/states.py 02-primitives/card/card.css</code></pre>
@@ -140,7 +140,7 @@
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.11.9 · 零第三方运行时依赖 · 组件数 35</p>
+  <p>v0.11.10 · 零第三方运行时依赖 · 组件数 35</p>
 </footer>
 </body>
 </html>

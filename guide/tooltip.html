@@ -99,7 +99,10 @@
 </tbody>
 </table></div>
 <p>要接统一行为层，得先清这两条债。</p>
-<h2 id="s10">门禁<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
+<h2 id="s10">反例<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
+<ul><li>❌ <strong>把必须知道的信息只放在 tooltip 里</strong> —— 触屏没有 hover，键盘用户也未必停留。判据很硬：tooltip 的文字<strong>不能</strong>与触发元素的可见文字/<code>aria-label</code> 重复 —— 一旦重复，说明它承载了本该可见的信息</li><li>❌ <strong>只做 hover、不做 focus</strong> —— 键盘用户永远看不到（WCAG 1.4.13 要求 focus 也能出）</li><li>❌ <strong>Esc 关不掉</strong> —— WCAG 1.4.13 的硬性要求：hover/focus 出现的内容必须可以关掉</li><li>❌ <strong>用 <code>display: none</code> 隐藏气泡</strong> —— 读屏读不到；淡入用透明度</li><li>❌ <strong><code>role=&quot;tooltip&quot;</code> 不给 <code>aria-label</code></strong> —— 光靠内容拿不到可访问名，读屏只会念&quot;提示&quot;（0.8.9 补的）</li><li>❌ <strong>触屏只靠 hover 触发</strong> —— 触屏上 hover 会&quot;粘住&quot;不褪；触屏必须走 JS 的 click / focus</li></ul>
+<hr>
+<h2 id="s11">门禁<a class="anchor" href="#s11" aria-label="本节直链">#</a></h2>
 <p><code>05-audit/tooltip-check.js</code>（契约 <code>gates</code> 里登记的唯一一道）—— 覆盖 <code>aria-describedby</code> 关联、<code>Esc</code> 关闭、触屏点击三条。</p>
     </article>
     <nav class="g-pager" aria-label="上一页 / 下一页">
@@ -109,11 +112,11 @@
   </main>
   <aside class="g-side">
     <p class="g-side__title" id="toc-title">本页目录</p>
-    <ul class="g-toc"><li><a href="#s2">🔴 一条铁律：tooltip 不承载必要信息</a></li><li><a href="#s3">结构（JS 生成，不要手写）</a></li><li><a href="#s4">🔴 用 aria-describedby，不是 aria-label</a></li><li><a href="#s5">键盘与触屏</a></li><li><a href="#s6">🔴 定位前必须先入 DOM</a></li><li><a href="#s7">显隐靠 data-state，别写 display</a></li><li><a href="#s8">降级</a></li><li><a href="#s9">成熟度：beta（两条行为债，如实列出）</a></li><li><a href="#s10">门禁</a></li></ul>
+    <ul class="g-toc"><li><a href="#s2">🔴 一条铁律：tooltip 不承载必要信息</a></li><li><a href="#s3">结构（JS 生成，不要手写）</a></li><li><a href="#s4">🔴 用 aria-describedby，不是 aria-label</a></li><li><a href="#s5">键盘与触屏</a></li><li><a href="#s6">🔴 定位前必须先入 DOM</a></li><li><a href="#s7">显隐靠 data-state，别写 display</a></li><li><a href="#s8">降级</a></li><li><a href="#s9">成熟度：beta（两条行为债，如实列出）</a></li><li><a href="#s10">反例</a></li><li><a href="#s11">门禁</a></li></ul>
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.11.9 · 零第三方运行时依赖 · 组件数 35</p>
+  <p>v0.11.10 · 零第三方运行时依赖 · 组件数 35</p>
 </footer>
 </body>
 </html>

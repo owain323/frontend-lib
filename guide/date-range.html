@@ -110,7 +110,10 @@ if (msg) {
 <p><code>opt.min</code> / <code>opt.max</code> 会<strong>同时</strong>写到两个输入的原生 <code>min</code>/<code>max</code> 属性上（浏览器自带的日期选择器就会拦住越界值，不只是我们事后校验）。</p>
 <h2 id="s7">成熟度：stable（无行为债）<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
 <p>契约里 <code>behaviorDebt</code> 为空 —— 清除、校验、preset 接线都有门禁覆盖（<code>05-audit/date-range-check.js</code>）。</p>
-<h2 id="s8">门禁<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
+<h2 id="s8">反例<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
+<ul><li>❌ <strong>不给 <code>drange__clear</code></strong> —— 日期填错要能一键清空；没有它，用户得逐格删六个数字</li><li>❌ <strong>错误态只改颜色、不加图标</strong> —— WCAG 1.4.1；本库的 <code>drange__error</code> 是「边框 + 图标」，颜色只是辅助</li><li>❌ <strong>禁用态用 <code>opacity</code></strong> —— 透明度会把文字对比度一起拉低，禁用不等于允许不可读（<code>date-range.css</code> 里改用中性色）</li><li>❌ <strong>自建日历替代 <code>&lt;input type=&quot;date&quot;&gt;</code></strong> —— 移动端原生选择器是系统级的：读屏、键盘、本地化都免费；自建的那一套要全部重做，而且一定做得更差</li><li>❌ <strong>三个预设按钮只做鼠标点击</strong> —— <code>drange__preset</code> 必须能 Tab 到，快捷选择对键盘用户才是&quot;快捷&quot;</li></ul>
+<hr>
+<h2 id="s9">门禁<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
 <p><code>05-audit/date-range-check.js</code></p>
     </article>
     <nav class="g-pager" aria-label="上一页 / 下一页">
@@ -120,11 +123,11 @@ if (msg) {
   </main>
   <aside class="g-side">
     <p class="g-side__title" id="toc-title">本页目录</p>
-    <ul class="g-toc"><li><a href="#s2">🔴 三件容易做错的事（写在最前面）</a></li><li><a href="#s3">结构</a></li><li><a href="#s4">启用</a></li><li><a href="#s5">校验做了什么</a></li><li><a href="#s7">成熟度：stable（无行为债）</a></li><li><a href="#s8">门禁</a></li></ul>
+    <ul class="g-toc"><li><a href="#s2">🔴 三件容易做错的事（写在最前面）</a></li><li><a href="#s3">结构</a></li><li><a href="#s4">启用</a></li><li><a href="#s5">校验做了什么</a></li><li><a href="#s7">成熟度：stable（无行为债）</a></li><li><a href="#s8">反例</a></li><li><a href="#s9">门禁</a></li></ul>
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.11.9 · 零第三方运行时依赖 · 组件数 35</p>
+  <p>v0.11.10 · 零第三方运行时依赖 · 组件数 35</p>
 </footer>
 </body>
 </html>

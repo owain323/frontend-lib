@@ -109,6 +109,20 @@ if (q > 0) this.page = Math.min(q, this.pages);
 
 `ai/components.json` 里 `pagination` 的 `behaviorDebt` 为空。
 
+## 反例
+
+- ❌ **把 `role="navigation"` 直接放在 `pagination__list` 上** —— 会**覆盖 `ul` 的列表语义**，
+  读屏不再报告"共 N 项"。要包在 `<nav aria-label>` 里
+- ❌ **用 `aria-selected` 标当前页** —— 那是 tab / option / row 的语义；当前页用 `aria-current="page"`，
+  用错了读屏会说"已选中"，而用户以为自己只是停在第 3 页
+- ❌ **客户端翻页不放 `pagination__live`** —— 页码变了却没有任何播报，读屏用户不知道"内容已经换了"。
+  而且这个 live 区必须**常驻 DOM**：新插入的节点很多读屏不播
+- ❌ **页码无限铺开** —— 槽位一多就撑破窄屏（USWDS 的上限是 7）。该用 `pagination__ellipsis` 收中间
+- ❌ **没跳过页码也显示省略号** —— 用户会以为中间少了页，去点它，什么也不会发生
+- ❌ **禁用态用纯透明表示** —— 半透明会让人以为"再点一下就行"；本库是让它"退到背景里"
+
+---
+
 ## 门禁
 
 `05-audit/pagination-check.js`
