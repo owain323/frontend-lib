@@ -96,7 +96,7 @@
 
   <h2 class="rule-bottom">对比：错写法 vs 本库写法</h2>
   <div class="cmp">
-    <div class="cmp__pane cmp__bad">
+    <div class="cmp__pane cmp__bad" data-bad="td.num--pos|glyphs|=5">
       <h3>❌ 常见写法：只靠红绿 + 连字符</h3>
         <div class="table tb-bad" aria-hidden="true">
           <table class="tb-demo">
@@ -110,7 +110,7 @@
         </div>
       <p class="cmp__why">涨的那行没有 <code>+</code>，跌的用连字符 <code>-</code>：灰度打印、色觉障碍、以及"只扫一列符号"的读法，全都不成立；连字符还比真减号窄，一列数字的个位对不齐。</p>
     </div>
-    <div class="cmp__pane cmp__good">
+    <div class="cmp__pane cmp__good" data-good="td.num--pos|glyphs|>=6">
       <h3>✅ 本库：符号 + 真减号 <code>−</code></h3>
         <div class="table" aria-hidden="true">
           <table class="tb-demo">

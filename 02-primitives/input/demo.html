@@ -108,7 +108,7 @@
 
   <h2 class="rule-bottom">对比：常见写法 vs 本库写法</h2>
   <div class="cmp cmp--wide-first">
-    <div class="cmp__pane cmp__bad">
+    <div class="cmp__pane cmp__bad" data-bad=".field__error|count|=0">
       <h3>常见写法</h3>
       <input class="bad-input err" value="abc" aria-hidden="true" tabindex="-1">
       <!-- 🔴 加 aria-hidden。
@@ -125,7 +125,7 @@
         错误文字没有 <code>aria-describedby</code> —— 屏幕阅读器读不到
       </p>
     </div>
-    <div class="cmp__pane cmp__good">
+    <div class="cmp__pane cmp__good" data-good=".field__error|count|>=1">
       <h3>本库写法</h3>
       <div class="field">
         <label class="field__label" for="g1">金额</label>

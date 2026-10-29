@@ -80,7 +80,7 @@
 
   <h2 class="rule-bottom">对比：错写法 vs 本库写法</h2>
   <div class="cmp">
-    <div class="cmp__pane cmp__bad">
+    <div class="cmp__pane cmp__bad" data-bad=".drange__error|count|=0">
       <h3>❌ 常见写法：错误只改边框颜色</h3>
         <div class="drange" aria-hidden="true">
           <div class="drange__field">
@@ -94,7 +94,7 @@
         </div>
       <p class="cmp__why">结束日期早于开始日期，界面上只是"红了一圈"：色觉障碍用户看不出来，灰度打印也看不出来，而且<b>没有一句话</b>告诉你错在哪。</p>
     </div>
-    <div class="cmp__pane cmp__good">
+    <div class="cmp__pane cmp__good" data-good=".drange__error|count|>=1">
       <h3>✅ 本库：左侧竖线 + 一句话说明</h3>
         <div class="drange" aria-hidden="true">
           <div class="drange__field">

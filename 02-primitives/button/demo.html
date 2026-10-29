@@ -120,7 +120,7 @@
 
   <h2 class="rule-bottom">对比：常见的错写法 vs 本库写法</h2>
   <div class="cmp cmp--wide-first">
-    <div class="cmp__pane cmp__bad">
+    <div class="cmp__pane cmp__bad" data-bad="button|gw|>=3">
       <h3>常见写法（某项目 现状）</h3>
       <div class="row">
         <button class="btn--naive">hover 看我</button>
@@ -133,7 +133,7 @@
         <code>transition: all</code> —— 所有属性一起动画，性能和观感失控。
       </p>
     </div>
-    <div class="cmp__pane cmp__good">
+    <div class="cmp__pane cmp__good" data-good="button|gw|=0">
       <h3>本库写法</h3>
       <div class="row">
         <button class="btn btn--md btn--primary">hover 看我</button>

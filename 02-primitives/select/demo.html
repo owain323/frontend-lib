@@ -115,7 +115,7 @@ label.f { display: block; margin-bottom: var(--sp-1); font-size: var(--fs-sm); }
 
   <h2 class="rule-bottom">对比：错写法 vs 本库写法</h2>
   <div class="cmp">
-    <div class="cmp__pane cmp__bad">
+    <div class="cmp__pane cmp__bad" data-bad="li.sl-tight|h|<=28">
       <h3>❌ 常见写法：选项挤在一起</h3>
         <div class="sl-wrap" aria-hidden="true">
           <div class="sl-head">所属板块</div>
@@ -127,7 +127,7 @@ label.f { display: block; margin-bottom: var(--sp-1); font-size: var(--fs-sm); }
         </div>
       <p class="cmp__why">行高只有 28px：手指点下去必然压到隔壁那一行。鼠标用户感觉不到，触屏用户每点错一次就要重来。</p>
     </div>
-    <div class="cmp__pane cmp__good">
+    <div class="cmp__pane cmp__good" data-good="li.select__opt|h|>=44">
       <h3>✅ 本库：每项 44px 命中区</h3>
         <div class="sl-wrap" aria-hidden="true">
           <div class="sl-head">所属板块</div>

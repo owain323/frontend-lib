@@ -43,6 +43,7 @@
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
+const { safeListen } = require('./safe-listen.js');
 const { launch } = require('./browser.js');
 
 const ROOT = path.resolve(__dirname, '..');
@@ -130,7 +131,7 @@ function serve(tokensCss) {
       res.writeHead(404);
       res.end('');
     });
-    srv.listen(0, '127.0.0.1', () => resolve(srv));
+    safeListen(srv).then(() => resolve(srv));
   });
 }
 

@@ -123,7 +123,7 @@ th { font-size: var(--fs-xs); color: var(--text-secondary); font-weight: 500; }
 
   <h2 class="rule-bottom">对比：错写法 vs 本库写法</h2>
   <div class="cmp">
-    <div class="cmp__pane cmp__bad">
+    <div class="cmp__pane cmp__bad" data-bad="li.pagination__item|count|>7">
       <h3>❌ 常见写法：页码全铺开</h3>
         <nav aria-label="分页示例" aria-hidden="true">
           <ul class="pagination__list">
@@ -143,7 +143,7 @@ th { font-size: var(--fs-xs); color: var(--text-secondary); font-weight: 500; }
         </nav>
       <p class="cmp__why">12 个页码硬塞进一行，窄屏上要么换行、要么每个都挤到点不中。而 4~10 页其实是读者最不会去点的区间。</p>
     </div>
-    <div class="cmp__pane cmp__good">
+    <div class="cmp__pane cmp__good" data-good="li.pagination__item|count|<=7">
       <h3>✅ 本库：7 个槽位封顶 + 省略号</h3>
         <nav aria-label="分页示例">
           <ul class="pagination__list">

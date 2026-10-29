@@ -28,6 +28,10 @@
    那个"列被长内容撑开"的毛病就被自己抹平了（第一版就是这么写坏的） */
 .ar-long { font-family: var(--font-mono, monospace); white-space: nowrap; }
 .ar-g--ok .ar-long { overflow: hidden; text-overflow: ellipsis; }
+/* 🔴 对照块里的栅格宽度钉住：断言量的是"列宽有没有被长串顶开"，
+   而列宽本身随栏宽变 —— 宽屏下两栏都变宽，绝对阈值就失去意义。
+   钉在 360px，任何视口宽度下量的都是同一个东西。 */
+.cmp .ar-g { max-width: 360px; }
 </style>
 </head>
 <body class="page">
@@ -239,7 +243,7 @@
   <!-- cmp--clip：这一块演示的就是"长串把列撑开"，栏内必须允许算得比栏宽更宽；
        越出栏框的部分裁掉（不裁的话 320px 下整页横向溢出 64px，WCAG 1.4.10 红）。 -->
   <div class="cmp cmp--clip">
-    <div class="cmp__pane cmp__bad">
+    <div class="cmp__pane cmp__bad" data-bad=".ar-cell.ar-long|w|>250">
       <h3>❌ 常见写法：栅格列写 <code>1fr</code></h3>
         <div class="ar-g" aria-hidden="true">
           <div class="ar-cell">正文一栏：营收同比 +18%。</div>
@@ -247,7 +251,7 @@
         </div>
       <p class="cmp__why">右栏里一串不肯断的长代码把列撑开了：它不换行、也不省略，整页横向溢出 —— 而外层容器并<b>没有</b>写错，错的是列定义。</p>
     </div>
-    <div class="cmp__pane cmp__good">
+    <div class="cmp__pane cmp__good" data-good=".ar-cell.ar-long|w|<=200">
       <h3>✅ 本库：<code>minmax(0, 1fr)</code></h3>
         <div class="ar-g ar-g--ok" aria-hidden="true">
           <div class="ar-cell">正文一栏：营收同比 +18%。</div>

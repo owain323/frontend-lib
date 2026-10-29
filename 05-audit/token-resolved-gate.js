@@ -56,6 +56,7 @@
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
+const { safeListen } = require('./safe-listen.js');
 const os = require('os');
 
 const ROOT = path.dirname(__dirname);
@@ -120,7 +121,7 @@ function serve(cssText) {
       res.writeHead(404);
       res.end('');
     });
-    srv.listen(0, '127.0.0.1', () => resolve(srv));
+    safeListen(srv).then(() => resolve(srv));
   });
 }
 

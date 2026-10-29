@@ -60,7 +60,7 @@
 
   <h2 class="rule-bottom">对比：错写法 vs 本库写法</h2>
   <div class="cmp">
-    <div class="cmp__pane cmp__bad">
+    <div class="cmp__pane cmp__bad" data-bad="span.tr-one|uniq|=1">
       <h3>❌ 常见写法：靠"旋转"表示状态</h3>
         <ul class="tr-demo" role="tree" aria-label="文件树示例" aria-hidden="true">
           <li class="tree__item" aria-expanded="true">
@@ -77,7 +77,7 @@
         </ul>
       <p class="cmp__why">三个节点长得一模一样：已展开的 src、收起的 components、叶子的 index.js 全是 ▸。旋转只能表达"变过"，表达不了"现在是哪一态"。</p>
     </div>
-    <div class="cmp__pane cmp__good">
+    <div class="cmp__pane cmp__good" data-good="span.tree__marker|uniq|>=3">
       <h3>✅ 本库：三态三种字形</h3>
         <ul class="tr-demo" role="tree" aria-label="文件树示例" aria-hidden="true">
           <li class="tree__item" aria-expanded="true">

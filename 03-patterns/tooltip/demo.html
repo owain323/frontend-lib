@@ -66,7 +66,7 @@
 
   <h2 class="rule-bottom">对比：错写法 vs 本库写法</h2>
   <div class="cmp">
-    <div class="cmp__pane cmp__bad">
+    <div class="cmp__pane cmp__bad" data-bad=".tt-real|count|=0">
       <h3>❌ 常见写法：关键信息只放在气泡里</h3>
         <div class="tt-field" aria-hidden="true">
           <span class="tt-label">账期</span>
@@ -75,7 +75,7 @@
         <p class="tt-hint">（把鼠标停在那颗 ⓘ 上才看得到说明）</p>
       <p class="cmp__why">触屏没有 hover，键盘用户也未必会停留 —— 这条说明对一半以上的读者等于不存在。判断标准很硬：<b>气泡里的字不能是"必须知道才能填对"的信息</b>。</p>
     </div>
-    <div class="cmp__pane cmp__good">
+    <div class="cmp__pane cmp__good" data-good=".tt-real|count|>=1">
       <h3>✅ 本库：该看见的写在页面上</h3>
         <div class="tt-field" aria-hidden="true">
           <span class="tt-label">账期</span>
