@@ -29,6 +29,7 @@ release-gate.py — 发布契约门禁（检查项 J4/J5/J6）
 import sys
 import os
 import io
+import glob
 import json
 import re
 import subprocess
@@ -258,8 +259,17 @@ def main():
         if isinstance(v, (dict, list)):
             n_cond += 1
         for t in _walk_targets(v):
-            if t.endswith('*') or k.endswith('.json'):
-                continue          # 通配与元数据跳过
+            # 🔴 通配符可能**在中间**（`./esm/*.mjs`），不能只判 `endswith('*')`。
+            #   0.11.15 加 esm 入口时踩到：判据把 `esm/*.mjs` 当成字面路径，
+            #   报「exports 指向不存在的文件」—— 其实它匹配 17 个真实文件。
+            #   正确判据是「通配至少匹配到一个文件」，而不是「跳过」：
+            #   跳过会让 `./nope/*.js` 这种真打错的路径也过。
+            if '*' in t:
+                if not glob.glob(os.path.join(ROOT, t.lstrip('./'))):
+                    ex_bad.append('%s -> %s（通配无匹配）' % (k, t))
+                continue
+            if k.endswith('.json'):
+                continue          # 元数据
             if not os.path.isfile(os.path.join(ROOT, t.lstrip('./'))):
                 ex_bad.append('%s -> %s' % (k, t))
     if ex_bad:
