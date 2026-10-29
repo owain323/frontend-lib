@@ -90,6 +90,19 @@ JS 只切`data-state`，显隐与动画全交给 CSS。
 
 要接统一行为层，得先清这两条债。
 
+## 反例
+
+- ❌ **把必须知道的信息只放在 tooltip 里** —— 触屏没有 hover，键盘用户也未必停留。
+  判据很硬：tooltip 的文字**不能**与触发元素的可见文字/`aria-label` 重复 ——
+  一旦重复，说明它承载了本该可见的信息
+- ❌ **只做 hover、不做 focus** —— 键盘用户永远看不到（WCAG 1.4.13 要求 focus 也能出）
+- ❌ **Esc 关不掉** —— WCAG 1.4.13 的硬性要求：hover/focus 出现的内容必须可以关掉
+- ❌ **用 `display: none` 隐藏气泡** —— 读屏读不到；淡入用透明度
+- ❌ **`role="tooltip"` 不给 `aria-label`** —— 光靠内容拿不到可访问名，读屏只会念"提示"（0.8.9 补的）
+- ❌ **触屏只靠 hover 触发** —— 触屏上 hover 会"粘住"不褪；触屏必须走 JS 的 click / focus
+
+---
+
 ## 门禁
 
 `05-audit/tooltip-check.js`（契约 `gates` 里登记的唯一一道）——

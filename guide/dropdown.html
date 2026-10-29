@@ -93,7 +93,10 @@ menu.setAttribute('role', 'menu');</code></pre>
 <tr><td><code>typeahead:gap</code></td><td><strong>没有类型搜索</strong> —— APG 的 Menu Button 不硬性要求，但列表长时体验缺失</td></tr>
 </tbody>
 </table></div>
-<h2 id="s9">门禁<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
+<h2 id="s9">反例<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
+<ul><li>❌ <strong>菜单里一部分项 <code>aria-hidden</code>、一部分不设</strong> —— APG 要求<strong>全设或全不设</strong>。半吊子会让读屏报&quot;1 项中的 0 项&quot;这种不可理解的计数</li><li>❌ <strong>禁用项不给 <code>tabindex=&quot;-1&quot;</code></strong> —— Tab 会停在点不动的项上，用户以为菜单坏了</li><li>❌ <strong>Esc 关闭后焦点不还给 <code>dd__btn</code></strong> —— 焦点掉到 <code>&lt;body&gt;</code>，键盘用户要从页面开头重新 Tab（APG 明确要求归还）</li><li>❌ <strong>给某个 <code>dd__item</code> 设 <code>tabindex=&quot;0&quot;</code></strong> —— <code>role=&quot;menu&quot;</code> 靠方向键步进，多一个 0 就多出一个 Tab 停靠点，整个菜单的导航模型就混了</li><li>❌ <strong>先写 <code>aria-controls</code> 再确保 <code>dd__menu</code> 有 id</strong> —— 顺序反了会引用空字符串，读屏拿不到&quot;这个按钮控制哪个菜单&quot;（<code>dropdown.js</code> 里为此调过顺序）</li><li>❌ <strong>用 <code>opacity: 0</code> 或 <code>visibility</code> 隐藏 <code>dd__menu</code></strong> —— 关闭态要用 <code>hidden</code>：它同时移出无障碍树并不可聚焦，另两种做法都还留着 Tab 停靠点</li></ul>
+<hr>
+<h2 id="s10">门禁<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
 <p><code>05-audit/dropdown-check.js</code></p>
     </article>
     <nav class="g-pager" aria-label="上一页 / 下一页">
@@ -103,11 +106,11 @@ menu.setAttribute('role', 'menu');</code></pre>
   </main>
   <aside class="g-side">
     <p class="g-side__title" id="toc-title">本页目录</p>
-    <ul class="g-toc"><li><a href="#s2">🔴 APG 的四条键盘契约（缺一条就不算合规）</a></li><li><a href="#s3">⚠️ 另有两条容易漏的</a></li><li><a href="#s4">结构</a></li><li><a href="#s5">启用</a></li><li><a href="#s6">🔴 role=&quot;menu&quot; 要么全设要么全不设</a></li><li><a href="#s7">状态写在 DOM 属性上</a></li><li><a href="#s8">成熟度：beta（两条行为债，如实列出）</a></li><li><a href="#s9">门禁</a></li></ul>
+    <ul class="g-toc"><li><a href="#s2">🔴 APG 的四条键盘契约（缺一条就不算合规）</a></li><li><a href="#s3">⚠️ 另有两条容易漏的</a></li><li><a href="#s4">结构</a></li><li><a href="#s5">启用</a></li><li><a href="#s6">🔴 role=&quot;menu&quot; 要么全设要么全不设</a></li><li><a href="#s7">状态写在 DOM 属性上</a></li><li><a href="#s8">成熟度：beta（两条行为债，如实列出）</a></li><li><a href="#s9">反例</a></li><li><a href="#s10">门禁</a></li></ul>
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.11.9 · 零第三方运行时依赖 · 组件数 35</p>
+  <p>v0.11.10 · 零第三方运行时依赖 · 组件数 35</p>
 </footer>
 </body>
 </html>

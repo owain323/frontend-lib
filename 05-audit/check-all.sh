@@ -785,6 +785,14 @@ run "docs-site-rev" $PY 05-audit/docs-site-gate.py --selftest
 #   **md 里的路径一直没人管**。
 run "md-links"      $PY 05-audit/md-links.py
 run "md-links-rev"  $PY 05-audit/md-links.py --selftest
+# 🔴 do-dont（2026-10-29 加）—— "每个组件都得说清什么时候不该用"
+#   起因：33 个组件里只有 11 个写了反例章，其余 22 个只有"✅ 这么用"。
+#   一份只写正例的文档，读者学不到边界；而反例恰恰是最容易写坏的一类内容：
+#   编造的类名/变量/文件名看起来很像真的，读者搜不到，整页可信度归零。
+#   判据只管能机器抓住的那一半：章节在、条目够、**引用的标识符真实存在**。
+#   "理由对不对"判不了，明确写在脚本头部 —— 不假装判了。
+run "do-dont"      $PY 05-audit/do-dont-gate.py
+run "do-dont-rev"  $PY 05-audit/do-dont-gate.py --selftest
 run "api-contract"     $PY 05-audit/api-contract-gate.py
 run "api-form"       $PY 05-audit/api-form-gate.py
 run "api-form-rev"   $PY 05-audit/api-form-gate.py --selftest

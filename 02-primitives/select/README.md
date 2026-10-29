@@ -90,6 +90,18 @@ const sel = Select.create(元素, { multiple: false, value: 'b', label: '选项'
 
 接统一行为层前，别当`stable` 用。
 
+## 反例
+
+- ❌ **不实现类型搜索** —— 原生 select 支持连续打字跳转；自建却丢掉这个，是**功能倒退**。
+  `select.js` 里做了 500ms 缓冲（超时清空，否则 "abc" 永远搜不到）
+- ❌ **把焦点放进 `select__list`** —— 焦点必须常驻 `select__btn`，"当前在第几项"靠
+  `aria-activedescendant` 表达；焦点进了 list，读屏会开始念"列表"而不是"选项"
+- ❌ **`select__opt` 命中区不足 44px** —— 本库按 AAA 要求做命中区；选项挤在一起，触屏必点错
+- ❌ **把 `select__value--placeholder` 当已选值** —— 占位不是值：表单提交时它是空的，
+  而用户以为自己选了
+
+---
+
 ## 门禁
 
 `05-audit/select-check.js` —— 覆盖键盘契约与 ARIA 属性同步。

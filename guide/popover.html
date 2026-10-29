@@ -100,6 +100,9 @@ Popover.current;      // 当前开着的实例（没有则null）</code></pre>
 </table></div>
 <h2 id="s6">动画<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
 <p>尊重 <code>prefers-reduced-motion</code> —— 用户在系统里关了动效，组件的过渡也要跟着关。</p>
+<h2 id="s7">反例<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
+<ul><li>❌ <strong>给 popover 加 focus trap</strong> —— 不做 trap 是刻意的：它没有&quot;确认/取消&quot;来放行， trap 住了人出不去。焦点<strong>进入</strong>浮层（键盘用户要能直接操作）就够了</li><li>❌ <strong>关闭态只用 <code>pointer-events: none</code></strong> —— Tab 仍能走进去，焦点会跑到看不见的地方；必须是 <code>inert</code>（<code>popover.js</code> 的 <code>open()</code> 里写明了这一条）</li><li>❌ <strong>同时开两个 popover</strong> —— 两个叠着，用户不知道该关哪个，也不知道点空白处关的是哪一个</li><li>❌ <strong>把箭头塞进带 <code>overflow: hidden</code> 的容器</strong> —— 箭头会被裁掉；所以本组件不用 overflow 方式隐藏</li></ul>
+<hr>
     </article>
     <nav class="g-pager" aria-label="上一页 / 下一页">
       <a class="g-pager__link g-pager__link--prev" href="input.html"><span>上一页</span>input / field</a>
@@ -108,11 +111,11 @@ Popover.current;      // 当前开着的实例（没有则null）</code></pre>
   </main>
   <aside class="g-side">
     <p class="g-side__title" id="toc-title">本页目录</p>
-    <ul class="g-toc"><li><a href="#s2">⭐ 该用哪一个（记不住就问这句）</a></li><li><a href="#s3">启用：DOM 由 JS 建，不用自己写</a></li><li><a href="#s4">内部结构（JS 生成，供你放内容）</a></li><li><a href="#s5">🔴 四个最容易做错的地方</a></li><li><a href="#s6">动画</a></li></ul>
+    <ul class="g-toc"><li><a href="#s2">⭐ 该用哪一个（记不住就问这句）</a></li><li><a href="#s3">启用：DOM 由 JS 建，不用自己写</a></li><li><a href="#s4">内部结构（JS 生成，供你放内容）</a></li><li><a href="#s5">🔴 四个最容易做错的地方</a></li><li><a href="#s6">动画</a></li><li><a href="#s7">反例</a></li></ul>
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.11.9 · 零第三方运行时依赖 · 组件数 35</p>
+  <p>v0.11.10 · 零第三方运行时依赖 · 组件数 35</p>
 </footer>
 </body>
 </html>

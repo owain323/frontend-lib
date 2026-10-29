@@ -78,3 +78,14 @@ Popover.current;      // 当前开着的实例（没有则null）
 
 尊重 `prefers-reduced-motion` —— 用户在系统里关了动效，
 组件的过渡也要跟着关。
+
+## 反例
+
+- ❌ **给 popover 加 focus trap** —— 不做 trap 是刻意的：它没有"确认/取消"来放行，
+  trap 住了人出不去。焦点**进入**浮层（键盘用户要能直接操作）就够了
+- ❌ **关闭态只用 `pointer-events: none`** —— Tab 仍能走进去，焦点会跑到看不见的地方；
+  必须是 `inert`（`popover.js` 的 `open()` 里写明了这一条）
+- ❌ **同时开两个 popover** —— 两个叠着，用户不知道该关哪个，也不知道点空白处关的是哪一个
+- ❌ **把箭头塞进带 `overflow: hidden` 的容器** —— 箭头会被裁掉；所以本组件不用 overflow 方式隐藏
+
+---

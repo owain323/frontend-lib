@@ -107,6 +107,9 @@
 <p><code>accordion-contract.js</code> <strong>18 项全过</strong>（真实按键）：</p>
 <ul><li>结构：heading 包 button（非里面套）· 原生 button · ARIA 双向互指 · <code>role=region</code> · marker <code>aria-hidden</code></li><li>单开：Enter 切换 · <strong>原项自动收起</strong> · 始终只有一项展开</li><li><strong>收起的面板真正 <code>display:none</code></strong>（离开无障碍树）</li><li>Space 切换（证明不监听 keydown 也对）· 点击切换</li><li>多开：两项可同时展开</li><li><code>aria-disabled</code> 点不开</li><li><strong>&gt;6 且加 <code>--many</code> ⇒ 不给 <code>role=region</code></strong>（实测 0/8）</li><li>axe 0 违规 / 29 条通过</li></ul>
 <p>判别力验证：注入 keydown 双触发 ⇒ <strong>2 项立即被抓</strong>。</p>
+<h2 id="s13">反例<a class="anchor" href="#s13" aria-label="本节直链">#</a></h2>
+<ul><li>❌ <strong>给折叠标题加方向键 / Home / End</strong> —— APG 的 Accordion 只要求 Tab + Enter/Space。加了会和页面滚动抢方向键；本组件<strong>刻意不监听 <code>keydown</code></strong>，这是设计不是遗漏</li><li>❌ <strong>用 <code>max-height</code> 做展开动画</strong> —— 你必须猜内容有多高：猜小了裁字，猜大了结尾拖一段空白。本库用 <code>grid-template-rows</code> 从 <code>0fr</code> 到 <code>1fr</code>，不需要知道高度</li><li>❌ <strong>收起时直接 <code>display: none</code></strong> —— 关闭前必须<strong>先量到高度再收</strong>，否则量到 0，动画&quot;啪&quot;一下消失（<code>accordion.js</code> 里那条注释说的就是这个）</li><li>❌ <strong>给 <code>accordion__panel</code> 加 <code>overflow: hidden</code></strong> —— 会裁掉里面控件的焦点环；收的过程交给 grid 的 <code>0fr</code> 完成</li><li>❌ <strong>每一项都套 <code>role=&quot;region&quot;</code></strong> —— APG 有 ≤6 的地标上限，超过就是&quot;地标泛滥&quot;，读屏的地标列表反而失去导航价值</li><li>❌ <strong>把 <code>--acc-h</code> 挪进全局令牌表</strong> —— 它只对本组件有意义（<code>accordion.css</code> 里写了为什么不进 <code>tokens.css</code>），进全局表会让所有人以为那是个通用尺寸</li></ul>
+<hr>
     </article>
     <nav class="g-pager" aria-label="上一页 / 下一页">
       <a class="g-pager__link g-pager__link--prev" href="switch.html"><span>上一页</span>switch · 开关</a>
@@ -115,11 +118,11 @@
   </main>
   <aside class="g-side">
     <p class="g-side__title" id="toc-title">本页目录</p>
-    <ul class="g-toc"><li><a href="#s2">结构（APG 原文要求，不是我的设计）</a></li><li><a href="#s3">类</a></li><li><a href="#s4">两种模式</a></li><li><a href="#s6">键盘（APG 原文）</a></li><li><a href="#s9">role=&quot;region&quot; 的 ≤6 上限</a></li><li><a href="#s10">折叠必须用 hidden</a></li><li><a href="#s11">语法约束</a></li><li><a href="#s12">验证</a></li></ul>
+    <ul class="g-toc"><li><a href="#s2">结构（APG 原文要求，不是我的设计）</a></li><li><a href="#s3">类</a></li><li><a href="#s4">两种模式</a></li><li><a href="#s6">键盘（APG 原文）</a></li><li><a href="#s9">role=&quot;region&quot; 的 ≤6 上限</a></li><li><a href="#s10">折叠必须用 hidden</a></li><li><a href="#s11">语法约束</a></li><li><a href="#s12">验证</a></li><li><a href="#s13">反例</a></li></ul>
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.11.9 · 零第三方运行时依赖 · 组件数 35</p>
+  <p>v0.11.10 · 零第三方运行时依赖 · 组件数 35</p>
 </footer>
 </body>
 </html>

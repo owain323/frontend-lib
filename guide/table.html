@@ -106,6 +106,9 @@
 <h2 id="s9">预览<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
 <pre class="code" tabindex="0"><code class="language-bash">python -m http.server 8000
 # http://127.0.0.1:8000/04-recipes/table/demo.html</code></pre>
+<h2 id="s10">反例<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
+<ul><li>❌ <strong>靠数值大小猜语义</strong> —— 不能用&quot;小于 1 就乘 100&quot;。<code>0.25</code> 是比例还是普通测量值，只能由列定义的 <code>format</code> 说</li><li>❌ <strong>给&quot;量&quot;的正数加 <code>+</code></strong> —— 营收、成本、毛利率这类量没有 <code>+</code>；只有 <code>signed-percent</code> 这类&quot;变化量&quot;才加。满屏 <code>+</code> 会让读者以为每个数都在变</li><li>❌ <strong>负数用连字符 <code>-</code></strong> —— 用真减号 <code>−</code>；连字符在等宽数字里对不齐，也容易被当成项目符号</li><li>❌ <strong>排序状态放在按钮上</strong> —— 要放 <code>&lt;th aria-sort=&quot;ascending|descending&quot;&gt;</code>；放在按钮上读屏不会报告&quot;这一列正按什么排序&quot;</li><li>❌ <strong>正负只靠红绿</strong> —— 颜色之外必须有 <code>+</code> / <code>−</code> 符号（WCAG 1.4.1）</li><li>❌ <strong>粘性表头配 <code>border-collapse: collapse</code></strong> —— <code>separate</code> 是 sticky 生效的前提，用 collapse 表头不会粘住</li><li>❌ <strong>拿它当虚拟滚动表格用</strong> —— 本组件不做虚拟滚动；超过 200 行请配分页</li></ul>
+<hr>
     </article>
     <nav class="g-pager" aria-label="上一页 / 下一页">
       <a class="g-pager__link g-pager__link--prev" href="report.html"><span>上一页</span>report · 报告版式系统 v1</a>
@@ -114,11 +117,11 @@
   </main>
   <aside class="g-side">
     <p class="g-side__title" id="toc-title">本页目录</p>
-    <ul class="g-toc"><li><a href="#s2">文件</a></li><li><a href="#s3">三种预设</a></li><li><a href="#s4">列定义（示例页里的用法）</a></li><li><a href="#s5">无障碍</a></li><li><a href="#s6">已知限制</a></li><li><a href="#s9">预览</a></li></ul>
+    <ul class="g-toc"><li><a href="#s2">文件</a></li><li><a href="#s3">三种预设</a></li><li><a href="#s4">列定义（示例页里的用法）</a></li><li><a href="#s5">无障碍</a></li><li><a href="#s6">已知限制</a></li><li><a href="#s9">预览</a></li><li><a href="#s10">反例</a></li></ul>
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.11.9 · 零第三方运行时依赖 · 组件数 35</p>
+  <p>v0.11.10 · 零第三方运行时依赖 · 组件数 35</p>
 </footer>
 </body>
 </html>

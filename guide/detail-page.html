@@ -105,6 +105,9 @@ python 05-audit/no-data-gate.py                     # 无数据态三条规则</
 <p><code>verify-skeleton.py</code> 是转发入口，实现在 <code>05-audit/detail-page-contract.py</code> —— <strong>同一份代码</strong>，避免门禁与配方各写一套然后慢慢漂移。</p>
 <h2 id="s8">边界<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
 <ul><li><strong>不含业务字段</strong>：示例用中性的&quot;对象 / 指标&quot;，不写营收、净利这类字段。一旦把某个业务的字段写进通用库，库的边界就没了。</li><li><strong>不做图表</strong>：指标卡只放数字。要图请用 <code>09-assets/</code> 的图表组件。</li><li><strong>不做标签页 / 折叠</strong>：那是 <code>03-patterns/</code> 的组件，这里只给骨架。</li></ul>
+<h2 id="s9">反例<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
+<ul><li>❌ <strong>缺的字段写成 <code>0</code></strong> —— <code>0</code> 是一个真实的值，用户会拿它去算同比。缺就是缺：写「未披露」+ 弱化色</li><li>❌ <strong>缺的字段直接把节点删掉</strong> —— 三个变体的 DOM 结构必须完全一致（节点数量与嵌套），删节点会让同一类页面越改越不像，最后没人能说清&quot;这页该长什么样&quot;</li><li>❌ <strong>无数据时隐藏整块</strong> —— 不隐藏、不冒充零，<strong>必须写清原因</strong>。空白让人以为是加载失败，反而会去刷新</li><li>❌ <strong>三个变体各写一套类名</strong> —— 允许变的是文案、数值、说明块；类名与语义标签不许变</li><li>❌ <strong>换肤时改类名</strong> —— 色对挂在 <code>section</code> 上，改类名等于换了一套结构，之后没法对比</li></ul>
+<hr>
     </article>
     <nav class="g-pager" aria-label="上一页 / 下一页">
       <a class="g-pager__link g-pager__link--prev" href="analysis-report.html"><span>上一页</span>analysis-report · 组合型研究报告</a>
@@ -113,11 +116,11 @@ python 05-audit/no-data-gate.py                     # 无数据态三条规则</
   </main>
   <aside class="g-side">
     <p class="g-side__title" id="toc-title">本页目录</p>
-    <ul class="g-toc"><li><a href="#s2">为什么需要它</a></li><li><a href="#s3">三个变体</a></li><li><a href="#s4">用法</a></li><li><a href="#s5">三条结构规则</a></li><li><a href="#s6">无数据态的三条硬规则</a></li><li><a href="#s7">校验收口</a></li><li><a href="#s8">边界</a></li></ul>
+    <ul class="g-toc"><li><a href="#s2">为什么需要它</a></li><li><a href="#s3">三个变体</a></li><li><a href="#s4">用法</a></li><li><a href="#s5">三条结构规则</a></li><li><a href="#s6">无数据态的三条硬规则</a></li><li><a href="#s7">校验收口</a></li><li><a href="#s8">边界</a></li><li><a href="#s9">反例</a></li></ul>
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.11.9 · 零第三方运行时依赖 · 组件数 35</p>
+  <p>v0.11.10 · 零第三方运行时依赖 · 组件数 35</p>
 </footer>
 </body>
 </html>

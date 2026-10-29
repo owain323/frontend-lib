@@ -85,6 +85,9 @@ analysis-report.css          ← 本示例的局部样式</code></pre>
 # http://127.0.0.1:8000/04-recipes/analysis-report/demo.html</code></pre>
 <h2 id="s8">数据说明<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
 <p>页面里的实验数据<strong>全部是演示用示例数据</strong>，不是真实实验结果。留出这条是因为：「长得像真实数据」的示例最容易被误引用。</p>
+<h2 id="s9">反例<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
+<ul><li>❌ <strong>栅格列写 <code>1fr</code> 而不是 <code>minmax(0, 1fr)</code></strong> —— 长表格、长代码会把列撑开，整页横向溢出。这是 Grid 的经典陷阱，<code>analysis-report.css</code> 里两处都写成 <code>minmax(0, 1fr)</code></li><li>❌ <strong>先做桌面并排、再用媒体查询缩回单栏</strong> —— 默认就该是单栏，并排是宽屏<strong>才发生</strong>的事。反过来做，窄屏上得到的是&quot;缩小的桌面版&quot;</li><li>❌ <strong><code>position: sticky</code> 的辅助栏不配 <code>align-self: start</code></strong> —— 在 grid 里 sticky 不生效，那一栏会跟着页面一起滚走</li><li>❌ <strong>再另造一个&quot;侧栏卡片&quot;</strong> —— 直接复用 <code>card.css</code>；重复造会在换主题时多一个不一致的源头</li><li>❌ <strong>用 inline style 写字号和颜色</strong> —— inline 的优先级高于一切样式表（INVARIANT I-4），换肤时改不动，只能一路 <code>!important</code></li><li>❌ <strong>把组件 CSS 引在骨架之前</strong> —— 顺序反了就要靠 <code>!important</code> 抢优先级； &quot;骨架在组件之前&quot;这条是有门禁守着的</li></ul>
+<hr>
     </article>
     <nav class="g-pager" aria-label="上一页 / 下一页">
       <a class="g-pager__link g-pager__link--prev" href="tree.html"><span>上一页</span>tree · 树形视图</a>
@@ -93,11 +96,11 @@ analysis-report.css          ← 本示例的局部样式</code></pre>
   </main>
   <aside class="g-side">
     <p class="g-side__title" id="toc-title">本页目录</p>
-    <ul class="g-toc"><li><a href="#s2">用途</a></li><li><a href="#s3">文件</a></li><li><a href="#s4">依赖</a></li><li><a href="#s5">布局策略</a></li><li><a href="#s6">已知限制</a></li><li><a href="#s7">预览</a></li><li><a href="#s8">数据说明</a></li></ul>
+    <ul class="g-toc"><li><a href="#s2">用途</a></li><li><a href="#s3">文件</a></li><li><a href="#s4">依赖</a></li><li><a href="#s5">布局策略</a></li><li><a href="#s6">已知限制</a></li><li><a href="#s7">预览</a></li><li><a href="#s8">数据说明</a></li><li><a href="#s9">反例</a></li></ul>
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.11.9 · 零第三方运行时依赖 · 组件数 35</p>
+  <p>v0.11.10 · 零第三方运行时依赖 · 组件数 35</p>
 </footer>
 </body>
 </html>

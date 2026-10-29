@@ -100,6 +100,9 @@
 <p>⇒ <strong>不需要加守卫。</strong> 加了反而会有害：隐藏方向若&quot;等动画播完再执行&quot;，元素已经在离场，总位移变大，看起来是&quot;走的时候还亮一下&quot;。（我第一版就是这么改的，被同一条判据算出来的总位移否掉了，已撤回。）</p>
 <p><strong>重开条件</strong>：某天 reveal 改用 Web Animations API（或换成 <code>@keyframes</code> 重启动画），这条结论立即失效 —— 那时必须重新量，并且很可能需要守卫。</p>
 <p>⚠️ 这属于<strong>负面结论入档</strong>：写下来是为了下次不要再&quot;看到别人有就照抄一遍&quot;。</p>
+<h2 id="s9">反例<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
+<ul><li>❌ <strong>引了脚本就指望内容被藏起来</strong> —— 默认<strong>不接管</strong>：只有显式调 <code>enable()</code> 才会把目标设成 <code>opacity: 0</code>。隐藏是有代价的决定，必须由页面自己做出</li><li>❌ <strong>藏了但没有兜底</strong> —— 任何一步失败都会留下&quot;看不见的内容&quot;，最坏是整页空白。所以隐藏<strong>只在</strong> <code>&lt;html data-reveal-ready&gt;</code> 存在时生效，没有它内容就是全可见</li><li>❌ <strong>位移超过 8px</strong> —— 内容&quot;飞进来&quot;会打断阅读节奏；本库的位移上限就是 8px</li><li>❌ <strong>自己再写一套 keyframes</strong> —— 缓动、时长、延迟会各写一套，最后没人能回答 &quot;为什么这个方向和那个方向节奏不一样&quot;。本库是<strong>一条规则撑六种表现</strong></li><li>❌ <strong>时长写裸数值</strong> —— 只走令牌；<code>05-audit/motion.py</code> 会查裸时长与自编曲线</li><li>❌ <strong>reduced-motion 时把动画一刀切归零</strong> —— 降级是<strong>分级</strong>的：关掉位移不等于关掉一切，透明度的过渡仍然可以留</li></ul>
+<hr>
     </article>
     <nav class="g-pager" aria-label="上一页 / 下一页">
       <a class="g-pager__link g-pager__link--prev" href="pagination.html"><span>上一页</span>pagination · 分页</a>
@@ -108,11 +111,11 @@
   </main>
   <aside class="g-side">
     <p class="g-side__title" id="toc-title">本页目录</p>
-    <ul class="g-toc"><li><a href="#s2">用法</a></li><li><a href="#s3">属性协议</a></li><li><a href="#s4">参数（不是随手定的）</a></li><li><a href="#s5">三条硬约束</a></li><li><a href="#s6">类名</a></li><li><a href="#s7">边界</a></li><li><a href="#s8">为什么没有「动画进行中不打断」的守卫（实测结论）</a></li></ul>
+    <ul class="g-toc"><li><a href="#s2">用法</a></li><li><a href="#s3">属性协议</a></li><li><a href="#s4">参数（不是随手定的）</a></li><li><a href="#s5">三条硬约束</a></li><li><a href="#s6">类名</a></li><li><a href="#s7">边界</a></li><li><a href="#s8">为什么没有「动画进行中不打断」的守卫（实测结论）</a></li><li><a href="#s9">反例</a></li></ul>
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.11.9 · 零第三方运行时依赖 · 组件数 35</p>
+  <p>v0.11.10 · 零第三方运行时依赖 · 组件数 35</p>
 </footer>
 </body>
 </html>

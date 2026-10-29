@@ -73,6 +73,21 @@ menu.setAttribute('role', 'menu');
 | `focus-return:manual` | 关闭后归位是手写的，不是统一机制 |
 | `typeahead:gap` | **没有类型搜索** —— APG 的 Menu Button 不硬性要求，但列表长时体验缺失 |
 
+## 反例
+
+- ❌ **菜单里一部分项 `aria-hidden`、一部分不设** —— APG 要求**全设或全不设**。
+  半吊子会让读屏报"1 项中的 0 项"这种不可理解的计数
+- ❌ **禁用项不给 `tabindex="-1"`** —— Tab 会停在点不动的项上，用户以为菜单坏了
+- ❌ **Esc 关闭后焦点不还给 `dd__btn`** —— 焦点掉到 `<body>`，键盘用户要从页面开头重新 Tab（APG 明确要求归还）
+- ❌ **给某个 `dd__item` 设 `tabindex="0"`** —— `role="menu"` 靠方向键步进，多一个 0
+  就多出一个 Tab 停靠点，整个菜单的导航模型就混了
+- ❌ **先写 `aria-controls` 再确保 `dd__menu` 有 id** —— 顺序反了会引用空字符串，
+  读屏拿不到"这个按钮控制哪个菜单"（`dropdown.js` 里为此调过顺序）
+- ❌ **用 `opacity: 0` 或 `visibility` 隐藏 `dd__menu`** —— 关闭态要用 `hidden`：
+  它同时移出无障碍树并不可聚焦，另两种做法都还留着 Tab 停靠点
+
+---
+
 ## 门禁
 
 `05-audit/dropdown-check.js`
