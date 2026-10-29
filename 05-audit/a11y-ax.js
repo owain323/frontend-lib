@@ -56,6 +56,10 @@ const PAGES = [
   ['choice', '02-primitives/choice/demo.html', '单选/复选：checked + group'],
   ['switch', '02-primitives/switch/demo.html', '开关：switch 角色 + checked'],
   ['tabs', '03-patterns/tabs/demo.html', '标签页：tablist/tab + selected + controls'],
+  /* 0.11.13 加：折叠是「button + expanded + 受控 region」这一组关系，
+     与 tablist 的 selected/controls 不同源；而 `accordion-contract.js`
+     查的是**属性写得对不对**，查不到"读屏实际念出什么"。 */
+  ['accordion', '03-patterns/accordion/demo.html', '折叠：button + expanded + 受控 region'],
   ['overlay', '03-patterns/overlay/demo.html', '浮层：dialog + modal + 名字'],
   ['table', '04-recipes/table/demo.html', '表格：table/row/columnheader 关系'],
   ['states', '03-patterns/states/demo.html', '状态消息：status/alert 播报'],

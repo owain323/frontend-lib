@@ -34,6 +34,7 @@
 </head>
 <body class="page page">
 <main class="wrap">
+  <!-- demo-claim:skip 两块反例（读屏念什么、reduced-motion 动画）都是运行时或读屏输出，没有可量的元素属性 -->
   <h1>sparkline · 迷你趋势图</h1>
   <p class="lede">
     在一行里显示"最近走势"。它是<strong>辅助</strong>不是图表 ——
@@ -107,7 +108,7 @@
   </div>
 
   <h2 class="rule-top">🔴 无障碍：它没有可读的文本等价物</h2>
-  <div class="box bad">
+  <div class="box bad" data-prose="这一块说的是原因（为什么刻意不加 role=img），反例是读屏念出来的那句话，不是一个看得见的元素 —— 图形本身在下面那块里已经摆出来了">
     <p>
       纯 SVG 路径对读屏<strong>没有意义</strong> ——
       读屏只会说"图像"，不会说"最近上涨 2.3%"。
@@ -131,7 +132,7 @@
     </p>
     <span class="sparkline" data-spark="12,18,15,24,22,31,28" data-spark-height="40"></span>
   </div>
-  <div class="box bad">
+  <div class="box bad" data-prose="「动画有没有被 reduced-motion 关掉」是媒体查询在运行时决定的行为，同一个 sparkline 在两种设置下长得一模一样 —— 静态块摆不出「错的那一版」">
     <h3>反例：动画不管 reduced-motion</h3>
     <p class="small">
       前庭功能障碍者会因动画眩晕（WCAG 2.3.3）。

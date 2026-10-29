@@ -19,6 +19,7 @@ RootWebArea "switch · 开关"
     paragraph "本组件用 原生 checkbox 实现，所以浏览器天然只响应 Space —— 不需要写 JS 去拦 Enter ，也就"
     heading "反例" [level=2]
     heading "反例：用 div + role="switch"，自己管所有状态" [level=3]
-    paragraph "常见写法是 <div role="switch" tabindex="0" onclick="..."> ， 然后手写 "
+    switch "开启动价推送"
+    paragraph "它 看起来和上面那个一模一样 —— 这正是坑所在： 常见写法是 <div role="switch" tabindex="
     heading "反例：给 label 加 display:none" [level=3]
     paragraph "为了"只留滑块"而把 <label> 隐藏掉， 开关就 失去了可点击的文字区域 ，也失去了语义名字 —— 读屏只会念「开"

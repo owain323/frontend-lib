@@ -18,6 +18,7 @@
 </head>
 <body class="page page">
 <main class="wrap">
+  <!-- demo-claim:skip 两块都可量（input 个数 0 vs 1、label 的高度），但这一页仍是单栏结构，升级成 cmp 要重排整页 —— 本轮没做，已知欠账 -->
   <h1>switch · 开关</h1>
   <p class="lede">
     开关用于<strong>立即生效的设置项</strong>（"开/关通知"）。
@@ -84,7 +85,12 @@
   <h2 class="rule-top">反例</h2>
   <div class="box bad">
     <h3>反例：用 div + role="switch"，自己管所有状态</h3>
+    <div class="switch" role="switch" aria-checked="false" tabindex="0">
+      <span class="switch__track"><span class="switch__thumb"></span></span>
+      <span class="switch__label">开启动价推送</span>
+    </div>
     <p class="small">
+      它<strong>看起来和上面那个一模一样</strong> —— 这正是坑所在：
       常见写法是 <code>&lt;div role="switch" tabindex="0" onclick="..."&gt;</code>，
       然后手写 <code>aria-checked</code> 切换。这需要自己处理：
       Space 键、焦点样式、状态播报。<strong>三件事漏一件就坏</strong>，
@@ -94,6 +100,10 @@
 
   <div class="box bad">
     <h3>反例：给 label 加 display:none</h3>
+    <div class="switch">
+      <span class="switch__track"><span class="switch__thumb"></span></span>
+      <label class="switch__label" style="display:none">自动续订</label>
+    </div>
     <p class="small">
       为了"只留滑块"而把 <code>&lt;label&gt;</code> 隐藏掉，
       开关就<strong>失去了可点击的文字区域</strong>，也失去了语义名字 ——

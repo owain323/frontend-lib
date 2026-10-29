@@ -1,0 +1,56 @@
+# accordion — 折叠：button + expanded + 受控 region
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "accordion · 折叠面板"
+  main
+    heading "accordion · 折叠面板" [level=1]
+    paragraph "用于把长表单或长内容分成几段。 默认只开一个 （同一个问题的不同答案）， 加 accordion--multi 可同时开"
+    heading "单开（默认）" [level=2]
+    heading "公司基本信息" [level=3]
+      button "公司基本信息" [expanded=true]
+    region "公司基本信息"
+      paragraph "公司名称、证券代码、行业分类、上市日期与所属交易所。"
+      paragraph "这些字段决定后面所有指标怎么算，缺任何一项都会让勾稽校验失败。"
+    heading "数据源与口径" [level=3]
+      button "数据源与口径"
+    heading "审计记录" [level=3]
+      button "审计记录"
+    paragraph "打开第二项时，第一项会 自动收起 。"
+    heading "多开" [level=2]
+    heading "网络与抓取" [level=3]
+      button "网络与抓取" [expanded=true]
+    region "网络与抓取"
+      paragraph "数据源：交易所公开文件、公司定期报告、第三方行情镜像。"
+      paragraph "抓取频率：日频（收盘后）与季频（财报期），失败自动重试三次。"
+      paragraph "最后成功：今天 18:24 · 下一轮：明日 09:10"
+    heading "指标与口径" [level=3]
+      button "指标与口径" [expanded=true]
+    region "指标与口径"
+      paragraph "口径以最新年报为准；年报未披露的用最近一期季报并标注。"
+      paragraph "跨期变动超过 5% 需人工复核，勾稽关系 E1–E22 全部通过才入库。"
+    heading "复核记录" [level=3]
+      button "复核记录"
+    paragraph "加了 data-accordion-multi ：各段独立，不互相影响。"
+    paragraph "为什么这里写了好几行字 ： 原来每段只有一句「网络」「计算」类的话（11–16 字符）， 视觉上就是个空壳 —— 真机实"
+    heading "禁用的分段" [level=2]
+    heading "可用" [level=3]
+      button "可用"
+    heading "未开通（禁用）" [level=3]
+      button "未开通（禁用）" [disabled=true]
+    heading "结构要求（APG 原文）" [level=2]
+    paragraph "heading 包住 button ，不是 button 套 heading："
+    paragraph "<h3><button aria-expanded="true">标题</button></h3>"
+    paragraph "APG 原文： "place the heading tag around the button, not inside"
+    heading "键盘（APG 原文）" [level=2]
+    paragraph "Enter / Space 切换 —— 但本组件 没有写 keydown 监听"
+    paragraph "因为原生 <button> 本身就响应这两个键并触发 click —— 写了反而 双触发 （keydown 切一次、cl"
+    paragraph "⚠️ 本组件故意没有方向键 / Home / End 。 APG 明确写： "arrow / Home / End ke"
+    heading "role="region" 的数量上限" [level=2]
+    paragraph "APG 警告：超过约 6 个可同时展开的面板时，给每个 panel 加 role="region" 会造成 "landm"
+    heading "反例" [level=2]
+    heading "反例：用 div 当 trigger" [level=3]
+    paragraph "<div class="accordion__trigger"> 键盘上 Tab 不到、 也不响应 Enter/Spac"
+    heading "反例：折叠时只用 max-height: 0" [level=3]
+    paragraph "这一整段文字，读屏此刻仍然念得出来。"
+    link "里面的这个链接，Tab 也仍然进得去"
+    paragraph "上面那块的高度被压成了 0 ，你 看不见它 —— 但按一下 Tab，焦点会停在里面的链接上；读屏也会把那句"仍然念得出来"

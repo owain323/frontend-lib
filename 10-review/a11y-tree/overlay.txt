@@ -23,6 +23,7 @@ RootWebArea "Toast vs Dialog · 反馈层"
     heading "滚动锁定：容易漏的那个细节" [level=2]
     heading "用错比做丑严重得多" [level=2]
     heading "❌ 错用" [level=3]
+    status "文件已删除 3 秒后自动消失，没有撤销" [live=polite atomic=true]
     paragraph "把"确认删除"做成 toast 用户可能根本没看见就把文件删了，而且没法撤销。"
     paragraph "把"已保存"做成 dialog 打断用户没在做别的事，白白多一次点击。"
     heading "✅ 判据" [level=3]

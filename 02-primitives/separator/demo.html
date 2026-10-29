@@ -15,6 +15,7 @@
 </head>
 <body class="page page">
 <main class="wrap">
+  <!-- demo-claim:skip 两块都可量（<hr> 的个数 0 vs 1），但这一页仍是单栏结构，升级成 cmp 要重排整页 —— 本轮没做，已知欠账 -->
   <h1>separator · 分隔线</h1>
   <p class="lede">
     分隔线有两种，<strong>必须分清</strong>：装饰性的只分开内容块，
@@ -62,6 +63,11 @@
   <h2>反例</h2>
   <div class="box bad">
     <h3>反例：语义分隔用装饰色</h3>
+    <div style="max-width:32em">
+      <p class="small" style="margin:0">基本信息</p>
+      <hr class="separator separator--tight">
+      <p class="small" style="margin:0">高级设置</p>
+    </div>
     <p class="small">
       分隔"基本信息"与"高级设置"——这是<strong>两类不同的东西</strong>，
       但如果用 <code>--border-decor</code>（1.26:1），
@@ -73,6 +79,7 @@
 
   <div class="box bad">
     <h3>反例：用 div + border-bottom 代替 hr</h3>
+    <div style="border-bottom:1px solid var(--border-decor); margin:var(--sp-4) 0"></div>
     <p class="small">
       <code>&lt;div class="line"&gt;</code> 对读屏是<strong>什么都没有</strong>。
       语义分隔必须用 <code>&lt;hr&gt;</code>（或 <code>role="separator"</code>），

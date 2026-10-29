@@ -42,6 +42,7 @@ p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6
 </head>
 <body class="page page">
 <main class="wrap">
+  <!-- demo-claim:skip 两块反例的差别都是时序（什么时候报错）和措辞（文案怎么说），没有可量的元素属性 -->
 
   <h1>表单校验</h1>
   <p class="lede">
@@ -128,9 +129,9 @@ p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6
   <div class="grid2">
     <div class="box bad">
       <h3>反例</h3>
-      <p style="font-size:var(--fs-sm); color:var(--danger); margin:0 0 var(--sp-2)">格式错误</p>
-      <p style="font-size:var(--fs-sm); margin:0 0 var(--sp-2)">非法输入</p>
-      <p style="font-size:var(--fs-sm); margin:0">值不合法</p>
+      <p class="naive-error">格式错误</p>
+      <p class="naive-error">非法输入</p>
+      <p class="naive-error" style="margin-bottom:0">值不合法</p>
       <p class="small" style="margin-top:var(--sp-3)">
         WCAG 3.3.3 要求给修正建议。这三句用户读完还是不知道该改成什么。
       </p>

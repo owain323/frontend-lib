@@ -17,6 +17,7 @@
 </head>
 <body class="page page">
 <main class="wrap">
+  <!-- demo-claim:skip 反例的差别是「饱和底白字的对比度」和「div 能不能被 Tab」：前者 demo-claim 没有对比度指标（contrast.py 单独测），后者没有焦点指标 -->
   <h1>badge · 状态标记</h1>
   <p class="lede">
     badge 承载<strong>一个短状态词</strong>（"已停牌""审计中"）。
@@ -81,6 +82,10 @@
 
   <div class="box bad">
     <h3>反例：用 badge 装可点的东西</h3>
+    <div class="row">
+      <div class="badge badge--info">待复核</div>
+      <span class="small">← 它和上面的 badge 长得一模一样，但 Tab 一遍就会发现焦点跳过了它</span>
+    </div>
     <p class="small">
       <code>&lt;div class="badge badge--info" onclick="..."&gt;待复核&lt;/div&gt;</code>
       —— div 加 onclick 对读屏是<strong>「没有角色的按钮」</strong>：

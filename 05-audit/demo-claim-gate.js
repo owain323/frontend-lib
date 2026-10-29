@@ -37,14 +37,55 @@
  * 这是「错的样子真的摆出来了」能被机器捡到的那一半。
  *
  * ============================================================================
+ * 🔴 第二道判据：反例块里**到底有没有东西可看**
+ * ============================================================================
+ * 上面那套判的是"两栏有没有差别"。但它有个前提：块里得真有标本。
+ * 0.11.12 发布之后扫了一遍，**13 个反例块里一个标本都没有** —— 全是
+ * `<p class="small">` 在**描述**一个反例。例如：
+ *
+ *   `02-primitives/separator`：标题写「反例：用 div + border-bottom 代替 hr」，
+ *   块里却只有一段话说"div 对读屏什么都没有"。**那个 div 根本没渲染。**
+ *   `02-primitives/switch`、`03-patterns/accordion`、`03-patterns/tabs` 同形。
+ *
+ * 这不是"反例不成立"，是更早一层：**没有反例**。而 `demo-counter` 判不出来
+ * ——它只判"块在不在、有没有被藏、块后有没有标题"，一段纯文字全都满足。
+ *
+ * 判据：块里必须有**标本** —— 一个库组件的实例。可接受两种：
+ *   ① 元素带着组件样式里定义的类名（`.badge` / `.choice` / `.field` / `.sparkline`…）
+ *   ② 原生绘图/交互元素（`hr` `input` `button` `table` `svg` …）
+ * 都摆不出来的，必须在块上写 `data-prose="理由"` —— **声明，不是沉默**。
+ * 理由为空等于没写。
+ *
+ * ⚠️ 类名表只从组件样式收，**排除 `01-tokens`**：那是排版工具类
+ * （`.small` `.page` `.row`），它们大量出现在说明文字上，拿它们当"标本"
+ * 就等于这条判据不存在（第一版正是这么写的，13 个块全绿）。
+ *
+ * ============================================================================
+ * 🔴 第三道判据：单栏页必须**逐页登记**，不是打个数字
+ * ============================================================================
+ * `box bad` 单栏的页没有成对结构，`demo-claim` 的互斥断言用不上 ——
+ * 这是真实的覆盖边界，不是能消灭的东西。但"边界"和"欠账"的区别在于：
+ * 前者每一页都写清了为什么，后者只是一个数字。
+ *
+ * 所以：每个只有 `box bad`、没有 `cmp__bad` 的页，必须在文件里写
+ *
+ *   <!-- demo-claim:skip 差别是"何时报错"，不是元素的某个可量属性 -->
+ *
+ * 缺了、或理由为空 ⇒ 红。理由每条都会打出来，可以被反驳 ——
+ * 这是它比一行统计数字唯一多出来的价值。
+ * 反过来，既有 `cmp__bad` 又写 `skip` 也是矛盾，同样红。
+ *
+ * ============================================================================
  * 🔴 它判不了什么（不假装判了）
  * ============================================================================
  *   · 反例**该不该**算错 —— 那是判断，机器判不了。
  *     （例：`progress` 那块量的是"反例里有 success 色的满进度条"，
  *       这证明演示物在，不证明"到 100% 变绿"这个做法不好。）
  *   · 文案说得准不准 —— `cmp__why` 里那句话对不对，只能人读。
- *   · 只覆盖 `cmp__bad` / `cmp__good` 成对出现的块；`box bad` 那批
- *     （10 页）没有成对结构，**不覆盖**，条数打在末尾。
+ *   · 标本**像不像**那个反例 —— 只判"有没有非说明标签的元素"，判不了
+ *     "这一实例对不对"。摆一个不相干的 `<div>` 就满足判据。
+ *   · `data-prose` 的理由**诚不诚实** —— 只判"写了且不是空话"，判不了真假。
+ *     理由会逐条打出来，能被反驳，这已经是机器能给的上限。
  *
  * ============================================================================
  * 🔴 为什么在 900px 宽下量
@@ -55,7 +96,7 @@
  *
  * 用法：
  *   node 05-audit/demo-claim-gate.js             # 判
- *   node 05-audit/demo-claim-gate.js --selftest  # 自检（N 条反向控制 + 1 条正例）
+ *   node 05-audit/demo-claim-gate.js --selftest  # 自检（21 条必须红 + 11 条必须绿）
  * ========================================================================= */
 
 const fs = require('fs');
@@ -238,10 +279,103 @@ async function measure(page, blockIdx, side, spec) {
 }
 
 /* ---------------------------------------------------------------------------
+ * ②b 判"块里有没有标本"（跑在页面里）
+ * ------------------------------------------------------------------------- */
+
+/* ---------------------------------------------------------------------------
+ * ②b 判"块里有没有标本"
+ * ---------------------------------------------------------------------------
+ * 走过两条错路，都留在注释里，因为下一个人会想到同样的两条：
+ *
+ * 错路一：按"类名是否定义在组件样式里"判。`separator` 的反例是
+ *   `<div class="line">`，`line` 定义在 demo 自己的 `<style>` 里 —— 真标本
+ *   被判成没标本；反过来 `.row > .sparkline` 这种后代选择器又会把排版类
+ *   `.row` 收进表里 ⇒ 假绿。解析 CSS 判不出来。
+ * 错路二：按"有没有边框/底色"判。`tooltip` 的反例是 `<div class="tt-field">`
+ *   里面几个纯文字的 span，`tree` 是 `div.tree__node`，`report` 是
+ *   `<p class="rep-p">` —— 三处都是**文字构成的标本**，一个边框都没有。
+ *   这条规则把三处真标本全冤枉了。
+ *
+ * 现在的判据：**说明文字用的排版类不算标本，其余算**。
+ *   · 原生控件/绘图元素（`hr` `input` `table` `svg`…）→ 标本
+ *   · `h3 p code pre strong …` 这些"天生是字"的标签 → 只有带**非排版类**
+ *     的类名时才算标本（`p.rep-p` 是内容本身，`p.small` 是描述）
+ *   · 其余标签（`div` `span` `li`…）→ 算标本
+ * 排版类表 = `01-tokens/*.css` 里出现过的类名（`.small` `.lede` `.note`…）。
+ *
+ * ⚠️ 刻意不判 `opacity` / `visibility`：`reveal` 那页的反例就是"卡片存在
+ * 但看不见"，排掉不可见，那页会被冤枉成"没有标本"。
+ *
+ * 它判不了：加一层 `<div>` 包住一段说明文字就能过 —— 判据只看"有没有
+ * 非说明标签的元素"，判不了"那个元素算不算标本"。这条只防"整块只有
+ * 说明文字"，不防"摆了个不相干的东西"，后者机器判不了。
+ */
+function judgeSpecimensInPage([tokenClasses]) {
+  const token = new Set(tokenClasses);
+  const NATIVE = new Set(['hr', 'input', 'button', 'select', 'textarea', 'svg',
+    'canvas', 'img', 'video', 'table', 'progress', 'meter', 'dialog', 'details',
+    'summary', 'iframe']);
+  /* 这些标签天生是"字"：只有挂上非排版类才算标本 */
+  const PROSE = new Set(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'code', 'pre',
+    'blockquote', 'strong', 'em', 'b', 'i', 'u', 's', 'small', 'kbd', 'samp',
+    'var', 'cite', 'q', 'abbr', 'br', 'ul', 'ol', 'li', 'dl', 'dt', 'dd', 'figure',
+    'figcaption', 'time', 'mark', 'del', 'ins', 'sub', 'sup']);
+
+  const rendered = (el) => {
+    const r = el.getBoundingClientRect();
+    return r.width > 0 || r.height > 0;
+  };
+  const isSpecimen = (el) => {
+    if (!rendered(el)) return false;
+    const tag = el.tagName.toLowerCase();
+    if (NATIVE.has(tag)) return true;
+    if (PROSE.has(tag)) {
+      return [...el.classList].some((c) => !token.has(c));
+    }
+    return true;
+  };
+
+  const out = [];
+  for (const el of document.querySelectorAll('.box.bad, .cmp__bad')) {
+    const h3 = el.querySelector('h3');
+    const title = h3 ? h3.textContent.trim() : '(无标题)';
+    const prose = el.getAttribute('data-prose');
+    if (prose !== null) {
+      out.push(prose.trim().length >= 8
+        ? { ok: true, declared: true, title, prose: prose.trim() }
+        : { ok: false, title, why: 'data-prose 的理由太短（要写清为什么摆不出来）' });
+      continue;
+    }
+    const n = [...el.querySelectorAll('*')].filter(isSpecimen).length;
+    out.push(n
+      ? { ok: true, declared: false, title, n }
+      : { ok: false, title,
+        why: '块里只有说明文字，没有一个"内容本身"的元素 —— '
+          + '标题说的那个"反例"根本没被摆出来' });
+  }
+  return out;
+}
+
+/* ---------------------------------------------------------------------------
  * ③ 判一个块
  * ------------------------------------------------------------------------ */
 
-function readBlocks() {
+/* 排版工具类：`01-tokens/*.css` 里出现过的类名。
+   判"这段文字是说明还是内容"时，就靠这张表 —— `.small` `.lede` 是描述用的，
+   `.rep-p` `.tt-hint` 是内容本身的。 */
+function tokenClasses() {
+  const set = new Set();
+  for (const f of fs.readdirSync(path.join(ROOT, '01-tokens'))) {
+    if (!f.endsWith('.css')) continue;
+    const css = fs.readFileSync(path.join(ROOT, '01-tokens', f), 'utf8');
+    for (const m of css.matchAll(/\.(-?[_a-zA-Z][\w-]*)/g)) set.add(m[1]);
+  }
+  return [...set];
+}
+
+/* 所有 demo 页。以前只收有 `cmp__bad` 的页 —— 那样"没有成对结构的页"
+   连看都不会被看到，正是 13 个空反例块能躺到 0.11.12 的原因。 */
+function readPages() {
   const out = [];
   for (const top of fs.readdirSync(ROOT)) {
     if (!/^0\d-/.test(top)) continue;
@@ -249,9 +383,14 @@ function readBlocks() {
     for (const name of fs.readdirSync(dir)) {
       const file = path.join(dir, name, 'demo.html');
       if (!fs.existsSync(file)) continue;
-      if (/cmp__bad/.test(fs.readFileSync(file, 'utf8'))) {
-        out.push({ rel: `${top}/${name}/demo.html` });
-      }
+      const src = fs.readFileSync(file, 'utf8');
+      out.push({
+        rel: `${top}/${name}/demo.html`,
+        hasCmp: /cmp__bad/.test(src),
+        hasBoxBad: /class="box bad"/.test(src),
+        /* `<!-- demo-claim:skip 理由 -->`，理由取到 `-->` 为止 */
+        skip: (/<!--\s*demo-claim:skip\s+([\s\S]*?)-->/.exec(src) || [])[1],
+      });
     }
   }
   return out;
@@ -322,48 +461,112 @@ const pad = (s) => (s + '            ').slice(0, 10);
  * ④ 主流程
  * ------------------------------------------------------------------------ */
 
+/* 登记表判据。抽成函数是为了能在自检里喂合成数据 ——
+   否则这段逻辑只能靠"在真实仓库里看着对"来相信。 */
+function judgeSkips(pages) {
+  const problems = [];
+  for (const p of pages) {
+    const reason = p.skip === undefined ? null : p.skip.trim();
+    if (p.hasCmp) {
+      if (reason !== null) {
+        problems.push({ rel: p.rel, why: '既写了 `cmp__bad` 又写了 `demo-claim:skip`'
+          + ' —— 有对照结构就不该登记成"量不了"' });
+      }
+      continue;
+    }
+    if (!p.hasBoxBad) continue;         // 既无反例也无对照，不归这道门禁管
+    if (reason === null) {
+      problems.push({ rel: p.rel, why: '有 `box bad` 单栏反例，却没有 '
+        + '`<!-- demo-claim:skip 理由 -->` 登记' });
+    } else if (reason.length < 8) {
+      problems.push({ rel: p.rel, why: `登记理由太短：${JSON.stringify(reason)}` });
+    }
+  }
+  return problems;
+}
+
 async function main() {
-  const pages = readBlocks();
+  const pages = readPages();
+  const token = tokenClasses();
   const b = await launch();
   const page = await b.newPage();
   await page.setViewport(VIEW);
+
   let blocks = 0;
-  const all = [];
+  let nSpecimen = 0;
+  const nProse = [];
+  const claimProblems = [];
+  const specimenProblems = [];
+
   for (const p of pages) {
     await page.goto(BASE + p.rel, { waitUntil: 'networkidle0' });
+
+    /* ② 标本：每一页都判，不只有成对结构的页 */
+    const specs = await page.evaluate(judgeSpecimensInPage, [token]);
+    const bad = specs.filter((s) => !s.ok);
+    if (bad.length) specimenProblems.push({ rel: p.rel, bad });
+    for (const s of specs) {
+      if (!s.ok) continue;
+      if (s.declared) nProse.push({ rel: p.rel, title: s.title, prose: s.prose });
+      else nSpecimen++;
+    }
+
+    /* ① 断言：只有成对结构的页才有 */
+    if (!p.hasCmp) continue;
     const n = await page.evaluate(() => document.querySelectorAll('.cmp').length);
     blocks += n;
     const problems = await judgePage(page);
-    if (problems.length) all.push({ rel: p.rel, problems });
-    else console.log('  ✅ %s（%d 块）', p.rel, n);
-  }
-
-  /* 没覆盖到的那批要报出条数 —— 悄悄跳过等于假绿 */
-  const boxPages = [];
-  for (const top of fs.readdirSync(ROOT)) {
-    if (!/^0\d-/.test(top)) continue;
-    for (const name of fs.readdirSync(path.join(ROOT, top))) {
-      const f = path.join(ROOT, top, name, 'demo.html');
-      if (!fs.existsSync(f)) continue;
-      const s = fs.readFileSync(f, 'utf8');
-      if (/class="box bad"/.test(s) && !/cmp__bad/.test(s)) boxPages.push(`${top}/${name}`);
-    }
+    if (problems.length) claimProblems.push({ rel: p.rel, problems });
+    else if (!bad.length) console.log('  ✅ %s（%d 块）', p.rel, n);
   }
   await b.close();
 
-  console.log('\n  判了 %d 个对照块（%d 页）', blocks, pages.length);
-  console.log('  ⚠️ 未覆盖：%d 页仍是 `box bad` 单栏反例，没有成对结构可量'
-    + '（%s）', boxPages.length, boxPages.join(' / '));
+  /* ③ 登记表：单栏页必须逐页写明为什么量不了 */
+  const skipBad = judgeSkips(pages);
+  const registered = pages
+    .filter((p) => !p.hasCmp && p.hasBoxBad && p.skip && p.skip.trim().length >= 8)
+    .map((p) => ({ rel: p.rel, why: p.skip.trim() }));
 
-  if (all.length) {
-    console.log('\n  🔴 %d 页有断言不成立：', all.length);
-    for (const x of all) {
+  console.log('\n  ── 覆盖 ──');
+  console.log('  对照块 %d 个（%d 页）；反例块里有标本 %d 个，'
+    + '声明摆不出来 %d 个', blocks, pages.filter((p) => p.hasCmp).length,
+  nSpecimen, nProse.length);
+  if (nProse.length) {
+    console.log('  声明的（`data-prose`，理由可被反驳）：');
+    nProse.forEach((x) => console.log('    · %s  %s\n      %s',
+      x.rel.replace('/demo.html', ''), x.title.slice(0, 18), x.prose));
+  }
+  if (registered.length) {
+    console.log('  单栏页登记（%d 页，没有成对结构，理由可被反驳）：', registered.length);
+    registered.forEach((x) => console.log('    · %s\n      %s',
+      x.rel.replace('/demo.html', ''), x.why));
+  } else if (pages.some((p) => p.hasBoxBad && !p.hasCmp)) {
+    console.log('  单栏页登记：0 页');
+  }
+
+  if (specimenProblems.length) {
+    console.log('\n  🔴 %d 页的反例块里没有标本：', specimenProblems.length);
+    for (const x of specimenProblems) {
+      console.log('\n  · %s', x.rel);
+      x.bad.forEach((s) => console.log('      「%s」\n        %s', s.title, s.why));
+    }
+  }
+  if (skipBad.length) {
+    console.log('\n  🔴 %d 页的登记有问题：', skipBad.length);
+    skipBad.forEach((x) => console.log('  · %s\n      %s', x.rel, x.why));
+  }
+  if (claimProblems.length) {
+    console.log('\n  🔴 %d 页有断言不成立：', claimProblems.length);
+    for (const x of claimProblems) {
       console.log('\n  · %s', x.rel);
       x.problems.forEach((m) => console.log('      %s', m));
     }
-    process.exit(1);
   }
+  if (specimenProblems.length || skipBad.length || claimProblems.length) process.exit(1);
+
   console.log('\n  ✅ %d 个对照块：每栏都写了可证伪的断言，且两两互斥、各自成立', blocks);
+  console.log('  ✅ 每个反例块里都有标本，或写明了为什么摆不出来');
+  console.log('  ✅ %d 个单栏页逐页登记（不是一行统计数字）', registered.length);
 }
 
 /* ---------------------------------------------------------------------------
@@ -434,9 +637,69 @@ async function selftest() {
       `反向控制：${name} → 必须红（${missing[0] || '却绿了'}）`);
   }
 
+  /* ③ 标本判据：块里到底有没有东西可看 */
+  const SPEC = (inner, attr = '') =>
+    `<div class="box bad"${attr}><h3>反例</h3>${inner}</div>`;
+  const TOK = ['small', 'lede', 'note', 'prose', 'row'];
+  /* 每条都写成"该红还是该绿"的对照 —— 只测红会得到一道恒红的门禁，
+     只测绿会得到一道恒绿的门禁，两种都不可信。 */
+  for (const [name, inner, attr, want] of [
+    ['只有一段说明文字（.small 是排版类）',
+      '<p class="small">div 对读屏什么都没有</p>', '', false],
+    ['说明文字带行内 code',
+      '<p><code>&lt;div class="line"&gt;</code> 不行</p>', '', false],
+    ['说明文字里有列表', '<ul><li>a</li><li>b</li></ul>', '', false],
+    ['无类名的 p（分不出是说明还是内容，按说明算）', '<p>x</p>', '', false],
+    /* 这条是重构的全部理由：report 的反例就是 <p class="rep-p">，
+       它没有边框没有底色，但它是"内容本身"而不是"描述反例的文字"。 */
+    ['PROSE 标签但带非排版类（report 的 p.rep-p）',
+      '<p class="rep-p">数据来源：公司 2026 年三季报</p>', '', true],
+    ['工具 tip 那种纯文字字段组（div.tt-field）',
+      '<div class="tt-field"><span class="tt-label">账期</span></div>', '', true],
+    ['有底色的 badge（span）',
+      '<span style="background:#eef;padding:2px 6px">已停牌</span>', '', true],
+    ['有边框的空 div（separator 的 div.line）',
+      '<div style="border-bottom:1px solid #ccc;height:8px"></div>', '', true],
+    ['裸 hr', '<hr>', '', true],
+    ['裸 table（说明性表格也是渲染出来的东西）',
+      '<table><tr><td>a</td></tr></table>', '', true],
+    ['opacity:0 但有尺寸（reveal 那种"存在但看不见"）',
+      '<div style="height:20px;opacity:0"></div>', '', true],
+    ['display:none 的零尺寸元素',
+      '<div style="display:none">x</div>', '', false],
+    ['data-prose 写了理由', '<p>x</p>',
+      ' data-prose="焦点落点是运行时行为，静态块摆不出来"', true],
+    ['data-prose 是空字符串', '<p>x</p>', ' data-prose=""', false],
+    ['data-prose 只有几个字', '<p>x</p>', ' data-prose="摆不出来"', false],
+  ]) {
+    await page.setContent(SPEC(inner, attr), { waitUntil: 'load' });
+    const r = await page.evaluate(judgeSpecimensInPage, [TOK]);
+    const green = r.length === 1 && r[0].ok;
+    say(green === want, `${want ? '放行' : '反向'}控制：标本「${name}」`
+      + `→ 必须${want ? '绿' : '红'}（实际${green ? '绿' : '红'}）`,
+    want ? 'green' : 'red');
+  }
+
+  /* ④ 登记表判据（喂合成数据，不碰真实仓库） */
+  const LONG = '差别是"何时报错"，不是元素的某个可量属性';
+  for (const [name, pages, want] of [
+    ['单栏页没登记', [{ rel: 'a', hasCmp: false, hasBoxBad: true }], false],
+    ['理由全是空格', [{ rel: 'a', hasCmp: false, hasBoxBad: true, skip: '   ' }], false],
+    ['理由太短', [{ rel: 'a', hasCmp: false, hasBoxBad: true, skip: '量不了' }], false],
+    ['理由够长', [{ rel: 'a', hasCmp: false, hasBoxBad: true, skip: LONG }], true],
+    ['没有反例也没有对照（不归它管）',
+      [{ rel: 'a', hasCmp: false, hasBoxBad: false }], true],
+    ['有成对结构却登记 skip', [{ rel: 'a', hasCmp: true, hasBoxBad: true, skip: LONG }], false],
+  ]) {
+    const green = judgeSkips(pages).length === 0;
+    say(green === want, `${want ? '放行' : '反向'}控制：登记「${name}」`
+      + `→ 必须${want ? '绿' : '红'}（实际${green ? '绿' : '红'}）`,
+    want ? 'green' : 'red');
+  }
+
   await b.close();
-  console.log(ok ? '\n  ✅ 自检通过：' + nRed + ' 条反向控制全红，'
-    + nGreen + ' 条正例全绿'
+  console.log(ok ? '\n  ✅ 自检通过：' + nRed + ' 条「必须红」的用例全红，'
+    + nGreen + ' 条「必须绿」的用例全绿'
     : '\n  🔴 自检失败：门禁抓不住上面的错误，它给的绿不可信');
   if (!ok) process.exit(1);
 }
