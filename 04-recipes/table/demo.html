@@ -14,6 +14,12 @@
 <style>
 .toolbar { display: flex; gap: var(--sp-2); margin: 0 0 var(--sp-3); flex-wrap: wrap; }
 .section-note { margin: 0 0 var(--sp-3); }
+.tb-demo { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+.tb-demo th, .tb-demo td { padding: var(--sp-2) var(--sp-3); text-align: start;
+  border-bottom: 1px solid var(--border-decor); }
+.tb-demo th { font-weight: 500; color: var(--text-secondary); font-size: var(--fs-xs); }
+/* 反例专用：把库自动生成的 +/− 关掉，只留颜色（这就是"只靠红绿"） */
+.tb-bad .num--pos::before, .tb-bad .num--neg::before { content: none; }
 </style>
 </head>
 <body class="page">
@@ -86,6 +92,39 @@
 </p>
 <div id="escproof"></div>
 
+
+
+  <h2 class="rule-bottom">对比：错写法 vs 本库写法</h2>
+  <div class="cmp">
+    <div class="cmp__pane cmp__bad">
+      <h3>❌ 常见写法：只靠红绿 + 连字符</h3>
+        <div class="table tb-bad" aria-hidden="true">
+          <table class="tb-demo">
+            <thead><tr><th scope="col">板块</th><th scope="col" class="num">涨跌幅</th></tr></thead>
+            <tbody>
+              <tr><td>半导体</td><td class="num num--neg">-1.05%</td></tr>
+              <tr><td>白酒</td><td class="num num--pos">3.21%</td></tr>
+              <tr><td>光伏</td><td class="num num--neg">-12.40%</td></tr>
+            </tbody>
+          </table>
+        </div>
+      <p class="cmp__why">涨的那行没有 <code>+</code>，跌的用连字符 <code>-</code>：灰度打印、色觉障碍、以及"只扫一列符号"的读法，全都不成立；连字符还比真减号窄，一列数字的个位对不齐。</p>
+    </div>
+    <div class="cmp__pane cmp__good">
+      <h3>✅ 本库：符号 + 真减号 <code>−</code></h3>
+        <div class="table" aria-hidden="true">
+          <table class="tb-demo">
+            <thead><tr><th scope="col">板块</th><th scope="col" class="num">涨跌幅</th></tr></thead>
+            <tbody>
+              <tr><td>半导体</td><td class="num num--neg">1.05%</td></tr>
+              <tr><td>白酒</td><td class="num num--pos">3.21%</td></tr>
+              <tr><td>光伏</td><td class="num num--neg">12.40%</td></tr>
+            </tbody>
+          </table>
+        </div>
+      <p class="cmp__why">颜色是<b>辅助</b>，符号才是信息（WCAG 1.4.1）。符号由 <code>.table .num--pos::before</code> / <code>.num--neg::before</code> 生成 —— 数据里不用手拼 <code>+</code>，也就不会有人漏掉；减号用的是 U+2212，不是连字符。</p>
+    </div>
+  </div>
 </main>
 
 <script>

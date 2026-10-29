@@ -31,6 +31,17 @@
 table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
 td, th { text-align: left; padding: var(--sp-2); border-bottom: 1px solid var(--border-decor); }
 th { font-weight: 600; }
+/* 一次性演示用：给浮层一个定位舞台（组件里它挂在触发元素的锚点上） */
+.pp-stage { position: relative; min-height: 210px; --popover-min-w: 0; }
+/* 气泡不设最小宽度：320px 下栏内宽只有约 256px，`min-width:200px` + 起点 120px
+   会直接顶出视口（实测溢出 33px）。宽度改由 max-width 向栏内收。 */
+/* 🔴 反例块里的气泡是"静态摆拍"，**不接行为**，所以用 data-demo-open，
+   不能用 data-open：`data-open[='true']` 是组件真实的"开着"状态，
+   `Popover.closeAll()` 和契约门禁都按它判断 —— 演示块一旦写了它，
+   门禁里「Esc 关闭后必须没有开着的浮层」就永远为假（实测两个条目连红）。 */
+.pp-stage .popover[data-demo-open] { opacity: 1; visibility: visible; }
+.pp-stage .popover__desc { margin: var(--sp-1) 0 0; font-size: var(--fs-xs); color: var(--text-secondary); }
+.pp-stage .popover__title { margin: 0; font-size: var(--fs-sm); font-weight: 500; }
 </style>
 </head>
 <body class="page page">
@@ -145,6 +156,40 @@ demo('bad1', 'bottom',
   '<button class="btn btn--sm btn--danger">删除</button>' +
   '</div>', '反面示例');
 </script>
+
+
+  <h2 class="rule-bottom">对比：错写法 vs 本库写法</h2>
+  <div class="cmp">
+    <div class="cmp__pane cmp__bad">
+      <h3>❌ 常见写法：两个浮层同时开着</h3>
+        <div class="pp-stage" aria-hidden="true">
+          <button class="btn btn--sm btn--ghost" type="button" tabindex="-1">筛选</button>
+          <div class="popover popover--bottom" data-demo-open="true"
+               style="top:36px; inset-inline-start:8px; max-width:calc(100% - 16px); transform:none">
+            <p class="popover__title">筛选条件</p>
+            <p class="popover__desc">按板块过滤，可多选。</p>
+          </div>
+          <div class="popover popover--bottom" data-demo-open="true"
+               style="top:84px; inset-inline-start:38%; max-width:52%; transform:none">
+            <p class="popover__title">排序方式</p>
+            <p class="popover__desc">按涨跌幅。</p>
+          </div>
+        </div>
+      <p class="cmp__why">两个都开着：点空白处到底关的是哪一个？读屏用户按 Esc 也不知道关掉的是哪个，而两个浮层的内容还叠在一起。</p>
+    </div>
+    <div class="cmp__pane cmp__good">
+      <h3>✅ 本库：同一时刻只开一个</h3>
+        <div class="pp-stage" aria-hidden="true">
+          <button class="btn btn--sm btn--ghost" type="button" tabindex="-1">筛选</button>
+          <div class="popover popover--bottom" data-demo-open="true"
+               style="top:36px; inset-inline-start:8px; max-width:calc(100% - 16px); transform:none">
+            <p class="popover__title">筛选条件</p>
+            <p class="popover__desc">按板块过滤，可多选。</p>
+          </div>
+        </div>
+      <p class="cmp__why"><code>popover.js</code> 的 <code>open()</code> 会先关掉当前打开的那个 —— 不是"约定"，是写死在实现里的。</p>
+    </div>
+  </div>
 </main>
 </body>
 </html>

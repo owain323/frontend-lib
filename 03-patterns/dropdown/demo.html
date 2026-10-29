@@ -19,6 +19,20 @@
     font-family: var(--font-mono, monospace); font-size: var(--fs-xs);
     color: var(--text-secondary); min-height: 2.6em;
   }
+.dd-cap { margin: 0 0 var(--sp-2); font-size: var(--fs-sm); color: var(--text-tertiary); }
+.dd-demo {
+  list-style: none; margin: 0; padding: var(--sp-1);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-decor);
+  border-radius: var(--r-sm);
+}
+/* 反例专用：24px 一行（本库把它量出来过，见 dropdown.css 的复盘） */
+.dd-bug {
+  display: flex; align-items: center;
+  height: 24px; padding: 0 var(--sp-3);
+  border-radius: var(--r-xs);
+  font-size: var(--fs-sm); cursor: pointer;
+}
 </style>
 </head>
 <body class="page page">
@@ -73,6 +87,31 @@
   </div>
 </div>
 
+
+
+  <h2 class="rule-bottom">对比：错写法 vs 本库写法</h2>
+  <div class="cmp">
+    <div class="cmp__pane cmp__bad">
+      <h3>❌ 常见写法：菜单项只有 24px</h3>
+        <p class="dd-cap">下拉菜单 · 每项高度</p>
+        <ul class="dd-demo" aria-hidden="true">
+          <li class="dd-bug">按涨跌幅</li>
+          <li class="dd-bug">按市值</li>
+          <li class="dd-bug">按成交额</li>
+        </ul>
+      <p class="cmp__why">24px 一行：手指点下去会压到隔壁，触屏用户每点错一次就得重来。本库在这块踩过更隐蔽的坑 —— 写 <code>min-height: 44px</code>，量出来只有 24px（<code>&lt;li&gt;</code> 是 <code>display:list-item</code>），所以现在用的是显式 <code>height</code>。</p>
+    </div>
+    <div class="cmp__pane cmp__good">
+      <h3>✅ 本库：显式 <code>height: 44px</code></h3>
+        <p class="dd-cap">下拉菜单 · 每项高度</p>
+        <ul class="dd-demo" aria-hidden="true">
+          <li class="dd__item">按涨跌幅</li>
+          <li class="dd__item">按市值</li>
+          <li class="dd__item">按成交额</li>
+        </ul>
+      <p class="cmp__why">同一个 44，<code>min-height</code> 与 <code>height</code> 在列表项上是两回事。桌面小屏看不出来，只有量了才发现 —— 所以这里把两种结果并排摆出来。</p>
+    </div>
+  </div>
 </main>
 
 <script src="dropdown.js"></script>

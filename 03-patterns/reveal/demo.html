@@ -22,6 +22,12 @@
            border: 1px solid var(--border-subtle); font-size: var(--fs-sm); }
 .rv-note  { font-size: var(--fs-sm); color: var(--text-secondary); }
 .rv-spacer { height: 40px; }
+.rv-card { padding: var(--sp-3); background: var(--surface-raised);
+           border: 1px solid var(--border-decor); border-radius: var(--r-sm); min-height: 64px; }
+.rv-card__t { margin: 0 0 var(--sp-1); font-size: var(--fs-sm); font-weight: 500; }
+.rv-card__d { margin: 0; font-size: var(--fs-xs); color: var(--text-secondary); }
+/* 反例专用：真的藏起来，用来演示"没有兜底"的后果 */
+.rv-hidden { opacity: 0; }
 </style>
 </head>
 <body class="page">
@@ -81,6 +87,24 @@
     ② 手动调 <code>Reveal.enable()</code>（本页就是这种，方便截图与演示）。<br>
     都不写 ⇒ 完全不接管：内容可见、位置不偏。<strong>这是刻意的默认值。</strong>
   </p>
+
+
+  <h2 class="rule-bottom">对比：错写法 vs 本库写法</h2>
+  <div class="cmp">
+    <div class="cmp__pane cmp__bad">
+      <h3>❌ 常见写法：藏了但没兜底</h3>
+        <div class="rv-card rv-hidden" aria-hidden="true"></div>
+      <p class="cmp__why">内容真被 <code>opacity: 0</code> 藏着，而脚本没跑起来（被拦、报错、CSP）—— 这一块就永远是空的，读者不知道这里有东西。</p>
+    </div>
+    <div class="cmp__pane cmp__good">
+      <h3>✅ 本库：只有 <code>data-reveal-ready</code> 时才藏</h3>
+        <div class="rv-card" aria-hidden="true">
+          <p class="rv-card__t">2026 年三季度回顾</p>
+          <p class="rv-card__d">营收同比 +18%，毛利率 42.1%。</p>
+        </div>
+      <p class="cmp__why">隐藏只在 <code>&lt;html data-reveal-ready&gt;</code> 存在时生效：任何一步失败，内容就是全可见的。动画可以有代价，但代价不能是"看不见内容"。</p>
+    </div>
+  </div>
 </main>
 
 <script src="../../03-patterns/reveal/reveal.js"></script>

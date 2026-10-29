@@ -16,16 +16,6 @@
 .cell p { margin: 0 0 var(--sp-4); font-size: var(--fs-xs);
              color: var(--text-tertiary); line-height: 1.55; }
 .row { display: flex; gap: var(--sp-3); flex-wrap: wrap; align-items: center; }
-.cmp { display: grid; gap: var(--sp-4); grid-template-columns: 1.55fr 1fr; }
-@media (max-width: 640px) {.cmp { grid-template-columns: 1fr; }
-
- }
-.cmp>div { padding: var(--sp-4); border-radius: var(--r-md); border: 1px solid var(--border-decor); }
-.bad { background: var(--surface-sunken); }
-.good { background: var(--surface-sunken); }
-.cmp h3 { margin: 0 0 var(--sp-3); font-size: var(--fs-sm); font-weight: 500; }
-.bad h3 { color: var(--danger); }
-.good h3 { color: var(--success); }
 /* 反例演示用 */
 .btn--naive { height: 44px; padding: 0 var(--sp-5); border: none; border-radius: var(--r-sm);
                 background: var(--accent); color: #fff; cursor: pointer; font-size: var(--fs-sm);
@@ -129,27 +119,27 @@
   </p>
 
   <h2 class="rule-bottom">对比：常见的错写法 vs 本库写法</h2>
-  <div class="cmp">
-    <div class="box bad">
+  <div class="cmp cmp--wide-first">
+    <div class="cmp__pane cmp__bad">
       <h3>常见写法（某项目 现状）</h3>
       <div class="row">
         <button class="btn--naive">hover 看我</button>
         <button class="btn--naive" disabled>disabled 看我</button>
       </div>
-      <p style="font-size:var(--fs-xs); margin:var(--sp-3) 0 0; color:var(--text-secondary)">
+      <p class="cmp__why">
         <code>filter: brightness(1.08)</code> —— hover 色是算出来的，无法验证对比度，不同底色表现不一致。<br>
         <code>transform: scale(1.05)</code> —— 按钮"长大"，廉价感。<br>
         <code>opacity: 0.5</code> —— 对比度变成随机数。<br>
         <code>transition: all</code> —— 所有属性一起动画，性能和观感失控。
       </p>
     </div>
-    <div class="good">
+    <div class="cmp__pane cmp__good">
       <h3>本库写法</h3>
       <div class="row">
         <button class="btn btn--md btn--primary">hover 看我</button>
         <button class="btn btn--md btn--primary" disabled>disabled 看我</button>
       </div>
-      <p style="font-size:var(--fs-xs); margin:var(--sp-3) 0 0; color:var(--text-secondary)">
+      <p class="cmp__why">
         明确的 <code>--accent-hover</code> 色值，实测 7.73 AAA。<br>
         active 只下沉 1px。<br>
         disabled 用明确的低对比色组，仍可读。<br>

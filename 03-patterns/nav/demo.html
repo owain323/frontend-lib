@@ -31,6 +31,7 @@ p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.7
 .spacer { height: 55vh; }
 
           /* 让目录高亮有滚动空间 */
+.toc-clip { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style>
 </head>
 <body class="page page">
@@ -112,7 +113,39 @@ p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.7
       早期版本用的是它 + <code>rootMargin</code>，结果滚到两节之间时观察区里
       一个 section 都没有，高亮卡住不动 —— 现在改成纯计算，任何滚动位置都有答案。
     </p>
-  </main>
+  
+
+  <h2 class="rule-bottom">对比：错写法 vs 本库写法</h2>
+  <!-- 目录项一律指向本页真实小节（`#mem` / `#sched` / `#sim`）：假锚点
+       （`href="#x"`）点下去会跳到页面顶部，读者以为"目录坏了"。
+       第一条故意写得长 —— 真实文档的长章节名就是这样，能不能单行是这条的判据。 -->
+  <div class="cmp">
+    <div class="cmp__pane cmp__bad">
+      <h3>❌ 常见写法：目录项允许换行</h3>
+        <nav class="toc" aria-label="示例目录" aria-hidden="true">
+          <p class="toc__title">本页</p>
+          <ul class="toc__list">
+            <li><a class="toc__link" href="#mem" tabindex="-1">存储器构成与 2026 年三季度的产能爬坡节奏</a></li>
+            <li><a class="toc__link" href="#sched" tabindex="-1">优先级与准入</a></li>
+            <li><a class="toc__link" href="#sim" tabindex="-1">把它跑起来</a></li>
+          </ul>
+        </nav>
+      <p class="cmp__why">一条目录折成两行，下面两条就都被推下去了 —— 目录的价值是"一眼看到全文结构"，行高一变，结构感就没了。</p>
+    </div>
+    <div class="cmp__pane cmp__good">
+      <h3>✅ 本库：单行、超出省略</h3>
+        <nav class="toc" aria-label="示例目录">
+          <p class="toc__title">本页</p>
+          <ul class="toc__list">
+            <li><a class="toc__link toc-clip" href="#mem">存储器构成与 2026 年三季度的产能爬坡节奏</a></li>
+            <li><a class="toc__link" href="#sched">优先级与准入</a></li>
+            <li><a class="toc__link" href="#sim">把它跑起来</a></li>
+          </ul>
+        </nav>
+      <p class="cmp__why">目录项单行、超出省略：宁可截断，也要保住"三条等高"的节奏。读者扫的是结构，不是一个条目的全名。</p>
+    </div>
+  </div>
+</main>
 
 </div>
 

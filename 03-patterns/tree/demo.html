@@ -24,6 +24,10 @@
     color: var(--text-secondary); min-height: 3em;
   }
 .frame { padding: var(--sp-3); border: 1px solid var(--border-decor); border-radius: var(--r-md); }
+.tr-demo { list-style: none; margin: 0; padding: 0; font-size: var(--fs-sm); }
+.tr-demo ul { list-style: none; margin: 0; padding-inline-start: 1.4em; }
+.tr-one { display: inline-block; width: 1em; font-size: .8em;
+          color: var(--text-tertiary); text-align: center; }
 </style>
 </head>
 <body class="page page">
@@ -52,6 +56,45 @@
   <div id="t2"></div>
 </div>
 
+
+
+  <h2 class="rule-bottom">对比：错写法 vs 本库写法</h2>
+  <div class="cmp">
+    <div class="cmp__pane cmp__bad">
+      <h3>❌ 常见写法：靠"旋转"表示状态</h3>
+        <ul class="tr-demo" role="tree" aria-label="文件树示例" aria-hidden="true">
+          <li class="tree__item" aria-expanded="true">
+            <div class="tree__node"><span class="tr-one">▸</span><span class="tree__label">src</span></div>
+            <ul role="group">
+              <li class="tree__item" aria-expanded="false">
+                <div class="tree__node"><span class="tr-one">▸</span><span class="tree__label">components</span></div>
+              </li>
+              <li class="tree__item">
+                <div class="tree__node"><span class="tr-one">▸</span><span class="tree__label">index.js</span></div>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      <p class="cmp__why">三个节点长得一模一样：已展开的 src、收起的 components、叶子的 index.js 全是 ▸。旋转只能表达"变过"，表达不了"现在是哪一态"。</p>
+    </div>
+    <div class="cmp__pane cmp__good">
+      <h3>✅ 本库：三态三种字形</h3>
+        <ul class="tr-demo" role="tree" aria-label="文件树示例" aria-hidden="true">
+          <li class="tree__item" aria-expanded="true">
+            <div class="tree__node"><span class="tree__marker"></span><span class="tree__label">src</span></div>
+            <ul role="group">
+              <li class="tree__item" aria-expanded="false">
+                <div class="tree__node"><span class="tree__marker"></span><span class="tree__label">components</span></div>
+              </li>
+              <li class="tree__item">
+                <div class="tree__node"><span class="tree__marker"></span><span class="tree__label">index.js</span></div>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      <p class="cmp__why"><code>tree.css</code> 按 <code>aria-expanded</code> 给三种字形：▼ 展开 / ▶ 收起 / · 叶子。形状本身就是信息，不依赖动画。</p>
+    </div>
+  </div>
 </main>
 
 <script src="tree.js"></script>

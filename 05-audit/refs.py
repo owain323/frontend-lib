@@ -155,7 +155,16 @@ def main():
 
     bad = 0
     # 有多个文件时显示父目录 —— 库里有 6 个都叫 demo.html，只显示 basename 认不出是谁
-    root = os.path.commonpath(paths) if len(paths) > 1 else None
+    # ⚠️ `commonpath` 在"参数里含仓库根的 index.html"时返回**空串**，
+    #    而空串是假值 ⇒ 退回 basename ⇒ 报错行只剩 `demo.html`，
+    #    6 个同名文件里不知道是哪一个（2026-10-30 真踩：一条 toc 假锚点找了 5 分钟）。
+    #    ⇒ 空串当成 `.`（相对仓库根），不要当成"没有公共前缀"。
+    root = None
+    if len(paths) > 1:
+        try:
+            root = os.path.commonpath(paths) or '.'
+        except ValueError:          # Windows 跨盘符
+            root = '.'
     for p in paths:
         mc, mi, toc_bad, cf, nu, nd = check(p)
         name = os.path.relpath(p, root).replace('\\', '/') if root else os.path.basename(p)

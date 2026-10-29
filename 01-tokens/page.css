@@ -217,6 +217,77 @@
 }
 
 /* ============================================================================
+   6. 对错对照 `.cmp`（并排两栏：错写法 / 本库写法）
+   ----------------------------------------------------------------------------
+   为什么要收编（量过才写的，不是凭印象）：
+     3 个页面（button / card / input）各自写了一遍，**语义完全相同**，
+     但参数各是各的 —— `grid-template-columns` 都是 1.55fr 1fr（这一条一致，
+     说明它确实是个固定意图），而 gap 是 sp-4 还是 sp-5、断点是 640 还是 700，
+     三页三种。这不是"各页局部排布"，是同一个东西的无意分叉。
+     判据与 `.row` 的区别就在这里：
+       `.row`  15 页 14 种写法 —— **语义**都不一样（有的是工具条、有的是按钮排），不收；
+       `.cmp`   3 页 3 种写法 —— **语义**一样，差的只是手抖，收。
+     另外 21 个页面缺"能看见的反例"，补上之后若不收编，就是 24 份副本。
+
+   为什么列宽是 1fr 1fr（而不是原来那三页的 1.55fr 1fr）：
+     那三页的左栏是"一大段解释 + 示例"，右栏只是一句话，所以给左栏 1.55。
+     现在每一栏都是"一个小示例 + 一句理由"，两栏等宽才不会让人以为
+     某一栏更重要。真需要不等宽时用 `.cmp--wide-first`，别在页面里重写栅格。
+   ========================================================================= */
+.page .cmp {
+  display: grid;
+  /* ⚠️ 必须是 `minmax(0, 1fr)`，不能写 `1fr`：`1fr` 的下限是 `auto`（= 内容最小宽度），
+     一栏里只要有不换行的长串（`.ls-clip` 的 nowrap、`.ar-long` 的股票代码、宽表格），
+     两栏就一起被顶宽 ⇒ **整页**横向溢出。
+     实测代价：本库 4 个页面在 320px / 834px / RTL 阿拉伯语膨胀后溢出 81–155px，
+     `zoom-reflow` `rtl-render` `responsive` 三道门禁同时红。
+     ——这条正是 `04-recipes/analysis-report` 那一页在教别人的东西，
+       我写这个收编的时候照着旧三页抄了 `1fr`，把要讲的坑又踩了一遍。 */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--sp-4);
+  /* 不写 align-items: start —— 两栏等高（stretch）边框才对得齐；
+     start 会让短的那栏提前结束，看起来像"没写完"。 */
+}
+.page .cmp--wide-first {
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+}
+/* 断点 640 而不是 720：文档页里的活标本 iframe 实测只有 734px 宽
+   （guide/xxx.html 里那个框），720 的断点意味着"再窄一点就叠成单栏"——
+   而叠成单栏，"并排"这件事就不存在了。留出 90px 余量。 */
+@media (max-width: 640px) {
+  .page .cmp,
+  .page .cmp--wide-first,
+  .page .cmp--clip { grid-template-columns: minmax(0, 1fr); }
+}
+.page .cmp__pane {
+  padding: var(--sp-4);
+  border: 1px solid var(--border-decor);
+  border-radius: var(--r-md);
+  background: var(--surface-sunken);
+  /* 栅格项默认 min-width:auto ⇒ 内容最小宽度照样能把栏顶开。 */
+  min-width: 0;
+}
+/* 内容本身就是"宽、且故意不收缩"的页（超长不换行串 / 宽表格）用这个修饰符。
+   ⚠️ 为什么不写进 `.cmp__pane` 全局：`popover` / `tooltip` / `dropdown` 的对照块里
+      气泡是绝对定位伸出栏外的，`overflow: hidden` 会把气泡直接裁掉 ——
+      那几页的演示就没了。裁的是"演示内容越出栏框"，不是"栏内的布局算错"：
+      栏内列的宽度仍按内容算，读者看到的还是被撑宽的那一栏。 */
+.page .cmp--clip .cmp__pane { overflow: hidden; }
+.page .cmp__pane > h3 {
+  margin: 0 0 var(--sp-3);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+}
+.page .cmp__bad > h3 { color: var(--danger); }
+.page .cmp__good > h3 { color: var(--success); }
+.page .cmp__why {
+  margin: var(--sp-3) 0 0;
+  font-size: var(--fs-xs);
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+/* ============================================================================
    反模式（本文件自己的边界）
    ----------------------------------------------------------------------------
    1. 在页面内联 <style> 里再写一遍上面任何一个选择器

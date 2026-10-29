@@ -12,3 +12,8 @@ RootWebArea "select · 下拉选择 · frontend-lib"
     button "请选择板块" [hasPopup=listbox]
     heading "3 · 禁用 + 靠右对齐" [level=2]
     button "请选择" [disabled=true hasPopup=listbox]
+    heading "对比：错写法 vs 本库写法" [level=2]
+    heading "❌ 常见写法：选项挤在一起" [level=3]
+    paragraph "行高只有 28px：手指点下去必然压到隔壁那一行。鼠标用户感觉不到，触屏用户每点错一次就要重来。"
+    heading "✅ 本库：每项 44px 命中区" [level=3]
+    paragraph "命中区 44px 是 AAA 的下限（ select.css 里写着这条），与 dropdown 同规格 —— 两个控件"

@@ -61,11 +61,30 @@ const REPO = path.resolve(__dirname, '..');
 
       '空状态给出下一步': async (p) => {
         const r = await p.evaluate(() => {
-          const empty = document.querySelector('.state--empty, .is-empty, [class*="empty"]');
-          if (!empty) return { ok: true, note: 'demo 无空状态（跳过）' };
-          const hasAction = !!empty.querySelector('a, button');
-          return { ok: hasAction,
-                   note: hasAction ? '有行动入口' : '🔴 空状态无任何可点操作' };
+          /* 🔴 判据修正（原因：新加"对错对照块"后本条连红）：
+             ① 反例区（`.cmp__bad` / `.box.bad`）里**故意**有一个"没有出口的空状态"
+                —— 那正是那一栏要演示的坏处。不排除它，这条判据会逼着人
+                把反例改成对的，反例就没了。
+             ② 顺手把"只看第一个"改成"看全部非反例区"：
+                原来 `querySelector` 只拿第一个匹配，页面里第二个空状态
+                没有出口也照样过关 —— 那才是这条判据真正的漏洞。
+             排除数量必须**打出来**（悄悄豁免等于给假绿，同 a11y-scan）。 */
+          const isDemo = (el) => !!el.closest('.cmp__bad, .box.bad');
+          const all = Array.prototype.slice.call(
+            document.querySelectorAll('.state--empty, .is-empty, [class*="empty"]'));
+          const skipped = all.filter(isDemo).length;
+          const empties = all.filter((e) => !isDemo(e));
+          if (!empties.length) {
+            return { ok: true, note: 'demo 无空状态（跳过）' };
+          }
+          const dead = empties.filter((e) => !e.querySelector('a, button')).length;
+          const tail = skipped ? '（跳过 ' + skipped + ' 个反例区）' : '';
+          return {
+            ok: dead === 0,
+            note: dead === 0
+              ? empties.length + ' 个空状态都有行动入口' + tail
+              : '🔴 ' + dead + ' / ' + empties.length + ' 个空状态无任何可点操作' + tail,
+          };
         });
         return r;
       },

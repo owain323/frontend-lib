@@ -19,6 +19,15 @@ label.f { display: block; margin-bottom: var(--sp-1); font-size: var(--fs-sm); }
     font-family: var(--mono); font-size: var(--fs-xs);
     color: var(--text-secondary); min-height: 2.8em;
   }
+/* 一次性演示用：把选项摆成静态列表（组件里它是浮层，这里要它躺着） */
+.cb-demo { display: grid; gap: var(--sp-1); }
+.cb-demo__q { font-size: var(--fs-sm); color: var(--text-tertiary); padding: 0 0 var(--sp-1); }
+.cb-demo__list {
+  list-style: none; margin: 0; padding: var(--sp-1);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-decor);
+  border-radius: var(--r-sm);
+}
 </style>
 </head>
 <body class="page page">
@@ -66,6 +75,35 @@ label.f { display: block; margin-bottom: var(--sp-1); font-size: var(--fs-sm); }
   </div>
 </div>
 
+
+
+  <h2 class="rule-bottom">对比：错写法 vs 本库写法</h2>
+  <div class="cmp">
+    <div class="cmp__pane cmp__bad">
+      <h3>❌ 常见写法：结果不高亮</h3>
+        <div class="cb-demo" aria-hidden="true">
+          <div class="cb-demo__q">半导体</div>
+          <ul class="cb-demo__list">
+            <li class="combo__opt">设备</li>
+            <li class="combo__opt">材料</li>
+            <li class="combo__opt">封测</li>
+          </ul>
+        </div>
+      <p class="cmp__why">输入"半导体"之后三条都留下了，但三条长得一模一样 —— 用户说不出<b>凭什么</b>是这三条，只会觉得"顺序乱了"。</p>
+    </div>
+    <div class="cmp__pane cmp__good">
+      <h3>✅ 本库：命中片段高亮</h3>
+        <div class="cb-demo" aria-hidden="true">
+          <div class="cb-demo__q">半导体</div>
+          <ul class="cb-demo__list">
+            <li class="combo__opt"><mark>半导体</mark>设备</li>
+            <li class="combo__opt"><mark>半导体</mark>材料</li>
+            <li class="combo__opt"><mark>半导体</mark>封测</li>
+          </ul>
+        </div>
+      <p class="cmp__why">高亮用的是本库的 <code>combo__opt mark</code>：accent 色 + 下划线，<b>不用</b>浏览器默认的黄底 —— 黄底与文字的对比度不可控，深色主题下更糟。</p>
+    </div>
+  </div>
 </main>
 
 <script src="combobox.js"></script>

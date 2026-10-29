@@ -235,3 +235,8 @@ RootWebArea "table · 专业数据表格 · frontend-lib"
         cell "A & B < C > D"
         cell "显示为字面字符"
     paragraph "复查方式：用浏览器看这一节的单元格 —— 第二、三列应当 原样显示 尖括号文本，而不是把它们变成样式。"
+    heading "对比：错写法 vs 本库写法" [level=2]
+    heading "❌ 常见写法：只靠红绿 + 连字符" [level=3]
+    paragraph "涨的那行没有 + ，跌的用连字符 - ：灰度打印、色觉障碍、以及"只扫一列符号"的读法，全都不成立；连字符还比真减号窄，"
+    heading "✅ 本库：符号 + 真减号 −" [level=3]
+    paragraph "颜色是 辅助 ，符号才是信息（WCAG 1.4.1）。符号由 .table .num--pos::before / .n"

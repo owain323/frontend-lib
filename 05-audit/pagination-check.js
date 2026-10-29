@@ -82,9 +82,17 @@ const PAGE = 'http://127.0.0.1:8000/03-patterns/pagination/demo.html';
   pass(curTag === 'BUTTON', '④ 当前页仍是 <button>（USWDS 反直觉要求）· 实测 <' + curTag + '>');
 
   // ⑤ aria-label 说人话
-  const labels = await p.evaluate(() =>
-    [...document.querySelectorAll('.pagination__link')]
-      .map((b) => b.getAttribute('aria-label')));
+  /* 🔴 判据要**限定在真分页器里**（`[data-pagination]`），并在报告里写明跳过了几个。
+     原因：demo 现在有"对错对照块"，里面有两组**静态**页码条（12 个 vs 6 个槽位），
+     它们是演示内容、不接行为。按全页 `document.querySelectorAll` 数，
+     ⑤ 会因为静态样例没有 aria-label 而红，⑨ 会因为 12 个槽位而红 ——
+     而这两条**恰恰是那两块要演示的东西**。
+     口径：组件契约只管那个**活的**分页器；静态样例的正确性由 a11y-scan 管。 */
+  const labels = await p.evaluate(() => {
+    const root = document.querySelector('[data-pagination]');
+    return [...root.querySelectorAll('.pagination__link')]
+      .map((b) => b.getAttribute('aria-label'));
+  });
   pass(labels.every((l) => l && /页/.test(l)),
        '⑤ 每个页码都有 "第 N 页" 式的 aria-label（' + JSON.stringify(labels.slice(0, 3)) + '）');
   pass(labels.indexOf('上一页') >= 0 && labels.indexOf('下一页') >= 0,
@@ -195,9 +203,11 @@ const PAGE = 'http://127.0.0.1:8000/03-patterns/pagination/demo.html';
     /* 🔴 数「页码槽位」——**不含**上一页/下一页
        （USWDS 的 7 槽位指的是页码区，前后页是独立控件） */
     const n = await p.evaluate(() => {
-      const items = [...document.querySelectorAll('.pagination__item')];
-      const prev = document.querySelector('[data-goto="prev"]').closest('li');
-      const next = document.querySelector('[data-goto="next"]').closest('li');
+      /* 同上：只数**活的**分页器，静态对照块里的 12 / 6 个槽位不算进来。 */
+      const root = document.querySelector('[data-pagination]');
+      const items = [...root.querySelectorAll('.pagination__item')];
+      const prev = root.querySelector('[data-goto="prev"]').closest('li');
+      const next = root.querySelector('[data-goto="next"]').closest('li');
       return items.filter((li) => li !== prev && li !== next).length;
     });
     slots.push({ pg, n });
