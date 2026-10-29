@@ -40,10 +40,34 @@ const path = require('path');
  * （要用 padStart/padEnd）—— 我在这项目上踩过两次，输出会变成一片 NaN。 */
 const pad = (x, n) => String(x).padEnd(n);
 
-/* playwright 装在受管 workspace 里，不在本库 */
-const PW = require(process.env.PW_PATH ||
-  path.join(process.env.USERPROFILE || '', '.toolchain', 'binaries', 'node',
-            'workspace', 'node_modules', 'playwright'));
+/* playwright 的解析顺序（0.11.15 修）
+ * ---------------------------------------------------------------------------
+ * 旧写法是 `require(process.env.PW_PATH || <硬编码 .toolchain 路径>)`。
+ * 两个问题叠在一起，让它在本机直接崩：
+ *   ① 硬编码的是"受管 workspace"那一份，可本库自己的 node_modules 里就有；
+ *   ② check-all.sh 里写的是 `PW_PATH=… run "firefox" node …` ——
+ *      POSIX 规定「变量前缀赋值 + 函数调用」只影响**函数自身**的 shell 变量，
+ *      **不会自动导出**给函数内部启动的子进程 ⇒ node 根本看不到 PW_PATH。
+ * ⇒ 改成按候选列表逐个 try，本地优先。不依赖任何环境变量被正确导出。 */
+function loadPlaywright() {
+  const cands = [
+    process.env.PW_PATH,
+    path.join(__dirname, '..', 'node_modules', 'playwright'),
+    path.join(process.env.USERPROFILE || process.env.HOME || '',
+              '.toolchain', 'binaries', 'node', 'workspace', 'node_modules', 'playwright'),
+  ].filter(Boolean);
+  const tried = [];
+  for (const c of cands) {
+    try {
+      return require(c);
+    } catch (e) {
+      tried.push(c);
+    }
+  }
+  throw new Error('playwright 未安装。试过的路径：\n  ' + tried.join('\n  ')
+    + '\n⇒ 在仓库根跑 `npm install`（或 `npx playwright install firefox`）。');
+}
+const PW = loadPlaywright();
 
 /* 只测这几页：布局敏感 + 有交互的组件 */
 const PAGES = [

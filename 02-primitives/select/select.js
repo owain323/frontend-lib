@@ -546,4 +546,4 @@
   }
 
   global.Select = { create: create };
-})(window);
+})(typeof window !== 'undefined' ? window : globalThis);

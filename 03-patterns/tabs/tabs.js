@@ -26,7 +26,7 @@
  *      只在初始化时设一次是最常见的 bug：用户激活第 3 个 tab 后，
  *      Tab 键还是会回到第 1 个。
  */
-(function () {
+(function (global) {
   'use strict';
 
   /* ==== BEHAVIOR INJECT BEGIN: emit ==== */
@@ -165,6 +165,9 @@
   }
 
   function Tabs(root, opts) {
+    /* 🔴 同一 root 只允许一个实例 —— 理由同 accordion.js。
+       重复构造会让 keydown 监听叠两份：方向键按一次跳两格。 */
+    if (root && root.tabsInstance) return root.tabsInstance;
     this.root = root;
     this.opts = opts || {};
     this.list = root.querySelector('[role="tablist"]');
@@ -281,7 +284,7 @@
   };
 
   // 暴露
-  window.Tabs = Tabs;
+  global.Tabs = Tabs;
 
   // 自动初始化：<div class="tabs" data-tabs>
   //
@@ -294,14 +297,20 @@
   function init() {
     var nodes = document.querySelectorAll('[data-tabs]');
     for (var i = 0; i < nodes.length; i++) {
+      /* 🔴 幂等：同 accordion.js 里的理由。重复 new 会让 keydown / click
+         监听叠在同一个 root 上 ⇒ 方向键按一次跳两格。 */
+      if (nodes[i].tabsInstance) continue;
       nodes[i].tabsInstance = new Tabs(nodes[i], {});
     }
   }
 
   // @autoinit: [data-tabs] —— 扫属性自动建实例（详见 API.md「自动初始化」）
+  // ⚠️ 无 DOM 环境（SSR / 构建期 / Node 里 import）不自动初始化。
+  //    之前这里直接摸 document ⇒ Next.js 等 SSR 里 import 即 ReferenceError。
+  if (typeof document === 'undefined') return;
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
     init();
   }
-})();
+})(typeof window !== 'undefined' ? window : globalThis);

@@ -62,4 +62,21 @@ const bad: string = tree.selected;
 
 /* ⑨ 类型里没有的整体画饼 */
 Select.prototype;
+
+/* ============================================================================
+ * 0.11.15：新声明的 11 个组件里，最容易写错的四类
+ * ========================================================================== */
+
+/* ⑩ Accordion.toggle 必须传 item —— 无参是「以为它能切当前项」的典型误用 */
+new window.Accordion(root).toggle();
+
+/* ⑪ pagesOf 的两个参数都是数字，传字符串是「从 DOM 里直接拿 value」的误用 */
+window.Pagination.pagesOf('100');
+
+/* ⑫ Tooltip.attach 返回 void，链式调 close 是「以为它返回句柄」 */
+window.Tooltip.attach(root, 'x').close();
+
+/* ⑬ Nav 只能 attach 出实例，没有静态 open */
+window.Nav.open(root);
+
 export { bad, root, treeRoot };

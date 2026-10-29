@@ -35,7 +35,7 @@
  *     });
  *   </script>
  */
-(function () {
+(function (global) {
   'use strict';
 
   /* ==== BEHAVIOR INJECT BEGIN: emit ==== */
@@ -385,11 +385,17 @@
     },
   };
 
-  if (typeof window !== 'undefined') window.Pagination = API;
+  /* global 已在 IIFE 收尾处解析成 window 或 globalThis（无 DOM 环境），
+     所以这里**无条件挂**——再套一层 `typeof window !== 'undefined'` 会让
+     SSR 里 require 得到 undefined（`esm/` 包装就取不到 API）。 */
+  global.Pagination = API;
   // @autoinit: [data-pagination] —— 扫属性自动 update()（详见 API.md「自动初始化」）
+  // ⚠️ 无 DOM 环境（SSR / 构建期 / Node 里 import）不自动初始化。
+  //    之前这里直接摸 document ⇒ Next.js 等 SSR 里 import 即 ReferenceError。
+  if (typeof document === 'undefined') return;
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () { API.update(); });
   } else {
     API.update();
   }
-})();
+})(typeof window !== 'undefined' ? window : globalThis);

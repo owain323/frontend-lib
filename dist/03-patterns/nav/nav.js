@@ -1,4 +1,4 @@
-(function () {
+(function (global) {
 'use strict';
 
 var flEmit = function (el, name, detail) {
@@ -306,7 +306,7 @@ root.navInstance = new Nav(root, opts);
 return root.navInstance;
 };
 
-window.Nav = Nav;
+global.Nav = Nav;
 
 function init() {
 each(document.querySelectorAll('[data-nav]'), function (el) {
@@ -314,9 +314,10 @@ if (!el.navInstance) Nav.attach(el, {});
 });
 }
 
+if (typeof document === 'undefined') return;
 if (document.readyState === 'loading') {
 document.addEventListener('DOMContentLoaded', init);
 } else {
 init();
 }
-})();
+})(typeof window !== 'undefined' ? window : globalThis);

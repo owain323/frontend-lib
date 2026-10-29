@@ -1,6 +1,6 @@
 {
   "name": "agentcss",
-  "version": "0.11.14",
+  "version": "0.11.15",
   "description": "移动 Web 组件库：CSS + 可选行为脚本，零第三方运行时依赖。样式用 bundler 引入，交互行为用 script 标签引入。",
   "keywords": [
     "css",
@@ -25,6 +25,11 @@
     "./tokens.css": "./dist/01-tokens/tokens.css",
     "./typography.css": "./dist/01-tokens/typography.css",
     "./page.css": "./dist/01-tokens/page.css",
+    "./esm": {
+      "types": "./types/index.d.ts",
+      "default": "./esm/index.mjs"
+    },
+    "./esm/*": "./esm/*.mjs",
     "./primitives/*": "./dist/02-primitives/*",
     "./patterns/*": "./dist/03-patterns/*",
     "./recipes/*": "./dist/04-recipes/*",
@@ -39,6 +44,7 @@
     "!ai/surface.baseline.json",
     "adapters/",
     "!adapters/presentation/fixtures",
+    "esm/",
     "types/",
     "dist/",
     "!dist/manifest.json",
@@ -63,8 +69,9 @@
     "index.html"
   ],
   "sideEffects": [
-    "*.css",
-    "*.js"
+    "**/*.css",
+    "**/*.js",
+    "**/*.mjs"
   ],
   "scripts": {
     "test": "node --test 05-audit/unit.test.mjs 05-audit/behavior-cores.test.mjs",

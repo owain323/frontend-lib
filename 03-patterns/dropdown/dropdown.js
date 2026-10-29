@@ -448,4 +448,4 @@
   }
 
   global.Dropdown = { create: create };
-})(window);
+})(typeof window !== 'undefined' ? window : globalThis);

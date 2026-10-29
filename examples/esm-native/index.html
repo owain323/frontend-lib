@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>接入样板 · 原生 ESM（无构建）</title>
+<!-- ============================================================================
+     这个页面的唯一目的：**证明 esm/ 入口在真实浏览器里能用**。
+     ---------------------------------------------------------------------------
+     它不是文档，是 `05-audit/example-esm-gate.js` 的被测物。
+     门禁会打开它、点一下、量一次 —— 所以它必须真的能跑，而不是"看起来像"。
+
+     为什么不用 Vite/React 做样板：
+       ① 那需要装依赖，而本库的核心承诺是**零依赖、零构建**；
+       ② 装依赖的样板在别人的机器上会因为网络/版本差异跑不起来，
+          于是"证明"变成了"我机器上曾经证明过"。
+     用原生 <script type="module"> 反而更接近"最坏情况"：
+     没有任何打包器帮忙，浏览器直接按 ESM 规范解析 —— 这里能跑，Vite 里一定能跑。
+     ============================================================================ -->
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/page.css">
+<link rel="stylesheet" href="../../02-primitives/button/button.css">
+<link rel="stylesheet" href="../../03-patterns/accordion/accordion.css">
+<style>
+  .demo { max-width: 640px; }
+  .demo + .demo { margin-top: var(--sp-6); }
+</style>
+</head>
+<body class="page">
+<main class="wrap demo">
+  <h1>原生 ESM 接入</h1>
+  <p class="lede">
+    下面两块都不是 <code>&lt;script src&gt;</code> 加载的全局对象，
+    而是 <code>import { Accordion } from '…/esm/accordion.mjs'</code> 拿到的函数。
+  </p>
+
+  <h2 class="rule-top">① 模块导入的构造函数</h2>
+  <div class="accordion" data-accordion id="acc">
+    <div class="accordion__item">
+      <h3 class="accordion__heading">
+        <button class="accordion__trigger" aria-expanded="true">
+          <span class="accordion__label">这一项初始是展开的</span>
+          <span class="accordion__marker" aria-hidden="true"></span>
+        </button>
+      </h3>
+      <div class="accordion__panel">
+        <div class="accordion__panel-inner">
+          <p>面板内容。点标题切换。</p>
+        </div>
+      </div>
+    </div>
+    <div class="accordion__item">
+      <h3 class="accordion__heading">
+        <button class="accordion__trigger" aria-expanded="false">
+          <span class="accordion__label">这一项初始是收起的</span>
+          <span class="accordion__marker" aria-hidden="true"></span>
+        </button>
+      </h3>
+      <div class="accordion__panel">
+        <div class="accordion__panel-inner">
+          <p>门禁点的是这一项。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="rule-top">② 样式来自 CSS 文件</h2>
+  <p>
+    <button type="button" class="btn btn--primary" id="btn">主按钮</button>
+    <span class="small">它的背景色由 <code>button.css</code> 的令牌算出 ——
+      门禁会量 computed style，不是看源码里有没有这个类名。</span>
+  </p>
+</main>
+
+<script type="module">
+/* ============================================================================
+   🔴 这里**只从 esm/ 入口拿东西**，一次都不碰 window.Accordion。
+   如果 esm/ 只是一层"看起来像模块"的壳，这一段会直接抛
+   "Accordion is not a constructor"，门禁随即变红。
+   ============================================================================ */
+import { Accordion } from '../../esm/accordion.mjs';
+
+const root = document.querySelector('[data-accordion]');
+const inst = new Accordion(root, { duration: 240 });
+/* 第二份实例：构造器应当返回**同一个**对象（幂等）。
+   这一条同时证明 esm 导出与"全局那份"是同一个构造器 ——
+   若包装里写成了 `export const Accordion = function () {}` 之类的复制品，
+   same 会是 false。 */
+const again = new Accordion(root);
+
+window.__esm = {
+  ok: true,
+  isCtor: typeof Accordion === 'function',
+  hasToggle: typeof inst.toggle === 'function',
+  same: again === inst,
+  fromGlobalSame: typeof window.Accordion === 'function' && window.Accordion === Accordion,
+};
+</script>
+</body>
+</html>

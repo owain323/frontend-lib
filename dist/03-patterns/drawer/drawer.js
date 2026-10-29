@@ -226,4 +226,4 @@ return { el: d, close: close };
 }
 
 global.Drawer = { open: open };
-})(window);
+})(typeof window !== 'undefined' ? window : globalThis);

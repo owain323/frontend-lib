@@ -159,8 +159,8 @@ def ensure_server():
         pass
 
     proc = subprocess.Popen(
-        [sys.executable, '-m', 'http.server', '8000',
-         '--bind', '127.0.0.1', '--directory', ROOT],
+        # 与 check-all.sh 用同一个服务实现：默认 backlog 5 撑不住并发浏览器
+        [sys.executable, os.path.join(AUDIT, 'http-serve.py'), '8000'],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, cwd=ROOT)
     for _ in range(20):
         try:

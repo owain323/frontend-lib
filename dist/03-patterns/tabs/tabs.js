@@ -1,4 +1,4 @@
-(function () {
+(function (global) {
 'use strict';
 
 var flEmit = function (el, name, detail) {
@@ -125,6 +125,8 @@ return out;
 }
 
 function Tabs(root, opts) {
+
+if (root && root.tabsInstance) return root.tabsInstance;
 this.root = root;
 this.opts = opts || {};
 this.list = root.querySelector('[role="tablist"]');
@@ -225,18 +227,21 @@ self.select(tab, false);
 });
 };
 
-window.Tabs = Tabs;
+global.Tabs = Tabs;
 
 function init() {
 var nodes = document.querySelectorAll('[data-tabs]');
 for (var i = 0; i < nodes.length; i++) {
+
+if (nodes[i].tabsInstance) continue;
 nodes[i].tabsInstance = new Tabs(nodes[i], {});
 }
 }
 
+if (typeof document === 'undefined') return;
 if (document.readyState === 'loading') {
 document.addEventListener('DOMContentLoaded', init);
 } else {
 init();
 }
-})();
+})(typeof window !== 'undefined' ? window : globalThis);

@@ -130,9 +130,10 @@ enable();
 }
 }
 
+if (typeof document === 'undefined') return;
 if (document.readyState === 'loading') {
 document.addEventListener('DOMContentLoaded', auto, false);
 } else {
 auto();
 }
-}(this));
+})(typeof window !== 'undefined' ? window : globalThis);

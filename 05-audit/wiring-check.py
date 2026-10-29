@@ -68,6 +68,39 @@ def refs_in(body):
     return out
 
 
+# 🔴 ESM 的引用不在标签属性里，而在 `<script type="module">` 的正文里。
+#   0.11.15 之前这里只认 `<script src>` ⇒ 一个用
+#   `import { Accordion } from '../../esm/accordion.mjs'` 的页面会被判
+#   「用了 data-accordion 但没引 accordion.js」。
+#   那是**门禁看不见新接法**，不是页面写错了 —— 遇到这种情况要先怀疑判据。
+RE_ESM_IMPORT = re.compile(
+    r"""(?:\bfrom\s*|\bimport\s*)['"]([^'"]+)['"]""")
+
+
+def esm_imports_in(body):
+    """抽 `<script type="module">` 正文里的 import 说明符。
+
+    只扫 module 脚本块，避免把正文里作为**文字**出现的 `import ...` 当真。
+    """
+    out = []
+    for m in re.finditer(
+            r'<script\b[^>]*\btype="module"[^>]*>(.*?)</script>', body, re.S):
+        out.extend(RE_ESM_IMPORT.findall(m.group(1)))
+    return out
+
+
+def has_script_ref(srcs, js):
+    """`srcs` 里有没有指向那个行为脚本的引用。
+
+    `.mjs` 包装（esm/accordion.mjs）也算 —— 它 re-export 的就是同一个脚本，
+    对使用者而言等价于引用了 accordion.js。
+    """
+    if js in srcs:
+        return True
+    stem = js[:-3] if js.endswith('.js') else js
+    return re.search(r'\b%s\.(?:js|mjs)\b' % re.escape(stem), srcs) is not None
+
+
 SKIP_DIRS = ('node_modules', 'dist', '.git', '05-audit', '06-vendor',
              '10-review')
 
@@ -164,7 +197,7 @@ def main():
                       '', body, flags=re.S)
         checked += 1
 
-        srcs = '\n'.join(refs_in(body))
+        srcs = '\n'.join(refs_in(body) + esm_imports_in(body))
 
         # ① data 属性 ⇒ 类名
         for attr, cls in ATTR_NEEDS_CLASS.items():
@@ -173,12 +206,12 @@ def main():
 
         # ②③ 标记 ⇒ 脚本
         for mark, js in MARK_NEEDS_JS.items():
-            if mark in body and js not in srcs:
+            if mark in body and not has_script_ref(srcs, js):
                 bad.append((rel, '用了 %s 但没引 %s' % (mark, js)))
 
         # ④ 引用的文件必须存在
-        for src in refs_in(body):
-            if not src.endswith(('.css', '.js')):
+        for src in refs_in(body) + esm_imports_in(body):
+            if not src.endswith(('.css', '.js', '.mjs')):
                 continue
             if src.startswith(('http:', 'https:', '//', 'data:')):
                 continue
@@ -281,6 +314,25 @@ def _selftest():
             '<html><head><link rel="stylesheet" '
             'href="/frontend-lib/01-tokens/nope.css"></head></html>\n')
         chk('⑤c 站点根路径指向不存在的文件 ⇒ 照样报', main(), 1)
+
+        # ⑥ ESM import 必须算「引用了那个行为脚本」（0.11.15）
+        #    旧版只认 <script src>，于是用 `import …/esm/x.mjs` 的页面被判
+        #    「用了标记但没引脚本」—— 那是门禁看不见新接法。
+        os.makedirs(os.path.join(tmp, 'esm'), exist_ok=True)
+        stem = mk[1][:-3] if mk[1].endswith('.js') else mk[1]
+        open(os.path.join(tmp, 'esm', stem + '.mjs'), 'w').write('//')
+        open(page, 'w', encoding='utf-8', newline='').write(
+            '<html><body><div %s class="%s"></div>\n'
+            '<script type="module">import x from "../../esm/%s.mjs";</script>'
+            '</body></html>\n' % (mk[0].rstrip('>'), stem, stem))
+        chk('⑥ ESM import 算作引用（旧版在这里假红）', main(), 0)
+
+        # ⑥b import 指向不存在的 .mjs ⇒ 必须报（否则新接法成了免检通道）
+        open(page, 'w', encoding='utf-8', newline='').write(
+            '<html><body><div %s class="%s"></div>\n'
+            '<script type="module">import "../../esm/nope.mjs";</script>'
+            '</body></html>\n' % (mk[0].rstrip('>'), stem))
+        chk('⑥b import 的 .mjs 不存在 ⇒ 报', main(), 1)
     finally:
         ROOT = keep_root
 
