@@ -367,6 +367,136 @@ const REPO = path.resolve(__dirname, '..');
         });
         return r;
       },
+      /* ⑫ 🔴 符号必须跟**打印出来的数字**同号（0.12.1 新增，E145）
+         -------------------------------------------------------------
+         起因：`cell()` 判的是 `v < 0`，于是 `v === 0` 掉进 else 拿到 `num--pos`
+         ⇒ 渲染成「+0.0%」—— 一个没变化的数被念成"涨了"。
+         同一条错在四舍五入处复现：0.0004 在 1 位精度下也印成「+0.0%」。
+
+         ⚠️ 判据不能"看着文本判正负"：符号是 CSS `::before` 生成的，
+            `textContent` 里只有绝对值（`0.8%`）。所以这里判的是
+            **"带方向类的格子，打印值必须非零"**，以及**零值不得带方向类**。
+            这两条合起来正好卡死那类错，而且不依赖列格式元数据。
+
+         ⚠️ 还要证明判据**有对象**：页面上必须真的存在一个"零值且不带方向类"
+            的格子。否则把零值行删掉就能假绿（本库一贯纪律）。 */
+      '⑫ 符号与打印值同号（零值不带方向类）': async (p) => {
+        const r = await p.evaluate(() => {
+          const mag = (t) => {
+            const s = String(t || '').replace(/[,\s%＋+]/g, '').replace(/[−]/g, '-');
+            const m = s.match(/-?\d+(\.\d+)?/);
+            return m ? Math.abs(Number(m[0])) : null;
+          };
+          const bad = [];
+          let signedZero = 0;          /* 零值且**没有**方向类（正确做法）的样本数 */
+          document.querySelectorAll('.table .num').forEach((e) => {
+            const t = (e.textContent || '').trim();
+            if (!t || t === '—') return;
+            const v = mag(t);
+            if (v === null) return;
+            const isPos = /num--pos/.test(e.className);
+            const isNeg = /num--neg/.test(e.className);
+            if (v === 0 && (isPos || isNeg)) {
+              bad.push('「' + t + '」零值却带方向类');
+            } else if (v === 0) {
+              signedZero++;
+            }
+            if (isPos && isNeg) bad.push('「' + t + '」同时带 pos 与 neg');
+          });
+          return { bad: bad.slice(0, 4), signedZero };
+        });
+        if (!r.signedZero) {
+          return { ok: false,
+                   note: '🔴 页面没有「零值不带方向类」的样本 ⇒ 判据无从生效' +
+                         '（删掉零值行不能算通过）' };
+        }
+        return { ok: r.bad.length === 0,
+                 note: (r.bad.length ? '🔴 ' + r.bad.join('、')
+                                     : '零值不带符号 · 方向类与打印值同号') +
+                       '（零值样本 ' + r.signedZero + ' 个）' };
+      },
+
+      /* ⑬ 市场涨跌走 delta，表格不自造第三组方向类，且口径切换真的生效
+         -------------------------------------------------------------
+         表格已有两组颜色类（`num--pos` 会计正 / `num--neg` 会计负）。
+         再给市场涨跌造 `num--up` / `num--down` 就是**四组**，
+         调用方每次都要记"这一列用哪组" ⇒ 方向该由数据语义决定，
+         不该由"它被放进了表格"决定。
+
+         判据三件一起查（少一件就能造假绿）：
+           a) `table.css` 里**不存在** `.num--up` / `.num--down`
+           b) 页面里 `.table .delta--up/down/flat` 三态齐全（含持平）
+           c) `[data-market="intl"]` 下市场列真的翻转，而**会计列不翻** ——
+              后者是关键：如果连会计列也变了，说明口径换错了令牌。 */
+      '⑬ 市场涨跌用 delta，且口径只翻市场列': async (p) => {
+        const fs = require('fs');
+        const raw = kit.stripComments(
+          fs.readFileSync(REPO + '/04-recipes/table/table.css', 'utf8'));
+        const noFourth = !/\.num--up|\.num--down/.test(raw);
+
+        const r = await p.evaluate(() => {
+          const q = (root, sel) => {
+            const e = (root || document).querySelector(sel);
+            return e ? getComputedStyle(e).color : null;
+          };
+          const cn = document.querySelector('[data-market="cn"]');
+          const intl = document.querySelector('[data-market="intl"]');
+          return {
+            up: document.querySelectorAll('.table .delta--up').length,
+            down: document.querySelectorAll('.table .delta--down').length,
+            flat: document.querySelectorAll('.table .delta--flat').length,
+            cnUp: q(cn, '.delta--up'), intlUp: q(intl, '.delta--up'),
+            cnDown: q(cn, '.delta--down'), intlDown: q(intl, '.delta--down'),
+            cnPos: q(cn, '.num--pos'), intlPos: q(intl, '.num--pos'),
+            hasBlocks: !!cn && !!intl,
+          };
+        });
+
+        const errs = [];
+        if (!noFourth) errs.push('table.css 里出现了 num--up / num--down');
+        if (!r.up || !r.down || !r.flat) {
+          errs.push('delta 三态不全（up ' + r.up + ' / down ' + r.down +
+                    ' / flat ' + r.flat + '）');
+        }
+        if (!r.hasBlocks) {
+          errs.push('缺少 data-market 对照块（判据无从比较口径）');
+        } else {
+          const flipUp = r.cnUp && r.intlUp && r.cnUp !== r.intlUp;
+          const flipDown = r.cnDown && r.intlDown && r.cnDown !== r.intlDown;
+          const acctStill = r.cnPos && r.intlPos && r.cnPos === r.intlPos;
+          if (!flipUp || !flipDown) errs.push('intl 下市场色没翻转');
+          if (!acctStill) errs.push('🔴 intl 下会计列也变色了（口径换错令牌）');
+        }
+        return { ok: errs.length === 0,
+                 note: errs.length ? '🔴 ' + errs.join(' · ')
+                   : '无第四组颜色类 · 三态齐全 · 只翻市场列' };
+      },
+
+      /* ⑭ 单元格里的 delta 不撑破列宽（393px 手机视口）
+         `delta` 自带 `white-space: nowrap`，而表格列宽是挤出来的 ——
+         两者相遇最容易在窄屏撑出横向滚动。判据量**实际几何**，不看声明。 */
+      '⑭ 单元格内的 delta 不溢出列宽': async (p) => {
+        const r = await p.evaluate(() => {
+          const bad = [];
+          document.querySelectorAll('.table td.num').forEach((td) => {
+            if (td.scrollWidth > td.clientWidth + 1) {
+              bad.push('「' + (td.textContent || '').trim().slice(0, 10) + '」撑宽 ' +
+                       (td.scrollWidth - td.clientWidth) + 'px');
+            }
+            td.querySelectorAll('.delta').forEach((d) => {
+              const a = td.getBoundingClientRect(), b = d.getBoundingClientRect();
+              if (b.right > a.right + 1 || b.left < a.left - 1) {
+                bad.push('delta 越出单元格边界');
+              }
+            });
+          });
+          return { bad: [...new Set(bad)].slice(0, 4),
+                   over: document.documentElement.scrollWidth - window.innerWidth };
+        });
+        return { ok: r.bad.length === 0 && r.over <= 0,
+                 note: (r.bad.length ? '🔴 ' + r.bad.join('、') : 'delta 都在格内') +
+                       ' · 页面横向溢出 ' + r.over + 'px' };
+      },
     },
   });
   process.exit(kit.report(r));

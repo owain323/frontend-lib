@@ -43,6 +43,8 @@ doc-facts-gate.py — 文档事实门禁（任务 W4，2026-10-09 加固）
   F4 组件清单        ← 目录下真实存在的组件（说"还没做"但实际有 ⇒ 红）
   F5 发布记录        ← CHANGELOG 的 `## [X.Y.Z] - ` 后面必须是 YYYY-MM-DD
   F6 精简档令牌数    ← 04-recipes/tierA-tokens.css 本身（浅色截断到 @media 之前）
+  F7 demo 页数       ← 磁盘上的 demo.html 份数（与 a11y-ax 的覆盖判据同源）
+  F8 声明适用版本     ← VERSION 文件
 
   视野声明：会打印扫了多少份文档。**扫到 0 份 ⇒ 判失败**（视野已空不许通过）。
 
@@ -57,6 +59,7 @@ doc-facts-gate.py — 文档事实门禁（任务 W4，2026-10-09 加固）
 ---------------------------------------------------------------------------
   · 代码块 / 行内代码内     —— 那是示例，不是事实声明
   · CHANGELOG 的**历史**版本段（## X.Y.Z ≠ VERSION）—— 历史快照不该追改
+  · 带版本号或「发布后 / 当时 / 此前」的**历史叙述句** —— 同上，改了就是篡改历史
   · 06-vendor / 08-plan / 10-review / dist / node_modules
         —— 讲的分别是别的库、未入库的计划、生成的评审稿、派生产物
 ===========================================================================
@@ -216,6 +219,24 @@ def real_css_size():
             'comment_ratio': (com / raw * 100) if raw else 0.0,
             'n_files': n_files}
 
+
+def real_demo_pages():
+    """磁盘上 `demo.html` 的份数（= `a11y-ax.js` 要求覆盖的页数）。
+
+    ⭐ 为什么以"磁盘上的 demo.html"为准：`a11y-ax.js` 的判据是
+      「手写清单必须等于磁盘清单」，所以这个数是**判据自己的真值**，
+      不是某个工具的配置值。文档里的页数只能跟它对齐。
+
+    跳过与 `a11y-ax.js` 相同的目录（node_modules / dist / guide / .git /
+    .toolchain / vendor / shots）—— 两处口径不一致，数字就永远对不上。
+    """
+    skip = {'node_modules', 'dist', 'guide', '.git',
+            '.toolchain', 'vendor', 'shots'}
+    n = 0
+    for dp, dn, fn in os.walk(ROOT):
+        dn[:] = [d for d in dn if d not in skip]
+        n += sum(1 for f in fn if f == 'demo.html')
+    return n
 
 def real_tier_counts():
     """精简档 `04-recipes/tierA-tokens.css` 的令牌数（浅色 / 暗色）。
@@ -424,6 +445,10 @@ PAT_COMPONENTS_BREAKDOWN = (
 #   这类数字最容易漂：生成器会说话，文档不会。
 PAT_TIER_COUNTS = (
     r'含浅色\s*(\d+)\s*\+\s*暗色\s*(\d+)\s*个令牌')
+PAT_DEMO_PAGES = (
+    r'全部\s*(\d+)\s*个\s*demo\s*页')
+PAT_DECLARED_VER = (
+    r'声明适用版本\s*\|\s*agentcss\s*`?(\d+\.\d+\.\d+)`?')
 PAT_GATES = [
     # 🔴 只在**声明总数**时才比对（0.8.9 修）：
     #   原来的 `(\d+)\s*道门禁` 会把随口一提的数量也当总数 ——
@@ -476,6 +501,7 @@ def main():
     gates, gate_problems = real_gates()
     size = real_css_size()
     tier = real_tier_counts()
+    npages = real_demo_pages()
     comps = real_components()
     all_names = set()
     for v in comps.values():
@@ -553,6 +579,54 @@ def main():
                 problems.append((f, '组件数量与实际不符',
                                  '第 %d 行写 %d 个，ai/components.json 是 %d 个'
                                  ' ⇒ %s' % (no, claim, n_comp, line[:60])))
+
+        # F7 demo 页数（0.12.1）——「全部 N 个 demo 页」必须等于磁盘份数
+        #
+        # 🔴 为什么加：`docs/ACCESSIBILITY.md` 写「全部 38 个 demo 页」写了两轮，
+        #    而磁盘早已是 40 个 —— 无障碍声明里的覆盖数是最不该漂的数字
+        #    （它是对外承诺"我们查了多少"）。真值取磁盘，与 `a11y-ax` 判据同源，
+        #    否则两处口径不一致就永远对不上（E139 同一类错）。
+        if npages:
+            for m7 in re.finditer(PAT_DEMO_PAGES, text):
+                n7 = int(m7.group(1))
+                # 🔴 历史叙述豁免：CONTRIBUTING 里那句
+                #    「0.11.12 发布后扫了全部 34 个 demo 页」说的是**当时的 34 页**，
+                #    改成 40 就是篡改历史（与 CHANGELOG 历史段同一条规则）。
+                #    ⇒ 同一行里出现版本号或过去时语汇，就不参与核对。
+                _ls = text.rfind(chr(10), 0, m7.start()) + 1
+                _le = text.find(chr(10), m7.end())
+                _line = text[_ls: _le if _le >= 0 else len(text)]
+                # ⚠️ 必须**同时**有过去时语汇和版本号才算历史句。
+                #    第一版写的是 `or`，结果 `docs/ACCESSIBILITY.md` 的表格行
+                #    因为带了 WCAG 编号「4.1.2」被当成版本号 ⇒ 整行被豁免 ⇒
+                #    判据对自己的目标文件**完全失效**（破坏实验抓到的）。
+                #    WCAG 编号长得像版本号，这是这个仓库里必然踩到的一次碰撞。
+                _has_past = any(c in _line for c in ('发布后', '当时', '此前',
+                                                     '当初', '曾经'))
+                _has_ver = re.search(r'\d+\.\d+\.\d+', _line)
+                if _has_past and _has_ver:
+                    continue
+                if n7 != npages:
+                    no7 = text.count('\n', 0, m7.start()) + 1
+                    problems.append(
+                        (f, 'demo 页数与磁盘不符',
+                         '第 %d 行写「全部 %d 个 demo 页」，磁盘上是 %d 个 ⇒ %s'
+                         % (no7, n7, npages, m7.group(0)[:40])))
+
+        # F8 无障碍声明的「适用版本」必须等于 VERSION（0.12.1）
+        #
+        # 🔴 为什么加：`docs/ACCESSIBILITY.md` 一直写 `0.11.9`，跨了三个版本没人改。
+        #    这是**对外承诺**（"这份无障碍声明对哪个版本有效"），
+        #    漂了就等于承诺了一个不存在的版本。
+        if cur:
+            for m8 in re.finditer(PAT_DECLARED_VER, text):
+                v8 = m8.group(1)
+                if v8 != cur:
+                    no8 = text.count(chr(10), 0, m8.start()) + 1
+                    problems.append(
+                        (f, '无障碍声明版本与 VERSION 不符',
+                         '第 %d 行写 %s，VERSION 是 %s ⇒ 声明承诺了一个'
+                         '不存在的版本' % (no8, v8, cur)))
 
         # F6 精简档令牌数（0.12.0 · E139）
         if tier is None:

@@ -9,7 +9,11 @@
 <link rel="stylesheet" href="../../01-tokens/typography.css">
 <link rel="stylesheet" href="../../01-tokens/focus-ring.css">
 <link rel="stylesheet" href="../../01-tokens/page.css">
+<!-- 市场口径切换：只有引了它，[data-market="intl"] 才生效。
+     不引则属性被完全忽略（可选文件，见 01-tokens/market.css 的文件头）。 -->
+<link rel="stylesheet" href="../../01-tokens/market.css">
 <link rel="stylesheet" href="../../02-primitives/button/button.css">
+<link rel="stylesheet" href="../../02-primitives/delta/delta.css">
 <link rel="stylesheet" href="table.css">
 <style>
 .toolbar { display: flex; gap: var(--sp-2); margin: 0 0 var(--sp-3); flex-wrap: wrap; }
@@ -91,6 +95,30 @@
   <br>⇒ 示例里的每一处动态文本都先过 <code>esc()</code>，UI 结构才是写死的 HTML。
 </p>
 <div id="escproof"></div>
+
+<!-- ========================================================================
+     两种方向语义：会计正负 vs 市场涨跌（0.12.1）
+     ===================================================================== -->
+<h2 class="rule-top">6 · 同一张表里的两种方向语义</h2>
+<p class="note">
+  「同比 +16.3%」和「近 20 日 +3.21%」看起来都是"涨"，但它们是<strong>两件事</strong>：
+  前者是会计口径（正负就是加减），后者是市场口径（红涨绿跌，国际口径正好相反）。
+  <br>⇒ 会计正负用 <code>num--pos</code> / <code>num--neg</code>；
+  市场涨跌用嵌进单元格的 <code>delta</code>，
+  <strong>不给表格加第三组方向类</strong>（<code>num--up</code> / <code>num--down</code> 故意不存在）。
+  <br>下面两块数据完全相同，只有外层 <code>data-market</code> 不同 ——
+  <strong>会计那一列一个字都不变，市场那一列整体翻转</strong>。
+  <br>⚠️ 在同一张表里，会计的「+16.3%」是绿、市场的「+3.21%」是红 ——
+  看起来互相矛盾，<strong>这恰恰是它们必须分开命名的原因</strong>：
+  一个说"多了多少"，一个说"涨了多少"，共用一个颜色令牌就会给出矛盾信号。
+</p>
+<div id="polarity"></div>
+<p class="table__foot">
+  注：<strong>零值两边都不带符号</strong> —— 会计列不写 <code>+</code>，
+  市场列用 <code>delta--flat</code>。
+  「0.0%」被读成「涨了 0.0%」是本库明确反对的一类错误
+  （四舍五入到 0 也算 0，所以 0.0004 在 1 位精度下同样不带符号）。
+</p>
 
 
 
@@ -187,17 +215,29 @@
     }
     if (f === 'text') return { text: String(v), cls: '' };
 
-    var abs = Math.abs(Number(v));
+    var n = Number(v);
+    var abs = Math.abs(n);
+    var isPct = (f === 'percent' || f === 'signed-percent');
     var text;
     if (f === 'currency' || f === 'integer') text = grouped(abs, col.precision);
-    else if (f === 'percent' || f === 'signed-percent') text = fixed(abs * 100, col.precision) + '%';
+    else if (isPct) text = fixed(abs * 100, col.precision) + '%';
     else text = fixed(abs, col.precision);
 
     /* 符号：负数总是有 −（数值语义 + 无障碍第二线索）；
-       正数只有 signed-* 才带 + —— 这就是"按列语义处理" */
+       正数只有 signed-* 才带 + —— 这就是"按列语义处理"。
+
+       🔴 但符号必须**跟打印出来的数字同号**（0.12.1 修，E145）：
+          旧实现判的是 `v < 0`，于是 `v === 0` 掉进 else 分支拿到 `num--pos`，
+          渲染成「+0.0%」—— 一个没变化的数被念成"涨了"。
+          同一条错还会在**四舍五入**处复现：0.0004 在 1 位精度下打印成
+          `0.0%`，若仍按原始值判正负，同样得到「+0.0%」。
+       ⇒ 唯一的正确判法：先算出**将要打印的数值**，再按它定符号。
+          `= 0` 既不加 + 也不加 −（与 delta 的 `delta--flat` 同一个契约）。 */
+    var shown = Number(fixed(isPct ? abs * 100 : abs, col.precision));
     var cls = 'num';
-    if (Number(v) < 0) cls += ' num--neg';
-    else if (f === 'signed-percent' || f === 'signed-decimal') cls += ' num--pos';
+    if (shown !== 0 && n < 0) cls += ' num--neg';
+    else if (shown !== 0 && n > 0 &&
+             (f === 'signed-percent' || f === 'signed-decimal')) cls += ' num--pos';
 
     return { text: text, cls: cls };
   }
@@ -488,6 +528,53 @@
     '<p class="table__foot">复查方式：用浏览器看这一节的单元格 —— ' +
     '第二、三列应当<b>原样显示</b>尖括号文本，而不是把它们变成样式。</p>';
   document.getElementById('escproof').innerHTML = e2;
+
+  /* --------------------------------------- 预设六：两种方向语义（0.12.1） */
+
+  /* 市场涨跌：方向交给 delta，表格自己不判色。
+     🔴 为什么不给 table 加 `num--up` / `num--down`：
+        那会让表格有四组颜色类（pos / neg / up / down），调用方每次都要记
+        「这一列用哪组」。方向该由**数据语义**决定，
+        不该由「它被放进了表格」决定 —— 所以它是独立原子，不是表格的变体。
+
+     🔴 符号规则与 cell() 完全一致：按**打印出来的数字**判方向。
+        四舍五入到 0 的一律算持平，否则 0.00004 会印成「+0.00%」——
+        同一类错误在会计列与市场列各犯一次，就等于没修。 */
+  function deltaCell(v) {
+    var n = Number(v);
+    var shown = Number(fixed(Math.abs(n) * 100, 2));
+    var dir = shown === 0 ? 'flat' : (n > 0 ? 'up' : 'down');
+    return '<span class="delta delta--' + dir + '">' +
+      esc(fixed(Math.abs(n) * 100, 2)) + '%</span>';
+  }
+
+  var POL_DATA = [
+    { name: '营业收入', acct:  0.163, mkt:  0.0321 },
+    { name: '营业成本', acct: -0.008, mkt: -0.0105 },
+    { name: '其他收益', acct:  0.000, mkt:  0.0000 }  /* 零值：两边都不许出符号 */
+  ];
+
+  function polarityTable() {
+    var h = '<div class="table"><table>' +
+      '<caption class="table__cap">同一份数据 · 会计口径不随市场切换，市场口径整体翻转</caption>' +
+      '<thead><tr><th scope="col">科目</th>' +
+      '<th scope="col">同比<span class="table__unit">(会计)</span></th>' +
+      '<th scope="col">涨跌<span class="table__unit">(市场)</span></th>' +
+      '</tr></thead><tbody>';
+    POL_DATA.forEach(function (r) {
+      var a = cell(r.acct, { format: 'signed-percent', precision: 1 });
+      h += '<tr><th scope="row">' + esc(r.name) + '</th>' +
+           '<td class="' + a.cls + '">' + esc(a.text) + '</td>' +
+           '<td class="num">' + deltaCell(r.mkt) + '</td></tr>';
+    });
+    return h + '</tbody></table></div>';
+  }
+
+  document.getElementById('polarity').innerHTML =
+    '<p class="note">A 股口径 <code>[data-market="cn"]</code>（默认，红涨绿跌）</p>' +
+    '<div data-market="cn">' + polarityTable() + '</div>' +
+    '<p class="note">国际口径 <code>[data-market="intl"]</code> —— 只有市场那一列翻转</p>' +
+    '<div data-market="intl">' + polarityTable() + '</div>';
 })();
 </script>
 </body>

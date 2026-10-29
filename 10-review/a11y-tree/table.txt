@@ -235,6 +235,47 @@ RootWebArea "table · 专业数据表格 · frontend-lib"
         cell "A & B < C > D"
         cell "显示为字面字符"
     paragraph "复查方式：用浏览器看这一节的单元格 —— 第二、三列应当 原样显示 尖括号文本，而不是把它们变成样式。"
+    heading "6 · 同一张表里的两种方向语义" [level=2]
+    paragraph "「同比 +16.3%」和「近 20 日 +3.21%」看起来都是"涨"，但它们是 两件事 ： 前者是会计口径（正负就是加"
+    paragraph "A 股口径 [data-market="cn"] （默认，红涨绿跌）"
+    table "同一份数据 · 会计口径不随市场切换，市场口径整体翻转"
+      caption "同一份数据 · 会计口径不随市场切换，市场口径整体翻转"
+      row
+        columnheader "科目"
+        columnheader "同比(会计)"
+        columnheader "涨跌(市场)"
+      row
+        rowheader "营业收入"
+        cell "+16.3%"
+        cell "+ 3.21%"
+      row
+        rowheader "营业成本"
+        cell "−0.8%"
+        cell "− 1.05%"
+      row
+        rowheader "其他收益"
+        cell "0.0%"
+        cell "0.00%"
+    paragraph "国际口径 [data-market="intl"] —— 只有市场那一列翻转"
+    table "同一份数据 · 会计口径不随市场切换，市场口径整体翻转"
+      caption "同一份数据 · 会计口径不随市场切换，市场口径整体翻转"
+      row
+        columnheader "科目"
+        columnheader "同比(会计)"
+        columnheader "涨跌(市场)"
+      row
+        rowheader "营业收入"
+        cell "+16.3%"
+        cell "+ 3.21%"
+      row
+        rowheader "营业成本"
+        cell "−0.8%"
+        cell "− 1.05%"
+      row
+        rowheader "其他收益"
+        cell "0.0%"
+        cell "0.00%"
+    paragraph "注： 零值两边都不带符号 —— 会计列不写 + ， 市场列用 delta--flat 。 「0.0%」被读成「涨了 0."
     heading "对比：错写法 vs 本库写法" [level=2]
     heading "❌ 常见写法：只靠红绿 + 连字符" [level=3]
     paragraph "涨的那行没有 + ，跌的用连字符 - ：灰度打印、色觉障碍、以及"只扫一列符号"的读法，全都不成立；连字符还比真减号窄，"
