@@ -1,0 +1,35 @@
+# metric — 指标块：dt/dd 的术语-值关系要能被念出来；缺数的 — 不许被念成「零」
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "metric · 指标块"
+  main
+    heading "metric · 指标块" [level=1]
+    paragraph "报表里 “一个数”的最小完整单元 ：一个标签、一个值、一句上下文。 KPI 行、详情页顶部、监控面板，都由它排出来。"
+    heading "一个完整的 metric" [level=2]
+    DescriptionList "营业总收入 1,294.06 亿元 + 12.40% 同比"
+    paragraph "四件必须一起做对的事： 数字等宽 （上下两行数位对齐，竖着扫能比大小）、 单位分离成槽位 （拼进字符串就没法单独调样式，"
+    heading "一行四个 KPI" [level=2]
+    DescriptionList "营业总收入 1,294.06 亿元 + 12.40% 同比"
+    DescriptionList "归母净利润 318.72 亿元 + 8.60% 同比"
+    DescriptionList "销售毛利率 41.28 % − 1.34% 同比"
+    DescriptionList "经营活动现金流净额 — 本期未披露"
+    paragraph "第四块是 缺数 ：值写 — （U+2014），并在脚下说明原因。 它 不隐藏、不变灰到看不见、也不填 0 —— 版面塌掉"
+    heading "三档字号" [level=2]
+    DescriptionList "主指标（lg） 318.72 亿元"
+    DescriptionList "默认 318.72 亿元"
+    DescriptionList "紧凑档（sm） 318.72 亿元"
+    paragraph "三档够了。出现第四档说明 KPI 行的层级没规划好（与 badge / card 同一判断标准）。"
+    heading "迷你走势槽位" [level=2]
+    DescriptionList "近九个交易日收盘 1,684.00 + 5.12% 五日"
+    DescriptionList "近九个交易日成交量 3.42 亿手 − 2.08% 五日"
+    paragraph "metric__spark 只是一个 槽位 —— 它不关心里面放什么。 上面放的是 sparkline ，也可以什么都不"
+    heading "反例：缺数填 0" [level=2]
+    heading "错：拿 0 冒充“没有”" [level=3]
+    DescriptionList "经营活动现金流净额 0.00 本期未披露"
+    paragraph "值有 4 个字形。读者读到的是“现金流为零”—— 一个具体的、错误的结论。"
+    heading "对：留 — 并说明原因" [level=3]
+    DescriptionList "经营活动现金流净额 — 本期未披露"
+    paragraph "值只有 1 个字形（U+2014），且 metric--null 把颜色降到 tertiary。"
+    paragraph "为什么不能靠“变淡”表达缺数 ：颜色淡了但字还在，读者仍会读那个数字。 缺数的正确表达是 不给出数字 ，再加一句为什么。"
+    heading "两条边界" [level=2]
+    paragraph "① 本组件不做格式化 。千分位、小数位、单位换算都由数据侧决定 —— CSS 不知道“1,294.06”和“1294.0"

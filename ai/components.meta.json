@@ -58,6 +58,10 @@
       "rootClass": "drange",
       "purpose": "日期区间选择，含预设快捷范围"
     },
+    "delta": {
+      "rootClass": "delta",
+      "purpose": "变化量：涨跌方向 + 符号 + 颜色。只描述往哪边变，不判断好坏（等于好恶是 badge 的事，会计正负是 table 的事）"
+    },
     "drawer": {
       "rootClass": "drawer",
       "purpose": "侧边抽屉，含遮罩"
@@ -82,6 +86,10 @@
       "rootClass": "mv",
       "tier": "asset",
       "purpose": "3D 模型查看器：令牌驱动样式，不含渲染库本体"
+    },
+    "metric": {
+      "rootClass": "metric",
+      "purpose": "指标块：一个标签 + 一个值 + 一句上下文。数字等宽、单位分离、缺数是一等状态"
     },
     "nav": {
       "rootClass": "nav",

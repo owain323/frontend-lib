@@ -83,9 +83,9 @@ npm install github:owain323/frontend-lib
 
 ## 组件一览
 
-共 **35** 个（stable 31 / beta 4）。每个组件目录下有 `README.md`（为什么这么做）和 `demo.html`（能直接抄的结构）。
+共 **37** 个（stable 31 / beta 4 / alpha 2）。每个组件目录下有 `README.md`（为什么这么做）和 `demo.html`（能直接抄的结构）。
 
-### primitives · 基础件（13）
+### primitives · 基础件（15）
 
 | 组件 | 根类名 | 用途 |
 |---|---|---|
@@ -95,7 +95,9 @@ npm install github:owain323/frontend-lib
 | `choice` | `choice` | 单选/多选/原生 select 外观的统一控件 |
 | `combobox` | `combo` | 可搜索 + 可多选标签的输入控件 |
 | `date-range` | `drange` | 日期区间选择，含预设快捷范围 |
+| `delta` | `delta` | 变化量：涨跌方向 + 符号，**只描述方向不判断好坏** |
 | `input` | `field` | 文本输入及其标签/帮助/错误三件套 |
+| `metric` | `metric` | 指标块：一个标签 + 一个值 + 一句上下文，缺数是一等状态 |
 | `popover` | `popover` | 锚定到触发元素的浮层 |
 | `progress` | `progress` | 进度条与进度环 |
 | `select` | `select` | 自定义下拉选择（非原生） |

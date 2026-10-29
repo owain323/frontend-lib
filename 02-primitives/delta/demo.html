@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>delta · 变化量</title>
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/page.css">
+<!-- 口径切换是可选文件；本页有 intl 对照栏，所以必须引它 -->
+<link rel="stylesheet" href="../../01-tokens/market.css">
+<link rel="stylesheet" href="../../02-primitives/delta/delta.css">
+<style>
+.row { display: flex; gap: var(--sp-4); flex-wrap: wrap; align-items: baseline;
+         padding: var(--sp-3) 0; }
+.line { display: flex; justify-content: space-between; align-items: baseline;
+          gap: var(--sp-3); padding: var(--sp-2) 0;
+          border-bottom: 1px solid var(--border-decor); }
+.line:last-child { border-bottom: 0; }
+.line__k { color: var(--text-secondary); }
+/* 口径对照：两栏**都是对的**，只是两种约定 —— 所以不用 .cmp（那是对错对照，
+   demo-claim 会要求两栏断言互斥，而这里没有"错"的那一栏）。 */
+.pair { display: grid; gap: var(--sp-4); align-items: start;
+          padding: var(--sp-4) 0; }
+@media (min-width: 40rem) { .pair { grid-template-columns: 1fr 1fr; } }
+.pair__pane { padding: var(--sp-4); border: 1px solid var(--border-decor);
+                border-radius: var(--r-md); background: var(--surface); }
+.pair__pane > h3 { margin: 0 0 var(--sp-2); font-size: var(--fs-sm);
+                     color: var(--text-secondary); }
+</style>
+</head>
+<body class="page page">
+<main class="wrap">
+  <h1>delta · 变化量</h1>
+  <p class="lede">
+    delta 只回答一件事：<strong>这个数相对基准往哪边变了、变了多少</strong>。
+    它<strong>不判断好坏</strong> —— 同一个“涨”，对营收是好消息，对费用是坏消息，
+    那是读者的判断，不是颜色的判断。
+  </p>
+
+  <h2 class="rule-top">三个方向</h2>
+  <div class="row">
+    <span class="delta delta--up">3.21%</span>
+    <span class="delta delta--down">1.05%</span>
+    <span class="delta delta--flat">0.00%</span>
+    <span class="delta delta--sm delta--up">0.42%</span>
+  </div>
+  <p class="small">
+    最后一个是紧凑档（<code>delta--sm</code>），用于表格行内与密集列表。
+    <br>
+    <strong>符号是 CSS 生成的</strong>：HTML 里只写 <code>3.21%</code>，
+    渲染成 <code>+3.21%</code>；写 <code>1.05%</code> 配 <code>delta--down</code>，
+    渲染成 <code>−1.05%</code>（减号是 U+2212，不是连字符 —— 连字符窄一半，混排会歪）。
+    持平刻意<strong>不带符号</strong>：0 没有方向，给它一个 ± 是把“误差”的概念借了过来。
+  </p>
+
+  <h2 class="rule-top">符号为什么由 CSS 生成</h2>
+  <p class="small">
+    因为“手写符号”是一种<strong>不会报错</strong>的错误。数据侧照着习惯把
+    <code>−1.05%</code> 写进去，组件再补一个减号，渲染出来是
+    <code>−−1.05%</code> —— 页面不崩、控制台不响，只是报表看起来像坏了。
+    下面是两栏真实渲染（同一段数据，只差手写时带没带符号）：
+  </p>
+  <div class="cmp">
+    <div class="cmp__pane cmp__bad" data-bad=".delta|glyphs|=7">
+      <h3>错：HTML 里也写了减号</h3>
+      <div class="row"><span class="delta delta--down">−1.05%</span></div>
+      <p class="small">字形 7 个 —— 两个减号叠在一起。</p>
+    </div>
+    <div class="cmp__pane cmp__good" data-good=".delta|glyphs|=6">
+      <h3>对：HTML 里只写数值本体</h3>
+      <div class="row"><span class="delta delta--down">1.05%</span></div>
+      <p class="small">字形 6 个 —— 减号只有一个，来自 CSS。</p>
+    </div>
+  </div>
+
+  <h2 class="rule-top">口径：默认红涨绿跌，可整体切换</h2>
+  <div class="pair">
+    <div class="pair__pane">
+      <h3>默认：A 股口径（红涨绿跌）</h3>
+      <div class="row">
+        <span class="delta delta--up">3.21%</span>
+        <span class="delta delta--down">1.05%</span>
+      </div>
+    </div>
+    <div class="pair__pane" data-market="intl">
+      <h3>国际口径（<code>[data-market="intl"]</code>）</h3>
+      <div class="row">
+        <span class="delta delta--up">3.21%</span>
+        <span class="delta delta--down">1.05%</span>
+      </div>
+    </div>
+  </div>
+  <p class="small">
+    两栏的 HTML <strong>逐字相同</strong>，区别只有右栏祖先上多了
+    <code>data-market="intl"</code>。组件 CSS 里没有任何
+    <code>[data-market]</code> 分支 —— 它只写 <code>color: var(--dir-up)</code>，
+    切换发生在令牌层（跟暗色同一手法：换底层值，语义名不动）。
+    <br>
+    也可以只切局部：这个属性加在任何容器上，就只影响那一块。
+  </p>
+
+  <h2 class="rule-top">方向强化：箭头档</h2>
+  <div class="row">
+    <span class="delta delta--arrow delta--up">3.21%</span>
+    <span class="delta delta--arrow delta--down">1.05%</span>
+    <span class="delta">+3.21%（默认符号档，对照）</span>
+  </div>
+  <p class="small">
+    <code>delta--arrow</code> 把符号换成 ▲ / ▼。它与符号档<strong>互斥</strong>
+    （同一个 ::before），不要同时加。
+    <br>
+    ⚠️ 箭头是字符伪元素，读屏可能念出字符本身。要严格可控就给它外层加
+    <code>aria-label</code>（如「同比上涨 3.21%」），或不用这一档 ——
+    默认的 +/− 已经满足「不能只靠颜色」。
+  </p>
+
+  <h2 class="rule-top">在真语境里</h2>
+  <div>
+    <div class="line">
+      <span class="line__k">营业总收入</span>
+      <span><span class="delta delta--up">12.40%</span></span>
+    </div>
+    <div class="line">
+      <span class="line__k">研发费用</span>
+      <span><span class="delta delta--up">38.20%</span></span>
+    </div>
+    <div class="line">
+      <span class="line__k">经营活动现金流净额</span>
+      <span><span class="delta delta--down">6.10%</span></span>
+    </div>
+    <div class="line">
+      <span class="line__k">基本每股收益</span>
+      <span><span class="delta delta--flat">0.00%</span></span>
+    </div>
+  </div>
+  <p class="small">
+    <strong>看第二行</strong>：研发费用 +38.20% 是“涨”，但那是成本失控，不是好消息。
+    如果用 <code>table</code> 的 <code>num--pos</code>（会计约定：正 = 绿）来渲染，
+    它会是绿色的 —— 颜色说“好事”，语义说“坏消息”。这正是 delta 存在的理由：
+    它只描述方向，不替读者下结论。
+  </p>
+
+  <h2 class="rule-top">三条边界</h2>
+  <p class="small">
+    ① <strong>方向由你给，不由数值推断</strong>。本组件没有 JS，不读数值；
+    类名写错就颜色错，而且不报错。数据侧务必按值选类，值为 0 用
+    <code>delta--flat</code>。
+    <br>
+    ② <strong>这不是“好/坏”指示器</strong>。要表达“成功/失败/警告”用
+    <code>badge</code> 的语义变体；要表达会计正负用 <code>table</code> 的
+    <code>num--pos/neg</code>。三者不可互换。
+    <br>
+    ③ <strong>涨跌幅塞进表格时用它，不要用 <code>num--pos/neg</code></strong>。
+    那两组是会计约定（正 = 绿），套在涨跌幅上会把“跌”渲染成红、把“涨”渲染成绿，
+    正好与 A 股习惯相反。这一条此前是 <code>table</code> README 里登记的未解问题，
+    现在有解了。
+  </p>
+</main>
+</body>
+</html>

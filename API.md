@@ -329,8 +329,23 @@ python3 05-audit/prefix-build.py --prefix fl
 | `--border-decor` | ✅ | 分隔线 |
 | `--shadow-1` / `--shadow-2` | ✅ | 阴影 |
 | `--dur` / `--ease-out` | ✅ | 动效 |
+| `--dir-up` / `--dir-down` | ✅ | 涨跌方向色（**方向 ≠ 好恶**：默认红涨绿跌，`[data-market="intl"]` 整体对调） |
 
 新增令牌算**小版本变更**；移除或改默认值算**破坏性变更**。
+
+### 口径切换：`[data-market]`
+
+涨跌配色是**全局约定**，不是组件参数：
+
+| 写法 | 效果 |
+|---|---|
+| 不写 | A 股口径：涨 = 红、跌 = 绿 |
+| `<html data-market="intl">` | 国际口径：涨 = 绿、跌 = 红 |
+| `<section data-market="intl">` | 只切这一块 |
+
+实现方式是**换令牌的指向**（`--dir-up` 永远表示"涨"），组件 CSS 里没有任何分支
+—— 与暗色同一手法。`05-audit/dir-gate.js` 在浏览器里读 computed color，
+四种组合（两种口径 × 明暗）各判一遍，并断言 `intl` 是**完整互换**而不是只改一边。
 
 ---
 

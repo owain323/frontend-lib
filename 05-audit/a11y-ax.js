@@ -75,6 +75,11 @@ const PAGES = [
    '组合框：combobox + listbox + option + expanded（与 select 的单选语义不同源）'],
   ['date-range', '02-primitives/date-range/demo.html',
    '日期区间：输入框名字 + 日历弹层 + role=alert 的越界提示'],
+  ['delta', '02-primitives/delta/demo.html',
+   '变化量：+ / − 是 CSS 生成的文本 —— 它必须真的进朗读序列，'
+   + '否则方向只剩颜色（WCAG 1.4.1 不成立）'],
+  ['metric', '02-primitives/metric/demo.html',
+   '指标块：dt/dd 的术语-值关系要能被念出来；缺数的 — 不许被念成「零」'],
   ['popover', '02-primitives/popover/demo.html',
    '气泡卡片：非模态浮层的名字来源与「点外面关掉」的可达性'],
   ['progress', '02-primitives/progress/demo.html',

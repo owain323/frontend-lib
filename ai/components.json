@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
   "generatedBy": "05-audit/gen-ai-contract.py",
-  "libraryVersion": "0.11.16",
+  "libraryVersion": "0.12.0",
   "$comment": "机器可读的组件契约。slots = BEM 元素名（在本库里元素名就是插槽名），states.enum = 组件会在 DOM 上写出的 data-* 取值，states.legacyClass = 仍未收敛到 data 属性的历史状态类（INVARIANT I-8 未达标）。",
   "maturityCriteria": {
     "alpha": "缺 demo.html 或缺 05-audit 下的专属门禁 ⇒ 还没被机器验证过，不要用",
@@ -9,16 +9,17 @@
     "stable": "以上四条全过：有 demo + 专属门禁 + 状态全在 data-* 属性上 + 行为零欠账",
     "$note": "成熟度是【计算出来的】，不是拍的。手写把某个组件改成 stable 而它还有 manual / gap ⇒ 门禁会红。",
     "$whyFourth": "🔴 为什么第四条判据不能省：用前三条时多数组件会**全是 stable** ⇒ ladder 没有任何鉴别力（对标 Primer 六档阶梯，每档都有硬判据）。补上「行为欠账」这一条后：**stable 31 / beta 4**（本行由生成器算出，不要手改）。",
-    "$strictImpact": "⚠️ strict 档位只放行 stable ⇒ 4 个组件在 strict 下不可用：accordion / drawer / dropdown / overlay。放宽 strict 会让「未收编的手写行为」进入生产路径。（本行由生成器算出，不要手改）"
+    "$strictImpact": "⚠️ strict 档位只放行 stable ⇒ 6 个组件在 strict 下不可用：accordion / delta / drawer / dropdown / metric / overlay。放宽 strict 会让「未收编的手写行为」进入生产路径。（本行由生成器算出，不要手改）"
   },
   "summary": {
-    "total": 35,
+    "total": 37,
     "byMaturity": {
       "stable": 31,
-      "beta": 4
+      "beta": 4,
+      "alpha": 2
     },
     "byTier": {
-      "primitive": 13,
+      "primitive": 15,
       "pattern": 14,
       "recipe": 4,
       "asset": 4
@@ -1354,6 +1355,47 @@
       "behaviorRef": "API.md#date-range"
     },
     {
+      "id": "delta",
+      "tier": "primitive",
+      "purpose": "变化量：涨跌方向 + 符号 + 颜色。只描述往哪边变，不判断好坏（等于好恶是 badge 的事，会计正负是 table 的事）",
+      "rootClass": "delta",
+      "maturity": "alpha",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": false,
+        "statesOnDomAttributes": true,
+        "behaviorDebt": []
+      },
+      "gates": [],
+      "files": {
+        "css": "02-primitives/delta/delta.css",
+        "js": null,
+        "jsAlso": [],
+        "demo": "02-primitives/delta/demo.html"
+      },
+      "slots": [],
+      "variants": [
+        "delta--arrow",
+        "delta--down",
+        "delta--flat",
+        "delta--sm",
+        "delta--up"
+      ],
+      "states": {
+        "enum": {},
+        "boolean": [],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [],
+        "attrs": []
+      },
+      "usesOtherNamespaces": [],
+      "global": null,
+      "globalAlso": [],
+      "behaviorRef": "API.md#delta"
+    },
+    {
       "id": "input",
       "tier": "primitive",
       "purpose": "文本输入及其标签/帮助/错误三件套",
@@ -1409,6 +1451,52 @@
       "global": null,
       "globalAlso": [],
       "behaviorRef": "API.md#input"
+    },
+    {
+      "id": "metric",
+      "tier": "primitive",
+      "purpose": "指标块：一个标签 + 一个值 + 一句上下文。数字等宽、单位分离、缺数是一等状态",
+      "rootClass": "metric",
+      "maturity": "alpha",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": false,
+        "statesOnDomAttributes": true,
+        "behaviorDebt": []
+      },
+      "gates": [],
+      "files": {
+        "css": "02-primitives/metric/metric.css",
+        "js": null,
+        "jsAlso": [],
+        "demo": "02-primitives/metric/demo.html"
+      },
+      "slots": [
+        "metric__foot",
+        "metric__label",
+        "metric__note",
+        "metric__spark",
+        "metric__unit",
+        "metric__value"
+      ],
+      "variants": [
+        "metric--lg",
+        "metric--null",
+        "metric--sm"
+      ],
+      "states": {
+        "enum": {},
+        "boolean": [],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [],
+        "attrs": []
+      },
+      "usesOtherNamespaces": [],
+      "global": null,
+      "globalAlso": [],
+      "behaviorRef": "API.md#metric"
     },
     {
       "id": "popover",

@@ -1,0 +1,142 @@
+/* ============================================================================
+   Metric — 指标块（一个标签 + 一个值 + 一句上下文）
+   ============================================================================
+   一句话：**报表里“一个数”的最小完整单元**。
+   财务页、监控页、详情页顶部的 KPI 行，都是由它排出来的。
+
+   🔴 为什么它是组件，而不是几个工具类
+   ----------------------------------------------------------------------------
+   因为“一个数”有四件事必须一起做对，少一件就会在真实报表里出错：
+
+     ① 数字要**等宽**（tabular-nums）—— 否则上下两行的数位对不齐，
+        竖着扫一眼比大小这件事就废了；这是「财务表格」与「装饰表格」的分界
+     ② 单位要**分离**成槽位 —— 拼进字符串后（"1,294.06亿元"）既不能单独调样式，
+        也没法让数字右对齐时把单位甩在外面
+     ③ **缺数是一等状态** —— 不能渲染成 0、不能留空、不能只把字变淡；
+        必须给出“为什么没有”（本库的既有纪律，见 04-recipes/detail-page 的 null 变体）
+     ④ 变化的**方向**要能表达 —— 所以它给 delta 留了位置，但它自己不管颜色
+
+   这四件事里任意一件交给调用方“记得做”，就会漏。本库在同一条路上栽过：
+   `table__unit` 的括号是组件加的，不是要求每个调用方记得加。
+
+   🔴 为什么推荐 `<dl>`
+   ----------------------------------------------------------------------------
+   “标签—值”在 HTML 里有现成语义：术语 + 描述。用 `<dl>` 读屏会念
+   「营业总收入 1,294.06 亿元 +12.4% 同比」，用 `<div>` 只会念一串没有关系的词。
+
+   本文件的 CSS **只认类名，不认标签** —— 用 `<div>` 也能正常渲染
+   （兼容既有页面），但 demo 与文档一律示范 `<dl>`。
+
+   🔴 缺数怎么写
+   ----------------------------------------------------------------------------
+     <dl class="metric metric--null">
+       <dt class="metric__label">经营现金流</dt>
+       <dd class="metric__value">—</dd>            <!-- U+2014，不是 0、不是空 -->
+       <dd class="metric__foot"><span class="metric__note">本期未披露</span></dd>
+     </dl>
+
+   `metric--null` 只做一件事：把值的颜色降到 tertiary、去掉字重。
+   它**不隐藏**这块 —— 版面塌掉比显示“没有”更糟。
+   ========================================================================= */
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  margin: 0;                       /* dl 自带外边距，会破坏网格对齐 */
+  min-width: 0;                    /* flex/grid 子项默认不缩，长标签会撑破列 */
+}
+
+/* dl 的 dd 默认有 40px 起始缩进 —— 只在结构与类名同时出现时清掉 */
+.metric > dd {
+  margin-inline-start: 0;
+}
+
+.metric__label {
+  margin: 0;
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  letter-spacing: var(--tracking-normal);   /* 小字号中文给一点字距更清；令牌在暗色段有另一档 */
+}
+
+/* 值：这一块的全部意义所在 */
+.metric__value {
+  margin: 0;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;   /* ① 等宽数字 —— 竖排能比大小 */
+  font-size: var(--fs-xl);
+  font-weight: 600;
+  line-height: var(--lh-tight);
+  color: var(--text-primary);
+  /* 数字不许换行；某一位数掉到第二行会让整个 KPI 行高度跳动 */
+  white-space: nowrap;
+}
+
+/* 单位：与数字同基线、小一号、次要色
+   ⚠️ 用 margin-inline-start 而不是空格字符：
+      空格在等宽字族里也占一格，而 4 位数 × 十几行就会看出错位。 */
+.metric__unit {
+  margin-inline-start: 0.3em;
+  font-size: var(--fs-sm);
+  font-weight: 400;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* 脚下那行：通常放一个 delta + 一个说明词（"同比" / "较上季"）*/
+.metric__foot {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+  color: var(--text-tertiary);
+}
+
+.metric__note {
+  color: var(--text-tertiary);
+}
+
+/* 迷你图槽位：放 sparkline 之类。给它一点上间距，避免贴着数字 */
+.metric__spark {
+  margin-block-start: var(--sp-1);
+  color: var(--text-tertiary);
+}
+
+/* 缺数：值降到 tertiary、去字重，但**仍然占位**
+   ⚠️ 不要用 opacity —— 它会让对比度跌破 4.5（--text-tertiary 已经是 5.33 的地板，
+      再乘一次透明度就没了）。改令牌才是对的做法。 */
+.metric--null .metric__value {
+  color: var(--text-tertiary);
+  font-weight: 400;
+}
+
+/* ---------------------------------------------------------------- 字号三档
+   三档够了。出现第四档说明 KPI 行的层级没规划好
+   （与 badge / card 的判断标准一致）。 */
+.metric--lg .metric__value {
+  font-size: var(--fs-2xl);
+}
+
+.metric--sm .metric__value {
+  font-size: var(--fs-md);
+  font-weight: 500;
+}
+
+/* ---------------------------------------------------------------- 网格容器
+   KPI 行几乎总是成排出现，把重复的栅格收进来一次。
+   ⚠️ `minmax(min(100%, 12rem), 1fr)` 里的 `min(100%, …)` 不是冗余：
+      窄容器（手机单列、侧栏）下 12rem 会比可用宽度还大，
+      没有这层 min() 就会横向溢出 —— 这是 auto-fit 最常见的翻车方式。 */
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: var(--sp-5) var(--sp-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;     /* 用 <ul> 包 metric 时不想看到圆点 */
+}

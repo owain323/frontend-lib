@@ -54,6 +54,11 @@
   --raw-success-bg:           #eaf2e6;
   --raw-warning-bg:           #fbf1dd;
   --raw-info-bg:              #e8f1f8;
+  /* 方向色（涨跌）。当前取值与 danger / success 相同 —— 但那是**巧合**，
+     不是同一件事，所以单独命名（理由见语义层那一段）。
+     浅色：红 4.89–5.44 · 绿 5.75–5.96，四组底全部 AA。 */
+  --raw-dir-up:               #c0392b;
+  --raw-dir-down:             #2f6b3a;
   --raw-accent:               #1b4d8f;
   --raw-switch-on:            #1b4d8f;
   --raw-accent-hover:         #163a6d;
@@ -194,6 +199,45 @@
   --success-bg:       var(--raw-success-bg);
   --warning-bg:       var(--raw-warning-bg);
   --info-bg:          var(--raw-info-bg);
+
+  /* ---------------------------------------------------------------- 方向色
+     🔴 为什么方向要独立成令牌，而不是复用 --danger / --success
+     ----------------------------------------------------------------
+     这两组读起来都是"红/绿"，但它们是**两件事**：
+
+       --danger / --success  = 好恶（错误/成功）。这是**评价**。
+       --dir-up / --dir-down = 涨跌（方向）。这是**事实**。
+
+     把两件事共用一个名字，会在这个场景里立刻暴露：
+       「研发费用同比 +38%」—— 是"涨"，但那是**坏消息**。
+       用 --danger 表示它，颜色说着"错了"，语义说着"涨了"，读者收到矛盾信号。
+
+     所以方向色单独命名，取值可以与语义色相同（当前就相同），
+     但**允许将来分开调**：金融终端普遍用比 --danger 更饱和的红。
+
+     🔴 口径可整体切换（不要在每个组件里判断）
+     ----------------------------------------------------------------
+     默认是 A 股 / 东亚口径：**红涨绿跌**。
+     给 `<html data-market="intl">`（或任意祖先）就切成国际口径：绿涨红跌。
+
+     实现方式与暗色同构 —— **换掉底层值，语义名不动**：
+       --dir-up 永远表示"涨"，组件的 CSS 只写 `color: var(--dir-up)`。
+     口径切换只改这两条令牌的指向，组件一行都不用改。
+     组件里若出现 `[data-market]` 分支，那是把全局约定抄进了组件（判据会拦）。
+
+     实测对比度（05-audit/contrast.py，四组底各算一遍）：
+       浅色：红 4.89–5.44 · 绿 5.75–5.96   （全部 AA）
+       暗色：红 5.60–6.15 · 绿 6.01–6.60   （全部 AA）
+     最差的一格是红点在 --surface-sunken 上 4.89 —— 仍 ≥ 4.5。
+     ---------------------------------------------------------------- */
+  --dir-up:           var(--raw-dir-up);     /* 涨：默认红 */
+  --dir-down:         var(--raw-dir-down);   /* 跌：默认绿 */
+
+  /* ⚠️ 口径切换的规则在 `:root` **外面**（见本块结束后的「国际口径」）。
+     第一版写在里面 —— `:root { }` 只能装声明，不能装规则块。
+     theme-sync.py 按「声明序列」解析这个块，遇到嵌套规则会把选择器切碎，
+     生成一段无效 CSS（实测：`:where(...)` 被截成 `where(...)`、第二条声明丢失）。
+     这类嵌套即使浏览器支持 CSS Nesting 也不该写：本库要兼容 Chromium 97。 */
 
   /* ---------------------------------------------------------------- 强调色
      🔴 一源原则：一个项目只选一个 accent，不要混用。
@@ -642,6 +686,10 @@
   --raw-danger-bg:       #341D1A;
   --raw-success:         #6FAA7A;
   --raw-success-bg:      #16241A;
+  /* 方向色（暗色）：与 success / danger 同值，理由见浅色段。
+     暗色下红 5.60–6.15 · 绿 6.01–6.60，四组底全部 AA。 */
+  --raw-dir-up:          #E07A6E;
+  --raw-dir-down:        #6FAA7A;
   --raw-warning:         #C99A3F;
   /* 🔴 最终定的（第二次修正）：
        「本身**淡黄色的那些框**你就改成**暖灰色**，
@@ -696,6 +744,8 @@
   --raw-danger: #c0392b;
   --raw-danger-bg: #fdeeec;
   --raw-danger-hover: #8f1e17;
+  --raw-dir-down: #2f6b3a;
+  --raw-dir-up: #c0392b;
   --raw-info: #1d5f8a;
   --raw-info-bg: #e8f1f8;
   --raw-paper: #f6f7f8;
@@ -730,6 +780,8 @@
   --danger: var(--raw-danger);
   --danger-bg: var(--raw-danger-bg);
   --danger-hover: var(--raw-danger-hover);
+  --dir-down: var(--raw-dir-down);
+  --dir-up: var(--raw-dir-up);
   --info: var(--raw-info);
   --info-bg: var(--raw-info-bg);
   --paper: var(--raw-paper);
@@ -769,6 +821,8 @@
   --raw-danger: #E07A6E;
   --raw-danger-bg: #341D1A;
   --raw-danger-hover: #F09A90;
+  --raw-dir-down: #6FAA7A;
+  --raw-dir-up: #E07A6E;
   --raw-info: #5B9BC4;
   --raw-info-bg: #13242F;
   --raw-paper: #14171A;
@@ -803,6 +857,8 @@
   --danger: var(--raw-danger);
   --danger-bg: var(--raw-danger-bg);
   --danger-hover: var(--raw-danger-hover);
+  --dir-down: var(--raw-dir-down);
+  --dir-up: var(--raw-dir-up);
   --info: var(--raw-info);
   --info-bg: var(--raw-info-bg);
   --paper: var(--raw-paper);
@@ -830,6 +886,15 @@
 }
 /* === END: dark-via-attr === */
 
+/* 🔴 涨跌口径切换（`[data-market="intl"]`）**不在本文件里**，在 `01-tokens/market.css`。
+   ----------------------------------------------------------------------------
+   原因不是洁癖：读本文件的那几个工具（contrast / gen-ai-contract /
+   gen-tokens-tree / token-audience）走 `_css.declared_tokens()`，它是**纯词法**的
+   —— 遍历所有声明、后者覆盖前者、**不看选择器**。
+   把一段**条件性**的交换规则放在这里，它们会把它当成默认值叠上去，
+   于是报告里「暗色 涨」显示成绿色，而浏览器里其实是对的 —— 门禁冤枉代码，
+   比漏判更难查（实测，见 E137）。
+   ⇒ 本文件只放「无条件声明」与「暗色媒体段」，条件规则一律外置。
 
 /* ============================================================================
    字体栈令牌

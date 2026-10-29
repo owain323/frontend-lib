@@ -85,6 +85,11 @@ COLOR = {
     '--scrollbar-thumb', '--scrollbar-thumb-hov',
     # 气泡的一对"反色面"（P1：由 tooltip.css 里的 media 分支改成令牌）
     '--tooltip-bg', '--tooltip-fg', '--tooltip-border',
+    # 涨跌方向色（0.12.0）。**不是** --danger/--success 的别名：
+    # 那两条是「好恶」（评价），这两条是「方向」（事实）。
+    # 口径切换（[data-market="intl"]）只改这两条的指向，所以它们必须
+    # 出现在导出里 —— 使用者要能查到"我这套口径下往哪边指"。
+    '--dir-up', '--dir-down',
 }
 
 SIZE = {
