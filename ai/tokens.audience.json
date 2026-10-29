@@ -14,6 +14,7 @@
     "--border":   { "audience": "public",    "why": "描边三档：控件 / 装饰 / 强装饰" },
     "--bp-":      { "audience": "reference", "why": "断点：CSS media query 条件里用不了 var()，只能当锚点给流体计算和脚本查询" },
     "--danger":   { "audience": "public",    "why": "危险色（--danger / -hover / -bg）" },
+    "--dir-":     { "audience": "public",    "why": "涨跌方向色（--dir-up / -down）。**方向 ≠ 好恶**：--danger/--success 是评价（错了/成了），方向是事实（涨了/跌了）。同一件事会同时成立而结论相反 —— 「研发费用同比 +38%」是涨，但那是坏消息。默认 A 股口径红涨绿跌，`[data-market=\"intl\"]` 整体对调" },
     "--dur-":     { "audience": "public",    "why": "时长阶梯：快 / 基准 / 慢" },
     "--ease-":    { "audience": "public",    "why": "缓动阶梯：默认 / 进出 / 滑入" },
     "--fs-":      { "audience": "public",    "why": "字号阶梯：阶梯允许有暂未使用的档位（那是阶梯，不是死代码）" },
@@ -49,7 +50,7 @@
   "tokens": {},
 
   "budget": {
-    "orphan": 4,
-    "$comment": "棘轮：孤儿令牌总数只能降。降了就把这个数字一起改小，不许偷偷升。2026-10-10：--lh-loose / --fs-xl 被新增 recipe 引用，7→5；同日 04-recipes/report 改在自身层内重定义边注宽 ⇒ --measure-aside 由『被引用』回到『无引用』，5→5→再核为 4。"
+    "orphan": 3,
+    "$comment": "棘轮：孤儿令牌总数只能降。降了就把这个数字一起改小，不许偷偷升。2026-10-10：--lh-loose / --fs-xl 被新增 recipe 引用，7→5；同日 04-recipes/report 改在自身层内重定义边注宽 ⇒ --measure-aside 由『被引用』回到『无引用』，5→5→再核为 4。2026-10-29：metric 引用 --tracking-normal ⇒ 4→3。"
   }
 }

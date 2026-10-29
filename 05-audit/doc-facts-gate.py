@@ -35,13 +35,14 @@ doc-facts-gate.py — 文档事实门禁（任务 W4，2026-10-09 加固）
      ⇒ 文档照它写就是错的，而门禁还会替它背书。
 
 ===========================================================================
-本门禁查五类事实（真值**全部**取自机器可读源，不写死）
+本门禁查六类事实（真值**全部**取自机器可读源，不写死）
 ---------------------------------------------------------------------------
   F1 组件总数        ← ai/components.json 的 summary.total（并与条目数互校）
   F2 门禁总数        ← check-all.sh 的**注册名单**（run / run_report，名字去重）
   F3 成熟度          ← summary.byMaturity；有 beta 时文档不许说"全部 stable"
   F4 组件清单        ← 目录下真实存在的组件（说"还没做"但实际有 ⇒ 红）
   F5 发布记录        ← CHANGELOG 的 `## [X.Y.Z] - ` 后面必须是 YYYY-MM-DD
+  F6 精简档令牌数    ← 04-recipes/tierA-tokens.css 本身（浅色截断到 @media 之前）
 
   视野声明：会打印扫了多少份文档。**扫到 0 份 ⇒ 判失败**（视野已空不许通过）。
 
@@ -216,6 +217,34 @@ def real_css_size():
             'n_files': n_files}
 
 
+def real_tier_counts():
+    """精简档 `04-recipes/tierA-tokens.css` 的令牌数（浅色 / 暗色）。
+
+    ⭐ 口径：**数文件本身**，不数 `tokens.css`。
+      精简档是 `tokens.css` 的**子集**（丢掉了 L1 原语、只留中间层），
+      所以它的数（104 / 35）与 `token-tree` 报的（112 / 35）本来就不一样 ——
+      拿后者去核前者是判据用错了对象。
+
+    · 浅色：截断到第一个 `@media` 之前
+    · 暗色：整份（暗色段在 `@media (prefers-color-scheme: dark)` 里）
+    · 计数单位是**声明**（与 `make-tiersnippet.py` 的 `count()` 一致），
+      不是去重后的名字数 —— 两处必须用同一种数法，否则永远对不上。
+    """
+    p = os.path.join(ROOT, '04-recipes/tierA-tokens.css')
+    if not os.path.isfile(p):
+        return None
+    css = io.open(p, encoding='utf-8').read()
+    # 去注释：文件头就写着这两个数，不去掉会把注释里的数字也数进去
+    css = re.sub(r'/\*[\s\S]*?\*/', '', css)
+    i = css.find('@media')
+    light = css if i < 0 else css[:i]
+    cnt = lambda t: len(re.findall(r'(--[a-z0-9-]+)\s*:', t))   # noqa: E731
+    # 🔴 暗色段 = 整份 − 浅色段。第一版直接数整份，得到「104 + 139」——
+    #    139 是浅色 104 + 暗色 35 的总和。计数口径必须与 make-tiersnippet
+    #    的 `extract()` 对齐：它把浅色块和暗色块**分开**返回再各自数。
+    return (cnt(light), cnt(css) - cnt(light))
+
+
 def real_gates():
     """check-all.sh 里注册的门禁**名单**（不是数字）。
 
@@ -387,6 +416,14 @@ PAT_COMPONENTS = [
 #   现在**三个数字一起核**：总数错、拆分错都红。
 PAT_COMPONENTS_BREAKDOWN = (
     r'(\d+)\s*个(?:（|\()\s*stable\s*(\d+)\s*/\s*beta\s*(\d+)')
+
+# 🔴 0.12.0 新增（E139）：精简档的令牌数也是**会被写死的事实**。
+#   0.11.16 之后 `tierA-tokens.css` 从 `tokens.css` 重抽过两次（delta/metric 那一轮
+#   加了 `--dir-*`），但 `01-tokens/README.md` 一直写着「浅色 102 + 暗色 33」，
+#   真值已是 104 + 35 —— `tierA-sync` 只比**文件内容**，没人比**文档里的数**。
+#   这类数字最容易漂：生成器会说话，文档不会。
+PAT_TIER_COUNTS = (
+    r'含浅色\s*(\d+)\s*\+\s*暗色\s*(\d+)\s*个令牌')
 PAT_GATES = [
     # 🔴 只在**声明总数**时才比对（0.8.9 修）：
     #   原来的 `(\d+)\s*道门禁` 会把随口一提的数量也当总数 ——
@@ -438,6 +475,7 @@ def main():
     conf = contract()
     gates, gate_problems = real_gates()
     size = real_css_size()
+    tier = real_tier_counts()
     comps = real_components()
     all_names = set()
     for v in comps.values():
@@ -515,6 +553,22 @@ def main():
                 problems.append((f, '组件数量与实际不符',
                                  '第 %d 行写 %d 个，ai/components.json 是 %d 个'
                                  ' ⇒ %s' % (no, claim, n_comp, line[:60])))
+
+        # F6 精简档令牌数（0.12.0 · E139）
+        if tier is None:
+            problems.append(('04-recipes/tierA-tokens.css', '真值缺失',
+                             '读不到精简档 ⇒ 「浅色 N + 暗色 M 个令牌」无从核对'))
+        else:
+            for m6 in re.finditer(PAT_TIER_COUNTS, text):
+                a, b = int(m6.group(1)), int(m6.group(2))
+                if (a, b) != tuple(tier):
+                    no6 = text.count('\n', 0, m6.start()) + 1
+                    problems.append(
+                        (f, '精简档令牌数与实际不符',
+                         '第 %d 行写「浅色 %d + 暗色 %d」，tierA-tokens.css 实际是 '
+                         '%d + %d ⇒ %s'
+                         % (no6, a, b, tier[0], tier[1],
+                            m6.group(0)[:50])))
 
         # F1b 组件总数 + 成熟度拆分的**列举式**声明
         #     「共 35 个（stable 31 / beta 4）」—— 三个数一起核。

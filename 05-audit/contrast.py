@@ -135,6 +135,16 @@ PAIRS = [
     ('危险色 / 危险底',     '--danger',         '--danger-bg',      4.5,  'text'),
     ('强调色 / 纸底',       '--accent',         '--paper',          4.5,  'text'),
     ('强调色 / 表面',       '--accent',         '--surface',        4.5,  'text'),
+    # 涨跌方向色（0.12.0）。delta 是 12px 小字号的正文本，
+    # 所以按 4.5 判（不是大字/UI 边界的 3.0）。
+    # ⚠️ 三张底都测：KPI 卡片是 --surface，表格内凹是 --surface-sunken，
+    #    只测纸底会漏掉最差的那一格（实测红点在内凹上 4.89，是四组里最低的）。
+    ('涨 / 纸底',           '--dir-up',         '--paper',          4.5,  'text'),
+    ('涨 / 表面',           '--dir-up',         '--surface',        4.5,  'text'),
+    ('涨 / 内凹区',         '--dir-up',         '--surface-sunken', 4.5,  'text'),
+    ('跌 / 纸底',           '--dir-down',       '--paper',          4.5,  'text'),
+    ('跌 / 表面',           '--dir-down',       '--surface',        4.5,  'text'),
+    ('跌 / 内凹区',         '--dir-down',       '--surface-sunken', 4.5,  'text'),
     ('控件边界 / 纸底',     '--border-control', '--paper',          3.0,  'ui'),
     ('控件边界 / 表面',     '--border-control', '--surface',        3.0,  'ui'),
     # 分层：底色与表面要有可见差，否则"表面浮在底上"的效果完全消失。

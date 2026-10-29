@@ -100,11 +100,13 @@ PAGES = [
     ('02-primitives/input',       'demo.html', '输入框'),
     ('02-primitives/card',        'demo.html', '卡片'),
     ('02-primitives/badge',       'demo.html', '徽标'),
+    ('02-primitives/delta',       'demo.html', '变化量'),
     ('02-primitives/choice',      'demo.html', '单选/复选'),
     ('02-primitives/switch',      'demo.html', '开关'),
     ('02-primitives/select',      'demo.html', '下拉选择'),
     ('02-primitives/combobox',    'demo.html', '组合框'),
     ('02-primitives/date-range',  'demo.html', '日期区间'),
+    ('02-primitives/metric',      'demo.html', '指标块'),
     ('02-primitives/separator',   'demo.html', '分隔线'),
     ('03-patterns/list',          'demo.html', '列表'),
     ('03-patterns/content',       'demo.html', '正文'),
@@ -193,6 +195,8 @@ RTL_PAGES = [
     ('04-recipes/detail-page',    'full.html',   '详情页-完整数据', 'b 侧栏栅格'),
     ('10-review/composition',     'demo.html',   '组合页',     'b 多栏栅格'),
     ('02-primitives/button',      'demo.html',   '按钮',       'b 图标与文字间距（最小样本）'),
+    ('02-primitives/delta',       'demo.html',   '变化量',     'c 符号在数字前/后 + 方向箭头'),
+    ('02-primitives/metric',      'demo.html',   '指标块',     'b 单位与数字的先后'),
     ('09-assets/bar',             'demo.html',   '柱状图',     'c 坐标轴方向'),
 ]
 

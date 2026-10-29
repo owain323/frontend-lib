@@ -1,0 +1,25 @@
+# delta — 变化量：+ / − 是 CSS 生成的文本 —— 它必须真的进朗读序列，否则方向只剩颜色（WCAG 1.4.1 不成立）
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "delta · 变化量"
+  main
+    heading "delta · 变化量" [level=1]
+    paragraph "delta 只回答一件事： 这个数相对基准往哪边变了、变了多少 。 它 不判断好坏 —— 同一个“涨”，对营收是好消息，"
+    heading "三个方向" [level=2]
+    paragraph "最后一个是紧凑档（ delta--sm ），用于表格行内与密集列表。 符号是 CSS 生成的 ：HTML 里只写 3.2"
+    heading "符号为什么由 CSS 生成" [level=2]
+    paragraph "因为“手写符号”是一种 不会报错 的错误。数据侧照着习惯把 −1.05% 写进去，组件再补一个减号，渲染出来是 −−1."
+    heading "错：HTML 里也写了减号" [level=3]
+    paragraph "字形 7 个 —— 两个减号叠在一起。"
+    heading "对：HTML 里只写数值本体" [level=3]
+    paragraph "字形 6 个 —— 减号只有一个，来自 CSS。"
+    heading "口径：默认红涨绿跌，可整体切换" [level=2]
+    heading "默认：A 股口径（红涨绿跌）" [level=3]
+    heading "国际口径（[data-market="intl"]）" [level=3]
+    paragraph "两栏的 HTML 逐字相同 ，区别只有右栏祖先上多了 data-market="intl" 。组件 CSS 里没有任何 "
+    heading "方向强化：箭头档" [level=2]
+    paragraph "delta--arrow 把符号换成 ▲ / ▼。它与符号档 互斥 （同一个 ::before），不要同时加。 ⚠️ 箭"
+    heading "在真语境里" [level=2]
+    paragraph "看第二行 ：研发费用 +38.20% 是“涨”，但那是成本失控，不是好消息。 如果用 table 的 num--pos "
+    heading "三条边界" [level=2]
+    paragraph "① 方向由你给，不由数值推断 。本组件没有 JS，不读数值； 类名写错就颜色错，而且不报错。数据侧务必按值选类，值为 0"

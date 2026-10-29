@@ -42,6 +42,14 @@
           "value": "#8f1e17",
           "type": "color"
         },
+        "dir-down": {
+          "value": "#2f6b3a",
+          "type": "color"
+        },
+        "dir-up": {
+          "value": "#c0392b",
+          "type": "color"
+        },
         "info": {
           "value": "#1d5f8a",
           "type": "color"
@@ -516,6 +524,14 @@
           "value": "#F09A90",
           "type": "color"
         },
+        "dir-down": {
+          "value": "#6FAA7A",
+          "type": "color"
+        },
+        "dir-up": {
+          "value": "#E07A6E",
+          "type": "color"
+        },
         "info": {
           "value": "#5B9BC4",
           "type": "color"
@@ -629,6 +645,8 @@
     "--danger": "color/danger",
     "--danger-bg": "color/danger-bg",
     "--danger-hover": "color/danger-hover",
+    "--dir-down": "color/dir-down",
+    "--dir-up": "color/dir-up",
     "--dur-base": "duration/base",
     "--dur-fast": "duration/fast",
     "--dur-slow": "duration/slow",
@@ -728,8 +746,8 @@
     "--z-toast": "zIndex/toast"
   },
   "meta": {
-    "lightCount": 110,
-    "darkCount": 33,
+    "lightCount": 112,
+    "darkCount": 35,
     "categories": [
       "breakpoint",
       "color",

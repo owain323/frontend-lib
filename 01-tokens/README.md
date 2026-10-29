@@ -170,12 +170,11 @@ node ai/cli.js tree   [--set=light|dark] [--cat=color]   # 第二种
 ## 库里没引用、但承诺给你用的令牌
 
 下面这些令牌**本库的组件一个都没用**（`token-audience-gate.py` 会一直盯着这个数：
-现在 5 个，只能降不能升）。它们不是死代码 —— 是**阶梯的档位**和**给脚本读的常量**，
+现在 3 个，只能降不能升）。它们不是死代码 —— 是**阶梯的档位**和**给脚本读的常量**，
 你写自己的页面时可以直接引用。
 
 | 令牌 | 值 | 为什么库里没人用 |
 |---|---|---|
-| `--tracking-normal` | `0` | 字距阶梯的"常规"档：它是**默认值**，写了等于没写 |
 | `--bp-sm` / `--bp-lg` / `--bp-xl` | 见上表 | 断点**物理上不可能**被 `var()` 引用（进不了 media query 条件） |
 
 > 2026-10-10（第二次）：新增的 `04-recipes/report` 在本层内把边注重定义为 14em，
@@ -187,6 +186,10 @@ node ai/cli.js tree   [--set=light|dark] [--cat=color]   # 第二种
 > 新增的 `04-recipes/analysis-report`（代码块行高）与
 > `04-recipes/data-showcase`（KPI 数值字号）开始引用它们 ⇒ 它们**不再**是孤儿。
 > 按双向校验规则从名单移除，棘轮数 7 → 5（棘轮只能降，本次是降）。
+>
+> 2026-10-29：`02-primitives/metric` 的标签用上了字距阶梯的"常规"档
+> （12px 中文给一点字距更清）⇒ 它不再是无引用项，从名单移除，棘轮 4 → 3。
+> 这是**降**，不是放水 —— 门禁自己会复核"名单里的令牌是不是真的没人引用"。
 >
 > ⚠️ 这一节里的**任何** `--` 开头字符串都会被 `token-audience-gate.py` 当作名单项，
 > 所以上面这句只能用中文描述、不能直接写令牌名。
@@ -223,9 +226,57 @@ node ai/cli.js tree   [--set=light|dark] [--cat=color]   # 第二种
 **不会报错但也不会生效**（被 `.page` 前缀的定义以更高特异性静默盖掉，
 成为死声明）⇒ `05-audit/shell-gate.py` 会拦住它。
 
+## 涨跌口径 `market.css`（选配，只在用 `delta` 时需要）
+
+`tokens.css` 里的 `--dir-up` / `--dir-down` 是**A 股口径**（红涨绿跌）。
+要支持国际口径（绿涨红跌），**再引一个文件**：
+
+```html
+<link rel="stylesheet" href="01-tokens/tokens.css">
+<link rel="stylesheet" href="01-tokens/market.css">   <!-- 必须在 tokens.css 之后 -->
+```
+
+然后在任意祖先上加属性，该范围内整体对调：
+
+```html
+<body data-market="intl">
+<div data-market="intl">…</div>   <!-- 也可以只切局部 -->
+```
+
+| 引了 `market.css` | 不引 |
+|---|---|
+| `[data-market="intl"]` 生效 | `data-market` 被**完全忽略**，永远是 A 股口径 |
+
+交换只改**令牌的指向**（`--dir-up: var(--raw-dir-down)`），组件 CSS 里零分支 ——
+`delta` 只写 `color: var(--dir-up)`，两栏 HTML 逐字相同。
+
+⚠️ 三条硬要求（都有判据挡着，见 `05-audit/dir-gate.js`）：
+
+1. **必须排在 `tokens.css` 之后** —— 同权重靠顺序定胜负。
+2. **不许写进 `tokens.css`** —— 那会让六个靠词法读 CSS 的工具静默读错
+   （`contrast` / `gen-ai-contract` / `gen-tokens-tree` / `token-audience` /
+   `theme-sync`）。真实事故见 `internal/ERRORS.md` 的 E137。
+3. 选择器是 `:root[data-market="intl"]` (0,2,0)，**不是** `:where(...)` (0) ——
+   `:where()` 抢不过 `:root` 的 (0,1,0)，写了等于没写（E135）。
+
+> 精简档（`tierA-tokens.css`）**不含**这段交换：它是一份 `<style>` 内的
+> 令牌快照，没有配套文件可引。要国际口径就自己补一条规则 ——
+> 注意精简档**丢掉了 L1 原语**（`--raw-dir-*` 不存在，值已内联），所以不能
+> `var(--raw-dir-down)` 互换，只能写直接色值：
+>
+> ```css
+> [data-market="intl"] { --dir-up: #2f6b3a; --dir-down: #c0392b; }
+> @media (prefers-color-scheme: dark) {
+>   [data-market="intl"] { --dir-up: #6FAA7A; --dir-down: #E07A6E; }
+> }
+> ```
+>
+> 这四条色值是**重复**的，所以要跟着 `tokens.css` 一起改 —— 这是精简档的
+> 固有代价（它本来就是"抄一份进去"的形态）。
+
 ## 精简档 的使用方式
 
-复制 **`04-recipes/tierA-tokens.css`** 进 `<style>`（**5.1 KB**，含浅色 102 + 暗色 33 个令牌，零外链零构建）。
+复制 **`04-recipes/tierA-tokens.css`** 进 `<style>`（**5.2 KB**，含浅色 104 + 暗色 35 个令牌，零外链零构建）。
 
 那一份是由 `tokens.css` **自动抽取**的（`python 05-audit/make-tiersnippet.py`），
 所以不会与本文件漂移；改了这个文件请重新生成。
