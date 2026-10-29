@@ -61,19 +61,25 @@
  * 就等于这条判据不存在（第一版正是这么写的，13 个块全绿）。
  *
  * ============================================================================
- * 🔴 第三道判据：单栏页必须**逐页登记**，不是打个数字
+ * 🔴 第三道判据：单栏块必须**逐块登记**，不是打个数字
  * ============================================================================
- * `box bad` 单栏的页没有成对结构，`demo-claim` 的互斥断言用不上 ——
- * 这是真实的覆盖边界，不是能消灭的东西。但"边界"和"欠账"的区别在于：
- * 前者每一页都写清了为什么，后者只是一个数字。
+ * `box bad` 单栏块没有成对结构，互斥断言用不上 —— 这是真实的覆盖边界，
+ * 不是能消灭的东西。但"边界"和"欠账"的区别在于：前者每一块都写清了为什么，
+ * 后者只是一个数字。
  *
- * 所以：每个只有 `box bad`、没有 `cmp__bad` 的页，必须在文件里写
+ * 所以：每个单栏反例块，必须在**块上**写
  *
- *   <!-- demo-claim:skip 差别是"何时报错"，不是元素的某个可量属性 -->
+ *   <div class="box bad" data-claim-skip="差别只在无障碍树里，两栏视觉必然相同">
  *
- * 缺了、或理由为空 ⇒ 红。理由每条都会打出来，可以被反驳 ——
+ * 缺了、或理由为空白 ⇒ 红。理由逐条打出来，可以被反驳 ——
  * 这是它比一行统计数字唯一多出来的价值。
- * 反过来，既有 `cmp__bad` 又写 `skip` 也是矛盾，同样红。
+ *
+ * ⚠️ 这条判据以前是**按页**的（`<!-- demo-claim:skip 理由 -->`），0.11.14 改成按块。
+ * 原因不是审美，是一个具体的洞：按页判时，只要给页面加**一个** `cmp` 块，
+ * 同页剩下的单栏反例就全部"洗白"了 —— 门禁不看了，也不需要理由。
+ * 而 0.11.14 恰好造出了这种页（`separator` / `switch` 各有一块在视觉上
+ * 必然相同的反例，凑不成对），所以这个洞必须先堵上，否则改完就是假绿。
+ * 页面级注释现在会**报错**，不忽略 —— 两套机制并存比没有机制更坏。
  *
  * ============================================================================
  * 🔴 它判不了什么（不假装判了）
@@ -96,7 +102,7 @@
  *
  * 用法：
  *   node 05-audit/demo-claim-gate.js             # 判
- *   node 05-audit/demo-claim-gate.js --selftest  # 自检（21 条必须红 + 11 条必须绿）
+ *   node 05-audit/demo-claim-gate.js --selftest  # 自检（每条用例都写明该红还是该绿）
  * ========================================================================= */
 
 const fs = require('fs');
@@ -120,6 +126,10 @@ const METRICS = {
   uniq: '不同"渲染字形"的个数（textContent + ::before/::after）',
   glyphs: '第一个匹配元素的字形字符数（含伪元素）',
   hidden: '有效不可见的匹配元素个数（opacity 0 / visibility hidden / 零尺寸）',
+  /* 别的指标都是**代理**：「高度 0」暗示焦点没了、「没有 input」暗示原生行为没了。
+     focus 是**直接**的那一个 —— 它数的就是"按 Tab 能不能停上去"。
+     反例讲的是"键盘到不了这里"时，只有它能把这句话量出来。 */
+  focus: '匹配元素里真的能 Tab 到的个数（tabIndex≥0、有渲染盒、未 disabled）',
   gh: 'hover 引起的高度变化（px，正数=变大）',
   gw: 'hover 引起的宽度变化（px，正数=变宽）',
 };
@@ -221,6 +231,40 @@ function measureInPage([blockIdx, side, spec]) {
 
   if (spec.metric === 'uniq') {
     return new Set([...pane.querySelectorAll(spec.sel)].map(glyph)).size;
+  }
+
+  /* 「能不能 Tab 到」没有现成 API，得**两个信号一起取** —— 少一个都会错，
+     而且两个方向的错都实测到了：
+
+       元素                     tabIndex   专注得成   Tab 到得了
+       a[href]                     0         ✅         ✅
+       a（没有 href）              0         ❌         ❌   ← tabIndex 会撒谎
+       input[disabled]             0         ❌         ❌   ← tabIndex 会撒谎
+       div[tabindex="-1"]         -1         ✅         ❌   ← 能聚焦 ≠ 能 Tab 到
+       button[tabindex="-1"]      -1         ✅         ❌   ← roving 的"其余项"就是它
+
+     所以判据是 **`focus()` 成功 且 `tabIndex >= 0`**：
+       · 只看 tabIndex  ⇒ 没 href 的 `<a>`、disabled 的输入框会被算成可聚焦；
+       · 只看 focus()   ⇒ roving tabindex 那组里 `-1` 的项会被算成能 Tab 到
+         （tabs 那页第一次就是这么错的：正例量出 3，应该是 1）。
+
+     ⚠️ 已知低估：`contenteditable` 在 Chrome 里 `tabIndex` 报 -1，但它**在**
+        Tab 顺序里 —— 本库没用到，真用上时要补一条 `isContentEditable`。
+        `focus()` 会滚动页面，量完把滚动位置放回去、并 `blur()` 掉。 */
+  if (spec.metric === 'focus') {
+    const els = [...pane.querySelectorAll(spec.sel)];
+    const sx = window.scrollX;
+    const sy = window.scrollY;
+    let n = 0;
+    for (const el of els) {
+      if (typeof el.focus !== 'function') continue;
+      if (el.tabIndex < 0) continue;
+      el.focus({ preventScroll: true });
+      if (document.activeElement === el) n++;
+    }
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    window.scrollTo(sx, sy);
+    return n;
   }
 
   const el = spec.sel === '.' ? pane : pane.querySelector(spec.sel);
@@ -339,17 +383,24 @@ function judgeSpecimensInPage([tokenClasses]) {
   for (const el of document.querySelectorAll('.box.bad, .cmp__bad')) {
     const h3 = el.querySelector('h3');
     const title = h3 ? h3.textContent.trim() : '(无标题)';
+    /* 块级信息：`data-claim-skip` 是"这块写不出互斥断言"的登记，
+       `isCmp` 用来区分"成对的（由断言判据管）"和"单栏的（必须登记）"。 */
+    const base = {
+      title,
+      isCmp: el.classList.contains('cmp__bad'),
+      claimSkip: el.getAttribute('data-claim-skip'),
+    };
     const prose = el.getAttribute('data-prose');
     if (prose !== null) {
       out.push(prose.trim().length >= 8
-        ? { ok: true, declared: true, title, prose: prose.trim() }
-        : { ok: false, title, why: 'data-prose 的理由太短（要写清为什么摆不出来）' });
+        ? { ...base, ok: true, declared: true, prose: prose.trim() }
+        : { ...base, ok: false, why: 'data-prose 的理由太短（要写清为什么摆不出来）' });
       continue;
     }
     const n = [...el.querySelectorAll('*')].filter(isSpecimen).length;
     out.push(n
-      ? { ok: true, declared: false, title, n }
-      : { ok: false, title,
+      ? { ...base, ok: true, declared: false, n }
+      : { ...base, ok: false,
         why: '块里只有说明文字，没有一个"内容本身"的元素 —— '
           + '标题说的那个"反例"根本没被摆出来' });
   }
@@ -387,9 +438,9 @@ function readPages() {
       out.push({
         rel: `${top}/${name}/demo.html`,
         hasCmp: /cmp__bad/.test(src),
-        hasBoxBad: /class="box bad"/.test(src),
-        /* `<!-- demo-claim:skip 理由 -->`，理由取到 `-->` 为止 */
-        skip: (/<!--\s*demo-claim:skip\s+([\s\S]*?)-->/.exec(src) || [])[1],
+        /* 已废弃的**页面级**登记。留着这一项是为了主动报错，不是兼容 ——
+           两套登记机制并存时，下一个人会以为注释那套还在生效。 */
+        legacySkip: /<!--\s*demo-claim:skip[\s\S]*?-->/.test(src),
       });
     }
   }
@@ -461,28 +512,41 @@ const pad = (s) => (s + '            ').slice(0, 10);
  * ④ 主流程
  * ------------------------------------------------------------------------ */
 
-/* 登记表判据。抽成函数是为了能在自检里喂合成数据 ——
+/* 块级登记判据。抽成函数是为了能在自检里喂合成数据 ——
    否则这段逻辑只能靠"在真实仓库里看着对"来相信。 */
-function judgeSkips(pages) {
+function judgeBlockSkips(blocks) {
   const problems = [];
-  for (const p of pages) {
-    const reason = p.skip === undefined ? null : p.skip.trim();
-    if (p.hasCmp) {
-      if (reason !== null) {
-        problems.push({ rel: p.rel, why: '既写了 `cmp__bad` 又写了 `demo-claim:skip`'
-          + ' —— 有对照结构就不该登记成"量不了"' });
-      }
-      continue;
-    }
-    if (!p.hasBoxBad) continue;         // 既无反例也无对照，不归这道门禁管
+  for (const b of blocks) {
+    if (b.isCmp) continue;            // 成对的块由断言判据管，不走这条
+    /* 写了 `data-prose` 的块连标本都摆不出来，自然更配不成对 ——
+       `data-prose` 已经把这件事说清了，再要一条 `data-claim-skip`
+       是让人把同一句话说两遍。一条声明只能覆盖一个问题，不要两个都罚。 */
+    if (b.declared) continue;
+    const reason = b.claimSkip === null || b.claimSkip === undefined
+      ? null : b.claimSkip.trim();
     if (reason === null) {
-      problems.push({ rel: p.rel, why: '有 `box bad` 单栏反例，却没有 '
-        + '`<!-- demo-claim:skip 理由 -->` 登记' });
+      problems.push({
+        title: b.title,
+        why: '单栏反例块没有写 `data-claim-skip="理由"` —— '
+          + '写不出互斥断言可以，沉默不行',
+      });
     } else if (reason.length < 8) {
-      problems.push({ rel: p.rel, why: `登记理由太短：${JSON.stringify(reason)}` });
+      problems.push({ title: b.title, why: `登记理由太短：${JSON.stringify(reason)}` });
     }
   }
   return problems;
+}
+
+/* 页面级登记已废弃：判据搬到**块上**了。
+   原因很具体 —— 页面级只有"这一页有没有成对结构"一个粒度，
+   而一页里可以既有成对的块、又有写不成对的块（本轮就有两页是这种情况）。
+   按页判的话，加一个 `cmp` 块就能把同页剩下的单栏反例全部"洗白"。 */
+function judgeLegacySkips(pages) {
+  return pages.filter((p) => p.legacySkip).map((p) => ({
+    rel: p.rel,
+    why: '还在用页面级的 `<!-- demo-claim:skip -->` —— '
+      + '判据已改到块上，请改成该块的 `data-claim-skip="理由"`',
+  }));
 }
 
 async function main() {
@@ -495,6 +559,7 @@ async function main() {
   let blocks = 0;
   let nSpecimen = 0;
   const nProse = [];
+  const allBlocks = [];
   const claimProblems = [];
   const specimenProblems = [];
 
@@ -503,6 +568,7 @@ async function main() {
 
     /* ② 标本：每一页都判，不只有成对结构的页 */
     const specs = await page.evaluate(judgeSpecimensInPage, [token]);
+    allBlocks.push(...specs.map((s) => ({ rel: p.rel, ...s })));
     const bad = specs.filter((s) => !s.ok);
     if (bad.length) specimenProblems.push({ rel: p.rel, bad });
     for (const s of specs) {
@@ -521,27 +587,26 @@ async function main() {
   }
   await b.close();
 
-  /* ③ 登记表：单栏页必须逐页写明为什么量不了 */
-  const skipBad = judgeSkips(pages);
-  const registered = pages
-    .filter((p) => !p.hasCmp && p.hasBoxBad && p.skip && p.skip.trim().length >= 8)
-    .map((p) => ({ rel: p.rel, why: p.skip.trim() }));
+  /* ③ 登记：**按块**判，不按页判 */
+  const skipBad = judgeBlockSkips(allBlocks);
+  const legacy = judgeLegacySkips(pages);
+  const declared = allBlocks.filter((b) => !b.isCmp
+    && typeof b.claimSkip === 'string' && b.claimSkip.trim().length >= 8);
 
   console.log('\n  ── 覆盖 ──');
   console.log('  对照块 %d 个（%d 页）；反例块里有标本 %d 个，'
-    + '声明摆不出来 %d 个', blocks, pages.filter((p) => p.hasCmp).length,
-  nSpecimen, nProse.length);
+    + '声明摆不出来 %d 个；单栏块登记 %d 个',
+  blocks, pages.filter((p) => p.hasCmp).length, nSpecimen, nProse.length,
+  declared.length);
   if (nProse.length) {
     console.log('  声明的（`data-prose`，理由可被反驳）：');
     nProse.forEach((x) => console.log('    · %s  %s\n      %s',
       x.rel.replace('/demo.html', ''), x.title.slice(0, 18), x.prose));
   }
-  if (registered.length) {
-    console.log('  单栏页登记（%d 页，没有成对结构，理由可被反驳）：', registered.length);
-    registered.forEach((x) => console.log('    · %s\n      %s',
-      x.rel.replace('/demo.html', ''), x.why));
-  } else if (pages.some((p) => p.hasBoxBad && !p.hasCmp)) {
-    console.log('  单栏页登记：0 页');
+  if (declared.length) {
+    console.log('  单栏块登记（%d 块，视觉上必然相同，写不出互斥断言）：', declared.length);
+    declared.forEach((x) => console.log('    · %s  %s\n      %s',
+      x.rel.replace('/demo.html', ''), x.title.slice(0, 18), x.claimSkip.trim()));
   }
 
   if (specimenProblems.length) {
@@ -552,8 +617,12 @@ async function main() {
     }
   }
   if (skipBad.length) {
-    console.log('\n  🔴 %d 页的登记有问题：', skipBad.length);
-    skipBad.forEach((x) => console.log('  · %s\n      %s', x.rel, x.why));
+    console.log('\n  🔴 %d 个单栏块没有登记：', skipBad.length);
+    skipBad.forEach((x) => console.log('  · 「%s」\n      %s', x.title, x.why));
+  }
+  if (legacy.length) {
+    console.log('\n  🔴 %d 页还在用页面级登记：', legacy.length);
+    legacy.forEach((x) => console.log('  · %s\n      %s', x.rel, x.why));
   }
   if (claimProblems.length) {
     console.log('\n  🔴 %d 页有断言不成立：', claimProblems.length);
@@ -562,11 +631,13 @@ async function main() {
       x.problems.forEach((m) => console.log('      %s', m));
     }
   }
-  if (specimenProblems.length || skipBad.length || claimProblems.length) process.exit(1);
+  if (specimenProblems.length || skipBad.length || legacy.length || claimProblems.length) {
+    process.exit(1);
+  }
 
   console.log('\n  ✅ %d 个对照块：每栏都写了可证伪的断言，且两两互斥、各自成立', blocks);
   console.log('  ✅ 每个反例块里都有标本，或写明了为什么摆不出来');
-  console.log('  ✅ %d 个单栏页逐页登记（不是一行统计数字）', registered.length);
+  console.log('  ✅ %d 个单栏块逐块登记（不是一行统计数字）', declared.length);
 }
 
 /* ---------------------------------------------------------------------------
@@ -680,21 +751,66 @@ async function selftest() {
     want ? 'green' : 'red');
   }
 
-  /* ④ 登记表判据（喂合成数据，不碰真实仓库） */
-  const LONG = '差别是"何时报错"，不是元素的某个可量属性';
-  for (const [name, pages, want] of [
-    ['单栏页没登记', [{ rel: 'a', hasCmp: false, hasBoxBad: true }], false],
-    ['理由全是空格', [{ rel: 'a', hasCmp: false, hasBoxBad: true, skip: '   ' }], false],
-    ['理由太短', [{ rel: 'a', hasCmp: false, hasBoxBad: true, skip: '量不了' }], false],
-    ['理由够长', [{ rel: 'a', hasCmp: false, hasBoxBad: true, skip: LONG }], true],
-    ['没有反例也没有对照（不归它管）',
-      [{ rel: 'a', hasCmp: false, hasBoxBad: false }], true],
-    ['有成对结构却登记 skip', [{ rel: 'a', hasCmp: true, hasBoxBad: true, skip: LONG }], false],
+  /* ④ 登记判据（喂合成数据，不碰真实仓库） */
+  const LONG = '两栏在视觉上必然相同，差别只在无障碍树里，写不出互斥断言';
+  for (const [name, blocks, want] of [
+    ['单栏块没登记', [{ title: 'x', isCmp: false }], false],
+    ['理由全是空格', [{ title: 'x', isCmp: false, claimSkip: '   ' }], false],
+    ['理由太短', [{ title: 'x', isCmp: false, claimSkip: '量不了' }], false],
+    ['理由够长', [{ title: 'x', isCmp: false, claimSkip: LONG }], true],
+    ['成对的块不需要登记', [{ title: 'x', isCmp: true }], true],
+    /* 反方向也要放行：成对的块**多写一条**登记不该被罚 ——
+       那不是矛盾，只是冗余；罚它会让下一个人去删一句真话。 */
+    ['成对的块多写了登记', [{ title: 'x', isCmp: true, claimSkip: LONG }], true],
+    /* 标本都没有的块不用再登记一遍 —— 否则同一件事要说两遍 */
+    ['写了 data-prose 的块（已声明摆不出来）',
+      [{ title: 'x', isCmp: false, declared: true }], true],
+    ['data-prose 无效的块仍然要登记',
+      [{ title: 'x', isCmp: false, declared: false }], false],
   ]) {
-    const green = judgeSkips(pages).length === 0;
+    const green = judgeBlockSkips(blocks).length === 0;
     say(green === want, `${want ? '放行' : '反向'}控制：登记「${name}」`
       + `→ 必须${want ? '绿' : '红'}（实际${green ? '绿' : '红'}）`,
     want ? 'green' : 'red');
+  }
+
+  /* 页面级登记已废弃：留着必须报错，否则两套机制并存 */
+  say(judgeLegacySkips([{ rel: 'a', legacySkip: true }]).length === 1
+    && judgeLegacySkips([{ rel: 'b', legacySkip: false }]).length === 0,
+  '反向控制：页面级 `<!-- demo-claim:skip -->` 残留 → 必须红');
+
+  /* ⑤ focus 指标：它数的是"能不能 Tab 到"，
+     所以每条都要有正反两面 —— 只测"数出 0"会放过一条永远返回 0 的实现。 */
+  for (const [name, inner, sel, want] of [
+    ['普通 input', '<input type="checkbox">', 'input', 1],
+    ['display:none 的 input', '<input type="checkbox" style="display:none">', 'input', 0],
+    ['visibility:hidden 的 input',
+      '<input type="checkbox" style="visibility:hidden">', 'input', 0],
+    ['disabled 的 input', '<input type="checkbox" disabled>', 'input', 0],
+    ['opacity:0 的 input（本库 choice 的写法）',
+      '<input style="opacity:0;position:absolute;inset:0">', 'input', 1],
+    ['带 tabindex=0 的 div', '<div tabindex="0">x</div>', '[tabindex]', 1],
+    ['没有 tabindex 的 div', '<div>x</div>', 'div', 0],
+    ['带 href 的 a', '<a href="#x">x</a>', 'a', 1],
+    ['没有 href 的 a', '<a>x</a>', 'a', 0],
+    /* 这两条是"别把语义搞反"的守门：aria-disabled 是**仍可聚焦**，
+       max-height:0 的内容**仍在 Tab 顺序里** —— 正是 accordion 那页要教的。 */
+    ['aria-disabled 的 button（规范要求仍可聚焦）',
+      '<button aria-disabled="true">x</button>', 'button', 1],
+    /* 这一条是第一次实现量错的地方：能聚焦不等于能 Tab 到 */
+    ['tabindex="-1" 的 button（脚本能聚焦，Tab 到不了）',
+      '<button tabindex="-1">x</button>', 'button', 0],
+    ['max-height:0 里的链接（仍可聚焦）',
+      '<div style="max-height:0;overflow:hidden"><a href="#y">y</a></div>', 'a', 1],
+    ['hidden 里的链接（已离开 Tab 顺序）',
+      '<div hidden><a href="#y">y</a></div>', 'a', 0],
+  ]) {
+    await page.setContent(
+      `<div class="cmp"><div class="cmp__pane cmp__bad">${inner}</div></div>`,
+      { waitUntil: 'load' });
+    const got = await page.evaluate(measureInPage, [0, 'bad', { sel, metric: 'focus' }]);
+    say(got === want, `${want ? '放行' : '反向'}控制：focus「${name}」`
+      + `→ 必须数出 ${want}（实际 ${got}）`, want ? 'green' : 'red');
   }
 
   await b.close();

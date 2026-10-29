@@ -31,15 +31,28 @@ RootWebArea "tabs · 标签页"
     heading "键盘契约（APG / Radix）" [level=2]
     paragraph "Tab 进入组时落在 当前选中 的 tab；再按 Tab 进面板 ← → 上一个 / 下一个 tab（并激活） Home"
     paragraph "roving tabindex ：一组 tab 里只有一个是 tabindex="0" ， 其余全是 -1 。否则 Ta"
-    heading "反例" [level=2]
-    heading "反例：用 div 当 tab" [level=3]
-    tablist "基本信息 高级设置" [orientation=horizontal]
+    heading "对照：两处最容易写错的地方" [level=2]
+    heading "❌ 用 div 当 tab" [level=3]
+    tablist "错例：div 当 tab" [orientation=horizontal]
       tab "基本信息" [selected=true]
       tab "高级设置"
-    paragraph "上面这两个 tab 看起来完全正常 ，但 <div role="tab"> 键盘上根本 Tab 不到 （除非手写 tab"
-    heading "反例：每个 tab 都写 tabindex="0"" [level=3]
-    tablist "基本信息 高级设置 日志" [orientation=horizontal]
+    paragraph "这两个 tab 看起来完全正常 ，但 <div role="tab"> 根本 Tab 不到（除非手写 tabindex "
+    heading "✅ button role="tab"" [level=3]
+    tablist "正例：button 当 tab" [orientation=horizontal]
+      tab "基本信息" [selected=true]
+      tab "高级设置"
+    paragraph "同一个外观，键盘行为免费且必然正确。 （这里只演示"能不能聚焦"，roving 见下面那块。）"
+    heading "❌ 每个 tab 都写 tabindex="0"" [level=3]
+    tablist "错例：三个 tab 全是 0" [orientation=horizontal]
       tab "基本信息" [selected=true]
       tab "高级设置"
       tab "日志"
-    paragraph "看起来"都能 Tab 到"，但一排 3 个 tab 就要按 3 次 Tab 才能进内容区（真到 5 个 tab 的页面上"
+    paragraph "看起来"都能 Tab 到"，但一排 3 个 tab 就要按 3 次 Tab 才能进内容区。Tab 键应该是 进出 控件的"
+    heading "✅ roving tabindex：整组只有一个 0" [level=3]
+    tablist "正例：roving" [orientation=horizontal]
+      tab "基本信息" [selected=true]
+      tab "高级设置"
+      tab "日志"
+    tabpanel "基本信息"
+      paragraph "一次 Tab 就进来，方向键在组内移动。"
+    paragraph "那个 0 跟着选中项走 —— 由 roving.js 在切换时搬， 不是初始化时设一次。只设一次是最常见的 bug。"

@@ -17,7 +17,6 @@
 </head>
 <body class="page page">
 <main class="wrap">
-  <!-- demo-claim:skip 反例的差别是「饱和底白字的对比度」和「div 能不能被 Tab」：前者 demo-claim 没有对比度指标（contrast.py 单独测），后者没有焦点指标 -->
   <h1>badge · 状态标记</h1>
   <p class="lede">
     badge 承载<strong>一个短状态词</strong>（"已停牌""审计中"）。
@@ -64,7 +63,7 @@
   </p>
 
   <h2 class="rule-top">反例</h2>
-  <div class="box bad">
+  <div class="box bad" data-claim-skip="两栏画出来的都是同一批色块，尺寸与位置完全相同 —— 差别是暗色下 2.72:1 与 6.39:1 的对比度，而 demo-claim 没有对比度指标（那件事由 contrast.py 单独测，本页正文引的就是它的数）">
     <h3>反例：饱和底 + 白字</h3>
     <div class="row">
       <span class="badge badge--solid-success">已披露</span>
@@ -80,7 +79,7 @@
     </p>
   </div>
 
-  <div class="box bad">
+  <div class="box bad" data-claim-skip="可点的正例本该是一个 a / button，但本库 badge 门禁要求所有可点元素命中区 ≥44px，而徽标本体只有 24px 高 —— 摆一个过得了门的正例，要么改组件，要么给演示塞内联样式把高度撑起来（那是拿样式骗门禁）。⇒ 配不成对的原因不是量不了，是组件本身还没解决这个冲突，见 CHANGELOG「已知冲突」">
     <h3>反例：用 badge 装可点的东西</h3>
     <div class="row">
       <div class="badge badge--info">待复核</div>
@@ -91,6 +90,10 @@
       —— div 加 onclick 对读屏是<strong>「没有角色的按钮」</strong>：
       读不出来它是能点的，键盘也 Tab 不到。
       要能点就用 <code>&lt;button&gt;</code> 或 <code>&lt;a&gt;</code>，样式照抄 <code>.badge</code>。
+      <br><br>
+      ⚠️ <strong>但这句建议目前有个坑</strong>：换成 button/a 之后，
+      本库 badge 门禁会判「命中区 54×24 &lt; 44px」—— 徽标本体的高度不够。
+      <strong>这个问题还没解决</strong>，不是演示写错了。
     </p>
   </div>
 

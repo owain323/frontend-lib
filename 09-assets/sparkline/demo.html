@@ -34,7 +34,6 @@
 </head>
 <body class="page page">
 <main class="wrap">
-  <!-- demo-claim:skip 两块反例（读屏念什么、reduced-motion 动画）都是运行时或读屏输出，没有可量的元素属性 -->
   <h1>sparkline · 迷你趋势图</h1>
   <p class="lede">
     在一行里显示"最近走势"。它是<strong>辅助</strong>不是图表 ——
@@ -124,7 +123,7 @@
   </div>
 
   <h2 class="rule-top">反例</h2>
-  <div class="box bad">
+  <div class="box bad" data-claim-skip="两栏画的是同一条走势线，差别只在旁边有没有一个数字 —— 而「该不该配数字」本页上文明写取决于数值重不重要（纯装饰小图可以不配），没有一条能划的界线；断言只能去数一个我自己编出来的选择器，那证明的是我编的标记，不是这件事">
     <h3>反例：只放 sparkline，没有数字</h3>
     <p class="small">
       视觉上"很有信息"，但读屏用户<strong>什么都不知道</strong> ——

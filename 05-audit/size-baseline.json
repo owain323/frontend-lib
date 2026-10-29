@@ -25,8 +25,8 @@
       "raw": 5633
     },
     "01-tokens/page.css": {
-      "gzip": 7450,
-      "raw": 17726
+      "gzip": 7563,
+      "raw": 17951
     },
     "01-tokens/polyfill.js": {
       "gzip": 1694,
@@ -242,6 +242,6 @@
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 251175,
-  "total_raw": 632229
+  "total_gzip": 251288,
+  "total_raw": 632454
 }

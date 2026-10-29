@@ -32,7 +32,6 @@ p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6
 </head>
 <body class="page page">
 <main class="wrap">
-  <!-- demo-claim:skip 可量（display:none 的 input 高度是 0，opacity:0 的不是），但这一页仍是单栏结构，升级成 cmp 要重排整页 —— 本轮没做，已知欠账 -->
 
   <h1>checkbox / radio / select</h1>
   <p class="lede">
@@ -187,22 +186,39 @@ p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6
     </p>
   </div>
 
-  <h2 class="rule-bottom">反例：用 display:none 隐藏原生控件</h2>
-  <div class="box bad">
-    <h3>反例：把原生勾选框 <code>display:none</code> 藏掉</h3>
-    <div class="choice choice--checkbox">
-      <input class="choice__input" type="checkbox" style="display:none" id="bad1">
-      <label class="choice__label" for="bad1">
-        <span class="choice__mark"></span>
-        <span>我看起来正常，但 Tab 到不了这里</span>
-      </label>
+  <h2 class="rule-bottom">对照：把原生勾选框藏起来的两种写法</h2>
+  <div class="cmp">
+    <div class="cmp__pane cmp__bad" data-bad="input|focus|=0">
+      <h3>❌ display:none：看不见，也 Tab 不到</h3>
+      <div class="choice choice--checkbox">
+        <input class="choice__input" type="checkbox" style="display:none" id="bad1">
+        <label class="choice__label" for="bad1">
+          <span class="choice__mark"></span>
+          <span>我看起来正常，但 Tab 到不了这里</span>
+        </label>
+      </div>
+      <p class="cmp__why">
+        <strong>按一次 Tab 就知道：焦点直接跳过它。</strong>
+        <code>display:none</code> 把这个 input 从 tab 顺序里删掉了，
+        键盘用户彻底到不了 —— 而鼠标点仍然有效，所以这个 bug 用鼠标永远测不出来。
+      </p>
     </div>
-    <p class="small" style="margin-top:var(--sp-3)">
-      <strong>用 Tab 试试——焦点会直接跳过它。</strong>
-      <code>display:none</code> 把它从 tab 顺序里移除了，键盘用户彻底到不了这里。
-      鼠标点击还正常，所以这种 bug 用鼠标测不出来。<br><br>
-      本库的 input 用的是 <code>opacity:0</code> + 绝对定位：<strong>看不见，但仍在 tab 顺序里</strong>。
-    </p>
+
+    <div class="cmp__pane cmp__good" data-good="input|focus|=1">
+      <h3>✅ opacity:0 + 绝对定位：看不见，但还在 Tab 顺序里</h3>
+      <div class="choice choice--checkbox">
+        <input class="choice__input" type="checkbox" id="good1">
+        <label class="choice__label" for="good1">
+          <span class="choice__mark"></span>
+          <span>同一行字，看起来一模一样，但 Tab 停得住</span>
+        </label>
+      </div>
+      <p class="cmp__why">
+        本库的 input 是 <code>opacity:0</code> 铺满整个 label：
+        你看得见的是 <code>.choice__mark</code>，焦点环也画在它身上
+        （<code>:focus-visible + .choice__mark</code>）。
+      </p>
+    </div>
   </div>
 
   <h2 class="rule-bottom">焦点环必须画在看得见的地方</h2>

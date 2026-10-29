@@ -816,8 +816,11 @@ run "demo-counter-rev" $PY 05-audit/demo-counterexample-gate.py --selftest
 #      34 个 demo 页，13 个反例块只有 `<p class="small">` 在描述反例 ——
 #      `separator` 标题写"用 div 代替 hr"，块里连那个 div 都没有。
 #      摆不出来的写 `data-prose="理由"`（理由要 ≥8 字，会被逐条打印）。
-#   ③ 只有 `box bad`、没有 `cmp` 的页，页内必须写
-#      `<!-- demo-claim:skip 理由 -->`。理由是"量不了"还是"可量没做"要分开写 ——
+#   ③ 单栏 `box bad` 块必须**在块上**写 `data-claim-skip="理由"`
+#      （0.11.14 起；以前是页面级注释 `<!-- demo-claim:skip -->`）。
+#      改成按块，是因为按页判有个洞：给页面加**一个** `cmp` 块，
+#      同页剩下的单栏反例就全部"洗白"了 —— 门禁不看了，也不要理由。
+#      理由是"量不了"还是"可量没做"要分开写 ——
 #      前者是边界，后者是欠账；混成一句"量化不了"就是拿措辞盖住没做的活。
 # 🔴 port-safe —— 5 道门禁都靠 `listen(0)` 拿临时端口，而 Chrome 有一张
 #   禁用端口表（ERR_UNSAFE_PORT，3659/4045/6000/6665-6669/10080…）。

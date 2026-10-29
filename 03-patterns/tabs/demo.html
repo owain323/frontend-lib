@@ -17,7 +17,6 @@
 </head>
 <body class="page page">
 <main class="wrap">
-  <!-- demo-claim:skip 两块都可量（button 的个数、tabindex="0" 的个数），但这一页仍是单栏结构，升级成 cmp 要重排整页 —— 本轮没做，已知欠账 -->
   <h1>tabs · 标签页</h1>
   <p class="lede">
     标签页用于在同一位置切换<strong>同层级的几块内容</strong>。
@@ -103,37 +102,82 @@
     </p>
   </div>
 
-  <h2 class="rule-top">反例</h2>
-  <div class="box bad">
-    <h3>反例：用 div 当 tab</h3>
-    <div class="tabs">
-      <div class="tabs__list" role="tablist">
-        <div class="tabs__tab" role="tab" aria-selected="true">基本信息</div>
-        <div class="tabs__tab" role="tab" aria-selected="false">高级设置</div>
+  <h2 class="rule-top">对照：两处最容易写错的地方</h2>
+  <div class="cmp">
+    <div class="cmp__pane cmp__bad" data-bad="[role=tab]|focus|=0">
+      <h3>❌ 用 div 当 tab</h3>
+      <div class="tabs">
+        <div class="tabs__list" role="tablist" aria-label="错例：div 当 tab">
+          <div class="tabs__tab" role="tab" aria-selected="true">基本信息</div>
+          <div class="tabs__tab" role="tab" aria-selected="false">高级设置</div>
+        </div>
       </div>
+      <p class="cmp__why">
+        这两个 tab <strong>看起来完全正常</strong>，但
+        <code>&lt;div role="tab"&gt;</code> 根本 Tab 不到（除非手写
+        <code>tabindex</code>），也不响应 Enter/Space。
+        APG 要求 tab 是 <code>&lt;button role="tab"&gt;</code>。
+      </p>
     </div>
-    <p class="small">
-      上面这两个 tab <strong>看起来完全正常</strong>，但
-      <code>&lt;div role="tab"&gt;</code> 键盘上根本<strong>Tab 不到</strong>
-      （除非手写 <code>tabindex</code>），也不会响应 Enter/Space。
-      APG 明确要求 tab 是 <code>&lt;button role="tab"&gt;</code> ——
-      用原生 button，键盘行为免费且必然正确。
-    </p>
+
+    <div class="cmp__pane cmp__good" data-good="[role=tab]|focus|=2">
+      <h3>✅ button role="tab"</h3>
+      <div class="tabs">
+        <div class="tabs__list" role="tablist" aria-label="正例：button 当 tab">
+          <button class="tabs__tab" role="tab" aria-selected="true">基本信息</button>
+          <button class="tabs__tab" role="tab" aria-selected="false">高级设置</button>
+        </div>
+      </div>
+      <p class="cmp__why">
+        同一个外观，键盘行为免费且必然正确。
+        （这里只演示"能不能聚焦"，roving 见下面那块。）
+      </p>
+    </div>
   </div>
-  <div class="box bad">
-    <h3>反例：每个 tab 都写 tabindex="0"</h3>
-    <div class="tabs">
-      <div class="tabs__list" role="tablist">
-        <button class="tabs__tab" role="tab" tabindex="0" aria-selected="true">基本信息</button>
-        <button class="tabs__tab" role="tab" tabindex="0">高级设置</button>
-        <button class="tabs__tab" role="tab" tabindex="0">日志</button>
+
+  <div class="cmp">
+    <div class="cmp__pane cmp__bad" data-bad="[role=tab]|focus|=3">
+      <h3>❌ 每个 tab 都写 tabindex="0"</h3>
+      <div class="tabs">
+        <div class="tabs__list" role="tablist" aria-label="错例：三个 tab 全是 0">
+          <button class="tabs__tab" role="tab" tabindex="0" aria-selected="true">基本信息</button>
+          <button class="tabs__tab" role="tab" tabindex="0" aria-selected="false">高级设置</button>
+          <button class="tabs__tab" role="tab" tabindex="0" aria-selected="false">日志</button>
+        </div>
       </div>
+      <p class="cmp__why">
+        看起来"都能 Tab 到"，但一排 3 个 tab 就要按 <strong>3 次 Tab</strong>
+        才能进内容区。Tab 键应该是<strong>进出</strong>控件的，
+        组内移动是方向键的活。
+      </p>
     </div>
-    <p class="small">
-      看起来"都能 Tab 到"，但一排 3 个 tab 就要按 <strong>3 次 Tab</strong>
-      才能进内容区（真到 5 个 tab 的页面上只会更糟）。Tab 键应该是<strong>进出</strong>控件的，
-      组内移动是方向键的活。
-    </p>
+
+    <div class="cmp__pane cmp__good" data-good="[role=tab]|focus|=1">
+      <h3>✅ roving tabindex：整组只有一个 0</h3>
+      <div class="tabs" data-tabs>
+        <div class="tabs__list" role="tablist" aria-orientation="horizontal" aria-label="正例：roving">
+          <button class="tabs__tab" role="tab" id="rt1" aria-controls="rp1"
+                  aria-selected="true">基本信息</button>
+          <button class="tabs__tab" role="tab" id="rt2" aria-controls="rp2"
+                  aria-selected="false">高级设置</button>
+          <button class="tabs__tab" role="tab" id="rt3" aria-controls="rp3"
+                  aria-selected="false">日志</button>
+        </div>
+        <div class="tabs__panel" role="tabpanel" id="rp1" aria-labelledby="rt1">
+          <p>一次 Tab 就进来，方向键在组内移动。</p>
+        </div>
+        <div class="tabs__panel" role="tabpanel" id="rp2" aria-labelledby="rt2" hidden>
+          <p>方向键到这里。</p>
+        </div>
+        <div class="tabs__panel" role="tabpanel" id="rp3" aria-labelledby="rt3" hidden>
+          <p>方向键到这里。</p>
+        </div>
+      </div>
+      <p class="cmp__why">
+        那个 <code>0</code> 跟着选中项走 —— 由 <code>roving.js</code> 在切换时搬，
+        不是初始化时设一次。只设一次是最常见的 bug。
+      </p>
+    </div>
   </div>
 </main>
 <script src="tabs.js"></script>

@@ -42,7 +42,6 @@ p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6
 </head>
 <body class="page page">
 <main class="wrap">
-  <!-- demo-claim:skip 焦点落点与「点遮罩关不关」都是运行时行为，静态块里摆不出「错的那一版」 -->
 
   <h1>Toast vs Dialog</h1>
   <p class="lede">
@@ -112,7 +111,7 @@ p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6
 
   <h2 class="rule-bottom">用错比做丑严重得多</h2>
   <div class="two">
-    <div class="box bad aside-col">
+    <div class="box bad aside-col" data-claim-skip="左栏是一个 toast 标本，右栏是一条判断规则（没有人能数的话）—— 两栏根本不是同一种东西，没有可比的量；而且「该 toast 还是 dialog」取决于要不要用户先确认，没有阈值可划">
       <h3 style="margin:0 0 var(--sp-3); font-size:var(--fs-sm); font-weight:500; color:var(--danger)">
         ❌ 错用</h3>
       <div class="toast toast--error" role="status" style="margin:0 0 var(--sp-3)">

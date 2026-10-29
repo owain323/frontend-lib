@@ -15,7 +15,6 @@ p { margin: 0 0 var(--sp-3); }
 </head>
 <body class="page page">
 <main class="wrap">
-  <!-- demo-claim:skip 两块都可量（button 的个数、面板里链接的高度），但这一页仍是单栏结构，升级成 cmp 要重排整页 —— 本轮没做，已知欠账 -->
   <h1>accordion · 折叠面板</h1>
   <p class="lede">
     用于把长表单或长内容分成几段。<strong>默认只开一个</strong>（同一个问题的不同答案），
@@ -200,36 +199,76 @@ p { margin: 0 0 var(--sp-3); }
     </p>
   </div>
 
-  <h2 class="rule-top">反例</h2>
-  <div class="box bad">
-    <h3>反例：用 div 当 trigger</h3>
-    <div class="accordion">
-      <div class="accordion__item">
-        <div class="accordion__heading">
-          <div class="accordion__trigger">用 div 写的标题（Tab 不到，也念不出状态）</div>
+  <h2 class="rule-top">对照：两处最容易写错的地方</h2>
+  <div class="cmp">
+    <div class="cmp__pane cmp__bad" data-bad="button|count|=0">
+      <h3>❌ 用 div 当 trigger</h3>
+      <div class="accordion">
+        <div class="accordion__item">
+          <div class="accordion__heading">
+            <div class="accordion__trigger">
+              <span class="accordion__label">数据源与口径</span>
+              <span class="accordion__marker" aria-hidden="true"></span>
+            </div>
+          </div>
         </div>
       </div>
+      <p class="cmp__why">
+        <code>&lt;div class="accordion__trigger"&gt;</code> 键盘上 Tab 不到、
+        也不响应 Enter/Space —— 它<strong>一个 button 都不是</strong>。
+        APG 要求 header 里是 <code>role="button"</code> 的元素，
+        用原生 <code>&lt;button&gt;</code> 最省事也最可靠。
+      </p>
     </div>
-    <p class="small">
-      <code>&lt;div class="accordion__trigger"&gt;</code> 键盘上 Tab 不到、
-      也不响应 Enter/Space。<strong>APG 要求 header 里是
-      <code>role="button"</code> 的元素</strong>，用原生
-      <code>&lt;button&gt;</code> 最省事也最可靠。
-    </p>
+
+    <div class="cmp__pane cmp__good" data-good="button|count|=1">
+      <h3>✅ heading 包住原生 button</h3>
+      <div class="accordion">
+        <div class="accordion__item">
+          <h3 class="accordion__heading">
+            <button class="accordion__trigger" aria-expanded="false">
+              <span class="accordion__label">数据源与口径</span>
+              <span class="accordion__marker" aria-hidden="true"></span>
+            </button>
+          </h3>
+        </div>
+      </div>
+      <p class="cmp__why">
+        同一个外观，一个按钮元素。Enter / Space 由浏览器负责 ——
+        本组件的 JS <strong>一行 keydown 都没写</strong>，写了反而会双触发。
+      </p>
+    </div>
   </div>
-  <div class="box bad">
-    <h3>反例：折叠时只用 max-height: 0</h3>
-    <div id="acc-bad" style="max-height:0; overflow:hidden">
-      <p class="small" style="margin:0 0 var(--sp-2)">这一整段文字，读屏此刻仍然念得出来。</p>
-      <a href="#acc-bad">里面的这个链接，Tab 也仍然进得去</a>
+
+  <div class="cmp">
+    <div class="cmp__pane cmp__bad" data-bad="a|focus|=1">
+      <h3>❌ 折叠时只用 max-height: 0</h3>
+      <div id="acc-bad" style="max-height:0; overflow:hidden">
+        <p class="small" style="margin:0 0 var(--sp-2)">这一整段文字，读屏此刻仍然念得出来。</p>
+        <a href="#acc-bad">里面的这个链接，Tab 也仍然进得去</a>
+      </div>
+      <p class="cmp__why">
+        <strong>这一栏看起来和右边一样空 —— 差别不在视觉上，在第 1 次按 Tab 之后。</strong>
+        这块的高度被压成了 <code>0</code>，你<strong>看不见它</strong>，
+        但按一下 Tab，焦点会停在里面的链接上；读屏也会把那句"仍然念得出来"念完。
+        内容在无障碍树里<strong>仍然活着</strong>，只是视觉上消失。
+      </p>
     </div>
-    <p class="small">
-      上面那块的高度被压成了 <code>0</code>，你<strong>看不见它</strong> ——
-      但按一下 Tab，焦点会停在里面的链接上；读屏也会把那句"仍然念得出来"念完。
-      内容在无障碍树里<strong>仍然存在</strong>，只是视觉上消失：
-      <strong>必须用 <code>hidden</code> 或 <code>display:none</code></strong>，
-      让它真正离开无障碍树。
-    </p>
+
+    <div class="cmp__pane cmp__good" data-good="a|focus|=0">
+      <h3>✅ hidden / display:none</h3>
+      <p class="small" style="margin:0 0 var(--sp-2)">
+        （这一栏故意是空的：内容被 <code>hidden</code> 之后连占位都不留，这正是重点。）
+      </p>
+      <div hidden>
+        <p class="small" style="margin:0 0 var(--sp-2)">这一整段文字，读屏此刻仍然念得出来。</p>
+        <a href="#acc-good">里面的这个链接，Tab 也仍然进得去</a>
+      </div>
+      <p class="cmp__why">
+        同样看不见，但内容<strong>真的离开了无障碍树</strong>：
+        Tab 到不了、读屏也不念。折叠面板收起时必须这样。
+      </p>
+    </div>
   </div>
 </main>
 <script src="accordion.js"></script>

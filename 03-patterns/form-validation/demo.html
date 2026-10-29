@@ -42,7 +42,6 @@ p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6
 </head>
 <body class="page page">
 <main class="wrap">
-  <!-- demo-claim:skip 两块反例的差别都是时序（什么时候报错）和措辞（文案怎么说），没有可量的元素属性 -->
 
   <h1>表单校验</h1>
   <p class="lede">
@@ -56,7 +55,7 @@ p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6
   </p>
 
   <div class="grid2" style="margin-top:var(--sp-4)">
-    <div class="box bad">
+    <div class="box bad" data-claim-skip="差别是「什么时候报错」—— 时序。两个输入框在任何一个静态时刻的几何与文本都相同，只有交互过程中才分得出来，而 demo-claim 量的是静态 DOM">
       <h3>反例：oninput 立即报错</h3>
       <div class="field">
         <label class="field__label" for="naive">金额</label>
@@ -127,7 +126,7 @@ p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6
 
   <h2 class="rule-bottom">三、错误文案：给建议，不给判断</h2>
   <div class="grid2">
-    <div class="box bad">
+    <div class="box bad" data-claim-skip="两栏都是三条错误文案（uniq 都是 3、字号行高全同），差别只在措辞本身 —— 机器判不了哪句更清楚，只能人读">
       <h3>反例</h3>
       <p class="naive-error">格式错误</p>
       <p class="naive-error">非法输入</p>
