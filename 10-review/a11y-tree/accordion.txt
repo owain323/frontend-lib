@@ -47,10 +47,17 @@ RootWebArea "accordion · 折叠面板"
     paragraph "⚠️ 本组件故意没有方向键 / Home / End 。 APG 明确写： "arrow / Home / End ke"
     heading "role="region" 的数量上限" [level=2]
     paragraph "APG 警告：超过约 6 个可同时展开的面板时，给每个 panel 加 role="region" 会造成 "landm"
-    heading "反例" [level=2]
-    heading "反例：用 div 当 trigger" [level=3]
+    heading "对照：两处最容易写错的地方" [level=2]
+    heading "❌ 用 div 当 trigger" [level=3]
     paragraph "<div class="accordion__trigger"> 键盘上 Tab 不到、 也不响应 Enter/Spac"
-    heading "反例：折叠时只用 max-height: 0" [level=3]
+    heading "✅ heading 包住原生 button" [level=3]
+    heading "数据源与口径" [level=3]
+      button "数据源与口径"
+    paragraph "同一个外观，一个按钮元素。Enter / Space 由浏览器负责 —— 本组件的 JS 一行 keydown 都没写 "
+    heading "❌ 折叠时只用 max-height: 0" [level=3]
     paragraph "这一整段文字，读屏此刻仍然念得出来。"
     link "里面的这个链接，Tab 也仍然进得去"
-    paragraph "上面那块的高度被压成了 0 ，你 看不见它 —— 但按一下 Tab，焦点会停在里面的链接上；读屏也会把那句"仍然念得出来"
+    paragraph "这一栏看起来和右边一样空 —— 差别不在视觉上，在第 1 次按 Tab 之后。 这块的高度被压成了 0 ，你 看不见它 "
+    heading "✅ hidden / display:none" [level=3]
+    paragraph "（这一栏故意是空的：内容被 hidden 之后连占位都不留，这正是重点。）"
+    paragraph "同样看不见，但内容 真的离开了无障碍树 ： Tab 到不了、读屏也不念。折叠面板收起时必须这样。"

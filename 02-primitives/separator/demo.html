@@ -15,7 +15,6 @@
 </head>
 <body class="page page">
 <main class="wrap">
-  <!-- demo-claim:skip 两块都可量（<hr> 的个数 0 vs 1），但这一页仍是单栏结构，升级成 cmp 要重排整页 —— 本轮没做，已知欠账 -->
   <h1>separator · 分隔线</h1>
   <p class="lede">
     分隔线有两种，<strong>必须分清</strong>：装饰性的只分开内容块，
@@ -61,7 +60,7 @@
   </div>
 
   <h2>反例</h2>
-  <div class="box bad">
+  <div class="box bad" data-claim-skip="两栏都会画出一条 1px 的线，高度与宽度完全相同 —— 差别是 1.26:1 与 3.42:1 的对比度，而 demo-claim 没有对比度指标（那件事由 contrast.py / component-contrast.py 单独测）">
     <h3>反例：语义分隔用装饰色</h3>
     <div style="max-width:32em">
       <p class="small" style="margin:0">基本信息</p>
@@ -77,14 +76,33 @@
     </p>
   </div>
 
-  <div class="box bad">
-    <h3>反例：用 div + border-bottom 代替 hr</h3>
-    <div style="border-bottom:1px solid var(--border-decor); margin:var(--sp-4) 0"></div>
-    <p class="small">
-      <code>&lt;div class="line"&gt;</code> 对读屏是<strong>什么都没有</strong>。
-      语义分隔必须用 <code>&lt;hr&gt;</code>（或 <code>role="separator"</code>），
-      装饰性的才可以用纯 div。
-    </p>
+  <div class="cmp">
+    <div class="cmp__pane cmp__bad" data-bad="hr|count|=0">
+      <h3>❌ div + border-bottom</h3>
+      <div>
+        <p class="small" style="margin:0">基本信息</p>
+        <div style="border-top:1px solid var(--border-decor); margin:var(--sp-4) 0"></div>
+        <p class="small" style="margin:0">高级设置</p>
+      </div>
+      <p class="cmp__why">
+        线画得一模一样 —— 连颜色都对齐了。但读屏走到这里是
+        <strong>两段独立的文字，中间什么都没有</strong>：
+        它不知道这两段被分成了一组。
+      </p>
+    </div>
+
+    <div class="cmp__pane cmp__good" data-good="hr|count|=1">
+      <h3>✅ hr（或 role="separator"）</h3>
+      <div>
+        <p class="small" style="margin:0">基本信息</p>
+        <hr class="separator separator--tight">
+        <p class="small" style="margin:0">高级设置</p>
+      </div>
+      <p class="cmp__why">
+        同一条线，读屏会念「分隔符」。<strong>0 个 <code>&lt;hr&gt;</code> 与 1 个</strong>，
+        就是"看得见"和"念得出"的全部差别。
+      </p>
+    </div>
   </div>
 </main>
 </body>

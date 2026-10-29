@@ -35,7 +35,6 @@ td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabu
 </head>
 <body class="page page">
 <div class="wrap">
-  <!-- demo-claim:skip 反例是一张「不要做」清单表；3D、双 Y 轴这些错法都要真的渲染一张图才立得住，本页没有图表实例可摆 -->
   <h1>图表规范</h1>
   <p class="lede">
     <strong>下次画图照这里做就行</strong>，不用再反复微调。
@@ -148,7 +147,7 @@ td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabu
   </p>
 
   <h2 class="rule-top">4 · 明确禁止（这些是"看起来专业但会骗人"的）</h2>
-  <div class="box bad">
+  <div class="box bad" data-claim-skip="这一块是「不要做」清单本身（一张表），不是某个组件的错写法 —— 要给它配正例栏，得先真的渲染一张 3D 图与一张 2D 图做对照，而本页没有图表实例可摆；表格尺寸量出来的是排版，不是观点">
     <table>
       <tr><th>不要做</th><th>为什么</th></tr>
       <tr><td class="no">3D 图表</td><td>透视扭曲会<b>误导读数</b>（Tufte 的核心结论）</td></tr>

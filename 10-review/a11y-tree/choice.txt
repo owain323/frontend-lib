@@ -41,10 +41,14 @@ RootWebArea "checkbox / radio / select · 键盘行为验证"
     checkbox "导出 PDF（需要专业版）" [disabled=true]
     LabelText "导出 PDF（需要专业版）"
     paragraph "不用 opacity ，用明确的低对比色组（对比度会变成不可控的随机数）。 disabled 之后 hover 不能有任"
-    heading "反例：用 display:none 隐藏原生控件" [level=2]
-    heading "反例：把原生勾选框 display:none 藏掉" [level=3]
+    heading "对照：把原生勾选框藏起来的两种写法" [level=2]
+    heading "❌ display:none：看不见，也 Tab 不到" [level=3]
     LabelText "我看起来正常，但 Tab 到不了这里"
-    paragraph "用 Tab 试试——焦点会直接跳过它。 display:none 把它从 tab 顺序里移除了，键盘用户彻底到不了这里。"
+    paragraph "按一次 Tab 就知道：焦点直接跳过它。 display:none 把这个 input 从 tab 顺序里删掉了， 键盘"
+    heading "✅ opacity:0 + 绝对定位：看不见，但还在 Tab 顺序里" [level=3]
+    checkbox "同一行字，看起来一模一样，但 Tab 停得住"
+    LabelText "同一行字，看起来一模一样，但 Tab 停得住"
+    paragraph "本库的 input 是 opacity:0 铺满整个 label： 你看得见的是 .choice__mark ，焦点环也"
     heading "焦点环必须画在看得见的地方" [level=2]
     paragraph "input 是 opacity:0 的，所以它自己的 outline 你 根本看不见 。 焦点环必须画在紧邻的可见标记上"
     checkbox "Tab 过来看焦点环"

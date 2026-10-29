@@ -18,8 +18,11 @@ RootWebArea "switch · 开关"
     paragraph "Space 切换 —— 这是唯一能切换的键。 Enter 不切换 （button 默认行为会切，但 switch 不是 "
     paragraph "本组件用 原生 checkbox 实现，所以浏览器天然只响应 Space —— 不需要写 JS 去拦 Enter ，也就"
     heading "反例" [level=2]
-    heading "反例：用 div + role="switch"，自己管所有状态" [level=3]
+    heading "❌ div + role="switch"，自己管所有状态" [level=3]
     switch "开启动价推送"
-    paragraph "它 看起来和上面那个一模一样 —— 这正是坑所在： 常见写法是 <div role="switch" tabindex="
+    paragraph "看起来和下面那个一模一样 —— 这正是坑所在。 常见写法是 <div role="switch" tabindex="0"
+    heading "✅ 原生 checkbox + role="switch"" [level=3]
+    switch "开启动价推送"
+    paragraph "同一个外观，但键盘响应、焦点环、状态播报 全部由浏览器给 —— 少写的那部分不是"省事"，是"少了一个会忘的地方"。"
     heading "反例：给 label 加 display:none" [level=3]
     paragraph "为了"只留滑块"而把 <label> 隐藏掉， 开关就 失去了可点击的文字区域 ，也失去了语义名字 —— 读屏只会念「开"
