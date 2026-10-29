@@ -110,7 +110,7 @@
 <h2 id="s9">预览<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
 <pre class="code" tabindex="0"><code class="language-bash">python -m http.server 8000
 # http://127.0.0.1:8000/04-recipes/table/demo.html</code></pre>
-<h2 id="s10">配色：与本库 <code>list</code> 的约定<strong>不同</strong>（已知，未统一）<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
+<h2 id="s10">配色：与本库 <code>list</code> 的约定<strong>不同</strong>（故意的，不是笔误）<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
 <div class="table"><table>
 <thead><tr>
 <th>组件</th><th>类名</th><th>约定</th>
@@ -122,11 +122,32 @@
 </table></div>
 <p>两种约定并存不是笔误，是因为两处的数是两种东西：</p>
 <ul><li>表格里多是<strong>量</strong>（营收、毛利率、净利润）—— 负数是&quot;红字&quot;，会计惯例；</li><li>列表里多是<strong>涨跌</strong>（涨跌幅、日变动）—— A 股惯例是涨红跌绿。</li></ul>
-<p>⚠️ <strong>真正的麻烦在这里</strong>：把「涨跌幅」这一列塞进 <code>table</code> 时，两种约定会打架 —— 负的涨跌幅被渲染成红色，读者第一眼读成&quot;涨&quot;。目前<strong>没有解</strong>：</p>
-<ul><li>加一套 <code>num--up</code> / <code>num--down</code>（市场约定）是候选，但那会让 <code>table</code> 有四组颜色类；</li><li>或者由调用方显式指定语义（<code>data-polarity=&quot;market&quot;</code>），但那要改契约。</li></ul>
-<p>在决定之前，这一条就写在这儿 —— 一个库里有两种配色约定而不说明，比约定本身选错更糟。</p>
-<h2 id="s11">反例<a class="anchor" href="#s11" aria-label="本节直链">#</a></h2>
-<ul><li>❌ <strong>靠数值大小猜语义</strong> —— 不能用&quot;小于 1 就乘 100&quot;。<code>0.25</code> 是比例还是普通测量值，只能由列定义的 <code>format</code> 说</li><li>❌ <strong>给&quot;量&quot;的正数加 <code>+</code></strong> —— 营收、成本、毛利率这类量没有 <code>+</code>；只有 <code>signed-percent</code> 这类&quot;变化量&quot;才加。满屏 <code>+</code> 会让读者以为每个数都在变</li><li>❌ <strong>负数用连字符 <code>-</code></strong> —— 用真减号 <code>−</code>；连字符在等宽数字里对不齐，也容易被当成项目符号</li><li>❌ <strong>排序状态放在按钮上</strong> —— 要放 <code>&lt;th aria-sort=&quot;ascending|descending&quot;&gt;</code>；放在按钮上读屏不会报告&quot;这一列正按什么排序&quot;</li><li>❌ <strong>正负只靠红绿</strong> —— 颜色之外必须有 <code>+</code> / <code>−</code> 符号（WCAG 1.4.1）</li><li>❌ <strong>粘性表头配 <code>border-collapse: collapse</code></strong> —— <code>separate</code> 是 sticky 生效的前提，用 collapse 表头不会粘住</li><li>❌ <strong>拿它当虚拟滚动表格用</strong> —— 本组件不做虚拟滚动；超过 200 行请配分页</li></ul>
+<h3 id="s11">涨跌幅放进表格：解题方式（0.12.1 已定）<a class="anchor" href="#s11" aria-label="本节直链">#</a></h3>
+<p>把「涨跌幅」这一列塞进 <code>table</code> 时，两种约定会打架 —— 负的涨跌幅被渲染成红色，读者第一眼读成&quot;涨&quot;。这个问题曾经挂在 README 里写「目前没有解」，现在有了，而且<strong>不是</strong>当初列的两个候选之一：</p>
+<blockquote><p><strong>市场涨跌不进 <code>table</code> 的颜色体系，而是嵌 <code>delta</code> 原子。</strong></p></blockquote>
+<pre class="code" tabindex="0"><code class="language-html">&lt;td class=&quot;num&quot;&gt;&lt;span class=&quot;delta delta--up&quot;&gt;3.21%&lt;/span&gt;&lt;/td&gt;
+&lt;td class=&quot;num&quot;&gt;&lt;span class=&quot;delta delta--down&quot;&gt;1.05%&lt;/span&gt;&lt;/td&gt;
+&lt;td class=&quot;num&quot;&gt;&lt;span class=&quot;delta delta--flat&quot;&gt;0.00%&lt;/span&gt;&lt;/td&gt;</code></pre>
+<div class="table"><table>
+<thead><tr>
+<th></th><th><code>num--pos</code> / <code>num--neg</code></th><th>嵌 <code>delta</code></th>
+</tr></thead>
+<tbody>
+<tr><td>语义</td><td>会计正负（多了 / 少了）</td><td>市场涨跌（涨了 / 跌了）</td></tr>
+<tr><td>颜色来源</td><td><code>--success</code> / <code>--danger</code></td><td><code>--dir-up</code> / <code>--dir-down</code></td></tr>
+<tr><td>随 <code>[data-market]</code> 切换</td><td><strong>不切</strong></td><td><strong>切</strong></td></tr>
+<tr><td>符号</td><td><code>::before</code> 的 <code>+</code> / <code>−</code></td><td><code>delta</code> 自己的 <code>+</code> / <code>−</code> / 无</td></tr>
+</tbody>
+</table></div>
+<p>为什么否掉当初那两个候选：</p>
+<ul><li><code>num--up</code> / <code>num--down</code> 会让 <code>table</code> 有<strong>四组</strong>颜色类，调用方每次都要记&quot;这列用哪组&quot;；</li><li><code>data-polarity=&quot;market&quot;</code> 是把语义塞进一个属性，表格得替数据判断&quot;这列是涨跌&quot;，而它并不知道 —— 调用方才知道。</li></ul>
+<p>⇒ 方向是<strong>独立语义</strong>，所以它就该是独立原子。表格只负责对齐（<code>td.num</code>），不负责判色。</p>
+<p>⚠️ <strong>不要两套一起用</strong>：<code>&lt;td class=&quot;num num--pos&quot;&gt;&lt;span class=&quot;delta delta--up&quot;&gt;</code> 会让同一格同时受两套颜色支配，谁赢取决于选择器权重 —— 那是最难查的一类 bug。 <code>table-check</code> 的判据 ⑬ 会挡住给 <code>table.css</code> 添 <code>num--up</code> / <code>num--down</code> 的做法。</p>
+<h3 id="s12">零值：两边都不许有符号（0.12.1 修，E145）<a class="anchor" href="#s12" aria-label="本节直链">#</a></h3>
+<p><code>format: 'signed-percent'</code> 的正号由类名触发，而旧实现判的是 <code>v &lt; 0</code> ⇒ <code>v === 0</code> 落进 else 分支得到 <code>num--pos</code>，渲染成「<strong>+0.0%</strong>」—— 一个没变化的数被念成&quot;涨了&quot;。四舍五入处同样复现：<code>0.0004</code> 在 1 位精度下也印成「+0.0%」。</p>
+<p>⇒ 规则只有一条：<strong>符号必须跟打印出来的数字同号</strong>。先算出将要打印的数值，再按它定符号；等于 0 既不加 <code>+</code> 也不加 <code>−</code> （这与 <code>delta--flat</code> 是同一个契约）。<code>table-check</code> 判据 ⑫ 守着它，并且要求页面上<strong>必须存在</strong>零值样本 —— 删掉零值行不能算通过。</p>
+<h2 id="s13">反例<a class="anchor" href="#s13" aria-label="本节直链">#</a></h2>
+<ul><li>❌ <strong>靠数值大小猜语义</strong> —— 不能用&quot;小于 1 就乘 100&quot;。<code>0.25</code> 是比例还是普通测量值，只能由列定义的 <code>format</code> 说</li><li>❌ <strong>给&quot;量&quot;的正数加 <code>+</code></strong> —— 营收、成本、毛利率这类量没有 <code>+</code>；只有 <code>signed-percent</code> 这类&quot;变化量&quot;才加。满屏 <code>+</code> 会让读者以为每个数都在变</li><li>❌ <strong>负数用连字符 <code>-</code></strong> —— 用真减号 <code>−</code>；连字符在等宽数字里对不齐，也容易被当成项目符号</li><li>❌ <strong>排序状态放在按钮上</strong> —— 要放 <code>&lt;th aria-sort=&quot;ascending|descending&quot;&gt;</code>；放在按钮上读屏不会报告&quot;这一列正按什么排序&quot;</li><li>❌ <strong>正负只靠红绿</strong> —— 颜色之外必须有 <code>+</code> / <code>−</code> 符号（WCAG 1.4.1）</li><li>❌ <strong>粘性表头配 <code>border-collapse: collapse</code></strong> —— <code>separate</code> 是 sticky 生效的前提，用 collapse 表头不会粘住</li><li>❌ <strong>拿它当虚拟滚动表格用</strong> —— 本组件不做虚拟滚动；超过 200 行请配分页</li><li>❌ <strong>给表格再加一套「市场涨跌」的颜色类</strong> —— 那是第三组方向类，加上会计的正负就是四组；市场涨跌嵌 <code>delta</code>（判据 ⑬ 会红）</li><li>❌ <strong>零值带 <code>+</code></strong> —— 「+0.0%」= 把持平念成上涨；先算打印值再定符号（判据 ⑫ 会红）</li></ul>
 <hr>
     </article>
     <nav class="g-pager" aria-label="上一页 / 下一页">
@@ -136,11 +157,11 @@
   </main>
   <aside class="g-side">
     <p class="g-side__title" id="toc-title">本页目录</p>
-    <ul class="g-toc"><li><a href="#s2">文件</a></li><li><a href="#s3">三种预设</a></li><li><a href="#s4">列定义（示例页里的用法）</a></li><li><a href="#s5">无障碍</a></li><li><a href="#s6">已知限制</a></li><li><a href="#s9">预览</a></li><li><a href="#s10">配色：与本库 list 的约定不同（已知，未统一）</a></li><li><a href="#s11">反例</a></li></ul>
+    <ul class="g-toc"><li><a href="#s2">文件</a></li><li><a href="#s3">三种预设</a></li><li><a href="#s4">列定义（示例页里的用法）</a></li><li><a href="#s5">无障碍</a></li><li><a href="#s6">已知限制</a></li><li><a href="#s9">预览</a></li><li><a href="#s10">配色：与本库 list 的约定不同（故意的，不是笔误）</a></li><li><a href="#s13">反例</a></li></ul>
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.12.0 · 零第三方运行时依赖 · 组件数 37</p>
+  <p>v0.12.1 · 零第三方运行时依赖 · 组件数 37</p>
 </footer>
 </body>
 </html>
