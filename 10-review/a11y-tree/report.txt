@@ -1,0 +1,150 @@
+# report — 报告页：表格与段落混排时的朗读顺序，标题不跳级
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "report · 报告版式系统 v1 · frontend-lib"
+  main
+    heading "report · 报告版式系统 v1" [level=1]
+    paragraph "三套版式共用一份 基础 （字体角色、正文行长、页面网格、间距层级、 图表说明、来源脚注），各自再决定"行长多宽、字号多大"
+    heading "先看取舍：三套版式各自放弃了什么" [level=2]
+    table "表 A · 三种 profile 的结构差异（判据可验证，不是文案差异）"
+      caption "表 A · 三种 profile 的结构差异（判据可验证，不是文案差异）"
+      row
+        columnheader "profile"
+        columnheader "正文行长"
+        columnheader "正文字号"
+        columnheader "图/表编号"
+        columnheader "必须有"
+        columnheader "它放弃了"
+      row
+        rowheader "杂志编辑"
+        cell "42em"
+        cell "基准"
+        cell "不要"
+        cell "引语块 / 出血宽图"
+        cell "审计级追溯（没编号就引用不了第几图）"
+      row
+        rowheader "科研技术"
+        cell "34em"
+        cell "基准"
+        cell "自动编号"
+        cell "来源脚注 / 方法写明"
+        cell "快速通读（窄行长 + 松行距，读起来慢）"
+      row
+        rowheader "金融研究"
+        cell "30em"
+        cell "小一档"
+        cell "不要"
+        cell "关键数字条 / 风险披露"
+        cell "长论证（超过两屏的推理会被跳过）"
+    heading "1 · 杂志编辑版（rep--magazine）" [level=2]
+    paragraph "宽行长、大标题、引语块，图可以出血到正文之外。 没有图编号 —— 那是技术文档的语法。"
+    paragraph "产业观察"
+    heading "三条产线，三种寿命：被低估的其实是包覆工艺" [level=2]
+    paragraph "同一批电芯、同一份配方，只在包覆环节差了一步，300 周之后的容量保持率能差出 25 个百分点。"
+    list
+      listitem "张彻 · 产业分析师" [level=1]
+      listitem "2026-10-10" [level=1]
+      listitem "示例文本，非真实评测" [level=1]
+    paragraph "过去两年讨论最多的，是哪家的正极材料能量密度更高。可真正决定一块电池能撑多久的， 往往不是那个写在规格书第一行的大数字，"
+    blockquote "包覆不是"加一道工序"，它是把材料的衰退从"突然坏掉"变成"慢慢变老"。"
+    paragraph "我们把三条工艺线的循环数据放在同一坐标下看了很久。区别不在起点 —— 前 50 周几乎重合； 区别在斜率开始变陡的那一刻"
+    figure "0 50 100 150 200 250 300 50 60 70 80 90 100 循环次数 / 周 容量保持率 /"
+      image "容量保持率随循环次数的变化。横轴：循环次数 / 周。纵轴：容量保持率 / %。共 2 个数据系列。系列：未包覆、Li₃P"
+      Figcaption "未包覆工艺在 150 周后掉队；两种包覆方案维持线性衰退（示例数据）。"
+    heading "接下来要看什么" [level=3]
+    paragraph "真正的分水岭可能出现在下一代工艺上：如果包覆的成本能降到当前的六成， "多撑两年"这件事就从实验室指标变成了合同条款。"
+    paragraph "边注只用来放 短 东西：一句提醒、一条术语、一个次要读数。 它挤得下的字数是有限的 —— 想放大件东西，那是正文流的活。"
+    heading "2 · 科研技术版（rep--technical）" [level=2]
+    paragraph "图与表 自动编号 （CSS counter，写死编号会在改稿后全部错位）、章节编号可选。 代价：行长最窄、行距最松 ——"
+    paragraph "实验报告"
+    heading "包覆工艺对正极材料循环稳定性的影响" [level=2]
+    list
+      listitem "材料表征组" [level=1]
+      listitem "2026-10-10" [level=1]
+      listitem "版本 v1.0" [level=1]
+      listitem "示例数据，不可用于定量结论" [level=1]
+    heading " · 方法" [level=3]
+    paragraph "三组样品均取自同一批次的正极粉体，区别在于包覆工序：BARE 不做处理， AL₂O₃ 与 Li₃PO₄ 分别为两种包覆方"
+    heading " · 结果" [level=3]
+    paragraph "循环至 300 周时，三组的容量保持率分别为 57.3%、76.4% 与 82.1%。 差异在前 50 周不显著，从 1"
+    figure
+      image "三种方案的容量保持率。横轴：循环次数 / 周。纵轴：容量保持率 / %。共 6 个数据系列。系列：未包覆、Al₂O₃ 包"
+      list
+        listitem "未包覆" [level=1]
+        listitem "Al₂O₃ 包覆" [level=1]
+        listitem "Li₃PO₄ 包覆" [level=1]
+      Figcaption "图 1 · 三种方案的容量保持率随循环次数变化，阴影为平行样极差。"
+    heading " · 讨论" [level=3]
+    paragraph "需要说明的是：本轮实验 未做 温度加速，也未控制电解液批次差异。 因此这里的排序只在这三批样品内部成立，不宜外推到供应商"
+    heading "关键读数" [level=3]
+    figure
+      table "关键读数：包覆方案与保持率"
+        row
+          columnheader "方案"
+          columnheader "保持率"
+        row
+          rowheader "未包覆"
+          cell "57.3%"
+        row
+          rowheader "Al₂O₃"
+          cell "76.4%"
+        row
+          rowheader "Li₃PO₄"
+          cell "82.1%"
+      Figcaption "表 1 · 第 300 周的容量保持率（示例数据）"
+    heading "来源" [level=3]
+    list
+      listitem "循环数据由本实验室测得，原始记录在 LIMS 批次 Q3-2026-041 。" [level=1]
+        ListMarker "1. "
+      listitem "平行样极差 = 两次独立测量值之差的一半，未按标准误处理。" [level=1]
+        ListMarker "2. "
+      listitem "本示例中的所有数值均为演示用构造值，不得引用。" [level=1]
+        ListMarker "3. "
+    heading "3 · 金融研究版（rep--finance）" [level=2]
+    paragraph "字号与行距各降一档 ⇒ 一屏塞得下更多数字； 关键数字条 放在最前面； 风险披露不是可选项 —— 缺了它，这份材料在法律"
+    paragraph "产业跟踪"
+    heading "包覆工艺渗透率：对正极材料毛利率的敏感性测算" [level=2]
+    list
+      listitem "研究部" [level=1]
+      listitem "2026-10-10" [level=1]
+      listitem "示例数据，非投资建议" [level=1]
+    DescriptionList "目标良率 94.5% 测算毛利率 23.1% 渗透率假设 38% 敏感性区间 18–26%"
+    heading "结论先行" [level=3]
+    paragraph "在良率维持 94.5%、渗透率 38% 的假设下，测算毛利率 23.1%。 敏感性区间的下限（18%）出现在良率下滑 2"
+    heading "关键假设" [level=3]
+    figure
+      table "关键假设：三种情形下的良率与毛利率"
+        row
+          columnheader "情形"
+          columnheader "良率"
+          columnheader "毛利率"
+        row
+          rowheader "悲观"
+          cell "92.5%"
+          cell "18.0%"
+        row
+          rowheader "中性"
+          cell "94.5%"
+          cell "23.1%"
+        row
+          rowheader "乐观"
+          cell "96.0%"
+          cell "26.4%"
+      Figcaption "敏感性测算的关键假设与结果（示例）"
+    paragraph "数据来源：公司公开披露的季度产能口径（示例），测算过程见内部模型 mod-sensitivity-041 。"
+    paragraph "本页面的数字均为 演示用构造值 ，用于说明版式，不代表任何真实公司或标的。"
+    paragraph "风险披露： 本报告为示例文本，不构成投资建议。测算结果对良率与采购价假设高度敏感， 假设的任何变动都可能使结论不成立。读"
+    heading "4 · 🔴 本轮明确不做（不是"还没做"，是"这一版不管"）" [level=2]
+    list
+      listitem "分页 PDF / 印刷分页 ： @page 页边距、页眉页脚、页码、跨页不断行、 孤行寡行控制 —— 全部不在本版范围内" [level=1]
+        ListMarker "1. "
+      listitem "自动目录、尾注/脚注、交叉引用、参考文献样式 ：图/表编号用 CSS counter 做到"写第几就显示第几"，再往上的" [level=1]
+        ListMarker "2. "
+      listitem "Markdown/文档输入、CMS、多语言排版（竖排、阿拉伯文 RTL） ：不是本系统的目标。" [level=1]
+        ListMarker "3. "
+    paragraph "相关的既有清单在 README.md ：包含三种 profile 的完整取舍、 共享基础的六个可变量，以及与 04-re"
+    heading "对比：错写法 vs 本库写法" [level=2]
+    heading "❌ 常见写法：来源与正文同一副面孔" [level=3]
+    paragraph "读者读到第二句才知道这是"出处"，而它和正文长得一模一样 —— 分不清哪句是结论、哪句是依据。"
+    heading "✅ 本库：来源用 rep__cap 这一档角色" [level=3]
+    paragraph "report 的六个字体角色（眉题 / 元信息 / 图表说明 / 来源 / 编者注 / 风险披露）是 不多不少 的。多造"

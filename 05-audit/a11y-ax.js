@@ -47,24 +47,154 @@ const ROOT = path.resolve(__dirname, '..');
 const BASE = process.env.FL_BASE || 'http://127.0.0.1:8000';
 const SNAP_DIR = path.join(ROOT, '10-review', 'a11y-tree');
 
-/* 要转录的页面：挑的是「交互语义各不相同」的那批，不是随便凑数。
- * 覆盖面 = 有名字/有状态/有组合关系的四类角色都出现。 */
+/* 要转录的页面 —— **全部 38 个 demo.html**，不是挑几张代表作。
+ *
+ * 🔴 0.11.16 之前这里只有 11 页（挑的是「交互语义各不相同」的那批）。
+ *    当时的理由是"覆盖面 = 四类角色都出现过"，但那个理由经不起一句追问：
+ *    **没被转录的 27 页，凭什么认为它们没问题？** 答案是没有依据 ——
+ *    判据（NEEDS_NAME / AX-3 / AX-4）只对被转录的页面生效。
+ *    一个 `role="progressbar"` 少写名字的图表页，正好落在视野外，
+ *    axe 也不报（axe 查的是"已知违规规则"，不生成朗读序列）。
+ *    ⇒ 全量后每一页都有快照：改坏了哪个字，diff 里看得见。
+ *
+ * 第三列不是"标题"，是**这一页负责证什么**。写不出这一行的页面说明
+ * 它在语义上和其他页重复 —— 那是删页的理由，不是跳过的理由。
+ */
 const PAGES = [
+  /* ---- 02-primitives ---- */
   ['button', '02-primitives/button/demo.html', '按钮：名字 + disabled/busy 状态'],
   ['input', '02-primitives/input/demo.html', '输入：label 关联 + 错误描述'],
   ['select', '02-primitives/select/demo.html', '下拉：combobox 角色 + expanded'],
   ['choice', '02-primitives/choice/demo.html', '单选/复选：checked + group'],
   ['switch', '02-primitives/switch/demo.html', '开关：switch 角色 + checked'],
+  ['badge', '02-primitives/badge/demo.html',
+   '徽章：纯装饰节点不许漏进朗读序列，也不许被合成出名字'],
+  ['card', '02-primitives/card/demo.html',
+   '卡片：标题层级 + 整块链接，标题不得被当成交互控件'],
+  ['combobox', '02-primitives/combobox/demo.html',
+   '组合框：combobox + listbox + option + expanded（与 select 的单选语义不同源）'],
+  ['date-range', '02-primitives/date-range/demo.html',
+   '日期区间：输入框名字 + 日历弹层 + role=alert 的越界提示'],
+  ['popover', '02-primitives/popover/demo.html',
+   '气泡卡片：非模态浮层的名字来源与「点外面关掉」的可达性'],
+  ['progress', '02-primitives/progress/demo.html',
+   '进度：progressbar + valuenow / 有名字与无名字两种形态'],
+  ['separator', '02-primitives/separator/demo.html',
+   '分隔线：separator 角色 + 分组名落在哪一层（放错层就等于没有）'],
+  ['skeleton', '02-primitives/skeleton/demo.html',
+   '骨架屏：装饰性 aria-hidden 与内嵌 progressbar 的例外'],
+  /* ---- 03-patterns ---- */
   ['tabs', '03-patterns/tabs/demo.html', '标签页：tablist/tab + selected + controls'],
   /* 0.11.13 加：折叠是「button + expanded + 受控 region」这一组关系，
      与 tablist 的 selected/controls 不同源；而 `accordion-contract.js`
      查的是**属性写得对不对**，查不到"读屏实际念出什么"。 */
   ['accordion', '03-patterns/accordion/demo.html', '折叠：button + expanded + 受控 region'],
   ['overlay', '03-patterns/overlay/demo.html', '浮层：dialog + modal + 名字'],
-  ['table', '04-recipes/table/demo.html', '表格：table/row/columnheader 关系'],
   ['states', '03-patterns/states/demo.html', '状态消息：status/alert 播报'],
   ['form-validation', '03-patterns/form-validation/demo.html', '表单校验：invalid + 描述'],
+  ['content', '03-patterns/content/demo.html',
+   '长文排版：标题层级与表格，正文段落不得被容器吞成一个名字'],
+  ['drawer', '03-patterns/drawer/demo.html',
+   '抽屉：dialog + modal + 关闭按钮的名字（ICON 按钮最容易只剩图标）'],
+  ['dropdown', '03-patterns/dropdown/demo.html',
+   '下拉菜单：menu/menuitem + expanded（菜单不等于 tablist）'],
+  ['list', '03-patterns/list/demo.html',
+   '列表：list/listitem + 可翻转卡片内部不得被朗读两遍'],
+  ['nav', '03-patterns/nav/demo.html',
+   '导航：同类地标多于一个时靠名字区分 + aria-current + 抽屉触发器'],
+  ['pagination', '03-patterns/pagination/demo.html',
+   '分页：每个页码按钮要有能区分的名字（"第 3 页"而不是"3"）'],
+  ['reveal', '03-patterns/reveal/demo.html',
+   '滚动显现：纯视觉变换不得进入朗读序列，也不得吞掉内容'],
+  ['tooltip', '03-patterns/tooltip/demo.html',
+   '提示：aria-describedby 关联，提示文本不作为独立节点再念一遍'],
+  ['tree', '03-patterns/tree/demo.html',
+   '树：tree/treeitem/group + expanded + 层级（缩进要能被念出来）'],
+  /* ---- 04-recipes ---- */
+  ['table', '04-recipes/table/demo.html', '表格：table/row/columnheader 关系'],
+  ['analysis-report', '04-recipes/analysis-report/demo.html',
+   '组合报告：region 地标 + 可横向滚动表格的名字（滚动容器最容易丢语义）'],
+  ['data-showcase', '04-recipes/data-showcase/demo.html',
+   '数据展示：多张表格并存时靠 caption/label 区分，不许都叫"表格"'],
+  ['detail-page', '04-recipes/detail-page/demo.html',
+   '详情页：标题层级 + 定义列表语义（dt/dd 不能被压平成一段）'],
+  ['report', '04-recipes/report/demo.html',
+   '报告页：表格与段落混排时的朗读顺序，标题不跳级'],
+  /* ---- 09-assets ---- */
+  ['bar', '09-assets/bar/demo.html',
+   '柱状图：图形替身必须有非空名字（canvas 的文本读屏拿不到）'],
+  ['echarts-adapter', '09-assets/echarts-adapter/demo.html',
+   '图表适配：role=img + 数值表双通道，两条通道都得有名字'],
+  ['model-viewer', '09-assets/model-viewer/demo.html',
+   '3D 模型：画布语义 + 操作提示，纯指针操作要给出替代路径'],
+  ['scientific-plot', '09-assets/scientific-plot/demo.html',
+   '科学绘图：坐标轴刻度文本进入朗读序列，且不与图形名字重复'],
+  ['sparkline', '09-assets/sparkline/demo.html',
+   '迷你趋势线：role=img + 名字（无名字的趋势线等于没画）'],
+  /* ---- 10-review ---- */
+  ['composition', '10-review/composition/demo.html',
+   '组合页：多个模式同处一页时不得出现无法区分的同名控件'],
 ];
+
+/* ---------------------------------------------------------------------------
+ * 🔴 覆盖完整性判据：手写的 PAGES 必须**等于**磁盘上的全部 demo.html。
+ *
+ *   为什么需要这一条（这不是洁癖，是同一个病第三次复发）：
+ *     `a11y-scan.js` 在 0.8.9 之前手写了 11 个页面，而组件有 33 个 ⇒
+ *     axe 只覆盖三分之一，而文档写的是"每个组件都有契约守着"。
+ *     当时的结论是「手写清单是**第二份**『哪些页面要查』的表述，两份必然漂移」。
+ *     本文件 0.11.16 从 11 页扩到 38 页时，同样是手写 —— 一样的隐患。
+ *
+ *   为什么不用"扫目录生成"（那样就没有第二份了）：
+ *     第三列「这一页负责证什么」必须是人写的。自动生成只能得到文件名，
+ *     而"这一页和那一页在语义上重复吗"这件事恰恰是要人回答的。
+ *   ⇒ 保留手写清单，但把「有没有漏页」变成**判据**：
+ *     新加一个 demo.html 却忘了加进来 ⇒ 这里直接红，而不是安静地少查一页。
+ *     清单里写了但磁盘上没有（改名/删页）⇒ 也红（它指向一个不存在的证据）。
+ */
+const SKIP_DIRS = new Set(['node_modules', 'dist', 'guide', '.git',
+                           '.toolchain', 'vendor', 'shots']);
+
+function demoPagesOnDisk() {
+  const out = [];
+  const walk = (dir, rel) => {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (e.isDirectory()) {
+        if (SKIP_DIRS.has(e.name)) continue;
+        walk(path.join(dir, e.name), rel ? rel + '/' + e.name : e.name);
+      } else if (e.name === 'demo.html') {
+        out.push(rel ? rel + '/demo.html' : 'demo.html');
+      }
+    }
+  };
+  walk(ROOT, '');
+  return out.sort();
+}
+
+function checkCoverage(pages) {
+  const listed = new Set(pages.map((p) => p[1]));
+  const disk = demoPagesOnDisk();
+  const errs = [];
+  for (const rel of disk) {
+    if (!listed.has(rel)) {
+      errs.push('磁盘上有 ' + rel + ' 但清单里没有 ⇒ 这一页从未被转录过'
+                + '（漏页不会自己叫，只有这条判据会）');
+    }
+  }
+  const onDisk = new Set(disk);
+  for (const rel of listed) {
+    if (!onDisk.has(rel)) {
+      errs.push('清单里的 ' + rel + ' 磁盘上没有 ⇒ 证据指向一个不存在的页面');
+    }
+  }
+  // 同一页登记两次 ⇒ 后一条覆盖前一条快照，其中一条永远不生效
+  const seen = new Set();
+  for (const p of pages) {
+    if (seen.has(p[1])) errs.push('清单里 ' + p[1] + ' 登记了两次');
+    seen.add(p[1]);
+  }
+  return errs;
+}
 
 /* 无语义节点：留在转录里只会淹没真问题。 */
 const ROLE_IGNORE = new Set([
@@ -292,6 +422,22 @@ function selftest() {
     console.log('  ' + (ok ? 'OK ' : 'RED') + ' ' + why.padEnd(20) +
                 ' 期望 ' + String(want).padEnd(6) + ' 得到 ' + String(code));
   }
+  /* 覆盖完整性判据也必须自己被打一遍：
+   * 一条只会说"全部覆盖"的判据和一个永远返回 true 的函数没有区别。 */
+  const cov = [
+    ['漏页必须红', checkCoverage(PAGES.slice(1)), '但清单里没有'],
+    ['指向不存在的页必须红',
+     checkCoverage(PAGES.concat([['ghost', 'no/such/demo.html', 'x']])),
+     '磁盘上没有'],
+    ['重复登记必须红', checkCoverage(PAGES.concat([PAGES[0]])), '登记了两次'],
+    ['原样必须绿', checkCoverage(PAGES), null],
+  ];
+  for (const [why, errs, needle] of cov) {
+    const ok = needle ? errs.some((e) => e.includes(needle)) : errs.length === 0;
+    if (!ok) bad++;
+    console.log('  ' + (ok ? 'OK ' : 'RED') + ' 覆盖判据：' + why.padEnd(14) +
+                ' ' + (errs.length ? '报 ' + errs.length + ' 条' : '0 条'));
+  }
   console.log('');
   console.log(bad ? '  ⇒ 🔴 判据自检 ' + bad + ' 条不成立' : '  ⇒ ✅ 判据自检全部成立');
   return bad ? 1 : 0;
@@ -301,6 +447,16 @@ function selftest() {
   if (process.argv.includes('--selftest')) process.exit(selftest());
   const UPDATE = process.argv.includes('--update');
   const only = process.argv.slice(2).find((a) => !a.startsWith('--'));
+
+  /* 覆盖闸门放在最前面：漏了页却照常出"✅ 全部通过"，比不跑更糟。 */
+  const covErrs = checkCoverage(PAGES);
+  if (covErrs.length) {
+    console.error('  🔴 页面清单与磁盘不一致 ' + covErrs.length + ' 处：');
+    for (const e of covErrs.slice(0, 10)) console.error('     - ' + e);
+    console.error('     每页都要有一行「这一页负责证什么」，写不出来说明该页'
+                  + '与别页语义重复 —— 那是删页的理由，不是跳过的理由。');
+    process.exit(2);
+  }
 
   try {
     await new Promise((res, rej) => {
@@ -380,7 +536,10 @@ function selftest() {
     }
 
     for (const e of errs) {
-      console.log('  🔴 ' + id.padEnd(16) + ' ' + e.code + ' ' + e.why);
+      // 🔴 带上 role：不带的话「可交互角色没有 accessible name」这句话
+      //    在一页有 200 个节点时等于没说 —— 你根本不知道去找哪个元素。
+      console.log('  🔴 ' + id.padEnd(16) + ' ' + e.code +
+                  (e.role ? ' [' + e.role + ']' : '') + ' ' + e.why);
       fails++;
     }
     if (!errs.length && (UPDATE || fs.existsSync(file))) {

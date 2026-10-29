@@ -1,0 +1,49 @@
+# date-range — 日期区间：输入框名字 + 日历弹层 + role=alert 的越界提示
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "date-range · 日期区间 · frontend-lib"
+  main
+    heading "date-range · 日期区间" [level=1]
+    paragraph "财务/成本刚需。三件最容易漏： ① 必须有「清除」 （填错了要能一键清空，而不是逐个退格） ② 约束校验 ：开始晚于结束"
+    heading "1 · 常用（无边界）" [level=2]
+    LabelText "开始"
+    Date "开始"
+      spinbutton "年 年"
+      spinbutton "月 月"
+      spinbutton "日 日"
+      button "显示日期选择器 显示日期选择器" [hasPopup=menu]
+    LabelText "结束"
+    Date "结束"
+      spinbutton "年 年"
+      spinbutton "月 月"
+      spinbutton "日 日"
+      button "显示日期选择器 显示日期选择器" [hasPopup=menu]
+    button "清除"
+    button "本季度"
+    button "上季度"
+    button "上月"
+    button "今年"
+    button "去年同期"
+    heading "2 · 限定范围（2020–2026）" [level=2]
+    LabelText "开始"
+    Date "开始"
+      spinbutton "年 年"
+      spinbutton "月 月"
+      spinbutton "日 日"
+      button "显示日期选择器 显示日期选择器" [hasPopup=menu]
+    LabelText "结束"
+    Date "结束"
+      spinbutton "年 年"
+      spinbutton "月 月"
+      spinbutton "日 日"
+      button "显示日期选择器 显示日期选择器" [hasPopup=menu]
+    button "清除"
+    button "本季度"
+    button "上季度"
+    button "上月"
+    button "去年同期"
+    heading "对比：错写法 vs 本库写法" [level=2]
+    heading "❌ 常见写法：错误只改边框颜色" [level=3]
+    paragraph "结束日期早于开始日期，界面上只是"红了一圈"：色觉障碍用户看不出来，灰度打印也看不出来，而且 没有一句话 告诉你错在哪。"
+    heading "✅ 本库：左侧竖线 + 一句话说明" [level=3]
+    paragraph "形状（左侧竖线）与文字一起承担信息，颜色只是辅助 —— 这是 WCAG 1.4.1 的要求。同时 JS 会给两个字段打 "

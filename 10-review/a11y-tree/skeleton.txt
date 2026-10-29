@@ -1,0 +1,24 @@
+# skeleton — 骨架屏：装饰性 aria-hidden 与内嵌 progressbar 的例外
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "骨架屏 · skeleton"
+  main
+    heading "骨架屏 · skeleton" [level=1]
+    paragraph "加载态是移动端最高频的状态。形状不统一的加载态会让页面看起来"没做完"。"
+    heading "1 · 文本骨架（多行）" [level=2]
+    paragraph "最后一行不带下边距（用 :last-child ），列表尾部不会多一块空白。"
+    heading "2 · 块状骨架（图片/卡片占位）" [level=2]
+    heading "3 · 列表骨架（最常用形态）" [level=2]
+    heading "4 · 减少动态效果时" [level=2]
+    paragraph "系统开启「减少动态效果」后，微光动画会停掉， 但 骨架屏本身仍然显示 —— 用户依然知道正在加载。"
+    heading "反例 · 不该这样用" [level=2]
+    paragraph "别把骨架屏当"灰条"用在一段很短的文字上 （< 12px）。 短文字用骨架屏会读成"渲染坏了"，而且屏幕阅读器会念出一堆"
+    heading "对比：错写法 vs 本库写法" [level=2]
+    heading "❌ 常见写法：有确切进度却用骨架屏" [level=3]
+    paragraph "上传 素材包.zip（3.1 MB）"
+    paragraph "文件大小是已知的、进度是算得出来的，却只给一片灰条：用户等了 40 秒也不知道还差 3 秒还是 3 分钟。"
+    heading "✅ 本库：确定进度用 progress，不确定才用 skeleton" [level=3]
+    paragraph "上传 素材包.zip（3.1 MB）"
+    paragraph "已传 1.9 MB / 3.1 MB"
+    progressbar "上传进度"
+    paragraph "skeleton 的语义是" 不知道 要多久"。知道比例就用 progress —— 两者的区别不是好看，是诚实。"

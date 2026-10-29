@@ -1,0 +1,36 @@
+# tree — 树：tree/treeitem/group + expanded + 层级（缩进要能被念出来）
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "tree · 树形视图 · frontend-lib"
+  main
+    heading "tree · 树形视图" [level=1]
+    paragraph "依据 APG Tree View 。两条最关键的设计： ① Roving tabindex ：整棵树只占一个 Tab 位"
+    heading "1 · 文件树（试试键盘）" [level=2]
+    tree "文件树" [orientation=vertical]
+      group "src 12 components 6 Button.js Card.js styles 5 tokens.css ba"
+        treeitem "src 12" [expanded=true level=2]
+          group "components 6 Button.js Card.js styles 5 tokens.css base.css "
+            treeitem "components 6" [expanded=true level=3]
+              group "Button.js Card.js"
+                treeitem "Button.js" [level=4]
+                treeitem "Card.js" [level=4]
+            treeitem "styles 5" [expanded=true level=3]
+              group "tokens.css base.css"
+                treeitem "tokens.css" [level=4]
+                treeitem "base.css" [level=4]
+            treeitem "index.js" [level=3]
+        treeitem "docs 3" [expanded=true level=2]
+          group "changelog.md"
+            treeitem "changelog.md" [level=3]
+        treeitem "package.json" [level=2]
+    heading "2 · 默认全部收起" [level=2]
+    tree "文件树" [orientation=vertical]
+      group "src 12 docs 3 package.json"
+        treeitem "src 12" [level=2]
+        treeitem "docs 3" [level=2]
+        treeitem "package.json" [level=2]
+    heading "对比：错写法 vs 本库写法" [level=2]
+    heading "❌ 常见写法：靠"旋转"表示状态" [level=3]
+    paragraph "三个节点长得一模一样：已展开的 src、收起的 components、叶子的 index.js 全是 ▸。旋转只能表达""
+    heading "✅ 本库：三态三种字形" [level=3]
+    paragraph "tree.css 按 aria-expanded 给三种字形：▼ 展开 / ▶ 收起 / · 叶子。形状本身就是信息，不"

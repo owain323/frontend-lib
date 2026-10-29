@@ -44,7 +44,8 @@ LAYERS = ('02-primitives', '03-patterns', '04-recipes')
 # 组件 README 里允许引用、但不在组件自己目录下的公共文件
 COMMON_FILES = {
     'README.md', 'CHANGELOG.md', 'CONTRIBUTING.md', 'SUPPORT.md',
-    'ACCESSIBILITY.md', 'INVARIANT.md', 'AI-CONTRACT.md', 'CONVENTIONS.md',
+    'ACCESSIBILITY.md', 'DEPRECATIONS.md', 'INVARIANT.md',
+    'AI-CONTRACT.md', 'CONVENTIONS.md',
     'demo.html', 'index.html',
 }
 

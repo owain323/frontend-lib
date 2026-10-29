@@ -1,0 +1,46 @@
+# progress — 进度：progressbar + valuenow / 有名字与无名字两种形态
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "进度条 · progress"
+  main
+    heading "进度条 · progress" [level=1]
+    paragraph "进度 已知 时用它；进度 不知道 时用 skeleton 。混用是常见错误。"
+    heading "1 · 线形（最常用）" [level=2]
+    progressbar "上传进度"
+    paragraph "用 --progress 驱动宽度； role="progressbar" + aria-valuenow 是 必须 的"
+    heading "2 · 语义色" [level=2]
+    progressbar "已完成"
+    progressbar "即将超时"
+    progressbar "失败"
+    heading "3 · 尺寸" [level=2]
+    progressbar "小"
+    progressbar "中"
+    progressbar "大"
+    heading "4 · 环形" [level=2]
+    progressbar "环形进度"
+    progressbar "已完成"
+    progressbar "失败"
+    paragraph "纯 CSS conic-gradient ，零 SVG、零依赖。数字用 tabular-nums ，变化时不会左右跳。"
+    heading "5 · 不确定进度" [level=2]
+    progressbar "正在处理（进度未知）" [busy=1]
+    paragraph "不确定时不要显示百分比 —— 那是撒谎。 读屏只会听到「正在处理，进度未知」，这才是事实。"
+    heading "6 · 步骤分段" [level=2]
+    progressbar "第 3 步，共 5 步"
+    paragraph "流程类进度（"第 3 步 / 共 5 步"）比百分比更贴切。"
+    heading "7 · 减少动态效果时" [level=2]
+    progressbar "正在处理" [busy=1]
+    paragraph "开启「减少动态效果」后扫光动画停掉，但条子 仍然可见 —— 用户依然知道系统在忙。"
+    heading "反例 · 不该这样用" [level=2]
+    progressbar "反例"
+    paragraph "不要用进度条表示「不知道要多久」。 停在 0% 或乱跳的百分比，比 skeleton 更让人困惑 —— 用户会盯着它算还"
+    heading "对比：错写法 vs 本库写法" [level=2]
+    heading "❌ 常见写法：到 100% 就变绿" [level=3]
+    paragraph "导出 6 个文件 · 100%"
+    progressbar "导出进度"
+    paragraph "界面写"导出完成"，条是绿的。"
+    paragraph "100% 说的是"走到头了"，不是"成功了"。这一批实际有 2 个文件失败，绿条仍然亮着 —— 用户以为可以走了。"
+    heading "✅ 本库：颜色讲结果，数值只讲进度" [level=3]
+    paragraph "导出 6 个文件 · 100%"
+    progressbar "导出失败"
+    paragraph "同样 100%，红了：2 个文件失败。"
+    paragraph "progress--success / --danger 由调用方按 业务结果 给，不按数值自动切换 —— 颜色是语义，"

@@ -1,0 +1,20 @@
+# dropdown — 下拉菜单：menu/menuitem + expanded（菜单不等于 tablist）
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "dropdown · 下拉菜单 · frontend-lib"
+  main
+    heading "dropdown · 下拉菜单" [level=1]
+    paragraph "依据 APG Menu Button ： ↑↓ 移动 · Esc 关闭并 把焦点还给按钮 · Tab 关闭 · Ente"
+    heading "1 · 基本用法（试试键盘）" [level=2]
+    button "操作" [hasPopup=menu]
+    heading "2 · 带勾选（选中性不只靠颜色）" [level=2]
+    button "排序方式" [hasPopup=menu]
+    heading "3 · 靠右对齐（窄屏不出屏）" [level=2]
+    button "账号" [hasPopup=menu]
+    heading "对比：错写法 vs 本库写法" [level=2]
+    heading "❌ 常见写法：菜单项只有 24px" [level=3]
+    paragraph "下拉菜单 · 每项高度"
+    paragraph "24px 一行：手指点下去会压到隔壁，触屏用户每点错一次就得重来。本库在这块踩过更隐蔽的坑 —— 写 min-heigh"
+    heading "✅ 本库：显式 height: 44px" [level=3]
+    paragraph "下拉菜单 · 每项高度"
+    paragraph "同一个 44， min-height 与 height 在列表项上是两回事。桌面小屏看不出来，只有量了才发现 —— 所以"

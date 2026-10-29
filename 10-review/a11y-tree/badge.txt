@@ -1,0 +1,20 @@
+# badge — 徽章：纯装饰节点不许漏进朗读序列，也不许被合成出名字
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "badge · 状态标记"
+  main
+    heading "badge · 状态标记" [level=1]
+    paragraph "badge 承载 一个短状态词 （"已停牌""审计中"）。 它 不可点 —— 要能点请用 <button class=""
+    heading "五个变体" [level=2]
+    paragraph "为什么是「淡底 + 深字」而不是「饱和底 + 白字」？因为 badge 只有 11–12px， 小字号在饱和底上对比度普"
+    heading "用在真实语境里" [level=2]
+    paragraph "每一枚都 自带文字 （WCAG 1.4.1：不能只靠颜色区分）—— 去掉颜色也能读懂，颜色只是冗余线索。"
+    heading "两档尺寸" [level=2]
+    paragraph "只有两档。出现第三档说明信息密度没规划好 （与 card 的判断标准一致）。"
+    heading "反例" [level=2]
+    heading "反例：饱和底 + 白字" [level=3]
+    paragraph "看起来"更醒目"，但白字在小字号饱和底上 对比度普遍不足 。 实测（ contrast.py ）：暗色下白字在 --su"
+    heading "反例：用 badge 装可点的东西" [level=3]
+    paragraph "<div class="badge badge--info" onclick="...">待复核</div> —— di"
+    heading "强制高对比模式" [level=2]
+    paragraph "Windows 的高对比模式会覆盖底色。本组件在 @media (forced-colors: active) 下把边框"

@@ -1,0 +1,19 @@
+# drawer — 抽屉：dialog + modal + 关闭按钮的名字（ICON 按钮最容易只剩图标）
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "drawer · 抽屉 · frontend-lib"
+  main
+    heading "drawer · 抽屉" [level=1]
+    paragraph "依据 APG Dialog 。与对话框的差别只是「从哪进来」， 三条硬要求完全一样： 焦点陷阱 （Tab 不跑出抽屉）·"
+    heading "1 · 四个方向" [level=2]
+    button "右侧"
+    button "左侧"
+    button "顶部"
+    button "底部"
+    heading "2 · 初始焦点可指定" [level=2]
+    button "打开（焦点落在第二个按钮）"
+    heading "对比：错写法 vs 本库写法" [level=2]
+    heading "❌ 常见写法：关闭按钮做小" [level=3]
+    paragraph "关闭是**独立目标**：抽屉滑进来之后，用户第一件事就是找它。24px 的叉在触屏上要瞄准，点偏了就点到了背后的内容。"
+    heading "✅ 本库：drawer__close 44px" [level=3]
+    paragraph "命中区 44px（ drawer.css 里写明"关闭按钮是独立目标，用 44"）—— 字形还是 20px，只是可点范围"

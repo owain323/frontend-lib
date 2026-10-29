@@ -133,6 +133,16 @@ WHITELIST = {
     'Shoelace', 'AnimationMixer', 'AnimationClip', 'LoadingManager',
     # 本库对外公开的全局名（不是内部代号，API.md 里有登记）
     'ScientificPlot',
+    # 本库 `types/index.d.ts` 里的**公开接口名**（2026-10-29 补）。
+    #   起因：0.11.16 把「类型成员」收进废弃基线（`api` 这一类），
+    #   成员名的坐标是 `接口.成员`，于是这些接口名第一次出现在
+    #   `ai/surface.baseline.json` 与 `docs/DEPRECATIONS.md` 里 ——
+    #   而它们本来就是对外导出的类型，不是内部代号。
+    #   ⚠️ 例外说明：这几个名字本身**不再**单独出现（成员都带前缀），
+    #      但基线是纯名字集合，接口名作为前缀仍然在里面。
+    'AccordionInstance', 'AccordionOptions', 'DismissableOverlay',
+    'FlipApi', 'NavInstance', 'OverlayApi', 'PaginationApi', 'PopoverApi',
+    'RevealApi', 'TabsInstance', 'TocApi', 'TooltipApi',
     # 化学元素符号连写（示例内容里的化学式，如 LiNi₀.₈Co₀.₁Mn₀.₁O₂）
     'LiNi',
 }

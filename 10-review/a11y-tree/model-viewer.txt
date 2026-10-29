@@ -1,0 +1,64 @@
+# model-viewer — 3D 模型：画布语义 + 操作提示，纯指针操作要给出替代路径
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "3D 模型查看器 · frontend-lib"
+  main
+    heading "3D 模型查看器" [level=1]
+    paragraph "惰性加载： 首屏 0 字节 3D 引擎 ，点了才下载。 这是 确定的三条硬要求之一（「体积和加载一定要快」）。"
+    heading "试试看：小狐狸" [level=2]
+    paragraph "先别急着点按钮 —— 打开开发者工具的 Network 面板， 首屏 不会有 three.js 。点下去才出现 thre"
+    paragraph "发布包里没有下面这些资源 —— vendor/ （引擎与两个 loader） 和 models/ （.glb 模型）都在"
+    button "加载 3D 模型"
+    paragraph "模型 fox.glb 会 点击后才下载 ，首屏不占流量。"
+    heading "为什么是这样设计的" [level=2]
+    table "3D 模型页的设计要求与做法"
+      row
+        columnheader "要求"
+        columnheader "做法"
+      row
+        cell "首屏要快"
+        cell "3D 引擎点击后才 <script> 注入， 首屏 0 KB；模型走 XHR 以便显示真实进度"
+      row
+        cell "绝不能白屏"
+        cell "WebGL 不支持 / 库没来 / 模型 404 / 解析失败 —— 四种失败全部给中文提示 + 重试按钮"
+      row
+        cell "视觉统一"
+        cell "颜色、圆角、间距全部走 var(--*)，换主题跟着变"
+      row
+        cell "iOS 手感"
+        cell "touch-action: none 让拖动不触发页面滚动； 关掉 tap highlight；页面切后台停止渲染省电"
+    heading "边界（本库不做什么）" [level=2]
+    list
+      listitem "不把 three.js 打包成本库的依赖 —— 592KB 违背「零依赖」；而且素材里那两个 loader 是 ES6 " [level=1]
+        ListMarker "• "
+      listitem "精简档（某项目）不做 3D —— WebGL 在老 WebView 上大概率不可用。 本组件会检测并给出明确提示， 不会" [level=1]
+        ListMarker "• "
+      listitem "不自己手搓 glTF 解析器 —— 用成熟的 GLTFLoader。" [level=1]
+        ListMarker "• "
+    heading "体积现状" [level=2]
+    table "各文件的体积与加载时机"
+      row
+        columnheader "文件"
+        columnheader "体积"
+        columnheader "何时加载"
+      row
+        cell "model-viewer.js（本库）"
+        cell "~9 KB"
+        cell "首屏"
+      row
+        cell "models/fox.glb"
+        cell "159 KB"
+        cell "点击后（可 XHR 显示进度）"
+      row
+        cell "vendor/three.min.js"
+        cell "589 KB"
+        cell "点击后"
+      row
+        cell "vendor/GLTFLoader.js"
+        cell "94 KB"
+        cell "点击后"
+      row
+        cell "vendor/OrbitControls.js"
+        cell "26 KB"
+        cell "点击后"
+    paragraph "⭐ 首屏只付出约 9 KB ；点一次才付 868 KB。 素材库里还有 20 个模型（最大 21MB）， 本库只放最小的"

@@ -1,0 +1,85 @@
+# analysis-report — 组合报告：region 地标 + 可横向滚动表格的名字（滚动容器最容易丢语义）
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "analysis-report · 组合型研究报告 · frontend-lib"
+  main
+    paragraph "材料科学 · 实验报告"
+    heading "高镍正极材料在高电压下的循环衰减与表面包覆效果" [level=1]
+    paragraph "对比三种表面处理方案在 4.4 V 截止电压下的 300 周容量保持表现， 并给出可复现的实验条件。"
+    heading "1 · 摘要" [level=2]
+    paragraph "高镍层状氧化物（LiNi 0.8 Co 0.1 Mn 0.1 O 2 ，下称 NCM811） 在提升能量密度的同时，其高"
+    paragraph "关键发现"
+    list
+      listitem "300 周后容量保持率：未包覆 57.3% 、 Al 2 O 3 76.4% 、 Li 3 PO 4 82.1% 。" [level=1]
+        ListMarker "1. "
+      listitem "两种包覆方案在 前 50 周 差异不显著（< 1 个百分点）， 分化主要发生在 100 周之后。" [level=1]
+        ListMarker "2. "
+      listitem "首次库仑效率的差异（87.2% / 88.1% / 89.3%） 不足以 单独解释 300 周时的容量差距 —— 包覆主" [level=1]
+        ListMarker "3. "
+      listitem "本报告 不主张 任何方案具备统计显著性： 每组仅 2 个平行电池，样本量不足以做显著性检验。" [level=1]
+        ListMarker "4. "
+    heading "2 · 方法与实验条件" [level=2]
+    paragraph "所有样品采用同一来源前驱体，包覆在流化床中进行。电化学测试使用扣式电池， 每组成 2 个平行样，取算术平均。"
+    paragraph "三种样品的基础电化学参数如下："
+    region "财务数据表（可横向滚动）"
+      table "表 1 · 三种样品的基础电化学参数（每组 n = 2，取算术平均）"
+        caption "表 1 · 三种样品的基础电化学参数（每组 n = 2，取算术平均）"
+        row
+          columnheader "样品"
+          columnheader "首次放电容量 mAh/g"
+          columnheader "首次库仑效率 %"
+          columnheader "300 周容量保持率 %"
+          columnheader "平均粒径 µm"
+        row
+          rowheader "未包覆"
+          cell "208"
+          cell "87.2"
+          cell "57.3"
+          cell "11.2"
+        row
+          rowheader "Al2O3 包覆"
+          cell "204"
+          cell "88.1"
+          cell "76.4"
+          cell "11.5"
+        row
+          rowheader "Li3PO4 包覆"
+          cell "206"
+          cell "89.3"
+          cell "82.1"
+          cell "11.3"
+    paragraph "注：容量保持率以第 1 周放电容量为基准归一化。粒径为激光粒度仪 D50。"
+    heading "3 · 结果" [level=2]
+    paragraph "下图给出三种方案的容量保持率随循环次数的变化。阴影带为两个平行样之间的 极差范围 —— 它是 两个测量值之间的实际差异 "
+    figure
+      image "容量保持率随循环次数的变化。横轴：循环次数 / 周。纵轴：容量保持率 / %。共 6 个数据系列。系列：未包覆、Al₂O"
+      list
+        listitem "未包覆" [level=1]
+        listitem "Al₂O₃ 包覆" [level=1]
+        listitem "Li₃PO₄ 包覆" [level=1]
+      Figcaption "图 1 · 300 周循环容量保持率。阴影为两个平行样之间的极差（n = 2）。 数据为示例，用于演示本库的组合排版。"
+    paragraph "值得注意的不是三条曲线的 位置 ，而是它们的 斜率 ： 未包覆样品在 100 周后开始出现明显加速衰减，而两种包覆样品的"
+    heading "4 · 讨论" [level=2]
+    paragraph "界面包覆的常见解释是抑制电解液与高活性表面的直接接触，从而减缓 Ni 2+ /Ni 4+ 的可逆性损失。本报告的数据与这"
+    blockquote "「包覆层的核心作用是延缓界面副反应的累积，而不是提高材料的本征容量。 因此评估包覆效果时，循环后期的衰减速率比首周容量更"
+    paragraph "本次未测量交流阻抗与表面 XPS，因此无法把衰减速率差异归因到具体的界面反应路径。 后续计划补充这两项表征。"
+    complementary
+      heading "数据速览" [level=3]
+      DescriptionList "样品数 3 组 × 2 平行样 循环周数 300 截止电压 4.4 V 最高保持率 82.1%（Li 3 PO 4 ） "
+      heading "术语" [level=3]
+      DescriptionList "NCM811 LiNi 0.8 Co 0.1 Mn 0.1 O 2 首效 首次库仑效率 D50 体积分布中位径 极差 最"
+      heading "本报告不承诺" [level=3]
+      paragraph "不做统计显著性判断（n = 2 不足）； 不外推至其他截止电压或电解液体系； 不给出循环寿命预测。"
+    paragraph "数据来源与限制"
+    list
+      listitem "全部数值为演示用示例数据， 不是真实实验结果 。" [level=1]
+        ListMarker "1. "
+      listitem "每组样本量 n = 2，不足以支持任何统计推断。" [level=1]
+        ListMarker "2. "
+      listitem "本页同时演示本库的表格、图表、并排布局与辅助栏，不代表任何材料学结论。" [level=1]
+        ListMarker "3. "
+    heading "对比：错写法 vs 本库写法" [level=2]
+    heading "❌ 常见写法：栅格列写 1fr" [level=3]
+    paragraph "右栏里一串不肯断的长代码把列撑开了：它不换行、也不省略，整页横向溢出 —— 而外层容器并 没有 写错，错的是列定义。"
+    heading "✅ 本库：minmax(0, 1fr)" [level=3]
+    paragraph "1fr 的最小值是 auto （即"内容最小宽度"），所以挡不住长内容。 minmax(0, 1fr) 把下限按到 0，"

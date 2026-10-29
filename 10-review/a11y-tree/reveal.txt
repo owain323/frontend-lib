@@ -1,0 +1,20 @@
+# reveal — 滚动显现：纯视觉变换不得进入朗读序列，也不得吞掉内容
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "reveal · 入场动效"
+  main
+    heading "reveal · 入场动效" [level=1]
+    paragraph "给内容挂一个 data-reveal 属性，它就会在进入视口时从指定方向就位。 六个方向共用一套 transform ，"
+    button "播放入场"
+    button "复原"
+    heading "六个方向" [level=2]
+    heading "分批（不用逐个标）" [level=2]
+    paragraph "容器写 data-reveal-children="up" ，子元素自动依次入场。 间隔 40ms，超过第 6 个之后 "
+    heading "单独延迟" [level=2]
+    heading "怎么接到自己的页面" [level=2]
+    paragraph "两种接法，二选一： ① 在 <html> 上写 data-reveal-auto ，脚本加载后自动接管； ② 手动调 R"
+    heading "对比：错写法 vs 本库写法" [level=2]
+    heading "❌ 常见写法：藏了但没兜底" [level=3]
+    paragraph "内容真被 opacity: 0 藏着，而脚本没跑起来（被拦、报错、CSP）—— 这一块就永远是空的，读者不知道这里有东西"
+    heading "✅ 本库：只有 data-reveal-ready 时才藏" [level=3]
+    paragraph "隐藏只在 <html data-reveal-ready> 存在时生效：任何一步失败，内容就是全可见的。动画可以有代价，"

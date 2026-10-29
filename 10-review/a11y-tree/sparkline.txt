@@ -1,0 +1,28 @@
+# sparkline — 迷你趋势线：role=img + 名字（无名字的趋势线等于没画）
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "sparkline · 迷你趋势图"
+  main
+    heading "sparkline · 迷你趋势图" [level=1]
+    paragraph "在一行里显示"最近走势"。它是 辅助 不是图表 —— 读屏读不出路径，所以 旁边必须有数字 。"
+    heading "真实语境（数字 + 涨跌 + 走势）" [level=2]
+    paragraph "每行都有 名字 + 当前值 + 涨跌 ，走势图是第四层信息。 这就是为什么 不能只有 sparkline 。"
+    heading "三种形态" [level=2]
+    paragraph "折线（默认）"
+    paragraph "面积（fill=yes）"
+    paragraph "柱状"
+    heading "换主题会自动跟着变" [level=2]
+    paragraph "颜色默认是 var(--accent) ， 不是写死的蓝 —— 切到暗色它会跟着变。"
+    paragraph "上面这条是 var(--danger) （本库的涨红）。"
+    heading "点击更新数据" [level=2]
+    paragraph "换一组数据"
+      button "换一组数据"
+    paragraph "更新只需改 data-spark 再调 Chart.emit(el) 。"
+    heading "🔴 无障碍：它没有可读的文本等价物" [level=2]
+    paragraph "纯 SVG 路径对读屏 没有意义 —— 读屏只会说"图像"，不会说"最近上涨 2.3%"。"
+    paragraph "⇒ 所以本组件 刻意不加 role="img" （那会让人以为它有可读的替代文本，而它没有）。 ⇒ 要给出可读的值 ：在"
+    heading "反例" [level=2]
+    heading "反例：只放 sparkline，没有数字" [level=3]
+    paragraph "视觉上"很有信息"，但读屏用户 什么都不知道 —— 这是把视觉当成了唯一通道。"
+    heading "反例：动画不管 reduced-motion" [level=3]
+    paragraph "前庭功能障碍者会因动画眩晕（WCAG 2.3.3）。 本组件在 @media (prefers-reduced-moti"

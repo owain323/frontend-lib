@@ -476,6 +476,11 @@ run "beh-matrix" $PY 05-audit/behavior-matrix-gate.py
 run "maturity"  $PY 05-audit/maturity-gate.py
 # 废弃治理：移除公开名字必须走流程（登记 → 迁移窗口 → 兑现）；基线只增不减
 run "deprecation" $PY 05-audit/deprecation-gate.py
+# 弃用政策文档 ↔ 登记册双向一致：漏告知（登记了没写）与假承诺（写了没登记）都要红。
+# 🔴 为什么它必须单独一道：前面那道只保证"机器那一份自洽"，
+#    使用者读的是 docs/DEPRECATIONS.md。两份文件描述同一件事就一定会漂，
+#    而漂的两种方向**都不会让任何测试变红**。
+run "deprec-doc" $PY 05-audit/deprecation-doc-gate.py
 # 🔴 自动初始化的三处一致（2026-10-27 · P3 的正确修法）：
 #   19 个全局里只有 6 个脚本会自动初始化，其余必须自己 create/new/attach。
 #   这个区别以前没有任何文档写 —— 使用者把 Accordion 的经验套到 Select 上，

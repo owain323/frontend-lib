@@ -1,0 +1,18 @@
+# detail-page — 详情页：标题层级 + 定义列表语义（dt/dd 不能被压平成一段）
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "detail-page · 实体详情页骨架"
+  main
+    heading "detail-page · 实体详情页骨架" [level=1]
+    paragraph "同一张图纸要装下三种数据状态，而 DOM 结构一个节点都不变 ： 差异只在文案、数值、以及说明块写什么。三个变体见下，结"
+    navigation "① 字段齐全（full） 三项指标都有值，说明块承担"数据完整度"的告知。 ② 部分缺失（partial） 缺的那项写""
+      link "① 字段齐全（full） 三项指标都有值，说明块承担"数据完整度"的告知。"
+      link "② 部分缺失（partial） 缺的那项写"未披露"并用弱化色 —— 不是 0，也不是删掉节点。"
+      link "③ 无数据（null） 一条数据都没有时页面仍然成立：不隐藏、不冒充零、必须说清原因。"
+    heading "三条结构规则" [level=2]
+    paragraph "① 装饰层与内容层是 平级兄弟 ，装饰不吃点击（ pointer-events: none ）； ② 皮肤挂在 sect"
+    heading "对比：错写法 vs 本库写法" [level=2]
+    heading "❌ 常见写法：缺的字段写 0" [level=3]
+    paragraph "0 是一个真实的值：读者会拿它去算"研发强度 = 0"，也会拿它去比同比 —— 而这一格其实 没有 数据。"
+    heading "✅ 本库：写「未披露」+ 弱化色" [level=3]
+    paragraph "缺就是缺。同一页里三个变体的 DOM 结构必须完全一致（节点数量与嵌套），所以缺数据时是 换文案 ，不是删节点 —— 删"

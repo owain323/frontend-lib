@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>弃用与移除 · agentcss</title>
+<meta name="description" content="删除公开名字必须先登记、迁移窗口有多长、现在有哪些名字在案、以及我们管不住哪些名字">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%227%22%20fill%3D%22%231b4d8f%22%2F%3E%3Crect%20x%3D%228%22%20y%3D%228%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%221.6%22%20fill%3D%22%23fff%22%2F%3E%3Crect%20x%3D%2217%22%20y%3D%228%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%221.6%22%20fill%3D%22%23fff%22%20opacity%3D%22.5%22%2F%3E%3Crect%20x%3D%228%22%20y%3D%2217%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%221.6%22%20fill%3D%22%23fff%22%20opacity%3D%22.5%22%2F%3E%3Crect%20x%3D%2217%22%20y%3D%2217%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%221.6%22%20fill%3D%22%23fff%22%2F%3E%3C%2Fsvg%3E">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">弃用与移除</span>
+    <a class="g-jump" href="index.html">回到索引<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">全局约定 · 跨组件</p>
+    <h1>弃用与移除</h1>
+    <p class="lede">删除公开名字必须先登记、迁移窗口有多长、现在有哪些名字在案、以及我们管不住哪些名字</p>
+    <ul class="g-meta"><li><a href="../docs/DEPRECATIONS.md"><code>docs/DEPRECATIONS.md</code></a></li><li>规则由 <code>01-tokens/</code> 实现，判据见文末对应表</li></ul>
+    <article class="g-doc">
+<p><strong>一句话：我们删掉任何一个公开名字之前，它必须先在这个文件里出现过。</strong></p>
+<p>这不是态度声明，是可以被机器验证的：登记册在 <code>ai/deprecations.json</code>，本文的两个表格由 <code>05-audit/deprecation-doc-gate.py</code> 与登记册<strong>双向比对</strong> —— 少写一行、多写一行、版本号写错一个数字，门禁都红。</p>
+<hr>
+<h2 id="s2">一 · 你会遇到的两件事<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>现象</th><th>含义</th><th>你该做什么</th>
+</tr></thead>
+<tbody>
+<tr><td>某个名字被列进下面的「表 A」</td><td>它<strong>还能用</strong>，但有一个明确的消失版本</td><td>在到那个版本之前换掉，或者钉住版本</td></tr>
+<tr><td>某个名字在代码里没了</td><td>它必须在「表 B」里查得到</td><td>查不到 ⇒ 我们违约了，请开 issue</td></tr>
+</tbody>
+</table></div>
+<p>「表 B」就是承诺的账本。它的存在本身就是约束：<strong>没有登记就不能删</strong>。</p>
+<hr>
+<h2 id="s3">二 · 迁移窗口有多长<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
+<p><strong>至少跨一个次版本。</strong></p>
+<p>具体说：<code>0.7.x</code> 里标为弃用的名字，最早到 <code>0.8.0</code> 才允许从代码里消失。同一次版本内的修订号<strong>不算窗口</strong> —— 本库一天可能发好几个修订号，用「修订号个数」当窗口等于没有窗口。</p>
+<div class="table"><table>
+<thead><tr>
+<th>你看到的</th><th>它意味着</th>
+</tr></thead>
+<tbody>
+<tr><td><code>deprecatedIn: 0.7.7</code> · <code>removeIn: 0.8.0</code></td><td>从 0.7.7 起有替代方案；0.8.0 起原名字会消失</td></tr>
+<tr><td>只有 <code>deprecatedIn</code>、没有 <code>removeIn</code></td><td>不会发生 —— 登记册要求两个都写，写不出 <code>removeIn</code> 就不许标弃用</td></tr>
+</tbody>
+</table></div>
+<blockquote><p>⚠️ <strong>诚实边界</strong>：我们没有 codemod，也没有运行时告警（组件脚本不打印<br><code>console.warn</code> —— 在移动端 WebView 里那是纯噪音）。<br>所以这个窗口是<strong>版本号承诺</strong>，不是技术阻断。你能依赖的是<br>「在这个版本之前它不会消失」，不能依赖「用了会被警告」。</p></blockquote>
+<hr>
+<h2 id="s4">三 · 现在登记在案的<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
+<h3 id="s5">表 A · 迁窗中（还能用，但有截止版本）<a class="anchor" href="#s5" aria-label="本节直链">#</a></h3>
+<div class="table"><table>
+<thead><tr>
+<th>名字</th><th>类型</th><th>弃用于</th><th>最早移除于</th><th>替代</th><th>说明</th>
+</tr></thead>
+<tbody>
+<tr><td>（无）</td><td></td><td></td><td></td><td></td><td>当前没有名字处于迁移窗口中</td></tr>
+</tbody>
+</table></div>
+<blockquote><p>这张表是<strong>空的</strong>，而且它是真的空 —— 不是&quot;还没整理&quot;。<br>上一个走完流程的名字是 <code>state--delayed</code>，它已经按承诺在 <code>0.8.0</code> 消失，<br>所以现在躺在表 B 里。</p></blockquote>
+<h3 id="s6">表 B · 已移除<a class="anchor" href="#s6" aria-label="本节直链">#</a></h3>
+<div class="table"><table>
+<thead><tr>
+<th>名字</th><th>类型</th><th>移除于</th><th>替代</th><th>说明</th>
+</tr></thead>
+<tbody>
+<tr><td><code>state--delayed</code></td><td>class</td><td>0.8.0</td><td>——</td><td>这个类承诺了一个&quot;延迟显现&quot;的机制，但全库没有任何 JS 会去设置它依赖的 <code>data-state=&quot;shown&quot;</code>，文档也没写。它读起来像本库已经实现了 —— 这类名字最危险：误会发生在读者脑子里，代码不会报错。想要延迟显现，自己给元素加 <code>data-state=&quot;shown&quot;</code> 即可。</td></tr>
+<tr><td><code>--measure</code></td><td>token</td><td>0.7.4</td><td><code>--measure-page</code> / <code>--measure-prose</code></td><td>这次移除发生在治理流程建立<strong>之前</strong>。补登在这里是为了让它不从历史里消失，不是把它洗成&quot;走过流程&quot; —— 那次就是没走。</td></tr>
+</tbody>
+</table></div>
+<hr>
+<h2 id="s7">四 · 我们管得住哪些名字，管不住哪些<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
+<p>名字分四类进基线。每类的取法都写在 <code>05-audit/deprecation-gate.py</code> 文件头，这里只说你该关心什么：</p>
+<div class="table"><table>
+<thead><tr>
+<th>类型</th><th>例子</th><th>抓得到</th><th>抓不到</th>
+</tr></thead>
+<tbody>
+<tr><td><code>token</code></td><td><code>--accent</code>、<code>--sp-3</code></td><td>删令牌、改名</td><td>令牌<strong>默认值</strong>变化（那不是&quot;名字消失&quot;）</td></tr>
+<tr><td><code>class</code></td><td><code>.btn</code>、<code>btn--ghost</code>、<code>.accordion__item</code></td><td>删根类 / 变体 / 槽位</td><td>类名的<strong>样式行为</strong>变化</td></tr>
+<tr><td><code>api</code></td><td><code>Select</code>、<code>Select.open</code>、<code>AccordionOptions.duration</code></td><td>删全局、删成员、删参数对象的字段</td><td>参数<strong>语义</strong>变化（同名不同类型）</td></tr>
+<tr><td><code>event</code></td><td><code>fl-change</code>、<code>fl-select</code></td><td>删/改事件名字面量</td><td><code>detail</code> 里字段的变化</td></tr>
+</tbody>
+</table></div>
+<p><strong>没进基线的（这是&quot;没做&quot;，不是&quot;量不了&quot;）</strong>：</p>
+<ul><li><code>data-*</code> 属性名（<code>data-select-btn</code> 这类）。删它同样会让调用方静默失效，但它们现在只被 <code>wiring</code> / <code>api-form</code> 这类<strong>接线</strong>门禁看着，不在废弃基线里。</li><li><code>detail</code> 里的字段、回调选项的<strong>语义</strong>、CSS 变量的<strong>默认值</strong>。</li><li>组件实例上的私有成员、闭包里的函数。</li></ul>
+<blockquote><p>写这一节的目的不是免责，是把「我们承诺什么」的边界划清楚 ——<br>上表第四列写「抓不到」的，就是真的抓不到，不要按&quot;应该没问题&quot;理解。</p></blockquote>
+<hr>
+<h2 id="s8">五 · 如果我们要删一个名字，走这五步<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
+<ol><li><strong>登记</strong>：在 <code>ai/deprecations.json</code> 的 <code>planned</code> 里加一条，写清 <code>deprecatedIn</code> / <code>removeIn</code> / <code>reason</code>。 <code>reason</code> 要回答「为什么它不该继续存在」，不是「我们要重构」。</li><li><strong>给替代</strong>：能给就给 <code>replacement</code>。写不出替代方案的名字，多半也不该急着删。</li><li><strong>写进本文的表 A</strong>：一行，人读得懂的那种。</li><li><strong>到版本再删</strong>：<code>VERSION</code> 推进到 <code>removeIn</code> 之后，才允许从代码里消失。提前删会被判「提前删了」；到期不删会被判「承诺了却没删」。</li><li><strong>挪进表 B</strong>：删完把这一行从表 A 移到表 B，保留 <code>removedIn</code>。历史账不销毁 —— 基线（<code>ai/surface.baseline.json</code>）也是只增不减。</li></ol>
+<p><code>reason</code> 写得含糊不算过关，但门禁<strong>不判理由对不对</strong>，只判它存不存在。这部分靠 review，不假装自动化。</p>
+<hr>
+<h2 id="s9">六 · 你自己怎么核<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-bash">python 05-audit/deprecation-gate.py            # 登记册与公开面是否自洽
+python 05-audit/deprecation-gate.py --selftest # 判据本身抓不抓得到问题
+python 05-audit/deprecation-doc-gate.py        # 本文与登记册是否一致</code></pre>
+<p>三条都不需要浏览器，秒级返回。</p>
+<hr>
+<h2 id="s10">七 · 为什么不索性承诺「0.x 期间一律不删」<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
+<p>因为那是空话。<code>0.x</code> 按 semver 本来就允许破坏性变更，写一句&quot;绝不破坏&quot; 只会让人以为可以长期依赖，然后在某次 <code>0.8.0</code> 里被打断 —— 比一开始就说清更伤人。</p>
+<p>我们的承诺比 semver 严一档、比&quot;绝不破坏&quot;诚实一档：</p>
+<ul><li>公开<strong>名字</strong>的消失，必须先登记、必须跨一个次版本、必须给替代或说明为什么没有；</li><li>其余变化（样式、默认值、语义）仍可能在小版本里调整，那部分看 <code>CHANGELOG.md</code>。</li></ul>
+<p>到 <code>1.0.0</code> 之后这条政策不变，只是 <code>1.0</code> 之前的破坏性变更会整批在此结清。</p>
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      <a class="g-pager__link g-pager__link--prev" href="accessibility.html"><span>上一页</span>无障碍</a>
+      
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    <ul class="g-toc"><li><a href="#s2">一 · 你会遇到的两件事</a></li><li><a href="#s3">二 · 迁移窗口有多长</a></li><li><a href="#s4">三 · 现在登记在案的</a></li><li><a href="#s7">四 · 我们管得住哪些名字，管不住哪些</a></li><li><a href="#s8">五 · 如果我们要删一个名字，走这五步</a></li><li><a href="#s9">六 · 你自己怎么核</a></li><li><a href="#s10">七 · 为什么不索性承诺「0.x 期间一律不删」</a></li></ul>
+  </aside>
+</div>
+<footer class="g-foot">
+  <p>v0.11.16 · 零第三方运行时依赖 · 组件数 35</p>
+</footer>
+</body>
+</html>

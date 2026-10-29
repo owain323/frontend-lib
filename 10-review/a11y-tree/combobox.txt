@@ -1,0 +1,18 @@
+# combobox — 组合框：combobox + listbox + option + expanded（与 select 的单选语义不同源）
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "combobox · 组合框 · frontend-lib"
+  main
+    heading "combobox · 组合框 / 标签输入" [level=1]
+    paragraph "依据 APG Combobox with List Autocomplete 。三条最容易漏： ① 焦点始终在 inpu"
+    heading "1 · 板块多选（最多 3 个）" [level=2]
+    LabelText "关注板块"
+    combobox "关注板块" [hasPopup=listbox]
+    heading "2 · 单个（可清除）" [level=2]
+    LabelText "对标公司"
+    combobox "对标公司" [hasPopup=listbox]
+    heading "对比：错写法 vs 本库写法" [level=2]
+    heading "❌ 常见写法：结果不高亮" [level=3]
+    paragraph "输入"半导体"之后三条都留下了，但三条长得一模一样 —— 用户说不出 凭什么 是这三条，只会觉得"顺序乱了"。"
+    heading "✅ 本库：命中片段高亮" [level=3]
+    paragraph "高亮用的是本库的 combo__opt mark ：accent 色 + 下划线， 不用 浏览器默认的黄底 —— 黄底与"
