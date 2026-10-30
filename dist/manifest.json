@@ -8,8 +8,8 @@
   ],
   "totals": {
     "sourceFiles": 72,
-    "sourceBytes": 781520,
-    "distGzip": 98633
+    "sourceBytes": 786492,
+    "distGzip": 98715
   },
   "files": [
     {
@@ -175,15 +175,15 @@
     },
     {
       "source": "01-tokens/tokens.css",
-      "sourceSha256": "e2ed5b31774ef60fdb6feeacd80140db9539922b9afd04e3a2df917202263778",
-      "sourceBytes": 53417,
-      "sourceGzip": 20092,
+      "sourceSha256": "e75dae841127011290b01a1527210f6b84f0ffce618eb0ffd68f06479a00cafa",
+      "sourceBytes": 55168,
+      "sourceGzip": 20881,
       "outputs": [
         {
           "path": "dist/01-tokens/tokens.css",
           "kind": "minified",
-          "bytes": 11688,
-          "gzip": 2752
+          "bytes": 11727,
+          "gzip": 2777
         }
       ]
     },
@@ -231,15 +231,15 @@
     },
     {
       "source": "02-primitives/card/card.css",
-      "sourceSha256": "b96acdf650aeaea52884cda11a8e6162e775478230be54742a611e5fac868c37",
-      "sourceBytes": 8894,
-      "sourceGzip": 3596,
+      "sourceSha256": "112cbac53fe43465a2ce2f26a8f6ad0d0ac03e8504bf428d5af2972196b7c89e",
+      "sourceBytes": 10625,
+      "sourceGzip": 4204,
       "outputs": [
         {
           "path": "dist/02-primitives/card/card.css",
           "kind": "minified",
-          "bytes": 2703,
-          "gzip": 946
+          "bytes": 3107,
+          "gzip": 972
         }
       ]
     },
@@ -849,15 +849,15 @@
     },
     {
       "source": "04-recipes/analysis-report/analysis-report.css",
-      "sourceSha256": "6e3fb31fb0f6afb1aa468f126e702ee24c66e74da135cb048034e7e7d6c5cd55",
-      "sourceBytes": 7150,
-      "sourceGzip": 2884,
+      "sourceSha256": "134b11c124ca6e5f8d86942447ed945df8d98094d69bf6d9f7164869511bef75",
+      "sourceBytes": 8640,
+      "sourceGzip": 3387,
       "outputs": [
         {
           "path": "dist/04-recipes/analysis-report/analysis-report.css",
           "kind": "minified",
-          "bytes": 3082,
-          "gzip": 818
+          "bytes": 3474,
+          "gzip": 849
         }
       ]
     },

@@ -171,9 +171,9 @@ Three mistakes the template above already avoids:
 
 ## Components
 
-**35** components (31 stable / 4 beta). Each directory holds a `README.md` (why it is built this way) and a `demo.html` (markup you can copy).
+**37** components (stable 37 / beta 0). Each directory holds a `README.md` (why it is built this way) and a `demo.html` (markup you can copy).
 
-### primitives (13)
+### primitives (15)
 
 | Component | Root class | Purpose |
 |---|---|---|
@@ -183,7 +183,9 @@ Three mistakes the template above already avoids:
 | `choice` | `choice` | One control for radio, checkbox and native-select appearance |
 | `combobox` | `combo` | Searchable input that can hold multiple tags |
 | `date-range` | `drange` | Start/end date range with preset shortcuts |
+| `delta` | `delta` | Change value: direction and sign, **describes direction only, never judges good or bad** |
 | `input` | `field` | Text field plus its label, hint and error |
+| `metric` | `metric` | Metric block: one label, one value, one line of context; missing data is a first-class state |
 | `popover` | `popover` | Floating panel anchored to its trigger |
 | `progress` | `progress` | Progress bar and ring |
 | `select` | `select` | Custom dropdown (not the native element) |

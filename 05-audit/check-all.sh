@@ -836,6 +836,12 @@ run "date-range" node 05-audit/date-range-check.js
 #   `--selftest` 用一张故意写坏的夹具证明它分得清三条路（不是"随便报个红"）。
 run "opener-path"     node 05-audit/opener-path-check.js
 run "opener-path-rev" node 05-audit/opener-path-check.js --selftest
+# 🔴 布局的参考系：槽宽还是视口宽（0.16.0）。
+#   44 个 CSS 文件里 @container 曾是 0 处 —— 于是"1440px 页面的 320px 侧栏里
+#   放一张横排卡片"永远横排（视口断点不触发），报告进 700px 阅读栏也一样硬排两栏。
+#   这一道同时证明三件事：按槽切换、未标记 `[data-cq]` 的页面行为不变、
+#   以及把 @container 整块剥掉之后布局不塌（老引擎 Chromium 97 看到的就是那一份）。
+run "container-query" node 05-audit/container-query-check.js
 run "composition" node 05-audit/composition-check.js
 
 # CSS 引用完整性（发现项只报告不 fail：class 名跨组件复用，误报率偏高）

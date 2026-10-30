@@ -29,7 +29,7 @@
       "raw": 2974
     },
     "01-tokens/page.css": {
-      "gzip": 7563,
+      "gzip": 7564,
       "raw": 17951
     },
     "01-tokens/polyfill.js": {
@@ -45,8 +45,8 @@
       "raw": 4647
     },
     "01-tokens/tokens.css": {
-      "gzip": 20092,
-      "raw": 53417
+      "gzip": 20881,
+      "raw": 55168
     },
     "01-tokens/typography.css": {
       "gzip": 3401,
@@ -61,8 +61,8 @@
       "raw": 16032
     },
     "02-primitives/card/card.css": {
-      "gzip": 3596,
-      "raw": 8894
+      "gzip": 4204,
+      "raw": 10625
     },
     "02-primitives/choice/choice.css": {
       "gzip": 5516,
@@ -233,8 +233,8 @@
       "raw": 17481
     },
     "04-recipes/analysis-report/analysis-report.css": {
-      "gzip": 2884,
-      "raw": 7150
+      "gzip": 3387,
+      "raw": 8640
     },
     "04-recipes/detail-page/detail-page.css": {
       "gzip": 2325,
@@ -254,6 +254,6 @@
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 265893,
-  "total_raw": 666508
+  "total_gzip": 267794,
+  "total_raw": 671480
 }

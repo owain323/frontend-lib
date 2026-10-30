@@ -438,6 +438,24 @@ PAT_COMPONENTS = [
 PAT_COMPONENTS_BREAKDOWN = (
     r'(\d+)\s*个(?:（|\()\s*stable\s*(\d+)\s*/\s*beta\s*(\d+)')
 
+# 🔴 0.16.0 新增：上面那条只认中文句式「共 N 个（stable A / beta B）」。
+#   英文 README 写的是 `**35** components (31 stable / 4 beta)` —— 一个字符都不匹配，
+#   于是它停在 35 / 31 / 4 整整两个版本（真实是 37 / 37 / 0），门禁每轮都报
+#   「文档里的事实与仓库一致」。**同一条事实有第二种语言写法，就多一个视野洞。**
+#   ⇒ 两个方向都要能读：`N components (X stable / Y beta)`。
+PAT_COMPONENTS_BREAKDOWN_EN = (
+    r'(\d+)\s+components?\s*\(\s*(?:(\d+)\s+stable\s*/\s*(\d+)\s+beta'
+    r'|stable\s*(\d+)\s*/\s*beta\s*(\d+))\s*\)')
+
+# 🔴 0.16.0 新增：分档标题里的数（`### primitives (13)`）。
+#   总数门禁管不到它：英文 README 的总数写成 35、primitives 写成 13，
+#   而真实是 37 与 15 —— 它少列了 `metric` 和 `delta` 两行，
+#   读者按表点货会以为这两个组件不存在。**"清单里少了什么"比"数字错"更难发现。**
+PAT_TIER_HEADING = (
+    r'^#{2,4}\s*(primitives|patterns|recipes|assets)\s*\((\d+)\)\s*$')
+TIER_KEY = {'primitives': 'primitive', 'patterns': 'pattern',
+            'recipes': 'recipe', 'assets': 'asset'}
+
 # 🔴 0.12.0 新增（E139）：精简档的令牌数也是**会被写死的事实**。
 #   0.11.16 之后 `tierA-tokens.css` 从 `tokens.css` 重抽过两次（delta/metric 那一轮
 #   加了 `--dir-*`），但 `01-tokens/README.md` 一直写着「浅色 102 + 暗色 33」，
@@ -528,6 +546,7 @@ def main():
     # ---------- 真值自检：真值本身不可信 ⇒ 不许往下判 ----------
     n_comp = None
     maturity = {}
+    by_tier = {}
     if conf is None:
         problems.append(('ai/components.json', '真值缺失',
                          '找不到契约文件 ⇒ 组件数与成熟度无从核对'))
@@ -536,6 +555,7 @@ def main():
         summ = conf.get('summary') or {}
         n_comp = summ.get('total')
         maturity = summ.get('byMaturity') or {}
+        by_tier = summ.get('byTier') or {}
         if n_comp != len(cs):
             problems.append(
                 ('ai/components.json', '契约自相矛盾',
@@ -660,6 +680,35 @@ def main():
                              '第 %d 行写 共 %d / stable %d / beta %d，契约是 '
                              '共 %d / stable %d / beta %d ⇒ %s'
                              % ((no,) + got + want + (line.strip()[:60],))))
+                # 同一条事实的英文写法（0.16.0 补的视野洞）
+                for m in re.finditer(PAT_COMPONENTS_BREAKDOWN_EN, bare):
+                    a = m.group(2) or m.group(4)
+                    b = m.group(3) or m.group(5)
+                    got = (int(m.group(1)), int(a), int(b))
+                    want = (n_comp,
+                            int(maturity.get('stable', 0)),
+                            int(maturity.get('beta', 0)))
+                    if got != want:
+                        problems.append(
+                            (f, '组件数与成熟度拆分不符',
+                             '第 %d 行写 %d components (%d stable / %d beta)，'
+                             '契约是 %d components (%d stable / %d beta) ⇒ %s'
+                             % ((no,) + got + want + (line.strip()[:60],))))
+
+        # F1c 分档标题里的条数（`### primitives (13)`）
+        if by_tier:
+            for line, no in iter_lines(text):
+                m = re.match(PAT_TIER_HEADING, line.strip())
+                if not m:
+                    continue
+                key = TIER_KEY[m.group(1)]
+                got = int(m.group(2))
+                want = int(by_tier.get(key, 0))
+                if got != want:
+                    problems.append(
+                        (f, '分档条数与契约不符',
+                         '第 %d 行写 %s (%d)，契约 byTier.%s 是 %d ⇒ %s'
+                         % (no, m.group(1), got, key, want, line.strip()[:50])))
 
         # F2 门禁总数
         if gates:
@@ -859,7 +908,8 @@ def selftest():
                     os.makedirs(d)
                 io.open(fp, 'w', encoding='utf-8').write(content)
 
-        CONF = ('{"summary":{"total":3,"byMaturity":{"stable":2,"beta":1}},'
+        CONF = ('{"summary":{"total":3,"byMaturity":{"stable":2,"beta":1},'
+                '"byTier":{"primitive":2,"pattern":1,"recipe":0,"asset":0}},'
                 '"components":[{"id":"a"},{"id":"b"},{"id":"c"}]}')
         # 3 道：two + one + skip 一条（skip 也算注册数）
         SH = ('run "two" true\n'
@@ -874,7 +924,9 @@ def selftest():
                 '04-recipes/tierA-tokens.css':
                     ':root{--a:1;--b:2;}\n@media (prefers-color-scheme: dark)'
                     '{:root{--c:3;}}\n',
-                'README.md': '共 3 道门禁、本版有 3 个组件。\n'}
+                'README.md': ('共 3 道门禁、本版有 3 个组件。\n'
+                              '**3** components (2 stable / 1 beta).\n'
+                              '### primitives (2)\n')}
 
         # ---- 基线：全对 ⇒ 必须绿 ----
         build(GOOD)
@@ -903,6 +955,13 @@ def selftest():
             ('精简档令牌数写错（7+9 ≠ 2+1）',
              {'README.md': '含浅色 7 + 暗色 9 个令牌。\n'},
              '精简档令牌数与实际不符'),
+            # 🔴 0.16.0：英文句式与分档标题以前是**视野外**的写法
+            ('英文组件数写错（9 components (1 stable / 2 beta)）',
+             {'README.md': '**9** components (1 stable / 2 beta).\n'},
+             '组件数与成熟度拆分不符'),
+            ('分档条数写错（primitives (7) ≠ 2）',
+             {'README.md': '### primitives (7)\n'},
+             '分档条数与契约不符'),
         ]
         for why, patch, expect in cases:
             shutil.rmtree(base)

@@ -37,7 +37,7 @@
 | 按钮 | `02-primitives/button/button.css` | 357 | — | 几乎总要 |
 | 输入框 | `02-primitives/input/input.css` | 239 | — | 有表单就要 |
 | 标签 / 徽章 | `02-primitives/badge/badge.css` | 141 | — | 有状态标记就要（"已披露""停牌"） |
-| 卡片 | `02-primitives/card/card.css` | 246 | — | 有分组内容就要 |
+| 卡片 | `02-primitives/card/card.css` | 283 | — | 有分组内容就要 |
 | 单选 / 多选 | `02-primitives/choice/choice.css` | 395 | — | 单选 / 多选就要 |
 | 下拉选择 | `02-primitives/select/select.css` | 151 | **必需 541** (`select.js`) | 原生 select 的外观或交互不够用就要 |
 | 可搜索选择 | `02-primitives/combobox/combobox.css` | 223 | **必需 477** (`combobox.js`) | 选项多到要搜索，或要选多个并留成标签就要 |
@@ -63,7 +63,7 @@
 | delta | `02-primitives/delta/delta.css` | 113 | — |  |
 | metric | `02-primitives/metric/metric.css` | 157 | — |  |
 | reveal | `03-patterns/reveal/reveal.css` | 93 | 可选 175 (`reveal.js`，入场动效，纯增强；没有它内容直接可见) |  |
-| analysis-report | `04-recipes/analysis-report/analysis-report.css` | 187 | — |  |
+| analysis-report | `04-recipes/analysis-report/analysis-report.css` | 226 | — |  |
 | detail-page | `04-recipes/detail-page/detail-page.css` | 190 | — |  |
 | report | `04-recipes/report/report.css` | 364 | — |  |
 | table | `04-recipes/table/table.css` | 387 | — |  |

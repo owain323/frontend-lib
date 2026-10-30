@@ -82,14 +82,22 @@ analysis-report.css          ← 本示例的局部样式</code></pre>
 }</code></pre>
 <p>三个要点：</p>
 <ol><li><strong>默认就是单栏</strong>，并排是宽屏才<strong>发生</strong>的事 —— 不是把桌面版缩小。窄屏下不需要任何额外媒体查询，栅格自然退成一行。</li><li><code>minmax(0, 1fr)</code> 而不是 <code>1fr</code>：否则长表格/长代码会把栅格列撑开，产生横向溢出。这是 Grid 的经典陷阱。</li><li>辅助栏 <code>position: sticky</code> 必须配 <code>align-self: start</code>，否则 sticky 在 Grid 里不生效（默认 stretch 会撑满整列高度）。</li></ol>
-<h2 id="s6">已知限制<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
+<h3 id="s6">分屏 / 嵌入：断点看槽宽<a class="anchor" href="#s6" aria-label="本节直链">#</a></h3>
+<p>上面那条断点对<strong>分屏</strong>是错的：1440px 的屏幕上把报告放进 700px 的阅读栏，视口 ≥1024 ⇒ 硬排 <code>1fr + 15rem</code>，正文每行只剩七八个字。</p>
+<pre class="code" tabindex="0"><code class="language-html">&lt;!-- 700px 的阅读栏；宽度由你的布局决定，这一层就是&quot;槽&quot; --&gt;
+&lt;div data-cq&gt;
+  &lt;div class=&quot;report&quot;&gt;…&lt;/div&gt;
+&lt;/div&gt;</code></pre>
+<p>槽位标了 <code>[data-cq]</code> ⇒ 以槽宽为准：槽 &lt; 64rem 时回到单栏（<code>aside</code> 同时退回 <code>position: static</code>，否则空侧栏会跟着滚）。没有标记 ⇒ 行为与本版之前一致。</p>
+<p>⚠️ <code>data-cq</code> 不要加在承载抽屉/全屏浮层的祖先上（<code>container-type</code> 会成为 <code>position: fixed</code> 的包含块）。</p>
+<h2 id="s7">已知限制<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
 <ul><li>断点写不了 <code>var()</code> —— 媒体查询里的 <code>64rem</code> 与令牌 <code>--bp-lg</code> 是同一数值，但<strong>必须写字面值</strong>（CSS 规范限制）。改令牌时这里要手动同步。</li><li>辅助栏在 <code>100vh</code> 内滚动，正文很长时它不会跟着到页脚。</li><li>页面宽度为 <code>--measure-page + 16rem</code>，若宿主项目另有页面框架，请按实际情况调整。</li></ul>
-<h2 id="s7">预览<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
+<h2 id="s8">预览<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
 <pre class="code" tabindex="0"><code class="language-bash">python -m http.server 8000        # 仓库根
 # http://127.0.0.1:8000/04-recipes/analysis-report/demo.html</code></pre>
-<h2 id="s8">数据说明<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
+<h2 id="s9">数据说明<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
 <p>页面里的实验数据<strong>全部是演示用示例数据</strong>，不是真实实验结果。留出这条是因为：「长得像真实数据」的示例最容易被误引用。</p>
-<h2 id="s9">反例<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
+<h2 id="s10">反例<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
 <ul><li>❌ <strong>栅格列写 <code>1fr</code> 而不是 <code>minmax(0, 1fr)</code></strong> —— 长表格、长代码会把列撑开，整页横向溢出。这是 Grid 的经典陷阱，<code>analysis-report.css</code> 里两处都写成 <code>minmax(0, 1fr)</code></li><li>❌ <strong>先做桌面并排、再用媒体查询缩回单栏</strong> —— 默认就该是单栏，并排是宽屏<strong>才发生</strong>的事。反过来做，窄屏上得到的是&quot;缩小的桌面版&quot;</li><li>❌ <strong><code>position: sticky</code> 的辅助栏不配 <code>align-self: start</code></strong> —— 在 grid 里 sticky 不生效，那一栏会跟着页面一起滚走</li><li>❌ <strong>再另造一个&quot;侧栏卡片&quot;</strong> —— 直接复用 <code>card.css</code>；重复造会在换主题时多一个不一致的源头</li><li>❌ <strong>用 inline style 写字号和颜色</strong> —— inline 的优先级高于一切样式表（INVARIANT I-4），换肤时改不动，只能一路 <code>!important</code></li><li>❌ <strong>把组件 CSS 引在骨架之前</strong> —— 顺序反了就要靠 <code>!important</code> 抢优先级； &quot;骨架在组件之前&quot;这条是有门禁守着的</li></ul>
 <hr>
     </article>
@@ -100,11 +108,11 @@ analysis-report.css          ← 本示例的局部样式</code></pre>
   </main>
   <aside class="g-side">
     <p class="g-side__title" id="toc-title">本页目录</p>
-    <ul class="g-toc"><li><a href="#s2">用途</a></li><li><a href="#s3">文件</a></li><li><a href="#s4">依赖</a></li><li><a href="#s5">布局策略</a></li><li><a href="#s6">已知限制</a></li><li><a href="#s7">预览</a></li><li><a href="#s8">数据说明</a></li><li><a href="#s9">反例</a></li></ul>
+    <ul class="g-toc"><li><a href="#s2">用途</a></li><li><a href="#s3">文件</a></li><li><a href="#s4">依赖</a></li><li><a href="#s5">布局策略</a></li><li><a href="#s7">已知限制</a></li><li><a href="#s8">预览</a></li><li><a href="#s9">数据说明</a></li><li><a href="#s10">反例</a></li></ul>
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.15.0 · 零第三方运行时依赖 · 组件数 37</p>
+  <p>v0.16.0 · 零第三方运行时依赖 · 组件数 37</p>
 </footer>
 </body>
 </html>

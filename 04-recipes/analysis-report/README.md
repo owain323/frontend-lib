@@ -60,6 +60,24 @@ analysis-report.css          ← 本示例的局部样式
 3. 辅助栏 `position: sticky` 必须配 `align-self: start`，
    否则 sticky 在 Grid 里不生效（默认 stretch 会撑满整列高度）。
 
+### 分屏 / 嵌入：断点看槽宽
+
+上面那条断点对**分屏**是错的：1440px 的屏幕上把报告放进 700px 的阅读栏，
+视口 ≥1024 ⇒ 硬排 `1fr + 15rem`，正文每行只剩七八个字。
+
+```html
+<!-- 700px 的阅读栏；宽度由你的布局决定，这一层就是"槽" -->
+<div data-cq>
+  <div class="report">…</div>
+</div>
+```
+
+槽位标了 `[data-cq]` ⇒ 以槽宽为准：槽 < 64rem 时回到单栏（`aside` 同时退回
+`position: static`，否则空侧栏会跟着滚）。没有标记 ⇒ 行为与本版之前一致。
+
+⚠️ `data-cq` 不要加在承载抽屉/全屏浮层的祖先上（`container-type` 会成为
+`position: fixed` 的包含块）。
+
 ## 已知限制
 
 - 断点写不了 `var()` —— 媒体查询里的 `64rem` 与令牌 `--bp-lg`
