@@ -104,6 +104,45 @@ const REPO = path.resolve(__dirname, '..');
                  : '🔴 Esc 之后弹层仍在（display=' + after.disp + '）' };
       },
 
+      /* ③b 🔴 打开那一刻焦点就要进弹层（APG Dialog 的开启动作）
+       *
+       *  为什么单独一条：dropdown 的同类缺陷就是「能打开、焦点没进」，
+       *  而当时的判据只测了 Tab 陷阱 —— 焦点还在触发器上时，Tab 也可能被陷阱
+       *  「拽」进弹层，于是判据绿着、用户侧是坏的。
+       *  ⇒ 判据必须**不按任何键**就读一次 activeElement。
+       *
+       *  用真实点击触发（不是直接调 API）：读屏把 Enter 合成点击，走的就是这条路。
+       */
+      '③b 打开即把焦点移进弹层': async (p) => {
+        const opened = await p.evaluate(() => {
+          const b = document.getElementById('d1');
+          if (!b) return false;
+          b.focus();
+          b.click();
+          return true;
+        });
+        if (!opened) return { ok: false, note: '🔴 找不到触发按钮 #d1' };
+        await new Promise((r) => setTimeout(r, 450));
+        const st = await p.evaluate(() => {
+          const dlg = document.querySelector('.dialog, [role="dialog"]');
+          if (!dlg) return { noDialog: true };
+          const a = document.activeElement;
+          return {
+            inside: !!(a && (dlg.contains(a) || a === dlg)),
+            tag: a ? a.tagName : 'null',
+            txt: a ? (a.textContent || '').trim().slice(0, 12) : '',
+          };
+        });
+        /* 收尾：关掉，免得影响后面的判据 */
+        await p.keyboard.press('Escape');
+        await new Promise((r) => setTimeout(r, 450));
+        if (st.noDialog) return { ok: false, note: '🔴 点击后弹层没出现' };
+        return { ok: st.inside,
+                 note: st.inside
+                   ? '未按任何键，焦点已在 ' + st.tag + '「' + st.txt + '」（弹层内）'
+                   : '🔴 打开后焦点仍在弹层外：' + st.tag + '「' + st.txt + '」' };
+      },
+
       /* ④ ⭐ 焦点陷阱：弹层打开时 Tab 不能跑到外面
          🔴 修正：上一条（Esc）已经把弹层关掉了 ⇒ 这里必须**重开**。 */
       '焦点陷阱（Tab 留在弹层内）': async (p) => {
@@ -130,6 +169,17 @@ const REPO = path.resolve(__dirname, '..');
             return !!(ov && (a === ov || ov.contains(a)));
           });
           if (!inOv) { escaped = i + 1; break; }
+        }
+        /* 🔴 收尾必须关掉：这条判据是**只开不关**的，后面 ⑤ / ⑤b 会各开各的。
+           不收尾的后果实测过：⑤ 叠一个内层、Esc 关掉内层时焦点归还到背景，
+           外层就成了"按 Esc 也关不掉"的悬空弹层 ——
+           后续判据看到的 inert 是它锁的，却以为是自己的，报出"触发按钮拿不到焦点"。
+           判据之间不清场，失败信息就会指向错误的地方。 */
+        for (let k = 0; k < 4; k++) {
+          const left = await p.evaluate(() => document.querySelectorAll('.dialog-backdrop').length);
+          if (!left) break;
+          await p.keyboard.press('Escape');
+          await new Promise((r) => setTimeout(r, 420));
         }
         return { ok: escaped === null,
                  note: escaped === null ? '连按 12 次 Tab 焦点都在弹层内'
@@ -173,6 +223,72 @@ const REPO = path.resolve(__dirname, '..');
         return { ok: back.isProbe,
                  note: back.isProbe ? '焦点已回到触发器 ✅'
                                     : '🔴 关闭后焦点没归位（现在焦点在 ' + back.tag + '）' };
+      },
+
+      /* ⑤b 🔴 第二条关闭路径：**点遮罩**关闭后，焦点也必须归位
+       *
+       *  为什么必须单独测：上面的「关闭后焦点归位」只走了 Esc。
+       *  两条关闭路径如果只在其中一条里做归还，另一条就会把用户扔在 body 上
+       *  —— 读屏用户等于失联。这正是「只测一条输入路径」的老毛病。
+       *  判据看**结果**：遮罩没了 + 焦点回到真正触发它的那颗按钮。
+       */
+      '⑤b 点遮罩关闭后焦点也归位': async (p) => {
+        /* 清场：前面的判据可能留下弹层。不清的话下面选到的遮罩可能是别人的，
+           于是"点了没关掉"——那不是实现的问题，是判据自己搞混了。 */
+        for (let i = 0; i < 4; i++) {
+          const n = await p.evaluate(() => document.querySelectorAll('.dialog-backdrop').length);
+          if (!n) break;
+          await p.keyboard.press('Escape');
+          await new Promise((r) => setTimeout(r, 420));
+        }
+        /* 把焦点先落到触发按钮上，并**记录下来**：
+           如果这里没落上去，后面"焦点回没回 #d1"就无从判断 —— 得先证明前提。 */
+        const pre = await p.evaluate(() => {
+          const b = document.getElementById('d1');
+          if (!b) return { missing: true };
+          b.focus();
+          const a = document.activeElement;
+          let inertAnc = false;
+          for (let n = b; n && n !== document.body; n = n.parentElement) {
+            if (n.hasAttribute && n.hasAttribute('inert')) { inertAnc = true; break; }
+          }
+          return { missing: false, same: a === b, gotId: a ? a.id : '', inertAnc };
+        });
+        if (pre.missing) return { ok: false, note: '🔴 找不到触发按钮 #d1' };
+        if (!pre.same) {
+          return { ok: false,
+                   note: '🔴 触发按钮拿不到焦点（现在在 #' + (pre.gotId || 'body') +
+                         '）· 祖先进程有 inert=' + pre.inertAnc + ' ⇒ 判据前提不成立' };
+        }
+        await p.evaluate(() => {
+          const b = document.getElementById('d1');
+          if (b) b.click();
+        });
+        await new Promise((r) => setTimeout(r, 450));
+        const before = await p.evaluate(() => document.querySelectorAll('.dialog-backdrop').length);
+        if (before === 0) return { ok: false, note: '🔴 点上没有遮罩 ⇒ 这条路径测不到' };
+        await p.evaluate(() => {
+          /* 取最上面那一层：多个弹层堆叠时，先出现的不是正在操作的那个 */
+          const all = document.querySelectorAll('.dialog-backdrop');
+          const bd = all[all.length - 1];
+          bd.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+        });
+        await new Promise((r) => setTimeout(r, 650));
+        const r = await p.evaluate(() => {
+          const a = document.activeElement;
+          return {
+            left: document.querySelectorAll('.dialog-backdrop').length,
+            tag: a ? a.tagName : 'null',
+            id: a ? a.id : '',
+          };
+        });
+        if (r.left >= before) {
+          return { ok: false, note: '🔴 点遮罩没关掉（遮罩 ' + before + ' → ' + r.left + '）' };
+        }
+        const ok = r.id === 'd1';
+        return { ok,
+                 note: ok ? '遮罩关闭后焦点回到 #d1 ✅'
+                          : '🔴 遮罩关闭后焦点落到了 ' + r.tag + (r.id ? '#' + r.id : '') };
       },
 
       /* 🔴 补（ I3 复核时发现这条缺失）：背景隔离。

@@ -175,6 +175,10 @@
 <tr><td>亮/暗两套对比度达标</td><td><code>contrast.py</code>、<code>dark-contrast.js</code>、<code>component-contrast.py</code></td></tr>
 <tr><td>焦点环存在且不是 <code>outline:none</code></td><td><code>focus-ring-check.js</code></td></tr>
 <tr><td>关掉弹层后焦点回到触发点</td><td><code>focus-return-check.js</code></td></tr>
+<tr><td>弹层<strong>打开那一刻</strong>焦点就进弹层（不是等 Tab 才进）</td><td><code>overlay-check.js</code> ③b、<code>drawer-check.js</code> ①</td></tr>
+<tr><td><strong>每条</strong>关闭路径都要归还焦点（Esc / 点遮罩 / 关闭按钮）</td><td><code>overlay-check.js</code> ⑤b（遮罩）+ ⑤（Esc）</td></tr>
+<tr><td>装饰符号不许进可访问名（伪元素有文本就会被算进 <code>name-from-contents</code>）</td><td><code>table-check.js</code> ⑨b</td></tr>
+<tr><td>浮层类组件的每条输入路径都要测（键盘 / 点击 / 读屏合成点击）</td><td><code>dropdown-check</code> ①b、<code>overlay-check</code> ③b、<code>drawer-check</code> ①</td></tr>
 <tr><td>键盘可达（Tab 顺序、Esc 关闭）</td><td><code>keyboard-nav.js</code></td></tr>
 <tr><td>减少动效策略双向一致</td><td><code>motion.py --reduced-audit</code></td></tr>
 <tr><td>逻辑属性全覆盖</td><td><code>rtl-check.js</code></td></tr>
