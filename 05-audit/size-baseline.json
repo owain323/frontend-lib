@@ -93,8 +93,8 @@
       "raw": 10141
     },
     "02-primitives/metric/metric.css": {
-      "gzip": 3264,
-      "raw": 6929
+      "gzip": 3277,
+      "raw": 6962
     },
     "02-primitives/popover/popover.css": {
       "gzip": 2577,
@@ -153,8 +153,8 @@
       "raw": 4044
     },
     "03-patterns/dropdown/dropdown.js": {
-      "gzip": 6533,
-      "raw": 17328
+      "gzip": 6732,
+      "raw": 17794
     },
     "03-patterns/form-validation/form-validation.css": {
       "gzip": 4606,
@@ -185,8 +185,8 @@
       "raw": 12252
     },
     "03-patterns/overlay/overlay.js": {
-      "gzip": 9088,
-      "raw": 24597
+      "gzip": 9396,
+      "raw": 25248
     },
     "03-patterns/pagination/pagination.css": {
       "gzip": 3407,
@@ -245,8 +245,8 @@
       "raw": 16085
     },
     "04-recipes/table/table.css": {
-      "gzip": 6136,
-      "raw": 15761
+      "gzip": 6709,
+      "raw": 17049
     },
     "04-recipes/tierA-tokens.css": {
       "gzip": 2079,
@@ -254,6 +254,6 @@
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 262280,
-  "total_raw": 656244
+  "total_gzip": 263373,
+  "total_raw": 658682
 }

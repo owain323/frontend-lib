@@ -8,8 +8,8 @@
   ],
   "totals": {
     "sourceFiles": 72,
-    "sourceBytes": 772406,
-    "distGzip": 96853
+    "sourceBytes": 773694,
+    "distGzip": 97098
   },
   "files": [
     {
@@ -891,15 +891,15 @@
     },
     {
       "source": "04-recipes/table/table.css",
-      "sourceSha256": "17f3503c903e6bcca08a96fc0076de7d21482acf39a8995ee291c767080ea39d",
-      "sourceBytes": 15761,
-      "sourceGzip": 6136,
+      "sourceSha256": "81c0b38f7d6ccbb4198b4e9f0268e02b8c39a517ab6d4570bb81da73aca4a24e",
+      "sourceBytes": 17049,
+      "sourceGzip": 6709,
       "outputs": [
         {
           "path": "dist/04-recipes/table/table.css",
           "kind": "minified",
-          "bytes": 4925,
-          "gzip": 1379
+          "bytes": 5604,
+          "gzip": 1624
         }
       ]
     },

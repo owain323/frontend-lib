@@ -72,10 +72,21 @@
   outline-offset: var(--focus-ring-offset);
 }
 
+/* ⭐ 排序指示符改用 mask 画，不再用文字字形。
+   原因：Chromium 会把 ::after 的 `content` 文本算进**可访问名**，读屏于是念出
+   「公司 · ↕ · 按钮」—— 这个符号对用户毫无意义，而且自动检查抓不到（名字非空即过）。
+   换成图像后字形不进无障碍树；三态形状、`opacity`、暗色跟随（currentColor）全不变。
+   ⚠️ 不要改回 `content: "↕" / ""` 这种替代文本语法：Firefox 不支持，箭头会直接消失。 */
 .table__sort::after {
-  content: "↕";                      /* 未排序：上下双向箭头 */
+  content: "";                       /* 空内容 ⇒ 不进可访问名 */
+  inline-size: .85em;
+  block-size: .85em;
+  flex: none;
+  background-color: currentColor;    /* 跟着文字颜色走，暗色自动适配 */
   opacity: .45;
-  font-size: .9em;
+  -webkit-mask: var(--sort-glyph) center / contain no-repeat;
+  mask: var(--sort-glyph) center / contain no-repeat;
+  --sort-glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 1.4 5.2 4.6h1.7v2.6h2.2V4.6h1.7z'/%3E%3Cpath d='M8 14.6 10.8 11.4h-1.7V8.8H6.9v2.6H5.2z'/%3E%3C/svg%3E");
 }
 
 /* 🔴🔴 排序指示符：三态必须**同时**用形状 + 颜色表达（WCAG 1.4.1）
@@ -95,13 +106,13 @@
      ⇒ 两条选择器并存，任何一种写法都能把箭头点亮。 */
 .table th[aria-sort="ascending"] .table__sort::after,
 .table__sort[aria-sort="ascending"]::after {
-  content: "↑";
+  --sort-glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 1.6 4.6 6h2.1v8h2.6V6h2.1z'/%3E%3C/svg%3E");
   opacity: 1;
 }
 
 .table th[aria-sort="descending"] .table__sort::after,
 .table__sort[aria-sort="descending"]::after {
-  content: "↓";
+  --sort-glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 14.4 11.4 10h-2.1V2H6.7v8H4.6z'/%3E%3C/svg%3E");
   opacity: 1;
 }
 
