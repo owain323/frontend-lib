@@ -88,8 +88,16 @@ const PAGES = [
    '分隔线：separator 角色 + 分组名落在哪一层（放错层就等于没有）'],
   ['skeleton', '02-primitives/skeleton/demo.html',
    '骨架屏：装饰性 aria-hidden 与内嵌 progressbar 的例外'],
+  /* 0.18.0 加：file input 的名字来自 <label for>（**不能**给 label 加 aria-hidden，
+     否则整支控件从无障碍树消失），以及"文件增减走独立 role=status 而不是给 <ul> 加 aria-live"。 */
+  ['upload', '02-primitives/upload/demo.html',
+   '文件上传：label 给出的名字 + 列表播报走独立 status + 移除按钮的 aria-label 带文件名'],
   /* ---- 03-patterns ---- */
   ['tabs', '03-patterns/tabs/demo.html', '标签页：tablist/tab + selected + controls'],
+  /* 0.18.0：外壳的判据是"当前页"怎么表达 —— aria-current 会不会落进无障碍树，
+     以及页面上出现第二个 <nav> 时名字够不够用（本页正好有两处导航）。 */
+  ['app-shell', '04-recipes/app-shell/demo.html',
+   '应用外壳：aria-current 表达当前页 + 多个 <nav> 各自有名字'],
   /* 0.11.13 加：折叠是「button + expanded + 受控 region」这一组关系，
      与 tablist 的 selected/controls 不同源；而 `accordion-contract.js`
      查的是**属性写得对不对**，查不到"读屏实际念出什么"。 */

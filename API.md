@@ -75,6 +75,7 @@ import { Accordion, Tabs, Select } from 'agentcss/esm';
 | `Pagination` | ✅ | create | `create` `update` `pagesOf` |
 | `Accordion` | ✅ | **construct** | 实例方法在原型上：`toggle` `set` `bind` `init` … |
 | `Tabs` | ✅ | **construct** | 实例方法在原型上：`select` `focusables` `enabled` `rove` `bind`（方向键游走已并入 roving 核） |
+| `Upload` | ✅ | **construct** | 实例方法在原型上：`add` `removeAt` `setProgress` `render` `destroy`（`new Upload(root, { maxSize, maxFiles })`；自动初始化时读 `data-max-size` / `data-max-files`）|
 | `Tooltip` | ✅ | attach | `attach` |
 | `Popover` | ✅ | attach | `attach` `closeAll` `current` |
 | `Overlay` | ✅ | direct | `dialog` `toast` |
@@ -139,6 +140,7 @@ window.ScientificPlot.render(el, {
 | `FLIP` | 否 | 必须 `FLIP.flip(...)` |
 | `ModelViewer` | 是 | 扫 `[data-mv]`（模型加载后自动 `update()`） |
 | `ScientificPlot` | 否 | 必须 `ScientificPlot.render(el, opts)` |
+| `Upload` | 是 | 扫 `[data-upload]`，实例挂在 `el.uploadInstance`（幂等；缺 `.upload__input` 时 console.warn 后跳过该元素） |
 <!-- autoinit-table:end -->
 
 **为什么不做成"全都自动"**：需要 options 的组件（`Select.create(root, opts)`）

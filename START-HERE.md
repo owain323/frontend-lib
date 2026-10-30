@@ -62,8 +62,10 @@
 | 长文排版 | `03-patterns/content/content.css` | 286 | — | 写文档 / 长文就要 |
 | delta | `02-primitives/delta/delta.css` | 113 | — |  |
 | metric | `02-primitives/metric/metric.css` | 157 | — |  |
+| upload | `02-primitives/upload/upload.css` | 490 | 可选 676 (`upload.js`，拖放 / 文件列表 / 校验；没有它基础形态照常工作) |  |
 | reveal | `03-patterns/reveal/reveal.css` | 93 | 可选 175 (`reveal.js`，入场动效，纯增强；没有它内容直接可见) |  |
 | analysis-report | `04-recipes/analysis-report/analysis-report.css` | 226 | — |  |
+| app-shell | `04-recipes/app-shell/app-shell.css` | 395 | — |  |
 | detail-page | `04-recipes/detail-page/detail-page.css` | 190 | — |  |
 | report | `04-recipes/report/report.css` | 364 | — |  |
 | table | `04-recipes/table/table.css` | 409 | — |  |
@@ -111,6 +113,7 @@
 | 示例 | 目录 | 它示范什么 |
 |---|---|---|
 | `analysis-report/` | `04-recipes/analysis-report/` | 组合型研究报告：正文 + 辅助栏并排，窄屏退回单栏 |
+| `app-shell/` | `04-recipes/app-shell/` | 应用外壳：侧栏 + 顶栏 + 主区；sticky 侧栏自滚、min-width 防撑破、窄屏收走侧栏 |
 | `data-showcase/` | `04-recipes/data-showcase/` | 四种数据表达方式对照：我到底该用哪个 |
 | `detail-page/` | `04-recipes/detail-page/` | 实体详情页骨架：字段齐全 / 部分缺失 / 无数据，三态同构（DOM 不变） |
 | `longform/` | `04-recipes/longform/` | 单栏长文排版与阅读节奏 |

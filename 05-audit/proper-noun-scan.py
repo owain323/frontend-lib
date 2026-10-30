@@ -49,6 +49,12 @@ WHITELIST = {
     #   起因：ERRORS.md E41 记「批量插零文件守卫时守卫插到 return 之后
     #   ⇒ NameError: total」，那是我自己踩的真实报错，不是内部代号。
     'NameError',
+    # DataTransfer / FileList（0.18.0 补）
+    #   起因：upload 组件的核心事实就是"拖放要写回 input.files"，
+    #   而 `input.files` 的类型是 `FileList`、写回必须经 `DataTransfer`。
+    #   两个都是标准 Web API（MDN 有独立页面），不是内部代号。
+    'DataTransfer',
+    'FileList',
     # 2026-10-31 补三个（起因：强制色那道门禁用系统色关键字修强制色缺陷）
     #   · CanvasText / GrayText —— CSS 系统色关键字（CSS Color 4）。它们不是
     #     内部代号，是**规范里的名字**；判据必须用它们才能在强制色下保住

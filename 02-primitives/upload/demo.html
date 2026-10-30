@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>文件上传 · upload</title>
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/page.css">
+<link rel="stylesheet" href="../input/input.css">
+<link rel="stylesheet" href="../progress/progress.css">
+<link rel="stylesheet" href="upload.css">
+<script src="upload.js"></script>
+<style>
+.demo {
+  background: var(--surface);
+  border: 1px solid var(--border-decor);
+  border-radius: var(--r-md);
+  padding: var(--sp-4);
+  margin-bottom: var(--sp-3);
+}
+.demo + .note { margin-top: 0; }
+/* 演示用：窄槽 */
+.cq-narrow {
+  max-width: 240px;
+  padding: var(--sp-3);
+  border: 1px dashed var(--border-decor);
+  border-radius: var(--r-md);
+}
+/* 演示用：把"上传中"的进度定住，视觉基线才不会拍到动画中间帧 */
+.frozen { margin-top: var(--sp-2); }
+</style>
+</head>
+<body class="page">
+<main class="wrap">
+
+<h1>文件上传 · upload</h1>
+<p class="lede">上传是「导入 CSV / 附一份财报 / 传凭证」的必经入口。这个组件的核心不在拖放区好看，
+而在于：<b>JS 没加载时它仍然是能用的</b>，以及文件有没有真的进到表单里。</p>
+
+<h2>1 · 基础形态：零 JS 也能用</h2>
+<div class="demo">
+  <div class="field">
+    <label class="field__label" for="u-basic">导入对账单</label>
+    <input class="upload__input" type="file" id="u-basic" name="statement"
+           accept=".csv,.xlsx" aria-describedby="u-basic-hint">
+    <p class="field__hint" id="u-basic-hint">支持 CSV / XLSX，单个不超过 20 MB</p>
+  </div>
+</div>
+<p class="note">这一块<b>没有任何 JS</b>：浏览器原生的"选择文件"按钮经
+<code>::file-selector-button</code> 美化，选完立刻在按钮右侧回显文件名 ——
+不需要脚本读 <code>files</code> 再写进 DOM。表单提交、<code>FormData</code>、
+<code>accept</code> 过滤全走原生路径。</p>
+
+<h2>2 · 增强形态：拖放区 + 文件列表</h2>
+<div class="demo">
+  <div class="field">
+    <label class="field__label" for="u-drop">上传审计底稿</label>
+    <div class="upload upload--drop" id="u-drop-wrap" data-upload data-max-size="20971520">
+      <input class="upload__input" type="file" id="u-drop" name="workpapers" multiple
+             accept=".pdf,.xlsx,.csv" aria-describedby="u-drop-hint">
+      <label class="upload__dropzone" for="u-drop">
+        <svg class="upload__icon" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+             stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 11V2.6M4.4 6.2L8 2.6l3.6 3.6M2.6 11.4v1.2a.8.8 0 0 0 .8.8h9.2a.8.8 0 0 0 .8-.8v-1.2"/>
+        </svg>
+        <span class="upload__title">拖入文件，或 <span class="upload__browse">选择文件</span></span>
+        <span class="upload__hint">PDF / XLSX / CSV，单个不超过 20 MB</span>
+      </label>
+      <ul class="upload__list"></ul>
+      <span class="upload__status" role="status" aria-live="polite"></span>
+    </div>
+    <p class="field__hint" id="u-drop-hint">可以一次选多个；再次拖入会<b>替换</b>整个列表</p>
+  </div>
+</div>
+<p class="note">拖放区是一个 <code>&lt;label for&gt;</code>：点它 = 原生打开选择器，
+这一步不依赖 JS。脚本只负责三件事 —— 把拖入的 <code>File</code> 塞进
+<code>input.files</code>、重画列表、派发 <code>fl-upload</code>。
+所以 <code>&lt;form&gt;</code> 拿到的永远是真实文件，不是"组件自己记的一份清单"。</p>
+
+<h2>3 · 上传中：进度既是图形也是文字</h2>
+<div class="demo">
+  <ul class="upload__list">
+    <li class="upload__item" data-state="pending">
+      <span class="upload__mark">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8 1.7a6.3 6.3 0 1 0 0 12.6A6.3 6.3 0 0 0 8 1.7zM8 4.6V8l2.3 1.5"/></svg>
+        <span class="upload__status">待上传</span>
+      </span>
+      <span class="upload__name">2025年度审计报告.pdf</span>
+      <span class="upload__meta num">上传中 42%</span>
+      <span class="upload__progress">
+        <span class="progress"><span class="progress__bar" style="--progress:42%"></span></span>
+      </span>
+      <button class="upload__remove" type="button" aria-label="移除 2025年度审计报告.pdf">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4.2 4.2l7.6 7.6M11.8 4.2l-7.6 7.6"/></svg>
+      </button>
+    </li>
+    <li class="upload__item" data-state="done">
+      <span class="upload__mark">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.3 8.4l3.1 3.1 6.3-6.9"/></svg>
+        <span class="upload__status">已完成</span>
+      </span>
+      <span class="upload__name">应付账款明细.xlsx</span>
+      <span class="upload__meta num">2.4 MB</span>
+      <button class="upload__remove" type="button" aria-label="移除 应付账款明细.xlsx">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4.2 4.2l7.6 7.6M11.8 4.2l-7.6 7.6"/></svg>
+      </button>
+    </li>
+    <li class="upload__item" data-state="error">
+      <span class="upload__mark">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8 1.7a6.3 6.3 0 1 0 0 12.6A6.3 6.3 0 0 0 8 1.7zM8 4.9v3.4M8 11.1v.5"/></svg>
+        <span class="upload__status">失败</span>
+      </span>
+      <span class="upload__name">往来余额扫描件.pdf</span>
+      <span class="upload__meta num">超过 20 MB</span>
+    </li>
+  </ul>
+</div>
+<p class="note">三个状态的差别<b>不只是颜色</b>：左侧图形（空心圆 / 勾 / 叹号）、
+中间文件名的灰度、以及右侧那行文字（"上传中 42%" / "2.4 MB" / "超过 20 MB"）。
+把这一块截图转成灰度打印，信息一条都不丢。</p>
+
+<h2>4 · 校验拒绝：一个都没收进来</h2>
+<div class="demo">
+  <div class="field">
+    <label class="field__label" for="u-reject">上传凭证</label>
+    <div class="upload upload--drop" id="u-reject-wrap" data-upload
+         data-max-size="20971520" data-max-files="3">
+      <input class="upload__input" type="file" id="u-reject" name="proofs" multiple
+             accept=".pdf,.jpg,.png" aria-describedby="u-reject-hint">
+      <label class="upload__dropzone" for="u-reject">
+        <svg class="upload__icon" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+             stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 11V2.6M4.4 6.2L8 2.6l3.6 3.6M2.6 11.4v1.2a.8.8 0 0 0 .8.8h9.2a.8.8 0 0 0 .8-.8v-1.2"/>
+        </svg>
+        <span class="upload__title">拖入文件，或 <span class="upload__browse">选择文件</span></span>
+        <span class="upload__hint">PDF / JPG / PNG，单个不超过 20 MB，最多 3 个</span>
+      </label>
+      <ul class="upload__list"></ul>
+      <span class="upload__status" role="status" aria-live="polite"></span>
+    </div>
+    <p class="field__hint" id="u-reject-hint">下面这一组是脚本真实拖入 3 个不合规文件的结果</p>
+  </div>
+</div>
+<p class="note">被拒的文件<b>不会进入 <code>input.files</code></b> ——
+它们根本没被接收，所以提交时不会悄悄带上一个 30 MB 的扫描件。
+拒绝原因写在文件名的位置，不是只把边框变红。</p>
+
+<h2>5 · 紧凑档（侧栏 / 抽屉）</h2>
+<div class="demo">
+  <div class="upload upload--drop upload--compact" data-upload>
+    <input class="upload__input" type="file" id="u-compact" name="att" multiple>
+    <label class="upload__dropzone" for="u-compact" aria-label="添加附件">
+      <svg class="upload__icon" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+           stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M8 11V2.6M4.4 6.2L8 2.6l3.6 3.6M2.6 11.4v1.2a.8.8 0 0 0 .8.8h9.2a.8.8 0 0 0 .8-.8v-1.2"/>
+      </svg>
+      <span class="upload__title">添加附件</span>
+    </label>
+    <ul class="upload__list"></ul>
+    <span class="upload__status" role="status" aria-live="polite"></span>
+  </div>
+</div>
+
+<h2>6 · 槽宽适配（看槽宽，不看视口）</h2>
+<div class="demo">
+  <div class="cq-narrow" data-cq>
+    <div class="upload upload--drop" data-upload>
+      <input class="upload__input" type="file" id="u-cq" name="cq" multiple>
+      <label class="upload__dropzone" for="u-cq" aria-label="窄槽里的上传">
+        <svg class="upload__icon" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+             stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 11V2.6M4.4 6.2L8 2.6l3.6 3.6M2.6 11.4v1.2a.8.8 0 0 0 .8.8h9.2a.8.8 0 0 0 .8-.8v-1.2"/>
+        </svg>
+        <span class="upload__title">拖入文件，或 <span class="upload__browse">选择文件</span></span>
+        <span class="upload__hint">PDF / XLSX</span>
+      </label>
+      <ul class="upload__list"></ul>
+      <span class="upload__status" role="status" aria-live="polite"></span>
+    </div>
+  </div>
+</div>
+<p class="note">左侧这块是 240px 宽的槽（外层加了 <code>data-cq</code>）。
+它比右边窄，但没有"响应式跳跃"：内边距与图标各降一档，限制说明<b>没有</b>被藏起来 ——
+藏掉它，用户就不知道该选什么文件了。</p>
+
+<h2>7 · 禁用</h2>
+<div class="demo">
+  <div class="field">
+    <label class="field__label" for="u-dis">上传补充材料</label>
+    <div class="upload upload--drop" data-upload>
+      <input class="upload__input" type="file" id="u-dis" name="extra" disabled>
+      <label class="upload__dropzone" for="u-dis">
+        <svg class="upload__icon" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+             stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 11V2.6M4.4 6.2L8 2.6l3.6 3.6M2.6 11.4v1.2a.8.8 0 0 0 .8.8h9.2a.8.8 0 0 0 .8-.8v-1.2"/>
+        </svg>
+        <span class="upload__title">拖入文件，或 <span class="upload__browse">选择文件</span></span>
+      </label>
+      <ul class="upload__list"></ul>
+    </div>
+    <p class="field__hint">先在"基础信息"里选好主体类型，这里才能上传</p>
+  </div>
+</div>
+<p class="note">禁用不用 <code>opacity</code>：半透明会让文字对比度随底色漂移，
+暗色下直接不达标。这里换的是<b>明确色值</b>，边框同时从虚线变实线 ——
+不用颜色也能看出"这一档不一样"。</p>
+
+<h2 class="rule-bottom">对比：两种"拖放区"</h2>
+<div class="cmp">
+  <div class="cmp__pane cmp__bad" data-bad=".upload__input|focus|=0">
+    <h3>❌ 常见写法：拖放区是唯一入口</h3>
+    <div class="upload upload--drop">
+      <input class="upload__input" type="file" id="u-bad" aria-label="上传文件（反例）" style="display:none">
+      <label class="upload__dropzone" for="u-bad">
+        <svg class="upload__icon" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+             stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 11V2.6M4.4 6.2L8 2.6l3.6 3.6M2.6 11.4v1.2a.8.8 0 0 0 .8.8h9.2a.8.8 0 0 0 .8-.8v-1.2"/>
+        </svg>
+        <span class="upload__title">拖入文件，或 <span class="upload__browse">选择文件</span></span>
+      </label>
+    </div>
+    <p class="cmp__why">把原生 <code>&lt;input&gt;</code> 设成 <code>display:none</code> 图省事 —— 两栏<b>看起来一模一样</b>，差别在键盘：
+    后果是键盘 <kbd>Tab</kbd> 永远聚焦不到它（不可聚焦元素进不了 Tab 序列），
+    读屏也拿不到可访问名字 —— 鼠标用户能用，键盘用户<b>完全无法上传</b>。</p>
+  </div>
+  <div class="cmp__pane cmp__good" data-good=".upload__input|focus|=1">
+    <h3>✅ 本库：隐藏的是像素，不是控件</h3>
+    <div class="upload upload--drop">
+      <input class="upload__input" type="file" id="u-good" aria-label="上传文件">
+      <label class="upload__dropzone" for="u-good">
+        <svg class="upload__icon" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+             stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 11V2.6M4.4 6.2L8 2.6l3.6 3.6M2.6 11.4v1.2a.8.8 0 0 0 .8.8h9.2a.8.8 0 0 0 .8-.8v-1.2"/>
+        </svg>
+        <span class="upload__title">拖入文件，或 <span class="upload__browse">选择文件</span></span>
+      </label>
+    </div>
+    <p class="cmp__why">同样看不见原生控件，但它只是 1px + <code>opacity:0</code>：
+    仍在 Tab 序列里、仍在表单里、仍能被 <code>label</code> 触发。
+    聚焦时焦点环画在拖放区上，用户看到的是"这块被选中了"。</p>
+  </div>
+</div>
+
+<script>
+/* ============================================================================
+   demo 脚本：只做两件事 —— 造出"真的文件"，以及冻结进度
+   ============================================================================
+   ⚠️ 不写动画。视觉基线是逐像素比对的，一个 setInterval 就能让每次截图都不一样，
+   然后"基线过期"会被误读成"组件改坏了"。
+   ========================================================================== */
+(function () {
+  'use strict';
+
+  /* 1 字节的真实 File + 覆盖 size。
+     ⚠️ 不要为了"看起来真实"去 new Uint8Array(30MB)：那是真分配内存，
+        demo 页会多花几十毫秒，也会让无头浏览器在低配 CI 上偶发慢加载。
+        而 size 只是 `_validate` 读的一个数字 —— 覆盖它不影响任何被验证的逻辑。 */
+  function fakeFile(name, size, type) {
+    var f = new File([new Uint8Array(1)], name, { type: type || '' });
+    try { Object.defineProperty(f, 'size', { value: size }); } catch (e) { /* 老引擎不支持就算了 */ }
+    return f;
+  }
+
+  function seed(rootId, list) {
+    var root = document.getElementById(rootId);
+    var inst = root && root.uploadInstance;
+    if (!inst) return;
+    var files = [];
+    for (var i = 0; i < list.length; i++) {
+      files.push(fakeFile(list[i][0], list[i][1], list[i][2]));
+    }
+    inst.add(files, 0);
+  }
+
+  function run() {
+    /* 2 · 增强形态：预置两个已经收下的文件 */
+    seed('u-drop-wrap', [
+      ['应付账款明细.xlsx', 2457600, 'application/vnd.ms-excel'],
+      ['银行存款余额调节表.pdf', 962560, 'application/pdf']
+    ]);
+
+    /* 4 · 校验拒绝：五个各自触发一条规则（类型 / 大小 / 数量） */
+    var rejRoot = document.getElementById('u-reject-wrap');
+    if (rejRoot && rejRoot.uploadInstance) {
+      rejRoot.uploadInstance.add([
+        fakeFile('会议纪要.docx', 120000, 'application/msword'),             /* 类型不符 */
+        fakeFile('往来余额扫描件.pdf', 30 * 1024 * 1024, 'application/pdf'), /* 超过 20 MB */
+        fakeFile('a.pdf', 1024, 'application/pdf'),
+        fakeFile('b.pdf', 2048, 'application/pdf'),
+        fakeFile('c.pdf', 4096, 'application/pdf'),
+        fakeFile('d.pdf', 8192, 'application/pdf')                           /* 超过 3 个 */
+      ], 1);
+    }
+
+    /* 5 · 紧凑档：一个文件，让"有文件时"的样子也在 */
+    var compact = document.querySelector('.upload--compact');
+    if (compact && compact.uploadInstance) {
+      compact.uploadInstance.add([fakeFile('回函.pdf', 358400, 'application/pdf')], 0);
+    }
+  }
+
+  /* upload.js 在 <head> 里加载，它的 init 挂在 DOMContentLoaded 上；
+     本脚本在 body 末尾，此时 readyState 还是 'loading' ⇒ 同样挂事件，
+     且**注册在后** ⇒ 一定在 init 之后跑。若脚本被动态注入（readyState 已就绪）
+     则直接跑 —— upload.js 那边也走"立即 init"分支，顺序依然成立。 */
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', run);
+  } else {
+    run();
+  }
+})();
+</script>
+
+</main>
+</body>
+</html>

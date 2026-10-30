@@ -40,10 +40,16 @@ const TARGETS = [
   ['.accordion__trigger', '折叠标题'],
   ['.toast__close', 'toast 关闭'],
   ['.nav__link', '导航链接'],
+  /* 0.18.0 补：文件列表里的移除按钮是本库唯一**有意**用 32px（--sz-touch-sm）
+     的可点元素 —— 列表项之间只隔 4px，44px 会溢出到相邻项的可行点区域上。
+     加进来是为了让这个取舍**被量出来**（它会显示"仅 AA"），
+     而不是藏在"没登记所以没被测"里。 */
+  ['.upload__remove', '文件移除'],
 ];
 // 视觉可以小、但**不可点**的元素（不算命中区）
 const NON_TARGET = ['.switch__thumb', '.switch__track', '.spinner',
-                    '.skeleton', '.choice__mark', '.btn__spinner'];
+                    '.skeleton', '.choice__mark', '.btn__spinner',
+                    '.upload__mark', '.upload__icon', '.upload__dropzone'];
 
 const PAGES = [
   ['ios 验证页', '10-review/ios/index.html'],
@@ -53,6 +59,7 @@ const PAGES = [
   ['tabs', '03-patterns/tabs/demo.html'],
   ['accordion', '03-patterns/accordion/demo.html'],
   ['overlay', '03-patterns/overlay/demo.html'],
+  ['upload', '02-primitives/upload/demo.html'],
   ['nav', '03-patterns/nav/demo.html'],
 ];
 

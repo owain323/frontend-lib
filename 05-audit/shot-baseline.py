@@ -126,6 +126,7 @@ PAGES = [
     ('02-primitives/popover',     'demo.html', '气泡卡片'),
     ('02-primitives/progress',    'demo.html', '进度条'),
     ('02-primitives/skeleton',    'demo.html', '骨架屏'),
+    ('02-primitives/upload',      'demo.html', '文件上传'),
     ('03-patterns/accordion',     'demo.html', '折叠面板'),
     ('03-patterns/pagination',    'demo.html', '分页'),
     ('03-patterns/tabs',          'demo.html', '选项卡'),
@@ -138,6 +139,7 @@ PAGES = [
     # ⭐ 2026-10-10 新增（FL-NEXT-01 / VIZ-02 交付物接入现有机制，不另建截图框架）：
     #    原则不变 —— 有 CSS 且有 demo 的一律纳入。
     ('04-recipes/analysis-report', 'demo.html', '组合型研究报告'),
+    ('04-recipes/app-shell',      'demo.html', '应用外壳'),
     ('04-recipes/report',          'demo.html', '研究报告'),
     ('04-recipes/data-showcase',   'demo.html', '数据展示对照'),
     ('04-recipes/detail-page',    'demo.html', '详情页-入口'),

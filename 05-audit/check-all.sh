@@ -874,6 +874,24 @@ run "container-query" node 05-audit/container-query-check.js
 #   真实高对比度主题下是灰，断言色值会得到一台机器绿、另一台红的门禁。
 #   三组：A 规则层（fixture）、B 页面层（37 页扫同款）、C 反向控制（剥掉修复必须变红）。
 run "forced-colors"   node 05-audit/forced-colors-check.js
+# 🔴 upload：真值方向 + 两条入口的校验一致性（0.18.0）。
+#   这个组件的失败方式是"看起来永远是对的"：拖入文件列表里出现一行，
+#   用户就认为选好了。但若那一行是组件自己记的数组、`input.files` 是空的，
+#   点提交时文件**凭空消失**，不报错、控制台干净。
+#   所以判的不是"渲染对不对"，是三条：input.files 是不是唯一真值、
+#   拖放与原生选择是不是同一套校验、写不进 files 时是不是明确拒绝。
+#   B8（两条入口结论一致）只有在 `_validate` 是**一份实现**时才可能持续通过 ——
+#   写成两遍的那天它会红，而那个缺口只有用户会碰到。
+#   D 组反向控制三条：display:none / 只清空 files 不动 DOM / 去掉 border。
+run "upload"          node 05-audit/upload-check.js
+# 🔴 app-shell：三段式布局的两个坑（0.18.0）。
+#   它的失败方式**不是**"看起来坏了"，是"在开发者的屏幕上绿、在用户的屏幕上红"：
+#     · 主区少了 min-width: 0 ⇒ 1280px 上一切正常，数据表多两列就整页横滚
+#     · 侧栏 fixed 而不是 sticky ⇒ 桌面一模一样，RTL 下侧栏和生产区错位
+#     · 高度 100vh 而不是 100dvh ⇒ 桌面永远看不出，手机地址栏展开时底部被裁
+#   所以判据必须在"塞宽内容 / 缩到 375px / 打开强制色"的条件下量。
+#   E 组三条把两个保险拆开验：只去 minmax ⇒ min-width 兜住；两个都去 ⇒ 撑破。
+run "app-shell"       node 05-audit/app-shell-check.js
 run "composition" node 05-audit/composition-check.js
 
 # CSS 引用完整性（发现项只报告不 fail：class 名跨组件复用，误报率偏高）

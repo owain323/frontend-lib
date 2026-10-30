@@ -1,0 +1,490 @@
+/* ============================================================================
+   upload — 文件上传
+   ============================================================================
+   为什么需要它（本库此前唯一的空白）
+   ---------------------------------------------------------------------------
+   37 个组件里，表单控件有 input / select / combobox / choice / switch，
+   **唯独没有"选文件"**。而上传是「导入金标准 CSV / 上传财报 PDF / 附凭证」
+   这类操作的必经入口 —— 每个项目都在自己糊一个 `<input type=file>`，
+   然后它长得和全站格格不入，且拖放区、多文件、失败重试全缺。
+
+   两层形态（这不是"两个组件"，是同一份 CSS 的一条升级路径）
+   ---------------------------------------------------------------------------
+   · 基础 `.upload`        —— 原生 `<input type=file>` + `::file-selector-button`
+                              美化。**零 JS 完整可用**：选文件、原生文件名回显、
+                              表单提交全走浏览器原生路径。
+   · 增强 `.upload--drop`  —— 加一个拖放区（`<label>`）+ 文件列表。需要
+                              `upload.js`：拖入、多文件、大小校验、移除。
+
+   🔴 为什么必须保留基础形态，而不是"直接上拖放区"
+   ---------------------------------------------------------------------------
+   拖放区一旦成为唯一入口，**JS 没加载就等于没有上传功能**，而且用户看不到
+   自己选了什么（原生文件名回显被视觉隐藏吃掉了）。
+   本库的做法：`--drop` 只是**加**了一层，`<input>` 始终是真的、
+   始终在表单里、始终能被键盘 Tab 到。
+
+   ⭐ 真值方向：`<input>.files` 是唯一真值，文件列表是它的**镜像**。
+   拖放不是"另一条上传通道"——它只是把拖入的 File 塞进 `input.files`
+   （经 `DataTransfer`），然后派发 `change`。这样表单序列化、`FormData`、
+   原生 `accept` 校验全都不用重写一遍。
+   ⚠️ 反过来做（拖放自己维护数组、提交时再拼）是这类组件最常见的错：
+   两条通道的校验规则迟早不一致，而且 `<form>` 提交时丢文件。
+
+   设计要点
+   ---------------------------------------------------------------------------
+   ① 状态全在 `data-*`（根 `data-state`，列表项 `data-state`），不用 `.is-*`
+   ② **信息不靠颜色**：每个状态都有一行文本（"上传中 42%" / "失败：超过 20 MB"）
+      ⇒ 色盲、强制色、灰度打印三种条件下都读得出来
+   ③ 图标用内联 `<svg>` + `currentColor`，**不用 mask + background-color**
+      —— 后者在强制色下被抹成 Canvas，白底白图形（0.17.0 六类缺陷之一）
+   ④ 拖放区边界用 `border`（不是 box-shadow），强制色下会自动变实线
+   ⑤ 逻辑属性，RTL 由 `rtl-check.js` 守
+   ⑥ 触控 44px；移除按钮视觉小、热区补足
+   ========================================================================== */
+
+.upload {
+  /* 组件私有槽位：改这些就能整体调，不必碰下面的规则 */
+  --upload-pad:        var(--sp-4);
+  --upload-gap:        var(--sp-3);
+  --upload-icon:       28px;
+  --upload-item-pad:   var(--sp-2) var(--sp-3);
+  --upload-radius:     var(--r-md);
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--upload-gap);
+  min-width: 0;                      /* 允许在 flex/grid 里收缩，否则长文件名撑破父级 */
+}
+
+/* ============================================================================
+   1 · 基础形态：原生 input（零 JS 完整可用）
+   ============================================================================ */
+.upload__input {
+  /* ⚠️ 不要写 `appearance: none`：那会把文件选择器退化成"没有按钮"的裸文本，
+     Chromium 与 Firefox 的行为还不一致。要改外观只能改 `::file-selector-button`。 */
+  font: inherit;
+  font-size: var(--fs-sm);
+  color: var(--text-primary);
+  max-width: 100%;
+  /* 强制色预留：原生控件本身有边框，但主题里可能被压掉 ⇒ 留一条透明 outline */
+  outline: 1px solid transparent;
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+.upload__input::file-selector-button {
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+  background: var(--surface);
+  border: 1px solid var(--border-control);
+  border-radius: var(--r-sm);
+  padding: var(--sp-2) var(--sp-3);
+  margin-inline-end: var(--sp-3);
+  min-height: var(--sz-touch-sm);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out),
+              border-color var(--dur-fast) var(--ease-out);
+}
+
+/* 焦点在 input 上时，原生按钮自己是画不出环的（它是 shadow DOM 的一部分）
+   ⇒ 环画在 input 外侧，用户看到的是"整块被框住"，仍然是同一个焦点位置。 */
+.upload__input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* 禁用：用明确色值，不用 opacity（CONVENTIONS 第八节） */
+.upload__input:disabled {
+  color: var(--text-tertiary);
+  cursor: not-allowed;
+}
+.upload__input:disabled::file-selector-button {
+  color: var(--text-tertiary);
+  background: var(--surface-sunken);
+  border-color: var(--border-decor);
+  cursor: not-allowed;
+}
+
+/* ============================================================================
+   2 · 增强形态：拖放区（.upload--drop）
+   ============================================================================ */
+.upload--drop {
+  gap: var(--sp-2);
+  /* 用于给视觉隐藏的 input 定位 —— 否则 `position:absolute` 会相对 body，
+     input 跑到页面左上角，Tab 聚焦时浏览器会**滚到那里**。 */
+  position: relative;
+}
+
+/* 增强形态隐藏原生控件（视觉，不隐藏语义）。
+   🔴 三个属性缺一不可：
+     · `position:absolute` + 1px 尺寸 ⇒ 不占布局
+     · `opacity:0`（不是 `display:none`）⇒ 仍可聚焦、仍在表单里、仍能被 label 触发
+     · 不加 `pointer-events:none` —— 它只有 1px，挡不住 dropzone；
+       加了反而在某些浏览器里让 label 的 for 转发失效（实测 Chromium 正常，
+       但这属于"没必要冒的险"）。
+   ⚠️ 视觉藏在左上角而不是 `inset-inline-start:-9999px`：后者在 RTL 下会跑到右边，
+      且部分读写模式屏幕阅读器会因"元素在屏幕外"跳过它。 */
+.upload--drop .upload__input {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+/* 拖放区是 <label for="…">：点击 = 原生打开选择器，不需要 JS。
+   ⇒ 它**不该**进 Tab 序列（焦点属于被关联的 input），见下面的逻辑。 */
+.upload__dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  padding: var(--upload-pad) var(--sp-3);
+  min-height: calc(var(--sz-touch) * 2);
+  text-align: center;
+  color: var(--text-secondary);
+  background: var(--surface-sunken);
+  border: 1px dashed var(--border-control);
+  border-radius: var(--upload-radius);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out),
+              border-color var(--dur-fast) var(--ease-out);
+}
+
+/* 🔴 强制色下的边界预留（本节全部结论来自 0.17.0 的强制色逐页实拍）
+   ---------------------------------------------------------------------
+   `border: 1px dashed` 在强制色下会被保留并替换成 CanvasText —— 实拍确认
+   dashed 的**虚实也保留**（Chromium 不重画边框样式，只换颜色）。
+   所以在强制色下这条边界不需要额外补救，这也是选 border 而不选
+   `box-shadow: inset 0 0 0 1px` 的原因：后者整个被移除，拖放区会消失。
+   判据见 05-audit/upload-check.js ⑤。 */
+
+/* 拖拽悬停：`data-state="dragover"` 由 upload.js 写。
+   ⚠️ 不能靠 CSS 的 `:hover` 表达拖拽 —— dragover 期间大部分浏览器**
+   不会**更新 :hover，用户会看到"拖过来了但没反应"。 */
+.upload--drop[data-state="dragover"] .upload__dropzone {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  border-style: solid;               /* 虚线变实线：状态不只靠颜色差 */
+  color: var(--text-primary);
+}
+
+/* 拖放区不是独立焦点站：input 聚焦时把环画在 dropzone 上，
+   用户看到的是"这个区域被选中了"，而焦点实际仍在 input 上（无障碍正确）。 */
+.upload--drop .upload__input:focus-visible ~ .upload__dropzone {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* 禁用：input 禁用后 label 的 for 转发会被浏览器拦住 ⇒ 点击自然无反应。
+   缺的是**看起来不能点**。用明确色值，不用 opacity（CONVENTIONS 第八节）：
+   opacity 会让对比度随底色漂移，暗色下直接不达标，而且"只是淡了点"表达不了"不能点"。 */
+.upload--drop .upload__input:disabled ~ .upload__dropzone {
+  color: var(--text-tertiary);
+  background: var(--surface-sunken);
+  border-color: var(--border-decor);
+  border-style: solid;              /* 与可用态（虚线）再差一档 */
+  cursor: not-allowed;
+}
+
+.upload--drop .upload__input:disabled ~ .upload__dropzone .upload__title,
+.upload--drop .upload__input:disabled ~ .upload__dropzone .upload__browse {
+  color: var(--text-tertiary);
+  text-decoration: none;
+}
+
+/* 🔴 hover 一律门控：触屏上"点一下"会先点亮 :hover 再 click ⇒ 状态粘住不褪，
+   用户看到一块高亮的拖放区，以为还在拖。判据 hover-gate。
+   三条集中成一个块而不是各包一层，是为了别在 dist 里重复三份 media 条件。
+   ⚠️ 位置在 dragover 规则**之后**：两者特异性相同（0,3,0），
+      谁后面谁赢 —— 拖拽中不该被 hover 的高亮盖掉。 */
+@media (hover: hover) and (pointer: fine) {
+  .upload__input::file-selector-button:hover {
+    background: var(--surface-sunken);
+    border-color: var(--accent);
+  }
+
+  .upload--drop .upload__dropzone:hover {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+  }
+
+  .upload__remove:hover {
+    color: var(--danger);
+    background: var(--danger-bg);
+  }
+}
+
+/* 图标：内联 SVG，`stroke="currentColor"`。
+   ⭐ 这就是"用 color 画图形"，强制色下 currentColor → CanvasText，
+      与背景必然不同色 ⇒ 一定可见。对比 mask + background 的写法（必死）。 */
+.upload__icon {
+  width: var(--upload-icon);
+  height: var(--upload-icon);
+  color: var(--text-tertiary);
+  flex: none;
+}
+
+.upload--drop[data-state="dragover"] .upload__icon {
+  color: var(--accent);
+}
+
+.upload__title {
+  font-size: var(--fs-sm);
+  color: var(--text-primary);
+}
+
+.upload__browse {
+  /* 视觉上是链接，但**不是** <a>：它不导航，点它等于点整个 dropzone。
+     role="link" 会谎报行为（读屏会说"链接"然后什么都不发生）⇒ 纯文本 + 下划线。 */
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.upload__hint {
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  /* 容器窄的时候允许换行成两行，不要 ellipsis —— 大小限制被截断会误导用户 */
+  max-width: 42ch;
+}
+
+/* ============================================================================
+   3 · 文件列表
+   ============================================================================ */
+.upload__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 空列表不占位：没有文件时不该出现一条空白缝 */
+.upload__list:empty {
+  display: none;
+}
+
+.upload__item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-areas: "mark name meta remove";
+  align-items: center;
+  gap: var(--sp-1) var(--sp-2);
+  padding: var(--upload-item-pad);
+  background: var(--surface);
+  border: 1px solid var(--border-decor);
+  border-radius: var(--r-sm);
+  font-size: var(--fs-sm);
+}
+
+/* 🔴 被拒项没有移除按钮，但必须**占住那个格**。
+   -------------------------------------------------------------------------
+   否则"有按钮的项"被 32px 热区撑到 50px，"没按钮的项"只有 42px 内容高
+   ⇒ 列表看起来"有的行空着"（0.17.0 实拍确认：54 vs 42）。
+
+   ⚠️ 不要用 `min-height: 50px` 抹平：本库的 `box-sizing: border-box` 挂在
+      `.page *` 上，是**选配**（CONVENTIONS 约定：组件库不改宿主的盒模型）。
+      同一句 min-height 在有骨架的页面里算出 50，在没有骨架的页面里算出 68 ——
+      一个"看起来对齐了"的假象，别人拿组件单独用时又不对了。
+      给缺失的那一格补一个同尺寸的占位，两种盒模型下结果都是 50。 */
+.upload__item[data-state="error"]::after {
+  content: "";
+  grid-area: remove;
+  width: var(--sz-touch-sm);
+  height: var(--sz-touch-sm);
+}
+
+.upload__mark {
+  grid-area: mark;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: var(--text-tertiary);
+  flex: none;
+}
+
+/* 状态标记的形状差异 —— 不靠颜色，靠**形状**和文本。
+   pending = 空心圆 / done = 勾 / error = 叹号方框 */
+.upload__item[data-state="done"] .upload__mark   { color: var(--success); }
+.upload__item[data-state="error"] .upload__mark  { color: var(--danger); }
+.upload__item[data-state="pending"] .upload__mark { color: var(--text-secondary); }
+
+.upload__mark svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.upload__name {
+  grid-area: name;
+  /* 长文件名：中段省略比尾部省略更能保住扩展名和日期
+     （"2025年度审计报告-合并…v3.pdf" 比 "2025年度审计报…" 有用） */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary);
+  /* `direction: ltr` 不行（会打乱 RTL 下的排版）。
+     用 `overflow-wrap: anywhere` 处理无空格的长文件名（GitHub 那种堆叠路径） */
+  overflow-wrap: anywhere;
+}
+
+.upload__meta {
+  grid-area: meta;
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  /* 数字等宽由 `.num` 类提供（upload.js 生成 meta 时会加上），
+     这里不写等宽属性 —— 本库的数字排印只有一处定义（typography.css），
+     组件 CSS 里自己写会多出第二份（numeric-gate 判这一条）。
+     ⚠️ 没引 typography.css 时 `.num` 无效果，退化成普通数字 —— 无害，
+        因为百分比同时在文本里（"上传中 42%"），不靠宽度对齐传意。 */
+}
+
+.upload__item[data-state="error"] .upload__meta {
+  color: var(--danger);
+  white-space: normal;               /* 错误原因通常更长，允许换行 */
+  text-align: end;
+}
+
+.upload__progress {
+  grid-column: 1 / -1;               /* 显式跨满整行 ⇒ 自动落到第二行（隐式轨道） */
+  /* ⚠️ 这里不写 `grid-template-areas` 的第二行、也不用 `:has()` 判"有没有进度条"。
+     本库禁用 `:has()`（CSS Level 4，精简档 WebView 版本不确定，见 choice.css 第 390 行），
+     而 `grid-column: 1 / -1` 已经让"有进度条就自动多一行、没有就保持一行"成立。 */
+  /* 进度条本体用 progress 组件（demo 里同时引入 progress.css）。
+     ⚠️ 这里不复制 progress 的样式：复制一份 = 两处真值 = 迟早漂移。 */
+  display: block;
+  min-width: 0;
+}
+
+.upload__item[data-state="done"] .upload__progress,
+.upload__item[data-state="error"] .upload__progress {
+  display: none;                     /* 完成/失败后进度条没有意义了 */
+}
+
+.upload__remove {
+  grid-area: remove;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* 32px 热区（`--sz-touch-sm`），16px 视觉。
+     🔴 这里**不**用 44px（`--sz-touch`）：列表项之间只隔 4px，44px 的热区会
+     溢出到相邻项的可行点区域上 —— "想删第 2 个，点到了第 3 个"。
+     密排列表用 sm 档是本库既有约定（tokens.css 第 426 行），
+     真正的 44px 场景见 button / choice。 */
+  width: var(--sz-touch-sm);
+  height: var(--sz-touch-sm);
+  padding: 0;
+  color: var(--text-tertiary);
+  background: none;
+  border: 0;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-out),
+              background var(--dur-fast) var(--ease-out);
+}
+
+.upload__remove:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.upload__remove svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+  pointer-events: none;              /* 点在图标上也要算点在按钮上 */
+}
+
+/* ============================================================================
+   4 · 播报区（视觉隐藏，但**不是** display:none）
+   ============================================================================
+   文件增减必须播报：`<ul>` 内容变化读屏默认**不读**（它不是 live region），
+   用户在"移除"之后完全不知道列表变短了。
+   ⚠️ 别给 `<ul>` 直接加 aria-live：那会连"上传进度从 42% 到 43%"一起读，
+   每 200ms 打断一次。单独一个 role="status" 元素，只播报**增删与最终结果**。
+   ========================================================================== */
+.upload__status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ============================================================================
+   5 · 变体
+   ============================================================================ */
+
+/* 紧凑：图标与标题排一行，给侧栏/抽屉里的窄空间用 */
+.upload--compact .upload__dropzone {
+  flex-direction: row;
+  justify-content: flex-start;
+  text-align: start;
+  min-height: var(--sz-touch);
+  padding: var(--sp-2) var(--sp-3);
+}
+.upload--compact .upload__icon {
+  --upload-icon: 20px;
+}
+.upload--compact .upload__hint {
+  display: none;                     /* 紧凑档不显示限制说明，靠 title 与页面文案 */
+}
+
+/* ============================================================================
+   6 · 槽宽适配（CONVENTIONS 第十一节：看槽宽，不看视口）
+   ============================================================================
+   两个方向都写：只写 max-width 的话，一旦宽槽里层叠了一条 max-width 规则，
+   变宽时撤不回来（不匹配不会撤销任何规则）。
+   ⚠️ 基础样式不在这里面 —— 老引擎丢弃整块 @container，写进来等于没样式。
+   ========================================================================== */
+@container (max-width: 26rem) {
+  .upload--drop .upload__dropzone {
+    padding: var(--sp-3);
+  }
+  .upload--drop .upload__icon {
+    --upload-icon: 22px;
+  }
+  /* 窄槽里拖放区只是"多一层装饰"，限制说明要留着 ——
+     它决定了用户选什么文件，不能为了省地方藏起来。 */
+}
+
+@container (min-width: 26.0625rem) {
+  .upload--drop .upload__dropzone {
+    padding: var(--upload-pad) var(--sp-3);
+  }
+  .upload--drop .upload__icon {
+    --upload-icon: 28px;
+  }
+}
+
+/* ============================================================================
+   7 · 减少动效（CONVENTIONS 第四节第 1 档：位移/缩放关，颜色可留）
+   ============================================================================
+   本组件没有任何位移动画，只有颜色过渡 ⇒ 无需整体关闭。
+   显式写下这条是为了**声明"我没有第 1 档动效"**，而不是漏掉。
+   判据：motion-policy.json —— 声明了没实现是红，实现了没声明也是红。
+   ========================================================================== */
+
+/* ============================================================================
+   8 · 强制色模式
+   ============================================================================
+   本组件**不需要** @media (forced-colors: active)。
+   理由（全部是 0.17.0 的实测结论，不是推测）：
+     · 边界全是 `border`，强制色下保留并替换成 CanvasText
+     · 图标全是内联 SVG + currentColor，跟着文字色走
+     · 状态信息全在文本里（mark 只是辅助）
+   写一条空的 media 块反而有害：它会让下一个人以为"这里有特殊处理过"。
+   判据见 05-audit/upload-check.js ⑤（在 forced-colors 下断言
+   "dropzone 边框色 ≠ 背景色" + "图标色 ≠ 背景色"）。
+   ========================================================================== */

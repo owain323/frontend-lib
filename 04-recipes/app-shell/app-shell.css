@@ -1,0 +1,395 @@
+/* ============================================================================
+   app-shell — 应用外壳（侧栏 + 顶栏 + 主区）
+   ============================================================================
+   为什么需要它
+   ---------------------------------------------------------------------------
+   本库已有的四个 recipe 都是**内容型**版式：
+     · analysis-report —— 报告正文 + 辅助栏（读）
+     · detail-page     —— 实体详情（查）
+     · report          —— 版式系统，三种排版取舍（写）
+     · table           —— 数据表（比）
+   缺的是**工具型**骨架：左边一列常驻导航、上面一条工具栏、右边是主区。
+   每个后台项目都在手写它，而且每一版都会踩同样的两个坑（下面写清了）。
+
+   两个坑（这是本组件存在的**主要**理由）
+   ---------------------------------------------------------------------------
+   ① `height: 100vh` 在移动端是错的。
+      浏览器地址栏收起/展开时视口高度会变，`100vh` 取的是**最大**那一个
+      ⇒ 底部永远被裁掉一截（iOS Safari 上最明显）。
+      正解是 `100dvh`（动态视口），并用 `100vh` 兜底给不支持的引擎。
+
+   ② 侧栏 `position: fixed` 会把它从 grid 流里摘出去。
+      后果是主区不知道侧栏存在，内容自己往左铺 ⇒ 要么被盖住，要么手动加
+      `margin-inline-start`，然后在 RTL 里全错。
+      正解是 `position: sticky`：它留在流里（grid 照常算宽度），
+      滚到顶后又固定住。RTL 自动正确，因为用的是逻辑属性。
+
+   设计要点
+   ---------------------------------------------------------------------------
+   ① 三区域 grid，不是"三个浮动的盒子"
+   ② 侧栏 sticky + 自己滚（`overflow-y: auto`），主区跟着页面滚
+   ③ `min-width: 0` 落在主区上 —— 少了它，一个宽表格就能把整个 shell 撑出横滚
+   ④ 窄屏退化：侧栏 `display: none`，主区全宽。**折叠成抽屉不是本组件的活**
+      —— 抽屉已经有 `03-patterns/drawer`，在这里再实现一遍就是第二份真值。
+   ⑤ 本组件是**唯一**该用 `@media` 判宽度的：它本身就是"视口的容器"，
+      没有"槽"可言。其余组件一律 `@container`（CONVENTIONS 第十一节）。
+   ========================================================================== */
+
+.shell {
+  /* 组件私有槽位 */
+  --shell-side-w:   15rem;      /* 侧栏宽；240px 是导航文字 + 图标不折行的下限附近 */
+  --shell-topbar-h: 3.5rem;     /* 顶栏高 */
+  --shell-gap:      var(--sp-4);
+  --shell-pad:      var(--sp-4);
+  --shell-bp:       48rem;      /* 侧栏收起阈值：768px 以下是"手机/窄平板" */
+
+  display: grid;
+  grid-template-columns: var(--shell-side-w) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas:
+    "side topbar"
+    "side main";
+  /* 🔴 100dvh + 100vh 兜底。顺序不能反：后写的优先，
+     支持 dvh 的引擎用 dvh，不支持的退到 vh（底边被裁，但至少不塌成 0）。 */
+  min-height: 100vh;
+  min-height: 100dvh;
+  /* 🔴 底色铺在**外壳**上，而不是只给 `.shell__side`。
+     ---------------------------------------------------------------------
+     侧栏是 `sticky` + `align-self: start`（见下），它的高度只到内容为止。
+     如果底色只铺在侧栏元素上，条目少的页面会看到"侧栏背景只到一半"，
+     下面露一条纸色 —— 那看起来像渲染坏了，其实是高度自然。
+
+     解法不是给侧栏加 `min-height: 100dvh`（那会让它在 demo 的固定高度容器里
+     顶出去，也会让"内容不足一屏"的页面底部多一块死色），
+     而是把侧栏色铺在整个外壳上，再让主区盖回纸色：
+
+       .shell        = 侧栏色
+       .shell__main  = 纸色
+
+     这个分层不依赖任何方向，RTL 下自动正确。 */
+  background: var(--surface);
+}
+
+/* ============================================================================
+   1 · 侧栏
+   ============================================================================ */
+.shell__side {
+  grid-area: side;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  padding: var(--shell-pad) var(--sp-3);
+  /* 底色与分界线都**不**画在侧栏上：
+     · 底色 —— 侧栏高度只到内容为止（`align-self: start` 的必然结果），
+       画在这里会出现"侧栏背景只到一半"
+     · 右边框 —— 同理，会变成"只到一半的竖线"，看起来像渲染断了
+     两者都交给 `.shell`（底色）与 `.shell__main`（左边框，全高）。 */
+  /* 🔴 sticky 而不是 fixed —— 见文件头坑 ②。
+     `align-self: start` 是必需的：grid 项默认 stretch，
+     stretch 之后元素和容器一样高，"粘住"就无从谈起。 */
+  position: sticky;
+  inset-block-start: 0;
+  align-self: start;
+  /* 🔴 自己滚：侧栏条目多的时候，主区不该跟着一起滚走。
+     高度取视口高（同样 dvh + vh 兜底）。 */
+  max-height: 100vh;
+  max-height: 100dvh;
+  overflow-y: auto;
+  /* 滚动链：侧栏滚到底后不要接着滚主区（iOS 上的橡皮筋会很难受） */
+  overscroll-behavior: contain;
+  /* 强制色预留：边框已存在，这条是为了让"侧栏边界"在强制色下更明确 */
+  outline: 1px solid transparent;
+  outline-offset: -1px;
+}
+
+.shell__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-2) var(--sp-3);
+  font-weight: 500;
+  color: var(--text-primary);
+  text-decoration: none;
+  /* 品牌名过长时截断，不要把侧栏撑宽 */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shell__side-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.shell__side-group + .shell__side-group {
+  margin-top: var(--sp-2);
+  padding-top: var(--sp-2);
+  border-top: 1px solid var(--border-decor);
+}
+
+.shell__side-label {
+  padding: var(--sp-2) var(--sp-2) var(--sp-1);
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  letter-spacing: var(--tracking-normal);
+  text-transform: uppercase;
+}
+
+/* 侧栏条目：与 nav 组件的 .nav__link 视觉一致，但**不复用它的类** ——
+   nav 是"页内目录 + 抽屉行为层"，语义不同；复用类会让两边的改动互相牵连。
+   ⚠️ 但间距/圆角/焦点环必须与 nav 对齐，否则同一页里两处导航长得不一样。 */
+.shell__link {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  /* 44px 命中区（CONVENTIONS 第八节） */
+  min-height: var(--sz-touch);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-sm);
+  color: var(--text-secondary);
+  font-size: var(--fs-sm);
+  text-decoration: none;
+  /* 长条目名截断，不撑宽侧栏 */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: background var(--dur-fast) var(--ease-out),
+              color var(--dur-fast) var(--ease-out);
+}
+
+/* 当前页：**两条线索**，不只靠底色。
+   左侧一条 3px 的竖条 + 文字变主色 + 字重加一档 —— 灰度打印也能分辨。 */
+.shell__link[aria-current="page"] {
+  color: var(--text-primary);
+  background: var(--surface-sunken);
+  font-weight: 500;
+  /* 用 inset 阴影画竖条：不占布局，也不会被 overflow 裁掉 */
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+/* 焦点环（states 门禁 HIGH：缺 focus-visible 就是"键盘用户看不到自己停在哪"）。
+   ⚠️ 用 `:focus-visible` 而不是 `:focus` —— 后者会让鼠标点一下也留个框。 */
+.shell__link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* 悬停：只改文字色，与 `03-patterns/nav` 的 `.nav__link` 保持一致 ——
+   两处导航在同一页里出现时，反馈方式不同会显得像两个库拼的。
+   ⚠️ 门控 hover：触屏上"点一下"会先点亮 hover 再 click ⇒ 状态粘住。 */
+@media (hover: hover) and (pointer: fine) {
+  .shell__link:hover {
+    color: var(--text-primary);
+  }
+}
+
+/* RTL 下竖条换到右边。⚠️ box-shadow 的 x 偏移**不是**逻辑属性，
+   必须显式翻 —— 这是本文件里唯一需要方向判断的地方。 */
+[dir="rtl"] .shell__link[aria-current="page"] {
+  box-shadow: inset -3px 0 0 var(--accent);
+}
+
+/* 强制色：inset 阴影会被整个移除（0.17.0 实测），
+   所以在强制色下必须换回 border 表达"当前项"。 */
+@media (forced-colors: active) {
+  /* 所有项统一预留 3px 边框 —— 只给"当前项"加边框会让它的文字比其它项右移 3px，
+     看起来像排版错了。透明边框在强制色下也会被解析成 CanvasText，
+     所以当前项必须用**实色**并且与其它项的透明区分开。 */
+  .shell__link {
+    border-inline-start: 3px solid transparent;
+  }
+  .shell__link[aria-current="page"] {
+    border-inline-start-color: CanvasText;
+    box-shadow: none;      /* inset 阴影在强制色下会被整个移除，留着没意义 */
+  }
+}
+
+/* ============================================================================
+   2 · 顶栏
+   ============================================================================ */
+.shell__topbar {
+  grid-area: topbar;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: var(--shell-topbar-h);
+  padding: 0 var(--shell-pad);
+  background: var(--surface);
+  border-block-end: 1px solid var(--border-decor);
+  /* 顶栏也粘住：长表单里用户滚到一半看不见"保存"是最常见的抱怨 */
+  position: sticky;
+  inset-block-start: 0;
+  z-index: var(--z-header);
+}
+
+/* 靠右的一组操作（头像/通知/保存） */
+.shell__topbar-end {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-inline-start: auto;
+}
+
+/* ⚠️ 选择器带 `.shell__topbar` 前缀是为了压过页面骨架的 `.page h2`
+   （(0,1,1) > (0,1,0)）。不加的话标题的上下 margin 会把顶栏从 56px 撑到 99px ——
+   而"顶栏比设计高 43px"这种问题在截图里只像"留白多了点"，很容易放过。 */
+.shell__topbar .shell__title {
+  margin: 0;
+  font-size: var(--fs-md);
+  font-weight: 500;
+  color: var(--text-primary);
+  /* 标题长时截断，不要挤掉右侧操作区 */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ============================================================================
+   3 · 主区
+   ============================================================================ */
+.shell__main {
+  grid-area: main;
+  padding: var(--shell-pad);
+  /* 盖回纸色：外壳是侧栏色（见文件头分层说明） */
+  background: var(--paper);
+  /* 分界线画在**主区**上：它占满整个 grid 区（含"内容不足一屏"的部分），
+     所以这条线始终是通高的。画在侧栏上就只到侧栏内容为止。 */
+  border-inline-start: 1px solid var(--border-decor);
+  /* 🔴 `min-width: 0` —— 整个组件最容易漏、后果最大的一行。
+     grid 项默认 `min-width: auto`（= 内容的最小宽度），
+     一个 12 列的宽表格就能把主区撑到 2000px，然后整个 shell 横滚。
+     加了它，表格自己滚（配合 .shell__main 里的 overflow 容器）。 */
+  min-width: 0;
+}
+
+/* 主区内容的宽度约束：正文别铺满 1920px。
+   ⚠️ 用 `max-width` + `margin-inline: auto` 而不是 `padding` ——
+      后者在窄屏上会把内容挤窄两次（padding + 视口）。 */
+.shell__content {
+  max-width: var(--measure-page);
+  margin-inline: auto;
+}
+
+/* 🔴 宽内容的**唯一**正确容器。
+   -------------------------------------------------------------------------
+   `.shell__main { min-width: 0 }` 只保证"grid 轨道不被撑开"，
+   它**不会**让溢出的内容自己滚 —— `overflow` 的默认值就是 `visible`，
+   于是 80rem 宽的表格照旧溢出到页面上，整页横滚。
+
+   第一版这里只写了"宽内容要在自己的 overflow 容器里滚"，
+   却没给那个容器 ⇒ 契约是半截的（0.18.0 门禁 C2 抓到：375px 视口下
+   docScrollWidth 748）。现在把它做出来：
+
+     <div class="shell__scroll" tabindex="0" role="region" aria-label="宽表格，可横向滚动">
+       <table>…</table>
+     </div>
+
+   🔴 `tabindex="0"` 与 `role="region"` 不是可选的（0.18.0 axe 实测报
+      `scrollable-region-focusable`）：滚动容器不聚焦，键盘用户就**滚不动**它 ——
+      鼠标用户可以拖滚动条，键盘用户没有任何办法看到右边那几列。
+      `aria-label` 也不能省：`role="region"` 没有名字时读屏只会说"区域"，
+      用户不知道这块是干什么的。
+
+   判据：app-shell-check.js B1（主区不被撑破）与 C2（窄屏不横滚）。 */
+.shell__scroll {
+  overflow-x: auto;
+  /* 横向滚到头之后不要接着滚页面（触控板上很容易误触） */
+  overscroll-behavior-x: contain;
+  /* 滚动条不占位：内容区不会因为"多了一条滚动条"而重新排版 */
+  scrollbar-width: thin;
+}
+
+/* ============================================================================
+   4 · 窄屏退化
+   ============================================================================
+   🔴 这里是**唯一**用 @media 判宽度的地方，理由写在文件头 ⑤：
+      app-shell 就是"视口的容器"，它没有外层槽可言。
+
+   ⚠️ 侧栏在窄屏直接 `display: none`，**不做**抽屉。
+      抽屉已经有 `03-patterns/drawer`（含 Esc / 焦点归位 / 背景锁 / 变宽自关）。
+      在这里再实现一遍 = 第二份真值，两边的焦点行为迟早不一致。
+      要抽屉就把 `.shell__side` 里的内容搬进 drawer 的实例。
+   ========================================================================== */
+@media (max-width: 47.99rem) {
+  .shell {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas:
+      "topbar"
+      "main";
+    --shell-pad: var(--sp-3);
+  }
+
+  .shell__side {
+    display: none;
+  }
+
+}
+
+/* ============================================================================
+   5 · 变体
+   ============================================================================ */
+
+/* 侧栏更窄（只有图标 + 提示）：适合"工具条"型产品。
+   ⚠️ 图标态必须靠 `aria-label` / `title` 给名字，否则读屏只念"链接"。 */
+.shell--rail {
+  --shell-side-w: 4.5rem;
+}
+
+.shell--rail .shell__side {
+  padding-inline: var(--sp-1);
+  align-items: center;
+}
+
+.shell--rail .shell__link {
+  justify-content: center;
+  padding-inline: 0;
+  width: var(--sz-touch);
+}
+
+/* 侧栏无边框（与主区同色，靠留白分层） */
+.shell--flat {
+  background: var(--paper);        /* 外壳回到纸色 ⇒ 侧栏与主区同色 */
+}
+.shell--flat .shell__main {
+  border-inline-start-color: transparent;   /* 无色差时也不画线：靠留白分层 */
+}
+
+/* 主区自己滚（看板型：侧栏与顶栏完全不动，只有内容区滚动）。
+   ⚠️ 用这个变体时**不要**再让页面滚 —— 两个滚动容器会让"滚到底"的行为不可预期。 */
+.shell--scroll-main {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.shell--scroll-main .shell__side {
+  position: static;
+  max-height: none;
+  height: 100%;
+}
+
+.shell--scroll-main .shell__topbar {
+  position: static;
+}
+
+.shell--scroll-main .shell__main {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* ============================================================================
+   6 · 减少动效
+   ============================================================================
+   本组件的动效只有链接的底色/文字色过渡（颜色档），按 CONVENTIONS 第四节
+   第 3 档处理：可以缩短保留，不强制关。这里不写 media 块 ——
+   `--dur-fast` 本身已在 tokens 里被 reduce 档缩短。
+   ========================================================================== */

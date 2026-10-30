@@ -1,0 +1,76 @@
+# upload — 文件上传：label 给出的名字 + 列表播报走独立 status + 移除按钮的 aria-label 带文件名
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "文件上传 · upload"
+  main
+    heading "文件上传 · upload" [level=1]
+    paragraph "上传是「导入 CSV / 附一份财报 / 传凭证」的必经入口。这个组件的核心不在拖放区好看， 而在于： JS 没加载时它"
+    heading "1 · 基础形态：零 JS 也能用" [level=2]
+    LabelText "导入对账单"
+    button "导入对账单"
+    paragraph "支持 CSV / XLSX，单个不超过 20 MB"
+    paragraph "这一块 没有任何 JS ：浏览器原生的"选择文件"按钮经 ::file-selector-button 美化，选完立刻在"
+    heading "2 · 增强形态：拖放区 + 文件列表" [level=2]
+    LabelText "上传审计底稿"
+    button "上传审计底稿 拖入文件，或 选择文件 PDF / XLSX / CSV，单个不超过 20 MB"
+    LabelText "拖入文件，或 选择文件 PDF / XLSX / CSV，单个不超过 20 MB"
+    list
+      listitem "待上传 应付账款明细.xlsx 2.3 MB" [level=1]
+        button "移除 应付账款明细.xlsx"
+      listitem "待上传 银行存款余额调节表.pdf 940 KB" [level=1]
+        button "移除 银行存款余额调节表.pdf"
+    status "已添加 2 个文件，共 2 个" [live=polite atomic=true]
+    paragraph "可以一次选多个；再次拖入会 替换 整个列表"
+    paragraph "拖放区是一个 <label for> ：点它 = 原生打开选择器， 这一步不依赖 JS。脚本只负责三件事 —— 把拖入的"
+    heading "3 · 上传中：进度既是图形也是文字" [level=2]
+    list
+      listitem "待上传 2025年度审计报告.pdf 上传中 42%" [level=1]
+        button "移除 2025年度审计报告.pdf"
+      listitem "已完成 应付账款明细.xlsx 2.4 MB" [level=1]
+        button "移除 应付账款明细.xlsx"
+      listitem "失败 往来余额扫描件.pdf 超过 20 MB" [level=1]
+    paragraph "三个状态的差别 不只是颜色 ：左侧图形（空心圆 / 勾 / 叹号）、 中间文件名的灰度、以及右侧那行文字（"上传中 42"
+    heading "4 · 校验拒绝：一个都没收进来" [level=2]
+    LabelText "上传凭证"
+    button "上传凭证 拖入文件，或 选择文件 PDF / JPG / PNG，单个不超过 20 MB，最多 3 个"
+    LabelText "拖入文件，或 选择文件 PDF / JPG / PNG，单个不超过 20 MB，最多 3 个"
+    list
+      listitem "待上传 a.pdf 1 KB" [level=1]
+        button "移除 a.pdf"
+      listitem "待上传 b.pdf 2 KB" [level=1]
+        button "移除 b.pdf"
+      listitem "待上传 c.pdf 4 KB" [level=1]
+        button "移除 c.pdf"
+      listitem "失败 会议纪要.docx 类型不支持" [level=1]
+      listitem "失败 往来余额扫描件.pdf 超过 20 MB" [level=1]
+      listitem "失败 d.pdf 最多 3 个文件" [level=1]
+      listitem "失败 1 个文件夹 请拖入文件，不支持文件夹" [level=1]
+    status "已添加 3 个文件，共 3 个；4 个未通过校验" [live=polite atomic=true]
+    paragraph "下面这一组是脚本真实拖入 3 个不合规文件的结果"
+    paragraph "被拒的文件 不会进入 input.files —— 它们根本没被接收，所以提交时不会悄悄带上一个 30 MB 的扫描件。"
+    heading "5 · 紧凑档（侧栏 / 抽屉）" [level=2]
+    button "添加附件"
+    LabelText "添加附件"
+    list
+      listitem "待上传 回函.pdf 350 KB" [level=1]
+        button "移除 回函.pdf"
+    status "已添加 1 个文件，共 1 个" [live=polite atomic=true]
+    heading "6 · 槽宽适配（看槽宽，不看视口）" [level=2]
+    button "窄槽里的上传"
+    LabelText "窄槽里的上传"
+    status [live=polite atomic=true]
+    paragraph "左侧这块是 240px 宽的槽（外层加了 data-cq ）。 它比右边窄，但没有"响应式跳跃"：内边距与图标各降一档，"
+    heading "7 · 禁用" [level=2]
+    LabelText "上传补充材料"
+    button "上传补充材料 拖入文件，或 选择文件" [disabled=true]
+    LabelText "拖入文件，或 选择文件"
+    paragraph "先在"基础信息"里选好主体类型，这里才能上传"
+    paragraph "禁用不用 opacity ：半透明会让文字对比度随底色漂移， 暗色下直接不达标。这里换的是 明确色值 ，边框同时从虚线变"
+    heading "对比：两种"拖放区"" [level=2]
+    heading "❌ 常见写法：拖放区是唯一入口" [level=3]
+    LabelText "拖入文件，或 选择文件"
+    paragraph "把原生 <input> 设成 display:none 图省事 —— 两栏 看起来一模一样 ，差别在键盘： 后果是键盘 "
+    heading "✅ 本库：隐藏的是像素，不是控件" [level=3]
+    button "上传文件"
+    LabelText "拖入文件，或 选择文件"
+    paragraph "同样看不见原生控件，但它只是 1px + opacity:0 ： 仍在 Tab 序列里、仍在表单里、仍能被 label "

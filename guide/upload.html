@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>upload · 文件上传 · agentcss</title>
+<meta name="description" content="文件上传：零 JS 的原生形态 + 拖放/多文件/校验的增强形态">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%227%22%20fill%3D%22%231b4d8f%22%2F%3E%3Crect%20x%3D%228%22%20y%3D%228%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%221.6%22%20fill%3D%22%23fff%22%2F%3E%3Crect%20x%3D%2217%22%20y%3D%228%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%221.6%22%20fill%3D%22%23fff%22%20opacity%3D%22.5%22%2F%3E%3Crect%20x%3D%228%22%20y%3D%2217%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%221.6%22%20fill%3D%22%23fff%22%20opacity%3D%22.5%22%2F%3E%3Crect%20x%3D%2217%22%20y%3D%2217%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%221.6%22%20fill%3D%22%23fff%22%2F%3E%3C%2Fsvg%3E">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<!-- 文档页里会出现 `data-market="intl"` 的示例（delta / 约定 / 索引）。
+     不引这个文件，示例就是"写了但没生效"—— 而 `dir-check.js` 判据 ⑧ 会拦住。
+     它是可选增强，0.2 KB，对没有该属性的页面零影响。 -->
+<link rel="stylesheet" href="../01-tokens/market.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">upload · 文件上传</span>
+    <a class="g-jump" href="../02-primitives/upload/demo.html">打开示例<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">基础组件 · stable</p>
+    <h1>upload · 文件上传</h1>
+    <p class="lede">文件上传：零 JS 的原生形态 + 拖放/多文件/校验的增强形态</p>
+    <ul class="g-meta"><li><a href="../02-primitives/upload/demo.html"><code>02-primitives/upload/demo.html</code></a></li><li><a href="../02-primitives/upload/upload.css"><code>02-primitives/upload/upload.css</code></a></li><li><a href="../02-primitives/upload/upload.js"><code>02-primitives/upload/upload.js</code></a></li></ul>
+<figure class="g-live"><figcaption class="g-live__cap"><span class="g-live__tag">在这页里直接跑</span>下面是 upload · 文件上传 的真实示例页，全套状态都在里面；<a href="../02-primitives/upload/demo.html">单独打开</a>可以看到完整尺寸。</figcaption><iframe class="g-live__frame" src="../02-primitives/upload/demo.html" title="upload · 文件上传 的可运行示例" loading="lazy"></iframe></figure><script src="live.js" defer></script>
+    <article class="g-doc">
+<blockquote><p>本库表单控件一直是&quot;缺一块&quot;的状态：input / select / choice / switch 都有，<br>唯独没有&quot;选文件&quot;。于是每个项目自己糊一个 <code>&lt;input type=file&gt;</code>，<br>它长得和全站不一样，而且拖放区、多文件、失败原因全缺。</p></blockquote>
+<h2 id="s2">两层形态<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>形态</th><th>需要 JS</th><th>得到什么</th>
+</tr></thead>
+<tbody>
+<tr><td><code>.upload</code></td><td><strong>不需要</strong></td><td>原生 <code>&lt;input type=file&gt;</code> + 美化过的 <code>::file-selector-button</code>；原生文件名回显、表单提交、<code>accept</code> 过滤全走浏览器</td></tr>
+<tr><td><code>.upload--drop</code></td><td>需要</td><td>在上面加一层拖放区 + 文件列表 + 大小/类型/数量校验 + 移除</td></tr>
+</tbody>
+</table></div>
+<p><code>.upload--drop</code> 是<strong>加</strong>在基础形态上的一层，不是替代品。原生 <code>&lt;input&gt;</code> 始终在 DOM 里、始终可聚焦、始终在表单里。</p>
+<h2 id="s3">用法<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-html">&lt;!-- ① 基础：零 JS --&gt;
+&lt;link rel=&quot;stylesheet&quot; href=&quot;upload.css&quot;&gt;
+&lt;input class=&quot;upload__input&quot; type=&quot;file&quot; id=&quot;f1&quot; name=&quot;statement&quot; accept=&quot;.csv,.xlsx&quot;&gt;
+&lt;label class=&quot;field__label&quot; for=&quot;f1&quot;&gt;导入对账单&lt;/label&gt;
+
+&lt;!-- ② 增强：拖放区 + 列表 --&gt;
+&lt;link rel=&quot;stylesheet&quot; href=&quot;upload.css&quot;&gt;
+&lt;script src=&quot;upload.js&quot;&gt;&lt;/script&gt;
+
+&lt;div class=&quot;upload upload--drop&quot; data-upload data-max-size=&quot;20971520&quot; data-max-files=&quot;5&quot;&gt;
+  &lt;input class=&quot;upload__input&quot; type=&quot;file&quot; id=&quot;f2&quot; name=&quot;files&quot; multiple
+         accept=&quot;.pdf,.xlsx&quot; aria-describedby=&quot;f2-hint&quot;&gt;
+  &lt;!-- 拖放区是 label for：点它 = 原生打开选择器，这一步不依赖 JS。
+       ⚠️ 不要给它加 aria-hidden：加了它就从无障碍树里消失，
+          input 只能靠外面的 .field__label 拿名字 —— 少写一个就是 axe critical。
+          （0.18.0 的 axe 实测：对比块里漏了 .field__label ⇒ label 违规。） --&gt;
+  &lt;label class=&quot;upload__dropzone&quot; for=&quot;f2&quot;&gt;
+    &lt;svg class=&quot;upload__icon&quot; viewBox=&quot;0 0 16 16&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot;
+         stroke-width=&quot;1.6&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;&gt;
+      &lt;path d=&quot;M8 11V2.6M4.4 6.2L8 2.6l3.6 3.6M2.6 11.4v1.2a.8.8 0 0 0 .8.8h9.2a.8.8 0 0 0 .8-.8v-1.2&quot;/&gt;
+    &lt;/svg&gt;
+    &lt;span class=&quot;upload__title&quot;&gt;拖入文件，或 &lt;span class=&quot;upload__browse&quot;&gt;选择文件&lt;/span&gt;&lt;/span&gt;
+    &lt;span class=&quot;upload__hint&quot;&gt;PDF / XLSX，单个不超过 20 MB&lt;/span&gt;
+  &lt;/label&gt;
+  &lt;ul class=&quot;upload__list&quot;&gt;&lt;/ul&gt;
+  &lt;span class=&quot;upload__status&quot; role=&quot;status&quot; aria-live=&quot;polite&quot;&gt;&lt;/span&gt;
+&lt;/div&gt;
+&lt;p class=&quot;field__hint&quot; id=&quot;f2-hint&quot;&gt;可以一次选多个&lt;/p&gt;</code></pre>
+<h2 id="s4">声明式属性（写在 <code>.upload</code> 根上）<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>属性</th><th>含义</th><th>默认</th>
+</tr></thead>
+<tbody>
+<tr><td><code>data-upload</code></td><td>自动初始化标记</td><td>—</td></tr>
+<tr><td><code>data-max-size</code></td><td>单文件上限（<strong>字节</strong>）</td><td>0 = 不限</td></tr>
+<tr><td><code>data-max-files</code></td><td>文件数上限</td><td>0 = 不限（<code>multiple</code> 时）／1（单选时）</td></tr>
+<tr><td><code>data-state</code></td><td><strong>输出</strong>：<code>dragover</code> 时存在</td><td>—</td></tr>
+<tr><td><code>data-count</code></td><td><strong>输出</strong>：当前文件数（供&quot;没选文件就不让提交&quot;用）</td><td><code>&quot;0&quot;</code></td></tr>
+</tbody>
+</table></div>
+<h2 id="s5">JS API<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-js">var u = document.getElementById('f2').closest('.upload').uploadInstance;
+// 或 new Upload(root, { maxSize: 20 * 1024 * 1024 })</code></pre>
+<div class="table"><table>
+<thead><tr>
+<th>成员</th><th>说明</th>
+</tr></thead>
+<tbody>
+<tr><td><code>add(files[, dirCount])</code></td><td>收下一批文件（= 拖放入口）。<strong>走同一条校验</strong>，返回是否至少收下一个</td></tr>
+<tr><td><code>removeAt(i)</code></td><td>移除第 i 个；返回 false 表示浏览器不支持写 <code>input.files</code></td></tr>
+<tr><td><code>setProgress(i, pct)</code></td><td><code>0–99</code> 上传中；<code>-1</code> 或 <code>&gt;=100</code> 标记完成并去掉进度条</td></tr>
+<tr><td><code>render()</code></td><td>从 <code>input.files</code> 重画列表（你手动改了 <code>files</code> 之后调它）</td></tr>
+<tr><td><code>destroy()</code></td><td>解绑全部监听</td></tr>
+</tbody>
+</table></div>
+<h3 id="s6">事件<a class="anchor" href="#s6" aria-label="本节直链">#</a></h3>
+<pre class="code" tabindex="0"><code class="language-js">document.addEventListener('fl-upload', function (e) {
+  e.target  // .upload 根元素（认它，别认事件名 —— 嵌套组件会冒泡到一起）
+  e.detail  // { files: File[], added: number, removed?: File, rejected: {file, reason, text}[] }
+});</code></pre>
+<p><code>reason</code> 取值：<code>size</code> / <code>type</code> / <code>count</code> / <code>dir</code> / <code>unsupported</code>。</p>
+<blockquote><p>⚠️ <strong>程序性改 <code>input.files</code> 不会触发原生 <code>change</code></strong>（这是规范，不是本库的选择）。<br>本组件不补发假 <code>change</code>（那会形成&quot;渲染两遍&quot;的循环），<br>所以 <strong>HTML 表单校验请监听 <code>fl-upload</code>，不要监听 <code>change</code></strong>。</p></blockquote>
+<h2 id="s7">三条硬约定<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
+<h3 id="s8">1 · <code>input.files</code> 是唯一真值，列表是镜像<a class="anchor" href="#s8" aria-label="本节直链">#</a></h3>
+<p>拖放不是&quot;第二条通道&quot;：它把文件塞进 <code>input.files</code>，然后重画。代价是<strong>再次选择/拖入会替换整个列表</strong>（与原生 <code>&lt;input multiple&gt;</code> 一致）。不做&quot;下一次追加&quot;—— 否则同一个控件里存在两种累加规则，迟早打架。</p>
+<h3 id="s9">2 · 校验只有一份实现<a class="anchor" href="#s9" aria-label="本节直链">#</a></h3>
+<p>拖放与原生选择都调 <code>_validate</code>。写成两遍的后果不是&quot;难看&quot;，是它们会<strong>漂移</strong>：某天给拖放加了大小限制，忘了给原生选择加 ⇒ 同一页面上，拖进去的被拒、点选进去的通过。这种 bug 只有用户会碰到。</p>
+<p><code>accept</code> 必须二次校验：它只约束<strong>文件选择器</strong>，拖放完全绕过它。只写 <code>accept=&quot;.pdf&quot;</code> 而拖入 <code>.exe</code> 时，浏览器不会拦 —— 这是规范行为。</p>
+<h3 id="s10">3 · <code>DataTransfer</code> 不存在时，拖放明确拒绝<a class="anchor" href="#s10" aria-label="本节直链">#</a></h3>
+<p>老 Safari（&lt; 14.1）没有 <code>new DataTransfer()</code> ⇒ <code>input.files</code> 不可写。此时照样渲染列表、照样派发事件，用户会看到&quot;文件进去了&quot;，点提交却什么都没有， <strong>且不报错</strong>。所以本组件直接提示&quot;当前浏览器不支持拖放，请点选择文件&quot;，不接收。</p>
+<h2 id="s11">无障碍<a class="anchor" href="#s11" aria-label="本节直链">#</a></h2>
+<ul><li><strong>状态不只靠颜色</strong>：左侧图形（空心圆 / 勾 / 叹号）+ 右侧文本（&quot;上传中 42%&quot; / &quot;2.4 MB&quot; / &quot;超过 20 MB&quot;）。灰度打印、色盲、强制色三种条件下信息都不丢。</li><li><strong>播报走单独的 <code>role=&quot;status&quot;</code></strong>，不给 <code>&lt;ul&gt;</code> 加 <code>aria-live</code> —— 后者会把&quot;进度 42% → 43%&quot;每 200ms 打断一次。同一句话连续播两次时读屏不再读，所以 <code>announce()</code> 先清空再延迟写入。</li><li><strong>移除按钮的 <code>aria-label</code> 带文件名</strong>（&quot;移除 2025年度审计报告.pdf&quot;），否则读屏用户听到一排&quot;移除、移除、移除&quot;。</li><li>拖放区是 <code>&lt;label for&gt;</code>，本身<strong>不进 Tab 序列</strong>（焦点属于 input）；聚焦时焦点环画在 dropzone 上，视觉上看到的是&quot;这一块被选中了&quot;。</li><li><strong>可访问名字来自两处</strong>：<code>.field__label</code>（&quot;上传审计底稿&quot;）与 dropzone 里的文字。读屏会连着念，略啰嗦，但这是<strong>安全的冗余</strong> —— 只用 dropzone、不写 <code>.field__label</code> 的页面也有名字。反过来（dropzone 加 <code>aria-hidden</code>、靠 <code>.field__label</code> 给名）看起来更干净，代价是少写一个 label 就变成 axe critical，而且没有任何门禁拦得住。</li><li>强制色模式下<strong>不需要额外 media query</strong>：边界全是 <code>border</code>（会自动变 CanvasText 实线），图标全是内联 SVG + <code>currentColor</code>。这是 0.17.0 逐页实拍定下的两条规律。</li></ul>
+<h2 id="s12">何时<strong>不该</strong>用<a class="anchor" href="#s12" aria-label="本节直链">#</a></h2>
+<ul><li><strong>需要断点续传 / 分片上传</strong> ⇒ 这不是纯前端控件能解决的，本组件只负责&quot;选与校验&quot;，传输交给你的上传库。它不发送任何请求。</li><li><strong>单个文件且没有校验</strong> ⇒ 用基础形态（<code>.upload__input</code> 一行）就够了，不要套拖放区。</li><li><strong>图片裁剪/预览</strong> ⇒ 需要 canvas 预览与交互，超出本组件范围。</li></ul>
+<h2 id="s13">相关<a class="anchor" href="#s13" aria-label="本节直链">#</a></h2>
+<ul><li><code>progress</code> —— 列表里的进度条复用它；没引入时退化成空槽，不报错</li><li><code>field</code>（在 <code>input</code> 里）—— <code>field__label</code> / <code>field__hint</code> / <code>field__error</code> 的外层结构</li><li><code>form-validation</code> —— 提交前校验；错误提示用 <code>field__error</code> + <code>aria-describedby</code></li></ul>
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      <a class="g-pager__link g-pager__link--prev" href="switch.html"><span>上一页</span>switch · 开关</a>
+      <a class="g-pager__link g-pager__link--next" href="accordion.html"><span>下一页</span>accordion · 折叠面板</a>
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    <ul class="g-toc"><li><a href="#s2">两层形态</a></li><li><a href="#s3">用法</a></li><li><a href="#s4">声明式属性（写在 .upload 根上）</a></li><li><a href="#s5">JS API</a></li><li><a href="#s7">三条硬约定</a></li><li><a href="#s11">无障碍</a></li><li><a href="#s12">何时不该用</a></li><li><a href="#s13">相关</a></li></ul>
+  </aside>
+</div>
+<footer class="g-foot">
+  <p>v0.18.0 · 零第三方运行时依赖 · 组件数 39</p>
+</footer>
+</body>
+</html>

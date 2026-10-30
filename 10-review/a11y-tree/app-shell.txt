@@ -1,0 +1,64 @@
+# app-shell — 应用外壳：aria-current 表达当前页 + 多个 <nav> 各自有名字
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "应用外壳 · app-shell"
+  main
+    heading "应用外壳 · app-shell" [level=1]
+    paragraph "工具型页面的骨架：左边一列常驻导航、上面一条工具栏、右边是主区。 它存在的理由不是"少写几个 div"，而是**两个每个"
+    heading "1 · 标准三段式" [level=2]
+    heading "应付账款 · 2025 年度" [level=2]
+    navigation "主导航"
+      link "金标准 · 财务台"
+      list
+        listitem "总览" [level=1]
+          link "总览"
+        listitem "实体" [level=1]
+          link "实体"
+        listitem "勾稽校验" [level=1]
+          link "勾稽校验"
+      paragraph "数据"
+      list
+        listitem "导入" [level=1]
+          link "导入"
+        listitem "审计日志" [level=1]
+          link "审计日志"
+    paragraph "当前页靠 三条 线索标记：左侧 3px 竖条、底色、字重加一档 —— 不只靠底色，灰度打印也分得出来。而且它同时带了 a"
+    heading "2 · 坑之一：宽内容会撑破主区（两个保险）" [level=2]
+    heading "❌ 常见写法：宽表格直接放主区" [level=3]
+    navigation "主导航（反例）"
+      link "总览"
+    paragraph "两件事都没做： min-width 保持默认的 auto （"不小于内容的最小宽度"），宽表格也没有自己的滚动容器。 于"
+    heading "✅ 本库：min-width: 0 + .shell__scroll" [level=3]
+    navigation "主导航（正例）"
+      link "总览"
+    region "宽表格，可横向滚动"
+    paragraph "主区宽度锁在栏宽内（ min-width: 0 ），宽内容放进 .shell__scroll 里自己横滚 —— 侧栏和顶"
+    paragraph "这就是 .shell__main { min-width: 0 } 存在的全部理由。 它是整个组件里 最容易漏、后果最大"
+    heading "3 · 坑之二：高度用 100dvh，不是 100vh" [level=2]
+    paragraph "这一条 在桌面浏览器上看不出来 ，只能在手机上看到， 所以没有截图可摆 —— 但它是本组件写 min-height: 1"
+    list
+      listitem "100vh 取的是 地址栏收起时 的视口高（最大那个）" [level=1]
+        ListMarker "• "
+      listitem "地址栏一展开，可视区域变小，而元素仍然按大的算 ⇒ 底部被裁掉一截" [level=1]
+        ListMarker "• "
+      listitem "iOS Safari 上最明显：页面最后一个按钮点不到，而且不出现滚动条" [level=1]
+        ListMarker "• "
+    heading "4 · 侧栏更窄：只有图标" [level=2]
+    heading "窄侧栏形态" [level=2]
+    navigation "主导航（图标）"
+      link "总览"
+      link "实体"
+      link "勾稽校验"
+    paragraph "图标态 必须 给每个链接 aria-label 或可见的 title ：只有图标时读屏念出来的是"链接、链接、链接"， "
+    heading "5 · 主区自己滚（看板型）" [level=2]
+    heading "只有主区滚动" [level=2]
+    navigation "主导航（看板）"
+      list
+        listitem "看板" [level=1]
+          link "看板"
+        listitem "报表" [level=1]
+          link "报表"
+    paragraph ".shell--scroll-main 让侧栏与顶栏完全不动，只有主区滚 —— 适合看板、监控墙。⚠️ 用这个变体时 不"
+    heading "6 · 窄屏：侧栏收走，主区全宽" [level=2]
+    paragraph "把浏览器窗口缩到 768px 以下 再看上面第 1 节 —— 侧栏会整列消失，主区铺满，顶栏保留。"
+    paragraph "侧栏 不会 自动变成抽屉，这是有意的：抽屉已经有 03-patterns/drawer （含 Esc 关闭、焦点归位、背"
