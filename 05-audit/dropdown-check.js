@@ -185,6 +185,149 @@ const REPO = path.resolve(__dirname, '..');
         return r;
       },
 
+      /* ⑦ 打字跳项 —— APG Menu 的 `(Optional)` 项（0.15.0 收编 typeahead 核）
+       *
+       * 🔴 为什么要造夹具，而不是直接测 demo：
+       *   demo 的菜单是**中文标签**，而 IME 组字时 keydown 只给
+       *   `Process` / `Unidentified` ⇒ 中文标签**根本打不出来**，
+       *   用 demo 测等于测了个寂寞。夹具只换标签，跑的仍是
+       *   `Dropdown.create` 的同一份代码。
+       *   （这也是 APG 把 typeahead 标成 Optional 的现实原因：
+       *    它天然只对拉丁字母标签有效。）
+       */
+      '⑦ 打字跳项（首字母）': async (p) => {
+        await p.evaluate(() => {
+          /* 幂等：每条判据都调一次，谁先跑都能自建 */
+          window.__ddSetup = function () {
+            var root = document.getElementById('dd-fixture');
+            if (!root) {
+              root = document.createElement('div');
+              root.className = 'dd';
+              root.id = 'dd-fixture';
+              root.innerHTML =
+                '<button class="dd__btn" data-dd-btn>File <span class="dd__caret"></span></button>' +
+                '<ul class="dd__menu" data-dd-menu hidden>' +
+                '<li data-value="copy">Copy</li>' +
+                '<li data-value="cut">Cut</li>' +
+                '<li data-value="paste">Paste</li>' +
+                '<li data-value="save">Save</li>' +
+                '<li data-value="sel">Select all</li>' +
+                '</ul>';
+              document.body.appendChild(root);
+            }
+            if (!root.ddInstance) root.ddInstance = Dropdown.create(root, { label: 'File' });
+            var btn = root.querySelector('[data-dd-btn]');
+            var menu = root.querySelector('[data-dd-menu]');
+            if (!menu.hidden) menu.hidden = true;   /* 从关闭态开始 */
+            btn.focus();
+            return true;
+          };
+          window.__ddSetup();
+        });
+        await p.keyboard.press('ArrowDown');         /* 打开并聚焦首项 Copy */
+        await new Promise((r) => setTimeout(r, 220));
+        await p.keyboard.press('p');
+        await new Promise((r) => setTimeout(r, 220));
+        const got = await p.evaluate(() => (document.activeElement.textContent || '').trim());
+        return { ok: got === 'Paste',
+                 note: got === 'Paste' ? '打 p ⇒ Paste ✅' : '🔴 打 p 落到了「' + got + '」' };
+      },
+
+      /* ⑦b 连打同一个字母 ⇒ 在匹配项之间**循环**（不是停住）
+         夹具里 Copy / Cut 都以 c 开头 ⇒ 连按两次 c 必须从 Copy 走到 Cut */
+      '⑦b 连打同一字母循环': async (p) => {
+        await p.evaluate(() => window.__ddSetup());
+        await p.keyboard.press('ArrowDown');
+        await new Promise((r) => setTimeout(r, 200));
+        await p.keyboard.press('c');
+        await p.keyboard.press('c');
+        await new Promise((r) => setTimeout(r, 220));
+        const got = await p.evaluate(() => (document.activeElement.textContent || '').trim());
+        return { ok: got === 'Cut',
+                 note: got === 'Cut' ? 'c c ⇒ Copy → Cut ✅' : '🔴 连按 c 停在「' + got + '」' };
+      },
+
+      /* ⑦c 快速连打不同字母 ⇒ 前缀累积
+         夹具里 Save / Select all 都以 s 开头 ⇒ "s" 到 Save，"se" 到 Select all */
+      '⑦c 连打不同字母按前缀匹配': async (p) => {
+        await p.evaluate(() => window.__ddSetup());
+        await p.keyboard.press('ArrowDown');
+        await new Promise((r) => setTimeout(r, 200));
+        await p.keyboard.press('s');
+        await new Promise((r) => setTimeout(r, 80));
+        await p.keyboard.press('e');
+        await new Promise((r) => setTimeout(r, 220));
+        const got = await p.evaluate(() => (document.activeElement.textContent || '').trim());
+        return { ok: got === 'Select all',
+                 note: got === 'Select all' ? 's e ⇒ Select all ✅' : '🔴 "se" 落到了「' + got + '」' };
+      },
+
+      /* ⑦d 不匹配 ⇒ 不动焦点（APG 不要求"没找到"有反馈）
+         也顺带守住"别跳回第一项"这个最烦人的实现错误 */
+      '⑦d 不匹配时焦点不动': async (p) => {
+        const before = await p.evaluate(() => (document.activeElement.textContent || '').trim());
+        await p.keyboard.press('z');
+        await new Promise((r) => setTimeout(r, 220));
+        const after = await p.evaluate(() => (document.activeElement.textContent || '').trim());
+        return { ok: before === after && before !== '',
+                 note: before === after ? '打 z 焦点仍在「' + after + '」✅'
+                                        : '🔴 焦点从「' + before + '」跳到了「' + after + '」' };
+      },
+
+      /* ⑦e 菜单关着时打字 ⇒ 不许把菜单打开（也不许动焦点） */
+      '⑦e 菜单关闭时打字不开菜单': async (p) => {
+        await p.evaluate(() => window.__ddSetup());
+        await p.keyboard.press('e');
+        await new Promise((r) => setTimeout(r, 220));
+        const r = await p.evaluate(() => {
+          const root = document.getElementById('dd-fixture');
+          const menu = root.querySelector('[data-dd-menu]');
+          const btn = root.querySelector('[data-dd-btn]');
+          /* 收尾：把夹具拆掉，别影响后面的判据 */
+          const out = { hidden: menu.hidden, onBtn: document.activeElement === btn };
+          if (root.ddInstance) root.ddInstance.destroy();
+          root.parentNode.removeChild(root);
+          return out;
+        });
+        return { ok: r.hidden && r.onBtn,
+                 note: r.hidden && r.onBtn ? '关闭态打字不会打开菜单 ✅'
+                      : '🔴 菜单状态 ' + (r.hidden ? '仍关着' : '被打开了') };
+      },
+
+      /* ⑦f 带勾选标记的项也要能按名字命中
+         "✓ Copy" 的文本以符号开头，不剥掉匹配不到 —— 与 table 列头 `↕`
+         被念出来是同一类问题：装饰符号混进了"名字"里。 */
+      '⑦f 装饰符号不进匹配文本': async (p) => {
+        await p.evaluate(() => {
+          var root = document.createElement('div');
+          root.className = 'dd';
+          root.id = 'dd-fixture2';
+          root.innerHTML =
+            '<button class="dd__btn" data-dd-btn>Pick <span class="dd__caret"></span></button>' +
+            '<ul class="dd__menu" data-dd-menu hidden>' +
+            '<li data-value="alpha">Alpha</li>' +
+            '<li data-value="copy"><span class="dd__check" data-check>✓</span>Copy</li>' +
+            '</ul>';
+          document.body.appendChild(root);
+          root.ddInstance = Dropdown.create(root, { label: 'Pick' });
+          root.querySelector('[data-dd-btn]').focus();
+        });
+        await p.keyboard.press('ArrowDown');
+        await new Promise((r) => setTimeout(r, 200));
+        await p.keyboard.press('c');
+        await new Promise((r) => setTimeout(r, 220));
+        const r = await p.evaluate(() => {
+          var root = document.getElementById('dd-fixture2');
+          var txt = (document.activeElement.textContent || '').replace(/\s+/g, ' ').trim();
+          if (root.ddInstance) root.ddInstance.destroy();
+          root.parentNode.removeChild(root);
+          return { txt: txt };
+        });
+        return { ok: r.txt.indexOf('Copy') >= 0,
+                 note: r.txt.indexOf('Copy') >= 0 ? '打 c 命中了「✓ Copy」✅'
+                      : '🔴 打 c 落到了「' + r.txt + '」' };
+      },
+
       /* ⑥ 关闭态用 hidden（真正移出无障碍树）*/
       '关闭态移出无障碍树': async (p) => {
         const r = await p.evaluate(() => {

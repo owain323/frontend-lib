@@ -634,14 +634,26 @@ def maturity_criteria(comps, base):
         '⇒ ladder 没有任何鉴别力（对标 Primer 六档阶梯，每档都有硬判据）。'
         '补上「行为欠账」这一条后：'
         '**stable %d / beta %d**（本行由生成器算出，不要手改）。'
-        % (n_stable, n_beta)
+        '%s'
+        % (n_stable, n_beta,
+           '全库达标时 ladder 靠**正向控制**证明还有鉴别力'
+           '（maturity-gate ③：塞一条合成债务必须降 beta），不是靠"总得留几个 beta"。'
+           if n_beta == 0 else '')
     )
-    mc['$strictImpact'] = (
-        '⚠️ strict 档位只放行 stable ⇒ %d 个组件在 strict 下不可用：'
-        '%s。放宽 strict 会让「未收编的手写行为」进入生产路径。'
-        '（本行由生成器算出，不要手改）'
-        % (len(blocked), ' / '.join(blocked) if blocked else '（无）')
-    )
+    if blocked:
+        mc['$strictImpact'] = (
+            '⚠️ strict 档位只放行 stable ⇒ %d 个组件在 strict 下不可用：'
+            '%s。放宽 strict 会让「未收编的手写行为」进入生产路径。'
+            '（本行由生成器算出，不要手改）'
+            % (len(blocked), ' / '.join(blocked))
+        )
+    else:
+        # 0.15.0 起会出现"全库达标"：这时不该印一句"0 个组件不可用：（无）"，
+        # 那是把空集合硬塞进一句话里，读起来像模板漏了值。
+        mc['$strictImpact'] = (
+            '✅ strict 档位放行全部 %d 个组件 —— 没有任何组件带着未收编的'
+            '手写行为或未做的行为（本行由生成器算出，不要手改）' % len(comps)
+        )
     return mc
 
 

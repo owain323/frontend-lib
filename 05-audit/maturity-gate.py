@@ -25,6 +25,12 @@ maturity-gate.py — 组件成熟度阶梯门禁（M8）
   ② 档位必须在 ladder 里（alpha / beta / stable）
   ③ 🔴 **ladder 必须有鉴别力**：不得所有组件都落在同一档
      ⇒ 这条正是本检查存在的理由。哪天又变成"全 stable"，这里会红。
+     ⚠️ 0.15.0 补了第三条出路（写下来，免得下次又以为只能二选一）：
+        如果**真的是全库达标**，那就必须**证明量具还活着** ——
+        给一个真实组件临时塞一条合成债务，重算必须降成 beta
+        （`discriminates()`）。证明得了 ⇒ 放行并打印一行说明；
+        证明不了（判据被改松，债务不再降档）⇒ 红，且红在"量具坏了"而不是"没 beta"。
+        这不是"加一个允许全绿的开关"：分支里唯一的证据是**判据仍然会红**。
   ④ 契约的 `maturityReasons.behaviorDebt` 必须与 `ai/behaviors.json` 实测一致（双向）
   ⑤ 契约的 `maturityReasons` 里四条判据字段必须与**独立重算**一致（双向）
 
@@ -143,6 +149,30 @@ def recompute(c):
 
 # ---------------------------------------------------------------- 判据
 
+def discriminates(comp):
+    """全库 stable 时的**正向控制**：判据还分得清"有债"和"没债"吗？
+
+    做法是只改一个变量——把某个真实组件的行为债临时置为一条合成债务，
+    重算必须降成 beta；撤掉之后必须回到 stable。
+    其它三条判据用的是真实组件的真实结果，不参与造假。
+
+    ⚠️ 为什么不用"必须有 beta"来保证鉴别力：那是**拿数据凑判据**。
+       47 个组件全部达标时，正确的结论就是"全 stable"，
+       而正确的问题变成"这把尺子还准不准"——本条回答的是后者。
+    """
+    global behavior_debt
+    if not comp:
+        return False
+    orig = behavior_debt
+    try:
+        behavior_debt = lambda b: ['synthetic:gap']
+        with_debt, _, _ = recompute(comp[0])
+    finally:
+        behavior_debt = orig
+    clean, _, _ = recompute(comp[0])
+    return with_debt == 'beta' and clean == 'stable'
+
+
 def check(comp, quiet=False):
     bad = []
     counts = {}
@@ -171,9 +201,16 @@ def check(comp, quiet=False):
     if len(counts) < 2:
         only = list(counts)[0] if counts else '空'
         n = list(counts.values())[0] if counts else 0
-        bad.append('🔴 ladder 没有鉴别力：%d 个组件全落在 %s 这一档 ⇒ 要么判据已经松到'
-                   '没有信息量（补一条 / 加严），要么库真全达标（那就显式声明阶梯退役）'
-                   '—— 不能就这么放着' % (n, only))
+        if only == 'stable' and discriminates(comp):
+            # 全库达标 + 量具经得起正向控制 ⇒ 这是**有证据的全绿**，放行。
+            # ⚠️ 这里不打印：check() 会被自检调用几十次，打印会淹掉结论。
+            #    说明放在 main() 里那行，只在真正跑门禁时出现。
+            pass
+        else:
+            bad.append('🔴 ladder 没有鉴别力：%d 个组件全落在 %s 这一档，且'
+                       '「塞一条债务 ⇒ 降成 beta」的正向控制没通过 ⇒ 要么判据已经松到'
+                       '没有信息量（补一条 / 加严），要么先修好量具'
+                       '—— 不能就这么放着' % (n, only))
     return bad, counts
 
 
@@ -215,18 +252,19 @@ def selftest():
         if not hit:
             bad += 1
 
-    def to_stable(cs):
-        """把**任意一个当前不是 stable 的**组件谎报成 stable。
+    def to_beta(cs):
+        """把**任意一个 stable 的**组件谎报成 beta。
 
-        不写死 id：写死的那一版被"组件真的升了 stable"追上过三次。
-        若全库都 stable（阶梯退役），clone() 会发现"没改到"并直接判失败。
+        ⚠️ 这条原来写的是"把某个非 stable 的谎报成 stable"。0.15.0 全库达标后
+        **没有非 stable 的组件了** ⇒ 那个突变体没有对象（clone 会判"没改到"）。
+        这类"写死方向"的突变体会被数据追上，所以改成反方向：stable 永远有。
         """
-        t = [c for c in cs if c.get('maturity') != 'stable']
+        t = [c for c in cs if c.get('maturity') == 'stable']
         if t:
-            t[0]['maturity'] = 'stable'
+            t[0]['maturity'] = 'beta'
 
-    expect('把一个非 stable 的组件手工改成 stable ⇒ 必须红',
-           check(clone(to_stable))[0], '按判据重算是')
+    expect('把一个 stable 的组件谎报成 beta ⇒ 必须红',
+           check(clone(to_beta))[0], '按判据重算是')
     expect('把一个 stable 手工降级成 alpha（button）⇒ 必须红',
            check(clone(lambda cs: [c for c in cs if c['id'] == 'button'][0]
                        .__setitem__('maturity', 'alpha')))[0], '按判据重算是')
@@ -253,19 +291,23 @@ def selftest():
                        ['maturityReasons'].__setitem__('hasDemo', False)))[0],
            'maturityReasons.hasDemo')
 
-    # 🔴 本检查存在的理由：行为欠账被"洗白"（矩阵里 manual / gap 全改成 core）
-    #    ⇒ 全库重算都会变成 stable ⇒ ladder 归零 ⇒ ③ 必须红
-    def wash(cs):
-        for c in cs:
-            c['maturity'] = 'stable'
-            c.setdefault('maturityReasons', {})['behaviorDebt'] = []
-    origin = behavior_debt
-    globals()['behavior_debt'] = lambda _b: []
+    # 🔴 本检查存在的理由：判据被改松 ⇒ 全库重算 stable ⇒ ladder 归零。
+    #    0.15.0 起「全库 stable」不再是自动红：③ 会先做**正向控制**
+    #    （塞一条合成债务 ⇒ 必须降 beta）。所以这里的突变体也要跟着换 ——
+    #    不能只把数据洗白（那本来就是合法的全绿），要**把判据本身改松**：
+    #    让 recompute 忽略债务、一律返回 stable。
+    origin_recompute = globals()['recompute']
+
+    def loosened(c):
+        lvl, facts, debt = origin_recompute(c)
+        return 'stable', facts, debt          # 债务不再影响档位
+
+    globals()['recompute'] = loosened
     try:
-        errs3 = check(clone(wash))[0]
+        errs3 = check(comp)[0]                # 契约一个字没动，动的是判据
     finally:
-        globals()['behavior_debt'] = origin
-    expect_true('行为欠账被洗白 ⇒ 全库 stable ⇒ ladder 失去鉴别力 ⇒ 必须红',
+        globals()['recompute'] = origin_recompute
+    expect_true('判据被改松（债务不再降档）⇒ 正向控制抓得到 ⇒ ③ 必须红',
                 any('ladder 没有鉴别力' in e for e in errs3),
                 '实际报的是：%s' % (errs3[:3] or '空 —— 一条都没抓到'))
     expect_true('…且**只**红了 ③ 这一条（证明突变体真打到 ③，不是被 ①⑤ 顺带抓到）',
@@ -297,7 +339,11 @@ def main():
     else:
         print('    OK %d 个组件档位与独立重算一致（%s）'
               % (len(comp), ' · '.join('%s %d' % (k, counts[k]) for k in sorted(counts))))
-        print('    OK ladder 有鉴别力（不止一个档位 ⇒ 它真的在区分组件）')
+        if len(counts) > 1:
+            print('    OK ladder 有鉴别力（不止一个档位 ⇒ 它真的在区分组件）')
+        else:
+            print('    OK 全库 stable（%d 个）—— 已用合成债务验证判据仍能把有债的降到'
+                  ' beta，阶梯退而不休' % len(comp))
     print('')
     if errs:
         print('  ❌ %d 项不满足' % len(errs))

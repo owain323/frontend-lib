@@ -223,6 +223,72 @@
   };
   /* ==== BEHAVIOR INJECT END: dismissable ==== */
 
+  /* ==== BEHAVIOR INJECT BEGIN: typeahead ==== */
+  var flTypeahead = function (opts) {
+    var opt = opts || {};
+    var items = opt.items || function () { return []; };
+    var textOf = opt.textOf || function (x) { return String((x && x.textContent) || ''); };
+    var usable = opt.usable || function () { return true; };
+    var timeout = opt.timeout || 500;
+    var onHit = opt.onHit || function () {};
+    var buf = '';
+    var timer = null;
+    var last = -1;
+
+    function stop() {
+      if (timer) { clearTimeout(timer); timer = null; }
+    }
+
+    /* 连打同一字符 ⇒ 只按首字符匹配（理由见文件头 ③④）*/
+    function repeated(s) {
+      if (s.length < 2) return false;
+      for (var i = 1; i < s.length; i++) {
+        if (s.charAt(i) !== s.charAt(0)) return false;
+      }
+      return true;
+    }
+
+    function find(needle) {
+      var l = items() || [];
+      var n = l.length;
+      if (!n) return -1;
+      for (var k = 0; k < n; k++) {
+        var i = (last + 1 + k) % n;      /* ① 从当前项之后开始 ⇒ 会绕回 */
+        if (!usable(l[i])) continue;     /* ⑤ */
+        if (textOf(l[i]).toLowerCase().indexOf(needle) === 0) return i;
+      }
+      return -1;                          /* ⑥ */
+    }
+
+    function type(ch) {
+      if (!ch) return -1;
+      buf += String(ch).toLowerCase();    /* ② */
+      stop();
+      timer = setTimeout(clear, timeout); /* ④ */
+      var needle = repeated(buf) ? buf.charAt(0) : buf;   /* ③ */
+      var i = find(needle);
+      if (i >= 0) {
+        last = i;
+        onHit(i, (items() || [])[i], buf);
+      }
+      return i;
+    }
+
+    /* 只清缓冲，不清 last（理由见文件头）*/
+    function clear() {
+      buf = '';
+      stop();
+    }
+
+    return {
+      type: type,
+      clear: clear,
+      buffer: function () { return buf; },
+      destroy: function () { stop(); },
+    };
+  };
+  /* ==== BEHAVIOR INJECT END: typeahead ==== */
+
   /* ---- 旧环境兼容：Element.closest 在老 WebView 上不存在 ----
      直接调用会在真机上抛 `is not a function`（本地完全正常，
      只在老环境炸 —— 属静默失效）。这里做模块内兜底，
@@ -315,6 +381,8 @@
          焦点留在按钮上，菜单项永远进不去（真机用 NVDA + Edge 实测过）。
          APG 的菜单按钮也是这样：打开即把焦点交给第一项。 */
       focusAt(0);
+      /* 每次打开都从空缓冲开始：上次关菜单前打了一半的前缀不该留到这次 */
+      typeahead.clear();
       flEmit(root, 'fl-open', null);
       if (opt.onOpen) opt.onOpen();
     }
@@ -324,6 +392,7 @@
       menu.hidden = true;
       btn.setAttribute('aria-expanded', 'false');
       active = -1;
+      typeahead.clear();
       if (restoreFocus !== false) fr.restore();
       flEmit(root, 'fl-close', null);
       if (opt.onClose) opt.onClose();
@@ -357,6 +426,22 @@
       axis: 'y',
       tabindex: false,
       onMove: function (i) { focusAt(i); },
+    });
+
+    /* ⑥ 打字跳项 —— APG Menu 的 `(Optional)` 项，走 typeahead 核。
+       匹配**可见文本**，但先剥掉开头的装饰符号：带勾选的项文本是
+       "✓ 按日期"，不剥的话打"按"永远匹配不到（同 table 列头 ↕ 那一类问题）。
+       ⚠️ 中文标签实际上打不出来：IME 走 keydown 时 key 是 Process / Unidentified。
+          这条是给拉丁字母标签的菜单用的 —— APG 的 typeahead 本来就是这个前提，
+          所以判据用一张英文夹具页测（见 dropdown-check ⑥）。 */
+    var typeahead = flTypeahead({
+      items: function () { return itemsOf(menu); },
+      textOf: function (el) {
+        var s = String((el && el.textContent) || '').replace(/\s+/g, ' ').trim();
+        return s.replace(/^[^0-9A-Za-z\u4e00-\u9fa5]+/, '');
+      },
+      usable: function (el) { return el.getAttribute('aria-disabled') !== 'true'; },
+      onHit: function (i) { focusAt(i); },
     });
 
     /* ---------- 按钮 ---------- */
@@ -416,6 +501,17 @@
          留在原地会**关两次**（同一元素上的两个监听器，stopPropagation 挡不住
          同级的另一个监听器，那是 stopImmediatePropagation 的活）⇒ onClose 被调两遍。 */
 
+      /* ③b 可打印字符 ⇒ 跳到名字以它开头的项（APG 的 (Optional) 项）
+         · 空格排除：它的语义是"激活当前项"（下面 ④）
+         · 带 Ctrl / Meta / Alt 排除：那是浏览器快捷键
+         · isComposing 时排除：中文输入法正在组字，不能抢 */
+      if (k.length === 1 && k !== ' ' &&
+          !e.ctrlKey && !e.metaKey && !e.altKey && !e.isComposing) {
+        e.preventDefault();
+        typeahead.type(k);
+        return;
+      }
+
       /* ③ Tab 关闭（不拦截，让焦点自然走到下一个）*/
       if (k === 'Tab') { close(false); return; }
 
@@ -440,7 +536,10 @@
     return {
       open: open,
       close: close,
-      destroy: function () { roving.destroy(); dismiss.destroy(); menu.hidden = true; },
+      destroy: function () {
+        roving.destroy(); dismiss.destroy(); typeahead.destroy();
+        menu.hidden = true;
+      },
     };
   }
 

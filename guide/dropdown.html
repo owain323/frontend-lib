@@ -31,7 +31,7 @@
 </header>
 <div class="g-layout">
   <main id="main" class="g-main">
-    <p class="g-kicker">模式 · beta</p>
+    <p class="g-kicker">模式 · stable</p>
     <h1>dropdown · 下拉菜单</h1>
     <p class="lede">下拉菜单</p>
     <ul class="g-meta"><li><a href="../03-patterns/dropdown/demo.html"><code>03-patterns/dropdown/demo.html</code></a></li><li><a href="../03-patterns/dropdown/dropdown.css"><code>03-patterns/dropdown/dropdown.css</code></a></li><li><a href="../03-patterns/dropdown/dropdown.js"><code>03-patterns/dropdown/dropdown.js</code></a></li></ul>
@@ -48,6 +48,7 @@
 <tr><td><code>Esc</code></td><td>关闭，并把焦点<strong>还给按钮</strong></td></tr>
 <tr><td><code>Tab</code></td><td>关闭菜单（焦点移到下一个元素）</td></tr>
 <tr><td><code>Enter</code> / <code>Space</code></td><td>激活当前项</td></tr>
+<tr><td>字母 / 数字（<strong>可选</strong>）</td><td>跳到名字以该前缀开头的项（APG 标为 <code>(Optional)</code>；见下）</td></tr>
 </tbody>
 </table></div>
 <h2 id="s3">⚠️ 另有两条容易漏的<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
@@ -87,20 +88,25 @@ menu.setAttribute('role', 'menu');</code></pre>
 <p><code>aria-hidden</code> 打了一半在个别项上，读屏会读到一半就断掉。</p>
 <h2 id="s7">状态写在 DOM 属性上<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
 <p><code>data-state</code> / <code>data-value</code>，<strong>不用 class 切换</strong> —— 这是全库 INVARIANT I-8 （状态必须活在 DOM 属性上），也是门禁会查的东西。</p>
-<h2 id="s8">成熟度：beta（两条行为债，如实列出）<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
+<h2 id="s8">成熟度：stable（行为零欠账）<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
+<p>两条历史债都收编了，记账在 <code>ai/behaviors.json</code>：</p>
 <div class="table"><table>
 <thead><tr>
-<th>债</th><th>现在的后果</th>
+<th>曾经</th><th>现在</th>
 </tr></thead>
 <tbody>
-<tr><td><code>focus-return:manual</code></td><td>关闭后归位是手写的，不是统一机制</td></tr>
-<tr><td><code>typeahead:gap</code></td><td><strong>没有类型搜索</strong> —— APG 的 Menu Button 不硬性要求，但列表长时体验缺失</td></tr>
+<tr><td><code>focus-return:manual</code></td><td>0.8.6 收编：<code>open()</code> 里 <code>save()</code>、<code>close()</code> 里 <code>restore()</code>，替掉手写的 <code>btn.focus()</code></td></tr>
+<tr><td><code>typeahead:gap</code></td><td>0.15.0 收编：打字跳项走 typeahead 核（见下）</td></tr>
 </tbody>
 </table></div>
-<h2 id="s9">反例<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
+<h3 id="s9">打字跳项（APG 的 <code>(Optional)</code> 项）<a class="anchor" href="#s9" aria-label="本节直链">#</a></h3>
+<p>打一个字母 ⇒ 跳到<strong>下一个</strong>以它开头的项；快速连打 ⇒ 前缀累积；连打同一个字母 ⇒ 在匹配项之间循环；不匹配 ⇒ <strong>什么都不做</strong>（APG 不要求&quot;没找到&quot;有反馈）。</p>
+<p>⚠️ <strong>它天然只对拉丁字母标签有效</strong>：中文标签靠输入法，而 IME 组字时 <code>keydown</code> 给的是 <code>Process</code> / <code>Unidentified</code>，拿不到字符。所以判据用一张英文夹具测（<code>dropdown-check</code> ⑦），demo 的中文菜单不受影响、也不会因此变慢。</p>
+<p>⚠️ 匹配前会<strong>剥掉开头的装饰符号</strong>：带勾选的项文本是「✓ 按日期」，不剥的话打「按」永远匹配不到。这和 table 列头把 <code>↕</code> 念出来是同一类问题 —— 装饰符号不该混进&quot;名字&quot;里。</p>
+<h2 id="s10">反例<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
 <ul><li>❌ <strong>菜单里一部分项 <code>aria-hidden</code>、一部分不设</strong> —— APG 要求<strong>全设或全不设</strong>。半吊子会让读屏报&quot;1 项中的 0 项&quot;这种不可理解的计数</li><li>❌ <strong>禁用项不给 <code>tabindex=&quot;-1&quot;</code></strong> —— Tab 会停在点不动的项上，用户以为菜单坏了</li><li>❌ <strong>Esc 关闭后焦点不还给 <code>dd__btn</code></strong> —— 焦点掉到 <code>&lt;body&gt;</code>，键盘用户要从页面开头重新 Tab（APG 明确要求归还）</li><li>❌ <strong>给某个 <code>dd__item</code> 设 <code>tabindex=&quot;0&quot;</code></strong> —— <code>role=&quot;menu&quot;</code> 靠方向键步进，多一个 0 就多出一个 Tab 停靠点，整个菜单的导航模型就混了</li><li>❌ <strong>先写 <code>aria-controls</code> 再确保 <code>dd__menu</code> 有 id</strong> —— 顺序反了会引用空字符串，读屏拿不到&quot;这个按钮控制哪个菜单&quot;（<code>dropdown.js</code> 里为此调过顺序）</li><li>❌ <strong>用 <code>opacity: 0</code> 或 <code>visibility</code> 隐藏 <code>dd__menu</code></strong> —— 关闭态要用 <code>hidden</code>：它同时移出无障碍树并不可聚焦，另两种做法都还留着 Tab 停靠点</li></ul>
 <hr>
-<h2 id="s10">门禁<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
+<h2 id="s11">门禁<a class="anchor" href="#s11" aria-label="本节直链">#</a></h2>
 <p><code>05-audit/dropdown-check.js</code></p>
     </article>
     <nav class="g-pager" aria-label="上一页 / 下一页">
@@ -110,11 +116,11 @@ menu.setAttribute('role', 'menu');</code></pre>
   </main>
   <aside class="g-side">
     <p class="g-side__title" id="toc-title">本页目录</p>
-    <ul class="g-toc"><li><a href="#s2">🔴 APG 的四条键盘契约（缺一条就不算合规）</a></li><li><a href="#s3">⚠️ 另有两条容易漏的</a></li><li><a href="#s4">结构</a></li><li><a href="#s5">启用</a></li><li><a href="#s6">🔴 role=&quot;menu&quot; 要么全设要么全不设</a></li><li><a href="#s7">状态写在 DOM 属性上</a></li><li><a href="#s8">成熟度：beta（两条行为债，如实列出）</a></li><li><a href="#s9">反例</a></li><li><a href="#s10">门禁</a></li></ul>
+    <ul class="g-toc"><li><a href="#s2">🔴 APG 的四条键盘契约（缺一条就不算合规）</a></li><li><a href="#s3">⚠️ 另有两条容易漏的</a></li><li><a href="#s4">结构</a></li><li><a href="#s5">启用</a></li><li><a href="#s6">🔴 role=&quot;menu&quot; 要么全设要么全不设</a></li><li><a href="#s7">状态写在 DOM 属性上</a></li><li><a href="#s8">成熟度：stable（行为零欠账）</a></li><li><a href="#s10">反例</a></li><li><a href="#s11">门禁</a></li></ul>
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.14.0 · 零第三方运行时依赖 · 组件数 37</p>
+  <p>v0.15.0 · 零第三方运行时依赖 · 组件数 37</p>
 </footer>
 </body>
 </html>
