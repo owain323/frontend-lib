@@ -60,7 +60,7 @@
 </tr></thead>
 <tbody>
 <tr><td>1.1.1</td><td>非文本内容</td><td>◐</td><td>图标一律 <code>aria-hidden</code>，语义由文字或 <code>aria-label</code> 承担；图表类组件要求调用方给替代文本，<strong>库替不了使用者</strong></td></tr>
-<tr><td>1.3.1</td><td>信息与关系</td><td>✅</td><td><code>a11y-scan</code>（axe）+ 页面结构判据：单一 <code>h1</code>、<code>main</code>、<code>lang</code>、标题不跳级</td></tr>
+<tr><td>1.3.1</td><td>信息与关系</td><td>✅</td><td><code>a11y-scan</code>（axe <code>heading-order</code> / <code>page-has-heading-one</code> / <code>empty-heading</code>）+ <code>a11y.py</code> 静态层级 + <strong>96 页运行时大纲实测（887 个标题）</strong>：每页恰好一个 <code>h1</code>、无跳级、无空名；三条规则都做过破坏实验，确认不是&quot;没查&quot;</td></tr>
 <tr><td>1.3.2</td><td>有意义的顺序</td><td>✅</td><td>DOM 顺序 = 视觉顺序，无 <code>order</code> / 绝对定位重排</td></tr>
 <tr><td>1.3.3</td><td>感官特性</td><td>✅</td><td>说明文字不以&quot;左边的按钮&quot;&quot;圆形图标&quot;指代</td></tr>
 <tr><td>1.3.4</td><td>方向</td><td>✅</td><td>无 <code>orientation</code> 锁定，横竖屏均可用</td></tr>
@@ -116,6 +116,7 @@
 <tbody>
 <tr><td><code>axe-core</code>（<code>a11y-scan.js</code>）</td><td>39 页（37 组件 demo + 2 个非组件页）</td><td><strong>0 类违规</strong>，991 条规则通过</td></tr>
 <tr><td>反向控制（注入 5 类典型违规）</td><td>证明上一条不是&quot;没查&quot;</td><td>5 类全部抓到</td></tr>
+<tr><td><code>heading-outline.js</code>（人工工具）</td><td><strong>全部 HTML：96 页 / 887 个标题</strong></td><td>0 处跳级 · 每页恰好 1 个 <code>h1</code> · DOM 标题数 == 无障碍树 heading 数</td></tr>
 <tr><td><code>a11y-ax.js</code> 可访问性树</td><td><strong>全部 <code>demo.html</code>（现 40 个）</strong>；清单与磁盘不一致即红</td><td>0 个无名控件；40 份朗读序列快照在 <code>10-review/a11y-tree/</code></td></tr>
 <tr><td><code>contrast.py</code> / <code>dark-contrast.js</code></td><td>亮 / 暗两套，逐对实算</td><td>正文 ≥ 4.5:1</td></tr>
 <tr><td><code>zoom-reflow.js</code></td><td>40 页 × 3 条 AA 硬项</td><td>320px 不横滚 · 200% 不裁字 · 焦点不被遮挡</td></tr>
@@ -124,9 +125,10 @@
 </table></div>
 <h3 id="s6">人工（<strong>已执行一轮，仍缺人耳与第二平台</strong>）<a class="anchor" href="#s6" aria-label="本节直链">#</a></h3>
 <p>自动化的天花板必须说清楚：<strong>axe 只能覆盖约 30–40% 的 WCAG 问题</strong>，而且它听不见。</p>
-<p>2026-10-30 用 NVDA 2026.3 + Edge（Windows 10 22H2）跑了一轮：把 NVDA 的朗读日志写到文件，逐条取它交给语音合成器的原文。九页结果见 <a href="../docs/A11Y-MANUAL-PROTOCOL.md">无障碍人工测试协议</a> 第三节。</p>
+<p>2026-10-30 用 NVDA 2026.3 + Edge（Windows 10 22H2）跑了两轮：把 NVDA 的朗读日志写到文件，逐条取它交给语音合成器的原文。九页结果见 <a href="../docs/A11Y-MANUAL-PROTOCOL.md">无障碍人工测试协议</a> 第三节。</p>
+<p>第一轮覆盖 Tab 遍历、禁用态、错误说明与浮层焦点；第二轮补的是<strong>标题层级</strong>—— 用读屏的「下一个标题」跳（<code>H</code>），逐页核对它念出的级别与页面结构是否一致。同一轮里把机器侧的结构扫描从 9 页扩到全站 96 页（887 个标题）。</p>
 <p><strong>它证明的是&quot;NVDA 念了什么&quot;，不等于&quot;人听着顺不顺&quot;。</strong> 仍然缺：</p>
-<ol><li><strong>人耳旁听</strong> —— 证据是日志文本；语气、打断、重复播报这类问题不在其中。</li><li><strong>macOS VoiceOver / Android TalkBack</strong> —— 一条记录都没有。</li><li><strong>标题层级（<code>H</code> 键逐级跳）</strong> —— 本轮没做，协议表里写着&quot;未执行&quot;。</li><li><strong>9 处「待人工」结论</strong>（例如图表的替代文本是否真的描述了数据）。</li></ol>
+<ol><li><strong>人耳旁听</strong> —— 证据是日志文本；语气、打断、重复播报这类问题不在其中。</li><li><strong>macOS VoiceOver / Android TalkBack</strong> —— 一条记录都没有。</li><li><strong>9 处「待人工」结论</strong>（例如图表的替代文本是否真的描述了数据）。</li></ol>
 <p>这一轮还确认并修掉了一条真缺陷：<code>table</code> 的列头按钮会把排序符号 <code>↕</code> 念出来（来源是 <code>table.css</code> 的 <code>::after</code> 伪元素文本，Chromium 把它算进了可访问名）。自动检查抓不到它 —— 可访问名&quot;非空&quot;就算过。修法是把字形换成 <code>mask</code> 图像（<code>content</code> 留空），视觉与三态形状不变；改完用 NVDA 复听，表头只剩「公司 · 按钮」。详见协议页第三节。</p>
 <hr>
 <h2 id="s7">三 · 已知缺口（按影响排序）<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
@@ -136,6 +138,7 @@
 <pre class="code" tabindex="0"><code class="language-bash"># 一条命令跑完全部无障碍相关判据（含反向控制）
 npm run gate:fast                       # 静态层：结构 / 契约 / 文档事实
 node 05-audit/a11y-scan.js              # axe（需要本地静态服务 :8000）
+node 05-audit/heading-outline.js        # 全站标题大纲：96 页 / 887 个标题（同一服务）
 node 05-audit/a11y-ax.js                # 可访问性树 + 名称判据
 node 05-audit/zoom-reflow.js            # 200% / 320px / 焦点遮挡
 node 05-audit/rtl-render.js             # RTL 渲染 + 阿/希膨胀 + 字形镜像
