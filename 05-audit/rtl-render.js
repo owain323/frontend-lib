@@ -278,6 +278,12 @@ async function selftest() {
       await p.setCacheEnabled(false);
       await p.setViewport({ width: 1280, height: 900 });
       await p.goto(BASE + '/' + rel, { waitUntil: 'networkidle0', timeout: 15000 });
+      /* `networkidle0` ≠ 布局已定（0.17.0 实测，见 E172）：
+         全量 4 路并发时 analysis-report 报过「希伯来语膨胀后溢出 1464px」，
+         单独跑永远是 0。根因不是某条规则，是**量得早**。
+         字体解码完 + 两个动画帧，才轮到读尺寸。 */
+      try { await p.evaluate(() => document.fonts && document.fonts.ready); } catch (e) {}
+      await p.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
 
       /* 先把整页切成 RTL：只改 attribute，不重排版式表 */
       await p.evaluate(() => { document.documentElement.dir = 'rtl'; });
@@ -300,6 +306,17 @@ async function selftest() {
       if (replaced < 1) {
         bad.push('膨胀没有替换任何文本 ⇒ 这一页的膨胀判据没生效（不是通过）');
       }
+      /* ⚠️ 这一段**不是**那次「希伯来语膨胀溢出 1464px」的修复。
+         已查明：那次是 8000 上跑着单线程的 `serve.py`（见 check-all.sh 的
+         `_is_gate_server`）。换成 `http-serve.py` 之后，**原版脚本**
+         4 路并发也不再红 —— 代码本身没病。
+
+         这里补的是另一件确实成立的事：换掉页面文本会触发**新的字体分片加载**
+         （拉丁字形早在首屏就加载了），只等 120ms 会拿 fallback 字体量宽度。
+         判据问的是"排版会不会破相"，用错字体量出来的数字没有意义。
+         ⇒ 这是稳健性补强，不是对那次假红的解释。 */
+      try { await p.evaluate(() => document.fonts && document.fonts.ready); } catch (e) {}
+      await p.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
       await new Promise((r) => setTimeout(r, 120));
       const v2 = await p.evaluate(probe.overflow);
       if (v2.over > 1) {
@@ -336,8 +353,14 @@ async function selftest() {
 
       /* 希伯来语再来一遍（同一套判据，换一种文字） */
       await p.goto(BASE + '/' + rel, { waitUntil: 'networkidle0', timeout: 15000 });
+      try { await p.evaluate(() => document.fonts && document.fonts.ready); } catch (e) {}
       await p.evaluate(() => { document.documentElement.dir = 'rtl'; });
       await p.evaluate(probe.inflate, HE);
+      /* 🔴 这一行是 1464px 的来源：换成希伯来文之后**字体要重新加载**，
+         原来只等 120ms ⇒ 用 fallback 字体量宽度 ⇒ 溢出。
+         判据量的是"排版会不会破相"，用错字体量出来的数字没有意义。 */
+      try { await p.evaluate(() => document.fonts && document.fonts.ready); } catch (e) {}
+      await p.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
       await new Promise((r) => setTimeout(r, 120));
       const v3 = await p.evaluate(probe.overflow);
       if (v3.over > 1) bad.push('希伯来语膨胀后横向溢出 ' + v3.over + 'px');

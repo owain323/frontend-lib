@@ -92,6 +92,35 @@ Windows 三套（light / dark / RTL）已重录。像素比对结果：**43/44 �
 `switch-geometry` 复验滑块仍是 20×20、上下间隙对称 ⇒ 尺寸未变。
 Linux 三套由 CI 的 `shoot_baseline` 重录。
 
+### 顺带修掉一个"环境假装成代码"的假红
+
+全量 4 路并发跑完，`tap-target` 与 `rtl-render` 同时红，而且数字都像代码缺陷：
+
+```
+ios 验证页 单选/复选  79×22  ❌（单独跑 360×44 ✅）
+analysis-report 希伯来语膨胀溢出 1464px（单独跑 0）
+```
+
+归因错了两次（先怀疑 CSS，再怀疑"并发下量得早"），最后靠
+**把脚本退回 git 原版、只换环境**才查清：8000 上跑的是
+`05-audit/serve.py` —— **单线程** HTTPServer（给"看 demo"用的），
+而门禁该用 `http-serve.py`（256 backlog + 守护线程）。
+4 路浏览器并发拉 CSS/字体时单线程排队 ⇒ **样式还没落地就被量**。
+
+`check-all.sh` 的 canary 当时只比对 `index.html` 的**字节**：
+它验"是不是同一棵树"，不验"这服务撑不撑得住并发" ⇒ 同一棵树 + 单线程服务器，
+canary 愉快放行。
+
+- `http-serve.py`：每个响应加 `X-FL-Gate-Server: threaded-256` 身份戳
+- `check-all.sh`：canary 升级为**字节一致 + 身份戳**两条都要；
+  缺戳时直接说"很可能是 serve.py，会假红"，而不是笼统报错
+- `tap-target` / `rtl-render`：顺手补了 `document.fonts.ready` + 两个动画帧
+  （换文本后确实要重等字体，是真稳健性）—— 但注释写明**这不是那次假红的解释**，
+  不冒领功劳
+
+全量复跑：**216 道 · 0 失败**（1 道 SKIP 是 `benchmark-records`，真实模型记录 0 份，
+与本次无关）。
+
 ## [0.16.1] - 2026-10-31
 
 ### 判据 · `a11y-ax` 在并发下量到过"组件还没初始化完"的树
