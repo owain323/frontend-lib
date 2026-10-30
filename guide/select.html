@@ -104,6 +104,7 @@
 </tbody>
 </table></div>
 <p><strong>① 为什么强调&quot;落在选中项&quot;</strong>：这是 APG 明确要求的，也是最常做错的一条。打开后焦点在第一项，用户按一次<code>↓</code> 就跳到第二项 —— 原来选的那项被跳过了。</p>
+<p>⚠️ 这里的&quot;焦点&quot;是<strong>活动项</strong>：用 <code>aria-activedescendant</code> 指到选中项，DOM 焦点仍留在按钮上。这是 APG「select-only combobox」的合法形态 —— 拿 <code>document.activeElement</code> 去要求它落进 <code>&lt;ul&gt;</code> 会判成缺陷，实际不是。本库的判据也是按前一种断的（<code>opener-path-check</code> 里这条组件的 <code>focus</code> 声明为 <code>activedesc</code>）。</p>
 <h2 id="s6">类型搜索（typeahead）<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
 <p>连续打字跳到匹配项。<strong>原生 <code>&lt;select&gt;</code> 有这个能力，所以自建的必须有</strong>。</p>
 <p>它不是在这里实现的，而是<strong>接线</strong>到共享微行为核 <code>01-tokens/behavior/typeahead.js</code>（<code>BEHAVIOR INJECT: typeahead</code> 段）—— <code>tabs</code> / <code>tree</code> 等也接同一份，所以各组件只有一半接线代码，不是各抄一遍规则。</p>
