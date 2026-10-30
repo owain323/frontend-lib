@@ -65,8 +65,8 @@
       "raw": 10625
     },
     "02-primitives/choice/choice.css": {
-      "gzip": 6064,
-      "raw": 17179
+      "gzip": 6060,
+      "raw": 17175
     },
     "02-primitives/combobox/combobox.css": {
       "gzip": 2893,
@@ -89,8 +89,8 @@
       "raw": 5627
     },
     "02-primitives/input/input.css": {
-      "gzip": 4035,
-      "raw": 10901
+      "gzip": 4031,
+      "raw": 10897
     },
     "02-primitives/metric/metric.css": {
       "gzip": 3277,
@@ -105,8 +105,8 @@
       "raw": 12305
     },
     "02-primitives/progress/progress.css": {
-      "gzip": 4385,
-      "raw": 11346
+      "gzip": 4382,
+      "raw": 11338
     },
     "02-primitives/select/select.css": {
       "gzip": 2066,
@@ -121,12 +121,20 @@
       "raw": 2811
     },
     "02-primitives/skeleton/skeleton.css": {
-      "gzip": 1983,
-      "raw": 4407
+      "gzip": 1980,
+      "raw": 4403
     },
     "02-primitives/switch/switch.css": {
-      "gzip": 8545,
-      "raw": 20998
+      "gzip": 8541,
+      "raw": 20982
+    },
+    "02-primitives/upload/upload.css": {
+      "gzip": 7801,
+      "raw": 21009
+    },
+    "02-primitives/upload/upload.js": {
+      "gzip": 10001,
+      "raw": 28344
     },
     "03-patterns/accordion/accordion.css": {
       "gzip": 7171,
@@ -236,6 +244,10 @@
       "gzip": 3387,
       "raw": 8640
     },
+    "04-recipes/app-shell/app-shell.css": {
+      "gzip": 6432,
+      "raw": 16328
+    },
     "04-recipes/detail-page/detail-page.css": {
       "gzip": 2325,
       "raw": 5797
@@ -245,8 +257,8 @@
       "raw": 16085
     },
     "04-recipes/table/table.css": {
-      "gzip": 7365,
-      "raw": 18564
+      "gzip": 7361,
+      "raw": 18560
     },
     "04-recipes/tierA-tokens.css": {
       "gzip": 2079,
@@ -254,6 +266,6 @@
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 272295,
-  "total_raw": 683143
+  "total_gzip": 296507,
+  "total_raw": 748784
 }

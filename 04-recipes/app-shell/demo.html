@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>应用外壳 · app-shell</title>
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/page.css">
+<link rel="stylesheet" href="app-shell.css">
+<style>
+.demo {
+  background: var(--surface);
+  border: 1px solid var(--border-decor);
+  border-radius: var(--r-md);
+  padding: var(--sp-4);
+  margin-bottom: var(--sp-3);
+}
+/* demo 专用：给 shell 一个固定高度，否则 min-height: 100dvh 会把整页撑成一屏，
+   后面的章节要滚很久才看得到。真实页面**不要**加这个。 */
+.shell-demo { min-height: 26rem; border-radius: var(--r-sm); overflow: hidden; }
+.shell-demo--short { min-height: 15rem; }
+.ph {
+  border: 1px dashed var(--border-decor);
+  border-radius: var(--r-sm);
+  padding: var(--sp-3);
+  color: var(--text-tertiary);
+  font-size: var(--fs-sm);
+  text-align: center;
+}
+.ph + .ph { margin-top: var(--sp-2); }
+.wide { min-width: 30rem; }   /* 对比块用：比栏宽更宽，足以撑破主区 */
+.shell-note { font-size: var(--fs-xs); color: var(--text-tertiary); }
+/* 320/393px 下对比块放不下两个 shell，宽内容会把整页撑出横滚。
+   这里收掉它 —— 那块对比在窄屏上失去意义是**可接受**的，
+   但让页面横滚不可接受（skel-lever / zoom-reflow 判这一条）。 */
+@media (max-width: 30rem) {
+  .wide { min-width: 0; }
+}
+.shell__link svg { flex: none; }
+</style>
+</head>
+<body class="page">
+<main class="wrap">
+
+<h1>应用外壳 · app-shell</h1>
+<p class="lede">工具型页面的骨架：左边一列常驻导航、上面一条工具栏、右边是主区。
+它存在的理由不是"少写几个 div"，而是**两个每个人都会踩的坑** —— 见下面两节。</p>
+
+<h2>1 · 标准三段式</h2>
+<div class="demo">
+  <!-- ⚠️ 这里用 <div class="shell__main"> 而不是 <main>：本页已经有一个
+       <main class="wrap">（页面骨架），HTML 不允许嵌套 main。
+       真实项目里这一格就应该是 <main> —— 那时候 shell 是整个页面的容器。 -->
+  <div class="shell shell-demo">
+    <header class="shell__topbar">
+      <h2 class="shell__title">应付账款 · 2025 年度</h2>
+      <div class="shell__topbar-end">
+        <span class="shell-note">已同步 5 分钟前</span>
+      </div>
+    </header>
+
+    <nav class="shell__side" aria-label="主导航">
+      <a class="shell__brand" href="#">金标准 · 财务台</a>
+      <ul class="shell__side-group">
+        <li><a class="shell__link" href="#" aria-current="page">总览</a></li>
+        <li><a class="shell__link" href="#">实体</a></li>
+        <li><a class="shell__link" href="#">勾稽校验</a></li>
+      </ul>
+      <p class="shell__side-label">数据</p>
+      <ul class="shell__side-group">
+        <li><a class="shell__link" href="#">导入</a></li>
+        <li><a class="shell__link" href="#">审计日志</a></li>
+      </ul>
+    </nav>
+
+    <div class="shell__main">
+      <div class="shell__content">
+        <div class="ph">主区内容</div>
+        <div class="ph">主区内容</div>
+        <div class="ph">主区内容</div>
+      </div>
+    </div>
+  </div>
+</div>
+<p class="note">当前页靠<b>三条</b>线索标记：左侧 3px 竖条、底色、字重加一档 ——
+不只靠底色，灰度打印也分得出来。而且它同时带了
+<code>aria-current="page"</code>，读屏用户听到的是"总览，当前页"。</p>
+
+<h2>2 · 坑之一：宽内容会撑破主区（两个保险）</h2>
+<div class="cmp">
+  <!-- 反例栏抬到上一层：不然它溢出的那截会被右栏的底色盖住，"撑破"在截图里就看不见了（0.18.0 实测）。 -->
+  <div class="cmp__pane cmp__bad" data-bad=".shell__main|w|>420" style="position:relative;z-index:1">
+    <h3>❌ 常见写法：宽表格直接放主区</h3>
+    <!-- 反例 = 手动拆掉本库的两个保险（inline 覆盖，不改 app-shell.css）：
+         · grid-template-columns 从 `minmax(0, 1fr)` 退回 `1fr`
+         · 主区的 min-width 从 0 退回默认的 auto
+         宽表格也没有自己的滚动容器。三样都不做，才是"每个项目自己糊一个外壳"的真实样子。 -->
+    <div class="shell shell-demo--short"
+         style="--shell-side-w:5rem;grid-template-columns:5rem 1fr">
+      <nav class="shell__side" aria-label="主导航（反例）">
+        <a class="shell__link" href="#" aria-current="page">总览</a>
+      </nav>
+      <!-- background:transparent 只是为了让溢出的那截**不遮住右栏的文字**，好让读者看见"越界"本身；撑破的机制与底色无关。 -->
+        <div class="shell__main" style="min-width:auto;background:transparent">
+        <div class="wide ph">一行 30rem 宽的表格式内容</div>
+      </div>
+    </div>
+    <p class="cmp__why">两件事都没做：<code>min-width</code> 保持默认的 <code>auto</code>
+    （"不小于内容的最小宽度"），宽表格也没有自己的滚动容器。
+    于是 grid 轨道被内容顶开，<b>主区被撑到栏外</b> ——
+    侧栏、顶栏一起被推出可视区。</p>
+  </div>
+  <div class="cmp__pane cmp__good" data-good=".shell__main|w|<=420">
+    <h3>✅ 本库：<code>min-width: 0</code> + <code>.shell__scroll</code></h3>
+    <div class="shell shell-demo--short" style="--shell-side-w:5rem">
+      <nav class="shell__side" aria-label="主导航（正例）">
+        <a class="shell__link" href="#" aria-current="page">总览</a>
+      </nav>
+      <div class="shell__main">
+        <div class="shell__scroll" tabindex="0" role="region" aria-label="宽表格，可横向滚动"><div class="wide ph">一行 30rem 宽的表格式内容</div></div>
+      </div>
+    </div>
+    <p class="cmp__why">主区宽度锁在栏宽内（<code>min-width: 0</code>），宽内容放进
+    <code>.shell__scroll</code> 里自己横滚 —— 侧栏和顶栏不动，页面不横滚。</p>
+  </div>
+</div>
+<p class="note">这就是 <code>.shell__main { min-width: 0 }</code> 存在的全部理由。
+它是整个组件里<b>最容易漏、后果最大</b>的一行：漏了以后页面在 1280px 屏幕上看着正常，
+一旦数据表多两列就横滚 —— 而且你会先怀疑表格，不会怀疑外壳。</p>
+
+<h2>3 · 坑之二：高度用 <code>100dvh</code>，不是 <code>100vh</code></h2>
+<div class="demo">
+  <p class="note" style="margin-top:0">这一条<b>在桌面浏览器上看不出来</b>，只能在手机上看到，
+  所以没有截图可摆 —— 但它是本组件写 <code>min-height: 100vh; min-height: 100dvh</code> 两行的原因。</p>
+  <ul>
+    <li><code>100vh</code> 取的是<b>地址栏收起时</b>的视口高（最大那个）</li>
+    <li>地址栏一展开，可视区域变小，而元素仍然按大的算 ⇒ <b>底部被裁掉一截</b></li>
+    <li>iOS Safari 上最明显：页面最后一个按钮点不到，而且不出现滚动条</li>
+  </ul>
+</div>
+
+<h2>4 · 侧栏更窄：只有图标</h2>
+<div class="demo">
+  <div class="shell shell--rail shell-demo--short">
+    <header class="shell__topbar">
+      <h2 class="shell__title">窄侧栏形态</h2>
+    </header>
+    <nav class="shell__side" aria-label="主导航（图标）">
+      <!-- 图标用内联 SVG + currentColor，不用 Unicode 字符：
+           字符（◧ ◫ ◰）在不同字体下尺寸与形状完全不同，实测渲染成小方块。
+           这也是"用 color 画图形"的那条规律 —— 强制色下依然可见。 -->
+      <a class="shell__link" href="#" aria-current="page" title="总览" aria-label="总览">
+        <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor"
+             stroke-width="1.4" aria-hidden="true"><path d="M2 2h5v5H2zM9 2h5v5H9zM2 9h5v5H2zM9 9h5v5H9z"/></svg>
+      </a>
+      <a class="shell__link" href="#" title="实体" aria-label="实体">
+        <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor"
+             stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><path d="M2.5 4h11M2.5 8h11M2.5 12h7"/></svg>
+      </a>
+      <a class="shell__link" href="#" title="校验" aria-label="勾稽校验">
+        <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor"
+             stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 8.5l3.5 3.5 7-8"/></svg>
+      </a>
+    </nav>
+    <div class="shell__main">
+      <div class="shell__content"><div class="ph">主区</div></div>
+    </div>
+  </div>
+</div>
+<p class="note">图标态<b>必须</b>给每个链接 <code>aria-label</code> 或可见的
+<code>title</code>：只有图标时读屏念出来的是"链接、链接、链接"，
+和一个空白页面没有区别。</p>
+
+<h2>5 · 主区自己滚（看板型）</h2>
+<div class="demo">
+  <div class="shell shell--scroll-main shell-demo">
+    <header class="shell__topbar">
+      <h2 class="shell__title">只有主区滚动</h2>
+    </header>
+    <nav class="shell__side" aria-label="主导航（看板）">
+      <ul class="shell__side-group">
+        <li><a class="shell__link" href="#" aria-current="page">看板</a></li>
+        <li><a class="shell__link" href="#">报表</a></li>
+      </ul>
+    </nav>
+    <div class="shell__main">
+      <div class="shell__content">
+        <div class="ph">内容 1</div><div class="ph">内容 2</div><div class="ph">内容 3</div>
+        <div class="ph">内容 4</div><div class="ph">内容 5</div><div class="ph">内容 6</div>
+        <div class="ph">内容 7</div><div class="ph">内容 8</div>
+      </div>
+    </div>
+  </div>
+</div>
+<p class="note"><code>.shell--scroll-main</code> 让侧栏与顶栏完全不动，只有主区滚 ——
+适合看板、监控墙。⚠️ 用这个变体时<b>不要</b>再让页面本身滚：两个滚动容器会让
+"滚到底"的行为不可预期（用户滚的是哪一个？）。</p>
+
+<h2>6 · 窄屏：侧栏收走，主区全宽</h2>
+<div class="demo">
+  <p class="note" style="margin-top:0">把浏览器窗口缩到 <b>768px 以下</b> 再看上面第 1 节 ——
+  侧栏会整列消失，主区铺满，顶栏保留。</p>
+  <p class="note">侧栏<b>不会</b>自动变成抽屉，这是有意的：抽屉已经有
+  <code>03-patterns/drawer</code>（含 Esc 关闭、焦点归位、背景锁、变宽自关）。
+  在这里再实现一遍 = 两份焦点行为，迟早不一致。
+  要抽屉就把 <code>.shell__side</code> 里的内容搬进 drawer 实例。</p>
+</div>
+
+</main>
+</body>
+</html>

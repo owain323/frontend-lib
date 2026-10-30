@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>app-shell · 应用外壳 · agentcss</title>
+<meta name="description" content="应用外壳：侧栏 + 顶栏 + 主区三段式；sticky 侧栏自滚、min-width 防撑破、窄屏收走侧栏">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%227%22%20fill%3D%22%231b4d8f%22%2F%3E%3Crect%20x%3D%228%22%20y%3D%228%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%221.6%22%20fill%3D%22%23fff%22%2F%3E%3Crect%20x%3D%2217%22%20y%3D%228%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%221.6%22%20fill%3D%22%23fff%22%20opacity%3D%22.5%22%2F%3E%3Crect%20x%3D%228%22%20y%3D%2217%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%221.6%22%20fill%3D%22%23fff%22%20opacity%3D%22.5%22%2F%3E%3Crect%20x%3D%2217%22%20y%3D%2217%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%221.6%22%20fill%3D%22%23fff%22%2F%3E%3C%2Fsvg%3E">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<!-- 文档页里会出现 `data-market="intl"` 的示例（delta / 约定 / 索引）。
+     不引这个文件，示例就是"写了但没生效"—— 而 `dir-check.js` 判据 ⑧ 会拦住。
+     它是可选增强，0.2 KB，对没有该属性的页面零影响。 -->
+<link rel="stylesheet" href="../01-tokens/market.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">app-shell · 应用外壳</span>
+    <a class="g-jump" href="../04-recipes/app-shell/demo.html">打开示例<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">版式模板 · stable</p>
+    <h1>app-shell · 应用外壳</h1>
+    <p class="lede">应用外壳：侧栏 + 顶栏 + 主区三段式；sticky 侧栏自滚、min-width 防撑破、窄屏收走侧栏</p>
+    <ul class="g-meta"><li><a href="../04-recipes/app-shell/demo.html"><code>04-recipes/app-shell/demo.html</code></a></li><li><a href="../04-recipes/app-shell/app-shell.css"><code>04-recipes/app-shell/app-shell.css</code></a></li></ul>
+<figure class="g-live"><figcaption class="g-live__cap"><span class="g-live__tag">在这页里直接跑</span>下面是 app-shell · 应用外壳 的真实示例页，全套状态都在里面；<a href="../04-recipes/app-shell/demo.html">单独打开</a>可以看到完整尺寸。</figcaption><iframe class="g-live__frame" src="../04-recipes/app-shell/demo.html" title="app-shell · 应用外壳 的可运行示例" loading="lazy"></iframe></figure><script src="live.js" defer></script>
+    <article class="g-doc">
+<blockquote><p>工具型页面的骨架：左边一列常驻导航、上面一条工具栏、右边是主区。<br>本库已有的四个 recipe 都是<strong>内容型</strong>版式（读 / 查 / 写 / 比），<br>缺的是<strong>工具型</strong>。</p></blockquote>
+<h2 id="s2">文件<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>文件</th><th>作用</th>
+</tr></thead>
+<tbody>
+<tr><td><code>app-shell.css</code></td><td>三段式布局 + 两个变体 + 窄屏退化。<strong>零 JS</strong></td></tr>
+<tr><td><code>demo.html</code></td><td>六个形态 + 一个对比块</td></tr>
+</tbody>
+</table></div>
+<h2 id="s3">用法<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-html">&lt;link rel=&quot;stylesheet&quot; href=&quot;app-shell.css&quot;&gt;
+
+&lt;div class=&quot;shell&quot;&gt;
+  &lt;header class=&quot;shell__topbar&quot;&gt;
+    &lt;h1 class=&quot;shell__title&quot;&gt;应付账款 · 2025 年度&lt;/h1&gt;
+    &lt;div class=&quot;shell__topbar-end&quot;&gt;
+      &lt;button&gt;保存&lt;/button&gt;
+    &lt;/div&gt;
+  &lt;/header&gt;
+
+  &lt;nav class=&quot;shell__side&quot; aria-label=&quot;主导航&quot;&gt;
+    &lt;a class=&quot;shell__brand&quot; href=&quot;/&quot;&gt;金标准 · 财务台&lt;/a&gt;
+    &lt;ul class=&quot;shell__side-group&quot;&gt;
+      &lt;li&gt;&lt;a class=&quot;shell__link&quot; href=&quot;/&quot; aria-current=&quot;page&quot;&gt;总览&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;a class=&quot;shell__link&quot; href=&quot;/entities&quot;&gt;实体&lt;/a&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+    &lt;p class=&quot;shell__side-label&quot;&gt;数据&lt;/p&gt;
+    &lt;ul class=&quot;shell__side-group&quot;&gt;
+      &lt;li&gt;&lt;a class=&quot;shell__link&quot; href=&quot;/import&quot;&gt;导入&lt;/a&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/nav&gt;
+
+  &lt;main class=&quot;shell__main&quot;&gt;
+    &lt;div class=&quot;shell__content&quot;&gt;
+      &lt;!-- 你的内容 --&gt;
+    &lt;/div&gt;
+  &lt;/main&gt;
+&lt;/div&gt;</code></pre>
+<p>DOM 顺序与视觉顺序一致（顶栏 → 侧栏 → 主区），<code>grid-template-areas</code> 负责把侧栏摆到左边。<strong>不要</strong>为了&quot;看起来对&quot;去改 DOM 顺序 —— 读屏用户就是按 DOM 顺序听的。</p>
+<h2 id="s4">两个坑（这是本组件存在的主要理由）<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
+<h3 id="s5">坑 1 · 主区少了 <code>min-width: 0</code><a class="anchor" href="#s5" aria-label="本节直链">#</a></h3>
+<p>grid / flex 项的默认 <code>min-width</code> 是 <code>auto</code>（不小于内容的最小宽度）。主区里只要有一个宽表格，它就被撑到 700px 以上，<strong>整个 shell 横滚</strong> —— 侧栏和顶栏一起被推走。</p>
+<pre class="code" tabindex="0"><code class="language-css">.shell__main { min-width: 0; }   /* 这一行 */</code></pre>
+<p>加了之后，宽内容只能在自己的滚动容器里滚 —— 那个容器本库给了：</p>
+<pre class="code" tabindex="0"><code class="language-html">&lt;div class=&quot;shell__scroll&quot; tabindex=&quot;0&quot; role=&quot;region&quot; aria-label=&quot;宽表格，可横向滚动&quot;&gt;
+  &lt;table&gt;…&lt;/table&gt;
+&lt;/div&gt;</code></pre>
+<p>⚠️ 三个属性都不能省：<code>tabindex=&quot;0&quot;</code> 让键盘用户能聚焦并滚动它（不加就是 axe 的 <code>scrollable-region-focusable</code>：鼠标能拖、键盘滚不动）， <code>role=&quot;region&quot;</code> 让它成为一个可识别的区块，<code>aria-label</code> 给它名字（没有名字的 region，读屏只会说&quot;区域&quot;）。</p>
+<p>⚠️ 宽内容要放在 <code>.shell__content</code> <strong>外面</strong>：后者的 <code>max-width</code> 是正文栏宽，放在里面宽度就被它限制住了，表格只能挤在 52rem 里。</p>
+<p>判据：<code>app-shell-check.js</code> B1 / B1b（造一个 80rem 宽的块，分别量主区宽度与页面是否横滚）。</p>
+<h3 id="s6">坑 2 · 高度用 <code>100vh</code> 而不是 <code>100dvh</code><a class="anchor" href="#s6" aria-label="本节直链">#</a></h3>
+<p><code>100vh</code> 取的是<strong>地址栏收起时</strong>的视口高（最大那个）。地址栏一展开，可视区域变小，元素仍按大的算 ⇒ 底部被裁一截，而且不出现滚动条。 iOS Safari 上最明显：最后一个按钮点不到。</p>
+<pre class="code" tabindex="0"><code class="language-css">min-height: 100vh;    /* 兜底：不认 dvh 的引擎 */
+min-height: 100dvh;   /* 正解 */</code></pre>
+<p>顺序不能反 —— 后写的优先。</p>
+<h2 id="s7">侧栏为什么是 <code>sticky</code> 而不是 <code>fixed</code><a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
+<p><code>fixed</code> 会把侧栏从 grid 流里摘出去，主区不知道它存在，于是要么被盖住，要么手动补 <code>margin-inline-start</code>（然后在 RTL 里全错）。</p>
+<p><code>sticky</code> 留在流里：grid 照常算它的 15rem，滚到顶后固定住，RTL 自动正确（因为用的是逻辑属性）。</p>
+<p>⚠️ 两个前提缺一不可：</p>
+<ul><li><code>align-self: start</code> —— grid 项默认 <code>stretch</code>，撑满高度就无从&quot;粘住&quot;</li><li><code>max-height: 100dvh</code> + <code>overflow-y: auto</code> —— 条目多了侧栏自己滚，而不是把主区一起滚走</li></ul>
+<h2 id="s8">变体<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>类</th><th>效果</th><th>用在哪</th>
+</tr></thead>
+<tbody>
+<tr><td><code>.shell--rail</code></td><td>侧栏 4.5rem，只剩图标</td><td>工具栏型产品</td></tr>
+<tr><td><code>.shell--flat</code></td><td>侧栏无边框、与主区同色</td><td>想要更轻的分层</td></tr>
+<tr><td><code>.shell--scroll-main</code></td><td>侧栏与顶栏不动，只有主区滚</td><td>看板 / 监控墙</td></tr>
+</tbody>
+</table></div>
+<p><code>.shell--rail</code> 下每个链接<strong>必须</strong>有 <code>aria-label</code> 或 <code>title</code> —— 否则读屏念出来是一串&quot;链接、链接、链接&quot;。</p>
+<h2 id="s9">令牌<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
+<div class="table"><table>
+<thead><tr>
+<th>变量</th><th>默认</th><th>说明</th>
+</tr></thead>
+<tbody>
+<tr><td><code>--shell-side-w</code></td><td><code>15rem</code></td><td>侧栏宽。导航文字 + 图标不折行的下限附近</td></tr>
+<tr><td><code>--shell-topbar-h</code></td><td><code>3.5rem</code></td><td>顶栏高</td></tr>
+<tr><td><code>--shell-pad</code></td><td><code>var(--sp-4)</code></td><td>主区与顶栏的内边距（窄屏自动降到 <code>--sp-3</code>）</td></tr>
+<tr><td><code>--shell-bp</code></td><td><code>48rem</code></td><td>侧栏收起阈值</td></tr>
+</tbody>
+</table></div>
+<h2 id="s10">无障碍<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
+<ul><li>侧栏是 <code>&lt;nav aria-label=&quot;主导航&quot;&gt;</code>：页面上可能还有第二个 <code>&lt;nav&gt;</code>（页内目录），两个都没有名字时读屏只会说&quot;导航、导航&quot;。判据：<code>a11y-ax.js</code>。</li><li>当前页用 <code>aria-current=&quot;page&quot;</code>，<strong>不是</strong> <code>class=&quot;active&quot;</code> —— 前者是读屏能听到的状态，后者只是 CSS 钩子。</li><li>标记当前页用三条线索：竖条、底色、字重。灰度打印和色盲下都分得出来。</li><li>强制色下 <code>inset</code> 阴影会被整个移除，所以另有一段 media 把&quot;当前项&quot;换成实色边框；所有项统一预留 3px 透明边框，避免当前项的文字比其它项右移。</li><li>顶栏与侧栏的链接都有 44px 命中区（<code>--sz-touch</code>）。</li></ul>
+<h2 id="s11">反例<a class="anchor" href="#s11" aria-label="本节直链">#</a></h2>
+<ul><li><strong>❌ 侧栏 <code>position: fixed</code> + 主区 <code>margin-inline-start</code></strong> —— 看起来能用，但侧栏被摘出 grid 流，主区宽度靠<strong>手抄的数字</strong>维持（改侧栏宽就要改两处）；<code>inset-inline-start</code> 与 <code>margin-inline-start</code> 只要有一处漏改，RTL 下侧栏跑到右边、主区仍在右边留白。**</li></ul>
+<p>正确的做法见上面「侧栏为什么是 <code>sticky</code> 而不是 <code>fixed</code>」。</p>
+<ul><li><strong>❌ 窄屏把侧栏 <code>display: none</code> 之后没有别的入口</strong> —— 导航消失了。侧栏收走的代价是&quot;用户找不到别的页面&quot;，要么在顶栏放一个按钮接到 <code>03-patterns/drawer</code>，要么明确接受&quot;窄屏只有当前页&quot;（只读看板可以接受）。</li></ul>
+<p>⚠️ 别自己写 <code>transform: translateX(-100%)</code> 的抽屉：抽屉需要 Esc 关闭、焦点归位、背景滚动锁、变宽自关四件事，<code>drawer</code> 已经全做了。自己写一份，四件里必然漏两件。</p>
+<ul><li><strong>❌ 给 <code>.shell</code> 加 <code>overflow: hidden</code> 想&quot;修好&quot;横滚</strong> —— 它确实不横滚了，因为内容<strong>被裁掉了</strong>，而且滚动条也没了。主区被撑破的正确修法是 <code>min-width: 0</code> + <code>.shell__scroll</code>（见坑 1），不是把溢出的部分藏起来。</li></ul>
+<ul><li><strong>❌ 把宽表格放进 <code>.shell__content</code></strong> —— <code>.shell__content</code> 的 <code>max-width</code> 是正文栏宽（<code>--measure-page</code>），表格会被限制在 52rem 里，右边几列挤成一团。宽内容要放在 <code>.shell__content</code> <strong>外面</strong>、<code>.shell__main</code> 直下。</li></ul>
+<h2 id="s12">相关<a class="anchor" href="#s12" aria-label="本节直链">#</a></h2>
+<ul><li><code>03-patterns/nav</code> —— 页内目录 + 抽屉行为层。视觉上与侧栏条目对齐，但<strong>不复用类</strong>：一个是&quot;页面内的目录&quot;，一个是&quot;应用级导航&quot;，语义不同。</li><li><code>03-patterns/drawer</code> —— 窄屏导航抽屉，Esc / 焦点归位 / 背景锁 / 变宽自关都已实现。</li><li><code>04-recipes/detail-page</code> / <code>analysis-report</code> —— 内容型版式，可以放进 <code>.shell__main</code>。</li></ul>
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      <a class="g-pager__link g-pager__link--prev" href="analysis-report.html"><span>上一页</span>analysis-report · 组合型研究报告</a>
+      <a class="g-pager__link g-pager__link--next" href="detail-page.html"><span>下一页</span>detail-page · 实体详情页骨架</a>
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    <ul class="g-toc"><li><a href="#s2">文件</a></li><li><a href="#s3">用法</a></li><li><a href="#s4">两个坑（这是本组件存在的主要理由）</a></li><li><a href="#s7">侧栏为什么是 sticky 而不是 fixed</a></li><li><a href="#s8">变体</a></li><li><a href="#s9">令牌</a></li><li><a href="#s10">无障碍</a></li><li><a href="#s11">反例</a></li><li><a href="#s12">相关</a></li></ul>
+  </aside>
+</div>
+<footer class="g-foot">
+  <p>v0.18.0 · 零第三方运行时依赖 · 组件数 39</p>
+</footer>
+</body>
+</html>

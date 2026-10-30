@@ -171,9 +171,9 @@ Three mistakes the template above already avoids:
 
 ## Components
 
-**37** components (stable 37 / beta 0). Each directory holds a `README.md` (why it is built this way) and a `demo.html` (markup you can copy).
+**39** components (stable 39 / beta 0). Each directory holds a `README.md` (why it is built this way) and a `demo.html` (markup you can copy).
 
-### primitives (15)
+### primitives (16)
 
 | Component | Root class | Purpose |
 |---|---|---|
@@ -212,7 +212,7 @@ Three mistakes the template above already avoids:
 | `tooltip` | `tooltip` | Hover and focus hints |
 | `tree` | `tree` | Expandable tree |
 
-### recipes (4)
+### recipes (5)
 
 | Component | Root class | Purpose |
 |---|---|---|

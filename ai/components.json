@@ -1,25 +1,25 @@
 {
   "schemaVersion": "1.0.0",
   "generatedBy": "05-audit/gen-ai-contract.py",
-  "libraryVersion": "0.17.0",
+  "libraryVersion": "0.18.0",
   "$comment": "机器可读的组件契约。slots = BEM 元素名（在本库里元素名就是插槽名），states.enum = 组件会在 DOM 上写出的 data-* 取值，states.legacyClass = 仍未收敛到 data 属性的历史状态类（INVARIANT I-8 未达标）。",
   "maturityCriteria": {
     "alpha": "缺 demo.html 或缺 05-audit 下的专属门禁 ⇒ 还没被机器验证过，不要用",
     "beta": "有 demo + 专属门禁，但**下面至少有一条没过**：① 状态仍用 .is-* class 表达（违反 INVARIANT I-8）；② 该收编到微行为核的行为还是**手写副本**（manual）或**根本没做**（gap） ⇒ 改一处不会全库跟着变（I-14 的病）",
     "stable": "以上四条全过：有 demo + 专属门禁 + 状态全在 data-* 属性上 + 行为零欠账",
     "$note": "成熟度是【计算出来的】，不是拍的。手写把某个组件改成 stable 而它还有 manual / gap ⇒ 门禁会红。",
-    "$whyFourth": "🔴 为什么第四条判据不能省：用前三条时多数组件会**全是 stable** ⇒ ladder 没有任何鉴别力（对标 Primer 六档阶梯，每档都有硬判据）。补上「行为欠账」这一条后：**stable 37 / beta 0**（本行由生成器算出，不要手改）。全库达标时 ladder 靠**正向控制**证明还有鉴别力（maturity-gate ③：塞一条合成债务必须降 beta），不是靠\"总得留几个 beta\"。",
-    "$strictImpact": "✅ strict 档位放行全部 37 个组件 —— 没有任何组件带着未收编的手写行为或未做的行为（本行由生成器算出，不要手改）"
+    "$whyFourth": "🔴 为什么第四条判据不能省：用前三条时多数组件会**全是 stable** ⇒ ladder 没有任何鉴别力（对标 Primer 六档阶梯，每档都有硬判据）。补上「行为欠账」这一条后：**stable 39 / beta 0**（本行由生成器算出，不要手改）。全库达标时 ladder 靠**正向控制**证明还有鉴别力（maturity-gate ③：塞一条合成债务必须降 beta），不是靠\"总得留几个 beta\"。",
+    "$strictImpact": "✅ strict 档位放行全部 39 个组件 —— 没有任何组件带着未收编的手写行为或未做的行为（本行由生成器算出，不要手改）"
   },
   "summary": {
-    "total": 37,
+    "total": 39,
     "byMaturity": {
-      "stable": 37
+      "stable": 39
     },
     "byTier": {
-      "primitive": 15,
+      "primitive": 16,
       "pattern": 14,
-      "recipe": 4,
+      "recipe": 5,
       "asset": 4
     }
   },
@@ -1820,6 +1820,74 @@
       "behaviorRef": "API.md#switch"
     },
     {
+      "id": "upload",
+      "tier": "primitive",
+      "purpose": "文件上传：零 JS 的原生形态 + 拖放/多文件/校验的增强形态",
+      "rootClass": "upload",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true,
+        "behaviorDebt": []
+      },
+      "gates": [
+        "upload-check.js"
+      ],
+      "files": {
+        "css": "02-primitives/upload/upload.css",
+        "js": "02-primitives/upload/upload.js",
+        "jsAlso": [],
+        "demo": "02-primitives/upload/demo.html"
+      },
+      "slots": [
+        "upload__browse",
+        "upload__dropzone",
+        "upload__hint",
+        "upload__icon",
+        "upload__input",
+        "upload__item",
+        "upload__list",
+        "upload__mark",
+        "upload__meta",
+        "upload__name",
+        "upload__progress",
+        "upload__remove",
+        "upload__status",
+        "upload__title"
+      ],
+      "variants": [
+        "upload--compact",
+        "upload--drop"
+      ],
+      "states": {
+        "enum": {
+          "state": [
+            "done",
+            "dragover",
+            "error",
+            "pending"
+          ]
+        },
+        "boolean": [],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [
+          "status"
+        ],
+        "attrs": [
+          "describedby",
+          "label",
+          "live"
+        ]
+      },
+      "usesOtherNamespaces": [],
+      "global": "Upload",
+      "globalAlso": [],
+      "behaviorRef": "API.md#upload"
+    },
+    {
       "id": "analysis-report",
       "tier": "recipe",
       "purpose": "组合型研究报告页面：正文与辅助栏并排，窄屏自然退回单栏",
@@ -1873,6 +1941,65 @@
       "global": null,
       "globalAlso": [],
       "behaviorRef": "API.md#analysis-report"
+    },
+    {
+      "id": "app-shell",
+      "tier": "recipe",
+      "purpose": "应用外壳：侧栏 + 顶栏 + 主区三段式；sticky 侧栏自滚、min-width 防撑破、窄屏收走侧栏",
+      "rootClass": "shell",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true,
+        "behaviorDebt": []
+      },
+      "gates": [
+        "app-shell-check.js"
+      ],
+      "files": {
+        "css": "04-recipes/app-shell/app-shell.css",
+        "js": null,
+        "jsAlso": [],
+        "demo": "04-recipes/app-shell/demo.html"
+      },
+      "slots": [
+        "shell__brand",
+        "shell__content",
+        "shell__link",
+        "shell__main",
+        "shell__scroll",
+        "shell__side",
+        "shell__side-group",
+        "shell__side-label",
+        "shell__title",
+        "shell__topbar",
+        "shell__topbar-end"
+      ],
+      "variants": [
+        "shell--flat",
+        "shell--rail",
+        "shell--scroll-main"
+      ],
+      "states": {
+        "enum": {},
+        "boolean": [],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [
+          "region"
+        ],
+        "attrs": [
+          "current",
+          "hidden",
+          "label"
+        ]
+      },
+      "usesOtherNamespaces": [],
+      "global": null,
+      "globalAlso": [],
+      "behaviorRef": "API.md#app-shell"
     },
     {
       "id": "detail-page",

@@ -341,7 +341,12 @@ def build_table(rows, comps):
     #    ⇒ 登记值允许写成 ((文件, 理由), …) —— 混合写法见 _decl()。
     OPTIONAL_JS = {'list': ('flip.js', 'FLIP 增删动画，纯增强'),
                    'nav': (('toc.js', '自动生成目录，纯增强'),),
-                   'reveal': ('reveal.js', '入场动效，纯增强；没有它内容直接可见')}
+                   'reveal': ('reveal.js', '入场动效，纯增强；没有它内容直接可见'),
+                   # 0.18.0：upload.js 是**增强层**，不是"给静态标记加行为"。
+                   # 没有它，基础形态（原生 input + ::file-selector-button）照常可用；
+                   # 写了 .upload--drop 而没引 JS 时，拖放区仍可点（它是 label for），
+                   # 只是没有文件列表 / 校验 / 移除。⇒ 归可选，不是必需。
+                   'upload': ('upload.js', '拖放 / 文件列表 / 校验；没有它基础形态照常工作')}
     check_js_classification(rows, REQUIRED_JS, OPTIONAL_JS)
     for name, rel, n_css, js_files in rows:
         lines = dict(js_files)
@@ -434,6 +439,7 @@ AI_END = '<!-- ==== AI-INVENTORY-END ==== -->'
 #    而不是静默漏掉（链子里少一个环是最难被发现的一种错）。
 RECIPE_DESC = {
     'analysis-report': '组合型研究报告：正文 + 辅助栏并排，窄屏退回单栏',
+    'app-shell': '应用外壳：侧栏 + 顶栏 + 主区；sticky 侧栏自滚、min-width 防撑破、窄屏收走侧栏',
     'data-showcase': '四种数据表达方式对照：我到底该用哪个',
     'detail-page': '实体详情页骨架：字段齐全 / 部分缺失 / 无数据，三态同构（DOM 不变）',
     'longform': '单栏长文排版与阅读节奏',

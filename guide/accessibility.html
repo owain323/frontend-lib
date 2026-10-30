@@ -42,7 +42,7 @@
 <th>项目</th><th>值</th>
 </tr></thead>
 <tbody>
-<tr><td>声明适用版本</td><td>agentcss <code>0.17.0</code></td></tr>
+<tr><td>声明适用版本</td><td>agentcss <code>0.18.0</code></td></tr>
 <tr><td>声明日期</td><td>2026-10-31</td></tr>
 <tr><td>复核节奏</td><td>每次发版前重跑（<code>npm run gate</code> 内含全部证据）</td></tr>
 <tr><td>范围</td><td>本库交付的 CSS / JS、全部 <code>demo.html</code>（组件页 + 图表页 + 组合页）、以及文档站生成的页面</td></tr>
@@ -101,7 +101,7 @@
 <tr><td>3.3.2</td><td>标签或说明</td><td>✅</td><td>必填项有可见标记 + <code>required</code></td></tr>
 <tr><td>3.3.7</td><td>冗余输入（2.2 A）</td><td>—</td><td>由业务表单决定，库不承载</td></tr>
 <tr><td>3.3.8</td><td>可访问的认证（2.2 AA）</td><td>—</td><td>库不含登录流程</td></tr>
-<tr><td>4.1.2</td><td>名称、角色、值</td><td>✅</td><td><code>a11y-ax.js</code>：<strong>全部 40 个 demo 页</strong>的可访问性树逐节点判，每个可交互控件有非空名称；朗读序列逐页存快照防回归</td></tr>
+<tr><td>4.1.2</td><td>名称、角色、值</td><td>✅</td><td><code>a11y-ax.js</code>：<strong>全部 42 个 demo 页</strong>的可访问性树逐节点判，每个可交互控件有非空名称；朗读序列逐页存快照防回归</td></tr>
 <tr><td>4.1.3</td><td>状态消息</td><td>◐</td><td>toast / 表单错误用 <code>role=&quot;status&quot;</code> / <code>alert</code>；<strong>未</strong>在真实读屏里验证播报时机</td></tr>
 </tbody>
 </table></div>
@@ -114,7 +114,7 @@
 <th>手段</th><th>覆盖</th><th>最近结果</th>
 </tr></thead>
 <tbody>
-<tr><td><code>axe-core</code>（<code>a11y-scan.js</code>）</td><td>39 页（37 组件 demo + 2 个非组件页）</td><td><strong>0 类违规</strong>，991 条规则通过</td></tr>
+<tr><td><code>axe-core</code>（<code>a11y-scan.js</code>）</td><td>41 页（39 组件 demo + 2 个非组件页）</td><td><strong>0 类违规</strong>，991 条规则通过</td></tr>
 <tr><td>反向控制（注入 5 类典型违规）</td><td>证明上一条不是&quot;没查&quot;</td><td>5 类全部抓到</td></tr>
 <tr><td><code>heading-outline.js</code>（人工工具）</td><td><strong>全部 HTML：96 页 / 887 个标题</strong></td><td>0 处跳级 · 每页恰好 1 个 <code>h1</code> · DOM 标题数 == 无障碍树 heading 数</td></tr>
 <tr><td><code>a11y-ax.js</code> 可访问性树</td><td><strong>全部 <code>demo.html</code>（现 40 个）</strong>；清单与磁盘不一致即红</td><td>0 个无名控件；40 份朗读序列快照在 <code>10-review/a11y-tree/</code></td></tr>
@@ -163,7 +163,7 @@ python 05-audit/shot-baseline.py --check --dir rtl   # RTL 视觉基线</code></
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.17.0 · 零第三方运行时依赖 · 组件数 37</p>
+  <p>v0.18.0 · 零第三方运行时依赖 · 组件数 39</p>
 </footer>
 </body>
 </html>

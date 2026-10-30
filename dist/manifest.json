@@ -7,9 +7,9 @@
     "manifesto 里的 sourceSha256 变了而 dist 没重建 ⇒ dist-parity/dist-fresh 门禁会红"
   ],
   "totals": {
-    "sourceFiles": 72,
-    "sourceBytes": 798115,
-    "distGzip": 98994
+    "sourceFiles": 75,
+    "sourceBytes": 863796,
+    "distGzip": 105822
   },
   "files": [
     {
@@ -472,6 +472,35 @@
       ]
     },
     {
+      "source": "02-primitives/upload/upload.css",
+      "sourceSha256": "232e4d782f85a4ec783fbb8b9c3975c9fc7896807a04b68211a0d6c059483f7e",
+      "sourceBytes": 21009,
+      "sourceGzip": 7801,
+      "outputs": [
+        {
+          "path": "dist/02-primitives/upload/upload.css",
+          "kind": "minified",
+          "bytes": 5849,
+          "gzip": 1397
+        }
+      ]
+    },
+    {
+      "source": "02-primitives/upload/upload.js",
+      "sourceSha256": "494106d7e58639e6d9a0f1a2d5abeb728e15d0ce0897a41d04a21425dc600d08",
+      "sourceBytes": 28344,
+      "sourceGzip": 10001,
+      "outputs": [
+        {
+          "path": "dist/02-primitives/upload/upload.js",
+          "kind": "stripped",
+          "bytes": 13946,
+          "gzip": 4291
+        }
+      ],
+      "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
+    },
+    {
       "source": "03-patterns/accordion/accordion.css",
       "sourceSha256": "758df204dac364e70b5ed49c16ddc563e62ac537f17b2aacf1ef1e7cffdc522f",
       "sourceBytes": 18445,
@@ -858,6 +887,20 @@
           "kind": "minified",
           "bytes": 3474,
           "gzip": 849
+        }
+      ]
+    },
+    {
+      "source": "04-recipes/app-shell/app-shell.css",
+      "sourceSha256": "1b7a92d3907d15deb9d6bfabee7d45013e49da63bcfe3c7ec02e127fe943244c",
+      "sourceBytes": 16328,
+      "sourceGzip": 6432,
+      "outputs": [
+        {
+          "path": "dist/04-recipes/app-shell/app-shell.css",
+          "kind": "minified",
+          "bytes": 3886,
+          "gzip": 1140
         }
       ]
     },
