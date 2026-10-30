@@ -80,9 +80,12 @@ python3 -m http.server 8000 --bind 127.0.0.1
 | **drawer** | 通过 | 通过（6/6） | — | — | 通过 | 打开念「从left进来的抽屉 · 对话框」；Tab 在「取消 → 确定 → 关闭」之间循环；Esc 后回到「左侧 · 按钮」。标题 1 → 2×3 → 3×2 |
 | **dropdown** | 通过 | 通过（7/7） | — | — | 通过（修复后） | 按钮念「菜单按钮 · 已折叠 · 子菜单」，展开念「已展开 · 菜单」。**修复前**：按 Enter 打开后焦点留在按钮上（读屏在浏览模式下把 Enter 变成点击，走 click 分支），修复后真机复测焦点落在「✓ 按日期」。方向键仍无法在项间移动 —— 极简 APG 对照页表现相同，属读屏浏览模式限制。标题 1 → 2×4 → 3×2 |
 
-> **为什么后三行是补的**：`accordion` / `drawer` / `dropdown` 这三个都是 beta 组件
-> （`ai/components.json` 当前记 4 个 beta），而它们升 stable 的判据之一就是「行为零欠账」
-> ——人工读屏是这件事**唯一的用户侧证据**。
+> **为什么后三行是补的**：`accordion` / `drawer` / `dropdown` 当时都是 beta 组件，
+> 而它们升 stable 的判据之一就是「行为零欠账」——人工读屏是这件事**唯一的用户侧证据**。
+> （0.14.0 把 drawer / overlay 的 dismissable 收编进核之后，两者已升 stable；
+> accordion 的 `roving:gap` 经核对 APG 原文后判定为**判据写错**（APG Accordion 没有
+> 方向键），已改为 `n/a`。`ai/components.json` 当前记 **1 个 beta**：dropdown
+> —— 它的 `typeahead:gap` 是真的：APG Menu 把"按字符跳项"列为 Optional，本库没做。）
 > 只覆盖 `overlay` 一个浮层，等于对其他浮层的真实表现没有任何记录。
 
 **本轮跑出来并已修掉的一条真缺陷**：`table` 的列头按钮被念成「公司 · `↕` · 按钮」——

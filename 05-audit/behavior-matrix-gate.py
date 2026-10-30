@@ -25,12 +25,15 @@ behavior-matrix-gate.py — 行为覆盖矩阵门禁（M3）
 
 ============================================================================
 反向控制：python 05-audit/behavior-matrix-gate.py --selftest
-  ① 声明 core 但源码没有 ⇒ 红
+  ① 声明 core 但源码没有（date-range 的 dismissable）⇒ 红
   ② 删掉一个组件的登记 ⇒ 红
   ③ n/a 不写理由 ⇒ 红
   ④ 声明一个不存在的行为（scrollLock）⇒ 红
-  ⑤ manual 数少于 budget（棘轮没同步）⇒ 红
+  ⑤ budget 与实测不一致 ⇒ 红
   ⑥ 注入了却没调用核 ⇒ 红（在临时副本上做，不动工作区）
+  ⑦ 突变体**本身**必须改到东西：与原样逐字节相同 ⇒ 直接判失败
+     （这条是 2026-10-30 加的：突变体第三次因为"要改的那个组合
+       后来真的变好了"而失效，自检却在报"门禁是瞎的"）
   每一次都必须被抓到。
 ============================================================================
 """
@@ -150,11 +153,20 @@ def run():
 def selftest():
     global ROOT
     raw = io.open(MATRIX, encoding='utf-8').read()
+    base = json.loads(raw)
     cases = []
 
     def mk(why, fn):
         d = json.loads(raw)
         fn(d)
+        # 🔴 2026-10-30：突变体**自己**也要被检查 —— 它必须真的改到了东西。
+        #    第三次踩同一个坑：突变体写着"把 X 谎报成 core"，而 X 后来真的
+        #    变成了 core ⇒ 突变等于原样 ⇒ 自检报"门禁是瞎的"，其实门禁没瞎。
+        #    ⇒ 与真实状态解耦还不够，得让"没改到"当场可见。
+        if json.dumps(d, sort_keys=True, ensure_ascii=False) == \
+           json.dumps(base, sort_keys=True, ensure_ascii=False):
+            cases.append((why + '【突变体与原样相同 ⇒ 这条反向控制已失效】', None))
+            return
         cases.append((why, d))
 
     # 🔴 这条突变体原本用「tooltip 的 dismissable 改成 core」。
@@ -164,25 +176,38 @@ def selftest():
     #    把它谎报成 core 必然抓得到。
     #    教训：反向控制的突变体必须**与当前真实状态解耦**，
     #    否则「把代码改好」会让自测自己失效（ERRORS E39）。
-    # ⚠️ 突变体必须选**不会被收编**的组合。0.8.8 又踩了一次：
-    #   这条原本用 combobox，0.8.6 收编后它真的成了 core ⇒ 突变失效。
-    #   ⇒ 改用 drawer/dismissable：它是**模态弹层**，「点外部不该关闭」
-    #      ⇒ 明确不该收编 ⇒ 这个组合永远不会被真的改成 core。
-    mk('声明 core 但源码没有（drawer 的 dismissable 谎报成 core）',
-       lambda d: d['matrix']['dismissable'].__setitem__('drawer', ['core', '']))
+    # ⚠️ 突变体必须选**结构上不可能**的组合，不是"当前恰好不是"的组合。
+    #   0.8.6 / 0.8.8 / 0.14.0 三次踩同一类坑（前两次见下面历史注释）：
+    #     · tooltip 收编后，"谎报成 core"不再是突变
+    #     · combobox 收编后，同上
+    #     · drawer 这次**真的**收编成 core 了，同上
+    #   ⇒ 改用 date-range：它是内联表单，**永远**不会有"关得掉"这回事
+    #     （不是浮层，没有打开/关闭状态）⇒ 声明 core 必红，且不会随时间失效。
+    mk('声明 core 但源码没有（date-range 的 dismissable 谎报成 core）',
+       lambda d: d['matrix']['dismissable'].__setitem__('date-range', ['core', '']))
     mk('删掉一个组件的登记（pagination 的 roving）',
        lambda d: d['matrix']['roving'].pop('pagination'))
     mk('n/a 不写理由',
        lambda d: d['matrix']['typeahead'].__setitem__('tabs', ['n/a', '']))
     mk('声明一个不存在的行为（scrollLock）',
        lambda d: d['matrix'].__setitem__('scrollLock', {'tabs': ['n/a', 'x']}))
-    mk('manual 数与 budget 不一致（棘轮没同步）',
-       lambda d: d['budget'].__setitem__('manual', 0))
+    # 棘轮：budget 必须等于实测数。旧写法直接写 0 —— 那时 manual 恰好是 2。
+    # 现在 manual 真的是 0，写 0 等于没改 ⇒ 也没被抓到。改成"实测 +1"，
+    # 与当前数值解耦（无论 manual 是几，都会与 budget 不一致）。
+    mk('budget 与实测不一致（manual 上限写得比实际多 1）',
+       lambda d: d['budget'].__setitem__(
+           'manual',
+           1 + sum(1 for cells in d['matrix'].values() for v in cells.values()
+                   if (v[0] if isinstance(v, list) else v) == 'manual')))
     mk('状态写成不存在的值（maybe）',
        lambda d: d['matrix']['roving'].__setitem__('tabs', ['maybe', 'x']))
 
     bad = 0
     for why, d in cases:
+        if d is None:                       # 突变体没改到任何东西（见 mk 的说明）
+            print('  [FAIL] 这条反向控制已经失效：' + why)
+            bad += 1
+            continue
         errs, _ = check(d)
         if errs:
             print('  [OK]   判据抓到突变：' + why)

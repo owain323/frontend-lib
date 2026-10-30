@@ -142,6 +142,45 @@ const REPO = path.resolve(__dirname, '..');
                        (r.inert === r.n && r.hidden === r.n ? ' ✅' : ' 🔴 漏了 ' + (r.n - r.inert) + ' 个') };
       },
 
+      /* ⑧ 点抽屉**内部**不该关闭（核的 inside 判定）
+         ⚠️ 用真实鼠标坐标点，不用 el.click()：合成点击不产生 pointerdown，
+            与"用户真的点了一下"不是同一条路径（opener-path-check 的教训）。 */
+      '⑧ 点抽屉内部不关闭': async (p) => {
+        await p.evaluate(() => {
+          const b = document.querySelector('[data-place="right"]');
+          if (b) b.click();
+        });
+        await new Promise((r) => setTimeout(r, 380));
+        const c = await p.evaluate(() => {
+          const d = document.querySelector('.drawer');
+          if (!d) return null;
+          const r = d.getBoundingClientRect();
+          return { x: r.left + r.width / 2, y: r.top + 40 };
+        });
+        if (!c) return { ok: false, note: '🔴 抽屉没打开 ⇒ 这条测不到' };
+        await p.mouse.click(c.x, c.y);
+        await new Promise((r) => setTimeout(r, 300));
+        const still = await p.evaluate(() => !!document.querySelector('.drawer'));
+        return { ok: still, note: still ? '点抽屉内部未关闭 ✅' : '🔴 点内部把抽屉关了' };
+      },
+
+      /* ⑨ 点遮罩关闭 —— 0.14.0 起由 dismissable 核承担（以前是手写的
+         `if (e.target === host) close()`）。判据看结果，不看实现。 */
+      '⑨ 点遮罩关闭': async (p) => {
+        const g = await p.evaluate(() => ({
+          left: (document.querySelector('.drawer') || { getBoundingClientRect: () => ({ left: 0 }) })
+            .getBoundingClientRect().left,
+          h: window.innerHeight,
+          w: window.innerWidth,
+        }));
+        if (!g.left) return { ok: false, note: '🔴 抽屉没打开 ⇒ 这条测不到' };
+        /* 点抽屉左侧的遮罩条（抽屉右对齐，左边那段一定是遮罩） */
+        await p.mouse.click(Math.max(2, Math.floor(g.left / 2)), Math.round(g.h / 2));
+        await new Promise((r) => setTimeout(r, 520));
+        const gone = await p.evaluate(() => !document.querySelector('.drawer'));
+        return { ok: gone, note: gone ? '点遮罩已关闭 ✅' : '🔴 点遮罩没关掉' };
+      },
+
       /* ⑤ 关闭后必须解锁滚动 */
       '关闭后解锁滚动': async (p) => {
         const r = await p.evaluate(() => ({

@@ -13,7 +13,7 @@ const { launch } = require('./browser.js');
  *   ⇒ 核要有**自己的**判据，用真实浏览器、真实事件流跑。
  *
  * ============================================================================
- * 判据（六条）
+ * 判据（九条）
  * ----------------------------------------------------------------------------
  *   ① 嵌套时一次 Esc **只关最内层**（这是本核存在的理由，也是最易回归的一条）
  *   ② 再按一次 Esc ⇒ 关外层（不能一次全关，也不能永远关不掉）
@@ -21,14 +21,19 @@ const { launch } = require('./browser.js');
  *   ④ 点内部 ⇒ 不关
  *   ⑤ destroy 之后 Esc 不再触发（监听器与栈都要清干净）
  *   ⑥ when() 为 false 时不响应（关闭的浮层不该被误关第二次）
+ *   ⑦ destroy 之后点外部也不再关到它（只测 Esc 抓不到"忘了摘栈"）
+ *   ⑧ outside:false（模态）点外部不关；**并且** Esc 仍关得掉
+ *      —— 两半分开断：只断"不关"的话，把关闭路径整条删掉也能过
+ *   ⑨ outside:false 不进栈：模态里的菜单打开时点外面，只关菜单，
+ *      对话框不许跟着被关（层次不能串）
  *
  * ============================================================================
  * 反向控制
  * ----------------------------------------------------------------------------
  *   node 05-audit/dismissable-check.js --selftest
- *   在内存里把核改坏三处（去掉 stopPropagation / 栈顶判定改成栈底 /
- *   destroy 不摘栈），要求**每一次都必须被判据抓到**。
- *   抓不到 ⇒ 这份门禁是瞎的。
+ *   在内存里把核改坏五处（去掉 stopPropagation / 栈顶判定改成栈底 /
+ *   destroy 不摘栈 / 无视 outside:false 照样进栈 / 把开关读成常量），
+ *   要求**每一次都必须被判据抓到**。抓不到 ⇒ 这份门禁是瞎的。
  * ============================================================================
  */
 const fs = require('fs');
@@ -128,6 +133,53 @@ function probe() {
   out.whenFalse = { log: log.slice(), ok: log.length === 0 };
   d3.destroy();
 
+  /* ⑧ 模态（outside:false）：点外部**不关**，但 Esc 仍要能关
+     —— 两半都要断，只断"不关"的话，把整条关闭路径删掉也能过。 */
+  let modalOpen = true;
+  const dModal = flDismissable({
+    escOn: [outer],
+    outside: false,
+    inside: [outer],
+    when: function () { return modalOpen; },
+    onDismiss: function (e, reason) {
+      if (reason === 'esc') modalOpen = false;
+      log.push('modal:' + reason);
+    },
+  });
+  log.length = 0;
+  click(elsewhere);
+  out.modalOutside = { log: log.slice(), ok: log.length === 0 && modalOpen };
+  log.length = 0;
+  key(document.getElementById('outer-btn'));
+  out.modalEsc = {
+    log: log.slice(),
+    ok: log.length === 1 && log[0] === 'modal:esc' && !modalOpen,
+  };
+  dModal.destroy();
+
+  /* ⑨ outside:false **不进栈** ⇒ 点外部时它不会被选中
+     场景：模态对话框里开了一个下拉菜单，点菜单外面应当只关菜单。
+     若模态也进了栈，栈顶会先落到模态上 ⇒ 一次点击把对话框关了。 */
+  let modal2Open = true, popOpen = true;
+  const dModal2 = flDismissable({
+    escOn: [outer], outside: false, inside: [outer],
+    when: function () { return modal2Open; },
+    onDismiss: function () { modal2Open = false; log.push('m2:outside'); },
+  });
+  const dPop = flDismissable({
+    escOn: [inner], inside: [inner],
+    when: function () { return popOpen; },
+    onDismiss: function () { popOpen = false; log.push('pop:outside'); },
+  });
+  log.length = 0;
+  click(elsewhere);
+  out.modalStack = {
+    log: log.slice(),
+    ok: log.length === 1 && log[0] === 'pop:outside' && modal2Open,
+  };
+  dPop.destroy();
+  dModal2.destroy();
+
   return out;
 }
 
@@ -151,6 +203,9 @@ const NAMES = {
   destroy: '⑤ destroy 之后 Esc 不再触发',
   destroyOutside: '⑥ destroy 之后点外部也不再关到它（栈必须摘干净）',
   whenFalse: '⑦ when() 为 false 时不响应',
+  modalOutside: '⑧ outside:false（模态）点外部不关',
+  modalEsc: '⑧b outside:false 时 Esc 仍然关得掉',
+  modalStack: '⑨ outside:false 不进栈：点外部只关栈里的非模态层',
 };
 
 (async () => {
@@ -164,6 +219,10 @@ const NAMES = {
         'for (var i = 0; i < shared.stack.length; i++)'],
       ['destroy 不摘栈（⇒ 监听器泄漏）',
         /var k = shared\.stack\.indexOf\(rec\);/, 'var k = -1;'],
+      ['无视 outside:false，模态也进栈（⇒ 点外部把对话框关了）',
+        /if \(outside\) shared\.stack\.push\(rec\);/, 'shared.stack.push(rec);'],
+      ['把 outside 开关读成常量 true（⇒ 选项整个失效）',
+        /var outside = opt\.outside !== false;/, 'var outside = true;'],
     ];
     let bad = 0;
     for (const [why, from, to] of mutants) {
@@ -186,7 +245,7 @@ const NAMES = {
     const ok = await run(raw);
     const allGreen = Object.keys(NAMES).every((k) => ok.out[k].ok) && !ok.errs.length;
     if (allGreen) {
-      console.log('  [OK]   原样六条全绿（判据没有误报）');
+      console.log('  [OK]   原样九条全绿（判据没有误报）');
     } else {
       console.log('  [FAIL] 原样就有不通过的项 ⇒ 判据过严');
       bad++;

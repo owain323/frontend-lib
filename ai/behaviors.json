@@ -28,8 +28,8 @@
     }
   },
   "budget": {
-    "manual": 2,
-    "gap": 2
+    "manual": 0,
+    "gap": 1
   },
   "matrix": {
     "dismissable": {
@@ -54,8 +54,8 @@
         "展开/收起是内容显隐，没有'关闭'语义；Esc 不参与"
       ],
       "drawer": [
-        "manual",
-        "0.8.6 评估后**决定不收编**：drawer 已经是**模态**弹层，它的 dismissable 只含 Esc；点遮罩关闭是它自己的语义（overlay 负责遮罩）。核的 onDocClick 会把「点遮罩」当成 outside 触发，而 drawer 想忽略非Esc 的关闭原因 ⇒ 需要给核加\"忽略 outside\"的开关，属于改核而不是接线。暂不做。"
+        "core",
+        "0.14.0 收编（推翻 0.8.6 的\"暂不做\"）：核新增 `outside` 开关，模态层不进栈，于是\"点遮罩关闭\"仍然成立而\"点其它地方\"不会被判成 outside。删掉手写的 Esc 分支与 `if (e.target === host) close()`；inside 只放抽屉本体，遮罩**不在** inside 里（放进去就等于声明\"点遮罩算内部\"）。判据 drawer-check ⑧（点内部不关）/ ⑨（点遮罩关）。"
       ],
       "dropdown": [
         "core",
@@ -74,8 +74,8 @@
         "0.11.2 收编：抽屉的「Esc 关闭」直接走核。⚠️ 遮罩**不能**写进 inside —— 写进去就等于声明\"点遮罩算内部\"，那一句\"点遮罩关闭\"的注释会立刻变成谎话（实测过，关不掉）"
       ],
       "overlay": [
-        "manual",
-        "0.8.6 评估后**决定不收编**：dialog 是模态，**点外部不该关闭**（那是 modal 的定义）。核的 onDocClick 天然会处理 outside ⇒ 收编等于给 dialog 引入错误行为。overlay 只需 Esc 那一半，Esc 已在组件内正确实现（不依赖全局栈）。"
+        "core",
+        "0.14.0 收编（推翻 0.8.6 的\"不收编\"）：dialog 是模态，点外部不关 —— 这正是核新开关 `outside:false` 的语义（模态层不进栈）。Esc 走核；点遮罩带 danger / closeOnBackdrop 两个前置条件，仍是组件自己的语义，没并进核。判据 overlay-check ⑤c（body 上的外部点击不关）/ ⑤b（点遮罩关且焦点归位）。"
       ],
       "pagination": [
         "n/a",
@@ -222,8 +222,8 @@
         "aria-activedescendant 模式：焦点常驻按钮"
       ],
       "accordion": [
-        "gap",
-        "APG 把方向键列为**可选**增强，本库未实现；要做就应走 roving 核，不该再手写一份"
+        "n/a",
+        "**判据纠正（2026-10-30 核对 APG 原文）**：此前这里写 `gap`，理由是\"APG 把方向键列为可选增强，本库未实现\"。核对后这条不成立 —— APG Accordion 的 Keyboard Interaction 只有 `Enter`/`Space`、`Tab`、`Shift+Tab` 三项，**没有**方向键 / Home / End，也没有\"可选\"字样（w3.org/WAI/ARIA/apg/patterns/accordion，2026-10-30 取）。加上本库是移动端组件：方向键就是页面滚动键，抢过来会直接和滚动打架。⇒ 不适用，不是缺口。组件 README 第 68 行早就写了同一个结论，是矩阵没跟上。"
       ],
       "drawer": [
         "n/a",

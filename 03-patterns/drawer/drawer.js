@@ -74,6 +74,73 @@
   };
   /* ==== BEHAVIOR INJECT END: focus-return ==== */
 
+  /* ==== BEHAVIOR INJECT BEGIN: dismissable ==== */
+  var flDismissable = function (opts) {
+    var opt = opts || {};
+    var escOn = opt.escOn || [];
+    var inside = opt.inside || [];
+    var outside = opt.outside !== false;
+    var when = opt.when || function () { return true; };
+    var onDismiss = opt.onDismiss || function () {};
+
+    var shared = window.__flDismiss || (window.__flDismiss = { stack: [], bound: false });
+
+    function isInside(node) {
+      if (!node) return false;
+      for (var i = 0; i < inside.length; i++) {
+        var el = inside[i];
+        if (!el || !el.contains) continue;
+        if (el === node || el.contains(node)) return true;
+      }
+      return false;
+    }
+
+    function onKey(e) {
+      if (!when()) return;
+      var k = e.key;
+      if (k !== 'Escape' && k !== 'Esc' && e.keyCode !== 27) return;
+      /* 先问 onDismiss，它返回 false 就不干预（分级 Esc，见文件头 ⑤） */
+      var closed = onDismiss(e, 'esc');
+      if (closed === false) return;
+      if (e.preventDefault) e.preventDefault();
+      if (e.stopPropagation) e.stopPropagation();
+    }
+
+    function onDocClick(e) {
+      var top = null;
+      for (var i = shared.stack.length - 1; i >= 0; i--) {
+        if (shared.stack[i].when()) { top = shared.stack[i]; break; }
+      }
+      if (!top || top.isInside(e.target)) return;
+      top.onDismiss(e, 'outside');
+    }
+
+    var rec = { when: when, isInside: isInside, onDismiss: onDismiss };
+
+    for (var j = 0; j < escOn.length; j++) {
+      if (escOn[j]) escOn[j].addEventListener('keydown', onKey);
+    }
+    /* 只有"点外部要关"的层才进栈：栈是给 onDocClick 挑最内层用的，
+       模态层不该被这条规则选中（见文件头 ④）。
+       ⚠️ Esc 不依赖栈（它挂在元素上），所以不进栈不影响 Esc。 */
+    if (outside) shared.stack.push(rec);
+    if (!shared.bound) {
+      shared.bound = true;
+      document.addEventListener('click', onDocClick, true);
+    }
+
+    return {
+      destroy: function () {
+        for (var j = 0; j < escOn.length; j++) {
+          if (escOn[j]) escOn[j].removeEventListener('keydown', onKey);
+        }
+        var k = shared.stack.indexOf(rec);
+        if (k >= 0) shared.stack.splice(k, 1);
+      },
+    };
+  };
+  /* ==== BEHAVIOR INJECT END: dismissable ==== */
+
   var FOCUSABLE = [
     'a[href]',
     'button:not([disabled])',
@@ -204,12 +271,23 @@
       (f[0] || d).focus();
     }
 
+    /* ① Esc 与「点抽屉之外关闭」走 dismissable 核（0.14.0 收编）。
+       0.8.6 曾**拒绝收编**，理由写得很实在：核当时只有"点外部一律关"，
+       而 drawer 是模态。现在核有了 `outside` 开关（模态层不进栈），
+       收编不再需要改组件的语义 —— 只改接线。
+       ⚠️ inside 只放抽屉本体，**不能**把 host（遮罩）也放进去：
+          放进去等于声明"点遮罩算内部"，"点遮罩关闭"立刻变成谎话
+          （nav 那一格踩过这个坑，见 ai/behaviors.json）。 */
+    var dm = flDismissable({
+      escOn: [d],
+      inside: [d],
+      when: function () { return !closed; },
+      onDismiss: function () { close(); },
+    });
+
     function onKey(e) {
-      var k = e.key;
-      /* ② Esc 关闭 */
-      if (k === 'Escape' || k === 'Esc') { e.preventDefault(); close(); return; }
-      if (k !== 'Tab') return;
-      /* ① 焦点陷阱：Tab / Shift+Tab 在抽屉内循环 */
+      if (e.key !== 'Tab') return;
+      /* ② 焦点陷阱：Tab / Shift+Tab 在抽屉内循环（Esc 已交给核） */
       var list = [].slice.call(d.querySelectorAll(FOCUSABLE))
         .filter(function (x) { return x.offsetParent !== null; });
       if (!list.length) { e.preventDefault(); d.focus(); return; }
@@ -220,10 +298,8 @@
         e.preventDefault(); first.focus();
       }
     }
-    function onBackdropClick(e) { if (e.target === host) close(); }
 
     d.addEventListener('keydown', onKey);
-    host.addEventListener('click', onBackdropClick);
     closeBtn.addEventListener('click', function () { close(); });
 
     var closed = false;
@@ -232,7 +308,9 @@
       closed = true;
       d.setAttribute('data-state', 'leaving');
       d.removeEventListener('keydown', onKey);
-      host.removeEventListener('click', onBackdropClick);
+      /* 核的监听器与栈记录必须一起摘：只摘 Esc 不摘栈的话，
+         点外部仍会关到一个已经没了的抽屉（dismissable 门禁 ⑥ 守这条）。 */
+      dm.destroy();
       setBackgroundInert(false);
       unlockScroll();
       /* 动画结束再移除；reduced-motion 下没有 transition ⇒ 兜底定时器 */

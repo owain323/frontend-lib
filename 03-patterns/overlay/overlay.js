@@ -357,6 +357,73 @@
     };
   };
   /* ==== BEHAVIOR INJECT END: focus-return ==== */
+
+  /* ==== BEHAVIOR INJECT BEGIN: dismissable ==== */
+  var flDismissable = function (opts) {
+    var opt = opts || {};
+    var escOn = opt.escOn || [];
+    var inside = opt.inside || [];
+    var outside = opt.outside !== false;
+    var when = opt.when || function () { return true; };
+    var onDismiss = opt.onDismiss || function () {};
+
+    var shared = window.__flDismiss || (window.__flDismiss = { stack: [], bound: false });
+
+    function isInside(node) {
+      if (!node) return false;
+      for (var i = 0; i < inside.length; i++) {
+        var el = inside[i];
+        if (!el || !el.contains) continue;
+        if (el === node || el.contains(node)) return true;
+      }
+      return false;
+    }
+
+    function onKey(e) {
+      if (!when()) return;
+      var k = e.key;
+      if (k !== 'Escape' && k !== 'Esc' && e.keyCode !== 27) return;
+      /* 先问 onDismiss，它返回 false 就不干预（分级 Esc，见文件头 ⑤） */
+      var closed = onDismiss(e, 'esc');
+      if (closed === false) return;
+      if (e.preventDefault) e.preventDefault();
+      if (e.stopPropagation) e.stopPropagation();
+    }
+
+    function onDocClick(e) {
+      var top = null;
+      for (var i = shared.stack.length - 1; i >= 0; i--) {
+        if (shared.stack[i].when()) { top = shared.stack[i]; break; }
+      }
+      if (!top || top.isInside(e.target)) return;
+      top.onDismiss(e, 'outside');
+    }
+
+    var rec = { when: when, isInside: isInside, onDismiss: onDismiss };
+
+    for (var j = 0; j < escOn.length; j++) {
+      if (escOn[j]) escOn[j].addEventListener('keydown', onKey);
+    }
+    /* 只有"点外部要关"的层才进栈：栈是给 onDocClick 挑最内层用的，
+       模态层不该被这条规则选中（见文件头 ④）。
+       ⚠️ Esc 不依赖栈（它挂在元素上），所以不进栈不影响 Esc。 */
+    if (outside) shared.stack.push(rec);
+    if (!shared.bound) {
+      shared.bound = true;
+      document.addEventListener('click', onDocClick, true);
+    }
+
+    return {
+      destroy: function () {
+        for (var j = 0; j < escOn.length; j++) {
+          if (escOn[j]) escOn[j].removeEventListener('keydown', onKey);
+        }
+        var k = shared.stack.indexOf(rec);
+        if (k >= 0) shared.stack.splice(k, 1);
+      },
+    };
+  };
+  /* ==== BEHAVIOR INJECT END: dismissable ==== */
   function dialog(opts) {
     opts = opts || {};
 
@@ -432,26 +499,25 @@
     openStack.push(stackEntry);
     if (!useInert) uninstallIsolation = installIsolation(stackEntry);
 
+    /* ① Esc 走 dismissable 核（0.14.0 收编）。
+       `outside: false` 是模态的定义：点外部**不该关**。核里这个开关专门
+       为它加的（不进栈 ⇒ 不参与"点外部关最内层"的仲裁）。
+       ⚠️ 点遮罩关闭是**另一件事**，不归核管：它带 danger / closeOnBackdrop
+          两个前置条件，是组件自己的语义（见下方 mousedown）。
+       关于"为什么不再手写 stopPropagation"：核在 onDismiss 之后统一
+       preventDefault + stopPropagation，一次 Esc 只关最内层的语义与
+       以前实测一致（两个 backdrop 是兄弟节点，本来也冒泡不到外层）。 */
+    var dm = flDismissable({
+      escOn: [box],
+      outside: false,
+      when: function () { return !closed; },
+      onDismiss: function () { close(); },
+    });
+
     /* ------------------------------------------------------------ 焦点 */
     function focusables() { return focusableIn(box); }
 
     box.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        /* ⚠️ 防御性 stopPropagation —— 保留，但**当前结构下它不改变任何行为**。
-         * 等价突变体实测：删掉这一行，一次 Esc 仍然只关最内层。
-         * 原因：两个 `.dialog-backdrop` 是 `body` 的**兄弟**节点，外层 box 不是
-         * 内层的祖先，所以内层按钮的 keydown 冒泡路径是
-         *      button → .dialog → .dialog-backdrop → body
-         * —— 根本到不了外层的 `.dialog`（实测 `outer.contains(inner) === false`）。
-         * 原注释写「不拦住会一次关两层」，那是**假设了 DOM 嵌套**，与实现不符。
-         * 保留理由：若将来改成「内层放进外层 box」的真嵌套，这行就必需。
-         * 判据 `pattern-behavior-check.js ⑬` 验证的是**行为**（只关最内层），
-         * 它抓不到删除本行的突变 —— 那是等价突变体，不是判据失效。 */
-        e.stopPropagation();
-        close();
-        return;
-      }
       if (e.key !== 'Tab') return;
 
       /* focus trap：Tab 在弹层内循环，绝不跑到背后的页面去 */
@@ -527,6 +593,9 @@
     function close() {
       if (closed) return;
       closed = true;
+      /* 核的 Esc 监听器要摘（outside:false ⇒ 它本来就没进栈，
+         但 destroy 仍然必须调用：摘监听器与摘栈是同一件事的两半）。 */
+      dm.destroy();
 
       /* 🔴 焦点归还前先看清**焦点现在在谁手里**（必须在移除 backdrop 之前读，
          移除之后 activeElement 会变成 body）。

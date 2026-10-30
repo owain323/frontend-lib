@@ -83,7 +83,7 @@ npm install github:owain323/frontend-lib
 
 ## 组件一览
 
-共 **37** 个（stable 33 / beta 4）。每个组件目录下有 `README.md`（为什么这么做）和 `demo.html`（能直接抄的结构）。
+共 **37** 个（stable 36 / beta 1）。每个组件目录下有 `README.md`（为什么这么做）和 `demo.html`（能直接抄的结构）。
 
 ### primitives · 基础件（15）
 
