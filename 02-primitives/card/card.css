@@ -209,6 +209,43 @@
   }
 }
 
+/* ---------------------------------------------------------------- 按槽宽（0.16.0）
+   🔴 上面那条是**视口**断点，它在一种真实布局里是错的：
+      1440px 的页面上，右侧 320px 栏里放一张 `.card--row` ——
+      视口很宽，于是 `@media` 不触发，卡片保持横排：
+      160px 的图 + 160px 的文字，标题换行三行。
+      症状不来自组件，来自"拿视口宽度替槽宽度做了决定"。
+
+   ⇒ 槽位被标成 `[data-cq]`（见 01-tokens/tokens.css 的「容器查询的槽位标记」）时，以**槽宽**为准。
+     两条都写，是因为"窄槽 + 宽视口"和"宽槽 + 窄视口"是两个方向：
+       槽窄 ⇒ 竖排；槽宽 ⇒ 横排（后者覆盖上面那条视口断点）。
+     ⚠️ 容器查询不匹配时**不会**撤销任何规则 —— 所以"退回去"必须显式写一条。
+        这也是为什么不能只写 `@container (max-width)` 一条。
+
+   ⚠️ 没有 `[data-cq]` 祖先时这两条整段不生效（实测：`@container` 不会退回视口），
+      行为与 0.15.0 完全一致 —— 这条改动对未标记的页面是**零影响**。
+   ---------------------------------------------------------------- */
+@container (max-width: 35rem) {
+  .card--row { flex-direction: column; }
+  .card--row .card__media {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: calc(var(--r-md) - 1px) calc(var(--r-md) - 1px) 0 0;
+  }
+}
+@container (min-width: 35rem) {
+  .card--row {
+    flex-direction: row;
+    align-items: stretch;
+  }
+  .card--row .card__media {
+    flex: none;
+    width: 160px;
+    aspect-ratio: auto;
+    border-radius: calc(var(--r-md) - 1px) 0 0 calc(var(--r-md) - 1px);
+  }
+}
+
 /* ---------------------------------------------------------------- 无障碍兜底
    card 的 hover 位移属于"小幅位移"，reduced-motion 下应当去掉抬起，
    只保留阴影变化 —— 阴影不属于前庭敏感类动效。

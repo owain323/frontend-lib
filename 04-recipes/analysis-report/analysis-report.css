@@ -58,6 +58,45 @@
   }
 }
 
+/* ---------------------------------------------------------------- 按槽宽（0.16.0）
+   🔴 上面那条断点对"分屏 / 嵌入"是错的：
+      1440px 的屏幕上，报告被放进右侧 700px 的阅读栏（列表在左）——
+      视口 ≥1024，于是硬排成 `1fr + 15rem`：正文 460px、侧栏 240px，
+      正文每行只剩七八个字，而侧栏空空荡荡。
+
+   ⇒ 槽位标了 `[data-cq]`（见 tokens.css 的「容器查询的槽位标记」）时，以**槽宽**为准。两条方向都写：
+       窄槽 ⇒ 回到单栏（撤销上面的并排）
+       宽槽 ⇒ 并排（覆盖"窄视口"那条）
+     ⚠️ 容器查询不匹配**不会**撤销规则，所以"退回去"必须显式写 ——
+        只写 `@container (min-width)` 一条，窄槽在宽视口上仍然是并排的。
+
+   ⚠️ 没有 `[data-cq]` 祖先时整段不生效，未标记的页面行为不变。
+   ---------------------------------------------------------------- */
+@container (max-width: 63.99rem) {
+  .report__body {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-6);
+  }
+  .report__aside {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+}
+@container (min-width: 64rem) {
+  .report__body {
+    grid-template-columns: minmax(0, 1fr) 15rem;
+    gap: var(--sp-7);
+  }
+  .report__aside {
+    position: sticky;
+    top: var(--sp-4);
+    align-self: start;
+    max-height: calc(100vh - var(--sp-8));
+    overflow: auto;
+  }
+}
+
 /* ---------- 正文节奏 ---------- */
 .report__main > section + section { margin-top: var(--sp-6); }
 .report__main h2 { margin-top: 0; }

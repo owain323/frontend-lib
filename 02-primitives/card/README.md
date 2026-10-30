@@ -85,9 +85,29 @@ hover 只改 **`transform`** 和 **`box-shadow`**，这两个属性不触发回�
 | `.card--linked` | 整卡可点 | 内部必须有真实 `<a>`/`<button>` |
 | `.card--selected` | 选中态 | inset shadow，不是改 border |
 | `.card--compact` | 紧凑 | 两档够了，第三档说明密度没规划 | —— demo 未演示，是留给复用者的钩子
-| `.card--row` | 横向 | 560px 以下自动回退纵向 |
+| `.card--row` | 横向 | 560px 以下回退纵向；槽位标了 `data-cq` 时按**槽宽**判断（见下） |
 
 ---
+
+## 横向卡片看槽宽，不看屏幕
+
+`.card--row` 有两套断点，按有没有容器祖先分流：
+
+```html
+<!-- 侧栏里：1440px 的屏幕上依然是竖排，因为槽只有 320px。
+     宽度由你的布局决定；这一层就是组件眼里的"槽"。 -->
+<aside data-cq>
+  <div class="card card--row">…</div>
+</aside>
+```
+
+- **没有 `data-cq`** ⇒ `@media (max-width: 560px)` 说了算，与本版之前完全一致。
+- **有 `data-cq`** ⇒ 以**槽宽**为准（35rem = 560px）：槽窄则竖排、槽宽则横排，
+  连"视口很窄但槽很宽"那种情况也以槽为准。
+- 为什么必须显式标记：`container-type` 会让元素成为 `position: fixed` 后代的包含块。
+  组件自己加会把抽屉/浮层关进卡片里 —— 这个决定只能由页面作者做。
+
+判据：`container-query-check.js`（含"剥掉 `@container` 布局不塌"的降级验证）。
 
 ## 🔴 整卡可点：正确做法 vs 错误做法
 
