@@ -122,13 +122,15 @@
 <tr><td><code>focus-ring-check</code> / <code>focus-return-check</code> / <code>keyboard-nav</code></td><td>焦点可见、焦点归还、键盘路径</td><td>全绿</td></tr>
 </tbody>
 </table></div>
-<h3 id="s6">人工（<strong>尚未执行</strong> —— 这是本声明最大的空白）<a class="anchor" href="#s6" aria-label="本节直链">#</a></h3>
-<p>自动化的天花板必须说清楚：<strong>axe 只能覆盖约 30–40% 的 WCAG 问题</strong>，而且它听不见。以下三件事本库<strong>没有</strong>任何一条真实记录：</p>
-<ol><li><strong>真机读屏</strong>（NVDA / VoiceOver / TalkBack）——一条录音都没有。</li><li><strong>真实键盘 + 读屏组合下的阅读顺序</strong>是否符合预期（<code>a11y-ax</code> 只证明&quot;顺序稳定&quot;，不证明&quot;顺序正确&quot;——后者需要人判断）。</li><li><strong>9 处「待人工」结论</strong>（例如图表的替代文本是否真的描述了数据）。</li></ol>
-<p>为了把这块从&quot;没有&quot;变成&quot;可执行&quot;，协议写在 <a href="../docs/A11Y-MANUAL-PROTOCOL.md">无障碍人工测试协议</a>：两条路径、约 20 分钟、结果直接填表。 <strong>在你或志愿者跑完之前，本声明只代表&quot;自动检查覆盖的部分是干净的&quot;。</strong></p>
+<h3 id="s6">人工（<strong>已执行一轮，仍缺人耳与第二平台</strong>）<a class="anchor" href="#s6" aria-label="本节直链">#</a></h3>
+<p>自动化的天花板必须说清楚：<strong>axe 只能覆盖约 30–40% 的 WCAG 问题</strong>，而且它听不见。</p>
+<p>2026-10-30 用 NVDA 2026.3 + Edge（Windows 10 22H2）跑了一轮：把 NVDA 的朗读日志写到文件，逐条取它交给语音合成器的原文。九页结果见 <a href="../docs/A11Y-MANUAL-PROTOCOL.md">无障碍人工测试协议</a> 第三节。</p>
+<p><strong>它证明的是&quot;NVDA 念了什么&quot;，不等于&quot;人听着顺不顺&quot;。</strong> 仍然缺：</p>
+<ol><li><strong>人耳旁听</strong> —— 证据是日志文本；语气、打断、重复播报这类问题不在其中。</li><li><strong>macOS VoiceOver / Android TalkBack</strong> —— 一条记录都没有。</li><li><strong>标题层级（<code>H</code> 键逐级跳）</strong> —— 本轮没做，协议表里写着&quot;未执行&quot;。</li><li><strong>9 处「待人工」结论</strong>（例如图表的替代文本是否真的描述了数据）。</li></ol>
+<p>这一轮同时确认了一条真缺陷：<code>table</code> 的列头按钮会把排序符号 <code>↕</code> 念出来（来源是 <code>table.css</code> 的 <code>::after</code> 伪元素文本，Chromium 把它算进了可访问名）。自动检查抓不到它 —— 可访问名&quot;非空&quot;就算过。详见协议页第三节。</p>
 <hr>
 <h2 id="s7">三 · 已知缺口（按影响排序）<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
-<ol><li><strong>没有真机读屏记录</strong>（同上）。这是与 Carbon / Spectrum 那类一致性报告差距最大的一处。</li><li><strong>没有 VPAT / ACR 正式报告</strong>。采购流程要的那种文档本库没有出；上面那张 SC 表可以当它的替代品，但它不是法律意义上的 ACR。</li><li><strong>强制色板（forced-colors）只覆盖 6 个 CSS</strong>，Windows 高对比度模式未逐组件验证。</li><li><strong>RTL 已进渲染判据与视觉基线，但没进真机</strong>： <code>rtl-render.js</code> 判 37 页（RTL 不横滚 / 阿·希文字膨胀 1.3× 不破相 / 方向性字形镜像），<code>shot-baseline.py --dir rtl</code> 有 13 张视觉基线（覆盖&quot;镜像错了但不溢出不改字形&quot;那一类）。 <strong>仍然缺的是</strong>：母语 RTL 使用者的实际阅读体验、iOS/Android 真机 RTL 截图，以及「页面加载后再切 <code>dir</code>」时组件内部状态是否需要重算。最后这条的现状是：CSS 会立刻响应（树形箭头、栅格、滑入方向都靠 CSS），但凡是 JS 在挂载时把方向读进变量的地方都不会重算 —— 本库目前没有这种写法，这一点靠 <code>rtl-render</code> 的&quot;挂载后再改 dir&quot;路径间接守着。</li><li><strong>1.4.12 文本间距</strong>未按极端注入验证；<strong>1.4.13</strong> 未验证&quot;提示内文字可选中&quot;。</li><li><strong>Android 系统 WebView 未验证</strong>，真机矩阵里它是 ❌（见<a href="../SUPPORT.md">浏览器支持矩阵</a>）。</li><li><strong><code>prefers-contrast: more</code> 未单独验收</strong>（只做了 <code>forced-colors</code>）。</li></ol>
+<ol><li><strong>没有人耳旁听与第二平台记录</strong>：2026-10-30 有一轮 NVDA 脚本实录（见协议页），但 VoiceOver / TalkBack 仍为空白，语气与播报时机也没人判断过。这是与 Carbon / Spectrum 那类一致性报告差距最大的一处。</li><li><strong>没有 VPAT / ACR 正式报告</strong>。采购流程要的那种文档本库没有出；上面那张 SC 表可以当它的替代品，但它不是法律意义上的 ACR。</li><li><strong>强制色板（forced-colors）只覆盖 6 个 CSS</strong>，Windows 高对比度模式未逐组件验证。</li><li><strong>RTL 已进渲染判据与视觉基线，但没进真机</strong>： <code>rtl-render.js</code> 判 37 页（RTL 不横滚 / 阿·希文字膨胀 1.3× 不破相 / 方向性字形镜像），<code>shot-baseline.py --dir rtl</code> 有 13 张视觉基线（覆盖&quot;镜像错了但不溢出不改字形&quot;那一类）。 <strong>仍然缺的是</strong>：母语 RTL 使用者的实际阅读体验、iOS/Android 真机 RTL 截图，以及「页面加载后再切 <code>dir</code>」时组件内部状态是否需要重算。最后这条的现状是：CSS 会立刻响应（树形箭头、栅格、滑入方向都靠 CSS），但凡是 JS 在挂载时把方向读进变量的地方都不会重算 —— 本库目前没有这种写法，这一点靠 <code>rtl-render</code> 的&quot;挂载后再改 dir&quot;路径间接守着。</li><li><strong>1.4.12 文本间距</strong>未按极端注入验证；<strong>1.4.13</strong> 未验证&quot;提示内文字可选中&quot;。</li><li><strong>Android 系统 WebView 未验证</strong>，真机矩阵里它是 ❌（见<a href="../SUPPORT.md">浏览器支持矩阵</a>）。</li><li><strong><code>prefers-contrast: more</code> 未单独验收</strong>（只做了 <code>forced-colors</code>）。</li></ol>
 <hr>
 <h2 id="s8">四 · 自己验一遍<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
 <pre class="code" tabindex="0"><code class="language-bash"># 一条命令跑完全部无障碍相关判据（含反向控制）
