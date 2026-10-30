@@ -26,13 +26,14 @@
  *   var d = flDismissable({
  *     escOn:  [box, trigger],                       // 在这些元素上听 Esc
  *     inside: [box, anchor],                        // 点在这些里面 ⇒ 不算"外部"
+ *     outside: false,                               // 模态：点外部**不关**（默认 true）
  *     when:   function () { return opened; },       // 只有开着才响应
  *     onDismiss: function (ev, reason) { close(); } // reason: 'esc' | 'outside'
  *   });
  *   d.destroy();     // 必须成对调用，否则监听器与栈都会泄漏
  *
  * ==========================================================================
- * ⚠️ 三个必须知道的实现细节（都是实测踩出来的，改之前先读）
+ * ⚠️ 五个必须知道的实现细节（都是实测踩出来的，改之前先读）
  * --------------------------------------------------------------------------
  *   ① **Esc 挂在元素上（冒泡阶段），不是挂在 document 上**：
  *      冒泡从最内层往外走 ⇒ 最内层先收到 ⇒ 它 stopPropagation 之后
@@ -52,6 +53,29 @@
  *   （本库既有约定，popover 的 open() 会先关掉别的），
  *   在此前提下"取最后一个活跃的记录"与"取最后打开的那个"等价。
  *
+ *   ④ **模态弹层用 `outside: false`，不进栈**（0.14.0 加）：
+ *      模态的定义就是"点外面不该关"，而外部点击只能挂 document（②）。
+ *      曾经的结论是"那就不收编"（见 ai/behaviors.json 的 0.8.6 记录）——
+ *      于是 drawer / overlay 各留一份手写的 Esc，I-14 的病留在原地。
+ *      开关放进核里之后，收编不必改组件的**语义**，只改它的**接线**。
+ *      不进栈的后果要写清：模态层不再参与"点外部关最内层"的仲裁，
+ *      它压根不该被这条规则选中；Esc 走元素监听器，与栈无关。
+ *      ⚠️ 模态层里的非模态浮层（对话框里的下拉菜单）仍正常进栈 ——
+ *         点菜单外面先关菜单、再点一次才轮到遮罩，层次不会乱。
+ *
+ *   ⑤ **先问 `onDismiss`，再 `preventDefault` / `stopPropagation`**（0.8.8 改）：
+ *      **分级 Esc** 需要核让组件有机会说"这次我没关"。combobox 的 Esc 是三级：
+ *        ① 列表开着 → 关列表
+ *        ② 列表关了、输入有字 → 清空输入
+ *        ③ 都没了 → 什么都不做（此时**不该**阻止默认行为，让 Esc 传给外层）
+ *      原实现是"无条件阻止，再调 onDismiss" ⇒ 组件无法表达"这次我没关"。
+ *      ⚠️ 顺序安全性：stopPropagation 只需在**本次监听器执行期间**被调用即可
+ *         阻止冒泡到外层，放在 onDismiss 之后仍然有效。
+ *
+ * ⚠️ 注入块里只留一行指针，长解释一律写在本文件头（同上，gzip 要算）：
+ *    这段注释以前在块内，8 个使用点各背 429 字节 ⇒ 收编时被 size-budget
+ *    当场红出来（drawer +44%），挪到这里。
+ *
  * ==========================================================================
  * 约束：ES5 · 零依赖 · 可被整块注入 · 不污染除 __flDismiss 外的任何全局
  * ==========================================================================
@@ -61,6 +85,7 @@ var flDismissable = function (opts) {
   var opt = opts || {};
   var escOn = opt.escOn || [];
   var inside = opt.inside || [];
+  var outside = opt.outside !== false;
   var when = opt.when || function () { return true; };
   var onDismiss = opt.onDismiss || function () {};
 
@@ -80,19 +105,7 @@ var flDismissable = function (opts) {
     if (!when()) return;
     var k = e.key;
     if (k !== 'Escape' && k !== 'Esc' && e.keyCode !== 27) return;
-    /* 🔴 为什么 onDismiss 在前、preventDefault/stopPropagation 在后
-       （0.8.8 改）：**分级 Esc** 需要核让组件有机会说"这次我没关"。
-       combobox 的 Esc 是三级的：
-         ① 列表开着 → 关列表
-         ② 列表关了、输入有字 → 清空输入
-         ③ 都没了 → 什么都不做（此时**不该**阻止默认行为，
-            让 Esc 能继续传给外层浮层）
-       而原实现是「无条件 preventDefault + stopPropagation，再调 onDismiss」
-       ⇒ 组件根本无法表达"这次我没关"。
-       ⇒ 改成：先问onDismiss，它返回 false 就**不干预**默认行为。
-       ⚠️ 顺序安全性：stopPropagation 只需在**本次监听器执行期间**被调用即可
-          阻止冒泡到外层，放在 onDismiss 之后仍然有效。
-    */
+    /* 先问 onDismiss，它返回 false 就不干预（分级 Esc，见文件头 ⑤） */
     var closed = onDismiss(e, 'esc');
     if (closed === false) return;
     if (e.preventDefault) e.preventDefault();
@@ -113,7 +126,10 @@ var flDismissable = function (opts) {
   for (var j = 0; j < escOn.length; j++) {
     if (escOn[j]) escOn[j].addEventListener('keydown', onKey);
   }
-  shared.stack.push(rec);
+  /* 只有"点外部要关"的层才进栈：栈是给 onDocClick 挑最内层用的，
+     模态层不该被这条规则选中（见文件头 ④）。
+     ⚠️ Esc 不依赖栈（它挂在元素上），所以不进栈不影响 Esc。 */
+  if (outside) shared.stack.push(rec);
   if (!shared.bound) {
     shared.bound = true;
     document.addEventListener('click', onDocClick, true);

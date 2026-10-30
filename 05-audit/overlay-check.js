@@ -291,6 +291,43 @@ const REPO = path.resolve(__dirname, '..');
                           : '🔴 遮罩关闭后焦点落到了 ' + r.tag + (r.id ? '#' + r.id : '') };
       },
 
+      /* ⑤c 🔴 模态的定义：**点外部不该关**
+       *
+       *  0.14.0 把 Esc 收编进 dismissable 核时，核新增了 `outside` 开关
+       *  （模态层不进栈）。这条判据就是那个开关的行为断言。
+       *
+       *  为什么不用 p.mouse.click：遮罩是 position:fixed inset:0，
+       *  真实鼠标点不到"遮罩之外"。而宿主页面自己的 `document.body.click()`
+       *  / 合成点击是真实存在的（点 toast、点脚本触发的关闭），
+       *  它们的目标是 body —— 正是这条要拦的"外部点击"。
+       *  ⇒ 判据直接往 body 上派发一次 click，要求弹层**还在**。
+       */
+      '⑤c 模态不被外部点击关掉（outside:false）': async (p) => {
+        for (let i = 0; i < 4; i++) {
+          const n = await p.evaluate(() => document.querySelectorAll('.dialog-backdrop').length);
+          if (!n) break;
+          await p.keyboard.press('Escape');
+          await new Promise((r) => setTimeout(r, 420));
+        }
+        await p.evaluate(() => {
+          const b = document.getElementById('d1');
+          if (b) b.click();
+        });
+        await new Promise((r) => setTimeout(r, 450));
+        const before = await p.evaluate(() => document.querySelectorAll('.dialog-backdrop').length);
+        if (!before) return { ok: false, note: '🔴 弹层没打开 ⇒ 这条测不到' };
+        await p.evaluate(() => {
+          document.body.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+        });
+        await new Promise((r) => setTimeout(r, 350));
+        const after = await p.evaluate(() => document.querySelectorAll('.dialog-backdrop').length);
+        await p.keyboard.press('Escape');
+        await new Promise((r) => setTimeout(r, 420));
+        return { ok: after === before,
+                 note: after === before ? 'body 上的外部点击未关闭模态 ✅'
+                      : '🔴 外部点击把模态关掉了（遮罩 ' + before + ' → ' + after + '）' };
+      },
+
       /* 🔴 补（ I3 复核时发现这条缺失）：背景隔离。
        *
        *  为什么必须查这条：

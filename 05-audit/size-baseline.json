@@ -1,8 +1,8 @@
 {
   "files": {
     "01-tokens/behavior/dismissable.js": {
-      "gzip": 2726,
-      "raw": 6200
+      "gzip": 3381,
+      "raw": 7614
     },
     "01-tokens/behavior/emit.js": {
       "gzip": 1973,
@@ -73,8 +73,8 @@
       "raw": 7168
     },
     "02-primitives/combobox/combobox.js": {
-      "gzip": 7011,
-      "raw": 19773
+      "gzip": 6867,
+      "raw": 19290
     },
     "02-primitives/date-range/date-range.css": {
       "gzip": 2248,
@@ -101,8 +101,8 @@
       "raw": 7960
     },
     "02-primitives/popover/popover.js": {
-      "gzip": 5147,
-      "raw": 12788
+      "gzip": 4911,
+      "raw": 12305
     },
     "02-primitives/progress/progress.css": {
       "gzip": 2946,
@@ -113,8 +113,8 @@
       "raw": 4540
     },
     "02-primitives/select/select.js": {
-      "gzip": 7992,
-      "raw": 22247
+      "gzip": 7758,
+      "raw": 21764
     },
     "02-primitives/separator/separator.css": {
       "gzip": 1310,
@@ -145,16 +145,16 @@
       "raw": 4652
     },
     "03-patterns/drawer/drawer.js": {
-      "gzip": 3498,
-      "raw": 8984
+      "gzip": 4642,
+      "raw": 12004
     },
     "03-patterns/dropdown/dropdown.css": {
       "gzip": 1929,
       "raw": 4044
     },
     "03-patterns/dropdown/dropdown.js": {
-      "gzip": 6732,
-      "raw": 17794
+      "gzip": 6509,
+      "raw": 17311
     },
     "03-patterns/form-validation/form-validation.css": {
       "gzip": 4606,
@@ -173,8 +173,8 @@
       "raw": 12430
     },
     "03-patterns/nav/nav.js": {
-      "gzip": 6921,
-      "raw": 18321
+      "gzip": 6691,
+      "raw": 17838
     },
     "03-patterns/nav/toc.js": {
       "gzip": 2101,
@@ -185,8 +185,8 @@
       "raw": 12252
     },
     "03-patterns/overlay/overlay.js": {
-      "gzip": 9396,
-      "raw": 25248
+      "gzip": 10012,
+      "raw": 27556
     },
     "03-patterns/pagination/pagination.css": {
       "gzip": 3407,
@@ -221,8 +221,8 @@
       "raw": 3538
     },
     "03-patterns/tooltip/tooltip.js": {
-      "gzip": 5032,
-      "raw": 11797
+      "gzip": 4772,
+      "raw": 11330
     },
     "03-patterns/tree/tree.css": {
       "gzip": 1958,
@@ -245,8 +245,8 @@
       "raw": 16085
     },
     "04-recipes/table/table.css": {
-      "gzip": 6709,
-      "raw": 17049
+      "gzip": 6911,
+      "raw": 17373
     },
     "04-recipes/tierA-tokens.css": {
       "gzip": 2079,
@@ -254,6 +254,6 @@
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 263373,
-  "total_raw": 658682
+  "total_gzip": 264663,
+  "total_raw": 662866
 }

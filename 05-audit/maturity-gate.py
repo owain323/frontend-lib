@@ -184,13 +184,6 @@ def selftest():
     comp = json.loads(raw)['components']
     bad = 0
 
-    def expect(why, errs, needle=None):
-        nonlocal bad
-        hit = any(needle in e for e in errs) if needle else bool(errs)
-        print('  [%s] %s' % ('OK  ' if hit else 'FAIL', why))
-        if not hit:
-            bad += 1
-
     def expect_true(why, cond, extra=''):
         nonlocal bad
         print('  [%s] %s' % ('OK  ' if cond else 'FAIL', why))
@@ -202,11 +195,38 @@ def selftest():
     def clone(fn):
         d = json.loads(raw)['components']
         fn(d)
+        # 🔴 突变体必须**真的改到东西**（2026-10-30 加，第三次踩同一类坑）：
+        #    这条自测原本写"把 accordion 手工改成 stable"，
+        #    而 accordion 这轮**真的**升成 stable 了 ⇒ 突变等于原样
+        #    ⇒ 自检报"判据没抓到"，其实判据没瞎。见 ERRORS E166。
+        if json.dumps(d, sort_keys=True, ensure_ascii=False) == \
+           json.dumps(json.loads(raw)['components'], sort_keys=True, ensure_ascii=False):
+            return None
         return d
 
-    expect('把一个 beta 手工改成 stable（accordion）⇒ 必须红',
-           check(clone(lambda cs: [c for c in cs if c['id'] == 'accordion'][0]
-                       .__setitem__('maturity', 'stable')))[0], '按判据重算是')
+    def expect(why, errs, needle=None):
+        nonlocal bad
+        if errs is None:
+            print('  [FAIL] 突变体与原样相同 ⇒ 这条反向控制已失效：%s' % why)
+            bad += 1
+            return
+        hit = any(needle in e for e in errs) if needle else bool(errs)
+        print('  [%s] %s' % ('OK  ' if hit else 'FAIL', why))
+        if not hit:
+            bad += 1
+
+    def to_stable(cs):
+        """把**任意一个当前不是 stable 的**组件谎报成 stable。
+
+        不写死 id：写死的那一版被"组件真的升了 stable"追上过三次。
+        若全库都 stable（阶梯退役），clone() 会发现"没改到"并直接判失败。
+        """
+        t = [c for c in cs if c.get('maturity') != 'stable']
+        if t:
+            t[0]['maturity'] = 'stable'
+
+    expect('把一个非 stable 的组件手工改成 stable ⇒ 必须红',
+           check(clone(to_stable))[0], '按判据重算是')
     expect('把一个 stable 手工降级成 alpha（button）⇒ 必须红',
            check(clone(lambda cs: [c for c in cs if c['id'] == 'button'][0]
                        .__setitem__('maturity', 'alpha')))[0], '按判据重算是')

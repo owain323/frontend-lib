@@ -5,6 +5,7 @@ var flDismissable = function (opts) {
 var opt = opts || {};
 var escOn = opt.escOn || [];
 var inside = opt.inside || [];
+var outside = opt.outside !== false;
 var when = opt.when || function () { return true; };
 var onDismiss = opt.onDismiss || function () {};
 
@@ -45,7 +46,8 @@ var rec = { when: when, isInside: isInside, onDismiss: onDismiss };
 for (var j = 0; j < escOn.length; j++) {
 if (escOn[j]) escOn[j].addEventListener('keydown', onKey);
 }
-shared.stack.push(rec);
+
+if (outside) shared.stack.push(rec);
 if (!shared.bound) {
 shared.bound = true;
 document.addEventListener('click', onDocClick, true);
