@@ -306,8 +306,10 @@ function recordAndReport(name) {
 }
 
 /* 逐个校验 models/ 下的全部记录（不重跑，只查形状与完整性）。
- * 🔴 判据：坏记录 ⇒ RC=1；**零记录 ⇒ RC=0 但输出写明 UNVERIFIED**。
- *    零记录不算失败（当前就是零），但也**不许**被读成"模型已验证"。 */
+ * 🔴 判据：坏记录 ⇒ RC=1；**零记录 ⇒ RC=3（SKIP / UNVERIFIED）**。
+ *    零记录不算失败（当前就是零），但也**不许**被读成"模型已验证"。
+ *    E153：原来是 RC=0 —— 而 check-all 只看退出码 ⇒ 日志里显示 PASS。
+ *    那正是"门禁说它没跑、报告说它通过"。改用第三态 3，汇总里显示 SKIP 并单独计数。 */
 function checkRecords() {
   var dir = path.join(BM, 'models');
   var files = fs.existsSync(dir)
@@ -318,11 +320,13 @@ function checkRecords() {
     process.stdout.write('  [UNVERIFIED] `benchmark/models/` 里 0 个模型记录。\n' +
       '        ⇒ 本项只说明"没有坏记录"，**不说明任何模型已验证**。\n' +
       '        ⇒ 要做真模型实测，按 README §四 建记录文件并 `--record`。\n');
-    return 0;
+    return 3;
   }
   var bad = 0;
+  var realModels = 0;   // 非 reference 的记录 —— 只有它才算"模型跑过"
   files.forEach(function (f) {
     var name = f.replace(/\.json$/, '');
+    if (name !== 'reference') realModels++;
     var rec;
     try {
       rec = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
@@ -380,7 +384,17 @@ function checkRecords() {
     process.stdout.write('  ⇒ ' + bad + ' / ' + files.length + ' 份记录不合法\n');
     return 1;
   }
-  process.stdout.write('  [OK] ' + files.length + ' 份模型记录形状合法\n');
+  /* 🔴 E153：只有参考解法时，不许说"模型记录合法"。
+   *   `reference.json` 的 model 字段明写"参考解法（不是模型）"，而旧汇总行把它
+   *   数成「1 份模型记录形状合法」⇒ 日志读起来像"模型已经验过了"。
+   *   管线自洽是**真的**；模型效果是**没有数据**的。两者必须分开说。 */
+  if (realModels === 0) {
+    process.stdout.write('  [UNVERIFIED] 真实模型记录 0 份 —— 只有参考解法。\n' +
+      '        ⇒ 本项只证明"记录 → 评分"管线自洽，**不证明任何模型的效果**。\n' +
+      '        ⇒ 建真实记录见 benchmark/README §四。\n');
+    return 3;
+  }
+  process.stdout.write('  [OK] ' + realModels + ' 份真实模型记录形状合法\n');
   return 0;
 }
 

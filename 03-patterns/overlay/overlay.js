@@ -438,10 +438,16 @@
     box.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') {
         e.preventDefault();
-        /* 🔴 必须 stopPropagation：弹层可嵌套。
-         * 不拦住的话，内层的 Esc 会**冒泡到外层**，
-         * 一次按键把两层全关掉 —— 键盘用户会以为应用崩了。
-         * （本库在 popover 上踩过同一个坑，这里一并修好。） */
+        /* ⚠️ 防御性 stopPropagation —— 保留，但**当前结构下它不改变任何行为**。
+         * 等价突变体实测：删掉这一行，一次 Esc 仍然只关最内层。
+         * 原因：两个 `.dialog-backdrop` 是 `body` 的**兄弟**节点，外层 box 不是
+         * 内层的祖先，所以内层按钮的 keydown 冒泡路径是
+         *      button → .dialog → .dialog-backdrop → body
+         * —— 根本到不了外层的 `.dialog`（实测 `outer.contains(inner) === false`）。
+         * 原注释写「不拦住会一次关两层」，那是**假设了 DOM 嵌套**，与实现不符。
+         * 保留理由：若将来改成「内层放进外层 box」的真嵌套，这行就必需。
+         * 判据 `pattern-behavior-check.js ⑬` 验证的是**行为**（只关最内层），
+         * 它抓不到删除本行的突变 —— 那是等价突变体，不是判据失效。 */
         e.stopPropagation();
         close();
         return;

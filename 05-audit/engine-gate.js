@@ -126,12 +126,14 @@ async function main() {
     process.stdout.write('  [SKIP] ' + x.engine.padEnd(9) + ' 本机跑不起来：' + scrub(x.why).slice(0, 70) + '\n');
   });
 
-  /* ④ 可用引擎 < 2 ⇒ 无从证明"不同" ⇒ SKIP，绝不报通过 */
+  /* ④ 可用引擎 < 2 ⇒ 无从证明"不同" ⇒ SKIP，绝不报通过
+   *   2026-10-30（E153）：原来 `return 0`。注释写着"绝不报通过"，代码却在报通过 ——
+   *   check-all 只看退出码，RC=0 就是 PASS。改用第三态 3，汇总里显示 SKIP 并单独计数。 */
   if (r.rows.length < 2) {
     process.stdout.write('\n  SKIP  可用引擎只有 ' + r.rows.length + ' 个 ⇒ 无法判断矩阵是否真的分引擎\n');
     process.stdout.write('        ⇒ 这是**环境问题**（没装浏览器），不是"矩阵没问题"\n');
     process.stdout.write('        ⇒ 装上：`npx playwright install --with-deps chromium webkit firefox`\n');
-    return 0;
+    return 3;
   }
 
   var errs = [];

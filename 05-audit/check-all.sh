@@ -39,8 +39,18 @@ export NODE_PATH="$NODE_MODULES"
 #   ⇒ 一批浏览器门禁集体报错，而代码一个字都没改。
 #   browser.js 早就有 FL_TMPDIR 这个口子，这里给它一个默认值；
 #   已经设了就不动（陌生环境里 os.tmpdir() 是对的）。
+#
+# 🔴 2026-10-30（E154）：**每轮先清空**。原来只 `mkdir -p`、从不清理 ⇒
+#   50 多轮全量攒下 21.2 GB / 3120 个 `fe-cache-*` 浏览器 profile，
+#   连带一个被 kill 的门禁留下的孤儿 headless Chrome 占住 profile 删不掉。
+#   清的是浏览器缓存，**不是 git 数据**（对象库在 .git/objects，与这里无关）。
+#   只删这一个目录；用户显式设了 FL_TMPDIR 就一律不碰（_FL_TMP_OWNED 记住归属）。
+#   ⚠️ 同一棵树上不要同时跑两个全量 —— 后启动的会把先启动的 profile 清掉。
+_FL_TMP_OWNED=0
 if [ -z "${FL_TMPDIR:-}" ] && [ -d "$PWD/.git" ]; then
   FL_TMPDIR="$PWD/.git/tmp"
+  _FL_TMP_OWNED=1
+  rm -rf "$FL_TMPDIR" 2>/dev/null || true
   mkdir -p "$FL_TMPDIR" 2>/dev/null && export FL_TMPDIR
 fi
 
@@ -106,6 +116,7 @@ MODE="${MODE:-full}"
 # ---------- 分层判定（0.8.9）------------------------------------------------
 _ran=0        # 本轮**真的执行了**的门禁数
 _skipped=0    # 本轮**按层跳过**的门禁数
+_nojudge=0    # 本轮**跑了但判不了**的门禁数（rc=3，见 _print）
 _layer_of() { # _layer_of <命令...>  → 回显 static / component
   local a
   for a in "$@"; do
@@ -168,10 +179,14 @@ _exec_args() { # 去掉命令行里的层标记，回显真正的命令
 #   放进 .git/ 是为了不污染工作区（repo-hygiene 会扫未跟踪文件）。
 if [ -d "$PWD/.git" ]; then _GATE_BASE="$PWD/.git"; else _GATE_BASE="${TMPDIR:-/tmp}"; fi
 GATE_TMP=$(mktemp -d "$_GATE_BASE/gate.XXXXXX") || { echo "无法创建临时目录"; exit 2; }
-trap 'rm -rf "$GATE_TMP"' EXIT
+# 🔴 E155：**唯一**的 EXIT 出口。任何地方再写 `trap ... EXIT` 都会把它覆盖掉
+#   （bash 的 trap 是替换不是追加），曾经因此让 GATE_TMP 和 .git/tmp 一个都不清。
+#   末尾的 `:` 保证 trap 自身返回 0，不篡改脚本的退出码。
+trap 'if [ -n "${_SRV_PID:-}" ]; then kill "$_SRV_PID" 2>/dev/null; fi; rm -rf "$GATE_TMP" 2>/dev/null; if [ "${_FL_TMP_OWNED:-0}" = 1 ]; then rm -rf "${FL_TMPDIR:-}" 2>/dev/null; fi; :' EXIT
 T_NAME=(); T_CMD=(); T_KIND=(); T_SER=(); T_TEXT=()
 _ran=0
 _skipped=0
+_nojudge=0
 
 _serial_of() { # 命令里带 @serial ⇒ 独占跑
   local a
@@ -211,6 +226,20 @@ _print() { # _print <idx> —— 按注册顺序打印，诊断逻辑与旧版�
   dtv=$(cat "$GATE_TMP/dt.$i" 2>/dev/null || echo 0)
   out=$(cat "$GATE_TMP/out.$i" 2>/dev/null || true)
   [ -n "$TIMING" ] && echo "$dtv $name" >> "$TIMING"
+
+  # 🔴 2026-10-30（E153）：第三态 —— 「跑了但判不了」不许冒充 PASS。
+  #   约定：门禁退出码 **3 = SKIP / UNVERIFIED**（环境不具备、数据为空，但本身无错）。
+  #   之前只有 PASS / FAIL 两态 ⇒ 任何"我没跑"只能 return 0 ⇒ 日志里显示 PASS。
+  #   实测两例：engine-gate 机器上可用引擎 < 2 时、benchmark 零模型记录时。
+  #   它不计通过也不计失败，但**必须**在汇总里单独数出来，否则仍然是假绿。
+  if [ "$rcv" -eq 3 ]; then
+    printf '  %-16s SKIP  %3ds（未判定，不计通过也不计失败）\n' "$name" "$dtv"
+    if [ -n "$out" ]; then
+      printf '%s\n' "$out" | grep -E '\[(UNVERIFIED|SKIP)\]|^  SKIP ' | head -3 | sed 's/^/       /'
+    fi
+    _nojudge=$((_nojudge+1))
+    return 0
+  fi
 
   if [ "$rcv" -eq 0 ]; then
     if [ "$kind" = report ]; then
@@ -393,6 +422,12 @@ run "tierA-sync" $PY 05-audit/make-tiersnippet.py --check
 run "theme-sync" $PY 05-audit/theme-sync.py --check
 # 机器可读契约（ai/components.json + ai/tokens.json）必须与源码一致
 run "ai-contract" $PY 05-audit/gen-ai-contract.py --check
+# 🔴 `ai assets` 是**扫描生成**的：扫描逻辑写错、目录改名，输出会静默变少而没人发现。
+#    这里用另一个口径（磁盘 / 契约 / CLI 三方）对账，任一条不成立就红。（WO-03）
+run "assets-catalog" $PY 05-audit/assets-catalog-gate.py
+# 🔴 「零第三方运行时依赖」是 README 的第一句承诺。2026-10-30 实测：此前**没有任何门禁
+#    读过 dependencies** —— 注入 lodash 后 doc-facts / dist:check / npm test 三道全部 RC=0。（WO-10）
+run "zero-dep" $PY 05-audit/zero-dep-gate.py
 # 令牌解析正确性：孤儿注释收尾符 / var() 引用缺失 / （full 模式）浏览器复核
 run "token-parse" $PY 05-audit/token-parse-gate.py --no-browser
 # 令牌受众：每个令牌都得登记「给谁用的」；孤儿不许是 internal、公开孤儿必须进受审名单
@@ -421,6 +456,12 @@ run "benchmark"  @static node benchmark/run.js
 #      不说明"模型已验证"。这个区别写在输出里，不许靠读者猜。
 run "benchmark-records" @static node benchmark/run.js --check-records
 run "benchmark-records-rev" @static node benchmark/run.js --selftest
+# P 组（真实页面生成）的评分器自检。它与 T 组测的不是一件事：
+# T 组判 Patch 的局部性，P 组判**生成出来的页面**有没有真的用这个库
+# （库类覆盖率 / 裸颜色 / 裸字号 / 外部依赖 / 语义结构）。
+# 现成门禁（a11y-ax / responsive）的页面清单是硬编码的，指不到新生成的文件，
+# 所以必须另有一个能对任意 HTML 打分的实现。这里只跑它的反向控制。
+run "benchmark-score" @static node benchmark/score-page.js --selftest
 # 核心不得混入呈现形态（slide/deck）语义 —— PPT 的事在 adapters/presentation/
 run "core-boundary" $PY 05-audit/core-boundary-gate.py
 # 呈现层自己的五条判据必须**真的会红**（0.4.2 补：它们此前一次都没被执行过）
@@ -530,7 +571,17 @@ else
   #    表现为工具门禁偶发失败、单跑却通过。见 05-audit/http-serve.py 头。
   $PY 05-audit/http-serve.py 8000 >/dev/null 2>&1 &
   _SRV_PID=$!
-  trap 'kill $_SRV_PID 2>/dev/null' EXIT
+  # 🔴 E155：**必须 disown**。
+  #   第 317 行的 `wait` 不带参数 ⇒ 等本 shell 的**所有**子进程；这个服务永不退出
+  #   ⇒ 每次"自己起服务"都会在最后一门跑完后**永久挂住**：210 个 rc 全写完了，
+  #   日志却只剩开头几行，看起来像卡在某道门禁里，其实门禁早跑完了。
+  #   实测：`sleep 30 & wait` 阻塞到超时；`sleep 30 & disown $!; wait` 0.076 秒返回。
+  #   ⚠️ 反直觉：:8000 上**已有**服务时反而不挂（走复用分支，没有这个子进程）
+  #      ⇒ 曾被误读成"陈旧服务导致挂起"，因果正好相反（E149 的结论已更正）。
+  disown $_SRV_PID 2>/dev/null || true
+  # 🔴 这里**不能**再写 `trap ... EXIT`：bash 的 trap 是**替换**不是追加，
+  #   写了就会把第 171 行那个统一清理（GATE_TMP / FL_TMPDIR）整个抹掉
+  #   ⇒ 表现为"跑完 .git/tmp 一个没少"。服务的 pid 记在 _SRV_PID，由统一 trap 负责杀。
   for _i in 1 2 3 4 5 6 7 8 9 10; do
     curl -s -o /dev/null --max-time 1 "http://127.0.0.1:8000/index.html" && break
     sleep 0.4
@@ -711,6 +762,10 @@ run "progress"    node 05-audit/progress-check.js
 run "popover"     node 05-audit/popover-check.js
 run "dismissable" node 05-audit/dismissable-check.js
 run "focus-return" node 05-audit/focus-return-check.js
+# 组件级行为闭环（drawer / overlay 的真实事件序列）。
+# 上面两道测的是**核**（把核源码注入空白页直接调），这一道测**组件有没有接上核**：
+# 焦点是否进入、Esc 是否只关最内层、点遮罩/点外部是否符合各自语义、反复开关是否重复注册。
+run "pattern-behavior" node 05-audit/pattern-behavior-check.js
 run "roving" node 05-audit/roving-check.js
 run "typeahead" node 05-audit/typeahead-check.js
 run "emit" node 05-audit/emit-check.js
@@ -1064,15 +1119,22 @@ if [ "$MODE" != "full" ]; then
   echo ""
   echo "（分层模式：$MODE —— 收尾前请跑 MODE=full）"
 fi
-if [ "$fail" -eq 0 ]; then
+# 🔴 E153：有未判定项时不许说"全部通过" —— 那正是最坏的一种假绿。
+if [ "$fail" -eq 0 ] && [ "$_nojudge" -eq 0 ]; then
   echo "全部通过。"
+elif [ "$fail" -eq 0 ]; then
+  echo "已执行的全部通过，但有 $_nojudge 道**未判定**（未判定不是通过，见上方 SKIP）。"
 else
   echo "$fail 道门禁失败。"
 fi
 # 🔴 0.8.9：把"跑了多少 / 跳了多少"打出来。
 #   之前 fast 静默丢弃约一半门禁、日志里 0 行 SKIP ⇒
 #   看到"全部通过"会误以为**全部**都跑过了（跳过不是通过 —— 它是一条真话）。
-echo "本轮：执行 $_ran 道 · 按层跳过 $_skipped 道（MODE=$MODE）"
+if [ "$_nojudge" -gt 0 ]; then
+  echo "本轮：执行 $_ran 道 · 按层跳过 $_skipped 道 · 未判定 $_nojudge 道（MODE=$MODE）"
+else
+  echo "本轮：执行 $_ran 道 · 按层跳过 $_skipped 道（MODE=$MODE）"
+fi
 if [ "$MODE" != "full" ]; then
   echo "       收尾与发版前请跑 MODE=full（$_ran + $_skipped 道全部执行）。"
 fi

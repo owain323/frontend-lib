@@ -78,6 +78,16 @@ SKIP = {
         '已在 check-all.sh 浏览器段注册（避免重复跑，不是跑不起来）',
 }
 
+# 临时跳过（`SKIP_SELFTESTS="a.py,b.py"`）：给「只想验一条」的场合用。
+# 🔴 这个入口此前**只写在文件头文档里，代码里从未实现** —— 文档承诺了一个
+#    不存在的参数。补实现而不是删文档，因为它正是「改什么跑什么」的通道：
+#    改了某项就只跑那项的反向控制，不必等 70 多条。
+for _s in (os.environ.get('SKIP_SELFTESTS') or '').split(','):
+    _s = _s.strip()
+    if _s:
+        SKIP.setdefault(_s, 'SKIP_SELFTESTS 临时跳过')
+del _s
+
 TIMEOUT = 180
 
 # 判据 ④ 的触发词。用「冒号」把普通叙述排除掉：
@@ -309,6 +319,20 @@ def main():
             tail = [l for l in out.strip().split('\n') if l.strip()][-4:]
             for l in tail:
                 print('        %s' % l[:96])
+            # 完整子输出落盘（E150）：这里只印 4 行摘要，一旦出现**不可复现**的红，
+            # 摘要往往不够定位。落盘走 internal/（已被 .gitignore 忽略），
+            # 不进公开仓库，也不影响判据 —— 只是把证据留在原地。
+            try:
+                _d = os.path.join(ROOT, 'internal', 'tmp')
+                os.makedirs(_d, exist_ok=True)
+                _fp = os.path.join(_d, 'selftest-fail-%s.log'
+                                   % os.path.splitext(f)[0])
+                io.open(_fp, 'w', encoding='utf-8').write(
+                    'RC=%d  %dms\n\n%s\n' % (rc, ms, out))
+                print('        完整输出已存：%s'
+                      % os.path.relpath(_fp, ROOT).replace('\\', '/'))
+            except Exception as _e:
+                print('        （完整输出落盘失败：%s）' % _e)
         if ms > 5000:
             slow.append((ms, f))
 

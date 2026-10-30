@@ -140,3 +140,27 @@ node benchmark/run.js --write-reference  # 由 TASKS 重新生成参考记录
 | T08 | 把 beta 组件换成 stable | 用了没验证过的组件 |
 | T09 | strict 档下用 beta 组件 | 该被拒却没被拒 |
 | T10 | 携带未来的 extensions | 旧校验器判文档非法 ⇒ 前向兼容失效 |
+
+---
+
+## 七、第二组：真实页面生成（P01–P10）
+
+上面 T01–T10 测的是**契约层**——Patch 能不能正确应用到组件骨架。
+它们**回答不了**这个问题：模型用这个库生成的**页面**，在真实视口里能不能成立？
+
+一个模型可以完美通过 T01–T10，同时产出一张 393px 横向溢出、暗色下对比度不足的页面。
+**契约合规 ≠ 页面合格。**
+
+P 组的十个任务、判据映射、对照实验协议（A/B/C 组）、记录格式与统计口径见
+[`REAL-PAGE-TASKS.md`](REAL-PAGE-TASKS.md)。
+
+评分器（对任意生成出来的 HTML 打分，不需要模型就能自检）：
+
+```bash
+node benchmark/score-page.js 04-recipes/table/demo.html --text
+node benchmark/score-page.js --selftest      # 反向控制
+```
+
+**状态**：`BLOCKED_EXTERNAL_MODEL_ACCESS` —— 任务集、评分器、记录格式都已就绪，
+缺的只有模型调用凭证。这道缺口由 `benchmark-records` 门禁盯着，它输出
+`[UNVERIFIED]` 并返回 3（SKIP），不会被读成通过。
