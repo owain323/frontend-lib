@@ -82,10 +82,10 @@ python3 -m http.server 8000 --bind 127.0.0.1
 
 > **为什么后三行是补的**：`accordion` / `drawer` / `dropdown` 当时都是 beta 组件，
 > 而它们升 stable 的判据之一就是「行为零欠账」——人工读屏是这件事**唯一的用户侧证据**。
-> （0.14.0 把 drawer / overlay 的 dismissable 收编进核之后，两者已升 stable；
-> accordion 的 `roving:gap` 经核对 APG 原文后判定为**判据写错**（APG Accordion 没有
-> 方向键），已改为 `n/a`。`ai/components.json` 当前记 **1 个 beta**：dropdown
-> —— 它的 `typeahead:gap` 是真的：APG Menu 把"按字符跳项"列为 Optional，本库没做。）
+> （0.14.0 把 drawer / overlay 的 dismissable 收编进核；accordion 的 `roving:gap`
+> 经核对 APG 原文后判定为**判据写错**（APG Accordion 没有方向键），改为 `n/a`；
+> 0.15.0 补上 dropdown 的 typeahead。`ai/components.json` 当前 **37 个全 stable**，
+> 阶梯靠正向控制证明仍能区分有债的组件。）
 > 只覆盖 `overlay` 一个浮层，等于对其他浮层的真实表现没有任何记录。
 
 **本轮跑出来并已修掉的一条真缺陷**：`table` 的列头按钮被念成「公司 · `↕` · 按钮」——

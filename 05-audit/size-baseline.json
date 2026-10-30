@@ -1,7 +1,7 @@
 {
   "files": {
     "01-tokens/behavior/dismissable.js": {
-      "gzip": 3381,
+      "gzip": 3383,
       "raw": 7614
     },
     "01-tokens/behavior/emit.js": {
@@ -153,8 +153,8 @@
       "raw": 4044
     },
     "03-patterns/dropdown/dropdown.js": {
-      "gzip": 6509,
-      "raw": 17311
+      "gzip": 7737,
+      "raw": 20953
     },
     "03-patterns/form-validation/form-validation.css": {
       "gzip": 4606,
@@ -254,6 +254,6 @@
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 264663,
-  "total_raw": 662866
+  "total_gzip": 265893,
+  "total_raw": 666508
 }

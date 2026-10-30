@@ -8,8 +8,8 @@
   ],
   "totals": {
     "sourceFiles": 72,
-    "sourceBytes": 777878,
-    "distGzip": 98102
+    "sourceBytes": 781520,
+    "distGzip": 98633
   },
   "files": [
     {
@@ -559,15 +559,15 @@
     },
     {
       "source": "03-patterns/dropdown/dropdown.js",
-      "sourceSha256": "21c3793e18cf850bb6995d38e76abc2ad4843674269d0e668a34a9ca5479cc95",
-      "sourceBytes": 17311,
-      "sourceGzip": 6509,
+      "sourceSha256": "f46911d8c3e03729378881edbcce58edb77883d9f52948d37c35379be6726bd0",
+      "sourceBytes": 20953,
+      "sourceGzip": 7737,
       "outputs": [
         {
           "path": "dist/03-patterns/dropdown/dropdown.js",
           "kind": "stripped",
-          "bytes": 9068,
-          "gzip": 2986
+          "bytes": 10897,
+          "gzip": 3517
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"

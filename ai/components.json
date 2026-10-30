@@ -1,21 +1,20 @@
 {
   "schemaVersion": "1.0.0",
   "generatedBy": "05-audit/gen-ai-contract.py",
-  "libraryVersion": "0.14.0",
+  "libraryVersion": "0.15.0",
   "$comment": "机器可读的组件契约。slots = BEM 元素名（在本库里元素名就是插槽名），states.enum = 组件会在 DOM 上写出的 data-* 取值，states.legacyClass = 仍未收敛到 data 属性的历史状态类（INVARIANT I-8 未达标）。",
   "maturityCriteria": {
     "alpha": "缺 demo.html 或缺 05-audit 下的专属门禁 ⇒ 还没被机器验证过，不要用",
     "beta": "有 demo + 专属门禁，但**下面至少有一条没过**：① 状态仍用 .is-* class 表达（违反 INVARIANT I-8）；② 该收编到微行为核的行为还是**手写副本**（manual）或**根本没做**（gap） ⇒ 改一处不会全库跟着变（I-14 的病）",
     "stable": "以上四条全过：有 demo + 专属门禁 + 状态全在 data-* 属性上 + 行为零欠账",
     "$note": "成熟度是【计算出来的】，不是拍的。手写把某个组件改成 stable 而它还有 manual / gap ⇒ 门禁会红。",
-    "$whyFourth": "🔴 为什么第四条判据不能省：用前三条时多数组件会**全是 stable** ⇒ ladder 没有任何鉴别力（对标 Primer 六档阶梯，每档都有硬判据）。补上「行为欠账」这一条后：**stable 36 / beta 1**（本行由生成器算出，不要手改）。",
-    "$strictImpact": "⚠️ strict 档位只放行 stable ⇒ 1 个组件在 strict 下不可用：dropdown。放宽 strict 会让「未收编的手写行为」进入生产路径。（本行由生成器算出，不要手改）"
+    "$whyFourth": "🔴 为什么第四条判据不能省：用前三条时多数组件会**全是 stable** ⇒ ladder 没有任何鉴别力（对标 Primer 六档阶梯，每档都有硬判据）。补上「行为欠账」这一条后：**stable 37 / beta 0**（本行由生成器算出，不要手改）。全库达标时 ladder 靠**正向控制**证明还有鉴别力（maturity-gate ③：塞一条合成债务必须降 beta），不是靠\"总得留几个 beta\"。",
+    "$strictImpact": "✅ strict 档位放行全部 37 个组件 —— 没有任何组件带着未收编的手写行为或未做的行为（本行由生成器算出，不要手改）"
   },
   "summary": {
     "total": 37,
     "byMaturity": {
-      "stable": 36,
-      "beta": 1
+      "stable": 37
     },
     "byTier": {
       "primitive": 15,
@@ -399,14 +398,12 @@
       "tier": "pattern",
       "purpose": "下拉菜单",
       "rootClass": "dd",
-      "maturity": "beta",
+      "maturity": "stable",
       "maturityReasons": {
         "hasDemo": true,
         "hasDedicatedGate": true,
         "statesOnDomAttributes": true,
-        "behaviorDebt": [
-          "typeahead:gap"
-        ]
+        "behaviorDebt": []
       },
       "gates": [
         "dropdown-check.js"
