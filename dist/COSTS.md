@@ -40,7 +40,7 @@
 | pattern | `form-validation` | 2.7 KB | 0.8 KB | — | **3.5 KB** | 24.1 KB | −20.7 KB |
 | pattern | `list` | 2.7 KB | 0.6 KB | — | **3.3 KB** | 22.0 KB | −18.7 KB |
 | pattern | `nav` | 2.7 KB | 1.2 KB | 2.6 KB | **6.5 KB** | 30.9 KB | −24.4 KB |
-| pattern | `overlay` | 2.7 KB | 1.1 KB | 2.8 KB | **6.7 KB** | 33.6 KB | −26.9 KB |
+| pattern | `overlay` | 2.7 KB | 1.1 KB | 2.8 KB | **6.7 KB** | 33.9 KB | −27.2 KB |
 | pattern | `pagination` | 2.7 KB | 0.8 KB | 2.6 KB | **6.0 KB** | 30.1 KB | −24.1 KB |
 | pattern | `reveal` | 2.7 KB | 0.3 KB | 1.2 KB | **4.2 KB** | 24.2 KB | −20.0 KB |
 | pattern | `states` | 2.7 KB | 0.8 KB | — | **3.5 KB** | 23.6 KB | −20.1 KB |
@@ -51,7 +51,7 @@
 ## 三、全库
 
 - 全部组件都用上（min，含 tokens 一份）：**61.2 KB**
-- 源码版（带注释）全库 gzip：302.0 KB
+- 源码版（带注释）全库 gzip：302.3 KB
 
 > ⚠️ 源码版那个数字**不是**要付的钱：它包含我们的注释（全库 CSS 有 67% 是注释，字节口径）。
 > 它的用途只有一个 —— 让人看清"dist 到底省了多少"。

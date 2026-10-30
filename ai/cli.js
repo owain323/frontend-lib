@@ -256,6 +256,153 @@ function cmdComponents(args) {
   process.exit(0);
 }
 
+// 🔴 ai assets —— 组件之外那批资产的机器可读目录（WO-03）
+// ---------------------------------------------------------------------------
+// 为什么要有这条：
+//   `ai components` 只认 `components.json`，而它只收「有独立 CSS 的目录」⇒ 37 个。
+//   磁盘上还有 5 项不是组件、但 AI 不知道就会自己重写的东西：
+//     · 01-tokens/page.css      页面骨架与响应式两栏
+//     · 01-tokens/behavior/     微行为核（Esc 关闭 / 焦点归还 / 方向键游走）
+//     · 04-recipes/longform     单文件长文示例页（连 demo.html 都没有）
+//     · 04-recipes/data-showcase
+//     · 09-assets/echarts-adapter  依赖宿主已有 ECharts（本库不含）
+//   后果很具体：不知道 page.css 就自己写布局，不知道 behavior/ 就手写
+//   dismissable —— 后者正是 4 个 beta 组件被判 beta 的原因（dismissable:manual）。
+//
+// ⚠️ 本命令的清单**从磁盘扫描生成**，禁止手工维护第二份事实。
+//    `05-audit/assets-catalog-gate.py` 校验「磁盘目录数 == 本命令输出数」，
+//    两边一旦漂移就变红。
+var ROOT = path.join(AI, '..');
+var ASSET_LAYERS = ['02-primitives', '03-patterns', '04-recipes', '09-assets'];
+
+function readFirstUsefulLine(file) {
+  try {
+    var s = fs.readFileSync(file, 'utf8').split('\n');
+    for (var i = 0; i < s.length && i < 90; i++) {
+      var t = s[i].trim();
+      if (!t) continue;
+      // 块注释边界与装饰线：跳过，不是描述
+      if (/^\/\*+[=\s*-]*$/.test(t)) continue;
+      if (/^[=\s-]*\*+\/$/.test(t)) continue;
+      if (/^\*+[=\s*-]*$/.test(t)) continue;
+      if (/^={3,}/.test(t) || /^-{3,}/.test(t)) continue;
+      // 注释内的内容行：去掉前导 * 再判断
+      if (t.charAt(0) === '*') { t = t.replace(/^\*+\s*/, '').trim(); if (!t) continue; }
+      if (t.length > 2 && t.slice(-2) === '*/') { t = t.slice(0, -2).trim(); if (!t) continue; }
+      if (t.charAt(0) === '#') { t = t.replace(/^#+\s*/, '').trim(); if (t) return t.slice(0, 72); continue; }
+      // Markdown 表格：只认「用途」这类带说明的字段，其余（来源/门禁/文件）跳过
+      var m = t.match(/^\|\s*\*\*([^*]+)\*\*\s*\|\s*([^|]+)\|/);
+      if (m) {
+        if (m[1].indexOf('用途') >= 0 || m[1].indexOf('定位') >= 0) return m[2].trim().slice(0, 72);
+        continue;
+      }
+      if (t.charAt(0) === '|') continue;
+      // 无中文的「a / b / c」是路径面包屑，不是描述
+      if (!/[\u4e00-\u9fa5]/.test(t) && t.indexOf(' / ') >= 0) continue;
+      if (!/[\u4e00-\u9fa5]/.test(t) && /\.(css|js|html)$/.test(t)) continue;
+      return t.slice(0, 72);
+    }
+  } catch (e) { /* 读不到就当没描述，不抛 */ }
+  return '';
+}
+
+function describeAsset(dir, name, purpose) {
+  // 在契约里的，直接用契约的 purpose（比 README 标题精确）
+  if (purpose) return purpose;
+  var d = path.join(ROOT, dir, name);
+  var rd = path.join(d, 'README.md');
+  if (fs.existsSync(rd)) {
+    var txt = fs.readFileSync(rd, 'utf8');
+    var m = txt.match(/\|\s*\*\*用途\*\*\s*\|\s*([^|\n]+)/);
+    if (m) return m[1].trim().slice(0, 72);
+    return readFirstUsefulLine(rd);
+  }
+  // 没有 README：回退到目录内第一个脚本的头部注释
+  var f2 = fs.readdirSync(d).filter(function (f) {
+    return /\.(js|css)$/.test(f) && f.indexOf('demo') !== 0;
+  });
+  if (f2.length) return readFirstUsefulLine(path.join(d, f2[0]));
+  return '';
+}
+
+// 类型判定必须机械可判，不查名单：
+//   在组件契约里        → component
+//   09-assets 下的目录  → adapter（都是「消费外部能力」的适配层）
+//   有 CSS 但不在契约   → component（意味着契约漏了它，门禁会报）
+//   无 CSS 有 demo.html → recipe（示例页）
+//   其余                → example（单文件示例）
+function classifyAsset(layer, name, inContract, files) {
+  if (inContract[name]) return 'component';
+  if (layer === '09-assets') return 'adapter';
+  if (files.some(function (f) { return /\.css$/.test(f); })) return 'component';
+  if (files.indexOf('demo.html') >= 0) return 'recipe';
+  return 'example';
+}
+
+function collectAssets() {
+  var doc = readJSON(path.join(AI, 'components.json'));
+  var inContract = {};
+  var purposeOf = {};
+  doc.components.forEach(function (c) {
+    inContract[c.id] = true;
+    purposeOf[c.id] = c.purpose || '';
+  });
+
+  var rows = [];
+  ASSET_LAYERS.forEach(function (layer) {
+    var abs = path.join(ROOT, layer);
+    if (!fs.existsSync(abs)) return;
+    fs.readdirSync(abs).sort().forEach(function (n) {
+      // 下划线/点开头是临时目录与隐藏目录，不是资产（扫描口径，不是白名单）
+      if (n.charAt(0) === '_' || n.charAt(0) === '.') return;
+      var p = path.join(abs, n);
+      if (!fs.statSync(p).isDirectory()) return;
+      var files = fs.readdirSync(p);
+      rows.push({
+        id: n, layer: layer, type: classifyAsset(layer, n, inContract, files),
+        demo: files.indexOf('demo.html') >= 0, contract: !!inContract[n],
+        desc: describeAsset(layer, n, purposeOf[n])
+      });
+    });
+  });
+
+  // 01-tokens 层：同样靠扫描，不写死名字。
+  //   behavior/ 目录 → behavior；*.css → base；*.js → behavior；*.html 是 demo，跳过
+  var tk = path.join(ROOT, '01-tokens');
+  if (fs.existsSync(tk)) {
+    fs.readdirSync(tk).sort().forEach(function (n) {
+      if (n.charAt(0) === '_' || n.charAt(0) === '.') return;
+      var p = path.join(tk, n);
+      var st = fs.statSync(p);
+      if (st.isDirectory()) {
+        rows.push({ id: n, layer: '01-tokens', type: 'behavior', demo: false,
+          contract: false, desc: describeAsset('01-tokens', n, '') });
+        return;
+      }
+      if (/\.html$/.test(n)) return;
+      var t = /\.css$/.test(n) ? 'base' : /\.js$/.test(n) ? 'behavior' : null;
+      if (!t) return;
+      rows.push({ id: n, layer: '01-tokens', type: t, demo: false, contract: false,
+        desc: readFirstUsefulLine(p) });
+    });
+  }
+  return rows;
+}
+
+function cmdAssets(args) {
+  var rows = collectAssets();
+  if (flag('json', false)) { out(rows); process.exit(0); }
+  var miss = rows.filter(function (r) { return !r.contract; });
+  process.stdout.write('  === 全部资产（' + rows.length + ' 项）===\n');
+  process.stdout.write('  契约内 ' + (rows.length - miss.length) + ' 项 · 契约外 ' + miss.length + ' 项\n\n');
+  rows.forEach(function (r) {
+    process.stdout.write('  ' + (r.contract ? '✅' : '○') + ' ' + pad(r.id, 22) +
+      '[' + r.type + ']' + (r.demo ? ' demo' : '     ') + '  ' + r.desc + '\n');
+  });
+  process.stdout.write('\n  ✅ 在组件契约内（可 ai components 查详情）  ○ 契约外（需看本节）\n');
+  process.exit(0);
+}
+
 function cmdTokens(args) {
   var doc = readJSON(path.join(AI, 'tokens.json'));
   var set = flag('set', null);
@@ -351,6 +498,7 @@ var CMDS = {
   diff: cmdDiff,
   patch: cmdPatch,
   components: cmdComponents,
+  assets: cmdAssets,
   tokens: cmdTokens,
   tree: cmdTree,
   profile: cmdProfile,
@@ -367,6 +515,7 @@ function main() {
       '  ai diff         <改动前.json> <改动后.json>      按语义 id 比对\n' +
       '  ai patch        <doc.json> <patch.json> [-o out.json]\n' +
       '  ai components   [--maturity=stable|beta|alpha]\n' +
+      '  ai assets       [--json]   组件之外的资产：布局 / 微行为核 / 示例页 / 适配器\n' +
       '  ai tokens       [--set=light|dark]\n' +
       '  ai tree         [--set=light|dark] [--cat=color]\n' +
       '  ai profile      列出三档及其差异\n' +

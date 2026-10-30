@@ -8,7 +8,7 @@
   ],
   "totals": {
     "sourceFiles": 72,
-    "sourceBytes": 771289,
+    "sourceBytes": 771940,
     "distGzip": 96853
   },
   "files": [
@@ -675,9 +675,9 @@
     },
     {
       "source": "03-patterns/overlay/overlay.js",
-      "sourceSha256": "aa5b6c4dacf9fcf82fcf7fcab794e508b6114a30e8ff3ff10dda76528208ea7f",
-      "sourceBytes": 24597,
-      "sourceGzip": 9088,
+      "sourceSha256": "4d20ab5e5cab90af16a73b9abf2cd83b690152928248c1d17fdddd0c5d690a6a",
+      "sourceBytes": 25248,
+      "sourceGzip": 9396,
       "outputs": [
         {
           "path": "dist/03-patterns/overlay/overlay.js",
