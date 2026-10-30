@@ -448,6 +448,33 @@ function selftest() {
   return bad ? 1 : 0;
 }
 
+/* ---------------------------------------------------------------------------
+ * 稳定采样：同一份页面连采两次，**逐字节相同**才算数
+ *
+ * 🔴 为什么要这个（0.16.1，并发下实测到）
+ *   `goto(networkidle0)` 只保证"网络静了"，**不保证组件的 JS 已经改完 DOM**。
+ *   全量门禁 4 路并发时，combobox 页出现过一次这样的转录：
+ *       - combobox "关注板块" [hasPopup=listbox]
+ *       + textbox "关注板块"
+ *   单独跑永远复现不出来。危险方向是**反过来**：如果这次恰好是在 `--update`，
+ *   基线就会录下一个「组件还没初始化完」的树 —— 之后每次真跑都红，
+ *   而人会以为是组件坏了。
+ *
+ * => 采样直到连续两次一致，最多 6 次。仍然不一致 => 返回 null（判失败，不录）。
+ *   宁可红着说「这页 AX 树不稳定」，也不要录一份不稳定的基线。
+ * ------------------------------------------------------------------------- */
+async function stableTranscript(page) {
+  const key = (t) => t.map((n) => [n.nodeId, n.role, n.depth, n.name].join('|')).join('\u000a');
+  let prev = null;
+  for (let i = 0; i < 6; i++) {
+    const t = await transcript(page);
+    if (prev !== null && key(t) === prev) return t;
+    prev = key(t);
+    await new Promise((r) => setTimeout(r, 90 + i * 90));
+  }
+  return null;
+}
+
 (async () => {
   if (process.argv.includes('--selftest')) process.exit(selftest());
   const UPDATE = process.argv.includes('--update');
@@ -491,7 +518,14 @@ function selftest() {
       await page.close();
       continue;
     }
-    const nodes = await transcript(page);
+    const nodes = await stableTranscript(page);
+    if (nodes === null) {
+      console.log('  🔴 ' + id.padEnd(16) + ' AX 树在 6 次采样内不稳定（组件 JS 还没跑完？）');
+      console.log('       不录基线、也不判通过 —— 这种状态下量到的东西不能当证据');
+      fails++;
+      await page.close();
+      continue;
+    }
 
     /* aria-hidden 祖先里有没有可聚焦元素 —— 用真实 DOM 判，不看 AX 树 */
     const hiddenFocusable = await page.evaluate(() => {
