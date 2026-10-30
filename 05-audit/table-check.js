@@ -266,6 +266,37 @@ const REPO = path.resolve(__dirname, '..');
                        (ok ? '' : '  🔴 排序是假的（箭头或顺序没跟着变）') };
       },
 
+      /* ⑨b 🔴 装饰符号不许进可访问名
+         `↕` 原来写成 `content: "↕"` 的字形 ⇒ Chromium 走 name-from-contents，
+         把它算进按钮名，读屏念成「公司 · ↕ · 按钮」（NVDA 真机实测）。
+         三引擎实测结论：伪元素**有文本**就会进名字，`content: ""` + mask 不会。
+         ⇒ 判据盯"伪元素有没有文本"，这才是那个缺陷的机制，
+           而不是"箭头画得好不好看"（后者归视觉基线）。 */
+      '⑨b 列头伪元素不含文本（装饰符号不许进可访问名）': async (p) => {
+        const r = await p.evaluate(() => {
+          const btns = [...document.querySelectorAll('.table__sort')];
+          const bad = [];
+          let withMask = 0;
+          for (const b of btns) {
+            const cs = getComputedStyle(b, '::after');
+            const raw = (cs.content || '').trim();
+            const hasText = !(raw === '' || raw === 'none' || raw === 'normal' || raw === '""');
+            const masked = (cs.maskImage && cs.maskImage !== 'none') ||
+                           (cs.webkitMaskImage && cs.webkitMaskImage !== 'none') ||
+                           !!cs.getPropertyValue('--sort-glyph').trim();
+            if (masked) withMask++;
+            if (hasText) bad.push(raw + ' ← ' + (b.textContent || '').trim().slice(0, 8));
+          }
+          return { total: btns.length, withMask, bad };
+        });
+        if (r.total === 0) return { ok: false, note: '🔴 一个 .table__sort 都没找到 ⇒ 判据无从生效' };
+        const ok = r.bad.length === 0 && r.withMask === r.total;
+        return { ok,
+                 note: r.bad.length
+                   ? '🔴 这些伪元素有文本，会进可访问名：' + r.bad.join(' / ')
+                   : r.total + ' 个列头：伪元素无文本、全部用 mask 出图' };
+      },
+
       /* ⑩ 🔴 动态文本不许被当成 HTML
          demo 是给人**照抄**的 ⇒ 它必须示范正确的做法：
            数据里的 <b> / <a> / 带引号的属性 都要**原样显示**。
