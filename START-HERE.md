@@ -35,16 +35,16 @@
 | 组件 | 文件 | 行数 | JS | 什么时候要 |
 |---|---|---|---|---|
 | 按钮 | `02-primitives/button/button.css` | 357 | — | 几乎总要 |
-| 输入框 | `02-primitives/input/input.css` | 239 | — | 有表单就要 |
+| 输入框 | `02-primitives/input/input.css` | 253 | — | 有表单就要 |
 | 标签 / 徽章 | `02-primitives/badge/badge.css` | 141 | — | 有状态标记就要（"已披露""停牌"） |
 | 卡片 | `02-primitives/card/card.css` | 283 | — | 有分组内容就要 |
-| 单选 / 多选 | `02-primitives/choice/choice.css` | 395 | — | 单选 / 多选就要 |
+| 单选 / 多选 | `02-primitives/choice/choice.css` | 424 | — | 单选 / 多选就要 |
 | 下拉选择 | `02-primitives/select/select.css` | 151 | **必需 541** (`select.js`) | 原生 select 的外观或交互不够用就要 |
 | 可搜索选择 | `02-primitives/combobox/combobox.css` | 223 | **必需 477** (`combobox.js`) | 选项多到要搜索，或要选多个并留成标签就要 |
-| 开关 | `02-primitives/switch/switch.css` | 370 | — | 有"立即生效的设置"就要 |
+| 开关 | `02-primitives/switch/switch.css` | 429 | — | 有"立即生效的设置"就要 |
 | 分隔线 | `02-primitives/separator/separator.css` | 73 | — | 要分开内容块就要 |
-| 加载骨架 | `02-primitives/skeleton/skeleton.css` | 96 | — | 数据还没到、先把版式占住就要 |
-| 进度条 / 环 | `02-primitives/progress/progress.css` | 172 | — | 有耗时过程要给进度就要 |
+| 加载骨架 | `02-primitives/skeleton/skeleton.css` | 114 | — | 数据还没到、先把版式占住就要 |
+| 进度条 / 环 | `02-primitives/progress/progress.css` | 228 | — | 有耗时过程要给进度就要 |
 | 浮层气泡 | `02-primitives/popover/popover.css` | 187 | **必需 323** (`popover.js`) | 要一段信息贴着触发元素浮出来就要 |
 | 日期区间 | `02-primitives/date-range/date-range.css` | 206 | **必需 301** (`date-range.js`) | 要选起止日期就要 |
 | 标签页 | `03-patterns/tabs/tabs.css` | 172 | **必需 316** (`tabs.js`) | 同层级内容切换就要 |
@@ -66,7 +66,7 @@
 | analysis-report | `04-recipes/analysis-report/analysis-report.css` | 226 | — |  |
 | detail-page | `04-recipes/detail-page/detail-page.css` | 190 | — |  |
 | report | `04-recipes/report/report.css` | 364 | — |  |
-| table | `04-recipes/table/table.css` | 387 | — |  |
+| table | `04-recipes/table/table.css` | 409 | — |  |
 | bar | `09-assets/bar/bar.css` | 166 | **必需 320** (`bar.js`) |  |
 | model-viewer | `09-assets/model-viewer/model-viewer.css` | 143 | **必需 423** (`model-viewer.js`) |  |
 | scientific-plot | `09-assets/scientific-plot/scientific-plot.css` | 141 | **必需 610** (`scientific-plot.js`) |  |

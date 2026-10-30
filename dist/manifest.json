@@ -8,8 +8,8 @@
   ],
   "totals": {
     "sourceFiles": 72,
-    "sourceBytes": 786492,
-    "distGzip": 98715
+    "sourceBytes": 798115,
+    "distGzip": 98994
   },
   "files": [
     {
@@ -245,15 +245,15 @@
     },
     {
       "source": "02-primitives/choice/choice.css",
-      "sourceSha256": "1e88b36bf92b0c4918b75b3bd0e2a5f0707a2ad875062449f6fc82ea0f5d5753",
-      "sourceBytes": 15468,
-      "sourceGzip": 5516,
+      "sourceSha256": "030fc343c06afb091725b4652d6772c74447e142bcad61e26ea1e471847493d2",
+      "sourceBytes": 17175,
+      "sourceGzip": 6060,
       "outputs": [
         {
           "path": "dist/02-primitives/choice/choice.css",
           "kind": "minified",
-          "bytes": 4109,
-          "gzip": 1101
+          "bytes": 4310,
+          "gzip": 1137
         }
       ]
     },
@@ -331,15 +331,15 @@
     },
     {
       "source": "02-primitives/input/input.css",
-      "sourceSha256": "880731bf6878893d67c70c8698832494669feb7f4d1e8a63d39ce631dd8d9865",
-      "sourceBytes": 10141,
-      "sourceGzip": 3716,
+      "sourceSha256": "cac27297126cea0c52f66d56977fec83fc7260cd46617f8735c58eecf3dc6f78",
+      "sourceBytes": 10897,
+      "sourceGzip": 4031,
       "outputs": [
         {
           "path": "dist/02-primitives/input/input.css",
           "kind": "minified",
-          "bytes": 3268,
-          "gzip": 1043
+          "bytes": 3346,
+          "gzip": 1075
         }
       ]
     },
@@ -388,15 +388,15 @@
     },
     {
       "source": "02-primitives/progress/progress.css",
-      "sourceSha256": "f15622096b0295f0e9973a149cbe8baa43c8261dfc7f83ae6cf56d5d1de991fc",
-      "sourceBytes": 7854,
-      "sourceGzip": 2946,
+      "sourceSha256": "6be16e3ee8b3b5f82da68364095946b46de8a5a28dddc41bd3dc723980c5ffcf",
+      "sourceBytes": 11338,
+      "sourceGzip": 4382,
       "outputs": [
         {
           "path": "dist/02-primitives/progress/progress.css",
           "kind": "minified",
-          "bytes": 2366,
-          "gzip": 706
+          "bytes": 2610,
+          "gzip": 794
         }
       ]
     },
@@ -445,29 +445,29 @@
     },
     {
       "source": "02-primitives/skeleton/skeleton.css",
-      "sourceSha256": "a9c9c67fae756744657a7f7914b799d8f12e42de674a7977a62d699b45955340",
-      "sourceBytes": 3379,
-      "sourceGzip": 1472,
+      "sourceSha256": "f55953bd3bc1a8e41740d72d87e24d21b7c75ef9f4031ceb1fd86b347570df9f",
+      "sourceBytes": 4403,
+      "sourceGzip": 1980,
       "outputs": [
         {
           "path": "dist/02-primitives/skeleton/skeleton.css",
           "kind": "minified",
-          "bytes": 1060,
-          "gzip": 488
+          "bytes": 1124,
+          "gzip": 518
         }
       ]
     },
     {
       "source": "02-primitives/switch/switch.css",
-      "sourceSha256": "231b282dabebefc22b0678e1c81a55e00d0b697ac659f40e5d8e088bf44ecb6d",
-      "sourceBytes": 17517,
-      "sourceGzip": 7314,
+      "sourceSha256": "dc6af9b14efa0bc2fffdb5c6bea935784df1ac5d27a8c8821dd631e53b75a36e",
+      "sourceBytes": 20982,
+      "sourceGzip": 8541,
       "outputs": [
         {
           "path": "dist/02-primitives/switch/switch.css",
           "kind": "minified",
-          "bytes": 2509,
-          "gzip": 773
+          "bytes": 2825,
+          "gzip": 833
         }
       ]
     },
@@ -891,15 +891,15 @@
     },
     {
       "source": "04-recipes/table/table.css",
-      "sourceSha256": "10167f72834238054a5bcb1bf82ef78560b562943f788e5bf33d21d31b34e2ee",
-      "sourceBytes": 17373,
-      "sourceGzip": 6911,
+      "sourceSha256": "59816a7810be397104a0c5d8a255c8f1290ce109c21526fa7c4bc8af8f048ca4",
+      "sourceBytes": 18560,
+      "sourceGzip": 7361,
       "outputs": [
         {
           "path": "dist/04-recipes/table/table.css",
           "kind": "minified",
-          "bytes": 5604,
-          "gzip": 1624
+          "bytes": 5696,
+          "gzip": 1657
         }
       ]
     },

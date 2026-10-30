@@ -234,8 +234,7 @@
   background: var(--accent);
   border-color: var(--accent);
 }
-.choice--radio .choice__input:checked ~ .choice__label .choice__mark::after {
-  transform: scale(1);
+.choice--radio .choice__input:checked ~ .choice__label .choice__mark::after {  transform: scale(1);
 }
 
 /* ============================================================================
@@ -393,3 +392,33 @@
        它是 CSS Level 4，某项目 上 WebView 版本不确定。
        写这一行时已经违反了自己刚定的纪律，已改用相邻兄弟选择器提优先级。
    ========================================================================= */
+
+/* ============================================================================
+   强制色（Windows 高对比度）
+   ============================================================================
+   0.17.0 全库扫描（forced-colors-check.js B3）在这里抓到 2 类 4 处，
+   都是同一个根因，而且**checkbox 的勾恰好没事** —— 这个对比值得记下来：
+
+     · checkbox 的勾：用 `border: solid var(--text-on-accent)` 画
+       ⇒ 强制色把 border-color 换成 CanvasText ⇒ **白底黑勾，看得见**
+     · radio 的圆点：用 `background: var(--text-on-accent)` 画
+       ⇒ 强制色把 background-color 换成 Canvas ⇒ **白底白点，消失**
+     · indeterminate 的横线：用 `background: var(--accent)` 画
+       ⇒ 同上 ⇒ **白底白线，消失**
+
+   ⇒ 规律：**用 background-color 画"前景图形"必死，用 border/color 画则活。**
+     强制色的换色规则是分属性的 —— 背景换背景色、前景换前景色。
+     把图形画在"背景属性"上，就等于把它声明成了背景，自然被换成背景色。
+
+   修法只有一处替换：把这两个 `background` 改成 `CanvasText`（系统前景色）。
+   ⚠️ 不要顺手把 checkbox 的勾也改了 —— 它现在是对的，
+      改成 CanvasText 反而会在暗色高对比度主题下（CanvasText = 浅色）出错。
+   ============================================================================ */
+@media (forced-colors: active) {
+  .choice--radio .choice__mark::after {
+    background: CanvasText;
+  }
+  .choice--checkbox .choice__input:indeterminate ~ .choice__label .choice__mark::after {
+    background: CanvasText;
+  }
+}
