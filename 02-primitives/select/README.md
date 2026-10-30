@@ -68,6 +68,11 @@ const sel = Select.create(元素, { multiple: false, value: 'b', label: '选项'
 **① 为什么强调"落在选中项"**：这是 APG 明确要求的，也是最常做错的一条。
 打开后焦点在第一项，用户按一次`↓` 就跳到第二项 —— 原来选的那项被跳过了。
 
+⚠️ 这里的"焦点"是**活动项**：用 `aria-activedescendant` 指到选中项，DOM 焦点仍留在
+按钮上。这是 APG「select-only combobox」的合法形态 —— 拿 `document.activeElement`
+去要求它落进 `<ul>` 会判成缺陷，实际不是。本库的判据也是按前一种断的
+（`opener-path-check` 里这条组件的 `focus` 声明为 `activedesc`）。
+
 ## 类型搜索（typeahead）
 
 连续打字跳到匹配项。**原生 `<select>` 有这个能力，所以自建的必须有**。

@@ -221,7 +221,7 @@
 | 弹层**打开那一刻**焦点就进弹层（不是等 Tab 才进） | `overlay-check.js` ③b、`drawer-check.js` ① |
 | **每条**关闭路径都要归还焦点（Esc / 点遮罩 / 关闭按钮） | `overlay-check.js` ⑤b（遮罩）+ ⑤（Esc） |
 | 装饰符号不许进可访问名（伪元素有文本就会被算进 `name-from-contents`） | `table-check.js` ⑨b |
-| 浮层类组件的每条输入路径都要测（键盘 / 点击 / 读屏合成点击） | `dropdown-check` ①b、`overlay-check` ③b、`drawer-check` ① |
+| 浮层类组件的每条输入路径都要测（键盘 / 点击 / 读屏合成点击） | `opener-path-check.js`（三条路径 × 五个组件一张矩阵，带 `--selftest` 证明分得清路径）+ `dropdown-check` ①b、`overlay-check` ③b、`drawer-check` ① |
 | 键盘可达（Tab 顺序、Esc 关闭） | `keyboard-nav.js` |
 | 减少动效策略双向一致 | `motion.py --reduced-audit` |
 | 逻辑属性全覆盖 | `rtl-check.js` |

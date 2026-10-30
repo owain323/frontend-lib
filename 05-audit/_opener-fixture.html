@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<!--
+  测试夹具（不是组件页，不对外）。给 opener-path-check.js --selftest 用。
+
+  四个触发元素，分别对应四种"打开"的实现方式：
+    f-ok       三条路径都能开、都移焦          → 期望 3 绿
+    f-kbd      只监听 keydown                  → 只有键盘绿
+    f-pointer  只监听 pointerdown              → 只有鼠标绿（合成点击没有 pointer 事件）
+    f-nofocus  开得了但焦点不动                → 三条全红
+
+  为什么需要它：判据要能分辨"哪条路径坏了"。若只造一个坏例子，判据把任何红都算过，
+  它就没法说明自己分得清路径 —— 而这正是它存在的理由。
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>输入路径夹具</title>
+<style>
+  body { font: 14px/1.6 system-ui, sans-serif; margin: 24px; color: #222; }
+  button { font: inherit; padding: 6px 14px; margin: 6px 8px 6px 0; }
+  .pop {
+    margin-top: 8px; padding: 10px 14px; border: 1px solid #bbb; border-radius: 6px;
+    background: #f6f6f6; max-width: 320px;
+  }
+  .pop[hidden] { display: none; }
+  .pop a { margin-right: 10px; }
+</style>
+</head>
+<body>
+<h1>输入路径夹具</h1>
+<p>这张页只服务于 <code>opener-path-check.js --selftest</code>，不参与任何展示。</p>
+
+<h2>1 · 三条路径都正常</h2>
+<button id="f-ok" type="button">打开</button>
+<div class="pop" id="pop-ok" hidden><a href="#a">第一项</a><a href="#b">第二项</a></div>
+
+<h2>2 · 只监听 keydown</h2>
+<button id="f-kbd" type="button">打开</button>
+<div class="pop" id="pop-kbd" hidden><a href="#a">第一项</a></div>
+
+<h2>3 · 只监听 pointerdown</h2>
+<button id="f-pointer" type="button">打开</button>
+<div class="pop" id="pop-pointer" hidden><a href="#a">第一项</a></div>
+
+<h2>4 · 开得了，但焦点不动</h2>
+<button id="f-nofocus" type="button">打开</button>
+<div class="pop" id="pop-nofocus" hidden><a href="#a">第一项</a></div>
+
+<script>
+(function () {
+  function show(id, moveFocus) {
+    var box = document.getElementById('pop-' + id);
+    if (!box) return;
+    box.hidden = false;
+    if (moveFocus) box.querySelector('a').focus();
+  }
+
+  /* ① 三条路径都接：click 覆盖合成点击与鼠标点击，keydown 覆盖键盘 */
+  var ok = document.getElementById('f-ok');
+  ok.addEventListener('click', function () { show('ok', true); });
+  ok.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); show('ok', true); }
+  });
+
+  /* ② 只接键盘 */
+  var kbd = document.getElementById('f-kbd');
+  kbd.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); show('kbd', true); }
+  });
+
+  /* ③ 只接指针按下（合成点击没有 pointerdown ⇒ 开不了）
+        焦点要延后一拍再移：pointerdown 之后浏览器还会把焦点交给被点的按钮，
+        同步移焦会被那一步抢回去 —— 这是"在 mousedown 里开"的真实代价，
+        所以这里照实写成 setTimeout，而不是假装它没有这个问题。 */
+  var ptr = document.getElementById('f-pointer');
+  ptr.addEventListener('pointerdown', function () {
+    show('pointer', false);
+    setTimeout(function () {
+      var box = document.getElementById('pop-pointer');
+      if (box && !box.hidden) box.querySelector('a').focus();
+    }, 0);
+  });
+
+  /* ④ click 能开，但不移焦 */
+  var nf = document.getElementById('f-nofocus');
+  nf.addEventListener('click', function () { show('nofocus', false); });
+})();
+</script>
+</body>
+</html>

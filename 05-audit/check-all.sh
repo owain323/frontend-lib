@@ -828,6 +828,14 @@ run "combobox" node 05-audit/combobox-check.js
   # （demo 页上查不出来，必须自己造实例）
   run "combobox-inst" node 05-audit/combobox-instance-check.js
 run "date-range" node 05-audit/date-range-check.js
+# 🔴 「打开」的三条输入路径（键盘 / 鼠标点击 / 读屏合成点击）必须是同一个结果。
+#   起因：dropdown 的菜单开了、焦点留在按钮上，而当时全部门禁是绿的 ——
+#   因为判据只按了 ↓。读屏在浏览模式按 Enter，浏览器把它变成**一次点击**，
+#   走的是另一条分支。缺陷不在实现里，在**判据的覆盖面**上。
+#   这一道把五个"点一下就开"的组件排成一张 5×3 的矩阵同时比；
+#   `--selftest` 用一张故意写坏的夹具证明它分得清三条路（不是"随便报个红"）。
+run "opener-path"     node 05-audit/opener-path-check.js
+run "opener-path-rev" node 05-audit/opener-path-check.js --selftest
 run "composition" node 05-audit/composition-check.js
 
 # CSS 引用完整性（发现项只报告不 fail：class 名跨组件复用，误报率偏高）
