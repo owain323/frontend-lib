@@ -552,18 +552,40 @@ echo "=== 启动本地静态服务（Python 与浏览器门禁都要用）==="
 #   在别人的根目录下 404）。若不是它红，这就是一次完美的假绿。
 #   ⇒ 判据：拉一个仓库里的真实文件，与本地**字节比对**（不是看返回码）。
 _SRV_PID=""          # set -u 下 trap 里引用未赋值变量会报错 ⇒ 先给空值
-_canary() {
+_same_tree() {
+  # ① 是不是**这一棵树**：拉一个真实文件做字节比对（不是看返回码）
   curl -s --max-time 3 "http://127.0.0.1:8000/index.html" 2>/dev/null | cmp -s - index.html
 }
+_is_gate_server() {
+  # ② 是不是**门禁专用服务器**：看身份戳（http-serve.py 的 end_headers 发的）
+  curl -sI --max-time 3 "http://127.0.0.1:8000/index.html" 2>/dev/null \
+    | grep -qi '^X-FL-Gate-Server:'
+}
+_canary() { _same_tree && _is_gate_server; }
 if curl -s -o /dev/null --max-time 2 "http://127.0.0.1:8000/index.html"; then
-  if _canary; then
-    echo "  [OK] 复用已在跑的服务 :8000（canary 字节一致 ⇒ 同一棵树）"
-  else
+  if ! _same_tree; then
     echo "  [FAIL] :8000 上跑的是**另一棵树**（index.html 字节与本地不一致）"
     echo "         ⇒ 继续跑下去，浏览器门禁量的就不是这份代码（INVARIANT I-10 实证 6）"
     echo "         ⇒ 请停掉占用 8000 的进程再跑。"
     exit 2
   fi
+  if ! _is_gate_server; then
+    # 🔴 0.17.0 实测：字节一致**不等于**能撑住并发。
+    #   `05-audit/serve.py` 是给"看 demo"用的**单线程** HTTPServer
+    #   （没有 request_queue_size，也没有 ThreadingHTTPServer），
+    #   拿它占着 8000 时 canary 的字节比对会通过 ⇒ 被愉快复用。
+    #   后果是 4 路浏览器并发时资源请求排队，页面**CSS 还没落地就被量**：
+    #     · tap-target 把 ios 验证页的「单选/复选」量成 79×22（应为 360×44）
+    #     · rtl-render 报「希伯来语膨胀后溢出 1464px」（应为 0）
+    #   两道门禁同时假红，而代码是好的 —— 去查代码永远查不到。
+    #   ⇒ 判据升级成"既同一棵树、又是门禁服务器"，缺一不可。
+    echo "  [FAIL] :8000 上的服务不是门禁用的那个（缺少 X-FL-Gate-Server 身份戳）"
+    echo "         ⇒ 它很可能是 05-audit/serve.py（单线程，专供看 demo）。"
+    echo "            4 路浏览器并发会把它压垮 ⇒ 页面样式没落地就被量 ⇒ **假红**。"
+    echo "         ⇒ 停掉它，然后重跑本脚本（会自己起 http-serve.py）。"
+    exit 2
+  fi
+  echo "  [OK] 复用已在跑的服务 :8000（字节一致 + 门禁服务器身份戳）"
 else
   echo "  [启动] 本地静态服务 :8000"
   # ⚠️ 不用 `-m http.server`：它的 listen backlog 默认 5，

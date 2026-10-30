@@ -69,6 +69,16 @@ const PAGES = [
     try {
       await p.goto('http://127.0.0.1:8000/' + rel,
                    { waitUntil: 'networkidle0', timeout: 12000 });
+      /* ⚠️ 这两行**不是**那次 79×22 的修复 —— 已查明根因在服务器：
+         8000 上当时跑着单线程的 `serve.py`（见 check-all.sh 的 `_is_gate_server`），
+         4 路并发时资源请求排队、CSS 没落地就被量。换成 `http-serve.py` 之后
+         **原版脚本**并发也不再红。
+
+         这里补的是稳健性：`networkidle0` 只说明网络静了，不说明字形解码完、
+         也不说明首帧布局跑过。下面两句是"读到的是一个成形布局"的最低保证，
+         不是对那次假红的解释。 */
+      try { await p.evaluate(() => document.fonts && document.fonts.ready); } catch (e) {}
+      await p.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
     } catch (e) { continue; }
 
     const found = await p.evaluate((sels, nonT) => {

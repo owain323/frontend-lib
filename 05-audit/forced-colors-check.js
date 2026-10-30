@@ -437,6 +437,11 @@ async function main() {
   await activate();
   const swOn = await p.evaluate(probe.switchOne);
 
+  /* 调试开关：`FL_FC_DEBUG=1 node 05-audit/forced-colors-check.js`
+     打开后会把「匹配到 .switch__track 且声明了背景/边框的全部规则」按
+     cascade 顺序打出来。2026-10-31 排查 "Highlight 明明是最后一条却没生效"
+     时靠的就是它 —— 那次最终发现不是 cascade 问题、是过渡未结束（E170），
+     但**没有这张表就分不清这两种可能**。留着，下次红了先开它。 */
   if (process.env.FL_FC_DEBUG) {
     const dump = await p.evaluate(() => {
       const tr = document.querySelector('.switch__track');
