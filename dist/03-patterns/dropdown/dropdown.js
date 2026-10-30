@@ -265,6 +265,8 @@ fr.save();
 menu.hidden = false;
 btn.setAttribute('aria-expanded', 'true');
 active = -1;
+
+focusAt(0);
 flEmit(root, 'fl-open', null);
 if (opt.onOpen) opt.onOpen();
 }
@@ -331,7 +333,6 @@ if (e.target === btn) {
 if (k === 'ArrowDown' || k === 'Enter' || k === ' ' || k === 'Spacebar') {
 e.preventDefault();
 open();
-focusAt(0);
 }
 return;
 }

@@ -8,7 +8,7 @@
   ],
   "totals": {
     "sourceFiles": 72,
-    "sourceBytes": 771940,
+    "sourceBytes": 772406,
     "distGzip": 96853
   },
   "files": [
@@ -559,14 +559,14 @@
     },
     {
       "source": "03-patterns/dropdown/dropdown.js",
-      "sourceSha256": "0126db2bc5d5fb24e8ef732c92256f71a09cee5602d7aee5aa9a9cd7f8b8f4c4",
-      "sourceBytes": 17328,
-      "sourceGzip": 6533,
+      "sourceSha256": "32701537448be9bb1c0bafebb5dacddcd4287a3c2023724741995f38a8686e5e",
+      "sourceBytes": 17794,
+      "sourceGzip": 6732,
       "outputs": [
         {
           "path": "dist/03-patterns/dropdown/dropdown.js",
           "kind": "stripped",
-          "bytes": 9016,
+          "bytes": 9017,
           "gzip": 2976
         }
       ],
