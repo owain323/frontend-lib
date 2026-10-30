@@ -217,7 +217,13 @@ const REPO = path.resolve(__dirname, '..');
                          t.querySelector('.table__sort').dataset.key === 'rev');
           const btn = th.querySelector('.table__sort');
           return {
-            arrow: getComputedStyle(btn, '::after').content,
+            /* ⭐ 箭头是 mask 图像（`content` 留空，字形不进可访问名），
+               所以读自定义属性，而不是读 content 字符。 */
+            arrow: (function () {
+              const cs = getComputedStyle(btn, '::after');
+              const g = cs.getPropertyValue('--sort-glyph').trim();
+              return g || cs.maskImage || cs.webkitMaskImage || '';
+            })(),
             aria: th.getAttribute('aria-sort'),
             vals: [...document.querySelectorAll('.table--financial tbody tr')]
               .map((tr) => {
@@ -243,10 +249,18 @@ const REPO = path.resolve(__dirname, '..');
         const isAsc = finite.every((v, i) => i === 0 || finite[i - 1] <= v);
         const dfin = desc.vals.filter((v) => isFinite(v));
         const isDesc = dfin.every((v, i) => i === 0 || dfin[i - 1] >= v);
-        const arrowsDiffer = asc.arrow !== desc.arrow && /↑|↓/.test(asc.arrow);
+        /* 把 data URI 认回可读的形状，断言两次**形状不同且都是单向箭头** */
+        const glyph = (s) => !s ? '无'
+          : (s.indexOf('M8 1.6') >= 0 ? '↑'
+            : s.indexOf('M8 14.4') >= 0 ? '↓'
+              : s.indexOf('M8 1.4') >= 0 ? '↕' : '图像');
+        const g1 = glyph(asc.arrow);
+        const g2 = glyph(desc.arrow);
+        const arrowsDiffer = (g1 === '↑' || g1 === '↓') &&
+                             (g2 === '↑' || g2 === '↓') && g1 !== g2;
         const ok = finite.length > 1 && isAsc && isDesc && arrowsDiffer;
         return { ok,
-                 note: '箭头 ' + asc.arrow + '→' + desc.arrow +
+                 note: '箭头 ' + g1 + '→' + g2 +
                        ' · 第一次是否升序=' + isAsc + ' · 第二次是否降序=' + isDesc +
                        ' · aria=' + asc.aria + '→' + desc.aria +
                        (ok ? '' : '  🔴 排序是假的（箭头或顺序没跟着变）') };
