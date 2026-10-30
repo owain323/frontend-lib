@@ -82,6 +82,20 @@ python 05-audit/shot-baseline.py --check --dir rtl   # 视觉基线（13 页）
   不各抄一份 apt 清单）。字体版本升级会让 CI 红而本机绿 —— 确认是字体变化，
   就重录 Linux 那套；这也是"基线锚在渲染环境上"的固有代价。
 
+**改了 demo 的结构 ⇒ 所有已有平台的基线都要重录，不只是你本机那套。**
+
+基线连同 `_stamp.json` 是**按平台分集**的：你重录 Windows 那套，
+本机的 `visual-stamp` 立刻绿；而 Linux 那套的戳仍指向旧 head，
+它在 CI 上红，**本机全量永远看不见**。判据很简单：**页面高度会不会变**——
+增删章节、改布局、改示例数据条数都会变；改文案、改注释不会。
+`visual` 报「尺寸变了 (393, 4540) → (393, 5653)」就是该重录的信号，
+不是"轻微像素差"，别当噪音忽略。
+
+Linux 那套**不要**在本机 `--record`（录出来的是 Windows 的渲染，等于污染基准）。
+正确通道是 Actions → release → Run workflow → 勾 `shoot_baseline`：
+它在 ubuntu + `ci-fonts.sh` 的同一套环境里录，产物只出 artifact、不落库、不发布。
+下载 `baseline-Linux` 覆盖 `10-review/shots/_baseline-linux*`，**逐张看过**再提交。
+
 **加新组件时请注意**：若它含有 **方向性字形**（箭头、指示符）、
 **左右不对称的槽位/边框/滑入方向**、或**顺序有语义**（上一页/下一页、首列），
 就必须把它的 demo 加进 `shot-baseline.py` 的 `RTL_PAGES`。
