@@ -227,7 +227,17 @@
      --surface 两套模式都有定义（浅色 #fff / 暗色 #1C2024），
      滑块作为「浮在轨道上的圆盘」用它是语义正确的。 */
   background: var(--surface);
-  border: 0;
+  /* 🔴 原来是 `border: 0`。0.17.0 强制色实拍：滑块变成**完全不可见** ——
+     白底（Canvas）+ 阴影被移除（box-shadow 在强制色下整个丢弃）+ 无边框，
+     开关只剩一个空心胶囊，**开与关看不出区别**。
+
+     `1px solid transparent` 在这里同时满足两件事：
+       · 正常态：transparent ⇒ 与 `border: 0` 视觉等效（下面已标 box-sizing: border-box，
+         外径仍是 --sw-thumb，滑块尺寸不变）
+       · 强制色下：transparent 被替换成 CanvasText ⇒ 自动获得 1px 描边
+     ⚠️ 不要为了"省一层"把箱模型改成 content-box —— 那会让滑块外径多 2px，
+        与 `--sw-gap` 的推导值脱钩，圆圈又歪回去（真机踩过一次）。 */
+  border: 1px solid transparent;
   /* 阴影里的 rgba 是**阴影本身**的物理属性（不是主题色），
      它在浅色与暗色下都该是黑色 —— 换令牌反而会变灰。 */
   box-shadow: 0 1px 2px rgba(0, 0, 0, .28);
@@ -254,7 +264,11 @@
                                  - var(--sw-inset) * 2 - var(--sw-pad) * 2
                                  - (var(--sw-h) - var(--sw-inset) * 2
                                     - var(--sw-pad) * 2)));
-  border-color: var(--accent);
+  /* ⚠️ 原来是 `var(--accent)`。那时 border 是 0，这条**从来没生效过**。
+     0.17.0 给滑块补了 `border: 1px solid transparent` 之后它会突然显形，
+     在蓝底上多出一圈品牌色描边 ⇒ 必须显式写 transparent，
+     让「正常态无描边 / 强制色下自动变 CanvasText」这条规则只有一个真相来源。 */
+  border-color: transparent;
 }
 
 /* 焦点环在**看得见**的元素上（原生 outline 被 clip 了，看不见）。
@@ -367,4 +381,49 @@
                                  - var(--sw-inset) * 2 - var(--sw-pad) * 2
                                  - (var(--sw-h) - var(--sw-inset) * 2
                                     - var(--sw-pad) * 2)));
+}
+
+/* ============================================================================
+   强制色（Windows 高对比度）
+   ============================================================================
+   0.17.0 实拍：加上滑块的 transparent 边框后，滑块已经**看得见**了，
+   但"开"与"关"仍然只能靠滑块的左右位置分辨 —— 因为开态轨道原本铺的是
+   `--switch-on` 品牌色，强制色下同样被抹成 Canvas。
+
+   ⇒ 开态改用系统 `Highlight`。这样：
+       关 = 白底胶囊 + 黑描边 + 左侧空心圆
+       开 = 高亮底胶囊 + 右侧实心圆
+     两重线索（底色 + 位置），不依赖任何作者色。
+
+   ⚠️ 选择器必须与上面开态规则**完全同权**（0,3,0）并写在它之后，
+      否则会被 `--switch-on` 压掉。
+   ============================================================================ */
+@media (forced-colors: active) {
+  .switch__input:checked ~ .switch__track {
+    background: Highlight;
+  }
+
+  /* 🔴 禁用态必须与「可用的关态」不同 —— 否则等于骗人
+     ------------------------------------------------------------------------
+     实拍（0.17.0）：修好滑块之后，禁用态与正常关态在强制色下**完全一致**
+     （track 白 + 1px 黑边、thumb 白 + 1px 黑边、都在左侧）。
+     高对比度用户会以为这个开关还能点。
+
+     原来靠 `--surface-sunken`（灰底）与 `--text-tertiary`（灰字）表达禁用，
+     这两者在强制色下都被抹成 CanvasText/Canvas。
+
+     ⇒ 用 `GrayText`：它的系统语义就是 "disabled / 不可操作"，
+       在真实高对比度主题下是灰。三处一起换，保持"轨道-滑块-文字"同一套语义。
+     ⚠️ 模拟色板里 GrayText 解析为 rgb(96,0,0) 深红，看着像"危险"不像"禁用"。
+        这是 Chromium 模拟的偏差，不是这条规则的问题 —— 判据只判"≠ Canvas"。
+     ------------------------------------------------------------------------ */
+  .switch__input:disabled ~ .switch__track {
+    border-color: GrayText;
+  }
+  .switch__input:disabled ~ .switch__track .switch__thumb {
+    border-color: GrayText;
+  }
+  .switch__input:disabled ~ .switch__label {
+    color: GrayText;
+  }
 }

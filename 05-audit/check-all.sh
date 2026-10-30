@@ -842,6 +842,16 @@ run "opener-path-rev" node 05-audit/opener-path-check.js --selftest
 #   这一道同时证明三件事：按槽切换、未标记 `[data-cq]` 的页面行为不变、
 #   以及把 @container 整块剥掉之后布局不塌（老引擎 Chromium 97 看到的就是那一份）。
 run "container-query" node 05-audit/container-query-check.js
+# 🔴 强制色（Windows 高对比度）下，信息还在不在（0.17.0）。
+#   全库 40 个 CSS 里 `@media (forced-colors: active)` 曾是 3 处，没人验证过其余部分。
+#   打开开关逐页实拍，抓到的不是"样式略糙"：进度条整块空白、开关滑块消失
+#   （开与关看不出区别）、排序箭头与错误图标变成白底白形状、骨架屏像"加载完了"。
+#   这些在正常截图里一个都看不见，对比度检查也全绿 —— 因为强制色不是"对比度不够"，
+#   是"颜色被换掉之后语义丢失"，必须单独一道。
+#   判据只问「前景 ≠ 背景」，不断言具体 RGB：模拟色板里 GrayText 是深红，
+#   真实高对比度主题下是灰，断言色值会得到一台机器绿、另一台红的门禁。
+#   三组：A 规则层（fixture）、B 页面层（37 页扫同款）、C 反向控制（剥掉修复必须变红）。
+run "forced-colors"   node 05-audit/forced-colors-check.js
 run "composition" node 05-audit/composition-check.js
 
 # CSS 引用完整性（发现项只报告不 fail：class 名跨组件复用，误报率偏高）

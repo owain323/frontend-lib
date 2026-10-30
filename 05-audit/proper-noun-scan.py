@@ -49,6 +49,13 @@ WHITELIST = {
     #   起因：ERRORS.md E41 记「批量插零文件守卫时守卫插到 return 之后
     #   ⇒ NameError: total」，那是我自己踩的真实报错，不是内部代号。
     'NameError',
+    # 2026-10-31 补三个（起因：强制色那道门禁用系统色关键字修强制色缺陷）
+    #   · CanvasText / GrayText —— CSS 系统色关键字（CSS Color 4）。它们不是
+    #     内部代号，是**规范里的名字**；判据必须用它们才能在强制色下保住
+    #     前景/禁用态的语义（见 02-primitives/skeleton、switch）。
+    #   · InvalidStateError —— Web Animations 的标准异常：对无限动画调
+    #     `Animation.finish()` 就会抛它。门禁里必须捕获，所以名字出现在代码里。
+    'CanvasText', 'GrayText', 'InvalidStateError',
     # 2026-10-17 补三个（起因：审计收口那轮新增的门禁代码里引用了它们）
     #   · AttributeError   —— release-gate 处理 exports 条件导出时，
     #                         原判据对 dict 调 .endswith ⇒ 真抛过这个错

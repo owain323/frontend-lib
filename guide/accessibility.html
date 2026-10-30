@@ -42,8 +42,8 @@
 <th>项目</th><th>值</th>
 </tr></thead>
 <tbody>
-<tr><td>声明适用版本</td><td>agentcss <code>0.16.1</code></td></tr>
-<tr><td>声明日期</td><td>2026-10-30</td></tr>
+<tr><td>声明适用版本</td><td>agentcss <code>0.17.0</code></td></tr>
+<tr><td>声明日期</td><td>2026-10-31</td></tr>
 <tr><td>复核节奏</td><td>每次发版前重跑（<code>npm run gate</code> 内含全部证据）</td></tr>
 <tr><td>范围</td><td>本库交付的 CSS / JS、全部 <code>demo.html</code>（组件页 + 图表页 + 组合页）、以及文档站生成的页面</td></tr>
 <tr><td>不在范围</td><td>使用者拿这些组件拼出来的业务页面（那是你的无障碍责任，不是库的）</td></tr>
@@ -132,7 +132,7 @@
 <p>这一轮还确认并修掉了一条真缺陷：<code>table</code> 的列头按钮会把排序符号 <code>↕</code> 念出来（来源是 <code>table.css</code> 的 <code>::after</code> 伪元素文本，Chromium 把它算进了可访问名）。自动检查抓不到它 —— 可访问名&quot;非空&quot;就算过。修法是把字形换成 <code>mask</code> 图像（<code>content</code> 留空），视觉与三态形状不变；改完用 NVDA 复听，表头只剩「公司 · 按钮」。详见协议页第三节。</p>
 <hr>
 <h2 id="s7">三 · 已知缺口（按影响排序）<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
-<ol><li><strong>没有人耳旁听与第二平台记录</strong>：2026-10-30 有一轮 NVDA 脚本实录（见协议页），但 VoiceOver / TalkBack 仍为空白，语气与播报时机也没人判断过。这是与 Carbon / Spectrum 那类一致性报告差距最大的一处。</li><li><strong>没有 VPAT / ACR 正式报告</strong>。采购流程要的那种文档本库没有出；上面那张 SC 表可以当它的替代品，但它不是法律意义上的 ACR。</li><li><strong>强制色板（forced-colors）只覆盖 6 个 CSS</strong>，Windows 高对比度模式未逐组件验证。</li><li><strong>RTL 已进渲染判据与视觉基线，但没进真机</strong>： <code>rtl-render.js</code> 判 37 页（RTL 不横滚 / 阿·希文字膨胀 1.3× 不破相 / 方向性字形镜像），<code>shot-baseline.py --dir rtl</code> 有 13 张视觉基线（覆盖&quot;镜像错了但不溢出不改字形&quot;那一类）。 <strong>仍然缺的是</strong>：母语 RTL 使用者的实际阅读体验、iOS/Android 真机 RTL 截图，以及「页面加载后再切 <code>dir</code>」时组件内部状态是否需要重算。最后这条的现状是：CSS 会立刻响应（树形箭头、栅格、滑入方向都靠 CSS），但凡是 JS 在挂载时把方向读进变量的地方都不会重算 —— 本库目前没有这种写法，这一点靠 <code>rtl-render</code> 的&quot;挂载后再改 dir&quot;路径间接守着。</li><li><strong>1.4.12 文本间距</strong>未按极端注入验证；<strong>1.4.13</strong> 未验证&quot;提示内文字可选中&quot;。</li><li><strong>Android 系统 WebView 未验证</strong>，真机矩阵里它是 ❌（见<a href="../SUPPORT.md">浏览器支持矩阵</a>）。</li><li><strong><code>prefers-contrast: more</code> 未单独验收</strong>（只做了 <code>forced-colors</code>）。</li></ol>
+<ol><li><strong>没有人耳旁听与第二平台记录</strong>：2026-10-30 有一轮 NVDA 脚本实录（见协议页），但 VoiceOver / TalkBack 仍为空白，语气与播报时机也没人判断过。这是与 Carbon / Spectrum 那类一致性报告差距最大的一处。</li><li><strong>没有 VPAT / ACR 正式报告</strong>。采购流程要的那种文档本库没有出；上面那张 SC 表可以当它的替代品，但它不是法律意义上的 ACR。</li><li><strong>强制色板（forced-colors）已逐组件验到&quot;信息不丢&quot;，但没上过真机</strong>： 2026-10-31 用 CDP 的 <code>Emulation.setEmulatedMedia</code> 把 <code>forced-colors</code> 打开，扫了全部 37 页 + 6 个 fixture，修掉 6 类真实缺陷（进度条整块空白、开关滑块消失、排序箭头与错误图标变白、骨架屏伪装成&quot;加载完&quot;、单选圆点消失），并由 <code>05-audit/forced-colors-check.js</code> 守着（含&quot;剥掉修复必须变红&quot;的反向控制）。 <strong>仍然缺的是</strong>：真实 Windows 高对比度主题下的截图与人眼确认 —— 模拟色板与真机不是同一套（<code>GrayText</code> 在模拟里是深红，真机是灰），所以本文档所有强制色结论都只到&quot;语义可辨&quot;这一层，不到&quot;配色好看&quot;。</li><li><strong>RTL 已进渲染判据与视觉基线，但没进真机</strong>： <code>rtl-render.js</code> 判 37 页（RTL 不横滚 / 阿·希文字膨胀 1.3× 不破相 / 方向性字形镜像），<code>shot-baseline.py --dir rtl</code> 有 13 张视觉基线（覆盖&quot;镜像错了但不溢出不改字形&quot;那一类）。 <strong>仍然缺的是</strong>：母语 RTL 使用者的实际阅读体验、iOS/Android 真机 RTL 截图，以及「页面加载后再切 <code>dir</code>」时组件内部状态是否需要重算。最后这条的现状是：CSS 会立刻响应（树形箭头、栅格、滑入方向都靠 CSS），但凡是 JS 在挂载时把方向读进变量的地方都不会重算 —— 本库目前没有这种写法，这一点靠 <code>rtl-render</code> 的&quot;挂载后再改 dir&quot;路径间接守着。</li><li><strong>1.4.12 文本间距</strong>未按极端注入验证；<strong>1.4.13</strong> 未验证&quot;提示内文字可选中&quot;。</li><li><strong>Android 系统 WebView 未验证</strong>，真机矩阵里它是 ❌（见<a href="../SUPPORT.md">浏览器支持矩阵</a>）。</li><li><strong><code>prefers-contrast: more</code> 未单独验收</strong>（只做了 <code>forced-colors</code>）。</li></ol>
 <hr>
 <h2 id="s8">四 · 自己验一遍<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
 <pre class="code" tabindex="0"><code class="language-bash"># 一条命令跑完全部无障碍相关判据（含反向控制）
@@ -163,7 +163,7 @@ python 05-audit/shot-baseline.py --check --dir rtl   # RTL 视觉基线</code></
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.16.1 · 零第三方运行时依赖 · 组件数 37</p>
+  <p>v0.17.0 · 零第三方运行时依赖 · 组件数 37</p>
 </footer>
 </body>
 </html>

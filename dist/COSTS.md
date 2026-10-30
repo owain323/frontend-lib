@@ -10,7 +10,7 @@
 实测两笔账，一笔不省：
 
 - `tokens` 源码版 gzip **20.4 KB** → min 版 **2.7 KB**（省 87%）——
-  源码多的那部分**全是注释**（全库 CSS 有 67% 是注释，字节口径），而注释是给维护者的，不是给浏览器的。
+  源码多的那部分**全是注释**（全库 CSS 有 68% 是注释，字节口径），而注释是给维护者的，不是给浏览器的。
 - tokens 的 min 版 2.7 KB **比任何一个组件自己都贵** ⇒
   "只用一个组件"的真实起步价就是它。不公开这张表，等于让人盲买。
 
@@ -21,18 +21,18 @@
 | primitive | `badge` | 2.7 KB | 0.5 KB | — | **3.2 KB** | 23.1 KB | −19.9 KB |
 | primitive | `button` | 2.7 KB | 1.0 KB | — | **3.7 KB** | 26.8 KB | −23.1 KB |
 | primitive | `card` | 2.7 KB | 0.9 KB | — | **3.7 KB** | 24.5 KB | −20.8 KB |
-| primitive | `choice` | 2.7 KB | 1.1 KB | — | **3.8 KB** | 25.8 KB | −22.0 KB |
+| primitive | `choice` | 2.7 KB | 1.1 KB | — | **3.8 KB** | 26.3 KB | −22.5 KB |
 | primitive | `combobox` | 2.7 KB | 1.0 KB | 5.4 KB | **9.1 KB** | 29.9 KB | −20.9 KB |
 | primitive | `date-range` | 2.7 KB | 0.8 KB | 2.5 KB | **6.1 KB** | 26.9 KB | −20.8 KB |
 | primitive | `delta` | 2.7 KB | 0.3 KB | — | **3.0 KB** | 23.1 KB | −20.2 KB |
-| primitive | `input` | 2.7 KB | 1.0 KB | — | **3.7 KB** | 24.0 KB | −20.3 KB |
+| primitive | `input` | 2.7 KB | 1.0 KB | — | **3.8 KB** | 24.3 KB | −20.6 KB |
 | primitive | `metric` | 2.7 KB | 0.5 KB | — | **3.2 KB** | 23.6 KB | −20.4 KB |
 | primitive | `popover` | 2.7 KB | 0.8 KB | 2.2 KB | **5.7 KB** | 27.7 KB | −22.0 KB |
-| primitive | `progress` | 2.7 KB | 0.7 KB | — | **3.4 KB** | 23.3 KB | −19.9 KB |
+| primitive | `progress` | 2.7 KB | 0.8 KB | — | **3.5 KB** | 24.7 KB | −21.2 KB |
 | primitive | `select` | 2.7 KB | 0.8 KB | 3.5 KB | **7.1 KB** | 30.0 KB | −22.9 KB |
 | primitive | `separator` | 2.7 KB | 0.2 KB | — | **3.0 KB** | 21.7 KB | −18.7 KB |
-| primitive | `skeleton` | 2.7 KB | 0.5 KB | — | **3.2 KB** | 21.8 KB | −18.6 KB |
-| primitive | `switch` | 2.7 KB | 0.8 KB | — | **3.5 KB** | 27.5 KB | −24.1 KB |
+| primitive | `skeleton` | 2.7 KB | 0.5 KB | — | **3.2 KB** | 22.3 KB | −19.1 KB |
+| primitive | `switch` | 2.7 KB | 0.8 KB | — | **3.5 KB** | 28.7 KB | −25.2 KB |
 | pattern | `accordion` | 2.7 KB | 1.3 KB | 1.8 KB | **5.8 KB** | 34.9 KB | −29.1 KB |
 | pattern | `content` | 2.7 KB | 1.0 KB | — | **3.7 KB** | 25.0 KB | −21.2 KB |
 | pattern | `drawer` | 2.7 KB | 0.8 KB | 2.4 KB | **5.9 KB** | 26.9 KB | −21.0 KB |
@@ -50,9 +50,9 @@
 
 ## 三、全库
 
-- 全部组件都用上（min，含 tokens 一份）：**62.7 KB**
-- 源码版（带注释）全库 gzip：307.3 KB
+- 全部组件都用上（min，含 tokens 一份）：**62.9 KB**
+- 源码版（带注释）全库 gzip：311.7 KB
 
-> ⚠️ 源码版那个数字**不是**要付的钱：它包含我们的注释（全库 CSS 有 67% 是注释，字节口径）。
+> ⚠️ 源码版那个数字**不是**要付的钱：它包含我们的注释（全库 CSS 有 68% 是注释，字节口径）。
 > 它的用途只有一个 —— 让人看清"dist 到底省了多少"。
 

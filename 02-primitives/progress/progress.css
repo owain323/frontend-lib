@@ -29,6 +29,22 @@
   background: var(--surface-sunken);
   border-radius: var(--r-full);   /* 胶囊形 */
   overflow: hidden;
+  /* 🔴 强制色模式下的边界预留（0.17.0 实拍：没有它进度条整体消失）
+     ---------------------------------------------------------------------
+     Windows 高对比度下 `background` 被强制成 Canvas，轨道与填充条**同色**
+     ⇒ 735×6 的面积全白，用户完全看不出进度。
+
+     `outline: 1px solid transparent` 是这里的正解，不是笔误：
+       · 正常态：transparent ⇒ 看不见，且 outline **不占布局**，胶囊形不变
+       · 强制色下：浏览器把 transparent 替换成 CanvasText
+         ⇒ 自动显出一条 1px 实线，轨道因此有了轮廓
+     ⚠️ 别改成 `border: 1px solid transparent`：border 在 border-box 下会
+        吃掉 2px 内容高，`--progress-h: 4px` 的细条就只剩 2px 了。
+     ⚠️ 也别用 `box-shadow: 0 0 0 1px transparent` 兜底 —— 实测无效，
+        box-shadow 在强制色下整个被移除，透明的也一样。
+     判据见 05-audit/forced-colors-check.js A2/A3。 */
+  outline: 1px solid transparent;
+  outline-offset: -1px;          /* 画在内侧，不与相邻元素抢位置 */
   /* ⚠️ 不用 <progress> 原生标签的原因：它在部分浏览器里无法设成胶囊形，
      且 ::-webkit-progress-value 的圆角行为不一致。 */
 }
@@ -48,6 +64,27 @@
 .progress--success .progress__bar { background: var(--success); }
 .progress--warning .progress__bar { background: var(--warning); }
 .progress--danger  .progress__bar { background: var(--danger); }
+
+/* 🔴 强制色：填充条必须换「系统高亮色」，不能靠作者色
+   ---------------------------------------------------------------------------
+   强制色模式下所有作者写的 background-color 都被替换成 Canvas（白/黑）
+   ⇒ 填充条与轨道同色，进度归零。实测 735×6 全白，一个像素都不剩。
+
+   为什么用 `Highlight` 而不是别的系统色：
+     · 它是**唯一**语义为"被选中的一段/重点区域"的系统色，正好对应填充条
+     · 系统色关键字**不被强制替换** —— 实测 `Highlight` 在模拟下解析为
+       rgb(55,0,110)，`CanvasText` 为 rgb(0,0,0)，都保持自己的身份
+     ⚠️ 但**别在判据里断言具体 RGB**：模拟色板与真实高对比度主题不是同一套
+        （实测 `GrayText` 在模拟下是 rgb(96,0,0) 深红，真实系统下是灰）。
+        判据只能问"是不是等于 Canvas"。
+
+   为什么选择器是 `.progress .progress__bar` 而不是 `.progress__bar`：
+     上面三个变体是 0,2,0 优先级。用 0,1,0 会被它们压掉 ⇒ 危险态仍然不可见。
+     这里必须同权或更高，且写在变体之后。
+   --------------------------------------------------------------------------- */
+@media (forced-colors: active) {
+  .progress .progress__bar { background: Highlight; }
+}
 
 /* 尺寸变体 */
 .progress--lg { --progress-h: 10px; }
@@ -89,6 +126,25 @@
 
 .progress-ring--success { background: conic-gradient(var(--success) calc(var(--progress-num, 0) * 1%), var(--surface-sunken) 0); }
 .progress-ring--danger  { background: conic-gradient(var(--danger)  calc(var(--progress-num, 0) * 1%), var(--surface-sunken) 0); }
+
+/* 🔴 强制色：conic-gradient 整条被移除，环会"凭空不见"只剩一个数字
+   ---------------------------------------------------------------------------
+   实测（0.17.0）：`.progress-ring` 在 forced-colors 下 `background-image`
+   变成 none ⇒ 只截到居中的 "72%"，环一个像素都没有。
+   信息本身没丢（中心 label 里就是百分比数字），丢的是"这是个环"的形状。
+
+   ⇒ 用 outline 补一个圈。**不用 border**：label 是
+      `calc(100% - var(--ring-thickness) * 2)`，border 会挤小它，
+      在 --ring-size 较小时数字会被裁。
+   ⚠️ 也不能指望 `background: canvas` 之类的替换 —— 环是**渐变**，
+      强制色下 gradient 不区分颜色，整条 background-image 直接丢弃。 */
+@media (forced-colors: active) {
+  .progress-ring {
+    background: none;
+    outline: 2px solid CanvasText;
+    outline-offset: -2px;        /* 内侧描边，外径不变 */
+  }
+}
 
 /* ============================================================================
    3 · 不确定进度（不知道要多久）

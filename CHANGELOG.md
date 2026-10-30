@@ -16,6 +16,82 @@
 
 （无）
 
+## [0.17.0] - 2026-10-31
+
+### 能力 · 强制色模式（Windows 高对比度）：从"3 个 CSS 有 media 块"到"逐页验证 + 门禁"
+
+**起因**：`docs/ACCESSIBILITY.md` 里一直挂着一条缺口 ——「强制色板只覆盖 6 个 CSS，
+未逐组件验证」。这句话是诚实的，但它同时意味着一件事：**其余 34 个 CSS
+在高对比度下是什么样，没人知道**。
+
+用 CDP 的 `Emulation.setEmulatedMedia` 把 `forced-colors` 打开逐页实拍，
+结果不是"样式略糙"，是**信息直接消失**：
+
+| 组件 | 强制色下实际发生的事 |
+|---|---|
+| progress（线形） | 735×6 **整块空白**，轨道与填充同色，进度归零 |
+| progress（环形） | `conic-gradient` 被整条移除，只剩一个漂着的 `72%` |
+| switch | 滑块**完全消失**（白底 + 阴影被丢弃 + 无边框），开关只剩空心胶囊，**开与关看不出区别**；修好滑块后还发现禁用态与可用关态**完全一样** |
+| table 排序箭头 | `mask` 还在，但 `background-color: currentColor` 被换成 Canvas ⇒ **白底白箭头** |
+| input 错误图标 | 同上，叹号圆标变白 |
+| skeleton | 整块变白 —— 看起来像"加载完了，内容为空" |
+| choice 单选圆点 / indeterminate 横线 | 同上模式，圆点与横线消失（**checkbox 的勾反而没事**，因为它用 `border` 画） |
+
+这些问题在正常截图里一个都看不见，在 axe / 对比度检查里也**全绿**：
+强制色不是"对比度不够"，是"颜色被换掉之后语义丢失"。所以它必须单独一道门禁。
+
+### 加了什么
+
+- **`05-audit/forced-colors-check.js`**（新）—— 三组判据：
+  - **A 规则层**（fixture + 真实 CSS）：6 类缺陷逐条断言"前景 ≠ 背景"
+  - **B 页面层**：同样的模式扫过 37 个真实 demo，防止"修完这几个，别处还有同款"
+    （B3 就是这么抓出 `choice` 的 —— 我原本没打算改它）
+  - **C 反向控制**：把修复剥掉再跑一遍，**必须变红** —— 否则 A 组的绿只证明
+    "代码现在是绿的"，不证明判据有牙
+- 已接进 `check-all.sh`（浏览器门禁段，紧随 `container-query`）。
+
+### 改了什么（6 个 CSS）
+
+- `progress.css`：轨道加 `outline: 1px solid transparent`；填充条
+  `@media (forced-colors: active) { background: Highlight }`；环形补 2px 轮廓
+- `switch.css`：滑块 `border: 0` → `1px solid transparent`；开态轨道用 `Highlight`；
+  禁用态三处用 `GrayText`；顺手修掉一条**从未生效过**的
+  `border-color: var(--accent)`（border 为 0 时它是死代码，加了边框才突然显形）
+- `table.css` / `input.css`：mask 图标的 `background-color` 在强制色下改 `CanvasText`
+- `skeleton.css`：填充改 `GrayText`（系统语义正是"占位/非正文"）
+- `choice.css`：radio 圆点与 indeterminate 横线改 `CanvasText`
+
+### 三条实测规律（省得下个人再试一遍）
+
+1. `border: 1px solid transparent` 与 `outline: Npx solid transparent`
+   在强制色下**自动变 CanvasText 实线** ⇒ 边界预留不需要 media query。
+   但 `box-shadow: 0 0 0 1px transparent` **无效** —— 阴影整个被丢弃。
+2. **用 `background-color` 画"前景图形"必死，用 `border`/`color` 画则活。**
+   强制色按属性换色：背景换背景色、前景换前景色。把图形画在背景属性上，
+   等于把它声明成了背景。
+3. **不能把 `rgb(0,0,0)` 当成 Canvas。** 黑既可能是亮色主题的 CanvasText，
+   也可能是暗色主题的 Canvas —— 同一个 RGB 在两种主题下含义相反。
+   判据只能问"这个图形和它所在的那块底，颜色一样吗"。
+
+### 两个判据自身的坑（都已修，记在这里）
+
+- **切媒体特性 ≠ 样式已重算完**：`.switch__track` 有
+  `transition: background var(--dur-fast)`，切到 `forced-colors` 后读它拿到的是
+  **过渡起点**（纯白），等 250ms 才是终态。而 progress / table / choice 没有
+  对 `background` 做过渡 ⇒ 立刻就对，于是同一个门禁里"有的过有的不过"。
+  修法是 `document.getAnimations().forEach(a => a.finish())` 把动画推到终态，
+  不是加 sleep。（和 0.16.1 那次「`networkidle0` ≠ JS 就绪」是同一类错误。）
+- **模拟色板与真机不是同一套**：`GrayText` 在 Chromium 模拟里解析成
+  `rgb(96,0,0)` 深红，真实 Windows 高对比度主题下是灰。所以本文档与门禁
+  都不写具体 RGB，只判"是否等于背景"。
+
+### 视觉基线
+
+Windows 三套（light / dark / RTL）已重录。像素比对结果：**43/44 页零差异**，
+只有 `switch` 有 112 个像素（0.0133%）变化，集中在滑块圆角的抗锯齿边缘；
+`switch-geometry` 复验滑块仍是 20×20、上下间隙对称 ⇒ 尺寸未变。
+Linux 三套由 CI 的 `shoot_baseline` 重录。
+
 ## [0.16.1] - 2026-10-31
 
 ### 判据 · `a11y-ax` 在并发下量到过"组件还没初始化完"的树

@@ -187,6 +187,20 @@
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 8v5M12 16.5v.5'/%3E%3C/svg%3E") center/contain no-repeat;
 }
 
+/* 🔴 强制色：与 table__sort::after 同一个模式 —— mask + currentColor 会变成白图标
+   ---------------------------------------------------------------------------
+   实拍（0.17.0）：`.field__error` 只剩「请输入有效金额」，行首的叹号没了。
+   文字本身已经表达了错误，所以这不是信息丢失，是**第二条线索**（给色盲用户的
+   非颜色编码，WCAG 1.4.1）被强制色抹掉了 —— 恰好抹掉的是它存在的理由。
+
+   ⇒ 强制色下改用 CanvasText。判据见 forced-colors-check.js A1。
+   --------------------------------------------------------------------------- */
+@media (forced-colors: active) {
+  .field__error::before {
+    background: CanvasText;
+  }
+}
+
 /* ---------------------------------------------------------------- 成功态
    只在"校验有明确通过语义"时用（如"该用户名可用"）。
    普通输入框加成功态是噪音。
