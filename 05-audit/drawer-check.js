@@ -36,6 +36,31 @@ const REPO = path.resolve(__dirname, '..');
         return { ok: ok, note: ok ? '已打开 .drawer' : '🔴 打不开' };
       },
 
+      /* ① 🔴 打开即把焦点移进抽屉（APG Dialog 的开启动作）
+       *  不重新点开：上一条已经把抽屉打开了，这里只读结果 ——
+       *  再点一次会 toggle 把它关掉。
+       *  为什么单独一条：dropdown 的同类缺陷就是「能打开、焦点没进」，
+       *  而「Tab 陷阱」那条在焦点还在触发器时也可能照样绿 —— 它只证明
+       *  按 Tab 之后没跑出去，证明不了"打开就已经在里面"。
+       */
+      '① 打开即把焦点移进抽屉': async (p) => {
+        const r = await p.evaluate(() => {
+          const d = document.querySelector('.drawer');
+          if (!d) return { noDrawer: true };
+          const a = document.activeElement;
+          return {
+            inside: !!(a && (d.contains(a) || a === d)),
+            tag: a ? a.tagName : 'null',
+            txt: a ? (a.textContent || '').trim().slice(0, 12) : '',
+          };
+        });
+        if (r.noDrawer) return { ok: false, note: '🔴 抽屉未打开 ⇒ 无从判断' };
+        return { ok: r.inside,
+                 note: r.inside
+                   ? '未按任何键，焦点已在 ' + r.tag + '「' + r.txt + '」（抽屉内）'
+                   : '🔴 打开后焦点在抽屉外：' + r.tag + '「' + r.txt + '」' };
+      },
+
       /* 语义 */
       'role=dialog + aria-modal + 有名字': async (p) => {
         const r = await p.evaluate(() => {
