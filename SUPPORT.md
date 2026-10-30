@@ -11,6 +11,12 @@
 >   ⇒ 这比"没验证"更糟：它给了一个**错误的**证据来源，
 >     读者会以为"至少 Firefox 跑过了"。
 >   现在引擎是真的切换了，并且每个作业都要**自己报 UA** 自证（见下）。
+>
+> 🔴 2026-10-30 更正（反方向）：
+>   这一页曾把桌面 Firefox 标成 ⚠️，理由是「没装 firefox 时门禁显式 SKIP」。
+>   **那句推测是错的**：CI 的 `浏览器矩阵（firefox）` 作业一直在跑，而且是绿的
+>   （UA 自报 `X11; Linux x86_64; rv:155.0 Gecko/20100101 Firefox/155.0`）。
+>   ⚠️ 与 ❌ 都会低估覆盖面，和 ✅ 高估一样是失真。
 
 ## 状态定义
 
@@ -31,7 +37,7 @@
 |---|---|---|---|
 | 桌面 | Chromium | ✅ | 全部组件契约、暗色对比度、响应式三档、视觉回归 |
 | 桌面 | WebKit | ✅ | nightly 矩阵的组件契约（select / combobox / date-range / overlay / tree / dropdown / popover / tooltip） |
-| 桌面 | Firefox | ⚠️ | 矩阵里**已声明并自证**，但本机/CI 需要先 `npx playwright install firefox`；没装时门禁显式 SKIP，不假装通过 |
+| 桌面 | Firefox | ✅ | 与 WebKit 同一批组件契约（select / combobox / date-range / overlay / tree / dropdown / popover / tooltip），CI 作业自报 Gecko UA；另外 8 个组件（accordion / drawer / table / tabs / choice / input / overlay / dropdown）用 `FL_ENGINE=firefox` 在本机复跑同样全绿 |
 
 ### 🔴 怎么知道"跑的真的是这个引擎"
 
