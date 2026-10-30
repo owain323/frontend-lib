@@ -69,6 +69,39 @@ const REPO = path.resolve(__dirname, '..');
                               : '🔴 ↓ 没能打开' };
       },
 
+      /* ①b 鼠标点击打开：焦点同样要进菜单
+         🔴 这条是补的。原来只测了 `↓`（键盘分支），于是漏掉了一个真实现：
+            读屏用户在浏览模式下按 Enter，NVDA 会把它变成**一次点击**，
+            走 click 分支 ⇒ 只 open() 不聚焦 ⇒ 焦点留在按钮上，菜单项永远进不去。
+            真机用 NVDA + Edge 实测到：菜单已展开，焦点元素却仍是那个按钮，
+            而当时 headless 的 ① 是绿的 —— 差别就在这条没被覆盖的路径。 */
+      '点击打开也聚焦首项': async (p) => {
+        /* 先回到关闭态（前一条 ① 结束时菜单是开着的） */
+        await p.evaluate(() => {
+          const b = document.querySelector('[data-dd-btn]');
+          if (b && b.getAttribute('aria-expanded') === 'true') b.click();
+        });
+        await new Promise((r) => setTimeout(r, 200));
+        const box = await p.evaluate(() => {
+          const b = document.querySelector('[data-dd-btn]');
+          const r = b.getBoundingClientRect();
+          return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+        });
+        await p.mouse.click(box.x, box.y);   /* 真鼠标点击，不是 el.click() */
+        await new Promise((r) => setTimeout(r, 300));
+        const r = await p.evaluate(() => {
+          const menu = document.querySelector('[data-dd-menu]');
+          const el = document.activeElement;
+          const inItem = el && el.getAttribute && el.getAttribute('role') === 'menuitem';
+          return { open: menu && !menu.hidden, inItem: inItem,
+                   label: (el || {}).textContent };
+        });
+        return { ok: r.open && r.inItem,
+                 note: r.open ? (r.inItem ? '点击打开后焦点在「' + (r.label || '').trim() + '」✅'
+                                          : '🔴 点击打开了但焦点不在菜单项上')
+                              : '🔴 点击没能打开' };
+      },
+
       /* ② ↑↓ 在项间移动（循环）*/
       '↑↓ 在菜单项间循环': async (p) => {
         const seq = [];

@@ -317,6 +317,12 @@
       menu.hidden = false;
       btn.setAttribute('aria-expanded', 'true');
       active = -1;
+      /* ⭐ 聚焦首项必须放在 open() 里，不能只写在键盘分支。
+         读屏用户在浏览模式下按 Enter，NVDA 会把它变成**一次点击**，
+         走的是 click 分支 ⇒ 键盘分支里的 `focusAt(0)` 根本没机会执行，
+         焦点留在按钮上，菜单项永远进不去（真机用 NVDA + Edge 实测过）。
+         APG 的菜单按钮也是这样：打开即把焦点交给第一项。 */
+      focusAt(0);
       flEmit(root, 'fl-open', null);
       if (opt.onOpen) opt.onOpen();
     }
@@ -391,12 +397,11 @@
     root.addEventListener('keydown', function (e) {
       var k = e.key;
 
-      /* 按钮上：↓ / Enter / Space 打开并聚焦首项 */
+      /* 按钮上：↓ / Enter / Space 打开（聚焦首项已由 open() 负责） */
       if (e.target === btn) {
         if (k === 'ArrowDown' || k === 'Enter' || k === ' ' || k === 'Spacebar') {
           e.preventDefault();
           open();
-          focusAt(0);
         }
         return;
       }
