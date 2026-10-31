@@ -215,7 +215,20 @@ def main():
         bad += 1
         print(out)
 
-    # ⑭ 自检不许改仓库
+    # ⑭ 文档里的天花板必须与账本一致（否则 docs/BUDGET.md 会变成第二个真值）
+    n += 1
+    with io.open(REAL, encoding='utf-8') as f:
+        real = json.load(f)
+    want = '%d KB' % round(real['ceilingEffectiveBytes'] / 1024.0)
+    with io.open(os.path.join(ROOT, 'docs', 'BUDGET.md'), encoding='utf-8') as f:
+        doc = f.read()
+    ok = want in doc
+    print('  %s BUDGET.md 写的天花板与账本一致（%s）' % ('OK ' if ok else '🔴', want))
+    if not ok:
+        bad += 1
+        print('       文档里找不到「%s」—— 改了账本却没改文档，或者反过来' % want)
+
+    # ⑮ 自检不许改仓库
     n += 1
     ok = sha(REAL) == real_before
     print('  %s 真账本未被改动（sha 相同）' % ('OK ' if ok else '🔴'))

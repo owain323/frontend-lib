@@ -11,6 +11,9 @@
 <link rel="stylesheet" href="../../02-primitives/timeline/timeline.css">
 <style>
   .tl-demo { max-width: 36rem; }
+  /* 代码块在 320px 上会横向溢出（实测 scrollWidth 630 > 320）——
+     一行长标记就能把整页撑成横向滚动。这一条只属于 demo，不进组件。 */
+  .tl-code { overflow-x: auto; }
   .tl-demo .timeline__title { font-size: var(--fs-base); }
   /* 反例专用：把圆点画成**字符**。这是错的，只为对照演示。 */
   .timeline--dotchar .timeline__item::after {
@@ -136,11 +139,16 @@
   </ul>
 
   <h2 class="rule-top">标记结构</h2>
-<pre><code>&lt;ol class="timeline"&gt;
-  &lt;li class="timeline__item timeline__item--latest"&gt;
-    &lt;time class="timeline__time" datetime="2026-10-29"&gt;2026-10-29&lt;/time&gt;
-    &lt;h3 class="timeline__title"&gt;2026 年三季报披露&lt;/h3&gt;
-    &lt;p class="timeline__body"&gt;营业总收入 1,294.06 亿元……&lt;/p&gt;
+<pre class="tl-code"><code>&lt;ol class="timeline"&gt;
+  &lt;li class="timeline__item
+       timeline__item--latest"&gt;
+    &lt;time class="timeline__time"
+          datetime="2026-10-29"&gt;
+      2026-10-29
+    &lt;/time&gt;
+    &lt;h3 class="timeline__title"&gt;
+      2026 年三季报披露
+    &lt;/h3&gt;
   &lt;/li&gt;
 &lt;/ol&gt;</code></pre>
   <p class="small">

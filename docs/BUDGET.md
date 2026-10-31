@@ -158,7 +158,7 @@ python3 05-audit/perf-gate.py --ratchet
 | 文件 | 验什么 | 怎么验 |
 |---|---|---|
 | `perf-gate.py --selftest` | `verdict()` 的五个分支顺序 + `main()` 真的调它 | 8 条合成数字 + 一条字节码接线检查 |
-| `budget-selftest.py` | **端到端**行为：退出码、失败文案、`--grant`/`--ratchet` 写盘、账本缺失 | 14 条，用 `FL_BUDGET` 指向临时账本跑真实的 `perf-gate.py` |
+| `budget-selftest.py` | **端到端**行为：退出码、失败文案、`--grant`/`--ratchet` 写盘、账本缺失 | 15 条，用 `FL_BUDGET` 指向临时账本跑真实的 `perf-gate.py` |
 
 变异探针（一次性的，结论记在这里）：把五个分支逐一改成恒假、把 `main()` 改成
 绕过 `verdict`、去掉授予次数上限 —— **5/5 全部被 `budget-selftest.py` 判红**，
