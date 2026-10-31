@@ -12,10 +12,11 @@ facts-gate.py — 事实链门禁（G0-1）
 
 任何一环断了，读者看到的数就是错的。这个门禁把四个环节**分别**验一遍：
 
-  ① 源文件结构对不对（缺字段 / id 重复 / 非法枚举 / 版本不一致）
+  ① 源文件结构对不对（缺字段 / 字段类型错 / id 重复 / 非法枚举 / 版本不一致）
   ② 从源文件现算一遍，与 facts.json 比          ← 抓"生成物没刷新"
   ③ 从对外文件里把数字抠出来，与现算值比        ← 抓"文档写错了"
   ④ 对外文件里有没有**没登记**的数字声明        ← 抓"新写了一句没人管"
+  ⑤ README 的组件清单：分节标题数 / 表格行数 / 表格里的 id / 契约，四者一致
 
 🔴 为什么不合并成一条
    合并就会退化成 `docs-site-gate` 判据 ① 那种写法：拿生成器的输出校验生成器。
@@ -116,7 +117,11 @@ def run(root):
     for where, msg in claims:
         print('  [FAIL] %s：%s' % (where, msg))
 
-    ok = not stale and not claims
+    listings = _facts.check_listings(root, facts)
+    for where, msg in listings:
+        print('  [FAIL] %s：%s' % (where, msg))
+
+    ok = not stale and not claims and not listings
     print('')
     print('  事实：组件 %d（原语 %d / 模式 %d / 版式 %d / 资产 %d）· '
           '翻车点 %d + %d = %d · CLI %d 个子命令 · 版本 %s'
@@ -127,12 +132,13 @@ def run(root):
              facts['components']['byTier']['asset'],
              facts['pitfalls']['total'], facts['pitfallsWriting']['total'],
              facts['pitfallsAll'], facts['cli']['subcommands'], facts['version']))
-    print('  声明清单：%d 条位置 · 已登记文件 %d 个'
-          % (len(_facts.CLAIMS), len({c[1] for c in _facts.CLAIMS})))
+    print('  声明清单：%d 条位置 · 已登记文件 %d 个 · 清单核对 %d 个文件 × %d 层'
+          % (len(_facts.CLAIMS), len({c[1] for c in _facts.CLAIMS}),
+             len(_facts.LISTING_FILES), len(_facts.TIER_HEADINGS)))
     if ok:
         print('  OK    源文件 / facts.json / 对外声明 三者一致')
         return 0
-    print('  FAIL  %d 处' % (len(stale) + len(claims)))
+    print('  FAIL  %d 处' % (len(stale) + len(claims) + len(listings)))
     return 1
 
 
@@ -160,8 +166,24 @@ def write(root):
 
 
 # ---------------------------------------------------------------- 自检
+def _listing(comps):
+    """按层生成 README 的清单段：标题数字与表格行数**同源**，不会一半新一半旧。"""
+    out = []
+    for tier, name in (('primitive', 'primitives'), ('pattern', 'patterns'),
+                       ('recipe', 'recipes'), ('asset', 'assets')):
+        group = [c for c in comps if c['tier'] == tier]
+        out.append('### %s (%d)' % (name, len(group)))
+        out.append('')
+        out.append('| Component | Root class | Purpose |')
+        out.append('|---|---|---|')
+        for c in group:
+            out.append('| `%s` | `%s` | %s |' % (c['id'], c['rootClass'], c['purpose']))
+        out.append('')
+    return '\n'.join(out)
+
+
 def _mk_root(tmp, n=3):
-    """合成一个最小仓库：结构合法、数字自洽。"""
+    """合成一个最小仓库：结构合法、数字自洽、README 清单与契约一致。"""
     os.makedirs(os.path.join(tmp, 'ai'))
 
     def w(rel, text):
@@ -192,7 +214,9 @@ def _mk_root(tmp, n=3):
         {'id': 'w1', 'title': 't', 'scope': 'writing', 'components': [],
          'symptom': 's', 'fix': 'f'},
     ]}))
-    # 声明文件：句式与 CLAIMS 对齐
+    stable = sum(1 for c in comps if c['maturity'] == 'stable')
+    beta = sum(1 for c in comps if c['maturity'] == 'beta')
+    # 声明文件：句式与 CLAIMS 对齐（含 Markdown 加粗 —— 真实仓库就是这么写的）
     w('llms.txt', '> demo: %d components, machine readable.\n'
                   'npx agentcss ai components --json   # all %d components\n' % (n, n))
     w('llms-full.txt', 'x  # %d components, joined with pitfalls\n## 2 · Components (%d)\n'
@@ -201,8 +225,11 @@ def _mk_root(tmp, n=3):
     w('index.html', '<p>%d 个组件</p>\n' % n)
     w('404.html', '<p>—— %d 个组件</p>\n' % n)
     w('guide/index.html', '<p>%d 个组件</p>\n' % n)
-    w('README.md', '# demo\n')
-    w('README.zh-CN.md', '# demo\n\n一页看全 %d 个组件\n' % n)
+    w('README.md', '# demo\n\n**%d** components (stable %d / beta %d).\n\n%s\n'
+      % (n, stable, beta, _listing(comps)))
+    w('README.zh-CN.md', '# demo\n\n一页看全 %d 个组件\n\n'
+                         '共 **%d** 个（stable %d · 全部通过四条判据）。\n\n%s\n'
+      % (n, n, stable, _listing(comps)))
     return tmp
 
 
@@ -261,10 +288,14 @@ def selftest():
         check('S4 声明写错被抓（39 vs 3）', bool(hit), '; '.join(m for _, m in e[:2]))
 
     # S5 未登记的数字声明 ⇒ 必须报
+    #     注意不能拿"已登记句式写错数"来测这一条 —— 那会走 ③ 的报错路径，
+    #     看起来也是红的，但证明的是另一件事。这里用 AGENTS.md 里一个
+    #     **没被任何 CLAIM 覆盖**的中文句式。
     with tempfile.TemporaryDirectory() as tmp:
         _mk_root(tmp)
-        p = os.path.join(tmp, 'README.md')
-        io.open(p, 'w', encoding='utf-8', newline='\n').write('# demo\n\n共 7 components 可用\n')
+        p = os.path.join(tmp, 'AGENTS.md')
+        s = io.open(p, encoding='utf-8').read()
+        io.open(p, 'w', encoding='utf-8', newline='\n').write(s + '\n顺带一提，这里有 7 个组件。\n')
         e = _facts.check_claims(tmp, _fresh(tmp))
         check('S5 未登记声明被抓', any('未登记' in m for _, m in e),
               '; '.join(m for _, m in e[:2]))
@@ -289,6 +320,137 @@ def selftest():
         e = _facts.validate_sources(tmp)
         check('S7 运行时依赖被抓', any('运行时依赖' in m for _, m in e),
               '; '.join(m for _, m in e[:2]))
+
+    # S8 Markdown 加粗 + 中文量词里的错数 ⇒ 必须报（老正则整条漏掉的那种）
+    with tempfile.TemporaryDirectory() as tmp:
+        _mk_root(tmp)
+        p = os.path.join(tmp, 'README.zh-CN.md')
+        s = io.open(p, encoding='utf-8').read()
+        s = s.replace('共 **3** 个（stable 3', '共 **37** 个（stable 37')
+        io.open(p, 'w', encoding='utf-8', newline='\n').write(s)
+        e = _facts.check_claims(tmp, _fresh(tmp))
+        hit = [m for _, m in e if '写着 37' in m and 'components.total' in m]
+        check('S8 `共 **37** 个` 被抓（加粗 + 中文量词）', bool(hit),
+              '; '.join(m for _, m in e[:2]))
+
+    # S9 同一文件里既有正确的 3 又有错误的 7 ⇒ 错的必须被报（正确数不能掩盖）
+    with tempfile.TemporaryDirectory() as tmp:
+        _mk_root(tmp)
+        p = os.path.join(tmp, 'README.zh-CN.md')
+        s = io.open(p, encoding='utf-8').read()
+        s += '\n另外，本库一共 7 个组件。\n'
+        io.open(p, 'w', encoding='utf-8', newline='\n').write(s)
+        e = _facts.check_claims(tmp, _fresh(tmp))
+        check('S9 正确的 3 不掩盖错误的 7',
+              any('写着 7' in m for _, m in e),
+              '; '.join(m for _, m in e[:2]))
+
+    # S10 标题数字对了、表格少一行 ⇒ check_listings 必须报
+    with tempfile.TemporaryDirectory() as tmp:
+        _mk_root(tmp)
+        p = os.path.join(tmp, 'README.md')
+        s = io.open(p, encoding='utf-8').read()
+        s = s.replace('| `c0` | `r` | p |\n', '')
+        io.open(p, 'w', encoding='utf-8', newline='\n').write(s)
+        e = _facts.check_listings(tmp, _fresh(tmp))
+        check('S10 清单少一行被抓', any('只列了 0 个组件' in m for _, m in e),
+              '; '.join(m for _, m in e[:2]))
+
+    # S11 标题数字写错 ⇒ check_listings 必须报
+    with tempfile.TemporaryDirectory() as tmp:
+        _mk_root(tmp)
+        p = os.path.join(tmp, 'README.md')
+        s = io.open(p, encoding='utf-8').read()
+        s = s.replace('### primitives (1)', '### primitives (2)')
+        io.open(p, 'w', encoding='utf-8', newline='\n').write(s)
+        e = _facts.check_listings(tmp, _fresh(tmp))
+        check('S11 分节标题数写错被抓', any('分节标题写着 2' in m for _, m in e),
+              '; '.join(m for _, m in e[:2]))
+
+    # S20 行数不变、但把一个组件换成不存在的 ⇒ 行数判据看不见，id 比对必须抓住
+    with tempfile.TemporaryDirectory() as tmp:
+        _mk_root(tmp)
+        p = os.path.join(tmp, 'README.md')
+        s = io.open(p, encoding='utf-8').read()
+        s = s.replace('| `c0` | `r` | p |', '| `ghost` | `r` | p |')
+        io.open(p, 'w', encoding='utf-8', newline='\n').write(s)
+        e = _facts.check_listings(tmp, _fresh(tmp))
+        check('S20 清单里塞不存在的组件被抓（行数不变）',
+              any('清单与契约不符' in m and 'ghost' in m for _, m in e),
+              '; '.join(m for _, m in e[:2]))
+
+    # S21 `共 37 个。`（不接括号）也要抓 —— 中文里省略名词是常见写法
+    with tempfile.TemporaryDirectory() as tmp:
+        _mk_root(tmp)
+        p = os.path.join(tmp, 'README.zh-CN.md')
+        s = io.open(p, encoding='utf-8').read()
+        s += '\n共 37 个。\n'
+        io.open(p, 'w', encoding='utf-8', newline='\n').write(s)
+        e = _facts.check_claims(tmp, _fresh(tmp))
+        check('S21 `共 37 个。`（无括号）被抓', any('写着 37' in m for _, m in e),
+              '; '.join(m for _, m in e[:2]))
+
+    # S22 反向：`共 3 个步骤` 省略的是"步骤"，不许当成组件数（不能误报）
+    with tempfile.TemporaryDirectory() as tmp:
+        _mk_root(tmp)
+        p = os.path.join(tmp, 'README.zh-CN.md')
+        s = io.open(p, encoding='utf-8').read()
+        s += '\n装好一共需要 3 个步骤。\n'
+        io.open(p, 'w', encoding='utf-8', newline='\n').write(s)
+        e = _facts.check_claims(tmp, _fresh(tmp))
+        check('S22 `共 3 个步骤` 不误报', not [m for _, m in e if '写着 3' in m],
+              '; '.join(m for _, m in e[:2]))
+
+    # ---- P1：pitfalls 字段类型（每条都要求"报清楚且不抛异常"）
+    def _pit(name, mutate, want, label):
+        with tempfile.TemporaryDirectory() as tmp:
+            _mk_root(tmp)
+            p = os.path.join(tmp, 'ai/pitfalls.json')
+            d = json.loads(io.open(p, encoding='utf-8').read())
+            mutate(d)
+            io.open(p, 'w', encoding='utf-8', newline='\n').write(_dump(d))
+            try:
+                e = _facts.validate_sources(tmp)
+            except Exception as exc:                        # noqa: BLE001
+                check(label, False, '校验器自己抛了 %s: %s' % (type(exc).__name__, exc))
+                return
+            check(label, any(want in m for _, m in e), '; '.join(m for _, m in e[:2]))
+
+    _pit('id', lambda d: d['pitfalls'][0].__setitem__('id', 7),
+         'id 必须是非空字符串', 'S12 pitfall id 是数字被抓（且不崩）')
+    _pit('title', lambda d: d['pitfalls'][0].__setitem__('title', None),
+         'title 必须是非空字符串', 'S13 title 是 null 被抓')
+    _pit('comps-str', lambda d: d['pitfalls'][0].__setitem__('components', 'c0'),
+         'components 必须是数组', 'S14 components 是字符串被抓')
+    _pit('comps-num', lambda d: d['pitfalls'][0].__setitem__('components', 3),
+         'components 必须是数组', 'S15 components 是数字被抓')
+    _pit('comps-bad', lambda d: d['pitfalls'][0]['components'].append('ghost'),
+         '引用了不存在的组件', 'S16 components 有幽灵 id 被抓')
+    _pit('comps-item', lambda d: d['pitfalls'][0].__setitem__('components', ['']),
+         'components[0] 必须是非空字符串', 'S17 components 里空串被抓')
+
+    # S18 顶层不是对象 ⇒ 报清楚、不抛
+    with tempfile.TemporaryDirectory() as tmp:
+        _mk_root(tmp)
+        p = os.path.join(tmp, 'ai/pitfalls.json')
+        io.open(p, 'w', encoding='utf-8', newline='\n').write('[1, 2, 3]\n')
+        try:
+            e = _facts.validate_sources(tmp)
+            check('S18 pitfalls 顶层是数组被抓（且不崩）',
+                  any('顶层不是对象' in m for _, m in e),
+                  '; '.join(m for _, m in e[:2]))
+        except Exception as exc:                            # noqa: BLE001
+            check('S18 pitfalls 顶层是数组被抓（且不崩）', False,
+                  '校验器自己抛了 %s: %s' % (type(exc).__name__, exc))
+
+    # S19 合法数据恢复后：validate / claims / listings 三处全绿
+    with tempfile.TemporaryDirectory() as tmp:
+        _mk_root(tmp)
+        f = _fresh(tmp)
+        e = (_facts.validate_sources(tmp) + _facts.check_claims(tmp, f)
+             + _facts.check_listings(tmp, f))
+        check('S19 合法仓库：三道判据全绿', not e,
+              '; '.join('%s:%s' % x for x in e[:2]))
 
     for name, ok, detail in cases:
         print('  %s %s%s' % ('[OK]  ' if ok else '[FAIL]', name,

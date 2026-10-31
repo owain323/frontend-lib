@@ -85,9 +85,9 @@ npm install github:owain323/frontend-lib
 
 ## 组件一览
 
-共 **37** 个（stable 37 · 全部通过四条判据）。每个组件目录下有 `README.md`（为什么这么做）和 `demo.html`（能直接抄的结构）。
+共 **40** 个（stable 40 · 全部通过四条判据）。每个组件目录下有 `README.md`（为什么这么做）和 `demo.html`（能直接抄的结构）。
 
-### primitives · 基础件（15）
+### primitives · 基础件（17）
 
 | 组件 | 根类名 | 用途 |
 |---|---|---|
@@ -106,6 +106,8 @@ npm install github:owain323/frontend-lib
 | `separator` | `separator` | 分隔线，可带中间文字 |
 | `skeleton` | `skeleton` | 加载占位骨架 |
 | `switch` | `switch` | 开关切换 |
+| `timeline` | `timeline` | 时间轴：按时间排的事件序列（公告/大事记/版本记录）；顺序即信息，用 `ol`，状态交给 `badge`，颜色在这里会失效 |
+| `upload` | `upload` | 文件上传：零 JS 的原生形态 + 拖放/多文件/校验的增强形态 |
 
 ### patterns · 组合模式（14）
 
@@ -126,11 +128,12 @@ npm install github:owain323/frontend-lib
 | `tooltip` | `tooltip` | 悬停/聚焦提示 |
 | `tree` | `tree` | 可展开树形结构 |
 
-### recipes · 整页配方（4）
+### recipes · 整页配方（5）
 
 | 组件 | 根类名 | 用途 |
 |---|---|---|
 | `analysis-report` | `report` | 组合型研究报告页面：正文与辅助栏并排，窄屏自然退回单栏 |
+| `app-shell` | `shell` | 应用外壳：侧栏 + 顶栏 + 主区三段式；sticky 侧栏自滚、`min-width` 防撑破、窄屏收走侧栏 |
 | `detail-page` | `detail-page` | 实体详情页骨架：字段齐全 / 部分缺失 / 一条数据都没有，三态共用同一套 DOM |
 | `report` | `rep` | 报告版式系统 v1：共享基础 + 三套版式（杂志/科研技术/金融研究），只换一个 … |
 | `table` | `table` | 数据表格：排序/加载/空/错误四态；三种用途预设（财务/学术/统计） |
