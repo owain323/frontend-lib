@@ -27,6 +27,9 @@ Every subcommand accepts `--json`. On failure it prints
 `{"ok":false,"command":"…","error":{"kind":"…","message":"…"}}` and exits non-zero,
 so a pipeline can never mistake an error for data.
 
+`pitfalls` needs `agentcss@0.21.0+`: `npx` resolves the *published* version, which can lag
+this repository. If a subcommand is missing, check `npx agentcss --version` first.
+
 There is **no MCP server**: the CLI is the whole interface (read-only queries, no daemon,
 no second copy of the contract to keep in sync). See `ai/START-HERE.md` §7.
 
