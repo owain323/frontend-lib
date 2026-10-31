@@ -115,8 +115,8 @@ SKIP_DIRS = ('node_modules', 'dist', '.git', '05-audit', '06-vendor',
 #   **文件系统绝对路径**：
 #       os.path.join(dirname, '/frontend-lib/01-tokens/tokens.css')
 #   `join` 遇到前导 `/` 会丢掉前面所有参数 ⇒ 结果是 '/frontend-lib/...'；
-#   而这台机器的仓库**正好**放在 `E:\frontend-lib` ⇒ Windows 把它解析成
-#   `E:\frontend-lib\01-tokens\tokens.css` ⇒ **碰巧命中真实文件** ⇒ 本机永远绿。
+#   而这台机器的仓库**正好**放在盘符根下的同名目录 ⇒ Windows 把它解析成
+#   `<盘符>:\<仓库目录>\01-tokens\tokens.css` ⇒ **碰巧命中真实文件** ⇒ 本机永远绿。
 #   换到 Linux（CI）上，`/frontend-lib/` 是根目录下的另一个东西 ⇒ 红 3 处。
 #
 #   ⚠️ 这是"环境顺手掩盖了判据缺陷"的典型：**能过 ≠ 判对了**。
@@ -299,7 +299,7 @@ def _selftest():
 
         # ⑤ 站点根绝对路径必须按**仓库根**解析，不是按文件系统根。
         #    这里直接钉解析结果、不看退出码 —— 因为在 Windows 上
-        #    「仓库恰好位于 E:\frontend-lib」会让 main() 假绿（10-29 的事故），
+        #    「仓库恰好位于盘符根下的同名目录」会让 main() 假绿（10-29 的事故），
         #    退出码那一层已经没有鉴别力了。
         os.makedirs(os.path.join(tmp, '01-tokens'), exist_ok=True)
         open(os.path.join(tmp, '01-tokens', 'ok.css'), 'w').write('/* */')

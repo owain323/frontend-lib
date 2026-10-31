@@ -157,12 +157,21 @@ def main():
 
     hits = {}
     for rel in files:
-        if is_self_tool(rel) or not rel.endswith(EXTS):
+        if not rel.endswith(EXTS):
             continue
         try:
             t = io.open(os.path.join(ROOT, rel), encoding='utf-8',
                         errors='replace').read()
         except Exception:
+            continue
+        # 🔴 2026-10-31：工具目录**不再整目录跳过**。
+        #    事故：真实代号清单明文写在 `outsider-audit.py` 里，而两道扫描都把
+        #    `05-audit/` 当"工具"跳过 ⇒ 一起报「零泄漏」，缺口正好在盲区里。
+        #    ⇒ 工具只跳过"它必须列出来的词"（场景 / 流程 / Owner 称谓），
+        #      身份类（真代号 / 用户名 / 本机路径）照抓 —— 见 terms.identity_hits。
+        if is_self_tool(rel):
+            for name, found in terms.identity_hits(t).items():
+                hits.setdefault(name, []).append((rel, len(found)))
             continue
         for name, pat in PATTERNS:
             found = pat.findall(t)
@@ -183,13 +192,10 @@ def main():
                 hits.setdefault(name, []).append((rel, n))
 
         # ---- 公开可用性三条 --------------------------------------------
-        # 🔴 2026-10-29 删掉两处**永远走不到**的分支：
-        #    原来这里有 `if name == '内部目录引用' and rel.startswith('05-audit/'): continue`
-        #    与 `if name == '未替换占位符' and rel.startswith('05-audit/'): continue`。
-        #    但循环开头已经 `if is_self_tool(rel): continue` —— 门禁目录根本到不了这里，
-        #    两个分支恒假。它们不只是废码：**读起来像"门禁目录也被扫了"**，
-        #    而实际是被整目录跳过的（这正是本地干净、外网 43 处的原因之一）。
-        #    ⇒ 分支删掉，豁免只留 `is_self_tool`（= terms.is_tool_file）一处。
+        # ⚠️ 2026-10-31：`05-audit/` 不再整目录跳过（见循环开头），
+        #    但这里的三条对工具目录仍不该生效：工具**必须**提到内部目录名与
+        #    占位符才能检测它们。所以工具文件走上面对 identity_hits 的窄判据，
+        #    根本不会走到这个循环 —— 这条注释是提醒，不是分支。
         for name, pat in CHECKS_EXTRA:
             if name == '内部协作痕迹':
                 # 用区分大小写的严格版，避开 CLASS_OWNER / owners 这类变量名
