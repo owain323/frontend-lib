@@ -46,7 +46,7 @@ This is an optional toolbox, not a spec every page must obey.
 - Adding it to an existing site: keep that site's existing framework and styles where they work, and fill only the gap you actually have.
 - When the output is not a web page (slides, documents, email), the layout rules here do not apply.
 
-`ai/START-HERE.md` is the short entry point for tools (~90 lines); `START-HERE.md` at the repository root is the three-step checklist for people.
+**Discovery files for agents:** `llms.txt` (short, English, with the CLI commands), `llms-full.txt` (one page: every component plus its known failure modes), `AGENTS.md` (ten lines: contract, query, validate). `ai/START-HERE.md` is the longer navigation for tools (Chinese, like the component docs); `START-HERE.md` at the repository root is the three-step checklist for people.
 
 ---
 
@@ -268,7 +268,7 @@ Colour comes from tokens only. Component CSS never writes `@media (prefers-color
 
 ## Machine-readable contract
 
-`ai/components.json` describes each component for tools: usable class names, how state is expressed, required behaviours, maturity. `agentcss ai` (the `bin` entry) validates and queries it.
+`ai/components.json` describes each component for tools: usable class names, how state is expressed, required behaviours, maturity. `ai/pitfalls.json` carries the known failure modes, joined to components by id. `agentcss ai` (the `bin` entry) validates and queries both — every subcommand accepts `--json`.
 
 ## Accessibility
 

@@ -16,6 +16,73 @@
 
 （无）
 
+## [0.21.0] - 2026-10-31
+
+### 发现层：让外面的 AI 找得到这个库
+
+差异化的卖点是"机器可读契约"，但在此之前**没有任何自动发现入口**：
+没有 `llms.txt`、没有 `AGENTS.md`，`ai/components.json` 是一份密封的文件 ——
+不知道它存在的人不会去读，知道的模型也只能靠猜类名。
+
+新增三份文件，各管一件事：
+
+| 文件 | 谁写 | 作用 |
+|---|---|---|
+| `llms.txt`（2.2 KB / ≈550 token） | 手写 | 定位声明 + `npx agentcss ai …` 用法 + 五条硬规矩 |
+| `llms-full.txt`（10.2 KB / ≈2.5k token） | **生成**（`05-audit/gen-llms.py`） | 一页看全 39 个组件（根类名 / tier / 成熟度 / 体积 / 用途 / 翻车点）+ 令牌 + 行为核 |
+| `AGENTS.md`（7 行） | 手写 | 契约在哪、怎么查、怎么验 |
+
+**为什么不把 52 KB 的 `components.json` 塞进 `llms-full.txt`**：
+约 13k token，比整份文档大五倍，而其中 slots / variants / aria 这些字段
+在"选组件"阶段用不上。`llms-full.txt` 只内联**决策需要**的字段，
+其余用一条命令代替：`npx agentcss ai components --json`。
+
+三份文件都进 `package.json` 的 `files`（`npm pack --dry-run` 可验）。
+
+### CLI：`--json` 覆盖全部 11 个子命令
+
+审计起点是"只有 components / tokens 支持 `--json`"，实测**7/10 支持**，
+缺的是 `validate`（完全没有）与 `patch`（只在没写 `-o` 时裸打文档）。
+`diff` 有，但四个命令各写一份 `flag('json') === true` 判定 —— 形状不统一。
+
+现在：
+
+- 11 个子命令（含新增 `pitfalls`）全部接受 `--json`
+- 判定收敛到一个 `isJson()`（`--json=false` 不再被当成真）
+- **失败也是 JSON**：`{ok:false, command, error:{kind,message}}` + 非 0 退出
+  （旧版失败只有 stderr 一行中文，调用方拿到的是"空 stdout + 退出码 1"）
+- `patch --json` 恒输出 `{ok, applied, deterministic, out, doc}`
+
+判据在 `ai-layer-gate.js` ⑥′/⑥″：逐个子命令跑一遍，`JSON.parse(stdout)`；
+再把参数改错，要求输出 `ok:false`。反向控制：把 `isJson()` 改成恒 `false`，
+两条必红（实测 27 → 25）。
+
+### 已知翻车点：`ai/pitfalls.json` + 挂到组件上
+
+从内部教训库（41 条）整理出 **19 条**可复用的失效模式，按 `scope` 分三类
+（component / layout / process），能对上组件的写进 `components`。
+
+- `npx agentcss ai pitfalls --json --component=table`
+- `npx agentcss ai components --json` 里每个组件多一个 `pitfalls: [{id,title}]`（**空数组也写**，形状恒定）
+- 组件名拼错会**吵**：列出全部可用 id，而不是静默返回 0 条
+
+⚠️ 教训库原文含内部项目名与日期，**不直接搬运**：入库版本逐条改写，
+只保留失效模式与改法。原文 41 条不是 134 条 —— 以实际文件为准。
+
+### 门禁
+
+- `docs-site-gate` 新增 [11]：`llms-full.txt` 必须与现算逐字节一致；
+  `llms.txt` 声明的组件数必须等于契约（实测把它改成 38 ⇒ 红）；
+  `AGENTS.md` ≤10 行且必须指向 `ai/components.json`。
+- 门禁总数不变（218）：新判据挂在既有两道门上，没有新增脚本。
+
+### 语言
+
+`llms.txt` / `AGENTS.md` 用**英文**，与 `README.md` 一致（英文在门口、中文在深处）；
+JSON 的键与 CLI 开关本来就是英文。组件文档仍是中文，且在 `llms.txt` 里写明。
+
+---
+
 ## [0.20.0] - 2026-10-31
 
 ### `.shell--rail` 接抽屉：图标在桌面，文字在抽屉

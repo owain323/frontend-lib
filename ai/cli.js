@@ -57,9 +57,29 @@ function out(obj) {
   process.stdout.write(JSON.stringify(obj, null, 2) + '\n');
 }
 
+var CURRENT_CMD = '';
+
+/* 🔴 失败也必须能被机器读。
+   以前 die() 只往 stderr 写一行中文，`--json` 的调用方拿到的是
+   退出码 1 + 空 stdout —— 它分不清「参数写错了」和「进程崩了」。
+   现在：带 --json 时，失败输出一个**单一 JSON 文档**，与成功路径一样可解析。 */
 function die(msg) {
+  if (isJson()) {
+    out({
+      ok: false,
+      command: CURRENT_CMD || null,
+      error: { kind: 'usage', message: String(msg) }
+    });
+    process.exit(1);
+  }
   process.stderr.write('[FAIL] ' + msg + '\n');
   process.exit(1);
+}
+
+/** 是否要求 JSON 输出。`--json` / `--json=true` 都认，`--json=false` 不认。 */
+function isJson() {
+  var v = flag('json', false);
+  return v === true || v === 'true';
 }
 
 /**
@@ -91,7 +111,7 @@ function cmdCheck(args) {
   var doc = readJSON(file);
   var profile = flag('profile', doc.profile || 'standard');
   var r = validate.validateDoc(doc, { profile: profile });
-  var json = flag('json', false) === true || flag('json', false) === 'true';
+  var json = isJson();
 
   if (json) {
     out(r);
@@ -135,6 +155,10 @@ function cmdValidate(args) {
   var schema = readJSON(path.join(AI, SCHEMAS[which]));
   var data = readJSON(file);
   var r = validate.validate(schema, data);
+  if (isJson()) {
+    out({ ok: r.ok, schema: which, file: file, errors: r.errors || [] });
+    process.exit(r.ok ? 0 : 1);
+  }
   if (r.ok) {
     process.stdout.write('  OK  ' + file + ' 符合 ' + which + ' 契约\n');
     process.exit(0);
@@ -184,7 +208,7 @@ function cmdDiff(args) {
     else if (JSON.stringify(cx || []) !== JSON.stringify(cy || [])) moved.push(id);
   });
 
-  var json = flag('json', false) === true || flag('json', false) === 'true';
+  var json = isJson();
   var res = { added: added, removed: removed, changed: changed, moved: moved };
   if (json) { out(res); process.exit(0); }
 
@@ -209,24 +233,109 @@ function cmdPatch(args) {
   var doc = readJSON(fdoc);
   var p = readJSON(fpatch);
   var r = patch.apply(doc, p);
+
   if (!r.ok) {
+    if (isJson()) {
+      out({ ok: false, applied: 0, errors: r.errors || [] });
+      process.exit(1);
+    }
     r.errors.forEach(function (e) {
       process.stdout.write('  [FAIL] ' + e.path + '  ' + e.msg + '\n');
     });
     process.stdout.write('\n  ⇒ 补丁**未应用**，原文档没有被改动\n');
     process.exit(1);
   }
+
   var det = patch.isDeterministic(doc, p);
+  var o = flag('o', null);
+  if (o) fs.writeFileSync(o, JSON.stringify(r.doc, null, 2) + '\n');
+
+  /* --json 永远输出**一个** JSON 文档：{ok, applied, deterministic, out, doc}。
+     旧版只在"没写 -o"时把 doc 裸打出来 ⇒ 带 -o 时调用方什么也拿不到。 */
+  if (isJson()) {
+    out({
+      ok: true, applied: r.applied, deterministic: det,
+      out: o || null, doc: r.doc
+    });
+    process.exit(det ? 0 : 1);
+  }
+
   process.stdout.write('  OK  已应用 ' + r.applied + ' 个操作 · 确定性：' +
     (det ? '是（同输入两次结果一致）' : '否（🔴 不可回放）') + '\n');
-  if (!det) process.exit(1);
-  var o = flag('o', null);
-  if (o) {
-    fs.writeFileSync(o, JSON.stringify(r.doc, null, 2) + '\n');
-    process.stdout.write('  已写出 ' + o + '\n');
-  } else if (flag('json', false)) {
-    out(r.doc);
+  if (o) process.stdout.write('  已写出 ' + o + '\n');
+  process.exit(det ? 0 : 1);
+}
+
+// ---------------------------------------------------------------- 翻车点
+/* 已知翻车点：`ai/pitfalls.json` 是**人工策展**的事实文件，不是构建产物。
+   为什么不塞进 components.json：那份是机器生成的契约，加一条叙述性字段
+   会让生成器每次重新生成时都要决定"保留还是覆盖"。两份文件各管一件事。 */
+var PITFALLS = null;
+
+function pitfallsDoc() {
+  if (PITFALLS) return PITFALLS;
+  try {
+    PITFALLS = readJSON(path.join(AI, 'pitfalls.json'));
+  } catch (e) {
+    PITFALLS = { pitfalls: [] };
   }
+  return PITFALLS;
+}
+
+function pitfallsFor(id) {
+  var all = pitfallsDoc().pitfalls || [];
+  var outList = [];
+  for (var i = 0; i < all.length; i++) {
+    if ((all[i].components || []).indexOf(id) >= 0) {
+      outList.push({ id: all[i].id, title: all[i].title });
+    }
+  }
+  return outList;
+}
+
+function cmdPitfalls(args) {
+  var doc = pitfallsDoc();
+  var list = (doc.pitfalls || []).slice();
+  var comp = flag('component', null);
+  var scope = flag('scope', null);
+  var tag = flag('tag', null);
+
+  if (comp) {
+    // 拼错的组件名要**吵**：静默返回 0 条会被读成"这个组件没坑"。
+    var ids = readJSON(path.join(AI, 'components.json')).components.map(function (c) {
+      return c.id;
+    });
+    if (ids.indexOf(comp) < 0) {
+      die('未知组件：' + comp + '（可用：' + ids.join(' / ') + '）');
+    }
+    list = list.filter(function (x) {
+      return (x.components || []).indexOf(comp) >= 0;
+    });
+  }
+  if (scope) {
+    list = list.filter(function (x) { return x.scope === scope; });
+  }
+  if (tag) {
+    list = list.filter(function (x) { return (x.tags || []).indexOf(tag) >= 0; });
+  }
+
+  if (isJson()) {
+    out({ schemaVersion: doc.schemaVersion, count: list.length, pitfalls: list });
+    process.exit(0);
+  }
+
+  process.stdout.write('  === 已知翻车点（' + list.length + ' 条' +
+    (comp ? ' · 组件 ' + comp : '') + (scope ? ' · scope ' + scope : '') + '）===\n\n');
+  if (!list.length) {
+    process.stdout.write('  （没有匹配项）\n');
+    process.exit(0);
+  }
+  list.forEach(function (x) {
+    process.stdout.write('  [' + (x.components.length ? x.components.join(',') : x.scope) +
+      '] ' + x.title + '\n');
+    process.stdout.write('      现象：' + x.symptom + '\n');
+    process.stdout.write('      改法：' + x.fix + '\n');
+  });
   process.exit(0);
 }
 
@@ -237,7 +346,16 @@ function cmdComponents(args) {
   var list = doc.components.filter(function (c) {
     return !m || c.maturity === m;
   });
-  if (flag('json', false)) { out(list); process.exit(0); }
+  /* 🔴 每个组件都带上自己的翻车点（id + 标题），字段恒存在（空数组也写）。
+     形状恒定比"有值才出现"好：调用方不用写 if，也不会因为某个组件
+     恰好没有翻车点而少一个键。 */
+  var joined = list.map(function (c) {
+    var one = {};
+    for (var k in c) if (Object.prototype.hasOwnProperty.call(c, k)) one[k] = c[k];
+    one.pitfalls = pitfallsFor(c.id);
+    return one;
+  });
+  if (isJson()) { out(joined); process.exit(0); }
   process.stdout.write('  === 组件契约（' + list.length + ' 个）===\n\n');
   list.forEach(function (c) {
     process.stdout.write('  ' + (c.maturity === 'stable' ? '✅' :
@@ -250,6 +368,11 @@ function cmdComponents(args) {
     if (c.states.legacyClass.length) {
       process.stdout.write('       ⚠️ 未收敛状态类: .is-' +
         c.states.legacyClass.join(' .is-') + '\n');
+    }
+    var ps = pitfallsFor(c.id);
+    if (ps.length) {
+      process.stdout.write('       ⚠️ 翻车点 ' + ps.length + ' 条: ' +
+        ps.map(function (x) { return x.title; }).join(' / ') + '\n');
     }
   });
   process.stdout.write('\n  ✅ stable  🟡 beta（状态仍在 class 里，I-8 未达标）  🔴 alpha\n');
@@ -391,7 +514,7 @@ function collectAssets() {
 
 function cmdAssets(args) {
   var rows = collectAssets();
-  if (flag('json', false)) { out(rows); process.exit(0); }
+  if (isJson()) { out(rows); process.exit(0); }
   var miss = rows.filter(function (r) { return !r.contract; });
   process.stdout.write('  === 全部资产（' + rows.length + ' 项）===\n');
   process.stdout.write('  契约内 ' + (rows.length - miss.length) + ' 项 · 契约外 ' + miss.length + ' 项\n\n');
@@ -406,7 +529,7 @@ function cmdAssets(args) {
 function cmdTokens(args) {
   var doc = readJSON(path.join(AI, 'tokens.json'));
   var set = flag('set', null);
-  if (flag('json', false)) {
+  if (isJson()) {
     out(set ? doc.sets[set] : doc);
     process.exit(0);
   }
@@ -429,7 +552,7 @@ function cmdTree(args) {
   var doc = readJSON(path.join(AI, 'tokens.tree.json'));
   var set = flag('set', null);
   var cat = flag('cat', null);
-  if (flag('json', false)) {
+  if (isJson()) {
     out(cat && set ? doc.sets[set][cat] : (set ? doc.sets[set] : doc));
     process.exit(0);
   }
@@ -458,7 +581,7 @@ function cmdTree(args) {
 
 function cmdProfile() {
   var doc = readJSON(path.join(AI, 'profiles.json'));
-  if (flag('json', false)) { out(doc); process.exit(0); }
+  if (isJson()) { out(doc); process.exit(0); }
   process.stdout.write('  === 三档 Profile ===\n\n');
   Object.keys(doc.profiles).forEach(function (k) {
     var p = doc.profiles[k];
@@ -478,7 +601,7 @@ function cmdProfile() {
 
 function cmdCapabilities() {
   var doc = readJSON(path.join(AI, 'capabilities.json'));
-  if (flag('json', false)) { out(doc); process.exit(0); }
+  if (isJson()) { out(doc); process.exit(0); }
   process.stdout.write('  === 能力协商 ===\n\n');
   Object.keys(doc.capabilities).forEach(function (k) {
     var c = doc.capabilities[k];
@@ -502,7 +625,8 @@ var CMDS = {
   tokens: cmdTokens,
   tree: cmdTree,
   profile: cmdProfile,
-  capabilities: cmdCapabilities
+  capabilities: cmdCapabilities,
+  pitfalls: cmdPitfalls
 };
 
 function main() {
@@ -510,19 +634,23 @@ function main() {
   if (!argv.length || argv[0] === 'help' || argv[0] === '--help') {
     process.stdout.write(
       'agentcss ai —— 独立校验入口（零依赖、不联网、不依赖任何模型）\n\n' +
-      '  ai check        <doc.json> [--profile=creative|standard|strict]\n' +
-      '  ai validate     <file.json> --schema=contract|components|tokens|tokensAudience|tokensTree|deprecations|patch\n' +
-      '  ai diff         <改动前.json> <改动后.json>      按语义 id 比对\n' +
-      '  ai patch        <doc.json> <patch.json> [-o out.json]\n' +
-      '  ai components   [--maturity=stable|beta|alpha]\n' +
+      '  ai check        <doc.json> [--profile=creative|standard|strict] [--json]\n' +
+      '  ai validate     <file.json> --schema=contract|components|tokens|tokensAudience|tokensTree|deprecations|patch [--json]\n' +
+      '  ai diff         <改动前.json> <改动后.json> [--json]   按语义 id 比对\n' +
+      '  ai patch        <doc.json> <patch.json> [-o out.json] [--json]\n' +
+      '  ai components   [--maturity=stable|beta|alpha] [--json]\n' +
       '  ai assets       [--json]   组件之外的资产：布局 / 微行为核 / 示例页 / 适配器\n' +
-      '  ai tokens       [--set=light|dark]\n' +
-      '  ai tree         [--set=light|dark] [--cat=color]\n' +
-      '  ai profile      列出三档及其差异\n' +
-      '  ai capabilities 列出可协商的能力\n');
+      '  ai tokens       [--set=light|dark] [--json]\n' +
+      '  ai tree         [--set=light|dark] [--cat=color] [--json]\n' +
+      '  ai pitfalls     [--component=<id>] [--scope=component|layout|process] [--tag=<t>] [--json]\n' +
+      '  ai profile      [--json]   列出三档及其差异\n' +
+      '  ai capabilities [--json]   列出可协商的能力\n' +
+      '\n' +
+      '  每个子命令都支持 --json；失败时输出 {ok:false, command, error} 并以非 0 退出。\n');
     process.exit(0);
   }
   var name = argv.shift();
+  CURRENT_CMD = name;
   var fn = CMDS[name];
   if (!fn) die('未知子命令：' + name + '（可用：' + Object.keys(CMDS).join(' / ') + '）');
   try {

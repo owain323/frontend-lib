@@ -1,0 +1,184 @@
+{
+  "schemaVersion": "1.0.0",
+  "generatedBy": "hand-curated, then frozen (this file is a fact, not a build product)",
+  "source": "curated from an internal frontend lessons log (41 entries). Sanitized: project names, dates, customer context and vendor-specific details removed; only the reusable failure mode is kept.",
+  "note": "Each entry is a failure that actually shipped at least once. `components` is the join key used by `agentcss ai components --json`; `scope` separates component-level defects from page-level and process-level ones.",
+  "scopes": {
+    "component": "一个组件自身的实现缺陷：换页面也照样复现。",
+    "layout": "页面/版式层面：单个组件都对，拼起来才出问题。",
+    "process": "交付过程：代码可能全绿，但结论是错的。"
+  },
+  "pitfalls": [
+    {
+      "id": "popover-measure-after-render",
+      "title": "浮层定位必须在可见状态下测量",
+      "scope": "component",
+      "components": ["popover", "dropdown", "tooltip", "select"],
+      "symptom": "隐藏状态下读不到宽高，打开后位置算错；靠近视口边缘时整块溢出屏幕。",
+      "fix": "先以 visibility:hidden 渲染，读到尺寸后再定位（含视口钳制与上下翻转），最后显示。箭头用旋转 45° 的方块，不要用背景图。",
+      "tags": ["positioning", "overlay"]
+    },
+    {
+      "id": "fixed-element-inventory",
+      "title": "新增全局悬浮元素前先盘点既有悬浮层",
+      "scope": "component",
+      "components": ["overlay", "drawer", "tooltip"],
+      "symptom": "两个 position:fixed 的按钮/提示落在同一角落，同一页里叠在一起；没有「悬浮层注册表」，只有看过才知道谁占了位。",
+      "fix": "动手前全仓搜一遍固定定位与高 z-index 的节点；同域旧元素按语义让位或合并；挂载点选应用级，不要藏在某个页面里（那样用户根本找不到入口）。",
+      "tags": ["fixed", "z-index"]
+    },
+    {
+      "id": "single-scroll-container",
+      "title": "多个滚动容器必然导致行号/表头漂移",
+      "scope": "component",
+      "components": ["table", "content"],
+      "symptom": "表头、行号、正文各自滚动时位置对不上；用 transform 同步只能在某一帧对上，一停就错。",
+      "fix": "只留一个滚动容器（父级 overflow:auto），内部全部 min-width:max-content，需要钉住的列/行用 sticky。结构上不可能漂移，不需要 JS 同步。",
+      "tags": ["scroll", "sticky"]
+    },
+    {
+      "id": "empty-state-no-decoration",
+      "title": "空态不要留装饰性元素",
+      "scope": "component",
+      "components": ["states", "table", "list"],
+      "symptom": "没有内容时仍渲染行号 / 表头 / 占位槽，看起来像「加载坏了」。",
+      "fix": "渲染前判断内容是否为空；为空时连装饰元素一起省掉，只留一句说明和一个下一步动作。",
+      "tags": ["empty", "state"]
+    },
+    {
+      "id": "table-overflow-wrapper",
+      "title": "表格必须有自己的横向滚动容器",
+      "scope": "component",
+      "components": ["table"],
+      "symptom": "列一多就把整页撑出横向滚动；手机上整页左右晃。",
+      "fix": "外层套一个 overflow-x:auto 的容器，并给它 tabindex=\"0\" 与可读名字（否则键盘用户滚不动，axe 也会报 scrollable-region-focusable）。",
+      "tags": ["mobile", "overflow", "a11y"]
+    },
+    {
+      "id": "chart-multiline-label",
+      "title": "SVG 的 <text> 不认换行符",
+      "scope": "component",
+      "components": ["bar", "sparkline", "scientific-plot"],
+      "symptom": "标签里写了 \\n，渲染成一行并溢出画布，遮挡相邻元素。",
+      "fix": "多行标签拆成多个 <text> 元素并各自定位；或在绘制前按测量宽度手动断行。",
+      "tags": ["svg", "chart"]
+    },
+    {
+      "id": "line-height-constant-sync",
+      "title": "用常量算行高时，常量必须与 CSS 同源",
+      "scope": "component",
+      "components": ["content"],
+      "symptom": "滚动到第 N 行总是差几像素；改过一次 CSS 行高后偏移突然变大。",
+      "fix": "行高只留一个来源（读计算样式，或用 CSS 变量同时喂给布局与脚本）；滚不动时兜底到 scrollIntoView 而不是继续调常量。",
+      "tags": ["css", "sync"]
+    },
+    {
+      "id": "text-injection-xss",
+      "title": "动态内容一律走 DOM API，不拼 innerHTML",
+      "scope": "component",
+      "components": ["list", "states", "table"],
+      "symptom": "字段一扩展就漏转义；恶意字符串（含标签的错误信息、用户输入的名称）直接变成 DOM。",
+      "fix": "动态值用 textContent / createElement / appendChild；innerHTML 只留纯静态模板与已转义内容。配一条恶意输入的契约测试。",
+      "tags": ["security", "escaping"]
+    },
+    {
+      "id": "empty-layout-min-height",
+      "title": "空态时主列矮于侧栏会留下大片空白",
+      "scope": "layout",
+      "components": ["analysis-report", "detail-page", "app-shell"],
+      "symptom": "内容少时主列只有半屏，侧栏更高，页面底部或 footer 上方出现一块死白。",
+      "fix": "给主列一个与视口相关的最小高度（calc(100dvh - 顶栏)），或让空态块自己撑满；改完专门看一眼「空态整页」而不是只看有数据的那一屏。",
+      "tags": ["layout", "empty"]
+    },
+    {
+      "id": "self-contained-page-budget",
+      "title": "自包含页面的体积预算要一开始就定",
+      "scope": "layout",
+      "components": [],
+      "symptom": "直接内嵌原图，手机打开等于下几百 KB；表格没有滚动容器，整页被撑破。",
+      "fix": "先定预算（例如整页 < 400KB）；图片统一缩到 720px 宽、quality ≤ 72、progressive；正文 ≥ 16px；表格套 overflow-x:auto。交付前跑一遍标签配平。",
+      "tags": ["performance", "mobile", "images"]
+    },
+    {
+      "id": "tokens-not-hardcoded",
+      "title": "系列化产出先把设计令牌抽成一组常量",
+      "scope": "layout",
+      "components": [],
+      "symptom": "第二份产出与第一份「看起来是一家人但就是不一样」；改一次配色要改 N 个文件。",
+      "fix": "先定一组令牌（颜色/字号/间距/字体栈），渲染器只引用令牌、不写死值；新产出直接继承同一组。",
+      "tags": ["tokens", "consistency"]
+    },
+    {
+      "id": "dom-stub-smoke",
+      "title": "语法检查通过 ≠ 交互能跑",
+      "scope": "process",
+      "components": [],
+      "symptom": "node --check 与 schema 校验全绿，按钮点了没反应：属性名与判断值对不上（data-k=\"V\" 却判 === 'verb'），状态机把刚清掉的项又塞回队列。",
+      "fix": "含交互的页面交付前跑一次 DOM 桩冒烟：getElementById 返回同一对象、innerHTML 赋值时注册其中所有 id、事件存根后手动触发。断言落到状态（显示值/条数/文案），不落到「没报错」。",
+      "tags": ["testing", "interaction"]
+    },
+    {
+      "id": "parallel-edits-verify",
+      "title": "同一文件的多处修改要串行，并逐条 grep 复核",
+      "scope": "process",
+      "components": [],
+      "symptom": "一次发多个修改，工具全部返回成功，事后发现其中几处根本没落盘；直接构建就把旧文案带进成品。",
+      "fix": "同一文件串行提交；确实要并行时，提交后用「改后独有的关键词」逐条 grep，搜不到就是没生效。",
+      "tags": ["tooling", "verification"]
+    },
+    {
+      "id": "stale-server-verify",
+      "title": "调试前先确认你连的不是旧进程",
+      "scope": "process",
+      "components": [],
+      "symptom": "端口被旧实例占着，新实例起不来；curl 仍返回 200 和旧内容，于是「改了没生效」查了半天。",
+      "fix": "起服务前先结束占用该端口的进程；验证到内容级（关键标记 grep），状态码 200 不代表新代码在跑。",
+      "tags": ["debugging", "verification"]
+    },
+    {
+      "id": "field-name-from-definition",
+      "title": "消费方写的字段名必须对着定义抄",
+      "scope": "process",
+      "components": [],
+      "symptom": "凭记忆写 currentId，实际返回 { current }；参数运行时恒 undefined，入口整轮不可用，而路由级测试全绿。",
+      "fix": "写字段名时打开定义文件对一遍；新入口上线前至少做一次组件级冒烟（真点一次），路由级测试不证明「组件传对了参数」。",
+      "tags": ["integration", "testing"]
+    },
+    {
+      "id": "human-semantic-review",
+      "title": "语义正确性只有人眼能查",
+      "scope": "process",
+      "components": [],
+      "symptom": "测试全绿，但每个数字/决策都可能在语义上错：取错引号里的值、常量被当成正确结果放行。",
+      "fix": "交付前把界面上每个数字与决策对照原始数据源走一遍；演示数据用最小可验证样本，让错误无处藏身。",
+      "tags": ["review", "semantics"]
+    },
+    {
+      "id": "evidence-grading",
+      "title": "措辞强度必须与证据等级匹配",
+      "scope": "process",
+      "components": [],
+      "symptom": "把「按约定位宽写的仿真」说成「机器输出」；把频率证据（grep 计数）说成机制证据；样本内成立被写成上界。",
+      "fix": "证据分层：源码实证 > 一手资料 > 可复跑脚本 > 数值模型 > 类比；数值模型显式标注「不是机器输出」；要证上界就解析求极值，不靠采样点。",
+      "tags": ["writing", "evidence"]
+    },
+    {
+      "id": "long-doc-consistency",
+      "title": "长文里同一结论会被说三遍，还可能自相矛盾",
+      "scope": "process",
+      "components": [],
+      "symptom": "同一件事在开头、证据注、章末各说一遍；更糟的是后一章推翻了前一章刚纠正过的简化。",
+      "fix": "定稿前做跨章一致性扫描：把每章的开头句/小结抽出来并排看，重复的压成一条，矛盾的改成交叉引用。",
+      "tags": ["writing", "consistency"]
+    },
+    {
+      "id": "counterfactual-model-drift",
+      "title": "反事实推演最容易偷偷换掉前面的模型",
+      "scope": "process",
+      "components": [],
+      "symptom": "正文刚确立「A 要和 B 合起来才完整」，推演时却把 A 当成完整值，推出与正文矛盾的结论。",
+      "fix": "推演前先把已确立的模型逐条列出来，确认沿用的是同一套；把「这里很容易换模型」写进正文，反而成了教学点。",
+      "tags": ["writing", "reasoning"]
+    }
+  ]
+}
