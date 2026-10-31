@@ -25,15 +25,20 @@
 
 | 承诺 | 具体到 | 谁在守 |
 |---|---|---|
-| 令牌名不消失 | `--text-primary`、`--sp-2` 等 112 个 | `deprecation-gate.py` ⑦（`ai/surface.baseline.json` 只增不减） |
-| 类名不消失 | `.btn`、`.field`、`.shell__link` 等 337 个 | 同上 |
-| JS 成员不消失 | `Select.open()`、`AccordionOptions.duration` 等 107 项 | `deprecation-gate.py` ⑦ + `api-contract-gate.py`（d.ts ↔ 运行时**实测**比对） |
+| 令牌名不消失 | `--text-primary`、`--sp-2` 这类名字 | `deprecation-gate.py` ⑦（`ai/surface.baseline.json` 只增不减） |
+| 类名不消失 | `.btn`、`.field`、`.shell__link` 这类名字 | 同上 |
+| JS 成员不消失 | `Select.open()`、`AccordionOptions.duration` 这类名字 | `deprecation-gate.py` ⑦ + `api-contract-gate.py`（d.ts ↔ 运行时**实测**比对） |
 | 声明的名字真的存在 | 不许出现"文档里有、代码里没有"的幻觉 API | `gen-ai-contract.py --check`、`dead-class-gate.py` |
-| 行为事件名不消失 | `fl:select` 等 6 个 | 只记在基线里，**没有运行时探针**（见 §6） |
+| 行为事件名不消失 | `fl:select` 这类事件名 | 只记在基线里，**没有运行时探针**（见 §6） |
 | CLI 子命令与 `--json` 形状 | `agentcss ai <cmd> --json` 的 11 个子命令、失败也是 JSON | `ai-layer-gate.js` ⑥′⑥″ |
 | 契约文件字段 | `ai/components.json` / `pitfalls*.json` / `behaviors.json` | `gen-ai-contract --check`、`ai-layer-gate` ⑦ |
 | 文件路径 | `02-primitives/button/button.css` 这类 `<link>` 直接指向的路径 | `dist-parity-check`、`pack-smoke.sh`、`assets-catalog-gate.py` |
 | 体积承诺 | 全库生效 CSS ≤ 172 KB，常规增长不涨价 | `perf-gate.py` + `budget-selftest.py`（见 [BUDGET.md](BUDGET.md)） |
+
+逐条清单与总数**不写在这份文件里** —— 那是 `ai/surface.baseline.json` 的职责
+（`deprecation-gate.py` 每次运行都会打印总数与「无未登记的移除」）。写在文档里的
+计数一定会漂 —— 这份文件的第一版就写死过「337 个类名」，后来基线涨到 379，
+没有任何门禁会因为那句话过时而变红。**数字只有一个来源，才不会有第二个版本。**
 
 ⚠️ "不消失"包含**不改语义**。把 `.btn` 从 44px 高改成 36px 不会让门禁变红，
 但它一样是破坏性变更 —— 判据守不住的部分，靠这一行字约束。
