@@ -151,8 +151,12 @@
     </header>
     <nav class="shell__side" aria-label="主导航（图标）">
       <!-- 品牌在 72px 里放不下名字 ⇒ 只留标记，名字视觉隐藏（不是删掉）。
-           标记与文字分成两段是**契约要求**，见 README「图标态的父级元素」。 -->
-      <a class="shell__brand" href="#">
+           标记与文字分成两段是**契约要求**，见 README「图标态的父级元素」。
+           ⚠️ `title` 在这里是**必要**的：rail 下只剩一个 20px 的图形，
+              鼠标用户没有别的线索知道它是什么。它只负责悬停提示 ——
+              名字仍然来自 `.shell__brand-text`（title 会兜出名字，
+              但 H2 判的是"文字是否被 display:none 掉"，不靠 title 兜）。 -->
+      <a class="shell__brand" href="#" title="金标准 · 财务台">
         <svg class="shell__brand-mark" viewBox="0 0 16 16" width="20" height="20" fill="none"
              stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" aria-hidden="true"><path d="M8 1.6l5.4 3.1v6.6L8 14.4 2.6 11.3V4.7z"/></svg>
         <span class="shell__brand-text">金标准 · 财务台</span>
