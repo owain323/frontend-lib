@@ -247,6 +247,18 @@ Two builds ship:
 
 The source tree keeps every comment — that is documentation, not payload.
 
+**One frozen ceiling.** The whole library is held to a single budget recorded in
+[`05-audit/budget.json`](05-audit/budget.json): a hard ceiling, a reserve that absorbs
+normal additions *without anyone editing a number*, and a ratchet that tightens the
+budget when the library shrinks. The rules — and what would have to be true to raise
+the ceiling — are in [`docs/BUDGET.md`](docs/BUDGET.md).
+
+**Stability.** Since `0.23.0` the public surface is frozen: token names, class names,
+JS members, CLI subcommands and their `--json` shape, contract fields and file paths
+do not disappear or change meaning. Removals go through the deprecation flow, with at
+least one minor version of lead time. What that covers — and what it honestly does
+not — is in [`docs/STABILITY.md`](docs/STABILITY.md).
+
 ---
 
 ## Browser support
