@@ -53,7 +53,7 @@
 | 文字提示 | `03-patterns/tooltip/tooltip.css` | 89 | **必需 280** (`tooltip.js`) | 图标按钮或缩写需要一句话解释就要 |
 | 分页 | `03-patterns/pagination/pagination.css` | 195 | **必需 401** (`pagination.js`) | 数据多到要翻页就要 |
 | 树形 | `03-patterns/tree/tree.css` | 122 | **必需 464** (`tree.js`) | 层级数据（文件 / 组织 / 分类）要展开就要 |
-| 侧边抽屉 | `03-patterns/drawer/drawer.css` | 129 | **必需 336** (`drawer.js`) | 要从侧边滑出面板就要 |
+| 侧边抽屉 | `03-patterns/drawer/drawer.css` | 129 | **必需 361** (`drawer.js`) | 要从侧边滑出面板就要 |
 | 弹窗 / 吐司 | `03-patterns/overlay/overlay.css` | 319 | **必需 638** (`overlay.js`) | 需要弹层（吐司 / 模态）就要 |
 | 状态（空 / 加载 / 错 / 成功） | `03-patterns/states/states.css` | 252 | — | **凡是会异步取数就要** |
 | 表单校验 | `03-patterns/form-validation/form-validation.css` | 263 | — | 提交前要校验就要 |
@@ -65,7 +65,7 @@
 | upload | `02-primitives/upload/upload.css` | 490 | 可选 676 (`upload.js`，拖放 / 文件列表 / 校验；没有它基础形态照常工作) |  |
 | reveal | `03-patterns/reveal/reveal.css` | 93 | 可选 175 (`reveal.js`，入场动效，纯增强；没有它内容直接可见) |  |
 | analysis-report | `04-recipes/analysis-report/analysis-report.css` | 226 | — |  |
-| app-shell | `04-recipes/app-shell/app-shell.css` | 395 | — |  |
+| app-shell | `04-recipes/app-shell/app-shell.css` | 473 | **必需 288** (`shell-nav.js`) |  |
 | detail-page | `04-recipes/detail-page/detail-page.css` | 190 | — |  |
 | report | `04-recipes/report/report.css` | 364 | — |  |
 | table | `04-recipes/table/table.css` | 409 | — |  |
@@ -93,6 +93,7 @@
 | 侧边抽屉 | `drawer.js` | 键盘 ✓ · ARIA ✓ · 焦点 ✓ |
 | 弹窗 / 吐司 | `overlay.js` | 键盘 ✓ · ARIA ✓ · 焦点 ✓ |
 | 导航 / 目录 | `nav.js` | 键盘 ✓ · ARIA ✓ · 焦点 ✓ |
+| app-shell | `shell-nav.js` | 键盘 — · ARIA ✓ · 焦点 ✓ |
 | bar | `bar.js` | 键盘 — · ARIA ✓ · 焦点 — |
 | model-viewer | `model-viewer.js` | 键盘 — · ARIA — · 焦点 — |
 | scientific-plot | `scientific-plot.js` | 键盘 — · ARIA ✓ · 焦点 — |

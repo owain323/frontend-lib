@@ -46,7 +46,12 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CORE_DIR = os.path.join(ROOT, '01-tokens', 'behavior')
-COMP_DIRS = ('02-primitives', '03-patterns')
+# 0.19.0：把 `04-recipes` 也纳入。
+#   在此之前 recipe 层**一个 JS 都没有**，所以这里只扫两层是够的。
+#   app-shell 是第一个例外（窄屏导航必须有行为层，理由见 shell-nav.js 文件头）——
+#   扫描范围不跟着扩，注入块就会成为一片没人校验的死文本：
+#   核改了它不跟随，而 `--check` 也永远不会红。
+COMP_DIRS = ('02-primitives', '03-patterns', '04-recipes')
 
 BEGIN = re.compile(r'^(?P<ind>[ \t]*)'
                    r'/\*\s*=+\s*BEHAVIOR INJECT BEGIN:\s*(?P<name>[\w-]+)\s*=+\s*\*/\s*$')

@@ -55,6 +55,11 @@ WHITELIST = {
     #   两个都是标准 Web API（MDN 有独立页面），不是内部代号。
     'DataTransfer',
     'FileList',
+    # ShellNav（0.19.0 补）
+    #   起因：app-shell 的窄屏导航层导出的全局名，出现在 global-api-probe.js
+    #   的探针表里。它和 Drawer / Upload / Tabs 同一类 —— 是库自己的公开 API，
+    #   不是内部代号。
+    'ShellNav',
     # 2026-10-31 补三个（起因：强制色那道门禁用系统色关键字修强制色缺陷）
     #   · CanvasText / GrayText —— CSS 系统色关键字（CSS Color 4）。它们不是
     #     内部代号，是**规范里的名字**；判据必须用它们才能在强制色下保住

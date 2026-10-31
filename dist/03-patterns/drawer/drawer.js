@@ -231,12 +231,22 @@ setBackgroundInert(true);
 lockScroll();
 
 var f = d.querySelectorAll(FOCUSABLE);
+var landed = false;
 if (opt.initialFocus) {
 var t = d.querySelector(opt.initialFocus);
-if (t) t.focus();
-else (f[0] || d).focus();
-} else {
-(f[0] || d).focus();
+if (t) {
+try { t.focus(); } catch (e) {  }
+landed = document.activeElement === t;
+}
+}
+if (!landed) {
+var first = null;
+for (var fi = 0; fi < f.length; fi++) {
+if (f[fi].offsetParent === null) continue;
+first = f[fi];
+break;
+}
+(first || d).focus();
 }
 
 var dm = flDismissable({

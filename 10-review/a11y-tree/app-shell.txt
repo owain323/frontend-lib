@@ -59,6 +59,23 @@ RootWebArea "应用外壳 · app-shell"
         listitem "报表" [level=1]
           link "报表"
     paragraph ".shell--scroll-main 让侧栏与顶栏完全不动，只有主区滚 —— 适合看板、监控墙。⚠️ 用这个变体时 不"
-    heading "6 · 窄屏：侧栏收走，主区全宽" [level=2]
-    paragraph "把浏览器窗口缩到 768px 以下 再看上面第 1 节 —— 侧栏会整列消失，主区铺满，顶栏保留。"
-    paragraph "侧栏 不会 自动变成抽屉，这是有意的：抽屉已经有 03-patterns/drawer （含 Esc 关闭、焦点归位、背"
+    heading "6 · 窄屏：侧栏收走，顶栏出一个菜单按钮" [level=2]
+    paragraph "把浏览器窗口缩到 768px 以下 。侧栏整列消失， 主区铺满，顶栏起始边出现一个 ☰ 按钮 —— 点它打开抽屉。 Es"
+    heading "应付账款 · 2025 年度" [level=2]
+    navigation "主导航（窄屏演示）"
+      link "金标准 · 财务台"
+      list
+        listitem "总览" [level=1]
+          link "总览"
+        listitem "实体" [level=1]
+          link "实体"
+        listitem "勾稽校验" [level=1]
+          link "勾稽校验"
+      paragraph "数据"
+      list
+        listitem "导入" [level=1]
+          link "导入"
+        listitem "审计日志" [level=1]
+          link "审计日志"
+    paragraph "上面第 1–5 节 没有 引 shell-nav.js ，所以它们缩窄后没有按钮， 侧栏直接消失 —— 缩窄窗口看看就知"
+    paragraph "⚠️ 别在这里自己写一个滑出来的侧栏。抽屉要的不是"滑出来"， 而是 焦点陷阱 / 焦点归位 / 背景 inert / "

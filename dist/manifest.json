@@ -7,9 +7,9 @@
     "manifesto 里的 sourceSha256 变了而 dist 没重建 ⇒ dist-parity/dist-fresh 门禁会红"
   ],
   "totals": {
-    "sourceFiles": 75,
-    "sourceBytes": 863796,
-    "distGzip": 105822
+    "sourceFiles": 76,
+    "sourceBytes": 882796,
+    "distGzip": 107892
   },
   "files": [
     {
@@ -559,15 +559,15 @@
     },
     {
       "source": "03-patterns/drawer/drawer.js",
-      "sourceSha256": "920e9700b6b28feeb75b0e6666ad72087cf53cfd4ee9e56eb271356dfa684aa3",
-      "sourceBytes": 12004,
-      "sourceGzip": 4642,
+      "sourceSha256": "7a58475e829fd120559810daa6edb9a6eb476d4ec12866dc687389150f464cbd",
+      "sourceBytes": 13371,
+      "sourceGzip": 5269,
       "outputs": [
         {
           "path": "dist/03-patterns/drawer/drawer.js",
           "kind": "stripped",
-          "bytes": 7212,
-          "gzip": 2489
+          "bytes": 7406,
+          "gzip": 2546
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
@@ -892,17 +892,32 @@
     },
     {
       "source": "04-recipes/app-shell/app-shell.css",
-      "sourceSha256": "1b7a92d3907d15deb9d6bfabee7d45013e49da63bcfe3c7ec02e127fe943244c",
-      "sourceBytes": 16328,
-      "sourceGzip": 6432,
+      "sourceSha256": "bf27a54fb123545519bd0bdbdbf3efeac3ae0bde0435abccf945636f857f22b2",
+      "sourceBytes": 20205,
+      "sourceGzip": 7936,
       "outputs": [
         {
           "path": "dist/04-recipes/app-shell/app-shell.css",
           "kind": "minified",
-          "bytes": 3886,
-          "gzip": 1140
+          "bytes": 4524,
+          "gzip": 1246
         }
       ]
+    },
+    {
+      "source": "04-recipes/app-shell/shell-nav.js",
+      "sourceSha256": "b386aa36118ec339ed17b616148dd920e11dc59536a40dae2b2fd81c602e20bf",
+      "sourceBytes": 13756,
+      "sourceGzip": 5980,
+      "outputs": [
+        {
+          "path": "dist/04-recipes/app-shell/shell-nav.js",
+          "kind": "stripped",
+          "bytes": 4389,
+          "gzip": 1907
+        }
+      ],
+      "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
     },
     {
       "source": "04-recipes/detail-page/detail-page.css",

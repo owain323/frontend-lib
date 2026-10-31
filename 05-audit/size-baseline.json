@@ -153,8 +153,8 @@
       "raw": 4652
     },
     "03-patterns/drawer/drawer.js": {
-      "gzip": 4642,
-      "raw": 12004
+      "gzip": 5269,
+      "raw": 13371
     },
     "03-patterns/dropdown/dropdown.css": {
       "gzip": 1929,
@@ -245,8 +245,12 @@
       "raw": 8640
     },
     "04-recipes/app-shell/app-shell.css": {
-      "gzip": 6432,
-      "raw": 16328
+      "gzip": 7936,
+      "raw": 20205
+    },
+    "04-recipes/app-shell/shell-nav.js": {
+      "gzip": 5980,
+      "raw": 13756
     },
     "04-recipes/detail-page/detail-page.css": {
       "gzip": 2325,
@@ -266,6 +270,6 @@
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 296507,
-  "total_raw": 748784
+  "total_gzip": 304618,
+  "total_raw": 767784
 }

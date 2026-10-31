@@ -169,6 +169,146 @@ const PROBE = {
   },
 };
 
+/* ------------------------------------------------------------ 窄屏导航 fixture
+ * F 组把 4 份文本直接内联进 fixture（不走 <link> / <script src>）。
+ * 理由：反向控制要**改写文本再重渲染**（剥掉一条规则 / 一行监听），
+ *      比对运行时状态更接近"代码真的变了"。
+ *
+ * ⚠️ 内联必须转义 `</script` / `</style`：CSS/JS 里只要出现一次，
+ *    HTML 解析器就会提前闭合标签，后面整段变成页面上的文字 ——
+ *    症状是"样式没生效 / 事件没绑上"，而源码看起来完全正确。
+ */
+function readText(rel) {
+  return fs.readFileSync(path.join(ROOT, rel), 'utf-8');
+}
+
+const NAV_TEXT = {
+  tokens: readText('01-tokens/tokens.css'),
+  typo: readText('01-tokens/typography.css'),
+  appShellCss: readText('04-recipes/app-shell/app-shell.css'),
+  drawerCss: readText('03-patterns/drawer/drawer.css'),
+  drawerJs: readText('03-patterns/drawer/drawer.js'),
+  shellNavJs: readText('04-recipes/app-shell/shell-nav.js'),
+};
+
+function inlineSafe(s) {
+  return s.replace(/<\/(script|style)/gi, '<\\/$1');
+}
+
+function navFixture(opt) {
+  const o = opt || {};
+  const css = o.appShellCss || NAV_TEXT.appShellCss;
+  const js = o.shellNavJs || NAV_TEXT.shellNavJs;
+  const withDrawer = o.withDrawer !== false;
+
+  return '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">' +
+    '<style>' + inlineSafe(NAV_TEXT.tokens) + '</style>' +
+    '<style>' + inlineSafe(NAV_TEXT.typo) + '</style>' +
+    '<style>body{margin:0;font:14px/1.5 sans-serif}</style>' +
+    '<style>' + inlineSafe(css) + '</style>' +
+    '<style>' + inlineSafe(NAV_TEXT.drawerCss) + '</style>' +
+    '</head><body>' +
+
+    '<div class="shell" id="n1" data-shell-nav="主导航">' +
+      '<header class="shell__topbar" id="ntop"><h1 class="shell__title">标题</h1>' +
+        '<div class="shell__topbar-end"><span>已同步</span></div></header>' +
+      '<nav class="shell__side" id="nside" aria-label="主导航">' +
+        '<a class="shell__brand" href="#">品牌</a>' +
+        '<ul class="shell__side-group">' +
+          '<li><a class="shell__link" id="cur" href="#" aria-current="page">总览</a></li>' +
+          '<li><a class="shell__link" href="#">实体</a></li>' +
+          '<li><a class="shell__link" href="#">勾稽校验</a></li>' +
+        '</ul>' +
+      '</nav>' +
+      '<main class="shell__main" id="nmain"><div class="shell__content">内容</div></main>' +
+    '</div>' +
+
+    /* 没 opt-in 的外壳：一个按钮都不该被注入（别人的顶栏布局不该被悄悄改） */
+    '<div class="shell" id="n2" style="margin-top:24px">' +
+      '<header class="shell__topbar"><h1 class="shell__title">没有 opt-in</h1></header>' +
+      '<nav class="shell__side" aria-label="侧栏"><a class="shell__link" href="#">一</a></nav>' +
+      '<main class="shell__main"><div class="shell__content">内容</div></main>' +
+    '</div>' +
+
+    (withDrawer ? '<script>' + inlineSafe(NAV_TEXT.drawerJs) + '</script>' : '') +
+    '<script>' + inlineSafe(js) + '</script>' +
+    '</body></html>';
+}
+
+/* 窄屏导航的探针（全部在页面内执行） */
+const NAV_PROBE = {
+  /** 外壳 + 按钮 + 侧栏的当前状态 */
+  shell: () => {
+    const root = document.getElementById('n1');
+    const btn = root.querySelector('.shell__menu');
+    const side = root.querySelector('.shell__side');
+    const top = root.querySelector('.shell__topbar');
+    const r = btn ? btn.getBoundingClientRect() : null;
+    return {
+      instance: !!root.shellNavInstance,
+      disabled: !!(root.shellNavInstance && root.shellNavInstance.disabled),
+      btn: !!btn,
+      btnVisible: !!btn && btn.offsetParent !== null,
+      btnFirst: !!btn && top.firstElementChild === btn,
+      btnLabel: btn && btn.getAttribute('aria-label'),
+      btnPopup: btn && btn.getAttribute('aria-haspopup'),
+      btnSize: r ? [Math.round(r.width), Math.round(r.height)] : null,
+      sideDisplay: side ? getComputedStyle(side).display : null,
+      /* 没 opt-in 的那个外壳有没有被误加按钮 */
+      otherButtons: document.querySelectorAll('#n2 .shell__menu').length,
+    };
+  },
+
+  /** 打开后的抽屉：结构 / 内容可见性 / 焦点 / id 去重 */
+  dialog: () => {
+    const host = document.querySelector('[data-drawer-host]');
+    const d = host && host.querySelector('[role="dialog"]');
+    if (!d) return { dialog: false };
+    const links = [].slice.call(d.querySelectorAll('a'));
+    const cur = d.querySelector('[aria-current="page"]');
+    const rect = (n) => {
+      if (!n) return null;
+      const r = n.getBoundingClientRect();
+      return [Math.round(r.width), Math.round(r.height)];
+    };
+    const outside = [].slice.call(document.querySelectorAll('[id]'))
+      .filter((n) => !host.contains(n)).map((n) => n.id);
+    return {
+      dialog: true,
+      modal: d.getAttribute('aria-modal'),
+      named: !!(d.getAttribute('aria-labelledby') || d.getAttribute('aria-label')),
+      title: (d.querySelector('.drawer__title') || {}).textContent,
+      linkCount: links.length,
+      /* 只数"真的占位"的链接：display:none 的克隆会有 0 尺寸 */
+      visibleLinks: links.filter((a) => a.offsetParent !== null && a.getBoundingClientRect().height > 0).length,
+      hasCurrent: !!cur,
+      curSize: rect(cur),
+      dupIds: [].slice.call(d.querySelectorAll('[id]')).map((n) => n.id)
+        .filter((i) => outside.indexOf(i) >= 0),
+      focusInDialog: !!(document.activeElement && d.contains(document.activeElement)),
+      focusIsCurrent: !!cur && document.activeElement === cur,
+      bgInert: (function () {
+        const kids = [].slice.call(document.body.children).filter((n) =>
+          n !== host && n.tagName !== 'SCRIPT' && n.tagName !== 'STYLE');
+        return kids.length > 0 && kids.every((n) => n.inert === true);
+      })(),
+      bodyOverflow: document.body.style.overflow,
+    };
+  },
+
+  /** 关闭后的复位情况 */
+  afterClose: () => {
+    const root = document.getElementById('n1');
+    const btn = root.querySelector('.shell__menu');
+    return {
+      gone: !document.querySelector('[data-drawer-host]'),
+      focusOnBtn: document.activeElement === btn,
+      bodyOverflow: document.body.style.overflow,
+      anyInert: [].slice.call(document.body.children).some((n) => n.inert === true),
+    };
+  },
+};
+
 /* ---------------------------------------------------------------- 主流程 */
 
 (async () => {
@@ -367,6 +507,220 @@ const PROBE = {
     e3.display !== 'none' && e3.w > 0,
     'display=' + e3.display + ' 宽=' + e3.w + ' ⇒ 375px 视口里挤掉一大块');
 
+  /* ==========================================================================
+   * F 组 · 窄屏导航的接线（shell-nav.js + drawer.js）
+   * ==========================================================================
+   * 🔴 这一层为什么也要门禁
+   *   它坏起来不"难看"，是让人**走不出去**：
+   *     · 抽屉里是空的（克隆继承了窄屏的 display: none）—— 看起来像"点开一个白框"
+   *     · 焦点没进抽屉 ⇒ 背景已 inert ⇒ Tab 无处可去；Esc 的监听挂在抽屉上，
+   *       也收不到 ⇒ 键盘用户被困在一个关不掉的模态里
+   *   两条都只在键盘 / 手机上现形，鼠标用户看到的一切都正常。
+   */
+  async function renderNav(opt) {
+    await p.setViewport({ width: 1200, height: 900 });
+    /* 🔴 先真的导航一次。`setContent` 在已有文档上是 document.write ——
+       **window 不会换**，于是上一次渲染定义的 `window.Drawer` 还在。
+       后果：F11（缺 drawer.js 应拒绝初始化）永远测不出来 ——
+       它会拿上一轮的 Drawer 继续工作，而判据看起来"通过了"。 */
+    await p.goto('about:blank', { waitUntil: 'load', timeout: 10000 });
+    await p.setContent(navFixture(opt), { waitUntil: 'load', timeout: 20000 });
+    await p.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    await p.waitForFunction(() => {
+      const n = document.getElementById('n1');
+      return !!(n && n.shellNavInstance);
+    }, { timeout: 5000 }).catch(() => {});
+  }
+
+  await renderNav();
+
+  const f1 = await p.evaluate(NAV_PROBE.shell);
+  add('F1', '宽屏：opt-in 后按钮已注入（顶栏首位 / aria-haspopup / 名字取自 data-shell-nav），但不可见',
+    f1.instance && f1.btn && f1.btnFirst && f1.btnPopup === 'dialog' &&
+      f1.btnLabel === '打开主导航' && !f1.btnVisible,
+    'instance=' + f1.instance + ' 首位=' + f1.btnFirst + ' 名字="' + f1.btnLabel +
+      '" haspopup=' + f1.btnPopup + ' 可见=' + f1.btnVisible);
+
+  add('F1b', '宽屏：侧栏仍可见（按钮只是待命，不替代侧栏）',
+    f1.sideDisplay !== 'none',
+    'side display=' + f1.sideDisplay);
+
+  add('F1c', '没有 data-shell-nav 的外壳一个按钮都不注入（opt-in 生效，别人的顶栏不被改）',
+    f1.otherButtons === 0,
+    '#n2 里的 .shell__menu 数量=' + f1.otherButtons);
+
+  /* ---- 窄屏：按钮出现 ---- */
+  await p.setViewport({ width: 375, height: 700 });
+  await p.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+  const f2 = await p.evaluate(NAV_PROBE.shell);
+  add('F2', '窄屏：菜单按钮出现且热区 ≥44×44，侧栏已收走',
+    f2.btnVisible && f2.sideDisplay === 'none' &&
+      !!f2.btnSize && f2.btnSize[0] >= 44 && f2.btnSize[1] >= 44,
+    '可见=' + f2.btnVisible + ' 尺寸=' + JSON.stringify(f2.btnSize) + ' side=' + f2.sideDisplay);
+
+  /* ---- 点开 ---- */
+  await p.click('#n1 .shell__menu');
+  await new Promise((r) => setTimeout(r, 320));
+  const f3 = await p.evaluate(NAV_PROBE.dialog);
+
+  add('F3', '点开：出现 role=dialog + aria-modal + 有名字，标题取自 data-shell-nav',
+    f3.dialog && f3.modal === 'true' && f3.named && f3.title === '主导航',
+    'dialog=' + f3.dialog + ' modal=' + f3.modal + ' 有名字=' + f3.named +
+      ' 标题="' + f3.title + '"');
+
+  add('F4', '抽屉里是侧栏的**可见**克隆（窄屏的 display:none 不该跟着克隆过去）',
+    f3.linkCount === 4 && f3.visibleLinks === 4,
+    '链接 ' + f3.linkCount + ' 个，其中真的占位 ' + f3.visibleLinks + ' 个');
+
+  add('F5', '克隆保留了 aria-current：当前页标记跟着过去，且真的有尺寸',
+    f3.hasCurrent && !!f3.curSize && f3.curSize[1] > 0,
+    'hasCurrent=' + f3.hasCurrent + ' 尺寸=' + JSON.stringify(f3.curSize));
+
+  add('F6', '克隆里没有与文档重复的 id（否则 aria-labelledby / label[for] 会指到隐藏那份）',
+    f3.dupIds.length === 0,
+    '重复 id=' + JSON.stringify(f3.dupIds));
+
+  add('F7', '初始焦点落在「当前页」且在抽屉内；背景已 inert、已锁滚动',
+    f3.focusInDialog && f3.focusIsCurrent && f3.bgInert && f3.bodyOverflow === 'hidden',
+    '焦点在抽屉内=' + f3.focusInDialog + ' 焦点=当前页 ' + f3.focusIsCurrent +
+      ' 背景 inert=' + f3.bgInert + ' body.overflow="' + f3.bodyOverflow + '"');
+
+  /* ---- Esc ---- */
+  await p.keyboard.press('Escape');
+  await new Promise((r) => setTimeout(r, 460));
+  const f4 = await p.evaluate(NAV_PROBE.afterClose);
+  add('F8', 'Esc ⇒ 遮罩消失、焦点回到菜单按钮、锁滚动与 inert 全部复位',
+    f4.gone && f4.focusOnBtn && f4.bodyOverflow === '' && !f4.anyInert,
+    '消失=' + f4.gone + ' 焦点回按钮=' + f4.focusOnBtn +
+      ' overflow="' + f4.bodyOverflow + '" 残留 inert=' + f4.anyInert);
+
+  /* ---- 点链接先关 ---- */
+  await p.click('#n1 .shell__menu');
+  await new Promise((r) => setTimeout(r, 320));
+  await p.evaluate(() => {
+    /* 用 click() 而不是鼠标坐标：抽屉里的链接可能被遮罩动画盖住一瞬间 */
+    const a = document.querySelector('[data-drawer-host] a[href]');
+    if (a) a.click();
+  });
+  await new Promise((r) => setTimeout(r, 460));
+  const f5 = await p.evaluate(() => ({
+    gone: !document.querySelector('[data-drawer-host]'),
+    overflow: document.body.style.overflow,
+  }));
+  add('F9', '点抽屉里的链接 ⇒ 先关掉抽屉（SPA 里不关会留一个盖住页面、还锁着焦点的遮罩）',
+    f5.gone && f5.overflow === '',
+    '消失=' + f5.gone + ' overflow="' + f5.overflow + '"');
+
+  /* ---- 开着的抽屉遇到窗口变宽 ---- */
+  await p.click('#n1 .shell__menu');
+  await new Promise((r) => setTimeout(r, 320));
+  const f6a = await p.evaluate(() => !!document.querySelector('[data-drawer-host]'));
+  await p.setViewport({ width: 1200, height: 900 });
+  await new Promise((r) => setTimeout(r, 460));
+  const f6b = await p.evaluate(() => ({
+    open: !!document.querySelector('[data-drawer-host]'),
+    overflow: document.body.style.overflow,
+    btnVisible: (function () {
+      const b = document.querySelector('#n1 .shell__menu');
+      return !!b && b.offsetParent !== null;
+    })(),
+    sideVisible: getComputedStyle(document.querySelector('#n1 .shell__side')).display !== 'none',
+  }));
+  add('F10', '开着抽屉把窗口拉宽 ⇒ 抽屉自动关闭（否则两个导航同时在场）',
+    f6a && !f6b.open && f6b.overflow === '' && !f6b.btnVisible && f6b.sideVisible,
+    '打开过=' + f6a + ' 拉宽后还开着=' + f6b.open + ' 按钮仍可见=' + f6b.btnVisible +
+      ' 侧栏回来了=' + f6b.sideVisible);
+
+  /* ---- 缺依赖：不许造"点了没反应"的按钮 ---- */
+  const msgs = [];
+  const onMsg = (m) => msgs.push({ type: m.type(), text: m.text() });
+  p.on('console', onMsg);
+  await renderNav({ withDrawer: false });
+  await new Promise((r) => setTimeout(r, 260));
+  const f7 = await p.evaluate(NAV_PROBE.shell);
+  p.off('console', onMsg);
+  /* ⚠️ 级别名在 puppeteer 各版本里是 'warning'，CDP 原生是 'warn' ——
+     两边都收，别让一个字符串拼写决定这条判据的真假。 */
+  const isWarn = (t) => t === 'warning' || t === 'warn';
+  const warned = msgs.some((m) => isWarn(m.type) && m.text.indexOf('drawer.js') >= 0);
+  add('F11', '缺 drawer.js ⇒ 不注入按钮，并 warn 点名缺什么（宁可没按钮，也不要点不动的按钮）',
+    f7.instance && f7.disabled && !f7.btn && warned,
+    '按钮=' + f7.btn + ' 已停用=' + f7.disabled + ' 点名警告=' + warned +
+      (msgs.length ? ' · "' + msgs[0].text.slice(0, 46) + '…"' : ''));
+
+  /* ==========================================================================
+   * G 组 · 反向控制：把接线拆掉，对应的 F 判据必须变红
+   * ==========================================================================
+   * 三条都用**改文本 + 重渲染**，不是改运行时状态 ——
+   * 判据要证的是"这段代码有用"，而不是"我能把它掰弯"。
+   */
+  const MUT = {
+    /* G1：窄屏那条 `display: inline-flex` */
+    menuRule: '  .shell__menu {\n    display: inline-flex;\n  }',
+    /* G2：resize 监听那一行 */
+    resize: '    global.addEventListener(\'resize\', this.onResize);',
+    /* G3：抽屉副本的修饰类选择器（换成不存在的类 = 那条规则不再命中） */
+    cloneRule: '.shell__side.shell__side--drawer {',
+  };
+
+  /* G1 剥掉窄屏菜单规则 ⇒ 375px 下按钮根本不出现 ⇒ F2 会红 */
+  const cssNoMenu = NAV_TEXT.appShellCss.replace(MUT.menuRule, '');
+  add('G0', '反向控制前提：G1 的替换真的改到了文件（否则下面三条全是空转）',
+    cssNoMenu !== NAV_TEXT.appShellCss,
+    '长度 ' + NAV_TEXT.appShellCss.length + ' → ' + cssNoMenu.length);
+
+  await renderNav({ appShellCss: cssNoMenu });
+  await p.setViewport({ width: 375, height: 700 });
+  await p.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+  const g1 = await p.evaluate(NAV_PROBE.shell);
+  add('G1', '反向：剥掉窄屏的菜单按钮规则 ⇒ 按钮不可见而侧栏也没了（F2 会判失败）',
+    !!g1.btn && !g1.btnVisible && g1.sideDisplay === 'none',
+    '按钮存在=' + g1.btn + ' 可见=' + g1.btnVisible + ' side=' + g1.sideDisplay +
+      ' ⇒ 窄屏上导航入口彻底消失');
+
+  /* G3 剥掉副本的修饰类规则 ⇒ 抽屉里那份还是 display:none ⇒ F4 会红 */
+  const cssNoClone = NAV_TEXT.appShellCss.replace(MUT.cloneRule, '.shell__side--not-used {');
+  add('G0b', '反向控制前提：G3 的替换真的改到了文件',
+    cssNoClone !== NAV_TEXT.appShellCss,
+    '选择器 ' + MUT.cloneRule + ' → .shell__side--not-used {');
+
+  await renderNav({ appShellCss: cssNoClone });
+  await p.setViewport({ width: 375, height: 700 });
+  await p.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+  await p.click('#n1 .shell__menu');
+  await new Promise((r) => setTimeout(r, 320));
+  const g3 = await p.evaluate(NAV_PROBE.dialog);
+  add('G3', '反向：剥掉抽屉副本的显示规则 ⇒ 抽屉打开但内容是隐藏的（F4 会判失败）',
+    g3.dialog && g3.visibleLinks === 0,
+    '对话框=' + g3.dialog + ' 可见链接 ' + g3.visibleLinks + '/' + g3.linkCount +
+      ' ⇒ 看起来像"点开一个白框"');
+
+  /* G2 剥掉 resize 监听 ⇒ 拉宽后抽屉仍开着 ⇒ F10 会红 */
+  const jsNoResize = NAV_TEXT.shellNavJs.replace(MUT.resize, '');
+  add('G0c', '反向控制前提：G2 的替换真的改到了文件',
+    jsNoResize !== NAV_TEXT.shellNavJs,
+    'shell-nav.js 长度 ' + NAV_TEXT.shellNavJs.length + ' → ' + jsNoResize.length);
+
+  await renderNav({ shellNavJs: jsNoResize });
+  await p.setViewport({ width: 375, height: 700 });
+  await p.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+  await p.click('#n1 .shell__menu');
+  await new Promise((r) => setTimeout(r, 320));
+  await p.setViewport({ width: 1200, height: 900 });
+  await new Promise((r) => setTimeout(r, 460));
+  const g2 = await p.evaluate(NAV_PROBE.dialog);
+  const g2wrap = await p.evaluate(() => ({
+    overflow: document.body.style.overflow,
+    sideVisible: getComputedStyle(document.querySelector('#n1 .shell__side')).display !== 'none',
+  }));
+  add('G2', '反向：剥掉 resize 监听 ⇒ 拉宽后抽屉还开着、页面仍锁着滚动（F10 会判失败）',
+    g2.dialog === true && g2wrap.overflow === 'hidden' && g2wrap.sideVisible,
+    '拉宽后仍打开=' + g2.dialog + ' body.overflow="' + g2wrap.overflow +
+      '" 侧栏已回来=' + g2wrap.sideVisible + ' ⇒ 两个导航同时在场');
+
+  await p.keyboard.press('Escape');
+  await new Promise((r) => setTimeout(r, 420));
+
   await b.close();
 
   /* ==========================================================================
@@ -379,6 +733,10 @@ const PROBE = {
     C1: '窄屏·侧栏收走', C2: '窄屏·不横滚', C3: '窄屏·顶栏保留', C4: '窄屏·宽屏恢复',
     D1: '强制色·当前项',
     E1: '反向·滚动容器', E1b: '反向·minmax 兜底', E1c: '反向·两个保险都拆', E2: '反向·sticky', E3: '反向·侧栏收走',
+    F1: '接线·宽屏', F1c: '接线·opt-in', F2: '接线·窄屏按钮',
+    F3: '接线·抽屉结构', F4: '接线·克隆可见', F6: '接线·id 去重', F7: '接线·初始焦点',
+    F8: '接线·Esc 归位', F9: '接线·点链接关闭', F10: '接线·宽屏复位', F11: '接线·缺依赖',
+    G0: '反向·前提', G1: '反向·菜单规则', G3: '反向·副本显示', G2: '反向·宽屏复位',
   };
 
   let bad = 0;
@@ -398,7 +756,8 @@ const PROBE = {
   console.log('');
   console.log(bad
     ? '  ❌ ' + bad + ' 条不满足'
-    : '  ✅ 全部满足：三段式成立、主区不被撑破、侧栏粘住且自滚、窄屏侧栏收走不横滚');
+    : '  ✅ 全部满足：三段式成立、主区不被撑破、侧栏粘住且自滚、窄屏侧栏收走不横滚' +
+        '；窄屏导航接线完整（克隆可见 / 焦点落位 / Esc 归位 / 宽屏复位 / 缺依赖不装死）');
   process.exit(bad ? 1 : 0);
 })().catch((e) => {
   console.error(e && e.stack ? e.stack : e);

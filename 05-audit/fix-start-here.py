@@ -336,6 +336,15 @@ def build_table(rows, comps):
         'bar': 'bar.js',
         'scientific-plot': 'scientific-plot.js',
         'model-viewer': 'model-viewer.js',
+        # 🔴 0.19.0：shell-nav.js 归**必需**，不是可选。
+        #    我一开始把它写成"可选增强"（宽屏没有它一切照旧），但那条理由只对桌面成立：
+        #    app-shell.css 在 ≤47.99rem 无条件把侧栏 `display: none`，
+        #    ⇒ 没有这层脚本时，窄屏上**一个导航入口都没有**。
+        #    这正是这张表在防的那件事："看起来能用，其实不能用"。
+        #    （分类表用 aria 计数判，此处 11 ≥ ARIA_MIN —— 判据与我的初判相反，
+        #      而判据是对的：它数的是"这层为了实现契约动了多少东西"，
+        #      不是"这层是不是必须存在"。两个问题不等价，我当初混了。）
+        'app-shell': 'shell-nav.js',
     }
     # 🔴 一个组件可以有多个 JS（0.11.2）：nav = nav.js（行为层，必需）+ toc.js（目录增强，可选）。
     #    ⇒ 登记值允许写成 ((文件, 理由), …) —— 混合写法见 _decl()。
@@ -346,7 +355,7 @@ def build_table(rows, comps):
                    # 没有它，基础形态（原生 input + ::file-selector-button）照常可用；
                    # 写了 .upload--drop 而没引 JS 时，拖放区仍可点（它是 label for），
                    # 只是没有文件列表 / 校验 / 移除。⇒ 归可选，不是必需。
-                   'upload': ('upload.js', '拖放 / 文件列表 / 校验；没有它基础形态照常工作')}
+                   'upload': ('upload.js', '拖放 / 文件列表 / 校验；没有它基础形态照常工作'),                   }
     check_js_classification(rows, REQUIRED_JS, OPTIONAL_JS)
     for name, rel, n_css, js_files in rows:
         lines = dict(js_files)

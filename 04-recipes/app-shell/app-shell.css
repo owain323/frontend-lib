@@ -228,12 +228,56 @@
   z-index: var(--z-header);
 }
 
+/* 窄屏导航按钮（由 shell-nav.js 注入，见该文件头）。
+   ----------------------------------------------------------------------------
+   🔴 默认 `display: none`，只有在下面的窄屏 @media 块里才变 `inline-flex`。
+      这个"默认隐藏"不是样式选择，是**契约的一半**：
+        · JS 靠 `offsetParent === null` 判断"现在该不该有抽屉"，
+          所以"什么时候显示"必须由 CSS 唯一决定，JS 一行数字都不写
+        · 桌面端即使有人手贱引了 shell-nav.js，也不会多出一个多余的汉堡按钮
+
+   ⚠️ 没有 JS 时这条规则仍然生效（按钮根本不存在），所以基础形态不受影响。 */
+.shell__menu {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex: none;                        /* 标题很长时不要让按钮被压扁 */
+  width: var(--sz-touch);            /* 44px 命中区（CONVENTIONS 第八节） */
+  height: var(--sz-touch);
+  /* 视觉上贴起始边：负 margin 只收视觉，热区仍是 44px */
+  margin-inline-start: calc(-1 * var(--sp-2));
+  padding: 0;
+  color: var(--text-secondary);
+  background: none;
+  /* 强制色预留：透明边框会被解析成 CanvasText 实线，不需要 media query */
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+}
+
+.shell__menu:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .shell__menu:hover {
+    color: var(--text-primary);
+    background: var(--surface-sunken);
+  }
+}
+
 /* 靠右的一组操作（头像/通知/保存） */
 .shell__topbar-end {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
   margin-inline-start: auto;
+  /* 🔴 不许被压缩。默认 `flex-shrink: 1` 时，窄屏上这组会被标题挤到
+     只剩一半宽，里面的文字**折成两行** —— 顶栏从 56px 长到 76px，
+     看起来像"手机上顶栏突然变厚了"（0.19.0 实拍）。
+     让它不收缩，标题自然会先截断（`.shell__title` 已经 `min-width: 0`）。 */
+  flex: none;
 }
 
 /* ⚠️ 选择器带 `.shell__topbar` 前缀是为了压过页面骨架的 `.page h2`
@@ -312,10 +356,19 @@
    🔴 这里是**唯一**用 @media 判宽度的地方，理由写在文件头 ⑤：
       app-shell 就是"视口的容器"，它没有外层槽可言。
 
-   ⚠️ 侧栏在窄屏直接 `display: none`，**不做**抽屉。
-      抽屉已经有 `03-patterns/drawer`（含 Esc / 焦点归位 / 背景锁 / 变宽自关）。
-      在这里再实现一遍 = 第二份真值，两边的焦点行为迟早不一致。
-      要抽屉就把 `.shell__side` 里的内容搬进 drawer 的实例。
+   🔴 纯 CSS 时：侧栏直接 `display: none`，页面上**没有**别的导航入口。
+      这是**故意**的降级 —— 只读看板可以接受；管理型后台请加下面这一行脚本。
+
+   🔴 要导航入口就引 `shell-nav.js`（行为层，同目录；START-HERE 归「必需」）：
+      它把 `.shell__side` **克隆**进 `03-patterns/drawer`，于是 Esc 关闭、
+      焦点陷阱、焦点归位、背景 inert、锁滚动五件事全部来自 drawer，
+      本组件一行行为逻辑都不重写。
+      （`03-patterns/nav` 做的是同一件"汉堡 → 抽屉"，但它的列表常驻在文档里、
+        靠移动位置，而这里的侧栏在窄屏是隐藏的 ⇒ 生命周期相反，不能共用。）
+
+   ⚠️ 别在这里自己写一份抽屉。抽屉要的不是"滑出来"，是那五件事 ——
+      自己写必然漏两件，而且漏掉的那两件（焦点归位 / 背景 inert）
+      在鼠标用户眼里完全正常。
    ========================================================================== */
 @media (max-width: 47.99rem) {
   .shell {
@@ -331,6 +384,31 @@
     display: none;
   }
 
+  /* 侧栏收走 ⇒ 把导航入口交还给顶栏的菜单按钮。
+     🔴 这一行是 shell-nav.js 的**唯一**开关：JS 读 `offsetParent` 决定有没有抽屉。
+        （所以窄屏断点只有这一个数字，改这里就是改全部 —— JS 不会错位。） */
+  .shell__menu {
+    display: inline-flex;
+  }
+}
+
+/* 🔴 抽屉里的那份侧栏必须**无视**上面那条 `display: none`。
+   ----------------------------------------------------------------------------
+   克隆出来的节点带着 `.shell__side` 类 ⇒ 它同样命中窄屏那条规则
+   ⇒ 抽屉能打开、遮罩在、关闭按钮在，但**内容是空的**（0.19.0 实拍）。
+   这不是"忘记加样式"，是"同一条规则对两种容器说了相反的话"：
+
+     · 桌面侧栏 在窄屏应该消失（顶栏有菜单按钮）
+     · 抽屉副本 在窄屏必须显示（它就是为了替代侧栏才存在的）
+
+   所以给副本加修饰类，用 0,2,0 的选择器压过 0,1,0 的那条 ——
+   不靠源码顺序，也不靠 `!important`。 */
+.shell__side.shell__side--drawer {
+  display: flex;
+  /* 抽屉自己会滚（.drawer__body），别在里头再套一个滚动容器 */
+  max-height: none;
+  overflow-y: visible;
+  position: static;
 }
 
 /* ============================================================================
