@@ -192,6 +192,8 @@ Three mistakes the template above already avoids:
 | `separator` | `separator` | Divider, optionally with centred text |
 | `skeleton` | `skeleton` | Loading placeholder |
 | `switch` | `switch` | Toggle switch |
+| `timeline` | `timeline` | Ordered event sequence: order is the information, so it is an `ol`; state belongs to `badge`, colour loses meaning here |
+| `upload` | `upload` | File upload: zero-JS native form, plus an enhanced form with drop, multiple files and validation |
 
 ### patterns (14)
 
@@ -217,6 +219,7 @@ Three mistakes the template above already avoids:
 | Component | Root class | Purpose |
 |---|---|---|
 | `analysis-report` | `report` | Research report page: body and side rail side by side, collapsing to one column |
+| `app-shell` | `shell` | App shell: sidebar, top bar, main area; sticky sidebar scrolls itself, folds away on narrow screens |
 | `detail-page` | `detail-page` | Entity detail skeleton: complete / partly missing / no records, three states sharing one DOM structure |
 | `report` | `rep` | Report layout system v1: shared base plus three layouts (magazine, scientific, financial research) |
 | `table` | `table` | Data table: sort / loading / empty / error states, three presets (financial, academic, statistical) |
