@@ -79,3 +79,12 @@ RootWebArea "应用外壳 · app-shell"
           link "审计日志"
     paragraph "上面第 1–5 节 没有 引 shell-nav.js ，所以它们缩窄后没有按钮， 侧栏直接消失 —— 缩窄窗口看看就知"
     paragraph "⚠️ 别在这里自己写一个滑出来的侧栏。抽屉要的不是"滑出来"， 而是 焦点陷阱 / 焦点归位 / 背景 inert / "
+    heading "7 · 窄侧栏 + 抽屉：图标在桌面，文字在抽屉" [level=2]
+    paragraph "把窗口缩到 768px 以下 再点 ☰： 抽屉里是 图标 + 文字 。同一份标记 —— 不是第二份导航，也没有 JS 分"
+    heading "图标导航" [level=2]
+    navigation "主导航（图标 · 抽屉演示）"
+      link "总览"
+      link "实体"
+      link "勾稽校验"
+    paragraph "文字包在 .shell__link-label 里：rail 状态下它被 视觉隐藏 ， 但仍在可访问树里（读屏念「总览」"
+    paragraph "只做纯图标栏、不接抽屉的话，第 4 节那种写法（图标 + aria-label ） 也成立；但只要你会用 data-sh"
