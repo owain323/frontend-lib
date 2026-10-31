@@ -144,7 +144,10 @@ def fetch_snapshot():
 # 词表（全部是"外人看到就会觉得奇怪"的东西）
 # ============================================================================
 PATTERNS = [
-    ('盘符/用户名', re.compile(r'czj\d{3,}', re.I)),
+    # 🔴 用户名的「形状」也要从私有词表读（`re:user=`）——
+    #    写死在这里等于门禁自己携带一处身份泄漏（E26）。
+    #    读不到就是永不匹配，`private_status()` 会在输出里点名。
+    ('盘符/用户名', re.compile(terms.USER_RE, re.I)),
     # ⚠️ 不要写 `[/\]` —— 字符类里的 `\]` 会**提前闭合字符类**，
     #    正则直接抛 "unterminated character set"。
     #    ⇒ 分成两个 alternation，各自只匹配正斜杠或"反斜杠+反斜杠"。
@@ -173,7 +176,11 @@ PATTERNS = [
     ('仓库绝对路径', re.compile(
         r'(?<![A-Za-z0-9_])[A-Z]:[/\\](?!Users[/\\](?:probe-user|someone|<))'
         r'[A-Za-z0-9_.-]+[/\\]', re.I)),
-    ('内部代号', re.compile(r'ESP32|SpendLatch|CostPilot|CHRONOS', re.I)),
+    # 🔴 内部代号：真实清单**不在这个文件里**（它曾经在这里，等于把
+    #    "我们有哪些项目"直接写进公开仓）。现在统一走 terms：
+    #    真实代号在 `internal/private-terms.txt`（.gitignore），读不到就只剩
+    #    公开的假代号 + 场景词。判据与 leak-scan 同一份，口径不会再分叉。
+    ('内部代号', re.compile('|'.join(re.escape(w) for w in terms.HARD_BAN), re.I)),
     ('内部场景', re.compile(r'录视频|做网站|做小程序')),
     # ⚠️ 自带域名判据收窄（2026-10-10）：
     #    原来是裸写账号名正则 ⇒ 把 `package.json` 里 repository/homepage/bugs
@@ -294,6 +301,7 @@ def main():
         return selftest()
 
     print('  === 外人视角审查（直接读 GitHub）===')
+    print('  ' + terms.private_status())
     print('')
     rel, read_fn, note = fetch_snapshot()
     if rel is not None:

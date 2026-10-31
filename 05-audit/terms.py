@@ -20,8 +20,11 @@ terms.py — 敏感词表（单一来源）
 ===========================================================================
 ⚠️ 加新词时的纪律
 ---------------------------------------------------------------------------
-  1. 一律用 `A + B` 拼接，不要直写
-  2. 改完必须跑 `python3 05-audit/outsider-audit.py` 确认扫不到自己
+  1. **真实项目代号 / 人名 / 账号片段 → 写进 `internal/private-terms.txt`**，
+     不要写进这个文件（拼接也不行，见下）
+  2. 通用场景词、流程词 → 这里的 `HARD_BAN` / `PROCESS_WORDS`，可以拼接
+  3. 改完必须跑 `python3 05-audit/leak-scan.py` 与
+     `python3 05-audit/outsider-audit.py`，确认扫不到自己
 ===========================================================================
 """
 
@@ -30,14 +33,64 @@ import json
 import os
 import re
 
-# ⭐ 全部用拼接写法 —— 源码里不存在完整词
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# ⭐ 通用词用拼接写法（不追求防人读，只求不给"照着念"的便利）
 _T = lambda *parts: ''.join(parts)
 
-HARD_BAN = [
-    _T('ESP', '32'),                       # 内部项目代号
+# ============================================================================
+# 🔴 私有词表：**不进公开树**（2026-10-31 修正）
+# ----------------------------------------------------------------------------
+# 旧版把真实代号拆成两半、用字符串拼接写在这个文件里，理由写在文件头：
+# "源码扫描不出来"。这个理由只对**机器**成立 —— 人一眼就能拼回来。
+# 对"别告诉外人你有哪些项目"这个目标来说，拼接等于没藏：
+# 每个 clone 仓库的人读一眼 `terms.py`，等于拿到一份内部项目清单。
+#
+# ⇒ 真词表搬到 `internal/private-terms.txt`（`.gitignore` 里），运行时读：
+#     · 本机 / 内网审计：读得到，判据完整
+#     · CI / 第三方 clone：读不到 ⇒ 代号类判据**关闭**，并且必须打印出来
+#       （`private_status()`；"没加载所以干净"是本库最忌讳的那种假绿）
+#   公开源码里只留一个**假**代号给自检夹具用 —— 它不指向任何真实项目。
+#
+# 格式：一行一条；`#` 注释；`re:名字=正则` 按正则；其余按字面（忽略大小写）。
+# ============================================================================
+def private_path():
+    """私有词表位置。可用 `FL_PRIVATE_TERMS` 指到别处（不想把它放进仓库时）。"""
+    return os.environ.get('FL_PRIVATE_TERMS') or os.path.join(
+        _ROOT, 'internal', 'private-terms.txt')
+
+
+def _load_private():
+    """返回 (字面词列表, {'user': 正则})。读不到就是空 —— 调用方负责说出来。"""
+    words, pats = [], {}
+    try:
+        with io.open(private_path(), encoding='utf-8') as f:
+            lines = f.read().splitlines()
+    except (IOError, OSError):
+        return words, pats
+    for line in lines:
+        s = line.strip()
+        if not s or s.startswith('#'):
+            continue
+        if s.startswith('re:') and '=' in s:
+            k, v = s[3:].split('=', 1)
+            if k.strip() and v.strip():
+                pats[k.strip()] = v.strip()
+            continue
+        words.append(s)
+    return words, pats
+
+
+_PRIVATE_WORDS, _PRIVATE_PATS = _load_private()
+
+# 公开的**假**代号：只用于自检夹具（"注入一个代号，看抓不抓得到"）。
+# ⚠️ 它必须排第一：`gate-selfcheck-fixtures.py` 取 HARD_BAN[0] 做注入样本，
+#    若取到真实代号，一次崩溃就可能把真名留在工作区里。
+DEMO_TERMS = [_T('Acme', 'Corp')]
+
+HARD_BAN = DEMO_TERMS + [
     _T('录', '视频'), _T('做网', '站'), _T('做小', '程序'),   # 内部场景
-    _T('Spend', 'Latch'), _T('Cost', 'Pilot'), _T('CHRO', 'NOS'),  # 内部项目
-]
+] + _PRIVATE_WORDS
 
 SOFT_WARN = [
     _T('我', '们'), _T('按你', '的'), _T('你要', '做'),
@@ -174,7 +227,6 @@ def process_trace_pat():
 REPO_FIELDS = ('repository', 'homepage', 'bugs')
 
 
-_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _SELF_URLS = None
 
 
@@ -333,8 +385,28 @@ def hits_outside_repo_field(text, pat):
     return out
 
 
-# 用户名（匹配 czj + 数字，用正则而非字面量）
-USER_RE = r'czj\d{3,}'
+# 用户名（形如「三个字母 + 工号」）—— **模式本身也是身份**。
+# 🔴 旧版在这里写死了字面量前缀，等于把本机用户名的前三字符连同工号格式
+#    一起公开（同一类错误见 ERRORS E26：为了检测泄漏而自己制造泄漏）。
+#    现在从 `internal/private-terms.txt` 的 `re:user=` 读；
+#    读不到就用一个**永不匹配**的表达式 —— 判据关闭，但 `private_status()`
+#    会把这件事打出来，不会假装扫过。
+USER_RE = _PRIVATE_PATS.get('user') or r'(?!)'
+
+
+def private_status():
+    """一行话：私有词表加载了几条、从哪来。**缺了必须说**。
+
+    ⚠️ 扫描器的输出里要包含它。否则 CI / 第三方 clone 上
+       「代号类判据没加载」看起来和「扫过且干净」一模一样 —— 又是一次假绿。
+    """
+    n = len(_PRIVATE_WORDS) + len(_PRIVATE_PATS)
+    if not n:
+        return ('⚠️ 私有词表未加载（0 条）⇒ 真实代号 / 用户名判据**本次未覆盖**；'
+                '补：把 internal/private-terms.txt 放回去，或设 FL_PRIVATE_TERMS')
+    where = 'FL_PRIVATE_TERMS' if os.environ.get('FL_PRIVATE_TERMS') \
+        else 'internal/private-terms.txt'
+    return '私有词表 %d 条已加载（%s）' % (n, where)
 
 
 # ============================================================================

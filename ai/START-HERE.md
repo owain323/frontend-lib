@@ -1,5 +1,12 @@
 # AI 使用入口（frontend-lib）
 
+> **English readers:** this index is Chinese, on purpose — the documents it points to
+> (component READMEs, demos, UI copy) are Chinese too, so an English translation of
+> *this page alone* would just walk you into Chinese walls. Start with
+> [`README.md`](../README.md) (English), then use the language-neutral
+> [`ai/components.json`](components.json) for contracts and each component's
+> `demo.html` for behaviour. Language policy: [`CONTRIBUTING.md`](../CONTRIBUTING.md#语言).
+
 > **本文件只做导航，不复制契约与组件文档。** 要细节就去它指的地方看。
 
 ## 0 · 先记住一件事

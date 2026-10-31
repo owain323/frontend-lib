@@ -150,6 +150,7 @@ EXTS = ('.js', '.ts', '.tsx', '.py', '.html', '.css', '.md', '.json',
 
 def main():
     print('  === 敏感信息扫描 ===')
+    print('  ' + terms.private_status())
     print('')
     # 🔴 视野 = 磁盘上要交付的东西（含未跟踪的新文件），不是 git 索引
     files = scannable_files(ROOT)
