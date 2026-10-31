@@ -1,6 +1,6 @@
 # agentcss — full reference (one file)
 
-> Generated from `ai/components.json` + `ai/pitfalls.json` + `ai/behaviors.json` at version **0.21.0**.
+> Generated from `ai/components.json` + `ai/pitfalls*.json` + `ai/behaviors.json` at version **0.22.0**.
 > Do not edit by hand: run `python 05-audit/gen-llms.py` (freshness is gated).
 > Short version: `llms.txt`. Machine contract: `ai/*.json`.
 
@@ -67,7 +67,7 @@ Every subcommand accepts `--json`; failures print `{"ok":false,...}` and exit no
 | `report` | `rep` | recipe | stable | 15.7 KB | — | 报告版式系统 v1：共享基础 + 三套版式（杂志/科研技术/金融研究），只换一… | — |
 | `table` | `table` | recipe | stable | 18.1 KB | — | 数据表格：排序/加载/空/错误四态；三种用途预设（财务/学术/统计） | `single-scroll-container` `empty-state-no-decoration` `table-overflow-wrapper` `text-injection-xss` |
 
-## 3 · Known failure modes (19)
+## 3 · Known failure modes (31)
 
 Each one has actually shipped at least once. Full text: `npx agentcss ai pitfalls --json`.
 
@@ -98,6 +98,21 @@ Each one has actually shipped at least once. Full text: `npx agentcss ai pitfall
 - `evidence-grading` — 措辞强度必须与证据等级匹配 · writing, evidence
 - `long-doc-consistency` — 长文里同一结论会被说三遍，还可能自相矛盾 · writing, consistency
 - `counterfactual-model-drift` — 反事实推演最容易偷偷换掉前面的模型 · writing, reasoning
+
+**Writing / publishing (12)**
+
+- `demo-must-prove-the-claim` — 演示要证明的是正文那句话，不是「能动就行」 · demo, narrative
+- `identifiers-from-source` — 编号、常量、行号、API 名一律回源检索，检索不到就降级表述 · evidence, citation
+- `prerender-when-host-strips-scripts` — 目标平台会剥 <script>/<style> 时，架构一开始就得是构建期预渲染 · publishing, prerender
+- `two-output-formats` — 「能进任何知识库」要两种载体：自包含 HTML + Markdown · publishing, output
+- `source-graded-by-citation` — 来源按「有没有引注」分级，自标缺引注的要明写不作定论 · evidence, sources
+- `unverified-source-not-authoritative` — 核不实的来源就降级，别挂权威名头 · evidence, sources
+- `md-table-cell-no-pipe` — Markdown 表格单元格里不能出现竖线 · markdown, table
+- `declare-what-you-did-not-decode` — 记法不统一时，写「本册不解码」比硬猜值钱 · evidence, scope
+- `majority-of-independent-evidence` — 注释与数据冲突时，数独立证据的票，并注明残留 · evidence, conflict
+- `plain-language-pass` — 定稿前做一遍「说人话」校对 · prose, editing
+- `reproducible-over-descriptive` — 从「有什么」升级到「怎么算」：控制流 + 可手算算例 + 版本固定 · prose, reproducibility
+- `counterfactual-worked-example` — 讲「为什么这样选」，就把被否掉的方案算死 · prose, argument
 
 ## 4 · Tokens
 

@@ -65,9 +65,16 @@ def clip(s, n=PURPOSE_MAX):
     return s if len(s) <= n else s[:n - 1] + '…'
 
 
+# 翻车点分两份文件（组件级 / 写作级）。生成器要**合并**，否则 llms-full.txt
+# 会漏掉一半 —— 而漏掉的部分恰好是"读者会读到的文字"那一类。
+PITFALL_FILES = ['pitfalls.json', 'pitfalls-writing.json']
+
+
 def build():
     comp = read('components.json')
-    pit = read('pitfalls.json')
+    pit = {'pitfalls': []}
+    for fn in PITFALL_FILES:
+        pit['pitfalls'] = pit['pitfalls'] + (read(fn).get('pitfalls') or [])
     beh = read('behaviors.json')
     tok = read('tokens.json')
     meta = json.load(io.open(os.path.join(ROOT, 'package.json'), encoding='utf-8'))
@@ -86,7 +93,7 @@ def build():
 
     A('# agentcss — full reference (one file)')
     A('')
-    A('> Generated from `ai/components.json` + `ai/pitfalls.json` + `ai/behaviors.json`'
+    A('> Generated from `ai/components.json` + `ai/pitfalls*.json` + `ai/behaviors.json`'
       ' at version **%s**.' % version)
     A('> Do not edit by hand: run `python 05-audit/gen-llms.py` (freshness is gated).')
     A('> Short version: `llms.txt`. Machine contract: `ai/*.json`.')
@@ -128,7 +135,8 @@ def build():
     A('')
     A('Each one has actually shipped at least once. Full text: `npx agentcss ai pitfalls --json`.')
     A('')
-    order = [('component', 'Component'), ('layout', 'Layout'), ('process', 'Process')]
+    order = [('component', 'Component'), ('layout', 'Layout'), ('process', 'Process'),
+             ('writing', 'Writing / publishing')]
     for key, label in order:
         rows = [p for p in pitfalls if p.get('scope') == key]
         if not rows:

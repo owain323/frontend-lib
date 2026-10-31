@@ -57,6 +57,7 @@
 | 有哪些组件、多大、JS 是否必需 | 根目录 `START-HERE.md`（组件表由 `05-audit/fix-start-here.py` 生成，不会漂移） |
 | 组件清单与成熟度 | `node ai/cli.js components --maturity=stable` |
 | 某个组件踩过的坑 | `node ai/cli.js pitfalls --component=<id>`（数据在 `ai/pitfalls.json`） |
+| 写文案 / 做演示 / 发页面时的坑 | `node ai/cli.js pitfalls --scope=writing`（数据在 `ai/pitfalls-writing.json`，不挂组件） |
 | 令牌名与取值 | `node ai/cli.js tokens --mode=dark`、`node ai/cli.js tree`（分层视图） |
 | 组件真实长什么样 | 该组件目录下的 `demo.html` |
 | 英文一页速览 | `llms.txt` / `llms-full.txt`（发现层；本文件是中文详版） |
@@ -106,7 +107,31 @@ node ai/cli.js check <doc.json>   # 校验契约文档（读 JSON，不解析原
 > 本文件（就是那份贴进 system prompt 的极简版）的适用范围是
 > **维护 frontend-lib 自身或严格按本库范式写页面**，不是所有 HTML 任务的通用规则。
 
-## 7 · 三句话版本
+## 7 · 为什么没有 MCP server
+
+有人问过要不要把 `ai/*.json` 包成一个 MCP server。结论是**不做**：
+
+1. 十一个子命令**全是只读查询** —— MCP 版本只是换一层传输，一个新能力都没有。
+2. 它会是**第二份真值**：命令怎么调、参数叫什么、返回什么形状，都得再写一遍。
+   CLI 改了 server 没改，就多一处只有用户能发现的错（`--json` 那次已经踩过同类）。
+3. 用户要多信任一个常驻进程（安装、权限、升级），而 CLI 离线、可审计、跑完即退。
+
+**什么情况下该重新考虑**（不是"永远不做"）：
+
+- 宿主环境**跑不了子进程**（浏览器端、沙箱化的 agent 运行时），CLI 根本调不到；
+- 出现需要**跨调用保持状态**的查询（现在没有：每次查询都无状态）。
+
+真要做，形状是给 `cli.js` 套一层 stdio 适配，**不要**重写实现：
+
+```js
+// 伪代码：把 tool 参数翻译成 argv，其余全部复用
+server.tool('ai_query', async (a) => runCli([a.cmd].concat(a.args, ['--json'])));
+```
+
+⚠️ 别在 server 里重新实现筛选（`--maturity` / `--scope` / `--component`）——
+那些判据在 CLI 里有门禁守，复制一份出去等于把门禁绕开。
+
+## 8 · 三句话版本
 
 1. 这是**可选**资产；不适用就用别的，别硬套。
 2. 查组件去根目录 `START-HERE.md` 和组件自己的 `demo.html`，别猜。

@@ -1,0 +1,119 @@
+{
+  "schemaVersion": "1.0.0",
+  "generatedBy": "hand-curated, then frozen (this file is a fact, not a build product)",
+  "source": "curated from the same internal lessons log as pitfalls.json (41 entries). Only the failures that happen while producing prose, demos and published pages — not inside a component, and not about running the gates. Sanitized: project names, dates, customer context and vendor-specific details removed.",
+  "note": "Same schema as pitfalls.json. `scope` is always \"writing\" and `components` is always empty here: these failures have no component to join to. `agentcss ai pitfalls --scope=writing` reads this file; plain `ai pitfalls` merges both files and reports which ones it loaded.",
+  "scopes": {
+    "writing": "写出来的东西：代码可能全绿、组件也可能都对，但读者读到的是错的，或者读不下去。"
+  },
+  "pitfalls": [
+    {
+      "id": "demo-must-prove-the-claim",
+      "title": "演示要证明的是正文那句话，不是「能动就行」",
+      "scope": "writing",
+      "components": [],
+      "symptom": "交互演示跑得很顺，但它演示出来的现象与正文结论相反（该被牺牲的项最后反而被保留）。画面本身没 bug，它证明的东西错了。",
+      "fix": "写完演示先自问一句「它演出来的现象，是不是正文那句话」；把「谁被保留、谁被牺牲」逐项对照结论核一遍，顺序、标注、结果文案三处一起看。",
+      "tags": ["demo", "narrative"]
+    },
+    {
+      "id": "identifiers-from-source",
+      "title": "编号、常量、行号、API 名一律回源检索，检索不到就降级表述",
+      "scope": "writing",
+      "components": [],
+      "symptom": "凭印象写出的编号在仓库里根本不存在；行号偏 1~2 行，代码块起止对不上，读者按它查不到任何东西。",
+      "fix": "正文里出现的每个编号、常量、行号、API 名先 grep 一遍：命中就附 file:line，未命中就明写「未能核实，本文不作断言」。行号宁可给范围（374-378），也不要给不确定的单点。",
+      "tags": ["evidence", "citation"]
+    },
+    {
+      "id": "prerender-when-host-strips-scripts",
+      "title": "目标平台会剥 <script>/<style> 时，架构一开始就得是构建期预渲染",
+      "scope": "writing",
+      "components": [],
+      "symptom": "客户端渲染做出来的页面在浏览器里完全正常，粘进公众号或笔记软件后是一片空白 —— 它们会剥掉脚本与样式块，并清洗 class。等于渲染层全废。",
+      "fix": "目标含微信/知识库时：构建期把数据渲染成最终 HTML；样式写成元素上的 style=\"…\"（唯一能穿过清洗的形式）；代码高亮也在构建期做完；展开/收起用原生 <details>。不要交付完再改架构。",
+      "tags": ["publishing", "prerender"]
+    },
+    {
+      "id": "two-output-formats",
+      "title": "「能进任何知识库」要两种载体：自包含 HTML + Markdown",
+      "scope": "writing",
+      "components": [],
+      "symptom": "只给 HTML，对方要 Markdown 沉淀；于是两份各自维护，正文很快走样，改一处忘一处。",
+      "fix": "内容只维护一份数据源，构建脚本同时产出 .html（自包含、内联样式）与 .md（纯文本，图注指向 HTML）。新增内容只改数据源，两个产物自动同步。",
+      "tags": ["publishing", "output"]
+    },
+    {
+      "id": "source-graded-by-citation",
+      "title": "来源按「有没有引注」分级，自标缺引注的要明写不作定论",
+      "scope": "writing",
+      "components": [],
+      "symptom": "把「二次综述、且该综述自己标了 [citation needed]」的句子当定论引用，后面整段论证都挂在它上面。",
+      "fix": "分三级：一手原件 > 有引注的二次综述 > 自标缺引注的二次综述。第三类照常使用，但必须写明「证据等级偏低，不构成定论，后文论证不依赖它」。",
+      "tags": ["evidence", "sources"]
+    },
+    {
+      "id": "unverified-source-not-authoritative",
+      "title": "核不实的来源就降级，别挂权威名头",
+      "scope": "writing",
+      "components": [],
+      "symptom": "想让一句话更有分量，就给某机构署名；等真去核，原始报告是扫描件、提不出文本，于是含糊写成「据相关机构」。",
+      "fix": "老实写「出自公开综述，非原件；尝试核过该档案但无法提取文本」。把核证失败的过程写出来，比含糊挂名更可信，也才配得上「证据等级」这套说法。",
+      "tags": ["evidence", "sources"]
+    },
+    {
+      "id": "md-table-cell-no-pipe",
+      "title": "Markdown 表格单元格里不能出现竖线",
+      "scope": "writing",
+      "components": [],
+      "symptom": "用 `a | b` 表达「拆成两段」，渲染时这一行被撑出额外列，整张表崩掉。HTML 侧完全看不出问题。",
+      "fix": "单元格内一律用「‖」或「/」代替竖线；写入前先扫一遍内容里的 `|`。",
+      "tags": ["markdown", "table"]
+    },
+    {
+      "id": "declare-what-you-did-not-decode",
+      "title": "记法不统一时，写「本册不解码」比硬猜值钱",
+      "scope": "writing",
+      "components": [],
+      "symptom": "两套公开整理稿对同一字段的记法互相冲突，硬挑一套去逐条解码；猜错一条，整篇「无幻觉」的立身之本就没了。",
+      "fix": "把能核对的部分给足（字段宽度、已确认的编码），然后明写一句「公开记法不统一，本册不逐条解码」。主动划清边界是加分项，审稿人看得出来。",
+      "tags": ["evidence", "scope"]
+    },
+    {
+      "id": "majority-of-independent-evidence",
+      "title": "注释与数据冲突时，数独立证据的票，并注明残留",
+      "scope": "writing",
+      "components": [],
+      "symptom": "老注释写 A，三处数据都指向 B，随手挑一个写进正文；或者只报一句「这里存在矛盾」就交稿。",
+      "fix": "把每条独立证据列出来数一遍，多数派胜出，然后照实记一句「该注释应是改数后忘记同步的残留」。不替老代码圆场，也不止步于「有矛盾」。",
+      "tags": ["evidence", "conflict"]
+    },
+    {
+      "id": "plain-language-pass",
+      "title": "定稿前做一遍「说人话」校对",
+      "scope": "writing",
+      "components": [],
+      "symptom": "括号套括号的长句、成串没解释的术语、形容词比证据多；读者要读两遍才知道在说什么，第二遍就不读了。",
+      "fix": "三个动作：把括号堆砌拆成顺叙；一句话只承载一个意象；把「少得不可思议」这类带劲的说法换成平实表达。说服力来自证据，不来自形容词。",
+      "tags": ["prose", "editing"]
+    },
+    {
+      "id": "reproducible-over-descriptive",
+      "title": "从「有什么」升级到「怎么算」：控制流 + 可手算算例 + 版本固定",
+      "scope": "writing",
+      "components": [],
+      "symptom": "文章能回答「这里有什么」，读者仍不知道它到底怎么算，也没法自己复现一遍；引证写着「某版本」，具体是哪个提交说不清。",
+      "fix": "三个动作：关键路径画成 输入→状态变化→输出 的阶梯；给一组小数字让读者拿笔跟算，并用独立公式验算同解；引证带 commit hash，外部资料列成编号文献并注明各自用于何处。",
+      "tags": ["prose", "reproducibility"]
+    },
+    {
+      "id": "counterfactual-worked-example",
+      "title": "讲「为什么这样选」，就把被否掉的方案算死",
+      "scope": "writing",
+      "components": [],
+      "symptom": "只写结论「因为位数不够，所以加了扩展位」，读者只能选择信或不信。",
+      "fix": "补一笔反事实账：换成另一种分配会算出什么不可行的结果（差多少、缺多少）。成本只有一个算例，读者会自己得出结论。",
+      "tags": ["prose", "argument"]
+    }
+  ]
+}
