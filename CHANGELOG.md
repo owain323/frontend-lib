@@ -16,6 +16,65 @@
 
 （无）
 
+## [0.24.1] - 2026-10-31
+
+### `page.css` 补上 `<pre>` 的兜底（实测出来的，不是推演）
+
+在 `.page` 环境里放一条 220 字符的长行，实测三种写法：
+
+| 写法 | 结果 |
+|---|---|
+| 裸 `<pre>` | `doc=2048 / vw=375` ❌ 撑破 |
+| `<pre class="code">`（没有 guide.css 时） | `doc=2211 / vw=375` ❌ 撑破 |
+| `<div class="prose"><pre>`（没有 content.css 时） | `doc=2048 / vw=375` ❌ 撑破 |
+
+三种都是 `overflow-x: visible` + `white-space: pre` ⇒ 长行顶到页面上，整页横向滚。
+
+现有 84 个页面之所以没红，是因为每个 `<pre>` 恰好都另有来源
+（`.prose > pre` 在 content.css、`pre.code` 在 guide.css）—— **那是巧合，不是契约**。
+使用者照 `page.css` 写一页文档、贴一段长代码就会踩到。
+
+修法只有两行，关键是选择器：
+
+```css
+:where(.page) pre { overflow-x: auto; }
+```
+
+`:where()` 把特异性压到 `0,0,1`（只算 `pre`），任何带类的规则都能盖掉它 ——
+`.prose > pre` 与 `pre.code` 都是 `0,1,1`，稳赢。
+写成 `.page pre`（同权重）则会变成"胜负取决于加载顺序"的随时会翻的脸。
+
+只写 `overflow-x`，**不写** padding / background / font：那些是"代码块长什么样"，
+属于 content.css / guide.css 的决定；这里只管"它不许撑破页面"。
+实测确认：`.prose > pre` 的 `padding 16.3px` / 灰底 / `3px` 竖条 / 12px mono 一点没变，
+裸 `<pre>` 也没有因此获得任何"代码块外观"。
+
+### 图标态的品牌补上悬停提示
+
+rail 下品牌只剩一个 20px 图形，鼠标用户没有别的线索知道它是什么
+⇒ `demo` 的 `.shell__brand` 加 `title="金标准 · 财务台"`。
+
+⚠️ 它只负责悬停提示。名字仍然来自 `.shell__brand-text` —— `title` 会**兜出**名字，
+但 `H2` 判的是"文字是否被 `display: none` 掉"，不靠 `title` 兜，所以这条改动
+不会掩盖"把 brand-text 改成 display:none"的破坏。
+
+### 工程卫生：38 个页面写成了 `<body class="page page">`
+
+`class` 里同一个类写了两遍。浏览器匹配一次，渲染无差异，但它是手误的化石，
+而且会让人怀疑"是不是有两套 page 类"。
+
+全库排查：**没有任何生成器产生它**（`gen-docs.py` 里是 `class="page"`），
+也没有 CSS 选择器依赖双类（`.page.page` 零命中）、没有 JS 读 `className` 精确值
+—— 是纯手写遗留。38 个文件各 1 处，已全部改回 `class="page"`。
+
+### 版本同步
+
+这一版三处改动都**不改渲染**（`overflow-x` 对已有页面本就是 `auto`；
+`title` 不渲染；重复类名去掉后匹配结果不变），只改内容哈希。
+所以两平台视觉基线重录后应当逐字节不变 —— 变的只有 `_stamp.json` 里的指纹。
+
+---
+
 ## [0.24.0] - 2026-10-31
 
 ### 图标态：把"文档说的"和"示例做的"合回一份
