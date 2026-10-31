@@ -268,7 +268,7 @@ Colour comes from tokens only. Component CSS never writes `@media (prefers-color
 
 ## Machine-readable contract
 
-`ai/components.json` describes each component for tools: usable class names, how state is expressed, required behaviours, maturity. `ai/pitfalls.json` carries the known failure modes, joined to components by id. `agentcss ai` (the `bin` entry) validates and queries both — every subcommand accepts `--json`.
+`ai/components.json` describes each component for tools: usable class names, how state is expressed, required behaviours, maturity. `ai/pitfalls.json` carries the known failure modes, joined to components by id; `ai/pitfalls-writing.json` holds the ones that happen while writing prose, building demos and publishing pages — those have no component to join to, and keeping them apart is what stops them from showing up as component defects. `agentcss ai` (the `bin` entry) validates and queries both — every subcommand accepts `--json`.
 
 ## Accessibility
 

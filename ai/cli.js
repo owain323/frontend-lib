@@ -270,15 +270,37 @@ function cmdPatch(args) {
 /* 已知翻车点：`ai/pitfalls.json` 是**人工策展**的事实文件，不是构建产物。
    为什么不塞进 components.json：那份是机器生成的契约，加一条叙述性字段
    会让生成器每次重新生成时都要决定"保留还是覆盖"。两份文件各管一件事。 */
+/* 分两份文件，因为读者不同：
+   · `pitfalls.json`         —— 组件 / 版式 / 交付过程。能对上组件的写进 `components`，
+                                `ai components --json` 会把它们挂到组件上。
+   · `pitfalls-writing.json` —— 写文案、做演示、发页面时的失效模式，`components` 恒空。
+   合成一份的代价：`components` 字段会混进一堆「没有组件可挂」的条目，
+   读的人分不清「这个组件没有坑」和「这条本来就不属于组件」。 */
+var PITFALL_FILES = ['pitfalls.json', 'pitfalls-writing.json'];
 var PITFALLS = null;
 
 function pitfallsDoc() {
   if (PITFALLS) return PITFALLS;
-  try {
-    PITFALLS = readJSON(path.join(AI, 'pitfalls.json'));
-  } catch (e) {
-    PITFALLS = { pitfalls: [] };
+  var merged = { schemaVersion: '1.0.0', files: [], pitfalls: [] };
+  for (var i = 0; i < PITFALL_FILES.length; i++) {
+    var f = PITFALL_FILES[i];
+    var d = null;
+    try {
+      d = readJSON(path.join(AI, f));
+    } catch (e) {
+      /* 🔴 读不到要**吵**。静默跳过会让 `--scope=writing` 返回 0 条，
+         而 0 条会被读成「这类没有翻车点」—— 实际是「这份文件不存在」。
+         写 stderr 而不是 stdout：stdout 要留给 JSON。 */
+      process.stderr.write('[WARN] 读不到 ai/' + f +
+        '：该文件覆盖的翻车点本次**未提供**\n');
+      continue;
+    }
+    merged.files.push(f);
+    if (d.schemaVersion) merged.schemaVersion = d.schemaVersion;
+    var list = d.pitfalls || [];
+    for (var j = 0; j < list.length; j++) merged.pitfalls.push(list[j]);
   }
+  PITFALLS = merged;
   return PITFALLS;
 }
 
@@ -320,7 +342,14 @@ function cmdPitfalls(args) {
   }
 
   if (isJson()) {
-    out({ schemaVersion: doc.schemaVersion, count: list.length, pitfalls: list });
+    /* `files` 是**覆盖面**，不是元数据：调用方看到只加载了一份文件时，
+       才知道「writing 0 条」是这类没有坑，还是那份文件根本没读到。 */
+    out({
+      schemaVersion: doc.schemaVersion,
+      files: doc.files,
+      count: list.length,
+      pitfalls: list
+    });
     process.exit(0);
   }
 
@@ -331,7 +360,8 @@ function cmdPitfalls(args) {
     process.exit(0);
   }
   list.forEach(function (x) {
-    process.stdout.write('  [' + (x.components.length ? x.components.join(',') : x.scope) +
+    process.stdout.write('  [' + ((x.components || []).length
+      ? x.components.join(',') : x.scope) +
       '] ' + x.title + '\n');
     process.stdout.write('      现象：' + x.symptom + '\n');
     process.stdout.write('      改法：' + x.fix + '\n');
@@ -642,7 +672,7 @@ function main() {
       '  ai assets       [--json]   组件之外的资产：布局 / 微行为核 / 示例页 / 适配器\n' +
       '  ai tokens       [--set=light|dark] [--json]\n' +
       '  ai tree         [--set=light|dark] [--cat=color] [--json]\n' +
-      '  ai pitfalls     [--component=<id>] [--scope=component|layout|process] [--tag=<t>] [--json]\n' +
+      '  ai pitfalls     [--component=<id>] [--scope=component|layout|process|writing] [--tag=<t>] [--json]\n' +
       '  ai profile      [--json]   列出三档及其差异\n' +
       '  ai capabilities [--json]   列出可协商的能力\n' +
       '\n' +

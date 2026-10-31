@@ -362,6 +362,91 @@ try {
     'status=' + miss.status + ' stdout=' + String(miss.stdout).slice(0, 48));
 })();
 
+// ---------------------------------------------------------------- ⑦ 翻车点：两份文件的口径
+(function () {
+  /* 翻车点分两份：组件/版式/交付（pitfalls.json）与写作（pitfalls-writing.json）。
+     合并不出错是**代码**的职责，这条门禁守的是**口径**：
+       · 写作类不许挂组件（挂了就会被 `components --json` 当成组件缺陷）
+       · 两份文件的 id 不许重（重了 `--scope` 过滤会各返回一条，读起来像两条不同的坑）
+       · CLI 报的条数必须等于两份文件之和（少一份 ⇒ 静默丢了一半，正是要防的）
+       · `files` 必须把两份都报出来（少报 = 调用方不知道覆盖面） */
+  var cp = require('child_process');
+  var cli = path.join(AI, 'cli.js');
+  function runCli(args) {
+    return cp.spawnSync(process.execPath, [cli].concat(args), { encoding: 'utf8' });
+  }
+
+  var core = readJSON('pitfalls.json').pitfalls || [];
+  var writ = readJSON('pitfalls-writing.json').pitfalls || [];
+
+  var shapeBad = [];
+  core.concat(writ).forEach(function (p) {
+    if (!p.id || !p.title || !p.scope || !p.symptom || !p.fix) {
+      shapeBad.push((p.id || '(无 id)') + ' 缺字段');
+    }
+    if (!Array.isArray(p.components)) shapeBad.push(p.id + ' 的 components 不是数组');
+    if (!Array.isArray(p.tags)) shapeBad.push(p.id + ' 的 tags 不是数组');
+  });
+  expect(shapeBad.length === 0,
+    '⑦ 两份翻车点文件共 ' + (core.length + writ.length) + ' 条，字段齐全（id/title/scope/symptom/fix）',
+    shapeBad.join(' / '));
+
+  var writBad = writ.filter(function (p) {
+    return p.scope !== 'writing' || (p.components || []).length !== 0;
+  }).map(function (p) { return p.id; });
+  expect(writBad.length === 0,
+    '⑦′ pitfalls-writing.json 的每条 scope 都是 writing 且不挂组件（' + writ.length + ' 条）',
+    writBad.join(' / '));
+
+  var seen = {};
+  var dup = [];
+  core.concat(writ).forEach(function (p) {
+    if (seen[p.id]) dup.push(p.id);
+    seen[p.id] = 1;
+  });
+  expect(dup.length === 0, '⑦″ 两份文件之间没有重复 id', dup.join(' / '));
+
+  var all = runCli(['pitfalls', '--json']);
+  var allDoc = null;
+  try { allDoc = JSON.parse(all.stdout); } catch (e) { allDoc = null; }
+  expect(allDoc && allDoc.count === core.length + writ.length,
+    '⑦‴ CLI 合并后的条数 = 两份文件之和（' + (core.length + writ.length) + '）',
+    allDoc ? 'count=' + allDoc.count : 'stdout 不是 JSON');
+
+  var filesOK = allDoc && Array.isArray(allDoc.files) &&
+    allDoc.files.indexOf('pitfalls.json') >= 0 &&
+    allDoc.files.indexOf('pitfalls-writing.json') >= 0;
+  expect(filesOK, '⑦⁗ CLI 输出 files 里两份都在（少一份 = 静默丢了一半）',
+    allDoc ? JSON.stringify(allDoc.files) : '');
+
+  var w = runCli(['pitfalls', '--json', '--scope=writing']);
+  var wDoc = null;
+  try { wDoc = JSON.parse(w.stdout); } catch (e) { wDoc = null; }
+  expect(wDoc && wDoc.count === writ.length && wDoc.pitfalls.every(function (p) {
+    return p.scope === 'writing';
+  }), '⑦⁵ --scope=writing 只返回写作类（' + writ.length + ' 条）',
+  wDoc ? 'count=' + wDoc.count : 'stdout 不是 JSON');
+
+  /* 反向控制（静态可判）：`components --json` 里挂到组件上的 id，
+     必须**只**来自核心文件。写作类若被挂上，这条会列出越界 id。 */
+  var coreIds = {};
+  core.forEach(function (p) { coreIds[p.id] = 1; });
+  var c = runCli(['components', '--json']);
+  var cDoc = null;
+  try { cDoc = JSON.parse(c.stdout); } catch (e) { cDoc = null; }
+  var leaked = [];
+  if (cDoc) {
+    cDoc.forEach(function (comp) {
+      (comp.pitfalls || []).forEach(function (x) {
+        if (!coreIds[x.id]) leaked.push(comp.id + '←' + x.id);
+      });
+    });
+  }
+  expect(cDoc && leaked.length === 0,
+    '⑦⁶ components --json 只挂核心翻车点，写作类不越界',
+    cDoc ? leaked.join(' / ') : 'components --json 不是 JSON');
+})();
+
 // ---------------------------------------------------------------- 汇总
 process.stdout.write('\n  通过 ' + passes + ' 项，失败 ' + fails.length + ' 项\n');
 if (fails.length) {

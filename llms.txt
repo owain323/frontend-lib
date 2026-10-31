@@ -8,6 +8,7 @@ Query the contract instead of guessing:
 
 - `ai/components.json` — id, tier, maturity, root class, slots, variants, states, ARIA, file paths
 - `ai/pitfalls.json` — known failure modes, keyed by component
+- `ai/pitfalls-writing.json` — failure modes of prose/demos/publishing (no component key)
 - `ai/tokens.json` · `ai/tokens.tree.json` — DTCG tokens, light + dark
 - `ai/behaviors.json` — five behaviour cores (Esc / focus return / roving / typeahead / scroll lock)
 
@@ -25,6 +26,9 @@ npx agentcss ai check page.json --profile=strict --json
 Every subcommand accepts `--json`. On failure it prints
 `{"ok":false,"command":"…","error":{"kind":"…","message":"…"}}` and exits non-zero,
 so a pipeline can never mistake an error for data.
+
+There is **no MCP server**: the CLI is the whole interface (read-only queries, no daemon,
+no second copy of the contract to keep in sync). See `ai/START-HERE.md` §7.
 
 ## Use it in a page
 

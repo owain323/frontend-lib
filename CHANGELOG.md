@@ -16,6 +16,60 @@
 
 （无）
 
+## [0.22.0] - 2026-10-31
+
+### 翻车点按「读者是谁」拆成两份文件
+
+0.21.0 的 `ai/pitfalls.json` 混装了三类东西：组件缺陷、版式问题、交付过程。
+在只收 UI 相关条目时这是对的，但它漏掉的恰好是**写出来给人看的那一类**
+（演示要证明什么、引证要不要回源、页面进公众号会不会被剥成空白）。
+
+新增 `ai/pitfalls-writing.json`，12 条，`scope` 恒为 `writing`、`components` 恒为空：
+
+| 文件 | scope | 挂组件 | 谁会被它绊到 |
+|---|---|---|---|
+| `pitfalls.json` | component / layout / process | 是（`components`） | 写页面的人 |
+| `pitfalls-writing.json` | writing | 否 | 写文案、做演示、发页面的人 |
+
+**为什么不合成一份**：`agentcss ai components --json` 会把每条坑挂到组件上。
+写作类没有组件可挂，混进去之后 `pitfalls: []` 就不再等于「这个组件没有坑」——
+它还得表达「这条根本不属于组件」。字段一旦要同时表达两件事，读的人就分不清了。
+
+CLI 侧：
+
+- `ai pitfalls` 合并两份，JSON 多一个 `files` 字段（**覆盖面**：只加载了一份时，
+  `count` 小不代表这类没有坑）
+- `--scope=writing` 直接可用；`components --json` 仍然只挂核心文件里的条目
+- 读不到某一份时往 stderr 写 `[WARN] … 本次未提供`，**不静默跳过** ——
+  静默会让 `--scope=writing` 返回 0 条，而 0 条读起来是「这类没有翻车点」
+
+### MCP：把「不做」写成可复查的决定，而不是一句口头结论
+
+`ai/START-HERE.md` 新增 §7：三条理由（只读查询 / 第二份真值 / 多一个要信任的常驻进程）、
+**什么条件下该重新考虑**（跑不了子进程、需要跨调用状态），以及真要做时的形状
+（给 `cli.js` 套 stdio 适配，不在 server 里重新实现筛选 —— 那些判据在 CLI 里有门禁守）。
+
+`llms.txt` 加一行"No MCP server"，免得 agent 去找一个不存在的东西。
+
+### 门禁
+
+`ai-layer-gate.js` 新增 ⑦ 系列 7 条（27 → 34）：
+
+- 两份文件字段齐全、写作类不挂组件、跨文件 id 不重复
+- CLI 合并条数 = 两份之和；`files` 里两份都在（少一份 = 静默丢了一半）
+- `--scope=writing` 只返回写作类
+- `components --json` 里挂着的 id 必须全部来自核心文件（写作类越界会点名）
+
+反向控制：给写作条目挂一个 `components: ['table']` 并把两条 id 改成一样
+⇒ ⑦′ / ⑦″ / ⑦⁶ 三条精确变红（34 → 31）；还原后回到 34/0。
+另做一次人工反向控制：把 `pitfalls-writing.json` 移走 ⇒ stderr 出现
+`[WARN] 读不到 ai/pitfalls-writing.json`，JSON 里 `files` 只剩一份、`writing count=0`。
+
+`llms-full.txt` 由生成器合并两份（`Writing / publishing (12)` 一节），
+仍是逐字节受 `docs-site-gate [11]` 守。
+
+---
+
 ## [0.21.0] - 2026-10-31
 
 ### 发现层：让外面的 AI 找得到这个库
