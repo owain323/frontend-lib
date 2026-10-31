@@ -10,7 +10,7 @@ No build step, no framework, no third-party runtime dependency. Class names are 
 ## 1 · Query instead of guessing
 
 ```bash
-npx agentcss ai components --json                     # 39 components, joined with pitfalls
+npx agentcss ai components --json                     # 40 components, joined with pitfalls
 npx agentcss ai components --json --maturity=stable
 npx agentcss ai pitfalls --json --component=table
 npx agentcss ai tokens --json --set=dark

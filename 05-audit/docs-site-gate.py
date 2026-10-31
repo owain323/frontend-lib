@@ -564,13 +564,13 @@ def selftest():
 # ===========================================================================
 
 def check_llms(comps):
-    """AI 发现层（llms.txt / llms-full.txt / AGENTS.md）的三条判据。
+    """AI 发现层（llms.txt / llms-full.txt / AGENTS.md）的四条判据。
 
     🔴 为什么这三份文件要进门禁
     ------------------------------------------------------------------------
       它们的作用是**让外面的 AI 找到这个库**。失效方式很安静：
         · 加了组件、忘了重跑 gen-llms ⇒ 文件里少一个组件（读者不会发现少了什么）
-        · llms.txt 里写着 39、实际 40 ⇒ 声称与事实不符
+        · 文件里写着 39、实际 40 ⇒ 声称与事实不符（生成器里也可能写死数字）
         · 文件被 .gitignore 或 files 数组漏掉 ⇒ 仓库里有、npm 包里没有
       最后一条由 `npm pack --dry-run` 那条人工验收守，前两条在这里守。
     """
@@ -584,13 +584,31 @@ def check_llms(comps):
     spec.loader.exec_module(mod)
     want = mod.build()
     full = os.path.join(ROOT, 'llms-full.txt')
+    full_text = ''
     if not os.path.isfile(full):
         errs.append('llms-full.txt 不存在 —— 跑 python3 05-audit/gen-llms.py')
     else:
         with io.open(full, encoding='utf-8') as f:
             got = f.read()
+        full_text = got
         if got != want:
             errs.append('llms-full.txt 与现算不一致 —— 跑 python3 05-audit/gen-llms.py')
+
+    # ①′ 生成物里**写死的数字**必须等于契约条数
+    #    🔴 为什么要单独一条（0.24.2 加）：判据 ① 比对的是"文件 == 生成器输出"，
+    #       它只能证明两者一致，**不能证明这个数是对的**。
+    #       实测：生成器里有一行 `# 39 components` 是手写常量，
+    #       于是文件里同时出现 "39 components"（第 13 行）和 "Components (40)"（第 118 行），
+    #       而 ① 一直绿 —— 自证式判据的典型失效。
+    #    ⇒ 这一条独立于生成器：直接数生成物里的数字。
+    if full_text:
+        ncomp = len(comps)
+        for pat, label in ((r'(\d+)\s+components\b', 'N components'),
+                           (r'Components \((\d+)\)', 'Components (N)')):
+            for m in re.finditer(pat, full_text):
+                if int(m.group(1)) != ncomp:
+                    errs.append('llms-full.txt 的「%s」写着 %s 个，契约里是 %d 个'
+                                ' —— 生成器里有写死的数字' % (label, m.group(1), ncomp))
 
     # ② llms.txt：组件数一致 / 必须教 AI 用 CLI / 有体积上限
     short = os.path.join(ROOT, 'llms.txt')
