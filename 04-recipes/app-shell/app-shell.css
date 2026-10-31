@@ -196,17 +196,39 @@
 }
 
 /* 强制色：inset 阴影会被整个移除（0.17.0 实测），
-   所以在强制色下必须换回 border 表达"当前项"。 */
+   所以在强制色下必须换一条**不靠颜色**的线索表达"当前项"。
+
+   🔴 0.22.1 修的是这里的第一版做法：当时用
+   `.shell__link { border-inline-start: 3px solid transparent }` 给所有项
+   "免费预留"3px，只给当前项换成实色。实拍发现**预留不是免费的** ——
+   强制色会把透明边框解析成实线（链接上实测是 LinkText 深蓝 rgb(0,0,159)，
+   当前项是 CanvasText 黑），于是**五项全部长出一条 3px 竖线**，
+   当前项与其它项的差别只剩一个色相 —— 正是本库反对的"只靠颜色"。
+
+   ⇒ 改成：不预留边框（零位移），当前项用**字重 + 行首圆点**两条非颜色线索。
+     圆点用系统色背景画（不是字符），位置用绝对定位 —— 不参与布局，也不进可访问名。 */
 @media (forced-colors: active) {
-  /* 所有项统一预留 3px 边框 —— 只给"当前项"加边框会让它的文字比其它项右移 3px，
-     看起来像排版错了。透明边框在强制色下也会被解析成 CanvasText，
-     所以当前项必须用**实色**并且与其它项的透明区分开。 */
   .shell__link {
-    border-inline-start: 3px solid transparent;
+    position: relative;
+    box-shadow: none;      /* inset 阴影在强制色下会被整个移除，留着没意义 */
   }
   .shell__link[aria-current="page"] {
-    border-inline-start-color: CanvasText;
-    box-shadow: none;      /* inset 阴影在强制色下会被整个移除，留着没意义 */
+    font-weight: 700;
+  }
+  /* 圆点用**系统色背景**画，不用字符。
+     实测：`content: "•"` 会被算进可访问名（读屏念成「圆点 总览」），
+     而 `content: ""` + `background: CanvasText` 两者都不发生 —— 空内容不进名字，
+     系统色背景不会被强制色替换（对比进度条的 `Highlight` 也是这么活的）。 */
+  .shell__link[aria-current="page"]::before {
+    content: "";
+    position: absolute;
+    inset-inline-start: 3px;      /* 微几何，不是节奏间距 ⇒ 不走 --sp-* */
+    top: 50%;
+    width: 5px;
+    height: 5px;
+    margin-top: -2.5px;
+    border-radius: 50%;
+    background: CanvasText;
   }
 }
 

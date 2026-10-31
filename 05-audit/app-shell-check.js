@@ -121,8 +121,29 @@ const PROBE = {
       shadow: cs.boxShadow,
       borderStartW: cs.borderInlineStartWidth,
       borderStartColor: cs.borderInlineStartColor,
+      markW: getComputedStyle(a, '::before').width,
+      markBg: getComputedStyle(a, '::before').backgroundColor,
       navLabel: a.closest('nav').getAttribute('aria-label'),
     };
+  },
+
+  /* 同一导航里的所有项 —— 判据要看"当前项与其它项的差别"，只看当前项会漏掉
+     "每一项都被标记"这种回归（0.22.1 的强制色缺陷正是这一种）。 */
+  navScan: () => {
+    const a = document.getElementById('cur');
+    const nav = a.closest('nav');
+    return Array.prototype.slice.call(nav.querySelectorAll('.shell__link')).map((x) => {
+      const cs = getComputedStyle(x);
+      const b = getComputedStyle(x, '::before');
+      return {
+        txt: (x.textContent || '').trim().slice(0, 6),
+        cur: x.getAttribute('aria-current') === 'page',
+        fw: parseInt(cs.fontWeight, 10) || 0,
+        bw: parseFloat(cs.borderInlineStartWidth) || 0,
+        markW: parseFloat(b.width) || 0,
+        markBg: b.backgroundColor,
+      };
+    });
   },
 
   /* 反例改造 ①：只去掉滚动容器的 overflow（模拟"忘了包 .shell__scroll"） */
@@ -547,9 +568,22 @@ const RAIL_PROBE = {
   });
   const fc = await p.evaluate(PROBE.current);
 
-  add('D1', '强制色：当前项靠实色边框区分（inset 阴影在强制色下被整个移除）',
-    parseFloat(fc.borderStartW) >= 1 && fc.borderStartColor !== 'rgba(0, 0, 0, 0)',
-    'border-inline-start=' + fc.borderStartW + ' ' + fc.borderStartColor);
+  /* 🔴 0.22.1 换了实现：原来靠 "给所有项预留 3px 透明边框 + 当前项换实色"，
+     实测强制色会把透明边框也解析成实线 ⇒ 每一项都长出一条竖线。
+     现在的契约是**零边框 + 字重 700 + 系统色圆点**（两条非颜色线索）。 */
+  add('D1', '强制色：当前项靠非颜色线索区分（字重 700 + 系统色圆点），且不靠边框',
+    parseFloat(fc.fontWeight) >= 700 && parseFloat(fc.markW) > 0 &&
+      fc.markBg !== 'rgba(0, 0, 0, 0)' && parseFloat(fc.borderStartW) === 0,
+    'fw=' + fc.fontWeight + ' 圆点=' + fc.markW + ' ' + fc.markBg +
+    ' · 左边框=' + fc.borderStartW);
+
+  const fcLinks = await p.evaluate(PROBE.navScan);
+  add('D1b', '强制色：同一导航里只有当前项带圆点，且没有任何项带左竖线',
+    fcLinks.filter((x) => x.cur).length === 1 &&
+      fcLinks.filter((x) => !x.cur).every((x) => x.markW === 0 || x.markBg === 'rgba(0, 0, 0, 0)') &&
+      fcLinks.every((x) => x.bw === 0),
+    fcLinks.map((x) => x.txt + (x.cur ? '*' : '') + ' fw=' + x.fw + ' 点=' + x.markW +
+      ' 边=' + x.bw).join(' / '));
 
   await cdp.send('Emulation.setEmulatedMedia', { features: [] });
   await p.evaluate(() => {
