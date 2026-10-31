@@ -677,9 +677,15 @@ const RAIL_PROBE = {
      返回的 `name.value` 就是读屏会念的那串字。
      （`cdp` 复用 D 组建的那个会话：同一个 target，强制色已复位。） */
   async function axName(selector) {
-    const { result } = await cdp.send('Runtime.evaluate', {
-      expression: 'document.querySelector(' + JSON.stringify(selector) + ')',
-    });
+    return axNameOf('document.querySelector(' + JSON.stringify(selector) + ')');
+  }
+  /* 同一页里有 N 个同类元素时，选择器拼不出"第 i 个"（它们分属不同父元素，
+     `:nth-of-type` 是相对父元素的）。直接按 NodeList 下标取。 */
+  async function axNameAt(selector, i) {
+    return axNameOf('document.querySelectorAll(' + JSON.stringify(selector) + ')[' + i + ']');
+  }
+  async function axNameOf(expression) {
+    const { result } = await cdp.send('Runtime.evaluate', { expression });
     if (!result || !result.objectId) return null;
     const { nodes } = await cdp.send('Accessibility.getPartialAXTree', {
       objectId: result.objectId, fetchRelatives: false,
@@ -929,6 +935,104 @@ const RAIL_PROBE = {
   await p.keyboard.press('Escape');
   await new Promise((r) => setTimeout(r, 420));
 
+  /* ==========================================================================
+   * H 组 · demo 页与契约一致（2026-10-31 加）
+   * ==========================================================================
+   * 🔴 为什么必须单独一组（这是本轮发现的**第三种假绿**）：
+   *   F12/F13/F14 验的是 `railFixture()` —— 内存里现拼的一份标记。
+   *   而 demo 页（使用者真正抄的那份）**当时写的是 aria-label**，
+   *   正是 README 用整节篇幅说「不要这么做」的写法。
+   *   ⇒ 门禁 46 条全绿，demo 却在教错的做法。判据与示例各说各话，
+   *     而使用者只会看 demo。
+   *
+   *   这与 E31（同一个决定写两遍）是同源病，只是这次两份分别是
+   *   「fixture 里的标记」与「demo 里的标记」。
+   *   ⇒ 判据必须落在**真实页面**上，不能只落在 fixture 上。
+   *
+   * 判什么（三条都是"存在性"，删掉就会红，不需要反向控制）：
+   *   H1  rail 的每条链接都含 `.shell__link-label`，且其文本 = 该链接的可访问名
+   *   H2  rail 的品牌必须是「标记 + 文字」两段（`.shell__brand-mark` +
+   *       `.shell__brand-text`），文字视觉隐藏但不 display:none
+   *   H3  rail 下不再出现 `.shell__side-label`（分组改用相邻 `.shell__side-group`）
+   * ========================================================================== */
+  await p.setViewport({ width: 1200, height: 900 });
+  await p.goto(BASE + '/04-recipes/app-shell/demo.html', { waitUntil: 'networkidle0' });
+  await p.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+
+  const h = await p.evaluate(() => {
+    const rails = Array.from(document.querySelectorAll('.shell--rail'));
+    const box = (n) => {
+      const r = n.getBoundingClientRect();
+      return [Math.round(r.width), Math.round(r.height)];
+    };
+    return rails.map((el) => {
+      const brand = el.querySelector('.shell__brand');
+      const text = el.querySelector('.shell__brand-text');
+      const mark = el.querySelector('.shell__brand-mark');
+      return {
+        links: Array.from(el.querySelectorAll('.shell__link')).map((a) => {
+          const lab = a.querySelector('.shell__link-label');
+          return {
+            lab: lab ? lab.textContent.trim() : null,
+            labBox: lab ? box(lab) : null,
+            labDisplay: lab ? getComputedStyle(lab).display : null,
+            /* 名字的第二来源：demo 里一旦同时写 aria-label 与可见文字，
+               两者就会漂。这里只记录，判据看 H1 的"名字来自哪"。 */
+            aria: a.getAttribute('aria-label'),
+          };
+        }),
+        brand: !!brand,
+        brandText: text ? text.textContent.trim() : null,
+        brandTextBox: text ? box(text) : null,
+        brandTextDisplay: text ? getComputedStyle(text).display : null,
+        markBox: mark ? box(mark) : null,
+        sideLabels: el.querySelectorAll('.shell__side-label').length,
+        sideLabelVisible: Array.from(el.querySelectorAll('.shell__side-label'))
+          .filter((n) => getComputedStyle(n).display !== 'none').length,
+      };
+    });
+  });
+
+  const hLinks = h.flatMap((r) => r.links);
+  const hNames = [];
+  for (let i = 0; i < hLinks.length; i++) {
+    /* 名字要问浏览器 —— 与 F12/G4 同一个理由：DOM 里有字不等于念得出。
+       ⚠️ 比对必须**双向**：只判「名字等于 label」还不够 —— 若链接根本没有
+       可访问名（aria-hidden 或 label 被 display:none），axName 返回 null，
+       宽松写法（`!hNames[i] || …`）会把"无名"读成通过。 */
+    hNames.push(await axNameAt('.shell--rail .shell__link', i));
+  }
+  add('H1', 'demo 的 rail：名字来自可见文字（`.shell__link-label`），且它确实被视觉隐藏',
+    hLinks.length > 0 &&
+      hLinks.every((l) => l.lab && l.labBox[0] <= 2 && l.labBox[1] <= 2 && l.labDisplay !== 'none') &&
+      hLinks.every((l, i) => hNames[i] !== null && hNames[i] === l.lab),
+    hLinks.length + ' 条链接：' + hLinks.map((l, i) =>
+      (l.lab || '(无 label)') + ' ↔ ' + (hNames[i] === null ? '(无名)' : '"' + hNames[i] + '"') +
+      (l.labBox ? ' ' + l.labBox.join('×') : '')).join(' · ') +
+      (hLinks.some((l) => l.aria) ? ' ⚠️ 仍有 aria-label=' +
+        JSON.stringify(hLinks.filter((l) => l.aria).map((l) => l.aria)) : ''));
+
+  /* ⚠️ 不是"每个 rail 都必须有品牌"：抽屉演示那个实例是精简的（只有图标），
+     那是合理用法。判据是「一旦有品牌，就必须是两段结构」，且**至少有一个**
+     实例真的演示了它 —— 否则这条判据会在"全都不写品牌"的 demo 上恒真。 */
+  const hWithBrand = h.filter((r) => r.brand);
+  add('H2', 'demo 的 rail：品牌是「标记 + 文字」两段，文字视觉隐藏但仍在可访问树（不是 display:none）',
+    hWithBrand.length > 0 && hWithBrand.every((r) => r.brandText && r.markBox &&
+      r.markBox[0] >= 16 && r.brandTextBox[0] <= 2 && r.brandTextDisplay !== 'none'),
+    hWithBrand.length + '/' + h.length + ' 个实例带品牌：' + hWithBrand.map((r, i) =>
+      '#' + i + ' 文字="' + (r.brandText || '(无 .shell__brand-text)') + '" ' +
+      (r.brandTextBox ? r.brandTextBox.join('×') : '?') +
+      ' display=' + r.brandTextDisplay + ' 标记=' + (r.markBox ? r.markBox.join('×') : '?')).join(' · '));
+
+  /* ⚠️ 这里判 `sideLabels === 0`，比 CSS 的容错**更严**，是有意的：
+     `.shell--rail .shell__side-label { display: none }` 是给使用者的兜底，
+     不是给范本的借口 —— 范本照抄进项目后，那个 label 就是一段永远不会
+     被看见、也不会被维护的标记。判"可见=0"会让这条判据在塞回 label 时
+     仍然通过（CSS 替它兜住了），那就测不出范本到底教了什么。 */
+  add('H3', 'demo 的 rail：不用 `.shell__side-label`（72px 放不下，分组改用相邻 group 的分隔线）',
+    h.length > 0 && h.every((r) => r.sideLabels === 0),
+    h.map((r) => 'label 数=' + r.sideLabels + '（可见 ' + r.sideLabelVisible + '，CSS 兜底不计入通过）').join(' · '));
+
   await b.close();
 
   /* ==========================================================================
@@ -947,6 +1051,7 @@ const RAIL_PROBE = {
     F12: '接线·rail 名字', F13: '接线·rail 布局', F14: '接线·抽屉补文字',
     G0: '反向·前提', G1: '反向·菜单规则', G3: '反向·副本显示', G2: '反向·宽屏复位',
     G4: '反向·rail 标签',
+    H1: '示例·rail 名字来源', H2: '示例·rail 品牌两段', H3: '示例·rail 分组',
   };
 
   let bad = 0;

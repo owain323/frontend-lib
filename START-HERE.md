@@ -66,7 +66,7 @@
 | upload | `02-primitives/upload/upload.css` | 490 | 可选 676 (`upload.js`，拖放 / 文件列表 / 校验；没有它基础形态照常工作) |  |
 | reveal | `03-patterns/reveal/reveal.css` | 93 | 可选 175 (`reveal.js`，入场动效，纯增强；没有它内容直接可见) |  |
 | analysis-report | `04-recipes/analysis-report/analysis-report.css` | 226 | — |  |
-| app-shell | `04-recipes/app-shell/app-shell.css` | 527 | **必需 288** (`shell-nav.js`) |  |
+| app-shell | `04-recipes/app-shell/app-shell.css` | 588 | **必需 288** (`shell-nav.js`) |  |
 | detail-page | `04-recipes/detail-page/detail-page.css` | 190 | — |  |
 | report | `04-recipes/report/report.css` | 364 | — |  |
 | table | `04-recipes/table/table.css` | 409 | — |  |

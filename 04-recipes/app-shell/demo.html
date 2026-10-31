@@ -150,30 +150,53 @@
       <h2 class="shell__title">窄侧栏形态</h2>
     </header>
     <nav class="shell__side" aria-label="主导航（图标）">
-      <!-- 图标用内联 SVG + currentColor，不用 Unicode 字符：
-           字符（◧ ◫ ◰）在不同字体下尺寸与形状完全不同，实测渲染成小方块。
-           这也是"用 color 画图形"的那条规律 —— 强制色下依然可见。 -->
-      <a class="shell__link" href="#" aria-current="page" title="总览" aria-label="总览">
-        <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor"
-             stroke-width="1.4" aria-hidden="true"><path d="M2 2h5v5H2zM9 2h5v5H9zM2 9h5v5H2zM9 9h5v5H9z"/></svg>
+      <!-- 品牌在 72px 里放不下名字 ⇒ 只留标记，名字视觉隐藏（不是删掉）。
+           标记与文字分成两段是**契约要求**，见 README「图标态的父级元素」。 -->
+      <a class="shell__brand" href="#">
+        <svg class="shell__brand-mark" viewBox="0 0 16 16" width="20" height="20" fill="none"
+             stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" aria-hidden="true"><path d="M8 1.6l5.4 3.1v6.6L8 14.4 2.6 11.3V4.7z"/></svg>
+        <span class="shell__brand-text">金标准 · 财务台</span>
       </a>
-      <a class="shell__link" href="#" title="实体" aria-label="实体">
-        <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor"
-             stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><path d="M2.5 4h11M2.5 8h11M2.5 12h7"/></svg>
-      </a>
-      <a class="shell__link" href="#" title="校验" aria-label="勾稽校验">
-        <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor"
-             stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 8.5l3.5 3.5 7-8"/></svg>
-      </a>
+      <!-- 分组标签在 72px 里放不下「数据 / 校验」这种词，折成两行会把三条图标挤散。
+           ⇒ 图标态**不用** `.shell__side-label`，改让两个 `.shell__side-group` 相邻：
+             `+` 那条规则会自动给出一条分隔线与间距（见 README「图标态的分组」）。 -->
+      <ul class="shell__side-group">
+        <li>
+          <a class="shell__link" href="#" aria-current="page" title="总览">
+            <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor"
+                 stroke-width="1.4" aria-hidden="true"><path d="M2 2h5v5H2zM9 2h5v5H9zM2 9h5v5H2zM9 9h5v5H9z"/></svg>
+            <span class="shell__link-label">总览</span>
+          </a>
+        </li>
+        <li>
+          <a class="shell__link" href="#" title="实体">
+            <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor"
+                 stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><path d="M2.5 4h11M2.5 8h11M2.5 12h7"/></svg>
+            <span class="shell__link-label">实体</span>
+          </a>
+        </li>
+      </ul>
+      <ul class="shell__side-group">
+        <li>
+          <a class="shell__link" href="#" title="校验">
+            <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor"
+                 stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 8.5l3.5 3.5 7-8"/></svg>
+            <span class="shell__link-label">勾稽校验</span>
+          </a>
+        </li>
+      </ul>
     </nav>
     <div class="shell__main">
       <div class="shell__content"><div class="ph">主区</div></div>
     </div>
   </div>
 </div>
-<p class="note">图标态<b>必须</b>给每个链接 <code>aria-label</code> 或可见的
-<code>title</code>：只有图标时读屏念出来的是"链接、链接、链接"，
-和一个空白页面没有区别。</p>
+<p class="note">图标态的名字<b>必须</b>来自可见文字 <code>.shell__link-label</code> ——
+它被视觉隐藏（1px 盒 + 裁切）但仍在可访问树里，读屏念的是「总览」而不是「链接」。
+改用 <code>aria-label</code> 也能让读屏念对，但那是<b>第二份真值</b>：改了可见文字忘了改它，
+念的还是旧的；更关键的是抽屉里那份克隆<b>补不回文字</b>（克隆离开
+<code>.shell--rail</code> 作用域，隐藏规则失效，但 <code>aria-label</code> 不会变成可见文字）。
+<code>title</code> 只负责鼠标悬停提示，不负责名字。</p>
 
 <h2>5 · 主区自己滚（看板型）</h2>
 <div class="demo">

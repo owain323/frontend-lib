@@ -370,6 +370,8 @@
     "shell--rail",
     "shell--scroll-main",
     "shell__brand",
+    "shell__brand-mark",
+    "shell__brand-text",
     "shell__content",
     "shell__link",
     "shell__link-label",

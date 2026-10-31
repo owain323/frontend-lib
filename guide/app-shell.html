@@ -137,7 +137,21 @@ min-height: 100dvh;   /* 正解 */</code></pre>
 <ol><li><strong>名字只能有一个来源。</strong> 删掉文字改用 <code>aria-label</code>，等于同一句话维护两遍：改了可见文字却忘了改 <code>aria-label</code>，读屏念的还是旧的。</li><li><strong>抽屉里要靠它把文字补回来。</strong> <code>shell-nav.js</code> 克隆的是侧栏节点，而抽屉把克隆挂到 <code>&lt;body&gt;</code> 下 ⇒ 它<strong>离开了 <code>.shell--rail</code> 的作用域</strong> ⇒ 隐藏规则不再命中 ⇒ 抽屉里自动变成「图标 + 文字」。不需要第二份标记，也没有 JS 分支。</li></ol>
 <p>⚠️ <strong>不能</strong>改成 <code>display: none</code>：不在可访问树里的内容不参与名字计算，链接会退化成 &quot;链接、链接、链接&quot;。门禁 <code>F12</code> 守名字；<code>G4</code> 把这条规则改成 <code>display:none</code> 后必须变红。</p>
 <p>⚠️ <code>title</code> 只负责桌面端的鼠标提示（触屏没有 hover）。它还会<strong>兜出</strong>一个名字，所以门禁 fixture 里故意不写 <code>title</code> —— 否则「把标签改成 display:none」这种破坏会被 <code>title</code> 兜住，判据看起来仍然是绿的。</p>
-<h2 id="s12">令牌<a class="anchor" href="#s12" aria-label="本节直链">#</a></h2>
+<h3 id="s12">图标态的品牌与分组<a class="anchor" href="#s12" aria-label="本节直链">#</a></h3>
+<p>4.5rem 放不下品牌名，也放不下「数据 / 校验」这种分组名。两者各有各的解法， <strong>都不是</strong>&quot;删掉了事&quot;。</p>
+<p><strong>品牌：标记 + 文字两段。</strong></p>
+<pre class="code" tabindex="0"><code class="language-html">&lt;a class=&quot;shell__brand&quot; href=&quot;#&quot;&gt;
+  &lt;svg class=&quot;shell__brand-mark&quot; …&gt;…&lt;/svg&gt;
+  &lt;span class=&quot;shell__brand-text&quot;&gt;金标准 · 财务台&lt;/span&gt;
+&lt;/a&gt;</code></pre>
+<p>rail 下 <code>.shell__brand-text</code> 与 <code>.shell__link-label</code> 同一套手法（1px 盒 + 裁切， <code>display: none</code> 是<strong>错的</strong>）：标记留在 72px 中央，品牌名仍在可访问树里，宽屏回来时字还在。品牌名是直接文本的老写法会退化成「金…」—— 不是坏，是提醒你补上两段结构。</p>
+<p>标记用 <code>currentColor</code> 画（内联 <code>&lt;svg&gt;</code>），不用 <code>&lt;img&gt;</code>：强制色下 <code>currentColor</code> 会被换成 <code>CanvasText</code>，图形还在；<code>&lt;img&gt;</code> 里的颜色不受当前颜色影响。</p>
+<p><strong>分组：让两个 <code>.shell__side-group</code> 相邻，不要用 <code>.shell__side-label</code>。</strong></p>
+<pre class="code" tabindex="0"><code class="language-html">&lt;ul class=&quot;shell__side-group&quot;&gt;…&lt;/ul&gt;
+&lt;ul class=&quot;shell__side-group&quot;&gt;…&lt;/ul&gt;   &lt;!-- `+` 会给出分隔线与间距 --&gt;</code></pre>
+<p><code>.shell__side-group + .shell__side-group</code> 那条规则本来就是为&quot;无标签分组&quot;准备的。 rail 下硬塞一个 <code>.shell__side-label</code> 会被 CSS 藏掉（兜底，防止它折行挤散图标），但那段标记从此永远不会被看见、也不会被维护 —— 所以门禁 <code>H3</code> 判的是「rail 实例里<strong>不许出现</strong> <code>.shell__side-label</code>」，比 CSS 的容错更严。</p>
+<p>门禁：<code>H1</code> 名字来自可见文字、<code>H2</code> 品牌两段、<code>H3</code> 分组不用标签 —— 三条都落在<strong>demo 页的真实 DOM</strong> 上，不只看 fixture （教训：F12/F13/F14 验的是 fixture，而 demo 当时教的是相反写法，46 条全绿）。</p>
+<h2 id="s13">令牌<a class="anchor" href="#s13" aria-label="本节直链">#</a></h2>
 <div class="table"><table>
 <thead><tr>
 <th>变量</th><th>默认</th><th>说明</th>
@@ -149,16 +163,16 @@ min-height: 100dvh;   /* 正解 */</code></pre>
 <tr><td><code>--shell-bp</code></td><td><code>48rem</code></td><td>侧栏收起阈值</td></tr>
 </tbody>
 </table></div>
-<h2 id="s13">无障碍<a class="anchor" href="#s13" aria-label="本节直链">#</a></h2>
+<h2 id="s14">无障碍<a class="anchor" href="#s14" aria-label="本节直链">#</a></h2>
 <ul><li>侧栏是 <code>&lt;nav aria-label=&quot;主导航&quot;&gt;</code>：页面上可能还有第二个 <code>&lt;nav&gt;</code>（页内目录），两个都没有名字时读屏只会说&quot;导航、导航&quot;。判据：<code>a11y-ax.js</code>。</li><li>当前页用 <code>aria-current=&quot;page&quot;</code>，<strong>不是</strong> <code>class=&quot;active&quot;</code> —— 前者是读屏能听到的状态，后者只是 CSS 钩子。</li><li>标记当前页用三条线索：竖条、底色、字重。灰度打印和色盲下都分得出来。</li><li>强制色下 <code>inset</code> 阴影会被整个移除，所以另有一段 media 把&quot;当前项&quot;换成实色边框；所有项统一预留 3px 透明边框，避免当前项的文字比其它项右移。</li><li>顶栏与侧栏的链接都有 44px 命中区（<code>--sz-touch</code>）。</li></ul>
-<h2 id="s14">反例<a class="anchor" href="#s14" aria-label="本节直链">#</a></h2>
+<h2 id="s15">反例<a class="anchor" href="#s15" aria-label="本节直链">#</a></h2>
 <ul><li><strong>❌ 侧栏 <code>position: fixed</code> + 主区 <code>margin-inline-start</code></strong> —— 看起来能用，但侧栏被摘出 grid 流，主区宽度靠<strong>手抄的数字</strong>维持（改侧栏宽就要改两处）；<code>inset-inline-start</code> 与 <code>margin-inline-start</code> 只要有一处漏改，RTL 下侧栏跑到右边、主区仍在右边留白。**</li></ul>
 <p>正确的做法见上面「侧栏为什么是 <code>sticky</code> 而不是 <code>fixed</code>」。</p>
 <ul><li><strong>❌ 窄屏把侧栏 <code>display: none</code> 之后就不管了</strong> —— 导航消失了，用户在手机上除了当前页哪儿也去不了。要么引 <code>shell-nav.js</code>（本目录就有），要么明确接受&quot;窄屏只有当前页&quot;（只读看板可以接受，但那要是<strong>决定</strong>，不是疏忽）。</li></ul>
 <p>⚠️ 别自己写 <code>transform: translateX(-100%)</code> 的抽屉。看起来只是&quot;滑出来&quot;，实际要做的是<strong>焦点陷阱 / 焦点归位 / 背景 <code>inert</code> / 锁滚动 / Esc</strong> 五件事。自己写必然漏两件，而漏掉的那两件在鼠标用户眼里完全正常 —— 只有键盘和读屏用户会被困在一个关不掉的抽屉里。</p>
 <ul><li><strong>❌ 给 <code>.shell</code> 加 <code>overflow: hidden</code> 想&quot;修好&quot;横滚</strong> —— 它确实不横滚了，因为内容<strong>被裁掉了</strong>，而且滚动条也没了。主区被撑破的正确修法是 <code>min-width: 0</code> + <code>.shell__scroll</code>（见坑 1），不是把溢出的部分藏起来。</li></ul>
 <ul><li><strong>❌ 把宽表格放进 <code>.shell__content</code></strong> —— <code>.shell__content</code> 的 <code>max-width</code> 是正文栏宽（<code>--measure-page</code>），表格会被限制在 52rem 里，右边几列挤成一团。宽内容要放在 <code>.shell__content</code> <strong>外面</strong>、<code>.shell__main</code> 直下。</li></ul>
-<h2 id="s15">相关<a class="anchor" href="#s15" aria-label="本节直链">#</a></h2>
+<h2 id="s16">相关<a class="anchor" href="#s16" aria-label="本节直链">#</a></h2>
 <ul><li><code>03-patterns/nav</code> —— 页内目录 + 抽屉行为层。视觉上与侧栏条目对齐，但<strong>不复用类</strong>：一个是&quot;页面内的目录&quot;，一个是&quot;应用级导航&quot;，语义不同。</li><li><code>03-patterns/drawer</code> —— 窄屏导航抽屉，Esc / 焦点归位 / 背景锁 / 变宽自关都已实现。</li><li><code>04-recipes/detail-page</code> / <code>analysis-report</code> —— 内容型版式，可以放进 <code>.shell__main</code>。</li></ul>
     </article>
     <nav class="g-pager" aria-label="上一页 / 下一页">
@@ -168,11 +182,11 @@ min-height: 100dvh;   /* 正解 */</code></pre>
   </main>
   <aside class="g-side">
     <p class="g-side__title" id="toc-title">本页目录</p>
-    <ul class="g-toc"><li><a href="#s2">文件</a></li><li><a href="#s3">用法</a></li><li><a href="#s4">两个坑（这是本组件存在的主要理由）</a></li><li><a href="#s7">侧栏为什么是 sticky 而不是 fixed</a></li><li><a href="#s8">窄屏导航（shell-nav.js）</a></li><li><a href="#s10">变体</a></li><li><a href="#s12">令牌</a></li><li><a href="#s13">无障碍</a></li><li><a href="#s14">反例</a></li><li><a href="#s15">相关</a></li></ul>
+    <ul class="g-toc"><li><a href="#s2">文件</a></li><li><a href="#s3">用法</a></li><li><a href="#s4">两个坑（这是本组件存在的主要理由）</a></li><li><a href="#s7">侧栏为什么是 sticky 而不是 fixed</a></li><li><a href="#s8">窄屏导航（shell-nav.js）</a></li><li><a href="#s10">变体</a></li><li><a href="#s13">令牌</a></li><li><a href="#s14">无障碍</a></li><li><a href="#s15">反例</a></li><li><a href="#s16">相关</a></li></ul>
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.23.0 · 零第三方运行时依赖 · 组件数 40</p>
+  <p>v0.24.0 · 零第三方运行时依赖 · 组件数 40</p>
 </footer>
 </body>
 </html>

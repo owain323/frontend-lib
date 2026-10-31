@@ -249,8 +249,8 @@
       "raw": 8640
     },
     "04-recipes/app-shell/app-shell.css": {
-      "gzip": 9108,
-      "raw": 22961
+      "gzip": 9962,
+      "raw": 25487
     },
     "04-recipes/app-shell/shell-nav.js": {
       "gzip": 5980,
@@ -274,6 +274,6 @@
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 309130,
-  "total_raw": 777826
+  "total_gzip": 309984,
+  "total_raw": 780352
 }

@@ -181,6 +181,44 @@ rail 状态下 `.shell__link-label` 被**视觉隐藏**（1px 盒 + 裁切），
 所以门禁 fixture 里故意不写 `title` —— 否则「把标签改成 display:none」这种破坏
 会被 `title` 兜住，判据看起来仍然是绿的。
 
+### 图标态的品牌与分组
+
+4.5rem 放不下品牌名，也放不下「数据 / 校验」这种分组名。两者各有各的解法，
+**都不是**"删掉了事"。
+
+**品牌：标记 + 文字两段。**
+
+```html
+<a class="shell__brand" href="#">
+  <svg class="shell__brand-mark" …>…</svg>
+  <span class="shell__brand-text">金标准 · 财务台</span>
+</a>
+```
+
+rail 下 `.shell__brand-text` 与 `.shell__link-label` 同一套手法（1px 盒 + 裁切，
+`display: none` 是**错的**）：标记留在 72px 中央，品牌名仍在可访问树里，
+宽屏回来时字还在。品牌名是直接文本的老写法会退化成「金…」——
+不是坏，是提醒你补上两段结构。
+
+标记用 `currentColor` 画（内联 `<svg>`），不用 `<img>`：强制色下 `currentColor`
+会被换成 `CanvasText`，图形还在；`<img>` 里的颜色不受当前颜色影响。
+
+**分组：让两个 `.shell__side-group` 相邻，不要用 `.shell__side-label`。**
+
+```html
+<ul class="shell__side-group">…</ul>
+<ul class="shell__side-group">…</ul>   <!-- `+` 会给出分隔线与间距 -->
+```
+
+`.shell__side-group + .shell__side-group` 那条规则本来就是为"无标签分组"准备的。
+rail 下硬塞一个 `.shell__side-label` 会被 CSS 藏掉（兜底，防止它折行挤散图标），
+但那段标记从此永远不会被看见、也不会被维护 —— 所以门禁 `H3` 判的是
+「rail 实例里**不许出现** `.shell__side-label`」，比 CSS 的容错更严。
+
+门禁：`H1` 名字来自可见文字、`H2` 品牌两段、`H3` 分组不用标签 ——
+三条都落在**demo 页的真实 DOM** 上，不只看 fixture
+（教训：F12/F13/F14 验的是 fixture，而 demo 当时教的是相反写法，46 条全绿）。
+
 ## 令牌
 
 | 变量 | 默认 | 说明 |
