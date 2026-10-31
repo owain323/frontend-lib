@@ -1,6 +1,6 @@
 # agentcss — full reference (one file)
 
-> Generated from `ai/components.json` + `ai/pitfalls*.json` + `ai/behaviors.json` at version **0.22.0**.
+> Generated from `ai/components.json` + `ai/pitfalls*.json` + `ai/behaviors.json` at version **0.22.1**.
 > Do not edit by hand: run `python 05-audit/gen-llms.py` (freshness is gated).
 > Short version: `llms.txt`. Machine contract: `ai/*.json`.
 
@@ -62,7 +62,7 @@ Every subcommand accepts `--json`; failures print `{"ok":false,...}` and exit no
 | `switch` | `switch` | primitive | stable | 20.5 KB | — | 开关切换 | — |
 | `upload` | `upload` | primitive | stable | 20.5 KB | `upload.js` | 文件上传：零 JS 的原生形态 + 拖放/多文件/校验的增强形态 | — |
 | `analysis-report` | `report` | recipe | stable | 8.4 KB | — | 组合型研究报告页面：正文与辅助栏并排，窄屏自然退回单栏 | `empty-layout-min-height` |
-| `app-shell` | `shell` | recipe | stable | 21.3 KB | `shell-nav.js` | 应用外壳：侧栏 + 顶栏 + 主区三段式；sticky 侧栏自滚、min-wi… | `empty-layout-min-height` |
+| `app-shell` | `shell` | recipe | stable | 22.4 KB | `shell-nav.js` | 应用外壳：侧栏 + 顶栏 + 主区三段式；sticky 侧栏自滚、min-wi… | `empty-layout-min-height` |
 | `detail-page` | `detail-page` | recipe | stable | 5.7 KB | — | 实体详情页骨架：字段齐全 / 部分缺失 / 无数据三种状态同构，无数据是一等状态 | `empty-layout-min-height` |
 | `report` | `rep` | recipe | stable | 15.7 KB | — | 报告版式系统 v1：共享基础 + 三套版式（杂志/科研技术/金融研究），只换一… | — |
 | `table` | `table` | recipe | stable | 18.1 KB | — | 数据表格：排序/加载/空/错误四态；三种用途预设（财务/学术/统计） | `single-scroll-container` `empty-state-no-decoration` `table-overflow-wrapper` `text-injection-xss` |

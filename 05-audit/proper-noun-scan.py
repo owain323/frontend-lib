@@ -66,7 +66,10 @@ WHITELIST = {
     #     前景/禁用态的语义（见 02-primitives/skeleton、switch）。
     #   · InvalidStateError —— Web Animations 的标准异常：对无限动画调
     #     `Animation.finish()` 就会抛它。门禁里必须捕获，所以名字出现在代码里。
-    'CanvasText', 'GrayText', 'InvalidStateError',
+    #   · LinkText —— 同族：CSS 系统色关键字，链接默认色。0.22.1 的强制色
+    #     判据靠"透明边框会被解析成 LinkText/CanvasText 实线"这条实测结论，
+    #     所以名字必须写在代码里。
+    'CanvasText', 'GrayText', 'LinkText', 'InvalidStateError',
     # 2026-10-17 补三个（起因：审计收口那轮新增的门禁代码里引用了它们）
     #   · AttributeError   —— release-gate 处理 exports 条件导出时，
     #                         原判据对 dict 调 .endswith ⇒ 真抛过这个错

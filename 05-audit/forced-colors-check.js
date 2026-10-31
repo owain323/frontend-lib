@@ -16,6 +16,8 @@
  *       （mask 还在，是 `background-color: currentColor` 被替换成了 Canvas）
  *     · 骨架屏整块变白 —— 看起来像"加载完了，内容为空"
  *     · 选项的勾选标记（choice__mark::after）同样消失
+ *     · 侧栏"当前项"：用透明边框预留 3px 的做法，在强制色里**五项全都长出竖线**
+ *       （透明边框会被解析成实线），当前项与其它项只剩一个色相差（0.22.1）
  *
  *   这些问题在正常截图里**一个都看不见**，在 axe / 对比度检查里也**全绿**：
  *   强制色不是"对比度不够"，而是"颜色被换掉之后语义丢失"。
@@ -289,6 +291,23 @@ const FIXTURE = {
     '<label class="switch"><input class="switch__input" type="checkbox" disabled>' +
       '<span class="switch__track"><span class="switch__thumb"></span></span>' +
       '<span class="switch__label">禁用</span></label>',
+  /* 拖放区：idle 与 dragover 的差别必须**不止颜色** ——
+     强制色会把作者色全部换掉，只靠色差的"拖到这里"提示会整块消失。 */
+  upload:
+    '<div class="upload upload--drop" style="width:360px">' +
+      '<input class="upload__input" type="file" id="fc-up">' +
+      '<label class="upload__dropzone" for="fc-up">' +
+        '<span class="upload__title">拖入文件</span>' +
+      '</label>' +
+    '</div>',
+  /* 侧栏导航：一条 aria-current + 两条普通项。
+     判据要看的是「当前项与其它项的差别」—— 只渲染一条链接测不出来。 */
+  shellNav:
+    '<nav class="shell__side" style="width:220px">' +
+      '<a class="shell__link" href="#" aria-current="page">总览</a>' +
+      '<a class="shell__link" href="#">实体</a>' +
+      '<a class="shell__link" href="#">勾稽校验</a>' +
+    '</nav>',
   sort: '<table><thead><tr><th aria-sort="ascending">' +
         '<button class="table__sort">公司</button></th></tr></thead>' +
         '<tbody><tr><td>甲</td></tr></tbody></table>',
@@ -310,6 +329,8 @@ const CSS_FILES = {
   input: '02-primitives/input/input.css',
   skeleton: '02-primitives/skeleton/skeleton.css',
   choice: '02-primitives/choice/choice.css',
+  shell: '04-recipes/app-shell/app-shell.css',
+  upload: '02-primitives/upload/upload.css',
 };
 
 async function main() {
@@ -398,6 +419,8 @@ async function main() {
   const I = read(CSS_FILES.input);
   const K = read(CSS_FILES.skeleton);
   const C = read(CSS_FILES.choice);
+  const SH = read(CSS_FILES.shell);
+  const U = read(CSS_FILES.upload);
 
   /* ---- A1 线形进度 ---- */
   await render([FIXTURE.progress], [P]);
@@ -538,6 +561,90 @@ async function main() {
     !!cbTick && !zeroPx(cbTick.bw) && cbTick.borderColor !== cbTick.hostBg,
     cbTick ? '勾 border-right ' + cbTick.bw + ' ' + cbTick.borderColor +
       ' / 框底 ' + cbTick.hostBg : '找不到');
+
+  /* ---- A7 侧栏当前项（0.22.1 实拍抓到的第 7 类缺陷） ---- */
+  /* 🔴 这一条守的是**状态差别**，不是"有没有样式"。
+     0.21 的做法是给所有链接预留 `border-inline-start: 3px solid transparent`，
+     只给当前项换实色。强制色把透明边框解析成实线（链接上实测 LinkText 深蓝
+     rgb(0,0,159)，当前项 CanvasText 黑）⇒ **每一项都长出一条竖线**，
+     当前项与其它项只剩一个色相差。旧判据（只看"当前项有边框"）会全绿。 */
+  const readNav = () => p.evaluate(() => {
+    return Array.prototype.slice.call(document.querySelectorAll('.shell__link')).map((a) => {
+      const s = getComputedStyle(a);
+      const b = getComputedStyle(a, '::before');
+      return {
+        txt: (a.textContent || '').trim(),
+        cur: a.getAttribute('aria-current') === 'page',
+        bw: s.borderInlineStartWidth,
+        bs: s.borderInlineStartStyle,
+        fw: parseInt(s.fontWeight, 10) || 0,
+        before: b.content,
+        beforeBg: b.backgroundColor,
+        beforeW: b.width,
+      };
+    });
+  });
+
+  await render([FIXTURE.shellNav], [SH]);
+  await activate();
+  const nav = await readNav();
+  const navCur = nav.filter(r => r.cur);
+  const navOther = nav.filter(r => !r.cur);
+  /* 「有标记」的定义要写成**可观测的三件事**：字重、圆点尺寸、圆点颜色。
+     第一版用 `content: "•"`，实测会被算进可访问名（读屏念「圆点 总览」）——
+     所以改成空内容的系统色圆点，判据也跟着看"圆点画出来没有"，而不是看字符。 */
+  const hasMark = (r) => r.fw >= 700 && !zeroPx(r.beforeW) && !isTransparent(r.beforeBg);
+  const noMark = (r) => r.fw < 700 &&
+    (r.before === 'none' || zeroPx(r.beforeW) || isTransparent(r.beforeBg));
+
+  add('A7', '侧栏当前项：只有当前项带非颜色标记（字重 ≥700 + 系统色圆点）',
+    navCur.length === 1 && navCur.every(hasMark) && navOther.every(noMark),
+    '当前项 ' + navCur.map(r => r.txt + ' fw=' + r.fw + ' 圆点 ' + r.beforeW + ' ' +
+      r.beforeBg).join(' / ') +
+    ' · 其它 ' + navOther.map(r => r.txt + ' fw=' + r.fw + ' 圆点 ' + r.beforeW).join(' / '));
+
+  /* A7c 圆点不能污染可访问名。`content: "•"` 的写法实测念成「圆点 总览」，
+     这条就是那个坑的护栏 —— 判据问浏览器要名字，不数 DOM 里的字。 */
+  const snap = await p.accessibility.snapshot({ interestingOnly: false });
+  const axNames = [];
+  (function walk(n) {
+    if (!n) return;
+    if (n.role === 'link') axNames.push(n.name);
+    (n.children || []).forEach(walk);
+  })(snap);
+  add('A7c', '侧栏当前项：圆点不进可访问名（读屏念「总览」，不是「圆点 总览」）',
+    axNames.length === nav.length && axNames.every(n => !/[•·]/.test(n)) &&
+      axNames.indexOf('总览') >= 0,
+    '名字：' + axNames.join(' / '));
+
+  add('A7b', '侧栏当前项：所有项都没有左竖线（透明边框预留会被强制色解析成实线）',
+    nav.every(r => zeroPx(r.bw)),
+    nav.map(r => r.txt + ' ' + r.bw + ' ' + r.bs).join(' / '));
+
+  /* ---- A8 拖放区：dragover 不能只靠底色差（0.18.0 引入的状态，0.22.1 才补判据） ---- */
+  const readDrop = async (state) => {
+    await p.evaluate((st) => {
+      const root = document.querySelector('.upload--drop');
+      if (st) root.setAttribute('data-state', st);
+      else root.removeAttribute('data-state');
+    }, state);
+    return p.evaluate(() => {
+      const dz = document.querySelector('.upload__dropzone');
+      const s = getComputedStyle(dz);
+      return { bs: s.borderStyle, bc: s.borderColor, bw: s.borderWidth, bg: s.backgroundColor };
+    });
+  };
+
+  await render([FIXTURE.upload], [U]);
+  await activate();
+  const dropIdle = await readDrop(null);
+  const dropOver = await readDrop('dragover');
+  /* 判据：**边框样式**必须变（dashed → solid）。边框色在强制色下会被统一，
+     底色会被丢掉，只有"线型"是结构差异 —— 它替读者回答了"现在能松手吗"。 */
+  add('A8', '拖放区：dragover 与 idle 的差别不止颜色（线型 dashed → solid）',
+    !!dropIdle && !!dropOver && dropIdle.bs !== dropOver.bs,
+    'idle ' + (dropIdle && dropIdle.bs) + ' / dragover ' + (dropOver && dropOver.bs) +
+    ' · 色差 ' + (dropIdle && dropIdle.bc) + ' → ' + (dropOver && dropOver.bc));
 
   /* ==========================================================================
    * B 组：页面层（37 个真实 demo）
@@ -715,6 +822,41 @@ async function main() {
     !!rSk && rSk.bg === rSk.seenBg,
     '骨架 ' + (rSk && rSk.bg) + ' / 页面底 ' + (rSk && rSk.seenBg));
 
+  /* C7 侧栏当前项：剥掉 media 块 ⇒ 行首标记消失（只剩正常态的底色与 500 字重，
+     而底色在强制色下被丢掉） */
+  const stShell = stripForcedColors(SH);
+  await render([FIXTURE.shellNav], [stShell.css]);
+  await activate();
+  const navBare = await readNav();
+  add('C7', '剥掉修复后：当前项重新没有圆点（标记确实来自那段 media 块）',
+    navBare.every(r => zeroPx(r.beforeW) || isTransparent(r.beforeBg)),
+    navBare.map(r => r.txt + ' 圆点 ' + r.beforeW + ' ' + r.beforeBg).join(' / ') +
+    ' · media 块剥了 ' + stShell.removed + ' 块');
+
+  /* C7b 🔴 关键：把**旧写法**注回去，A7b 必须能抓住它。
+     只证明"删掉修复会红"还不够 —— 真正要防的回归是"有人又把透明边框预留加回来"。 */
+  const OLD_RESERVE = [
+    '.shell__link { border-inline-start: 3px solid transparent; }',
+    '.shell__link[aria-current="page"] { border-inline-start-color: CanvasText; }',
+  ].join(' ');   /* 用空格拼接：CSS 规则之间不需要换行 */
+  await render([FIXTURE.shellNav], [stShell.css + OLD_RESERVE]);
+  await activate();
+  const navOld = await readNav();
+  add('C7b', '旧写法注回去：每一项都长出 3px 左竖线（A7b 会因此变红）',
+    navOld.filter(r => !zeroPx(r.bw)).length === navOld.length,
+    navOld.map(r => r.txt + ' ' + r.bw).join(' / '));
+
+  /* C8 拖放区：剥掉 `border-style: solid` ⇒ 两态线型相同（提示只剩色差） */
+  const U_noStyle = U.replace(/border-style:\s*solid;\s*/g, '');
+  await render([FIXTURE.upload], [U_noStyle]);
+  await activate();
+  const dropIdle2 = await readDrop(null);
+  const dropOver2 = await readDrop('dragover');
+  add('C8', '剥掉修复后：dragover 重新与 idle 同线型（判定确实在看那条声明）',
+    !!dropIdle2 && !!dropOver2 && dropIdle2.bs === dropOver2.bs,
+    'idle ' + (dropIdle2 && dropIdle2.bs) + ' / dragover ' + (dropOver2 && dropOver2.bs) +
+    ' · 剥掉 ' + ((U.match(/border-style:\s*solid;/g) || []).length) + ' 处声明');
+
   await b.close();
 
   /* ==========================================================================
@@ -723,11 +865,13 @@ async function main() {
   const GROUPS = {
     A0: '证据有效性', A1: '线形进度', A2: '环形进度', A3: '开关三态',
     A4: 'mask 图标', A5: '骨架屏', A6: '选择控件', A6b: '复选勾（反向样本）',
+    A7: '侧栏当前项', A7b: '侧栏（无竖线）', A7c: '侧栏（可访问名）', A8: '拖放区状态',
     B1: '全库·currentColor 图标', B2: '全库·阴影边界', B3: '全库·伪元素图形',
     C0: '反向控制前提', C1: '反向·进度前提', C1b: '反向·进度条', C1c: '反向·进度轮廓',
     C2: '反向·环形',
     C3: '反向·开关前提', C3b: '反向·滑块', C3c: '反向·开关底色',
     C4: '反向·排序箭头', C5: '反向·错误图标', C6: '反向·骨架屏',
+    C7: '反向·侧栏当前项', C7b: '反向·透明边框预留', C8: '反向·拖放区线型',
   };
 
   let bad = 0;
@@ -748,7 +892,7 @@ async function main() {
   console.log('');
   console.log(bad
     ? '  ❌ ' + bad + ' 条不满足'
-    : '  ✅ 全部满足：6 条实拍缺陷已闭合，37 页无同款，剥掉修复全部变红');
+    : '  ✅ 全部满足：7 类实拍缺陷已闭合，37 页无同款，剥掉修复全部变红');
   process.exit(bad ? 1 : 0);
 }
 
