@@ -10,11 +10,11 @@ gen-llms.py — 生成 `llms-full.txt`（给 AI 编码代理的一页式参考�
 
     llms.txt       短、稳定、**手写**。它是定位声明（这是什么 / 去哪查 /
                    几条硬规矩），不随组件数量变化 —— 手写才不会写成模板腔。
-    llms-full.txt  长、逐组件、**生成**。39 个组件的手写清单一定会漂：
+    llms-full.txt  长、逐组件、**生成**。几十个组件的手写清单一定会漂：
                    加一个组件忘改一次，读者看到的是一份"少一个"的表。
 
   ⇒ 分工：手写的部分归人，可枚举的部分归机器。
-     `llms.txt` 里那个"39 components"由 `docs-site-gate.py` 对着
+     `llms.txt` 里那句"N components"由 `docs-site-gate.py` 对着
      `ai/components.json` 核 —— 手写不等于没人管。
 
 ===========================================================================
@@ -37,7 +37,7 @@ AI = os.path.join(ROOT, 'ai')
 OUT = os.path.join(ROOT, 'llms-full.txt')
 
 # 表格里 purpose 的截断长度。为什么是 40：
-#   39 行 × 40 汉字 ≈ 1.5k token，整份文件落在 ~3k token；
+#   40 行 × 40 汉字 ≈ 1.6k token，整份文件落在 ~3k token；
 #   再长就会挤掉"翻车点"那一列 —— 而后者是这份文件相对 components.json 的**增量**。
 PURPOSE_MAX = 40
 
@@ -104,7 +104,8 @@ def build():
     A('## 1 · Query instead of guessing')
     A('')
     A('```bash')
-    A('npx agentcss ai components --json                     # 39 components, joined with pitfalls')
+    A('npx agentcss ai components --json                     # %d components, joined with pitfalls'
+      % len(comps))
     A('npx agentcss ai components --json --maturity=stable')
     A('npx agentcss ai pitfalls --json --component=table')
     A('npx agentcss ai tokens --json --set=dark')
