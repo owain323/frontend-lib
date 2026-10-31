@@ -415,8 +415,24 @@
    5 · 变体
    ============================================================================ */
 
-/* 侧栏更窄（只有图标 + 提示）：适合"工具条"型产品。
-   ⚠️ 图标态必须靠 `aria-label` / `title` 给名字，否则读屏只念"链接"。 */
+/* 侧栏更窄（只有图标）：适合"工具条"型产品。
+   ----------------------------------------------------------------------------
+   🔴 图标态的文字用 `.shell__link-label` 包起来，这里只做**视觉隐藏**：
+
+     <a class="shell__link" href="#" title="总览">
+       <svg … aria-hidden="true">…</svg><span class="shell__link-label">总览</span>
+     </a>
+
+   为什么不是"删掉文字 + 写 aria-label"：
+     ① 名字有两个来源就会漂 —— 改了可见文字忘了改 aria-label，读屏念的还是旧的
+     ② 抽屉里那份是侧栏的**克隆**，克隆被挂在 `<body>` 下（drawer.js），
+        它**离开了 `.shell--rail` 的作用域** ⇒ 下面这条隐藏规则不再命中
+        ⇒ 抽屉里自动变成"图标 + 文字"。文字删了就永远补不回来。
+
+   ⚠️ 不能用 `display: none`：那样文字不参与可访问名计算，链接退化成
+      "链接、链接、链接"。门禁 F12 守名字、G4 守这条（改成 display:none 必须变红）。
+   ⚠️ 仍建议给 `title`：44px 的图标对鼠标用户需要悬停提示。但它只是提示 ——
+      名字必须来自 `.shell__link-label`（`title` 会兜出名字，把上面的问题盖住）。 */
 .shell--rail {
   --shell-side-w: 4.5rem;
 }
@@ -427,9 +443,25 @@
 }
 
 .shell--rail .shell__link {
+  /* 绝对定位的标签以链接为包含块，不会被算到侧栏的滚动区外 */
+  position: relative;
   justify-content: center;
   padding-inline: 0;
   width: var(--sz-touch);
+}
+
+/* 视觉隐藏（保留在可访问树里）。这是 Web 上最老的一段样板之一，
+   每一行都有作用：1px 盒 + 裁切；`white-space: nowrap` 防止文字在
+   1px 宽里折成几十行（Safari 会因此把行高算得很夸张）。 */
+.shell--rail .shell__link-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 /* 侧栏无边框（与主区同色，靠留白分层） */

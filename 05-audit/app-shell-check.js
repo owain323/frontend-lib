@@ -235,6 +235,48 @@ function navFixture(opt) {
     '</body></html>';
 }
 
+/* 图标态（rail）的 fixture。
+ * ----------------------------------------------------------------------------
+ * 🔴 这里**故意不写 `title`**：`title` 会在没有内容时兜出一个可访问名，
+ *    于是「把 `.shell__link-label` 改成 display:none」这种破坏会被它盖住 ——
+ *    G4 就永远红不了（判据是装饰）。demo 页面写 title 是给鼠标用户的提示，
+ *    与"名字从哪来"是两件事。
+ * 🔴 用内联 SVG 而不是 <img>：`<img>` 需要 alt 才能不出噪声，而这里要证的正是
+ *    名字只来自那个 span。 */
+function railFixture(opt) {
+  const o = opt || {};
+  const css = o.appShellCss || NAV_TEXT.appShellCss;
+
+  return '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">' +
+    '<style>' + inlineSafe(NAV_TEXT.tokens) + '</style>' +
+    '<style>' + inlineSafe(NAV_TEXT.typo) + '</style>' +
+    '<style>body{margin:0;font:14px/1.5 sans-serif}</style>' +
+    '<style>' + inlineSafe(css) + '</style>' +
+    '<style>' + inlineSafe(NAV_TEXT.drawerCss) + '</style>' +
+    '</head><body>' +
+
+    '<div class="shell shell--rail" id="r1" data-shell-nav="图标导航">' +
+      '<header class="shell__topbar"><h1 class="shell__title">图标导航</h1></header>' +
+      '<nav class="shell__side" aria-label="图标导航">' +
+        '<ul class="shell__side-group">' +
+          '<li><a class="shell__link" id="rcur" href="#" aria-current="page">' +
+            '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">' +
+              '<path d="M2 2h5v5H2z"/></svg>' +
+            '<span class="shell__link-label">总览</span></a></li>' +
+          '<li><a class="shell__link" href="#">' +
+            '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">' +
+              '<path d="M2 8h12"/></svg>' +
+            '<span class="shell__link-label">实体</span></a></li>' +
+        '</ul>' +
+      '</nav>' +
+      '<main class="shell__main"><div class="shell__content">内容</div></main>' +
+    '</div>' +
+
+    '<script>' + inlineSafe(NAV_TEXT.drawerJs) + '</script>' +
+    '<script>' + inlineSafe(NAV_TEXT.shellNavJs) + '</script>' +
+    '</body></html>';
+}
+
 /* 窄屏导航的探针（全部在页面内执行） */
 const NAV_PROBE = {
   /** 外壳 + 按钮 + 侧栏的当前状态 */
@@ -305,6 +347,57 @@ const NAV_PROBE = {
       focusOnBtn: document.activeElement === btn,
       bodyOverflow: document.body.style.overflow,
       anyInert: [].slice.call(document.body.children).some((n) => n.inert === true),
+    };
+  },
+};
+
+/* 图标态（rail）的探针：桌面那份 vs 抽屉里那份 */
+const RAIL_PROBE = {
+  rail: () => {
+    const link = document.getElementById('rcur');
+    const label = link.querySelector('.shell__link-label');
+    const icon = link.querySelector('svg');
+    const lb = label.getBoundingClientRect();
+    const lk = link.getBoundingClientRect();
+    const ib = icon.getBoundingClientRect();
+    const cs = getComputedStyle(label);
+    const side = document.getElementById('r1').querySelector('.shell__side');
+    return {
+      linkSize: [Math.round(lk.width), Math.round(lk.height)],
+      labelText: label.textContent,
+      labelSize: [Math.round(lb.width), Math.round(lb.height)],
+      labelDisplay: cs.display,
+      sideW: Math.round(side.getBoundingClientRect().width),
+      /* 图标中心与链接中心的偏差：文字若真的参与布局，图标会被挤偏 */
+      iconOffset: Math.round((ib.left + ib.width / 2) - (lk.left + lk.width / 2)),
+    };
+  },
+
+  drawer: () => {
+    const d = document.querySelector('[data-drawer-host] [role="dialog"]');
+    if (!d) return { dialog: false };
+    const link = d.querySelector('.shell__link');
+    const label = link && link.querySelector('.shell__link-label');
+    const r = (n) => {
+      const b = n.getBoundingClientRect();
+      return [Math.round(b.width), Math.round(b.height)];
+    };
+    return {
+      dialog: true,
+      linkW: link ? Math.round(link.getBoundingClientRect().width) : 0,
+      labelSize: label ? r(label) : null,
+      labelText: label ? label.textContent : null,
+      /* 抽屉挂在 <body> 下 ⇒ 克隆不在 `.shell--rail` 里面。
+         这一条是"文字自己回来"的**机制本身**，不是顺带一提。 */
+      insideRail: !!(link && link.closest('.shell--rail')),
+      /* label 与图标的横向关系：文字应该排在图标后面，而不是压在图标上 */
+      labelAfterIcon: (function () {
+        if (!link || !label) return null;
+        const icon = link.querySelector('svg');
+        if (!icon) return null;
+        return Math.round(label.getBoundingClientRect().left -
+          icon.getBoundingClientRect().right);
+      })(),
     };
   },
 };
@@ -532,6 +625,35 @@ const NAV_PROBE = {
     }, { timeout: 5000 }).catch(() => {});
   }
 
+  async function renderRail(opt) {
+    await p.setViewport({ width: 1200, height: 900 });
+    /* 与 renderNav 同一个理由：setContent 不换 window（E183） */
+    await p.goto('about:blank', { waitUntil: 'load', timeout: 10000 });
+    await p.setContent(railFixture(opt), { waitUntil: 'load', timeout: 20000 });
+    await p.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    await p.waitForFunction(() => {
+      const n = document.getElementById('r1');
+      return !!(n && n.shellNavInstance);
+    }, { timeout: 5000 }).catch(() => {});
+  }
+
+  /* 🔴 可访问名要问浏览器，不能数 DOM 里的字。
+     `display: none` 的文字照样有 `textContent`，但它在可访问树里不存在 ——
+     G4 证的就是这个差别。走 CDP 的 `Accessibility.getPartialAXTree`：
+     返回的 `name.value` 就是读屏会念的那串字。
+     （`cdp` 复用 D 组建的那个会话：同一个 target，强制色已复位。） */
+  async function axName(selector) {
+    const { result } = await cdp.send('Runtime.evaluate', {
+      expression: 'document.querySelector(' + JSON.stringify(selector) + ')',
+    });
+    if (!result || !result.objectId) return null;
+    const { nodes } = await cdp.send('Accessibility.getPartialAXTree', {
+      objectId: result.objectId, fetchRelatives: false,
+    });
+    const n = nodes && nodes[0];
+    return n && n.name ? n.name.value : null;
+  }
+
   await renderNav();
 
   const f1 = await p.evaluate(NAV_PROBE.shell);
@@ -648,6 +770,40 @@ const NAV_PROBE = {
     '按钮=' + f7.btn + ' 已停用=' + f7.disabled + ' 点名警告=' + warned +
       (msgs.length ? ' · "' + msgs[0].text.slice(0, 46) + '…"' : ''));
 
+  /* ---- 图标态（rail）：桌面是图标，抽屉里要补回文字 ---- */
+  await renderRail();
+  const r1 = await p.evaluate(RAIL_PROBE.rail);
+  const r1name = await axName('#rcur');
+
+  add('F12', 'rail：文字视觉隐藏（1×1，且不是 display:none），可访问名仍是「总览」',
+    r1.labelSize[0] <= 2 && r1.labelSize[1] <= 2 && r1.labelDisplay !== 'none' &&
+      r1name === '总览',
+    '标签 ' + r1.labelSize.join('×') + ' display=' + r1.labelDisplay +
+      ' 名字="' + r1name + '"（DOM 里的字="' + r1.labelText + '"）');
+
+  add('F13', 'rail：文字不参与布局 —— 图标仍在 44px 命中区里居中，侧栏仍是 4.5rem',
+    Math.abs(r1.iconOffset) <= 1 && r1.linkSize[0] <= 48 && Math.abs(r1.sideW - 72) <= 1,
+    '图标偏移=' + r1.iconOffset + 'px 链接宽=' + r1.linkSize[0] +
+      ' 侧栏宽=' + r1.sideW + 'px（文字参与布局会把图标挤偏）');
+
+  await p.setViewport({ width: 375, height: 700 });
+  await p.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+  await p.click('#r1 .shell__menu');
+  await new Promise((r) => setTimeout(r, 320));
+  const r2 = await p.evaluate(RAIL_PROBE.drawer);
+  const r2name = await axName('[data-drawer-host] .shell__link');
+
+  add('F14', '抽屉：同一份标记自动恢复文字（克隆离开 .shell--rail 作用域），名字仍是「总览」',
+    r2.dialog && !r2.insideRail && r2.linkW > 100 &&
+      !!r2.labelSize && r2.labelSize[0] > 20 && r2.labelSize[1] > 10 &&
+      r2.labelAfterIcon > 0 && r2name === '总览',
+    '在 rail 作用域内=' + r2.insideRail + ' 链接宽=' + r2.linkW +
+      ' 标签=' + JSON.stringify(r2.labelSize) + ' 与图标间距=' + r2.labelAfterIcon +
+      'px 名字="' + r2name + '"');
+
+  await p.keyboard.press('Escape');
+  await new Promise((r) => setTimeout(r, 420));
+
   /* ==========================================================================
    * G 组 · 反向控制：把接线拆掉，对应的 F 判据必须变红
    * ==========================================================================
@@ -661,6 +817,8 @@ const NAV_PROBE = {
     resize: '    global.addEventListener(\'resize\', this.onResize);',
     /* G3：抽屉副本的修饰类选择器（换成不存在的类 = 那条规则不再命中） */
     cloneRule: '.shell__side.shell__side--drawer {',
+    /* G4：rail 的"视觉隐藏"规则 */
+    railLabel: '.shell--rail .shell__link-label {',
   };
 
   /* G1 剥掉窄屏菜单规则 ⇒ 375px 下按钮根本不出现 ⇒ F2 会红 */
@@ -694,6 +852,22 @@ const NAV_PROBE = {
     g3.dialog && g3.visibleLinks === 0,
     '对话框=' + g3.dialog + ' 可见链接 ' + g3.visibleLinks + '/' + g3.linkCount +
       ' ⇒ 看起来像"点开一个白框"');
+
+  /* G4 把"视觉隐藏"换成 display:none ⇒ 字还在 DOM 里，可访问名却没了 ⇒ F12 会红。
+     这条挡的是最常见的一种"优化"：既然看不见，不如 display:none 省事。 */
+  const cssRailNone = NAV_TEXT.appShellCss.replace(
+    MUT.railLabel, MUT.railLabel + '\n  display: none;');
+  add('G0d', '反向控制前提：G4 的替换真的改到了文件',
+    cssRailNone !== NAV_TEXT.appShellCss,
+    '在 ' + MUT.railLabel + ' 后插入 display: none');
+
+  await renderRail({ appShellCss: cssRailNone });
+  const g4 = await p.evaluate(RAIL_PROBE.rail);
+  const g4name = await axName('#rcur');
+  add('G4', '反向：隐藏改成 display:none ⇒ 字还在 DOM 里，可访问名却没了（F12 会判失败）',
+    g4.labelDisplay === 'none' && g4.labelText === '总览' && !g4name,
+    'display=' + g4.labelDisplay + ' DOM 里的字="' + g4.labelText +
+      '" 可访问名="' + g4name + '" ⇒ 读屏只剩"链接"');
 
   /* G2 剥掉 resize 监听 ⇒ 拉宽后抽屉仍开着 ⇒ F10 会红 */
   const jsNoResize = NAV_TEXT.shellNavJs.replace(MUT.resize, '');
@@ -736,7 +910,9 @@ const NAV_PROBE = {
     F1: '接线·宽屏', F1c: '接线·opt-in', F2: '接线·窄屏按钮',
     F3: '接线·抽屉结构', F4: '接线·克隆可见', F6: '接线·id 去重', F7: '接线·初始焦点',
     F8: '接线·Esc 归位', F9: '接线·点链接关闭', F10: '接线·宽屏复位', F11: '接线·缺依赖',
+    F12: '接线·rail 名字', F13: '接线·rail 布局', F14: '接线·抽屉补文字',
     G0: '反向·前提', G1: '反向·菜单规则', G3: '反向·副本显示', G2: '反向·宽屏复位',
+    G4: '反向·rail 标签',
   };
 
   let bad = 0;

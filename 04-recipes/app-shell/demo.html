@@ -214,9 +214,9 @@
         <span class="shell-note">已同步 5 分钟前</span>
       </div>
     </header>
-    <!-- ⚠️ 这一页有六个外壳，所以第 6 节的 nav 名字必须与第 1 节不同：
-         同一页面出现两个 aria-label="主导航" 的 <nav> 是 axe 的 landmark-unique
-         违规。真实页面只有一个外壳，不会遇到 —— 这是 demo 页自己的问题。 -->
+    <!-- ⚠️ 这一页有七个外壳，所以每个 <nav> 的 aria-label 必须互不相同：
+         同一页面出现两个同名 landmark 是 axe 的 landmark-unique 违规。
+         真实页面只有一个外壳，不会遇到 —— 这是 demo 页自己的问题。 -->
     <nav class="shell__side" aria-label="主导航（窄屏演示）">
       <a class="shell__brand" href="#">金标准 · 财务台</a>
       <ul class="shell__side-group">
@@ -245,6 +245,50 @@
 <p class="note">⚠️ 别在这里自己写一个滑出来的侧栏。抽屉要的不是"滑出来"，
 而是<b>焦点陷阱 / 焦点归位 / 背景 inert / 锁滚动 / Esc</b> 五件事。
 自己写必然漏两件，而漏掉的那两件在鼠标用户眼里完全正常。</p>
+
+<h2>7 · 窄侧栏 + 抽屉：图标在桌面，文字在抽屉</h2>
+<div class="demo">
+  <p class="note" style="margin-top:0">把窗口缩到 <b>768px 以下</b>再点 ☰：
+  抽屉里是<b>图标 + 文字</b>。同一份标记 —— 不是第二份导航，也没有 JS 分支。</p>
+
+  <div class="shell shell--rail shell-demo--short" data-shell-nav="图标导航">
+    <header class="shell__topbar">
+      <h2 class="shell__title">图标导航</h2>
+    </header>
+    <!-- ⚠️ 本页第七个外壳，nav 名字必须唯一（landmark-unique） -->
+    <nav class="shell__side" aria-label="主导航（图标 · 抽屉演示）">
+      <a class="shell__link" href="#" aria-current="page" title="总览">
+        <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor"
+             stroke-width="1.4" aria-hidden="true"><path d="M2 2h5v5H2zM9 2h5v5H9zM2 9h5v5H2zM9 9h5v5H9z"/></svg>
+        <span class="shell__link-label">总览</span>
+      </a>
+      <a class="shell__link" href="#" title="实体">
+        <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor"
+             stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><path d="M2.5 4h11M2.5 8h11M2.5 12h7"/></svg>
+        <span class="shell__link-label">实体</span>
+      </a>
+      <a class="shell__link" href="#" title="校验">
+        <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor"
+             stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 8.5l3.5 3.5 7-8"/></svg>
+        <span class="shell__link-label">勾稽校验</span>
+      </a>
+    </nav>
+    <div class="shell__main">
+      <div class="shell__content">
+        <div class="ph">桌面：侧栏只有图标（宽 4.5rem）</div>
+        <div class="ph">窄屏：点 ☰，抽屉里是图标 + 文字</div>
+      </div>
+    </div>
+  </div>
+</div>
+<p class="note">文字包在 <code>.shell__link-label</code> 里：rail 状态下它被<b>视觉隐藏</b>，
+但仍在可访问树里（读屏念「总览」，不是「链接」）。抽屉里的克隆被挂到
+<code>&lt;body&gt;</code> 下，<b>离开了 <code>.shell--rail</code> 的作用域</b>，
+隐藏规则自然不再命中 —— 文字自己就回来了。所以<b>不能</b>把文字删掉、
+也不能用 <code>display: none</code>：前者抽屉里只剩一排图标，后者连名字都没了。</p>
+<p class="note">只做纯图标栏、不接抽屉的话，第 4 节那种写法（图标 + <code>aria-label</code>）
+也成立；但只要你会用 <code>data-shell-nav</code>，就把文字留在 DOM 里 ——
+一份标记同时满足两种形态。</p>
 
 </main>
 <!-- shell-nav.js 依赖 Drawer（抽屉的行为层）。顺序不能反：
