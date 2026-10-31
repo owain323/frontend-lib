@@ -1,0 +1,39 @@
+{
+  "cli": {
+    "subcommands": 11
+  },
+  "components": {
+    "byMaturity": {
+      "alpha": 0,
+      "beta": 0,
+      "stable": 40
+    },
+    "byTier": {
+      "asset": 4,
+      "pattern": 14,
+      "primitive": 17,
+      "recipe": 5
+    },
+    "total": 40,
+    "withBehaviorLayer": 21
+  },
+  "dependencies": {
+    "dev": 7,
+    "runtime": 0
+  },
+  "generatedBy": "05-audit/facts-gate.py --write",
+  "pitfalls": {
+    "byScope": {
+      "component": 8,
+      "layout": 3,
+      "process": 9
+    },
+    "total": 20
+  },
+  "pitfallsAll": 32,
+  "pitfallsWriting": {
+    "total": 12
+  },
+  "schemaVersion": 1,
+  "version": "0.24.1"
+}

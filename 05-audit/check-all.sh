@@ -1044,6 +1044,15 @@ run "hype"        $PY 05-audit/hype-scan.py
 # ⚠️ 直接调 node，不套 with-server.sh ——
 #   check-all 自己已经起了 :8000，而 with-server.sh 遇到端口被占会直接报错。
 run "doc-facts"       $PY 05-audit/doc-facts-gate.py
+# 🔴 facts（G0-1 · 2026-11-01 加）
+#   起因：同一个数字有三个手抄本，已经漂了三次 ——
+#     llms-full.txt 第 13 行 39 / 第 118 行 40（生成器里写死）
+#     AGENTS.md 第 3 行 39（手写、没人看）
+#   这条门禁把四个环节分开验：源结构 → 现算 → facts.json → 对外声明。
+#   ⚠️ 不要把它和 docs-site 判据 ① 合并：那条比的是"文件 == 生成器输出"，
+#      生成器写错数时两边一起错 ⇒ 绿。自证式判据只能证明"一起错"。
+run "facts"           $PY 05-audit/facts-gate.py
+run "facts-rev"       $PY 05-audit/facts-gate.py --selftest
 # 🔴 docs-site（2026-10-28 加 · 起因是"全绿但漏页"）
 #   根索引页此前是手写的，于是 `reveal` / `analysis-report` / `detail-page` /
 #   `longform` / `data-showcase` / `scientific-plot` 六个页面早就存在、
