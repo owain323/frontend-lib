@@ -171,9 +171,9 @@ Three mistakes the template above already avoids:
 
 ## Components
 
-**39** components (stable 39 / beta 0). Each directory holds a `README.md` (why it is built this way) and a `demo.html` (markup you can copy).
+**40** components (stable 40 / beta 0). Each directory holds a `README.md` (why it is built this way) and a `demo.html` (markup you can copy).
 
-### primitives (16)
+### primitives (17)
 
 | Component | Root class | Purpose |
 |---|---|---|

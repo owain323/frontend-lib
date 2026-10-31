@@ -107,6 +107,7 @@ PAGES = [
     ('02-primitives/combobox',    'demo.html', '组合框'),
     ('02-primitives/date-range',  'demo.html', '日期区间'),
     ('02-primitives/metric',      'demo.html', '指标块'),
+    ('02-primitives/timeline',    'demo.html', '时间轴'),
     ('02-primitives/separator',   'demo.html', '分隔线'),
     ('03-patterns/list',          'demo.html', '列表'),
     ('03-patterns/content',       'demo.html', '正文'),

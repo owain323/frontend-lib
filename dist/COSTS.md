@@ -33,6 +33,7 @@
 | primitive | `separator` | 2.7 KB | 0.2 KB | — | **3.0 KB** | 21.7 KB | −18.7 KB |
 | primitive | `skeleton` | 2.7 KB | 0.5 KB | — | **3.2 KB** | 22.3 KB | −19.1 KB |
 | primitive | `switch` | 2.7 KB | 0.8 KB | — | **3.5 KB** | 28.7 KB | −25.2 KB |
+| primitive | `timeline` | 2.7 KB | 0.5 KB | — | **3.2 KB** | 23.7 KB | −20.4 KB |
 | primitive | `upload` | 2.7 KB | 1.4 KB | 4.2 KB | **8.3 KB** | 37.8 KB | −29.5 KB |
 | pattern | `accordion` | 2.7 KB | 1.3 KB | 1.8 KB | **5.8 KB** | 34.9 KB | −29.1 KB |
 | pattern | `content` | 2.7 KB | 1.0 KB | — | **3.7 KB** | 25.0 KB | −21.2 KB |
@@ -51,8 +52,8 @@
 
 ## 三、全库
 
-- 全部组件都用上（min，含 tokens 一份）：**68.5 KB**
-- 源码版（带注释）全库 gzip：344.4 KB
+- 全部组件都用上（min，含 tokens 一份）：**69.0 KB**
+- 源码版（带注释）全库 gzip：347.7 KB
 
 > ⚠️ 源码版那个数字**不是**要付的钱：它包含我们的注释（全库 CSS 有 68% 是注释，字节口径）。
 > 它的用途只有一个 —— 让人看清"dist 到底省了多少"。

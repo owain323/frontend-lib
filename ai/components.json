@@ -1,23 +1,23 @@
 {
   "schemaVersion": "1.0.0",
   "generatedBy": "05-audit/gen-ai-contract.py",
-  "libraryVersion": "0.22.1",
+  "libraryVersion": "0.23.0",
   "$comment": "机器可读的组件契约。slots = BEM 元素名（在本库里元素名就是插槽名），states.enum = 组件会在 DOM 上写出的 data-* 取值，states.legacyClass = 仍未收敛到 data 属性的历史状态类（INVARIANT I-8 未达标）。",
   "maturityCriteria": {
     "alpha": "缺 demo.html 或缺 05-audit 下的专属门禁 ⇒ 还没被机器验证过，不要用",
     "beta": "有 demo + 专属门禁，但**下面至少有一条没过**：① 状态仍用 .is-* class 表达（违反 INVARIANT I-8）；② 该收编到微行为核的行为还是**手写副本**（manual）或**根本没做**（gap） ⇒ 改一处不会全库跟着变（I-14 的病）",
     "stable": "以上四条全过：有 demo + 专属门禁 + 状态全在 data-* 属性上 + 行为零欠账",
     "$note": "成熟度是【计算出来的】，不是拍的。手写把某个组件改成 stable 而它还有 manual / gap ⇒ 门禁会红。",
-    "$whyFourth": "🔴 为什么第四条判据不能省：用前三条时多数组件会**全是 stable** ⇒ ladder 没有任何鉴别力（对标 Primer 六档阶梯，每档都有硬判据）。补上「行为欠账」这一条后：**stable 39 / beta 0**（本行由生成器算出，不要手改）。全库达标时 ladder 靠**正向控制**证明还有鉴别力（maturity-gate ③：塞一条合成债务必须降 beta），不是靠\"总得留几个 beta\"。",
-    "$strictImpact": "✅ strict 档位放行全部 39 个组件 —— 没有任何组件带着未收编的手写行为或未做的行为（本行由生成器算出，不要手改）"
+    "$whyFourth": "🔴 为什么第四条判据不能省：用前三条时多数组件会**全是 stable** ⇒ ladder 没有任何鉴别力（对标 Primer 六档阶梯，每档都有硬判据）。补上「行为欠账」这一条后：**stable 40 / beta 0**（本行由生成器算出，不要手改）。全库达标时 ladder 靠**正向控制**证明还有鉴别力（maturity-gate ③：塞一条合成债务必须降 beta），不是靠\"总得留几个 beta\"。",
+    "$strictImpact": "✅ strict 档位放行全部 40 个组件 —— 没有任何组件带着未收编的手写行为或未做的行为（本行由生成器算出，不要手改）"
   },
   "summary": {
-    "total": 39,
+    "total": 40,
     "byMaturity": {
-      "stable": 39
+      "stable": 40
     },
     "byTier": {
-      "primitive": 16,
+      "primitive": 17,
       "pattern": 14,
       "recipe": 5,
       "asset": 4
@@ -1818,6 +1818,51 @@
       "global": null,
       "globalAlso": [],
       "behaviorRef": "API.md#switch"
+    },
+    {
+      "id": "timeline",
+      "tier": "primitive",
+      "purpose": "时间轴：按时间排的事件序列（公告 / 大事记 / 版本记录）。顺序即信息，用 ol；状态交给 badge，颜色在这里会失效",
+      "rootClass": "timeline",
+      "maturity": "stable",
+      "maturityReasons": {
+        "hasDemo": true,
+        "hasDedicatedGate": true,
+        "statesOnDomAttributes": true,
+        "behaviorDebt": []
+      },
+      "gates": [
+        "timeline-check.js"
+      ],
+      "files": {
+        "css": "02-primitives/timeline/timeline.css",
+        "js": null,
+        "jsAlso": [],
+        "demo": "02-primitives/timeline/demo.html"
+      },
+      "slots": [
+        "timeline__body",
+        "timeline__item",
+        "timeline__item--latest",
+        "timeline__time",
+        "timeline__title"
+      ],
+      "variants": [
+        "timeline--compact"
+      ],
+      "states": {
+        "enum": {},
+        "boolean": [],
+        "legacyClass": []
+      },
+      "aria": {
+        "roles": [],
+        "attrs": []
+      },
+      "usesOtherNamespaces": [],
+      "global": null,
+      "globalAlso": [],
+      "behaviorRef": "API.md#timeline"
     },
     {
       "id": "upload",

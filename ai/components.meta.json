@@ -130,6 +130,10 @@
       "rootClass": "select",
       "purpose": "自定义下拉选择（非原生）"
     },
+    "timeline": {
+      "rootClass": "timeline",
+      "purpose": "时间轴：按时间排的事件序列（公告 / 大事记 / 版本记录）。顺序即信息，用 ol；状态交给 badge，颜色在这里会失效"
+    },
     "separator": {
       "rootClass": "separator",
       "purpose": "分隔线，可带中间文字"

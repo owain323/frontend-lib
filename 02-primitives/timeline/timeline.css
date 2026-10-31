@@ -1,0 +1,152 @@
+/* ============================================================================
+   Timeline — 时间轴（公告、大事记、版本记录）
+   ============================================================================
+   一句话：**一串按时间排的事件**，每个事件有一个时点、一句标题、可选一段正文。
+
+   🔴 为什么它是组件，而不是「一个 ol + 几个 margin」
+   ----------------------------------------------------------------------------
+   因为这四件事必须一起做对，少一件就会在真实页面里出错：
+
+     ① **顺序就是内容** —— 用 `<ol>` 而不是 `<div>`。读屏会念「第 3 项，共 7 项」，
+        而 `<div>` 堆出来的时间轴在无障碍树里只是一串没有关系的段落。
+        CSS **只认类名、不认标签**（用 `<ul>` 也能跑），但 demo 与文档一律 `<ol>`。
+     ② **连接线的收尾靠选择器，不靠颜色** —— 见下面「为什么不用 border」。
+     ③ **状态不许只靠颜色** —— 见下面「为什么不给状态配色」。
+     ④ **方向和间距全是逻辑属性** —— `padding-inline-start` 而不是 `padding-left`，
+        否则阿拉伯语页面里圆点会落在文字的右边（本库 40 页 RTL 基线会抓）。
+
+   🔴 为什么连接线用伪元素，不用 border
+   ----------------------------------------------------------------------------
+   最省事的写法是给每个 item 加 `border-inline-start`，再用
+   `border-color: transparent` 收掉最后一条。**这条在本库已经炸过一次**：
+   强制色模式会把 transparent 边框解析成实线（0.21 的侧栏「当前项」，
+   五项全都长出竖线，见 CHANGELOG 0.22.1）。
+
+   ⇒ 这里的收尾是**选择器**的事（`:not(:last-child)`），不是颜色的事。
+     伪元素要么在、要么不在，没有「在但看不见」这种中间态。
+
+   🔴 为什么不给状态配色（已披露 / 待披露 / 停牌）
+   ----------------------------------------------------------------------------
+   因为「绿=已披露、灰=待披露」在三种情况下会同时失效：
+   强制色模式（所有作者色被替换成同一套系统色）、色盲用户、
+   以及打印。而**状态文字本身**不会失效。
+
+   ⇒ 状态留给 `badge`（它带文字）。本组件只管「什么时候、发生了什么」。
+
+   🔴 为什么「最新一条」用尺寸 + 字重，而不是颜色
+   ----------------------------------------------------------------------------
+   同一个道理：颜色在强制色里会消失。这里用**圆点更大 + 标题更重**，
+   两条都是非颜色线索，且都不依赖 `::before` 里的字符
+   （`content: "●"` 会被算进可访问名，读屏念「圆点 …」，见 internal/ERRORS.md E189）。
+   ========================================================================= */
+
+.timeline {
+  /* 三个几何量，全部从这里派生 —— 圆点大小一改，圆心、轴线、连接线一起跟着走，
+     不会出现「圆点变大了但线还在原地」这种只差半像素、却怎么看怎么歪的错位。 */
+  --tl-dot: 8px;             /* 圆点直径（最新一条改成 12px） */
+  --tl-axis: 4px;            /* 轴线：圆点中心与连接线中心都落在这条竖线上 */
+
+  list-style: none;          /* ol 的序号对时间轴是噪声：时间本身就是序号 */
+  margin: 0;                 /* 组件不依赖 page.css 的重置 */
+  padding: 0;
+  min-width: 0;              /* 放进 flex/grid 列时不撑破（长标题会） */
+}
+
+.timeline__item {
+  position: relative;
+  padding-inline-start: var(--sp-5);
+  padding-block-end: var(--sp-4);
+}
+
+/* 最后一条不留尾巴 —— 否则列表下方凭空多出一截空白，
+   而它看起来像「还有一个事件没加载出来」。 */
+.timeline__item:last-child {
+  padding-block-end: 0;
+}
+
+/* 连接线：**从自己的圆心画到下一个的圆心**，两头各由圆点盖住。
+   不用 `inset-block: 0` —— 那样第一条上方会多出一小截悬空的线
+   （从条目顶端到圆点之间），看起来像「上面还有一个事件没渲染出来」。
+   两个端点都写成同一个表达式，圆点尺寸一改两边自动跟上。 */
+.timeline__item:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: calc(var(--tl-axis) - 1px);
+  inset-block-start: calc(var(--fs-xs) * var(--lh-base) / 2);
+  inset-block-end: calc(var(--fs-xs) * var(--lh-base) / -2);
+  width: 2px;
+  background: var(--border-decor-str);
+}
+
+/* 圆点：**没有 border**，所以尺寸与 box-sizing 无关
+   （本库的 box-sizing 是选配，挂在 `.page *` 上；组件不能假设它存在）。
+   纵向对齐的是**第一行时间的行盒中心**，不是整块的中心 ——
+   正文长短不一时，后者会让圆点忽上忽下。 */
+.timeline__item::after {
+  content: "";
+  position: absolute;
+  inset-inline-start: calc(var(--tl-axis) - var(--tl-dot) / 2);
+  inset-block-start: calc(var(--fs-xs) * var(--lh-base) / 2 - var(--tl-dot) / 2);
+  width: var(--tl-dot);
+  height: var(--tl-dot);
+  border-radius: var(--r-full);
+  background: var(--accent);
+}
+
+/* 最新一条：圆点 12px。圆心由上面的 calc 自动保持不动 ——
+   否则连接线会在这一条拐个弯，看起来像画错了。 */
+.timeline__item--latest {
+  --tl-dot: 12px;
+}
+
+.timeline__item--latest .timeline__title {
+  font-weight: 600;
+}
+
+.timeline__time {
+  display: block;            /* <time> 默认是行内，不换行会跟标题黏在一起 */
+  line-height: var(--lh-base);   /* 显式给：圆点对齐算的就是这个行盒 */
+  color: var(--text-tertiary);
+  font-size: var(--fs-xs);
+}
+
+/* ⚠️ 日期要等宽对齐（竖着扫）的话，**给它加 class="num"** —— 本库的等宽数字
+   只有一处定义（`typography.css` 的 `.num`），组件自己再声明一遍就会漂移
+   （`numeric-gate.py` 守这一条）。
+   本组件不默认加：`.timeline__time` 也可能放“第三季度”这种非数字文本。 */
+
+.timeline__title {
+  margin: 0;                 /* 标题的 margin 由本组件说了算，不由浏览器默认值 */
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.timeline__body {
+  margin: var(--sp-1) 0 0;
+  color: var(--text-secondary);
+  font-size: var(--fs-sm);
+}
+
+/* 紧凑档：时间与标题同一行，用于侧栏、卡片内嵌、弹层里的事记。 */
+.timeline--compact .timeline__item {
+  padding-block-end: var(--sp-2);
+}
+
+.timeline--compact .timeline__time {
+  display: inline;
+  margin-inline-end: var(--sp-2);
+}
+
+/* 强制色：圆点与连接线改用**系统色**。
+   作者色在这里会被统一替换掉 —— 若不显式给系统色，
+   整条时间轴会变成「一排悬空的文字」，而 DOM 顺序还在（信息没丢，
+   但读者看不出这是一个序列）。系统色关键字不会被替换。 */
+@media (forced-colors: active) {
+  .timeline__item::after {
+    background: CanvasText;   /* 主标记：最亮的系统前景色 */
+  }
+
+  .timeline__item:not(:last-child)::before {
+    background: GrayText;     /* 连接线是次要结构，用弱一档的系统色 */
+  }
+}

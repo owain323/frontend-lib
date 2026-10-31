@@ -197,6 +197,9 @@
 <tr><td>表格里的方向语义（涨跌嵌 <code>delta</code>、零值不带符号、口径只翻市场列）</td><td><code>table-check.js</code> ⑫⑬⑭</td></tr>
 <tr><td>指标缺数是显式状态、数字等宽对齐</td><td><code>metric-check.js</code></td></tr>
 <tr><td>文档里的数字与实际一致（组件数/门禁数/精简档令牌数）</td><td><code>doc-facts-gate.py</code></td></tr>
+<tr><td>体积不越过账面预算（天花板 / 储备 / 棘轮 / 单组件）</td><td><code>perf-gate.py</code>（账本 <code>05-audit/budget.json</code>，规则 <a href="../docs/BUDGET.md">BUDGET.md</a>）</td></tr>
+<tr><td>预算判据自己的五个分支与接线</td><td><code>budget-selftest.py</code>（用临时账本端到端跑真实门禁）</td></tr>
+<tr><td>公开名字不消失、d.ts 与运行时一致</td><td><code>deprecation-gate.py</code> + <code>api-contract-gate.py</code>（承诺见 <a href="../docs/STABILITY.md">STABILITY.md</a>）</td></tr>
 </tbody>
 </table></div>
 <p>想加一条新规则？先在门禁里加判据、确认它会红，再写进本文 —— <strong>顺序反了就会得到一条&quot;写在文档里、没人执行&quot;的规则。</strong></p>
@@ -212,7 +215,7 @@
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.22.1 · 零第三方运行时依赖 · 组件数 39</p>
+  <p>v0.23.0 · 零第三方运行时依赖 · 组件数 40</p>
 </footer>
 </body>
 </html>

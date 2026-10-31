@@ -1,6 +1,6 @@
 # agentcss — full reference (one file)
 
-> Generated from `ai/components.json` + `ai/pitfalls*.json` + `ai/behaviors.json` at version **0.22.1**.
+> Generated from `ai/components.json` + `ai/pitfalls*.json` + `ai/behaviors.json` at version **0.23.0**.
 > Do not edit by hand: run `python 05-audit/gen-llms.py` (freshness is gated).
 > Short version: `llms.txt`. Machine contract: `ai/*.json`.
 
@@ -21,7 +21,7 @@ npx agentcss ai check <doc.json> --profile=strict --json
 
 Every subcommand accepts `--json`; failures print `{"ok":false,...}` and exit non-zero.
 
-## 2 · Components (39)
+## 2 · Components (40)
 
 `class` is the root class you put on the element; `js` is the behaviour script (`—` = CSS only).
 
@@ -60,6 +60,7 @@ Every subcommand accepts `--json`; failures print `{"ok":false,...}` and exit no
 | `separator` | `separator` | primitive | stable | 2.7 KB | — | 分隔线，可带中间文字 | — |
 | `skeleton` | `skeleton` | primitive | stable | 4.3 KB | — | 加载占位骨架 | — |
 | `switch` | `switch` | primitive | stable | 20.5 KB | — | 开关切换 | — |
+| `timeline` | `timeline` | primitive | stable | 7.1 KB | — | 时间轴：按时间排的事件序列（公告 / 大事记 / 版本记录）。顺序即信息，用 … | — |
 | `upload` | `upload` | primitive | stable | 20.5 KB | `upload.js` | 文件上传：零 JS 的原生形态 + 拖放/多文件/校验的增强形态 | — |
 | `analysis-report` | `report` | recipe | stable | 8.4 KB | — | 组合型研究报告页面：正文与辅助栏并排，窄屏自然退回单栏 | `empty-layout-min-height` |
 | `app-shell` | `shell` | recipe | stable | 22.4 KB | `shell-nav.js` | 应用外壳：侧栏 + 顶栏 + 主区三段式；sticky 侧栏自滚、min-wi… | `empty-layout-min-height` |

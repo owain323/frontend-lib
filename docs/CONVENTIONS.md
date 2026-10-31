@@ -260,6 +260,9 @@
 | 表格里的方向语义（涨跌嵌 `delta`、零值不带符号、口径只翻市场列） | `table-check.js` ⑫⑬⑭ |
 | 指标缺数是显式状态、数字等宽对齐 | `metric-check.js` |
 | 文档里的数字与实际一致（组件数/门禁数/精简档令牌数） | `doc-facts-gate.py` |
+| 体积不越过账面预算（天花板 / 储备 / 棘轮 / 单组件） | `perf-gate.py`（账本 `05-audit/budget.json`，规则 [BUDGET.md](BUDGET.md)） |
+| 预算判据自己的五个分支与接线 | `budget-selftest.py`（用临时账本端到端跑真实门禁） |
+| 公开名字不消失、d.ts 与运行时一致 | `deprecation-gate.py` + `api-contract-gate.py`（承诺见 [STABILITY.md](STABILITY.md)） |
 
 想加一条新规则？先在门禁里加判据、确认它会红，再写进本文 ——
 **顺序反了就会得到一条"写在文档里、没人执行"的规则。**

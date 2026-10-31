@@ -1,0 +1,56 @@
+# timeline — 时间轴：顺序靠 <ol> 而不靠圆点（读屏要念「第 N 项，共 M 项」），圆点用盒子画所以不进名字
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "timeline · 时间轴"
+  main
+    heading "timeline · 时间轴" [level=1]
+    paragraph "一串按时间排的事件： 一个时点、一句标题、可选一段正文 。 公告列表、大事记、版本记录都是它 —— 它们的共同点不是“有"
+    heading "一个完整的时间轴" [level=2]
+    list
+      listitem [level=1]
+        time "2026-10-29"
+        heading "2026 年三季报披露" [level=3]
+        paragraph "营业总收入 1,294.06 亿元，同比 +12.40%；经营现金流净额本期未披露。"
+      listitem [level=1]
+        time "2026-08-27"
+        heading "2026 年半年报披露" [level=3]
+        paragraph "营业总收入 842.31 亿元，同比 +9.87%。"
+      listitem [level=1]
+        time "2026-05-18"
+        heading "2025 年度分红实施" [level=3]
+        paragraph "每 10 股派 12.80 元（含税），除权除息日 2026-05-19。"
+      listitem [level=1]
+        time "2026-04-02"
+        heading "2025 年年度报告披露" [level=3]
+    paragraph "第一项带 timeline__item--latest ：圆点从 8px 变成 12px、标题加重到 600。 两条都是"
+    heading "紧凑档：侧栏、卡片、弹层里的事记" [level=2]
+    list
+      listitem "10-31 0.23.0 发布" [level=1]
+        time "10-31"
+      listitem "10-31 0.22.1 修强制色当前项" [level=1]
+        time "10-31"
+      listitem "10-31 0.21.0 发现层" [level=1]
+        time "10-31"
+    paragraph "timeline--compact 只做两件事：条目间距从 --sp-4 收到 --sp-2 ，时间挪回标题同一行。**"
+    heading "反例：拿字符画圆点" [level=2]
+    heading "错：content: "●"" [level=3]
+    list
+      listitem "10-29 季报披露 ●" [level=1]
+        time "10-29"
+    paragraph "这一条的字形多 1 个：那个 ● 是 文字 。 它会出现在 textContent 里、能被选中复制、 也会被算进链接名"
+    heading "对：空内容 + 盒子" [level=3]
+    list
+      listitem "10-29 季报披露" [level=1]
+        time "10-29"
+    paragraph "content: "" + 8×8 的圆角盒子：视觉一样，字形 0 个。 装饰不该占用“读得出来的字符”这个稀缺资源。"
+    paragraph "两栏的字形数差 1 —— 那 1 个就是圆点。这不是洁癖： 伪元素里的字符会参与可访问名计算 （本库 `internal"
+    heading "什么时候不该用它" [level=2]
+    list
+      listitem "状态要区分时 （已披露 / 待披露 / 停牌）：用 badge 配文字。 本组件 故意不给状态配色 —— 颜色在强制色、" [level=1]
+        ListMarker "• "
+      listitem "要做进度条时 ：步骤条（steps）与时间轴不是一回事 —— 前者有“当前在第几步”的语义，本组件只表示“发生过”。" [level=1]
+        ListMarker "• "
+      listitem "只有一条事件时 ：那是一个段落，不是时间轴。连接线和圆点在这里只会让人以为还有下文。" [level=1]
+        ListMarker "• "
+    heading "标记结构" [level=2]
+    paragraph "<ol> 不只是习惯：读屏会念“第 2 项，共 4 项”， 而 <div> 堆出来的时间轴在无障碍树里只是一串没有关系的"
