@@ -45,7 +45,7 @@
  * 🔴 三组判据，缺一组这个结论就站不住
  *   A 组 规则层：用 fixture + **真实的组件 CSS 文本**，精确控制状态
  *       （三态开关、60% 进度），断言"前景 ≠ 背景"
- *   B 组 页面层：把同样的**模式**扫过 37 个真实 demo 页，
+ *   B 组 页面层：把同样的**模式**扫过契约里全部有 demo 的页（数量由 components.json 定，
  *       防止"修完这几个，别处还有同款"（误报进白名单，每条必须写理由）
  *   C 组 反向控制：把修复**剥掉**再跑 A 组同一套断言，必须变红
  *       —— 没有 C 组，A 组的绿只证明"代码现在是绿的"，不证明判据有牙
@@ -647,7 +647,7 @@ async function main() {
     ' · 色差 ' + (dropIdle && dropIdle.bc) + ' → ' + (dropOver && dropOver.bc));
 
   /* ==========================================================================
-   * B 组：页面层（37 个真实 demo）
+   * B 组：页面层（页数由 ai/components.json 现算，不写死）
    * ========================================================================== */
   const cj = JSON.parse(read('ai/components.json'));
   const pages = cj.components.filter(c => c.files && c.files.demo).map(c => [c.id, c.files.demo]);
@@ -705,15 +705,15 @@ async function main() {
     }
   }
 
-  add('B1', '全库 37 页：用 currentColor 画的图标没有消失',
+  add('B1', '全库 ' + pages.length + ' 页：用 currentColor 画的图标没有消失',
     bFound.maskIcon.length === 0,
     bFound.maskIcon.length ? bFound.maskIcon.slice(0, 5).join(' ; ') : '0 处');
 
-  add('B2', '全库 37 页：靠阴影立边界的元素仍有边界',
+  add('B2', '全库 ' + pages.length + ' 页：靠阴影立边界的元素仍有边界',
     bFound.shadowEdge.length === 0,
     bFound.shadowEdge.length ? bFound.shadowEdge.slice(0, 5).join(' ; ') : '0 处');
 
-  add('B3', '全库 37 页：伪元素画的图形没有和底色重合',
+  add('B3', '全库 ' + pages.length + ' 页：伪元素画的图形没有和底色重合',
     bFound.pseudoShape.length === 0,
     bFound.pseudoShape.length ? bFound.pseudoShape.slice(0, 5).join(' ; ') : '0 处');
 
@@ -892,7 +892,7 @@ async function main() {
   console.log('');
   console.log(bad
     ? '  ❌ ' + bad + ' 条不满足'
-    : '  ✅ 全部满足：7 类实拍缺陷已闭合，37 页无同款，剥掉修复全部变红');
+    : '  ✅ 全部满足：7 类实拍缺陷已闭合，' + pages.length + ' 页无同款，剥掉修复全部变红');
   process.exit(bad ? 1 : 0);
 }
 
