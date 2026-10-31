@@ -8,8 +8,8 @@
   ],
   "totals": {
     "sourceFiles": 77,
-    "sourceBytes": 892838,
-    "distGzip": 108512
+    "sourceBytes": 895364,
+    "distGzip": 108582
   },
   "files": [
     {
@@ -906,15 +906,15 @@
     },
     {
       "source": "04-recipes/app-shell/app-shell.css",
-      "sourceSha256": "df2b6171cb98a87e0e4c4c1667d0b7e20e1f1380563df5c7f5740b002539f79f",
-      "sourceBytes": 22961,
-      "sourceGzip": 9108,
+      "sourceSha256": "f48af3006397a5018f7e5633129abb3c458623e87afbd647f1f0c5a20b80e464",
+      "sourceBytes": 25487,
+      "sourceGzip": 9962,
       "outputs": [
         {
           "path": "dist/04-recipes/app-shell/app-shell.css",
           "kind": "minified",
-          "bytes": 4831,
-          "gzip": 1349
+          "bytes": 5334,
+          "gzip": 1419
         }
       ]
     },

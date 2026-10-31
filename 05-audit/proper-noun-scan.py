@@ -70,6 +70,15 @@ WHITELIST = {
     #     判据靠"透明边框会被解析成 LinkText/CanvasText 实线"这条实测结论，
     #     所以名字必须写在代码里。
     'CanvasText', 'GrayText', 'LinkText', 'InvalidStateError',
+    # 2026-10-31 再补一个：`NodeList`
+    #   起因：app-shell 的 H1 判据要取"第 i 个 rail 链接"的**可访问名**，
+    #   而同类元素分属不同父元素，`:nth-of-type` 是相对父元素的、拼不出来。
+    #   ⇒ 改成按 `querySelectorAll` 的 NodeList 下标取，函数名就叫 `axNameAt`，
+    #     注释里写了「直接按 NodeList 下标取」。
+    #   ⚠️ 这条和白名单里其他技术名不同：它不是异常名也不是颜色关键字，
+    #   是 **DOM 规范里的接口名**（`NodeList` 是 querySelectorAll 的返回类型）。
+    #   加进来是因为它出现在注释里，而扫描器按驼峰词扫、不看上下文。
+    'NodeList',
     # 2026-10-17 补三个（起因：审计收口那轮新增的门禁代码里引用了它们）
     #   · AttributeError   —— release-gate 处理 exports 条件导出时，
     #                         原判据对 dict 调 .endswith ⇒ 真抛过这个错

@@ -179,6 +179,15 @@
       "symptom": "正文刚确立「A 要和 B 合起来才完整」，推演时却把 A 当成完整值，推出与正文矛盾的结论。",
       "fix": "推演前先把已确立的模型逐条列出来，确认沿用的是同一套；把「这里很容易换模型」写进正文，反而成了教学点。",
       "tags": ["writing", "reasoning"]
+    },
+    {
+      "id": "fixture-demo-split-truth",
+      "title": "门禁测 fixture、示例教另一套：两份标记各说各话",
+      "scope": "process",
+      "components": ["app-shell"],
+      "symptom": "fixture 里是契约推荐的写法，demo 页里却是相反的写法（例如图标态用 aria-label 而不是 .shell__link-label），门禁全绿 —— 因为判据只读 fixture。而使用者只会照 demo 抄，抄走的正是文档用整节否定掉的做法。",
+      "fix": "判据要落在真实页面的 DOM 上：存在性断言（该有的元素在不在）+ 可访问名比对（浏览器算出来的名字等不等于那段文字）。fixture 守机制（改坏规则要变红），demo 守教法（教的东西必须是对的）—— 两组缺一不可。",
+      "tags": ["gate", "docs", "a11y"]
     }
   ]
 }

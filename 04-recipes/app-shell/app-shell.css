@@ -117,6 +117,30 @@
   white-space: nowrap;
 }
 
+/* 品牌的两段：标记（图形）+ 文字。
+   🔴 为什么必须分成两段，而不是让品牌名当纯文本：
+     图标态（`.shell--rail`）侧栏只有 4.5rem，品牌名放不下。
+     纯文本只能截成「金…」，而 `display: none` 掉整个 `.shell__brand`
+     又等于没有品牌。分成两段后，rail 下只留标记、文字视觉隐藏
+     —— 与 `.shell__link-label` 同一套手法、同一个理由：
+     文字留在 DOM 与可访问树里，宽屏/抽屉里能原样回来，名字仍只有一份。
+   ⚠️ `.shell__brand-mark` 用 `currentColor` 画（不用 <img>）：
+      强制色下 `currentColor` 会被换成 `CanvasText`，图形还在；
+      `<img>` 里的颜色则完全不受当前颜色影响。 */
+.shell__brand-mark {
+  flex: 0 0 auto;
+  display: inline-flex;
+  color: var(--accent);
+}
+
+/* 文字自己截断：`.shell__brand` 上的 text-overflow 对 flex 子项不起作用 */
+.shell__brand-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .shell__side-group {
   display: flex;
   flex-direction: column;
@@ -484,6 +508,43 @@
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+/* 品牌：72px 里只留标记，名字视觉隐藏（与 `.shell__link-label` 同一手法）。
+   ⚠️ 没有 `.shell__brand-text` 的老写法（品牌名是直接文本）会退化成
+      `.shell__brand` 自己的 ellipsis ⇒ 显示成「金…」。那不是坏，
+      是**提醒你补上两段结构** —— 门禁 H1 会对 rail 实例判这一条。 */
+.shell--rail .shell__brand {
+  justify-content: center;
+  padding-inline: 0;
+  gap: 0;
+}
+
+.shell--rail .shell__brand-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* 分组标签：72px 放不下「数据 / 校验」这种词，折成两行会把三条图标挤散。
+   ⇒ 图标态**不要**用 `.shell__side-label`：让两个 `.shell__side-group` 相邻，
+      `+` 那条规则会自动给出一条分隔线与间距（这才是分隔线的设计用途）。
+   这条规则是**兜底**：使用者直接沿用宽屏结构时，宁可标签消失，也不要它折行；
+   标签是纯视觉文本（`<p>`，不是标题、也不进任何元素的可访问名），
+   所以 `display: none` 不会让任何元素失去名字。 */
+.shell--rail .shell__side-label {
+  display: none;
+}
+
+/* 图标态的分隔线要与图标同宽居中，否则在 72px 里看着像一条贴边的毛刺 */
+.shell--rail .shell__side-group {
+  align-items: center;
+  width: 100%;
 }
 
 /* 侧栏无边框（与主区同色，靠留白分层） */
