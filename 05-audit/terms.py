@@ -92,6 +92,11 @@ HARD_BAN = DEMO_TERMS + [
     _T('录', '视频'), _T('做网', '站'), _T('做小', '程序'),   # 内部场景
 ] + _PRIVATE_WORDS
 
+# 身份类：工具目录（05-audit/）里**也不许**出现。
+# 工具必须能写出它检测的通用词（场景 / 流程 / Owner 称谓），
+# 但没有任何理由写出真实代号 —— 举个例子用假名字就够了。
+IDENTITY_TERMS = DEMO_TERMS + _PRIVATE_WORDS
+
 SOFT_WARN = [
     _T('我', '们'), _T('按你', '的'), _T('你要', '做'),
 ]
@@ -161,7 +166,7 @@ PLACEHOLDER_RE = r'\$\{[A-Z_]{3,}\}'
 #    而且会让门禁被学会忽略（正是本仓 ERRORS.md 反复记的教训）。
 #
 # ⇒ 收紧办法：只保留「批次」的**轮次/流程组合形**，以及「工单」的**任务组合形**。
-#    两边都保住的证明在 `E:/fltmp/viz/rc-terms.py` 的反向控制里（11/11）。
+#    两边都保住的证明在临时目录里的反向控制脚本（11/11）。
 PROCESS_WORDS = [
     _T('主力档', '位'), _T('降级', '到'), _T('批', '次任务'),
 ]
@@ -394,6 +399,51 @@ def hits_outside_repo_field(text, pat):
 USER_RE = _PRIVATE_PATS.get('user') or r'(?!)'
 
 
+# 本机绝对路径（工具目录版身份判据用）。软件安装位置不算身份 —— 每台机器都一样。
+_IDENT_PATH = re.compile(
+    r'(?<![A-Za-z0-9_])[A-Z]:[/\\](?!Users[/\\](?:probe-user|someone|<))'
+    r'[A-Za-z0-9_.-]+[/\\]', re.I)
+_IDENT_OK_PREFIX = ('C:/Program', 'C:/Users', 'C:/Windows', 'D:/Program', 'E:/Program')
+
+
+def identity_pat():
+    """真实代号 / 假代号的判据。私有词表缺失时也至少能抓假代号（用于自检）。"""
+    if not IDENTITY_TERMS:
+        return re.compile(r'(?!)')
+    return re.compile('|'.join(re.escape(w) for w in IDENTITY_TERMS), re.I)
+
+
+def identity_hits(text):
+    """工具文件（`05-audit/`）专用的身份判据 → {类别: [命中]}。
+
+    🔴 为什么工具目录需要单独一条
+    ------------------------------------------------------------------------
+      工具**必须**包含它检测的通用词（场景词 / 流程词 / `Owner` 称谓），
+      所以整目录豁免本身是对的。但工具**没有理由**包含真实身份 ——
+      举个假名字就够了。
+
+      实测事故（2026-10-31）：真实代号清单明文写在 `outsider-audit.py` 里，
+      而 leak-scan 与 outsider-audit 都把 `05-audit/` 整目录跳过
+      ⇒ 两道扫描一起报「零泄漏」。**缺口正好藏在扫描器的盲区里。**
+
+      ⇒ 工具目录按类别豁免：通用词放过，身份类照抓。
+        这条判据本身很窄（三类），所以不会因为"工具要提这些词"而假红。
+    """
+    out = {}
+    m = identity_pat().findall(text)
+    if m:
+        out['内部代号'] = m
+
+    m = re.compile(USER_RE, re.I).findall(text)
+    if m:
+        out['用户名'] = m
+
+    m = [x for x in _IDENT_PATH.findall(text) if not x.startswith(_IDENT_OK_PREFIX)]
+    if m:
+        out['仓库绝对路径'] = m
+    return out
+
+
 def private_status():
     """一行话：私有词表加载了几条、从哪来。**缺了必须说**。
 
@@ -429,7 +479,7 @@ def private_status():
 #
 #    ⚠️ 这笔账要摊开说：豁免 = 这些文件**不再被这两道扫描覆盖**。
 #    单独核过一遍，`05-audit/` 里的身份类命中只有 4 处，全部在上面那几个
-#    词表文件里（`D:/work/`、`E:/fltmp/` 是判据的排除样本，`owain` 来自
+#    词表文件里（盘符根目录、临时目录是判据的排除样本，账号名来自
 #    `self_identity_pat()` 自指身份）。**没有一处是真实身份。**
 #    但这个结论是人工核的，不是判据保证的 —— 所以每次动词表，
 #    要重跑一次 `grep -rn "05-audit" ` 之外的抽样确认，别让豁免变成盲区。

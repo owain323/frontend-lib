@@ -71,6 +71,15 @@ CASES = [
     ('leak-scan.py', '02-primitives/switch/README.md',
      '\n用法见 ${REPO}/docs\n',
      '未替换的占位符'),
+    # ⭐ 2026-10-31：工具目录（05-audit/）从"整目录豁免"改成"只豁免通用词"。
+    #    正例：假代号混进工具文件必须被抓 —— 否则真实代号又能在盲区里躺着。
+    ('leak-scan.py', '05-audit/css-imports.py',
+     '\n# probe %s\n' % terms.DEMO_TERMS[0],
+     '工具目录里的代号'),
+    #    反例：工具**必须**能列出它检测的通用词（场景词），这条不该红。
+    ('leak-scan.py', '05-audit/css-imports.py',
+     '\n# probe %s\n' % terms.HARD_BAN[1],
+     '工具目录里的通用场景词（应**不**被抓）'),
 ]
 
 

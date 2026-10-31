@@ -166,7 +166,7 @@ PATTERNS = [
     ('用户目录', re.compile(r'[A-Za-z]:/Users/(?!someone|probe-user|<)' +
                             r'|[A-Za-z]:' + re.escape(chr(92) * 2) +
                             r'Users' + re.escape(chr(92) * 2) + r'(?!someone)')),
-    # 🔴 判据：**别人机器上的具体目录**（D:/work/ 之类），排除两种形态：
+    # 🔴 判据：**别人机器上的具体目录**（某个盘符下的目录），排除两种形态：
     #   ① 本仓库自己的开发路径 —— 原写死了具体盘符目录，等于门禁自身携带痕迹（E26）
     #   ② **判别力夹具**里的**占位**路径（`C:/Users/probe-user/`、
     #      `C:\Users\<用户名>\`）—— 这些是门禁**用来证明自己能抓到真路径**的样本，
@@ -327,19 +327,26 @@ def main():
             return t
 
     eligible = []
+    tools = set()
     skipped = {}
     for p in paths:
+        # 🔴 工具目录也进分母 —— 但只查身份（真代号 / 用户名 / 本机路径）。
+        #    事故：代号清单就在 `05-audit/outsider-audit.py` 里，而这里把它
+        #    整目录跳过 ⇒ 报告"零泄漏"。缺口藏在扫描器的盲区里最坏。
+        if terms.is_tool_file(p):
+            tools.add(p)
+            eligible.append(p)
+            continue
         keep, why = scannable(p)
         if keep:
             eligible.append(p)
         else:
             skipped[why] = skipped.get(why, 0) + 1
-    print('  远端文件 %d 个：需扫 %d 个，不计入分母 %d 个（%s）' % (
-        len(paths), len(eligible), sum(skipped.values()),
+    print('  远端文件 %d 个：需扫 %d 个（其中工具目录 %d 个只查身份），不计入分母 %d 个（%s）' % (
+        len(paths), len(eligible), len(tools), sum(skipped.values()),
         '，'.join('%s %d' % (k, v) for k, v in sorted(skipped.items()))))
-    # ⚠️ 豁免要**打出来**，不能静默：`tool` 那一项意味着 `05-audit/` 整个不在
-    #    本次覆盖范围内（理由见 terms.is_tool_file）。不打印就等于
-    #    "少扫了 200 个文件但报告看起来像扫了全部"。
+    # ⚠️ 豁免要**打出来**，不能静默：`baseline` / `binary` 意味着这些文件
+    #    不在本次覆盖范围内。不打印就等于"少扫了 200 个文件但报告看起来像扫了全部"。
 
     bad = {}
     fails = {}
@@ -351,6 +358,10 @@ def main():
             fails.setdefault(str(e)[:22] or 'unknown', []).append(p)
             continue
         checked += 1
+        if p in tools:
+            for name, found in terms.identity_hits(t).items():
+                bad.setdefault(name, []).append((p, len(found)))
+            continue
         for name, pat in PATTERNS:
             found = pat.findall(t)
             if name == '自有域名':
