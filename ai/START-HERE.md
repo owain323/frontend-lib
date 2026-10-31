@@ -56,8 +56,10 @@
 |---|---|
 | 有哪些组件、多大、JS 是否必需 | 根目录 `START-HERE.md`（组件表由 `05-audit/fix-start-here.py` 生成，不会漂移） |
 | 组件清单与成熟度 | `node ai/cli.js components --maturity=stable` |
+| 某个组件踩过的坑 | `node ai/cli.js pitfalls --component=<id>`（数据在 `ai/pitfalls.json`） |
 | 令牌名与取值 | `node ai/cli.js tokens --mode=dark`、`node ai/cli.js tree`（分层视图） |
 | 组件真实长什么样 | 该组件目录下的 `demo.html` |
+| 英文一页速览 | `llms.txt` / `llms-full.txt`（发现层；本文件是中文详版） |
 | 页面怎么搭 | `04-recipes/` 下的示例 |
 | 令牌怎么改 | README「主题定制」（覆盖 CSS 变量，不需重新编译） |
 

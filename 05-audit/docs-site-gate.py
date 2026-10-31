@@ -46,6 +46,7 @@ import re
 import sys
 import tempfile
 import shutil
+import importlib.util
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -562,6 +563,71 @@ def selftest():
 # 主流程
 # ===========================================================================
 
+def check_llms(comps):
+    """AI 发现层（llms.txt / llms-full.txt / AGENTS.md）的三条判据。
+
+    🔴 为什么这三份文件要进门禁
+    ------------------------------------------------------------------------
+      它们的作用是**让外面的 AI 找到这个库**。失效方式很安静：
+        · 加了组件、忘了重跑 gen-llms ⇒ 文件里少一个组件（读者不会发现少了什么）
+        · llms.txt 里写着 39、实际 40 ⇒ 声称与事实不符
+        · 文件被 .gitignore 或 files 数组漏掉 ⇒ 仓库里有、npm 包里没有
+      最后一条由 `npm pack --dry-run` 那条人工验收守，前两条在这里守。
+    """
+    errs = []
+    here = os.path.dirname(os.path.abspath(__file__))
+
+    # ① llms-full.txt == 现算（复用生成器，不复制它的拼接逻辑）
+    spec = importlib.util.spec_from_file_location(
+        'gen_llms', os.path.join(here, 'gen-llms.py'))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    want = mod.build()
+    full = os.path.join(ROOT, 'llms-full.txt')
+    if not os.path.isfile(full):
+        errs.append('llms-full.txt 不存在 —— 跑 python3 05-audit/gen-llms.py')
+    else:
+        with io.open(full, encoding='utf-8') as f:
+            got = f.read()
+        if got != want:
+            errs.append('llms-full.txt 与现算不一致 —— 跑 python3 05-audit/gen-llms.py')
+
+    # ② llms.txt：组件数一致 / 必须教 AI 用 CLI / 有体积上限
+    short = os.path.join(ROOT, 'llms.txt')
+    if not os.path.isfile(short):
+        errs.append('llms.txt 不存在（AI 发现层的入口）')
+    else:
+        with io.open(short, encoding='utf-8') as f:
+            t = f.read()
+        n = len(comps)
+        m = re.search(r'(\d+)\s+components', t)
+        if not m:
+            errs.append('llms.txt 没声明组件数（形如 "39 components"）')
+        elif int(m.group(1)) != n:
+            errs.append('llms.txt 写 %s 个组件，契约里是 %d 个' % (m.group(1), n))
+        if 'npx agentcss ai' not in t:
+            errs.append('llms.txt 没出现 `npx agentcss ai` —— AI 不会知道可以查表')
+        size = len(t.encode('utf-8'))
+        if size > 8192:
+            errs.append('llms.txt 有 %d 字节（≈2k token 预算的上界是 8KB）' % size)
+
+    # ③ AGENTS.md：短、且必须指向契约
+    agents = os.path.join(ROOT, 'AGENTS.md')
+    if not os.path.isfile(agents):
+        errs.append('AGENTS.md 不存在')
+    else:
+        with io.open(agents, encoding='utf-8') as f:
+            t = f.read()
+        lines = [ln for ln in t.splitlines() if ln.strip()]
+        if len(lines) > 10:
+            errs.append('AGENTS.md 有 %d 行非空内容（约定 ≤10 行）' % len(lines))
+        if 'ai/components.json' not in t:
+            errs.append('AGENTS.md 没指向 ai/components.json')
+        if 'npx agentcss ai' not in t:
+            errs.append('AGENTS.md 没给出 `npx agentcss ai` 查询命令')
+    return errs
+
+
 def main():
     if '--selftest' in sys.argv:
         return 1 if selftest() else 0
@@ -639,6 +705,9 @@ def main():
 
     errs += ['[9] ' + m for _c, m in check_parity(comps, readme_text, files)]
 
+    # [11] AI 发现层：llms.txt / llms-full.txt / AGENTS.md
+    errs += ['[11] ' + m for m in check_llms(comps)]
+
     # 视野声明：扫到 0 页不许通过
     n_pages = len([f for f in files if f.startswith('guide/')])
     if n_pages < 2:
@@ -650,6 +719,9 @@ def main():
         if len(errs) > 20:
             print('  [FAIL] …另有 %d 条' % (len(errs) - 20))
         print('  ⇒ 改完 README 或生成器后跑：python3 05-audit/gen-docs.py')
+        if any(e.startswith('[11]') for e in errs):
+            print('  ⇒ llms 相关：跑 python3 05-audit/gen-llms.py；'
+                  'llms.txt 是手写的，改它声明的组件数即可')
         return 1
 
     print('  [OK] %d 页（%d 组件 + %d 约定页 + 索引）· 摘要 %d 行 · 链接全部落地'

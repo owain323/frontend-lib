@@ -1,0 +1,136 @@
+# agentcss — full reference (one file)
+
+> Generated from `ai/components.json` + `ai/pitfalls.json` + `ai/behaviors.json` at version **0.21.0**.
+> Do not edit by hand: run `python 05-audit/gen-llms.py` (freshness is gated).
+> Short version: `llms.txt`. Machine contract: `ai/*.json`.
+
+Mobile-web CSS component library. Tokens + components + optional behaviour scripts.
+No build step, no framework, no third-party runtime dependency. Class names are the API.
+
+## 1 · Query instead of guessing
+
+```bash
+npx agentcss ai components --json                     # 39 components, joined with pitfalls
+npx agentcss ai components --json --maturity=stable
+npx agentcss ai pitfalls --json --component=table
+npx agentcss ai tokens --json --set=dark
+npx agentcss ai tree --json --set=dark --cat=color
+npx agentcss ai validate <file> --schema=components --json
+npx agentcss ai check <doc.json> --profile=strict --json
+```
+
+Every subcommand accepts `--json`; failures print `{"ok":false,...}` and exit non-zero.
+
+## 2 · Components (39)
+
+`class` is the root class you put on the element; `js` is the behaviour script (`—` = CSS only).
+
+| id | class | tier | maturity | css | js | what it is | pitfalls |
+|---|---|---|---|---|---|---|---|
+| `bar` | `bar` | asset | stable | 5.3 KB | `bar.js` | 柱状图：堆叠/分组两种语义、超量程裁剪、图例 | `chart-multiline-label` |
+| `model-viewer` | `mv` | asset | stable | 4.0 KB | `model-viewer.js` | 3D 模型查看器：令牌驱动样式，不含渲染库本体 | — |
+| `scientific-plot` | `splot` | asset | stable | 3.9 KB | `scientific-plot.js` | 二维科学绘图：折线/区间带/对数轴，纯令牌驱动、零依赖 | `chart-multiline-label` |
+| `sparkline` | `sparkline` | asset | stable | 7.2 KB | `sparkline.js` | 迷你趋势图：无坐标轴、纯形状，适合表格内嵌的一行走势 | `chart-multiline-label` |
+| `accordion` | `accordion` | pattern | stable | 18.0 KB | `accordion.js` | 可折叠分组 | — |
+| `content` | `prose` | pattern | stable | 11.1 KB | — | 长文排版容器（标题/段落/列表/引用/代码） | `single-scroll-container` `line-height-constant-sync` |
+| `drawer` | `drawer` | pattern | stable | 4.5 KB | `drawer.js` | 侧边抽屉，含遮罩 | `fixed-element-inventory` |
+| `dropdown` | `dd` | pattern | stable | 3.9 KB | `dropdown.js` | 下拉菜单 | `popover-measure-after-render` |
+| `form-validation` | `form` | pattern | stable | 11.0 KB | — | 表单校验反馈与错误汇总 | — |
+| `list` | `list` | pattern | stable | 6.1 KB | `flip.js` | 键值列表/条目列表 | `empty-state-no-decoration` `text-injection-xss` |
+| `nav` | `nav` | pattern | stable | 12.1 KB | `nav.js` | 顶部导航与目录 | — |
+| `overlay` | `toast` | pattern | stable | 12.0 KB | `overlay.js` | 吐司提示与模态遮罩 | `fixed-element-inventory` |
+| `pagination` | `pagination` | pattern | stable | 7.7 KB | `pagination.js` | 分页控件 | — |
+| `reveal` | `reveal` | pattern | stable | 4.0 KB | `reveal.js` | 入场动效：一个 data-reveal 属性六个方向，无 JS 时内容全可见 | — |
+| `states` | `state` | pattern | stable | 10.1 KB | — | 空/加载/错误/成功四种整块状态 | `empty-state-no-decoration` `text-injection-xss` |
+| `tabs` | `tabs` | pattern | stable | 5.9 KB | `tabs.js` | 选项卡切换 | — |
+| `tooltip` | `tooltip` | pattern | stable | 3.5 KB | `tooltip.js` | 悬停/聚焦提示 | `popover-measure-after-render` `fixed-element-inventory` |
+| `tree` | `tree` | pattern | stable | 4.0 KB | `tree.js` | 可展开树形结构 | — |
+| `badge` | `badge` | primitive | stable | 6.1 KB | — | 状态标签：计数、分类、结果标记 | — |
+| `button` | `btn` | primitive | stable | 15.7 KB | — | 动作触发：主/次/危险/纯文字四档 | — |
+| `card` | `card` | primitive | stable | 10.4 KB | — | 内容容器：媒体+正文+操作区三段 | — |
+| `choice` | `choice` | primitive | stable | 16.8 KB | — | 单选/多选/原生 select 外观的统一控件 | — |
+| `combobox` | `combo` | primitive | stable | 7.0 KB | `combobox.js` | 可搜索 + 可多选标签的输入控件 | — |
+| `date-range` | `drange` | primitive | stable | 6.0 KB | `date-range.js` | 日期区间选择，含预设快捷范围 | — |
+| `delta` | `delta` | primitive | stable | 5.5 KB | — | 变化量：涨跌方向 + 符号 + 颜色。只描述往哪边变，不判断好坏（等于好恶是 … | — |
+| `input` | `field` | primitive | stable | 10.6 KB | — | 文本输入及其标签/帮助/错误三件套 | — |
+| `metric` | `metric` | primitive | stable | 6.8 KB | — | 指标块：一个标签 + 一个值 + 一句上下文。数字等宽、单位分离、缺数是一等状态 | — |
+| `popover` | `popover` | primitive | stable | 7.8 KB | `popover.js` | 锚定到触发元素的浮层 | `popover-measure-after-render` |
+| `progress` | `progress` | primitive | stable | 11.1 KB | — | 进度条与进度环 | — |
+| `select` | `select` | primitive | stable | 4.4 KB | `select.js` | 自定义下拉选择（非原生） | `popover-measure-after-render` |
+| `separator` | `separator` | primitive | stable | 2.7 KB | — | 分隔线，可带中间文字 | — |
+| `skeleton` | `skeleton` | primitive | stable | 4.3 KB | — | 加载占位骨架 | — |
+| `switch` | `switch` | primitive | stable | 20.5 KB | — | 开关切换 | — |
+| `upload` | `upload` | primitive | stable | 20.5 KB | `upload.js` | 文件上传：零 JS 的原生形态 + 拖放/多文件/校验的增强形态 | — |
+| `analysis-report` | `report` | recipe | stable | 8.4 KB | — | 组合型研究报告页面：正文与辅助栏并排，窄屏自然退回单栏 | `empty-layout-min-height` |
+| `app-shell` | `shell` | recipe | stable | 21.3 KB | `shell-nav.js` | 应用外壳：侧栏 + 顶栏 + 主区三段式；sticky 侧栏自滚、min-wi… | `empty-layout-min-height` |
+| `detail-page` | `detail-page` | recipe | stable | 5.7 KB | — | 实体详情页骨架：字段齐全 / 部分缺失 / 无数据三种状态同构，无数据是一等状态 | `empty-layout-min-height` |
+| `report` | `rep` | recipe | stable | 15.7 KB | — | 报告版式系统 v1：共享基础 + 三套版式（杂志/科研技术/金融研究），只换一… | — |
+| `table` | `table` | recipe | stable | 18.1 KB | — | 数据表格：排序/加载/空/错误四态；三种用途预设（财务/学术/统计） | `single-scroll-container` `empty-state-no-decoration` `table-overflow-wrapper` `text-injection-xss` |
+
+## 3 · Known failure modes (19)
+
+Each one has actually shipped at least once. Full text: `npx agentcss ai pitfalls --json`.
+
+**Component (8)**
+
+- `popover-measure-after-render` — 浮层定位必须在可见状态下测量 · positioning, overlay
+- `fixed-element-inventory` — 新增全局悬浮元素前先盘点既有悬浮层 · fixed, z-index
+- `single-scroll-container` — 多个滚动容器必然导致行号/表头漂移 · scroll, sticky
+- `empty-state-no-decoration` — 空态不要留装饰性元素 · empty, state
+- `table-overflow-wrapper` — 表格必须有自己的横向滚动容器 · mobile, overflow, a11y
+- `chart-multiline-label` — SVG 的 <text> 不认换行符 · svg, chart
+- `line-height-constant-sync` — 用常量算行高时，常量必须与 CSS 同源 · css, sync
+- `text-injection-xss` — 动态内容一律走 DOM API，不拼 innerHTML · security, escaping
+
+**Layout (3)**
+
+- `empty-layout-min-height` — 空态时主列矮于侧栏会留下大片空白 · layout, empty
+- `self-contained-page-budget` — 自包含页面的体积预算要一开始就定 · performance, mobile, images
+- `tokens-not-hardcoded` — 系列化产出先把设计令牌抽成一组常量 · tokens, consistency
+
+**Process (8)**
+
+- `dom-stub-smoke` — 语法检查通过 ≠ 交互能跑 · testing, interaction
+- `parallel-edits-verify` — 同一文件的多处修改要串行，并逐条 grep 复核 · tooling, verification
+- `stale-server-verify` — 调试前先确认你连的不是旧进程 · debugging, verification
+- `field-name-from-definition` — 消费方写的字段名必须对着定义抄 · integration, testing
+- `human-semantic-review` — 语义正确性只有人眼能查 · review, semantics
+- `evidence-grading` — 措辞强度必须与证据等级匹配 · writing, evidence
+- `long-doc-consistency` — 长文里同一结论会被说三遍，还可能自相矛盾 · writing, consistency
+- `counterfactual-model-drift` — 反事实推演最容易偷偷换掉前面的模型 · writing, reasoning
+
+## 4 · Tokens
+
+Light 112 / dark 35. Two exports, same values:
+
+- `ai/tokens.json` — DTCG shape (`$value` / `$type`), feed to design tools
+- `ai/tokens.tree.json` — grouped, `value` / `type` without `$`, feed to build tools
+
+Restyle by overriding CSS variables (`--accent`, `--paper`, `--sp-4`, …).
+Never rewrite a component selector: it wins on specificity today and breaks silently later.
+
+## 5 · Behaviour cores
+
+| core | global | what it does |
+|---|---|---|
+| dismissable | `flDismissable` | Esc 关闭 + 点击浮层之外关闭 |
+| focus-return | `flFocusReturn` | 记住打开时的焦点，关闭时还回去 |
+| roving | `flRoving` | 方向键在一组项里移动 DOM 焦点（roving tabindex） |
+| typeahead | `flTypeahead` | 打字母/汉字跳到匹配项（不是过滤） |
+
+These are shared by drawer / tabs / dropdown / overlay / combobox — do not re-implement them.
+
+## 6 · Conventions that are actually gated
+
+- 44×44 px touch targets; `:focus-visible` only, never `outline: 0`.
+- States must survive forced-colors: backgrounds are dropped, borders and text are kept.
+- Logical properties only (`margin-inline`, `inset-block`) — RTL is not a special case.
+- `prefers-reduced-motion` shortens or removes every animation.
+- Wide content gets its own `overflow-x` container with `tabindex="0"`.
+
+## 7 · Docs and language
+
+- `README.md` — English quickstart · `README.zh-CN.md` — Chinese detail
+- `ai/START-HERE.md` — Chinese navigation for agents
+- `demo.html` in each component directory — the ground truth for markup
+- Prose docs are Chinese; JSON keys, CLI flags and this file are English.

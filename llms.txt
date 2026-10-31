@@ -1,0 +1,48 @@
+# agentcss
+
+> A mobile-web CSS component library with a machine-readable contract: 39 components,
+> design tokens (light/dark), RTL and forced-colors support. No build step, no framework,
+> zero third-party runtime dependency. **Class names are the API.**
+
+Query the contract instead of guessing:
+
+- `ai/components.json` — id, tier, maturity, root class, slots, variants, states, ARIA, file paths
+- `ai/pitfalls.json` — known failure modes, keyed by component
+- `ai/tokens.json` · `ai/tokens.tree.json` — DTCG tokens, light + dark
+- `ai/behaviors.json` — five behaviour cores (Esc / focus return / roving / typeahead / scroll lock)
+
+## CLI (works without installing)
+
+```bash
+npx agentcss ai components --json                    # all 39 components
+npx agentcss ai components --json --maturity=stable  # only stable
+npx agentcss ai tokens --json --set=dark
+npx agentcss ai pitfalls --json --component=table
+npx agentcss ai validate ai/components.json --schema=components --json
+npx agentcss ai check page.json --profile=strict --json
+```
+
+Every subcommand accepts `--json`. On failure it prints
+`{"ok":false,"command":"…","error":{"kind":"…","message":"…"}}` and exits non-zero,
+so a pipeline can never mistake an error for data.
+
+## Use it in a page
+
+1. `<link rel="stylesheet" href="node_modules/agentcss/dist/01-tokens/tokens.css">`
+2. add `typography.css` / `page.css` only if you use the page skeleton
+3. add the component's own CSS, then copy its markup from `demo.html`
+4. restyle with tokens (CSS variables); do not rewrite component selectors
+
+## Rules that prevent most breakage
+
+- **Copy markup from `demo.html`** — it is the ground truth, not the prose.
+- 44×44 px minimum touch target; `:focus-visible` only, never `outline: 0`.
+- Every state must stay readable without colour — forced-colors drops backgrounds.
+- Tables and other wide content need their own scroll container.
+- Behaviour (drawer / tabs / overlay) needs its JS; the CSS alone is not interactive.
+
+## Docs
+
+`README.md` (English) · `ai/START-HERE.md` (Chinese navigation) · `llms-full.txt` (one-page reference with every component).
+
+**Language:** prose docs (component READMEs, demos) are Chinese; JSON keys, CLI flags and this file are English.

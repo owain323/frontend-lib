@@ -90,6 +90,11 @@ ROOT_ALLOWED_FILES = {
     #   引资源用站内绝对路径，前缀从 `homepage` 推 —— 因为它的"当前目录"
     #   是用户敲错的那个目录，相对路径会二次 404、整页裸奔。
     '404.html',
+    # 0.21.0：AI 发现层。三份都必须在**仓库根**：
+    #   · llms.txt / llms-full.txt —— 惯例就是站点根 /llms.txt，换个目录没人找得到
+    #   · AGENTS.md —— 编码代理从仓库根开始读，这是它们的第一站
+    # 三份都进了 package.json 的 files；`npm pack --dry-run` 可验。
+    'AGENTS.md', 'llms.txt', 'llms-full.txt',
 }
 
 

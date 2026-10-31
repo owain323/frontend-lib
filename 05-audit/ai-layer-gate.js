@@ -314,6 +314,52 @@ try {
          (realBeta ? 'beta ' + realBeta.id : '契约外组件') + '）⇒ 退出码非 0');
   var noArgs = run(['check']);
   expect(noArgs.status !== 0, '⑥ CLI：缺参数 ⇒ 退出码非 0');
+
+  /* ⑥′ 每个子命令的 --json 都必须产出**单一可解析 JSON**。
+     🔴 这条挡的是"半截 JSON"：人类提示混进 stdout、或某些命令根本没有 --json
+        （旧版只有 7/10 个命令支持，validate 完全没接）。
+        判据是"能不能被 JSON.parse"——机器读不了，等于没有。 */
+  var T = require('os').tmpdir();
+  var fDoc = path.join(T, 'fl-ai-json-doc.json');
+  var fDoc2 = path.join(T, 'fl-ai-json-doc2.json');
+  var fPat = path.join(T, 'fl-ai-json-patch.json');
+  var baseDoc = {
+    schemaVersion: '1.0.0', profile: 'creative',
+    nodes: { a: { id: 'a', kind: stable.id } }, root: ['a']
+  };
+  fs.writeFileSync(fDoc, JSON.stringify(baseDoc));
+  fs.writeFileSync(fDoc2, JSON.stringify(baseDoc));
+  fs.writeFileSync(fPat, JSON.stringify({
+    schemaVersion: '1.0.0',
+    ops: [{ op: 'update', id: 'a', patch: { variant: 'primary' } }]
+  }));
+
+  var jsonCases = [
+    ['check', [fDoc]],
+    ['validate', [fDoc, '--schema=contract']],
+    ['diff', [fDoc, fDoc2]],
+    ['patch', [fDoc, fPat]],
+    ['components', []], ['assets', []], ['tokens', []], ['tree', []],
+    ['profile', []], ['capabilities', []], ['pitfalls', ['--component=table']]
+  ];
+  var broken = [];
+  jsonCases.forEach(function (c) {
+    var r = run([c[0]].concat(c[1], ['--json']));
+    if (r.status !== 0) { broken.push(c[0] + ' 退出码 ' + r.status); return; }
+    try { JSON.parse(r.stdout); } catch (e) { broken.push(c[0] + ' 的 stdout 不是 JSON'); }
+  });
+  expect(broken.length === 0,
+    '⑥′ 全部 ' + jsonCases.length + ' 个子命令都支持 --json，stdout 是单一可解析 JSON',
+    broken.join(' / '));
+
+  /* ⑥″ 失败路径：参数错时也必须是 JSON。
+     否则调用方拿到的是"退出码 1 + 空 stdout"，分不清用法错还是进程崩了。 */
+  var miss = run(['check', path.join(T, 'fl-ai-no-such-file.json'), '--json']);
+  var missOK = false;
+  try { missOK = JSON.parse(miss.stdout).ok === false; } catch (e) { missOK = false; }
+  expect(miss.status !== 0 && missOK,
+    '⑥″ 失败时 --json 输出 {ok:false,...} 且退出码非 0',
+    'status=' + miss.status + ' stdout=' + String(miss.stdout).slice(0, 48));
 })();
 
 // ---------------------------------------------------------------- 汇总
