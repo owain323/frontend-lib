@@ -1,6 +1,6 @@
 # agentcss
 
-> A mobile-web CSS component library with a machine-readable contract: 39 components,
+> A mobile-web CSS component library with a machine-readable contract: 40 components,
 > design tokens (light/dark), RTL and forced-colors support. No build step, no framework,
 > zero third-party runtime dependency. **Class names are the API.**
 
@@ -15,7 +15,7 @@ Query the contract instead of guessing:
 ## CLI (works without installing)
 
 ```bash
-npx agentcss ai components --json                    # all 39 components
+npx agentcss ai components --json                    # all 40 components
 npx agentcss ai components --json --maturity=stable  # only stable
 npx agentcss ai tokens --json --set=dark
 npx agentcss ai pitfalls --json --component=table

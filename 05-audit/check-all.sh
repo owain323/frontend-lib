@@ -892,6 +892,12 @@ run "upload"          node 05-audit/upload-check.js
 #   所以判据必须在"塞宽内容 / 缩到 375px / 打开强制色"的条件下量。
 #   E 组三条把两个保险拆开验：只去 minmax ⇒ min-width 兜住；两个都去 ⇒ 撑破。
 run "app-shell"       node 05-audit/app-shell-check.js
+# 🔴 timeline：几何契约（0.23.0）。它的失败方式是「看起来像画错了」——
+#   圆点直径一改圆心没跟上 ⇒ 连接线拐个弯；线用 inset-block:0 画 ⇒
+#   第一条上方留一截悬空的线；圆点对齐整块中心 ⇒ 正文一长就往下滑。
+#   三条都是静态读代码看不出来、渲染出来要盯半天的类型。
+#   fixture **不引 page.css**：组件声称不依赖全局重置，引了就等于删掉前提。
+run "timeline"        node 05-audit/timeline-check.js
 run "composition" node 05-audit/composition-check.js
 
 # CSS 引用完整性（发现项只报告不 fail：class 名跨组件复用，误报率偏高）
@@ -921,6 +927,11 @@ else
   skip "firefox"    "无 node"
 fi
 run "perf"         $PY 05-audit/perf-gate.py
+# 🔴 预算判据**自己**的判据（0.22.2 换模型时加）。
+#   换模型的风险不是"数字对不对"，而是"五个分支里只有一个会被日常触发"——
+#   写反不等号、把天花板判成储备，跑一百次都是绿的。
+#   它用临时账本（FL_BUDGET）逼出每个分支，并核对真账本 sha 未变。
+run "budget-self" @serial $PY 05-audit/budget-selftest.py
 run "coverage"    $PY 05-audit/coverage-gate.py
 # ---------- 视觉回归（ G2 · 最慢，放最后）----------
 # 零依赖：比对走 05-audit/pngdiff.py（纯标准库，已与 Pillow 逐字节对齐）

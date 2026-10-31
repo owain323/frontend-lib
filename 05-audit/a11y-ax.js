@@ -86,6 +86,8 @@ const PAGES = [
    '进度：progressbar + valuenow / 有名字与无名字两种形态'],
   ['separator', '02-primitives/separator/demo.html',
    '分隔线：separator 角色 + 分组名落在哪一层（放错层就等于没有）'],
+  ['timeline', '02-primitives/timeline/demo.html',
+   '时间轴：顺序靠 <ol> 而不靠圆点（读屏要念「第 N 项，共 M 项」），圆点用盒子画所以不进名字'],
   ['skeleton', '02-primitives/skeleton/demo.html',
    '骨架屏：装饰性 aria-hidden 与内嵌 progressbar 的例外'],
   /* 0.18.0 加：file input 的名字来自 <label for>（**不能**给 label 加 aria-hidden，

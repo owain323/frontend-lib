@@ -128,6 +128,10 @@
       "gzip": 8541,
       "raw": 20982
     },
+    "02-primitives/timeline/timeline.css": {
+      "gzip": 3340,
+      "raw": 7286
+    },
     "02-primitives/upload/upload.css": {
       "gzip": 7801,
       "raw": 21009
@@ -270,6 +274,6 @@
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 305790,
-  "total_raw": 770540
+  "total_gzip": 309130,
+  "total_raw": 777826
 }
