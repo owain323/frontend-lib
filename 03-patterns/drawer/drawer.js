@@ -261,14 +261,39 @@
     setBackgroundInert(true);
     lockScroll();
 
-    /* 初始焦点：优先指定项，其次第一个可聚焦元素，最后容器本身 */
+    /* 初始焦点：优先指定项，其次第一个**真的能聚焦**的元素，最后容器本身。
+       ------------------------------------------------------------------
+       🔴 0.19.0 修：原来写的是 `if (t) t.focus(); else (f[0] || d).focus();`
+          —— "找到节点"被当成了"聚焦成功"。可这两件事不等价：
+
+            · 节点存在但 `display: none`（本库真实踩到：app-shell 的侧栏克隆
+              继承了窄屏的 `display: none`）⇒ `focus()` **静默无效**
+            · 节点存在但 `disabled` / `inert` ⇒ 同样无效
+
+          后果不是"焦点位置不理想"，是**模态框关不掉**：
+          焦点留在 `<body>` 上，而 Esc 的监听挂在抽屉元素上，
+          事件根本冒泡不过去。键盘用户 Tab 一下也出不去（背景已 inert）。
+          鼠标用户点遮罩还能关，所以这个 bug 只在键盘下现形。
+
+       ⇒ 判据改成"焦点**真的到了**"（比对 activeElement），没到就兜底；
+         兜底时也跳过隐藏项，否则兜底同样落空。 */
     var f = d.querySelectorAll(FOCUSABLE);
+    var landed = false;
     if (opt.initialFocus) {
       var t = d.querySelector(opt.initialFocus);
-      if (t) t.focus();
-      else (f[0] || d).focus();
-    } else {
-      (f[0] || d).focus();
+      if (t) {
+        try { t.focus(); } catch (e) { /* 极端情况下 focus 会抛，按没落位处理 */ }
+        landed = document.activeElement === t;
+      }
+    }
+    if (!landed) {
+      var first = null;
+      for (var fi = 0; fi < f.length; fi++) {
+        if (f[fi].offsetParent === null) continue;   /* 隐藏项不作为落点 */
+        first = f[fi];
+        break;
+      }
+      (first || d).focus();
     }
 
     /* ① Esc 与「点抽屉之外关闭」走 dismissable 核（0.14.0 收编）。

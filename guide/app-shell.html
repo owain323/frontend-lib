@@ -34,7 +34,7 @@
     <p class="g-kicker">版式模板 · stable</p>
     <h1>app-shell · 应用外壳</h1>
     <p class="lede">应用外壳：侧栏 + 顶栏 + 主区三段式；sticky 侧栏自滚、min-width 防撑破、窄屏收走侧栏</p>
-    <ul class="g-meta"><li><a href="../04-recipes/app-shell/demo.html"><code>04-recipes/app-shell/demo.html</code></a></li><li><a href="../04-recipes/app-shell/app-shell.css"><code>04-recipes/app-shell/app-shell.css</code></a></li></ul>
+    <ul class="g-meta"><li><a href="../04-recipes/app-shell/demo.html"><code>04-recipes/app-shell/demo.html</code></a></li><li><a href="../04-recipes/app-shell/app-shell.css"><code>04-recipes/app-shell/app-shell.css</code></a></li><li><a href="../04-recipes/app-shell/shell-nav.js"><code>04-recipes/app-shell/shell-nav.js</code></a></li></ul>
 <figure class="g-live"><figcaption class="g-live__cap"><span class="g-live__tag">在这页里直接跑</span>下面是 app-shell · 应用外壳 的真实示例页，全套状态都在里面；<a href="../04-recipes/app-shell/demo.html">单独打开</a>可以看到完整尺寸。</figcaption><iframe class="g-live__frame" src="../04-recipes/app-shell/demo.html" title="app-shell · 应用外壳 的可运行示例" loading="lazy"></iframe></figure><script src="live.js" defer></script>
     <article class="g-doc">
 <blockquote><p>工具型页面的骨架：左边一列常驻导航、上面一条工具栏、右边是主区。<br>本库已有的四个 recipe 都是<strong>内容型</strong>版式（读 / 查 / 写 / 比），<br>缺的是<strong>工具型</strong>。</p></blockquote>
@@ -44,10 +44,12 @@
 <th>文件</th><th>作用</th>
 </tr></thead>
 <tbody>
-<tr><td><code>app-shell.css</code></td><td>三段式布局 + 两个变体 + 窄屏退化。<strong>零 JS</strong></td></tr>
+<tr><td><code>app-shell.css</code></td><td>三段式布局 + 两个变体 + 窄屏退化</td></tr>
+<tr><td><code>shell-nav.js</code></td><td>窄屏导航：菜单按钮 + 把侧栏克隆进 <code>03-patterns/drawer</code>。<strong>必需</strong>（理由见下）</td></tr>
 <tr><td><code>demo.html</code></td><td>六个形态 + 一个对比块</td></tr>
 </tbody>
 </table></div>
+<blockquote><p>布局本身零 JS。<code>shell-nav.js</code> 不是&quot;给布局加动效&quot;，它补的是一个<strong>入口</strong>：<br>没有它，窄屏上侧栏收走之后一个导航链接都没有。<br>所以 START-HERE 里它归「必需」，不是&quot;可选增强&quot;。</p></blockquote>
 <h2 id="s3">用法<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
 <pre class="code" tabindex="0"><code class="language-html">&lt;link rel=&quot;stylesheet&quot; href=&quot;app-shell.css&quot;&gt;
 
@@ -99,7 +101,22 @@ min-height: 100dvh;   /* 正解 */</code></pre>
 <p><code>sticky</code> 留在流里：grid 照常算它的 15rem，滚到顶后固定住，RTL 自动正确（因为用的是逻辑属性）。</p>
 <p>⚠️ 两个前提缺一不可：</p>
 <ul><li><code>align-self: start</code> —— grid 项默认 <code>stretch</code>，撑满高度就无从&quot;粘住&quot;</li><li><code>max-height: 100dvh</code> + <code>overflow-y: auto</code> —— 条目多了侧栏自己滚，而不是把主区一起滚走</li></ul>
-<h2 id="s8">变体<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
+<h2 id="s8">窄屏导航（<code>shell-nav.js</code>）<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-html">&lt;link rel=&quot;stylesheet&quot; href=&quot;app-shell.css&quot;&gt;
+&lt;link rel=&quot;stylesheet&quot; href=&quot;../drawer/drawer.css&quot;&gt;
+
+&lt;div class=&quot;shell&quot; data-shell-nav=&quot;主导航&quot;&gt;   &lt;!-- 值 = 抽屉标题 --&gt;
+  &lt;header class=&quot;shell__topbar&quot;&gt;…&lt;/header&gt;    &lt;!-- 按钮插在这里的第一个位置 --&gt;
+  &lt;nav class=&quot;shell__side&quot; aria-label=&quot;主导航&quot;&gt;…&lt;/nav&gt;
+  &lt;main class=&quot;shell__main&quot;&gt;…&lt;/main&gt;
+&lt;/div&gt;
+
+&lt;script src=&quot;../drawer/drawer.js&quot;&gt;&lt;/script&gt;   &lt;!-- 必需：抽屉的行为 --&gt;
+&lt;script src=&quot;shell-nav.js&quot;&gt;&lt;/script&gt;          &lt;!-- 有 data-shell-nav 就自动初始化 --&gt;</code></pre>
+<ul><li><strong>opt-in</strong>：不写 <code>data-shell-nav</code> 就一个按钮都不注入 —— 别人的顶栏布局不该被悄悄改。</li><li><strong>只接线，不重写行为</strong>：Esc、焦点陷阱、焦点归位、背景 <code>inert</code>、锁滚动五件事全部来自 <code>drawer.js</code>。本层做的是&quot;建按钮 / 克隆侧栏 / 判断何时该关&quot;。</li><li><strong>克隆，不移动</strong>。桌面端还要用原节点；而抽屉是&quot;用完即毁&quot;的，移动过去的话一关侧栏就永远回不来了。克隆里所有 <code>id</code> 会剥掉（两份同 id 会让 <code>aria-labelledby</code> 指到隐藏那份上）。</li><li><strong>断点不写在 JS 里</strong>：判据是&quot;菜单按钮还在不在&quot;（<code>offsetParent === null</code>），显隐由 CSS 的 <code>@media</code> 决定。写死数字的话 CSS 改一个值、JS 就静默错位。</li><li><strong>缺 <code>drawer.js</code> 时拒绝初始化</strong>并 warn —— 宁可没有按钮，也不要一个点了没反应的按钮。窄屏下用户会反复点，然后认为整个页面坏了。</li><li><strong>宽屏复位</strong>：开着抽屉把窗口拉宽，抽屉自动关掉，否则两个导航同时在场。</li></ul>
+<h3 id="s9">为什么不用 <code>03-patterns/nav</code><a class="anchor" href="#s9" aria-label="本节直链">#</a></h3>
+<p><code>nav.js</code> 做的是&quot;横排导航 → 全屏抽屉&quot;：它的列表<strong>常驻在文档里</strong>，抽屉和列表是同一个节点，只是移动位置。而这里的侧栏在窄屏是 <code>display: none</code>, 需要的是&quot;另建一份显示出来&quot; —— 生命周期正好相反（常驻 vs 即用即毁）。两者共用同一套核（<code>emit</code> / <code>focus-return</code> / <code>dismissable</code>），只是不共用外壳。</p>
+<h2 id="s10">变体<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
 <div class="table"><table>
 <thead><tr>
 <th>类</th><th>效果</th><th>用在哪</th>
@@ -111,7 +128,7 @@ min-height: 100dvh;   /* 正解 */</code></pre>
 </tbody>
 </table></div>
 <p><code>.shell--rail</code> 下每个链接<strong>必须</strong>有 <code>aria-label</code> 或 <code>title</code> —— 否则读屏念出来是一串&quot;链接、链接、链接&quot;。</p>
-<h2 id="s9">令牌<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
+<h2 id="s11">令牌<a class="anchor" href="#s11" aria-label="本节直链">#</a></h2>
 <div class="table"><table>
 <thead><tr>
 <th>变量</th><th>默认</th><th>说明</th>
@@ -123,16 +140,16 @@ min-height: 100dvh;   /* 正解 */</code></pre>
 <tr><td><code>--shell-bp</code></td><td><code>48rem</code></td><td>侧栏收起阈值</td></tr>
 </tbody>
 </table></div>
-<h2 id="s10">无障碍<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
+<h2 id="s12">无障碍<a class="anchor" href="#s12" aria-label="本节直链">#</a></h2>
 <ul><li>侧栏是 <code>&lt;nav aria-label=&quot;主导航&quot;&gt;</code>：页面上可能还有第二个 <code>&lt;nav&gt;</code>（页内目录），两个都没有名字时读屏只会说&quot;导航、导航&quot;。判据：<code>a11y-ax.js</code>。</li><li>当前页用 <code>aria-current=&quot;page&quot;</code>，<strong>不是</strong> <code>class=&quot;active&quot;</code> —— 前者是读屏能听到的状态，后者只是 CSS 钩子。</li><li>标记当前页用三条线索：竖条、底色、字重。灰度打印和色盲下都分得出来。</li><li>强制色下 <code>inset</code> 阴影会被整个移除，所以另有一段 media 把&quot;当前项&quot;换成实色边框；所有项统一预留 3px 透明边框，避免当前项的文字比其它项右移。</li><li>顶栏与侧栏的链接都有 44px 命中区（<code>--sz-touch</code>）。</li></ul>
-<h2 id="s11">反例<a class="anchor" href="#s11" aria-label="本节直链">#</a></h2>
+<h2 id="s13">反例<a class="anchor" href="#s13" aria-label="本节直链">#</a></h2>
 <ul><li><strong>❌ 侧栏 <code>position: fixed</code> + 主区 <code>margin-inline-start</code></strong> —— 看起来能用，但侧栏被摘出 grid 流，主区宽度靠<strong>手抄的数字</strong>维持（改侧栏宽就要改两处）；<code>inset-inline-start</code> 与 <code>margin-inline-start</code> 只要有一处漏改，RTL 下侧栏跑到右边、主区仍在右边留白。**</li></ul>
 <p>正确的做法见上面「侧栏为什么是 <code>sticky</code> 而不是 <code>fixed</code>」。</p>
-<ul><li><strong>❌ 窄屏把侧栏 <code>display: none</code> 之后没有别的入口</strong> —— 导航消失了。侧栏收走的代价是&quot;用户找不到别的页面&quot;，要么在顶栏放一个按钮接到 <code>03-patterns/drawer</code>，要么明确接受&quot;窄屏只有当前页&quot;（只读看板可以接受）。</li></ul>
-<p>⚠️ 别自己写 <code>transform: translateX(-100%)</code> 的抽屉：抽屉需要 Esc 关闭、焦点归位、背景滚动锁、变宽自关四件事，<code>drawer</code> 已经全做了。自己写一份，四件里必然漏两件。</p>
+<ul><li><strong>❌ 窄屏把侧栏 <code>display: none</code> 之后就不管了</strong> —— 导航消失了，用户在手机上除了当前页哪儿也去不了。要么引 <code>shell-nav.js</code>（本目录就有），要么明确接受&quot;窄屏只有当前页&quot;（只读看板可以接受，但那要是<strong>决定</strong>，不是疏忽）。</li></ul>
+<p>⚠️ 别自己写 <code>transform: translateX(-100%)</code> 的抽屉。看起来只是&quot;滑出来&quot;，实际要做的是<strong>焦点陷阱 / 焦点归位 / 背景 <code>inert</code> / 锁滚动 / Esc</strong> 五件事。自己写必然漏两件，而漏掉的那两件在鼠标用户眼里完全正常 —— 只有键盘和读屏用户会被困在一个关不掉的抽屉里。</p>
 <ul><li><strong>❌ 给 <code>.shell</code> 加 <code>overflow: hidden</code> 想&quot;修好&quot;横滚</strong> —— 它确实不横滚了，因为内容<strong>被裁掉了</strong>，而且滚动条也没了。主区被撑破的正确修法是 <code>min-width: 0</code> + <code>.shell__scroll</code>（见坑 1），不是把溢出的部分藏起来。</li></ul>
 <ul><li><strong>❌ 把宽表格放进 <code>.shell__content</code></strong> —— <code>.shell__content</code> 的 <code>max-width</code> 是正文栏宽（<code>--measure-page</code>），表格会被限制在 52rem 里，右边几列挤成一团。宽内容要放在 <code>.shell__content</code> <strong>外面</strong>、<code>.shell__main</code> 直下。</li></ul>
-<h2 id="s12">相关<a class="anchor" href="#s12" aria-label="本节直链">#</a></h2>
+<h2 id="s14">相关<a class="anchor" href="#s14" aria-label="本节直链">#</a></h2>
 <ul><li><code>03-patterns/nav</code> —— 页内目录 + 抽屉行为层。视觉上与侧栏条目对齐，但<strong>不复用类</strong>：一个是&quot;页面内的目录&quot;，一个是&quot;应用级导航&quot;，语义不同。</li><li><code>03-patterns/drawer</code> —— 窄屏导航抽屉，Esc / 焦点归位 / 背景锁 / 变宽自关都已实现。</li><li><code>04-recipes/detail-page</code> / <code>analysis-report</code> —— 内容型版式，可以放进 <code>.shell__main</code>。</li></ul>
     </article>
     <nav class="g-pager" aria-label="上一页 / 下一页">
@@ -142,11 +159,11 @@ min-height: 100dvh;   /* 正解 */</code></pre>
   </main>
   <aside class="g-side">
     <p class="g-side__title" id="toc-title">本页目录</p>
-    <ul class="g-toc"><li><a href="#s2">文件</a></li><li><a href="#s3">用法</a></li><li><a href="#s4">两个坑（这是本组件存在的主要理由）</a></li><li><a href="#s7">侧栏为什么是 sticky 而不是 fixed</a></li><li><a href="#s8">变体</a></li><li><a href="#s9">令牌</a></li><li><a href="#s10">无障碍</a></li><li><a href="#s11">反例</a></li><li><a href="#s12">相关</a></li></ul>
+    <ul class="g-toc"><li><a href="#s2">文件</a></li><li><a href="#s3">用法</a></li><li><a href="#s4">两个坑（这是本组件存在的主要理由）</a></li><li><a href="#s7">侧栏为什么是 sticky 而不是 fixed</a></li><li><a href="#s8">窄屏导航（shell-nav.js）</a></li><li><a href="#s10">变体</a></li><li><a href="#s11">令牌</a></li><li><a href="#s12">无障碍</a></li><li><a href="#s13">反例</a></li><li><a href="#s14">相关</a></li></ul>
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.18.0 · 零第三方运行时依赖 · 组件数 39</p>
+  <p>v0.19.0 · 零第三方运行时依赖 · 组件数 39</p>
 </footer>
 </body>
 </html>

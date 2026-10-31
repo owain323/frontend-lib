@@ -28,6 +28,7 @@ const TARGETS = {
   Combobox: '/02-primitives/combobox/demo.html',
   DateRange: '/02-primitives/date-range/demo.html',
   Upload: '/02-primitives/upload/demo.html',
+  ShellNav: '/04-recipes/app-shell/demo.html',
   Popover: '/02-primitives/popover/demo.html',
   Accordion: '/03-patterns/accordion/demo.html',
   Tabs: '/03-patterns/tabs/demo.html',

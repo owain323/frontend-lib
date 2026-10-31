@@ -9,6 +9,8 @@
 <link rel="stylesheet" href="../../01-tokens/typography.css">
 <link rel="stylesheet" href="../../01-tokens/page.css">
 <link rel="stylesheet" href="app-shell.css">
+<!-- 抽屉的样式：只有第 6 节用到，但样式表要提前加载 -->
+<link rel="stylesheet" href="../../03-patterns/drawer/drawer.css">
 <style>
 .demo {
   background: var(--surface);
@@ -198,16 +200,56 @@
 适合看板、监控墙。⚠️ 用这个变体时<b>不要</b>再让页面本身滚：两个滚动容器会让
 "滚到底"的行为不可预期（用户滚的是哪一个？）。</p>
 
-<h2>6 · 窄屏：侧栏收走，主区全宽</h2>
+<h2>6 · 窄屏：侧栏收走，顶栏出一个菜单按钮</h2>
 <div class="demo">
-  <p class="note" style="margin-top:0">把浏览器窗口缩到 <b>768px 以下</b> 再看上面第 1 节 ——
-  侧栏会整列消失，主区铺满，顶栏保留。</p>
-  <p class="note">侧栏<b>不会</b>自动变成抽屉，这是有意的：抽屉已经有
-  <code>03-patterns/drawer</code>（含 Esc 关闭、焦点归位、背景锁、变宽自关）。
-  在这里再实现一遍 = 两份焦点行为，迟早不一致。
-  要抽屉就把 <code>.shell__side</code> 里的内容搬进 drawer 实例。</p>
+  <p class="note" style="margin-top:0">把浏览器窗口缩到 <b>768px 以下</b>。侧栏整列消失，
+  主区铺满，顶栏起始边出现一个 ☰ 按钮 —— 点它打开抽屉。
+  <b>Esc 关、点遮罩关、关闭后焦点回到按钮上</b>，这三件事来自
+  <code>03-patterns/drawer</code>，本组件只做接线（<code>shell-nav.js</code>）。</p>
+
+  <div class="shell shell-demo" data-shell-nav="主导航">
+    <header class="shell__topbar">
+      <h2 class="shell__title">应付账款 · 2025 年度</h2>
+      <div class="shell__topbar-end">
+        <span class="shell-note">已同步 5 分钟前</span>
+      </div>
+    </header>
+    <!-- ⚠️ 这一页有六个外壳，所以第 6 节的 nav 名字必须与第 1 节不同：
+         同一页面出现两个 aria-label="主导航" 的 <nav> 是 axe 的 landmark-unique
+         违规。真实页面只有一个外壳，不会遇到 —— 这是 demo 页自己的问题。 -->
+    <nav class="shell__side" aria-label="主导航（窄屏演示）">
+      <a class="shell__brand" href="#">金标准 · 财务台</a>
+      <ul class="shell__side-group">
+        <li><a class="shell__link" href="#" aria-current="page">总览</a></li>
+        <li><a class="shell__link" href="#">实体</a></li>
+        <li><a class="shell__link" href="#">勾稽校验</a></li>
+      </ul>
+      <p class="shell__side-label">数据</p>
+      <ul class="shell__side-group">
+        <li><a class="shell__link" href="#">导入</a></li>
+        <li><a class="shell__link" href="#">审计日志</a></li>
+      </ul>
+    </nav>
+    <div class="shell__main">
+      <div class="shell__content">
+        <div class="ph">缩到 768px 以下，左上角会多出一个 ☰</div>
+        <div class="ph">抽屉里的列表是侧栏的<b>克隆</b>，当前页标记也一起带过去</div>
+      </div>
+    </div>
+  </div>
 </div>
+<p class="note">上面第 1–5 节<b>没有</b>引 <code>shell-nav.js</code>，所以它们缩窄后没有按钮，
+侧栏直接消失 —— 缩窄窗口看看就知道了：<b>一个入口都没有</b>。
+所以这层脚本在 START-HERE 里归「必需」，不是"可选增强"：
+"宽屏没有它一切照旧"只对桌面成立，而用户在手机上就走不出去了。</p>
+<p class="note">⚠️ 别在这里自己写一个滑出来的侧栏。抽屉要的不是"滑出来"，
+而是<b>焦点陷阱 / 焦点归位 / 背景 inert / 锁滚动 / Esc</b> 五件事。
+自己写必然漏两件，而漏掉的那两件在鼠标用户眼里完全正常。</p>
 
 </main>
+<!-- shell-nav.js 依赖 Drawer（抽屉的行为层）。顺序不能反：
+     少了 drawer.js 时 shell-nav.js 会 warn 并跳过，不注入按钮。 -->
+<script src="../../03-patterns/drawer/drawer.js"></script>
+<script src="shell-nav.js"></script>
 </body>
 </html>

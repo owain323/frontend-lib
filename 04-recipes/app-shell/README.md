@@ -8,8 +8,13 @@
 
 | 文件 | 作用 |
 |---|---|
-| `app-shell.css` | 三段式布局 + 两个变体 + 窄屏退化。**零 JS** |
+| `app-shell.css` | 三段式布局 + 两个变体 + 窄屏退化 |
+| `shell-nav.js` | 窄屏导航：菜单按钮 + 把侧栏克隆进 `03-patterns/drawer`。**必需**（理由见下） |
 | `demo.html` | 六个形态 + 一个对比块 |
+
+> 布局本身零 JS。`shell-nav.js` 不是"给布局加动效"，它补的是一个**入口**：
+> 没有它，窄屏上侧栏收走之后一个导航链接都没有。
+> 所以 START-HERE 里它归「必需」，不是"可选增强"。
 
 ## 用法
 
@@ -103,6 +108,41 @@ min-height: 100dvh;   /* 正解 */
 - `max-height: 100dvh` + `overflow-y: auto` —— 条目多了侧栏自己滚，
   而不是把主区一起滚走
 
+## 窄屏导航（`shell-nav.js`）
+
+```html
+<link rel="stylesheet" href="app-shell.css">
+<link rel="stylesheet" href="../drawer/drawer.css">
+
+<div class="shell" data-shell-nav="主导航">   <!-- 值 = 抽屉标题 -->
+  <header class="shell__topbar">…</header>    <!-- 按钮插在这里的第一个位置 -->
+  <nav class="shell__side" aria-label="主导航">…</nav>
+  <main class="shell__main">…</main>
+</div>
+
+<script src="../drawer/drawer.js"></script>   <!-- 必需：抽屉的行为 -->
+<script src="shell-nav.js"></script>          <!-- 有 data-shell-nav 就自动初始化 -->
+```
+
+- **opt-in**：不写 `data-shell-nav` 就一个按钮都不注入 —— 别人的顶栏布局不该被悄悄改。
+- **只接线，不重写行为**：Esc、焦点陷阱、焦点归位、背景 `inert`、锁滚动五件事
+  全部来自 `drawer.js`。本层做的是"建按钮 / 克隆侧栏 / 判断何时该关"。
+- **克隆，不移动**。桌面端还要用原节点；而抽屉是"用完即毁"的，
+  移动过去的话一关侧栏就永远回不来了。克隆里所有 `id` 会剥掉
+  （两份同 id 会让 `aria-labelledby` 指到隐藏那份上）。
+- **断点不写在 JS 里**：判据是"菜单按钮还在不在"（`offsetParent === null`），
+  显隐由 CSS 的 `@media` 决定。写死数字的话 CSS 改一个值、JS 就静默错位。
+- **缺 `drawer.js` 时拒绝初始化**并 warn —— 宁可没有按钮，也不要一个点了没反应的按钮。
+  窄屏下用户会反复点，然后认为整个页面坏了。
+- **宽屏复位**：开着抽屉把窗口拉宽，抽屉自动关掉，否则两个导航同时在场。
+
+### 为什么不用 `03-patterns/nav`
+
+`nav.js` 做的是"横排导航 → 全屏抽屉"：它的列表**常驻在文档里**，
+抽屉和列表是同一个节点，只是移动位置。而这里的侧栏在窄屏是 `display: none`,
+需要的是"另建一份显示出来" —— 生命周期正好相反（常驻 vs 即用即毁）。
+两者共用同一套核（`emit` / `focus-return` / `dismissable`），只是不共用外壳。
+
 ## 变体
 
 | 类 | 效果 | 用在哪 |
@@ -142,12 +182,14 @@ min-height: 100dvh;   /* 正解 */
 
   正确的做法见上面「侧栏为什么是 `sticky` 而不是 `fixed`」。
 
-- **❌ 窄屏把侧栏 `display: none` 之后没有别的入口** —— 导航消失了。
-  侧栏收走的代价是"用户找不到别的页面"，要么在顶栏放一个按钮接到
-  `03-patterns/drawer`，要么明确接受"窄屏只有当前页"（只读看板可以接受）。
+- **❌ 窄屏把侧栏 `display: none` 之后就不管了** —— 导航消失了，用户在手机上
+  除了当前页哪儿也去不了。要么引 `shell-nav.js`（本目录就有），
+  要么明确接受"窄屏只有当前页"（只读看板可以接受，但那要是**决定**，不是疏忽）。
 
-  ⚠️ 别自己写 `transform: translateX(-100%)` 的抽屉：抽屉需要 Esc 关闭、焦点归位、
-  背景滚动锁、变宽自关四件事，`drawer` 已经全做了。自己写一份，四件里必然漏两件。
+  ⚠️ 别自己写 `transform: translateX(-100%)` 的抽屉。看起来只是"滑出来"，
+  实际要做的是**焦点陷阱 / 焦点归位 / 背景 `inert` / 锁滚动 / Esc** 五件事。
+  自己写必然漏两件，而漏掉的那两件在鼠标用户眼里完全正常 ——
+  只有键盘和读屏用户会被困在一个关不掉的抽屉里。
 
 - **❌ 给 `.shell` 加 `overflow: hidden` 想"修好"横滚** —— 它确实不横滚了，
   因为内容**被裁掉了**，而且滚动条也没了。主区被撑破的正确修法是
