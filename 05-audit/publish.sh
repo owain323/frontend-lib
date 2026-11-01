@@ -40,12 +40,12 @@ else
   say "✓ registry = $REG"
 fi
 
-# ---------- ② 版本五处一致 ----------
+# ---------- ② 版本六处一致 ----------
 if ! "$PY" 05-audit/bump-version.py --check >/dev/null 2>&1; then
-  say "✗ 版本五处不一致 ⇒ 跑 $PY 05-audit/bump-version.py --check 看详情"
+  say "✗ 版本六处不一致 ⇒ 跑 $PY 05-audit/bump-version.py --check 看详情"
   fail=1
 else
-  say "✓ 版本五处一致"
+  say "✓ 版本六处一致"
 fi
 
 # ---------- ③ 工作区干净 ----------

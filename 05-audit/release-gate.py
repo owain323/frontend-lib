@@ -694,6 +694,14 @@ def _publish_entry_selftest():
         w('CHANGELOG.md', '# 变更\n\n## [0.24.1] - 2026-01-01\n\n- 初始\n')
         w('ai/components.json', json.dumps(
             {'libraryVersion': '0.24.1'}, indent=2) + '\n')
+        # 🔴 夹具也要有 .gitignore（2026-11 修 · CI 实测）：
+        #    `bump-version.py` 会 import `_changelog`，于是 05-audit/ 下
+        #    出现 `__pycache__/`。真实仓库用 .gitignore 忽略它，
+        #    而这个夹具没有 ⇒ `git status` 变脏 ⇒ `publish.sh` **正确**地报
+        #    「工作区不干净」⇒ 两条"正例"失败。
+        #    ⚠️ 这不是产品的问题，是夹具失真：它造了一个比真实仓库更脏的世界。
+        #       所以修夹具，不改判据（改判据去容忍脏工作区才是真倒退）。
+        w('.gitignore', '__pycache__/\n*.pyc\n')
 
         def git(*a):
             return subprocess.run(('git',) + a, cwd=tmp,

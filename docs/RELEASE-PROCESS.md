@@ -175,9 +175,23 @@ bash 05-audit/release-run.sh probe
 
 禁止的恢复方式：
 
-- 删除 tag 重新打 —— 那会改写"当时发布了什么"。
+- **已发布之后**删除 tag 重新打 —— 那会改写"当时发布了什么"。
 - `npm unpublish` 之后再发同版本 —— 版本号不可变规则不允许。
 - 只手工 `gh release create` 而不跑 `verify` —— 回执是"三者同时成立"的唯一记录。
+
+**唯一的例外，判据是"有没有产出物"**：`probe` 明确给出
+`npm=absent release=absent` 时，这个 tag 从未产生任何可被消费的东西，
+它可以删掉、在同一版本号上重打。判据不是"我觉得没发出去"，是那两行输出
+——两个渠道都查过，都不存在。
+
+这条例外有实际先例：`v0.24.2` 第一次打 tag 后，`release.yml` 在
+**发布前门禁**就失败了（`selftest-all` 里 `release-gate` 的夹具在 Linux 上失真：
+夹具缺 `.gitignore`，`__pycache__` 让"工作区干净"那条正确地变红）。
+npm 与 Release 都是 absent ⇒ 删 tag、修夹具、在同一提交树上重打 `v0.24.2`。
+**版本号没有跳号，也没有第二份同版本内容。**
+
+⚠️ 反过来说：只要 `npm=present`，哪怕 Release 没建，也不许删 tag 重打 ——
+那时 registry 上已经有一个别人可以 `npm install` 的包，tag 是它唯一的来源锚点。
 
 ---
 

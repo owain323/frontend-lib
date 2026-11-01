@@ -69,19 +69,29 @@ release_state() {
 }
 
 # 读 provenance 里的 gitCommit。stdout = 提交（40 位）或空。
+#
+# 🔴 用 python3 而不是 node（2026-11 修）：
+#   这条脚本跑在 bash 门禁里，而 `selftest-all` 会在**任何**装了 python 的
+#   机器上跑它。第一版用 `node -e` 解析 JSON —— 本地有 node 时全绿，
+#   而 selftest 在没装 node 的环境里一律得到 `provenance=unreadable`
+#   （实测：Ubuntu 22.04 裸机、以及本仓 Windows 侧的 WSL）。
+#   那不是"包有问题"，是**判据的工具缺失伪装成了结论**。
+#   ⇒ 本仓所有门禁都要求 python3，沿用它就没有额外的隐式依赖。
 prov_commit_of() {
   local f="$1"
-  node -e '
-const fs = require("fs");
-const j = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
-const a = (j.attestations || []).find(
-  x => x.predicateType && x.predicateType.endsWith("provenance/v1"));
-if (!a) process.exit(3);
-const st = JSON.parse(
-  Buffer.from(a.bundle.dsseEnvelope.payload, "base64").toString("utf8"));
-const d = st.predicate.buildDefinition.resolvedDependencies || [];
-process.stdout.write(String(d[0].digest.gitCommit || ""));
-' "$f" 2>/dev/null
+  python3 - "$f" <<'PY' 2>/dev/null
+import base64, json, sys
+with open(sys.argv[1], encoding='utf-8') as fh:
+    j = json.load(fh)
+att = j.get('attestations') or []
+a = next((x for x in att
+          if (x.get('predicateType') or '').endswith('provenance/v1')), None)
+if a is None:
+    sys.exit(3)
+st = json.loads(base64.b64decode(a['bundle']['dsseEnvelope']['payload']))
+deps = st['predicate']['buildDefinition'].get('resolvedDependencies') or []
+sys.stdout.write(str((deps[0].get('digest') or {}).get('gitCommit') or ''))
+PY
 }
 
 provenance_state() {
@@ -219,15 +229,22 @@ printf '%s' "${STUB_CODE:-200}"
 SH
   chmod +x "$tmp/bin/npm" "$tmp/bin/gh" "$tmp/bin/curl"
 
+  # 造一份"看起来像真的" attestation。同样用 python3 —— 夹具依赖 node
+  # 会让自检在没装 node 的机器上以 `provenance=unreadable` 集体失败，
+  # 而那看起来像"包有问题"，实际只是夹具造不出来。
   body_of() {
-    node -e '
-const c = process.argv[1];
-const st = {predicate: {buildDefinition: {resolvedDependencies: [{digest: {gitCommit: c}}]}}};
-process.stdout.write(JSON.stringify({attestations: [{
-  predicateType: "https://slsa.dev/provenance/v1",
-  bundle: {dsseEnvelope: {payload: Buffer.from(JSON.stringify(st)).toString("base64")}},
-}]}));
-' "$1"
+    python3 - "$1" <<'PY'
+import base64, json, sys
+st = {'predicate': {'buildDefinition': {
+    'resolvedDependencies': [{'digest': {'gitCommit': sys.argv[1]}}]}}}
+out = {'attestations': [{
+    'predicateType': 'https://slsa.dev/provenance/v1',
+    'bundle': {'dsseEnvelope': {
+        'payload': base64.b64encode(
+            json.dumps(st).encode('utf-8')).decode('ascii')}},
+}]}
+sys.stdout.write(json.dumps(out))
+PY
   }
   body_ok="$(body_of "$sha")"
   body_bad="$(body_of "1111111111111111111111111111111111111111")"
