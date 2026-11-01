@@ -124,6 +124,15 @@ for _arg in "$@"; do
   esac
 done
 MODE="${MODE:-full}"
+# 并发默认值 = min(核数, 6)，下限 2。
+# 🔴 写死 6 会在 2 核的 CI runner 上把浏览器门禁压到"页面没加载完"——
+#    实测那次 api-form 报"页面里探不到 global"，本机 6 核复跑全绿（同 E228）。
+_NCORE="${NUMBER_OF_PROCESSORS:-}"
+case "$_NCORE" in ''|*[!0-9]*) _NCORE=$(nproc 2>/dev/null || echo 4) ;; esac
+case "$_NCORE" in ''|*[!0-9]*) _NCORE=4 ;; esac
+_PAR_DEFAULT=$_NCORE
+[ "$_PAR_DEFAULT" -gt 6 ] && _PAR_DEFAULT=6
+[ "$_PAR_DEFAULT" -lt 2 ] && _PAR_DEFAULT=2
 # ---------- 分层判定（0.8.9）------------------------------------------------
 _ran=0        # 本轮**真的执行了**的门禁数
 _skipped=0    # 本轮**按层跳过**的门禁数
@@ -327,8 +336,8 @@ flush_all() { # 串行独占的先跑 → 其余并发 → 全部跑完再按序
   [ "$total" -eq 0 ] && return 0
   # 默认 6 路：实测 12 核 / 222 道门禁，4 路约 9 分钟、6 路约 4 分钟。
   # 并发只影响**顺序与墙钟**，不影响任何判据 —— 每道门禁的输出各自落盘。
-  local par="${PARALLEL:-6}"
-  case "$par" in ''|*[!0-9]*) par=6 ;; esac
+  local par="${PARALLEL:-$_PAR_DEFAULT}"
+  case "$par" in ''|*[!0-9]*) par=$_PAR_DEFAULT ;; esac
   local i
 
   # 串行门禁（@serial）：先独占执行完

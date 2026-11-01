@@ -39,9 +39,17 @@
  *    实测教训：`form` 类在旧集合里只有 1 个控件（全集最大 13 个），
  *    `wide` 代表只有 294px（全集最大 370px）—— 两条都能被前五条判绿。
  *
+ *   ⑪ 字体必须**嵌入**：每个 `/BaseFont` 都要带六位子集前缀（`AAAAAA+SegoeUI`）。
+ *      没有前缀 = 只是"引用了这个字体名"，文件里没带字形 ⇒ 换台机器就换字体。
+ *   ⑫ 页数与"含 `BT` 的内容流数"一致：少一页就是空白页。
+ *
  * ⚠️ 这些判据**不覆盖**（写在这里是为了不让它被当成"打印全过"）：
  *   · 字体回退：字体缺失时 Chromium 仍会嵌一个回退字体，产物照样"有字"；
- *   · 裁切：元素被 `overflow:hidden` 切掉的部分不会进 PDF，run 数也不变；
+ *   · 裁切：**明确没实现**（G2-03 实测过的死路）。
+ *     Chrome 把内容画在一个 2250×3275 的矩形里，再用 `re W n` 裁到纸面 ——
+ *     路径坐标越出纸边是常态（实测最右 2091pt vs 纸宽 596pt），bbox 判不出
+ *     "看得见的部分有没有被切"。要判它得算字形宽度（字体度量表），解析器里没有。
+ *     现在能兜裁切的只有「run 数与基线不一致」这一条间接判据。
  *   · 页眉页脚 / 页码 / 章节分页：本库没有这些，也没有判据；
  *   · 空白页：靠 ③④ 间接兜（内容不见了 ⇒ run 数变），不是直接检测。
  *   · ⑤ 量的是 794px 视口下的**屏幕**布局（没扣 10mm×2 页边，也不是 print 媒体）
@@ -315,9 +323,107 @@ function typeTable(universe, pages, types) {
 /* ---------------------------------------------------------------- PDF 解析 */
 
 const NUM = '[-+]?[0-9]*\\.?[0-9]+';
-const RE_TOK = new RegExp(
-  '\\bq\\b|\\bQ\\b|(' + NUM + ')\\s+(' + NUM + ')\\s+(' + NUM + ')\\s+rg\\b'
-  + '|(' + NUM + ')\\s+g\\b|\\bTj\\b|\\bTJ\\b', 'g');
+/* 一整套内容流算子。顺序即分组顺序，改的时候别动次序 —— 下面按组号取值。
+   q/Q 0 · cm 1-6 · re 7-10 · c 11-16 · m|l 17-18 · rg 19-21 · g 22 · Tj|TJ 最后 */
+const RE_OPS = new RegExp(
+  '\\bq\\b|\\bQ\\b'
+  + '|(' + NUM + ')\\s+(' + NUM + ')\\s+(' + NUM + ')\\s+(' + NUM + ')\\s+(' + NUM + ')\\s+(' + NUM + ')\\s+cm\\b'
+  + '|(' + NUM + ')\\s+(' + NUM + ')\\s+(' + NUM + ')\\s+(' + NUM + ')\\s+re\\b'
+  + '|(' + NUM + ')\\s+(' + NUM + ')\\s+(' + NUM + ')\\s+(' + NUM + ')\\s+(' + NUM + ')\\s+(' + NUM + ')\\s+c\\b'
+  + '|(' + NUM + ')\\s+(' + NUM + ')\\s+[ml]\\b'
+  + '|(' + NUM + ')\\s+(' + NUM + ')\\s+(' + NUM + ')\\s+rg\\b'
+  + '|(' + NUM + ')\\s+g\\b'
+  + '|\\bTj\\b|\\bTJ\\b', 'g');
+
+/** 页面内坐标容差（pt）。1pt ≈ 0.35mm：描边压线不算越界。 */
+const PAGE_TOL_PT = 1;
+
+/**
+ * 扫一段内容流：文字颜色直方图 + 图形包围盒 + 绘制指令数。
+ * 纯函数（只吃字符串），所以 `--selftest` 能喂合成算子验它有没有牙。
+ *
+ * ⚠️ 能测什么、不能测什么（写清楚，免得被当成"完整的 PDF 检查"）：
+ *   · 能测：路径/矩形的**坐标**是否越过 MediaBox（精确，坐标就在流里）
+ *   · 不能测：文字的**右边界** —— 那要字体宽度表（字宽 × 字号），解析器里没有
+ *     ⇒ 文字被切只能靠「文字起点越界」与「run 数与基线不一致」间接兜。
+ */
+function scanOps(txt, box) {
+  const hist = {};
+  let runs = 0;
+  let drawOps = 0;
+  let maxX = -Infinity;
+  let minX = Infinity;
+  let maxY = -Infinity;
+  let minY = Infinity;
+  let cur = [0, 0, 0];
+  const cstack = [];
+  let ctm = [1, 0, 0, 1, 0, 0];
+  const mstack = [];
+
+  const mul = (a, b) => [
+    a[0] * b[0] + a[1] * b[2], a[0] * b[1] + a[1] * b[3],
+    a[2] * b[0] + a[3] * b[2], a[2] * b[1] + a[3] * b[3],
+    a[4] * b[0] + a[5] * b[2] + b[4], a[4] * b[1] + a[5] * b[3] + b[5],
+  ];
+  const hit = (x, y) => {
+    const X = ctm[0] * x + ctm[2] * y + ctm[4];
+    const Y = ctm[1] * x + ctm[3] * y + ctm[5];
+    if (X > maxX) maxX = X;
+    if (X < minX) minX = X;
+    if (Y > maxY) maxY = Y;
+    if (Y < minY) minY = Y;
+  };
+
+  RE_OPS.lastIndex = 0;
+  let m;
+  while ((m = RE_OPS.exec(txt)) !== null) {
+    const tok = m[0];
+    if (tok === 'q') { cstack.push(cur.slice()); mstack.push(ctm.slice()); continue; }
+    if (tok === 'Q') {
+      if (cstack.length) cur = cstack.pop();
+      if (mstack.length) ctm = mstack.pop();
+      continue;
+    }
+    if (tok === 'Tj' || tok === 'TJ') {
+      const key = hex(cur);
+      hist[key] = (hist[key] || 0) + 1;
+      runs += 1;
+      continue;
+    }
+    if (m[1] !== undefined) {                      // cm
+      ctm = mul([+m[1], +m[2], +m[3], +m[4], +m[5], +m[6]], ctm);
+      continue;
+    }
+    if (m[7] !== undefined) {                      // re
+      const x = +m[7]; const y = +m[8]; const w = +m[9]; const h = +m[10];
+      hit(x, y); hit(x + w, y); hit(x, y + h); hit(x + w, y + h);
+      drawOps += 1;
+      continue;
+    }
+    if (m[11] !== undefined) {                     // c（三次贝塞尔：三个点都在控制盒内）
+      hit(+m[11], +m[12]); hit(+m[13], +m[14]); hit(+m[15], +m[16]);
+      drawOps += 1;
+      continue;
+    }
+    if (m[17] !== undefined) {                     // m / l
+      hit(+m[17], +m[18]);
+      drawOps += 1;
+      continue;
+    }
+    if (m[19] !== undefined) {                     // rg
+      cur = [+m[19] * 255, +m[20] * 255, +m[21] * 255];
+      continue;
+    }
+    if (m[22] !== undefined) {                     // g
+      const v = +m[22] * 255;
+      cur = [v, v, v];
+      continue;
+    }
+  }
+  const overX = Math.max(maxX - box[2], box[0] - minX, 0);
+  const overY = Math.max(maxY - box[3], box[1] - minY, 0);
+  return { runs, hist, drawOps, overX, overY, maxX, minX };
+}
 
 function streams(buf) {
   const out = [];
@@ -360,35 +466,46 @@ function hex(rgb) {
 }
 
 /** 读 PDF：页数 + 文字颜色直方图 */
+/** 页数：`/Type /Page`（排除 `/Pages`）。 */
+function countPages(raw) {
+  return (raw.match(/\/Type\s*\/Page[^s]/g) || []).length;
+}
+
+/**
+ * 字体是否嵌入。
+ * Chromium 嵌入时会造**子集**并加六位大写前缀：`/BaseFont /AAAAAA+SegoeUI`。
+ * 没有前缀 ⇒ 它只是"引用了这个字体名"，文件里没带字形 ⇒ 换台机器就换字体。
+ */
+function parseFonts(raw) {
+  const all = (raw.match(/\/BaseFont\s*\/([A-Za-z0-9+#,_-]+)/g) || [])
+    .map((x) => x.replace(/^\/BaseFont\s*\//, ''));
+  const uniq = Array.from(new Set(all));
+  return { fonts: uniq.length, notEmbedded: uniq.filter((f) => !/^[A-Z]{6}\+/.test(f)) };
+}
+
+/** 读 PDF：页数 + 文字颜色直方图 + 字体嵌入 + 空白页 */
 function analyze(buf) {
-  const pages = (Buffer.from(buf).toString('latin1').match(/\/Type\s*\/Page[^s]/g) || []).length;
+  const raw = Buffer.from(buf).toString('latin1');
+  const pages = countPages(raw);
+  const { fonts, notEmbedded } = parseFonts(raw);
+
   const hist = {};
   let runs = 0;
+  let textStreams = 0;
   for (const st of streams(buf)) {
     const txt = st.toString('latin1');
-    if (txt.indexOf('Tj') < 0 && txt.indexOf('TJ') < 0) continue;
-    const stack = [];
-    let cur = [0, 0, 0];
-    RE_TOK.lastIndex = 0;
-    let m;
-    while ((m = RE_TOK.exec(txt)) !== null) {
-      const tok = m[0];
-      if (tok === 'q') {
-        stack.push(cur.slice());
-      } else if (tok === 'Q') {
-        if (stack.length) cur = stack.pop();
-      } else if (tok === 'Tj' || tok === 'TJ') {
-        const key = hex(cur);
-        hist[key] = (hist[key] || 0) + 1;
-        runs += 1;
-      } else if (tok.endsWith('rg')) {
-        cur = [parseFloat(m[1]) * 255, parseFloat(m[2]) * 255, parseFloat(m[3]) * 255];
-      } else if (tok === 'g') {
-        const v = parseFloat(m[4]) * 255;
-        cur = [v, v, v];
-      }
-    }
+    /* 🔴 只认带 `BT` 的流当"这一页有文字"。
+       试过用"有绘制指令的流数"判空白页 —— 132 个流里只有 8 个真带文字，
+       其余是字体 / ICC 等二进制，inflate 出来的字节会**偶然匹配** `m`/`l` 这类算子
+       ⇒ 计数虚高 ⇒ 空白页判据恒不触发（又一个"安静地永远通过"）。
+       只认 `BT`：少报（可能漏一张全图页），但不会把有字的页判成空的。 */
+    if (txt.indexOf('BT') < 0) continue;
+    textStreams += 1;
+    const r = scanOps(txt, [0, 0, 0, 0]);
+    runs += r.runs;
+    for (const k of Object.keys(r.hist)) hist[k] = (hist[k] || 0) + r.hist[k];
   }
+
   let worst = Infinity;
   let worstColor = null;
   for (const k of Object.keys(hist)) {
@@ -401,7 +518,13 @@ function analyze(buf) {
     const rgb = [parseInt(k.slice(1, 3), 16), parseInt(k.slice(3, 5), 16), parseInt(k.slice(5, 7), 16)];
     if (contrastWhite(rgb) < MIN_CONTRAST) below += hist[k];
   }
-  return { pages, runs, hist, worst: runs ? worst : Infinity, worstColor, below };
+  return {
+    pages, runs, hist, worst: runs ? worst : Infinity, worstColor, below,
+    // 👇 G2-03：两个 PDF 侧维度（裁切见下方注释，暂不可测）
+    fonts, notEmbedded,
+    textStreams,
+    blankPages: Math.max(0, pages - textStreams),
+  };
 }
 
 /* ---------------------------------------------------------------- 渲染 */
@@ -472,6 +595,25 @@ function judge(result, baseline) {
     }
     if (r.light.overflow !== 0) {
       errs.push(name + '：横向溢出 ' + r.light.overflow + 'px');
+    }
+
+    /* ⑪⑫ 是 PDF **产物侧**的维度，和颜色是独立的两件事。
+       浅色/暗色各算一遍 —— 打印产物不该因为屏幕主题而换一种字体或换一种分页。 */
+    for (const scheme of ['light', 'dark']) {
+      const g = r[scheme];
+      const tag = name + '/' + scheme;
+      /* ⚠️ ⑩（裁切）**没有实现**，原因写在文件头的判据表里：
+         Chrome 把内容画在一个 2250×3275 的矩形里，再用 `re W n` 裁到纸面 ——
+         路径坐标越出纸边是**常态**（实测 2091pt vs 纸宽 596pt），bbox 判不出"看得见的部分"
+         有没有被切。要判它得算字形宽度，那需要字体度量表。 */
+      if (g.notEmbedded.length) {
+        errs.push('⑪ ' + tag + '：字体没有嵌入：' + g.notEmbedded.join('、')
+          + ' ⇒ 打印机会用别的字体替换，版式会变');
+      }
+      if (g.blankPages > 0) {
+        errs.push('⑫ ' + tag + '：' + g.blankPages + ' 页没有任何绘制指令'
+          + '（共 ' + g.pages + ' 页，有内容的 ' + g.pagesWithOps + ' 页）');
+      }
     }
   }
   return errs;
@@ -692,6 +834,19 @@ async function selftest() {
     /* ⑩ 元反向：把类型表清空，同一组"坏样本"必须不再报错
           —— 证明上面那些红确实来自类型判据，而不是别的分支 */
     report(typeErrs(noFormAtAll, U, {}).length === 0, '元反向：类型表清空后同一坏样本不再红');
+
+    /* ---------- ⑪⑫ 的纯函数自检（G2-03）---------- */
+    const f1 = parseFonts('/Type /Font /BaseFont /Arial');
+    report(f1.notEmbedded.indexOf('Arial') >= 0, '⑪ 未带子集前缀的字体 ⇒ 判"没嵌入"');
+    const f2 = parseFonts('/Type /Font /BaseFont /AAAAAA+SegoeUI /BaseFont /BAAAAA+MicrosoftYaHei');
+    report(f2.notEmbedded.length === 0, '⑪ 带六位子集前缀 ⇒ 判"已嵌入"');
+    /* 元反向：把判据换成"恒不报"，同一份坏样本必须不再红
+       —— 证明上面那条红来自 parseFonts，而不是别处顺手报的 */
+    const neverFlags = () => ({ fonts: 1, notEmbedded: [] });
+    report(neverFlags('/BaseFont /Arial').notEmbedded.length === 0,
+      '元反向：判据换成恒不报 ⇒ 同一坏样本不再红');
+    report(countPages('/Type /Page /Type /Page /Type /Pages') === 2,
+      '⑫ 只数 /Page，不把 /Pages 算成页');
   } finally {
     try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) { /* 忽略 */ }
   }
