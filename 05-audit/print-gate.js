@@ -1118,7 +1118,7 @@ async function selftest() {
     ])).problems.length === 0, '⑪ 标准 14 字体不带 FontFile ⇒ 绿（阅读器有替代字形）');
     /* 非标准字体、无描述符、无前缀 ⇒ 红（这才是旧判据唯一抓得到的形态） */
     report(fontChain(mkPdf([
-      '<< /Type /Font /Subtype /TrueType /BaseFont /SomeWeirdFont >>',
+      '<< /Type /Font /Subtype /TrueType /BaseFont /Mystery >>',
     ])).problems.some((x) => /没有 \/FontDescriptor/.test(x)),
       '⑪ 非标准字体没有 FontDescriptor ⇒ 红');
 
