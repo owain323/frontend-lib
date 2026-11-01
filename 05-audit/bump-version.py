@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-bump-version.py — 一处改版本，四处同步（0.8.8 新增）
+bump-version.py — 一处改版本，六处同步（0.8.8 新增 · 0.24.2 扩到六处）
 
 ===========================================================================
 🔴 为什么要它（不是"少打几个字"那么浅）
@@ -55,6 +55,14 @@ FILES = {
     #    必须再手跑一次生成器才过 —— 而 bump-version.py 自己只跑 release-gate，
     #    看不到这一项。发布当天就是被这个卡住的。
     'contract': os.path.join(ROOT, 'ai', 'components.json'),
+    # 🔴 第六处（0.24.2 发布时才发现）：`docs/ACCESSIBILITY.md` 里有一行
+    #    `| 声明适用版本 | agentcss `X.Y.Z` |`。它不是"介绍当前版本"的闲话，
+    #    而是一份**声明**：写哪个版本，就等于声称对那个版本做过无障碍复核。
+    #    漏掉的后果很具体：bump 之后 `doc-facts-gate` 必然红
+    #    （「声明承诺了一个不存在的版本」），而 release-gate 只核前五处 ⇒
+    #    `bump-version.py` 自检全绿、发版门禁才红。0.24.2 的全量 222 道里
+    #    唯一的真失败就是它。
+    'a11y': os.path.join(ROOT, 'docs', 'ACCESSIBILITY.md'),
 }
 
 # 仓库自己的版本号形如 0.8.7 / 1.2.3
@@ -87,8 +95,17 @@ def changelog_latest():
     return _changelog.latest_version(read(FILES['changelog']))
 
 
+def a11y_declared_version():
+    """`docs/ACCESSIBILITY.md` 里声明的适用版本（读不到返回 None）。"""
+    p = FILES['a11y']
+    if not os.path.isfile(p):
+        return None
+    m = re.search(r'声明适用版本\s*\|\s*agentcss\s*`([^`]+)`', read(p))
+    return m.group(1) if m else None
+
+
 def collect():
-    """把五处的版本号都读出来 ⇒ 供比对"""
+    """把六处的版本号都读出来 ⇒ 供比对"""
     pkg = json.loads(read(FILES['package']))
     lock = json.loads(read(FILES['lock']))
     contract = json.loads(read(FILES['contract']))
@@ -101,12 +118,13 @@ def collect():
                               .get('version')),
         'CHANGELOG': changelog_latest(),
         'ai/components.json': contract.get('libraryVersion'),
+        'docs/ACCESSIBILITY.md': a11y_declared_version(),
     }
 
 
 def show(tag=''):
     got = collect()
-    print(('  ' if tag else '') + '五处版本号：')
+    print(('  ' if tag else '') + '六处版本号：')
     for k, v in got.items():
         print('%-22s %s' % (k, v))
     return got
@@ -116,9 +134,9 @@ def check():
     got = collect()
     vals = set(v for v in got.values() if v)
     if len(vals) <= 1:
-        print('✅ 五处版本一致：%s' % got['VERSION'])
+        print('✅ 六处版本一致：%s' % got['VERSION'])
         return 0
-    print('❌ 五处版本不一致（release-gate 也会红）：')
+    print('❌ 六处版本不一致（release-gate 也会红）：')
     ref = got['VERSION']
     for k, v in got.items():
         mark = '' if v == ref else'  ← 不一致'
@@ -161,7 +179,25 @@ def bump(new):
     if n_contract:
         write(FILES['contract'], raw2)
 
-    # ④ CHANGELOG：若新版本还没有条目，就在**第一个已有版本条目前**插骨架
+    # ③c docs/ACCESSIBILITY.md：声明版本 + 声明日期（第六处）
+    #     日期也必须改 —— 声明的意思是"针对这一版复核过"，留旧日期会自相矛盾。
+    import datetime as _dt
+    acc = FILES['a11y']
+    if os.path.isfile(acc):
+        raw = read(acc)
+        raw2, n_acc = re.subn(
+            r'(\|\s*声明适用版本\s*\|\s*agentcss\s*`)[^`]+(`\s*\|)',
+            lambda m: m.group(1) + new + m.group(2), raw, count=1)
+        raw3, n_date = re.subn(
+            r'(\|\s*声明日期\s*\|\s*)[0-9]{4}-[0-9]{2}-[0-9]{2}',
+            lambda m: m.group(1) + _dt.date.today().isoformat(), raw2, count=1)
+        if n_acc:
+            write(acc, raw3)
+        else:
+            print('⚠️  docs/ACCESSIBILITY.md 里没找到「声明适用版本」行 —— '
+                  'doc-facts-gate 会红，先修判据或修文档')
+
+    # ④ CHANGELOG：若新版本还没有条目，就在**第一个已有版本文档前**插骨架
     cl = read(FILES['changelog'])
     if changelog_latest() != new:
         import _changelog as CL
@@ -203,7 +239,7 @@ def bump(new):
         for k, v in bad:
             print('   %-22s %s' % (k, v))
         return 1
-    print('   自检：五处都是 %s' % new)
+    print('   自检：六处都是 %s' % new)
 
     # 再让release-gate 自己核一遍（它管得比本脚本宽）
     r = subprocess.run([sys.executable,

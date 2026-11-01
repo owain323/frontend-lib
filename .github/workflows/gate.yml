@@ -81,6 +81,14 @@ jobs:
       - name: 补齐 tag 对象
         run: git fetch --tags --force origin
 
+      # 🔴 release 门禁的「tag 指向的提交必须被某个远端分支包含」需要
+      #   `refs/remotes/origin/*`。而 `actions/checkout` 对 `pull_request`
+      #   只抓 merge ref、对 tag 只抓该 tag —— **两者都不会建远端分支引用**。
+      #   不补这一行，判据会在 CI 上报「看不到任何 refs/remotes/origin/*」，
+      #   而那正是它设计上**不许判通过**的情形（视野为空 ≠ 没问题）。
+      - name: 补齐远端分支引用（tag 锚点判据需要）
+        run: git fetch --no-tags origin '+refs/heads/*:refs/remotes/origin/*'
+
       # 🔴 必须装依赖：否则 lockfile 的可复现性从未被验证
       - name: 按锁文件安装（验证 lockfile 真能装）
         run: npm ci

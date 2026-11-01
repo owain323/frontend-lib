@@ -90,6 +90,15 @@ jobs:
       - name: 补齐 tag 对象
         run: git fetch --tags --force origin
 
+      # 🔴 tag 触发时 `actions/checkout` 只抓这一个 tag，**不建**
+      #   `refs/remotes/origin/*`。而 release-gate 的「tag 指向的提交必须被
+      #   某个远端分支包含」没有那个视野就只能判红（它不许在看不到时放行）。
+      #   ⇒ 发布前显式抓一次分支引用。仓库只有 2 MB，代价可以忽略。
+      #   ⚠️ 这不是为了让判据变绿，是为了让它**看得见**：fetched 之后
+      #      「给游离提交打 tag」依然会被挡住。
+      - name: 补齐远端分支引用（tag 锚点判据需要）
+        run: git fetch --no-tags origin '+refs/heads/*:refs/remotes/origin/*'
+
       - name: 校验 tag 与 package.json 版本一致
         run: |
           set -eu
