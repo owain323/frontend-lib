@@ -1235,6 +1235,11 @@ run "api-form-rev"   $PY 05-audit/api-form-gate.py --selftest
 run "api-doc"      $PY 05-audit/api-doc-gate.py
 run "legacy-api"  $PY 05-audit/legacy-api-gate.py
 run "release"     $PY 05-audit/release-gate.py
+# 🔴 回执的反向测试（G2-04）：
+#   `selftest-all` 的候选发现只看 `.py` / `.js`（`candidates()` 里写死），
+#   `.sh` 的自检**从来没被任何东西跑过** —— 写了 12 条夹具，等于没有。
+#   所以在这里显式注册。纯本地桩（假 npm/gh/curl），不联网、不发布。
+run "release-run-rev" bash 05-audit/release-run.sh --selftest
 # 包名一致性（0.9.1 加）。
 #   背景：包名从 frontend-lib 改成 agentcss 之后，类型测试里还留着旧名的 paths 映射
 #   ⇒ 类型门禁验的是旧名，用户真会写的 `from 'agentcss'` 一次都没被编译过。
