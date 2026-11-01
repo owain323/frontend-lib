@@ -238,6 +238,21 @@ def _fresh(tmp):
     return _facts.collect(tmp)
 
 
+def _shape_violations(claims):
+    """含数字捕获组、但捕获组前后**不是规定形状**的声明。
+
+    比的是完整子串 `NUM_CORE`（前有可选强调符、后有可选强调符），
+    不是"pattern 里出现过 MD"。区别很实际：
+        `[*_`]{0,3}\\s*beta\\s+(\\d+)`  ← MD 在标签前面，捕获组是裸的
+    两种情况都含 MD，但只有前者是我们要的形状。
+
+    ⚠️ 它证明的是"捕获组带规定的容忍结构"，**不是**"这个正则由 _num/_labelled
+    生成"。后者需要解析器，本阶段不做（验收已明确不引入 AST）。
+    """
+    return [label for _f, _r, pat, label in claims
+            if re.search(r'\(\\d', pat) and _facts.NUM_CORE not in pat]
+
+
 def selftest():
     cases, fails = [], []
 
@@ -402,14 +417,23 @@ def selftest():
         check('S22 `共 3 个步骤` 不误报', not [m for _, m in e if '写着 3' in m],
               '; '.join(m for _, m in e[:2]))
 
-    # S24 结构性断言：**每一个**含数字的声明正则都必须容忍 Markdown 强调符。
+    # S24 结构性断言：每一个含数字捕获组的声明正则，捕获组前后都必须是规定形状。
     #     0.24.1 的教训 —— 只把一部分换成了 _num，`stable **39**` 就静默漏了，
-    #     而同一行的 `**40** components` 是好的 ⇒ 门禁绿。这条不验行为，验形状：
-    #     含 \d 的 pattern 里必须出现 MD 那段字符类。
-    bad = [label for _f, _r, pat, label in _facts.CLAIMS
-           if re.search(r'\\d', pat) and _facts.MD not in pat]
-    check('S24 所有含数字的声明正则都走 _num/_labelled', not bad,
-          '这些还在自己抓数字：%s' % '; '.join(bad))
+    #     而同一行的 `**40** components` 是好的 ⇒ 门禁绿。
+    #     0.24.1 之后的第一版 S24 只查"MD 出现过"，仍能被"MD 在无关位置"骗过；
+    #     现在比完整子串 NUM_CORE。
+    bad = _shape_violations(_facts.CLAIMS)
+    check('S24 含数字捕获组的正则都带规定的 Markdown 容忍结构（前 * 后 *）', not bad,
+          '这些捕获组没带规定的形状：%s' % '; '.join(bad))
+
+    # S24b 这条测的是 S24 **本身**：坏形状要抓、好形状不许误判。
+    #     如果不做这一条，"S24 永远返回空列表"也会显示为通过。
+    bad_pat = r'[*_`]{0,3}\s*stable\s+(\d+)'      # MD 在标签前（无关位置），捕获组裸着
+    check('S24b 结构断言抓"MD 在无关位置"，且不误判正常形态',
+          _shape_violations([('f', 'x', bad_pat, '假声明')]) == ['假声明']
+          and _shape_violations([('f', 'x', _facts._labelled('stable'), '真声明')]) == [],
+          '假=%r 真=%r' % (_shape_violations([('f', 'x', bad_pat, '假声明')]),
+                          _shape_violations([('f', 'x', _facts._labelled('stable'), '真声明')])))
 
     # ---- 标签在前的写法（`stable 40` / `### primitives (17)`）也必须容忍加粗
     #     每条都断言**具体诊断**：若正则不认加粗，报的会是"找不到数字"

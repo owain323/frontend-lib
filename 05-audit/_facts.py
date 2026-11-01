@@ -286,6 +286,20 @@ def collect(root):
 #   而那个 37 从来没人看见。**"找到一个正确的数"不能替代"所有同类声明都对"。**
 MD = r'[*_`]{0,3}'
 
+# 数字捕获组的**标准形状**：前有可选强调符、后有可选强调符，中间是 `(\d+)`。
+#
+# 🔴 为什么要有这个常量
+#   S24 最初写成"pattern 里出现过 MD 就算合格"。那只能抓 `stable\s+(\d+)`
+#   这种**完全没提**强调符的写法；把 MD 放到无关位置（比如标签前面）、
+#   捕获组本身不带宽容，照样能骗过子串检查：
+#
+#       r'[*_`]{0,3}\s*beta\s+(\d+)'        ← MD 在 beta 前面，捕获组是裸的
+#
+#   行为上它对 `beta **1**` 恰好也能匹配（因为 `**` 在 beta 之后被 `\s+` 让过
+#   一部分？不 —— 它匹配不到），但只要有一种写法行为正常、结构不对，
+#   子串检查就会放行。比对完整形状才守得住。
+NUM_CORE = MD + r'\s*(\d+)\s*' + MD
+
 
 def _num(after, group=True):
     """**数字在前、标签在后**：`N 个组件` / `N components`。
@@ -311,9 +325,13 @@ def _labelled(label, after='', group=True):
        0.24.1 只把前一种换成了 `_num`，后一种仍写死 `\\s+(\\d+)` —— 于是
        `stable **39**` 静默不匹配；而同一行里的 `**40** components` 是好的，
        门禁照样绿。**声称支持 Markdown 强调符，就必须让每一个数字提取都支持。**
+
+    数字**两侧**都带宽容（与 `_num()` 同形），所以 `stable **39**` 与 `stable 39`
+    走的是同一条判据，捕获组位置也一致 —— S24 比对的就是这个共同形状。
     """
     n = r'(\d+)' if group else r'\d+'
-    return label + r'\s*' + MD + r'\s*' + n + after
+    core = MD + r'\s*' + n + r'\s*' + MD
+    return label + r'\s*' + core + after
 
 CLAIMS = [
     ('components.total', 'llms.txt',         _num(r'components\b'),                    'llms.txt 组件数'),
