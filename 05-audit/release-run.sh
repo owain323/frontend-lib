@@ -163,9 +163,29 @@ do_probe() {
 }
 
 do_verify() {
-  local n r p rc c
-  n="$(npm_state)"; rc=$?
-  [ "$rc" = "2" ] && { log "  registry 不可达 ⇒ 无法出回执"; exit 2; }
+  local n r p rc c i=0 step="${WAIT_STEP:-10}" tries="${WAIT_TRIES:-18}"
+  # 🔴 先等 registry 索引（2026-11 加 · v0.24.2 现场打出来的）
+  #   npm publish 返回 0 之后，**版本端点还要几十秒才可见**。
+  #   回执在 publish 之后立刻跑，于是拿到 npm=absent ⇒ 报"发布未完成"。
+  #   实际是发布成功、回执错判 —— 一次**假红**，而且出现在最不该出错的地方。
+  #   ⇒ 只在"absent"上等（present 立刻返回；unreadable 说明网络/接口有问题，
+  #      等下去也不会变，直接判环境不可用）。
+  #   ⚠️ 用"尝试次数"而不是"累计秒数"做上界：`WAIT_STEP=0` 时（自检用）
+  #      累计秒数永远不涨 ⇒ 死循环。这种写法在自检里才会暴露。
+  while [ "$i" -lt "$tries" ]; do
+    n="$(npm_state)" || true
+    [ "$n" = "present" ] && break
+    [ "$n" = "unreadable" ] && break
+    i=$((i + 1))
+    [ "$i" -ge "$tries" ] && break
+    log "  registry 还没索引到 $PKG@$VER（第 $i 次重试 / 上限 ${tries}）"\
+" —— npm 发布是最终一致的，继续等"
+    sleep "$step"
+  done
+  if [ "$n" = "unreadable" ]; then
+    log "  registry 不可达 ⇒ 无法出回执"
+    exit 2
+  fi
   r="$(release_state)"; rc=$?
   [ "$rc" = "2" ] && { log "  gh 不可用 ⇒ 无法出回执"; exit 2; }
   p="unknown"
@@ -208,8 +228,18 @@ selftest() {
 
   cat > "$tmp/bin/npm" <<'SH'
 #!/usr/bin/env bash
+# STUB_NPM: present / absent / unreachable / flaky
+#   flaky = 第一次说"没有"，之后说"有" —— 模拟 registry 索引延迟
 case "${2:-}" in
-  agentcss@*) [ "${STUB_NPM:-absent}" = present ] && exit 0 || exit 1 ;;
+  agentcss@*)
+    case "${STUB_NPM:-absent}" in
+      present) exit 0 ;;
+      flaky)
+        if [ -f "${STUB_FLIP:-/nonexistent}" ]; then exit 0; fi
+        : > "${STUB_FLIP:-/nonexistent}" 2>/dev/null
+        exit 1 ;;
+      *) exit 1 ;;
+    esac ;;
   agentcss)   [ "${STUB_NPM:-absent}" = unreachable ] && exit 1 || exit 0 ;;
   *) exit 0 ;;
 esac
@@ -291,9 +321,15 @@ PY
   out="$(verify_stub present present 200 "$body_ok")"; rc=$?
   chk '回执：三者齐备 ⇒ 0 且带提交号' 0 "$rc" "$out" 'commit='
 
+  # 🔴 v0.24.2 现场：publish 成功，回执立刻查 → npm=absent → 报"未完成"。
+  #   这里造一个"第一次说没有、第二次说有"的 registry，断言回执会等。
+  rm -f "$tmp/flip"
+  out="$(verify_stub flaky present 200 "$body_ok")"; rc=$?
+  chk '回执：registry 索引延迟 ⇒ 等到 present 再判' 0 "$rc" "$out" 'npm=present'
+
   rm -rf "$tmp"
   if [ "$bad" = "0" ]; then
-    log '  release-run 反向测试：7/7 通过'
+    log '  release-run 反向测试：8/8 通过'
   else
     log "  release-run 反向测试：$bad 条未通过"
   fi

@@ -68,7 +68,15 @@ var SCRIPT_EXT = /\.(py|js|mjs|cjs|sh)$/;
  *    误报由 existsSync 兜住，不是靠正则写得更聪明。
  */
 function scriptRefs(runText) {
-  var text = String(runText);
+  /* 🔴 先剔掉 shell 注释行（2026-11 加 · v0.24.2 发布时踩到）：
+     注释里**提到**一个脚本名，不等于 run 会执行它。
+     实测：release.yml 的注释写着「必须套 with-server.sh」，
+     判据把它当成引用 ⇒ 去仓库根找 `with-server.sh` ⇒ 报"引用了不存在的脚本"，
+     而那条命令其实是 `bash 05-audit/with-server.sh …`，文件好好在那儿。
+     ⇒ 误报的代价是**让人改注释去哄判据**，那比漏判更糟。 */
+  var text = String(runText).split('\n').map(function (ln) {
+    return /^\s*#/.test(ln) ? '' : ln;
+  }).join('\n');
   var out = [];
   var re = /[A-Za-z0-9_.][A-Za-z0-9_./\\-]*\.(py|js|mjs|cjs|sh)\b/g;
   var m;

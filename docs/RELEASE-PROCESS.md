@@ -154,6 +154,16 @@ pack-smoke.sh            # npm pack → 装进空项目 → 解析入口
 
 第 3 步之所以不能只看「版本存在」：`npm view` 只能回答「这个版本在不在」，不能回答「它是不是我们发的」。probe 会取 attestation 里的 `gitCommit` 与 tag 指向比对；不一致就判失败，而不是跳过。
 
+⚠️ 第 8 步的回执必须**等 registry 索引**。`npm publish` 返回 0 之后，版本端点还要几十秒才可见；
+回执在发布后立刻跑，会拿到 `npm=absent` 并把一次成功的发布报成「未完成」。
+`release-run.sh verify` 现在对 `absent` 重试（默认 18 次 × 10 秒），
+对 `unreadable` **不重试**（那是接口/网络问题，等下去也不会变）。
+
+这条不是推演，是 `v0.24.2` 第三次运行的现场：npm 与 Release 都建好了，
+只有回执红。事后人工复核——`gitHead`、provenance 的 `gitCommit`、
+registry `integrity` 与 attestation `subject` 全部一致——产物是对的，
+错的是**回执比索引快**。
+
 ### 5.2 站点链（主分支触发）
 
 | 态 | 含义 | 探测方式 |
