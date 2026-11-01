@@ -46,8 +46,25 @@
  *   合并的前提是"改视口/字号之后量到的是稳定后的布局"。
  *   固定 sleep 只证明"睡够了"，证明不了"布局不动了"；两帧 rAF 只覆盖
  *   同步提交，覆盖不了 `ResizeObserver` 回调、字体切换、按视口补资源这些
- *   延后一拍的布局。⇒ 这里判的是**布局指纹连续 N 帧不变**，
+ *   延后一拍的布局。⇒ 这里判的是**关键布局指标连续 N 帧不变**，
  *   超时就**报错**（`LAYOUT_UNSTABLE`）—— 不许"量到了就往下走"。
+ *
+ *   🔴 名字要说准：这是「**关键布局指标稳定性检查**」，
+ *      不是「全页面布局稳定性证明」。它证不到的边界，逐条列在下面
+ *      （写在这里是为了将来漏检时能直接对号，而不是以为"等稳定了就万事大吉"）：
+ *
+ *        1. 指纹只收 `body` 下**前 600 个**元素 —— 第 601 个之后的节点发生
+ *           异步布局变化，这次检查看不见。
+ *        2. `offsetWidth/Height` 是**整数**布局盒，亚像素级的变化（<0.5px）
+ *           不会进指纹。
+ *        3. 只看**主滚动容器**（`document.scrollingElement`）的四个尺寸；
+ *           页面里嵌套的其它滚动容器内部变化，不在此列。
+ *        4. CSS 伪元素、Shadow DOM 内部布局、以及不改变上述指标的**纯绘制**
+ *           变化（颜色、阴影、滤镜），都不在指纹里。
+ *
+ *   ⇒ 不扩指纹是有意的：扩大范围要付性能与误报的代价，而 43 页已有独立
+ *     对照（`npm run ci:zoom-merge` 逐页比对）兜底。将来出现相关漏检，
+ *     拿**真实反例**来扩，不为把名字说绝对而加复杂度。
  *
  * 用法
  * ---------------------------------------------------------------------------
@@ -177,8 +194,9 @@ const occludedProbe = () => {
   return bad;
 };
 
-/* ---------- 布局稳定等待（G2-06C） ----------
- * 判据不是"等了多久"，而是"布局还动不动"。
+/* ---------- 关键布局指标稳定性检查（G2-06C） ----------
+ * 判据不是"等了多久"，而是"关键布局指标还动不动"。
+ * ⚠️ 名字不是「全页面布局稳定性证明」—— 证不到的四条边界列在文件头。
  *
  * 指纹 = 滚动容器四个尺寸 + 根字号 + body 下前 N 个元素的 offset 盒。
  * 🔴 为什么用 offset* 而**不用** getBoundingClientRect：
@@ -234,14 +252,15 @@ function watchLayout(need, timeout, maxEls) {
 }
 
 /**
- * 等布局稳定。不稳定 ⇒ 抛 LAYOUT_UNSTABLE，**不许继续测量**。
+ * 等关键布局指标稳定。不稳定 ⇒ 抛 LAYOUT_UNSTABLE，**不许继续测量**。
  * （继续测量的后果是把"没量到稳定态"报成"达标"，这正是本库反复踩的坑。）
  */
 async function settle(p, label, opts) {
   const o = Object.assign({}, STABLE, opts || {});
   const r = await p.evaluate(watchLayout, o.need, o.timeout, o.maxEls);
   if (!r.ok) {
-    const e = new Error('布局 ' + r.ms + 'ms 内未稳定（' + label + '，' + r.frames + ' 帧仍变化）');
+    const e = new Error('关键布局指标 ' + r.ms + 'ms 内未稳定（' + label + '，' +
+                        r.frames + ' 帧仍变化）');
     e.code = 'LAYOUT_UNSTABLE';
     throw e;
   }
@@ -419,7 +438,7 @@ async function main() {
       if (m.occl.length) bad.push('2.4.11 焦点被吸顶元素遮挡：' + m.occl.join(' / '));
     } catch (e) {
       /* 稳定等待超时**不能**降级成"跳过"或"通过"：没量到就是没量到。 */
-      if (e && e.code === 'LAYOUT_UNSTABLE') bad.push('布局未稳定：' + e.message);
+      if (e && e.code === 'LAYOUT_UNSTABLE') bad.push('关键布局指标未稳定：' + e.message);
       else bad.push('页面打不开：' + String(e).slice(0, 50));
     }
     await p.close();
@@ -441,7 +460,7 @@ async function main() {
     return 2;
   }
   console.log('  判了 ' + done + ' 页 · 失败 ' + fails +
-              ' · 加载 ' + LOADS.goto + ' 次（每页 1 次）· 最长布局等待 ' +
+              ' · 加载 ' + LOADS.goto + ' 次（每页 1 次）· 最长稳定等待 ' +
               maxWait + 'ms' + (maxWaitId ? '（' + maxWaitId + '）' : ''));
   if (LOADS.goto !== done) {
     console.log('  ⇒ 🔴 执行结构变了：' + done + ' 页却 goto 了 ' + LOADS.goto +
