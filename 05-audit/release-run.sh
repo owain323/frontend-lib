@@ -163,8 +163,10 @@ do_verify() {
     p="$(provenance_state)" || true
   fi
   c="$(git rev-parse --short=12 "$TAG^{commit}" 2>/dev/null || echo '?')"
-  printf 'release %s  commit=%s  npm=%s  provenance=%s  release=%s\n' \
-    "$TAG" "$c" "$n" "$p" "$r"
+  # 回执必须自带"是哪一版、哪个 tag、哪个提交、三态各是什么"——
+  # 只写"成功"两个字，事后无法判断它验的是不是同一个东西。
+  printf 'tag=%s  version=%s  commit=%s  npm=%s  provenance=%s  release=%s\n' \
+    "$TAG" "$VER" "$c" "$n" "$p" "$r"
   if [ "$n" != "present" ] || [ "$r" != "present" ] || [ "$p" != "ok" ]; then
     log "  ⇒ 发布未完成或身份不符（npm/provenance/release 三者必须同时成立）"
     exit 1
