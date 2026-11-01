@@ -38,6 +38,8 @@ WHITELIST = {
     'Puppeteer', 'Playwright', 'Jest', 'Vitest', 'Bash', 'PowerShell',
     'DevTools', 'Node', 'Deno', 'Bun', 'React', 'Vue', 'Angular', 'Svelte',
     'TemporaryDirectory',   # Python tempfile 的 stdlib API（facts-gate 的自检用）
+    # PDF 规范里的字段名与常见字体名（print-gate 解析产物时会出现）
+    'BaseFont', 'MediaBox', 'MicrosoftYaHei',
     # Python 标准异常（门禁脚本里会用到，不是内部代号）
     #   SubprocessError = TimeoutExpired / CalledProcessError 的基类
     'RuntimeError', 'ValueError', 'TypeError', 'KeyError', 'OSError',
