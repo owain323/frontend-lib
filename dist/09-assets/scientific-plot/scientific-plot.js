@@ -25,13 +25,6 @@ return String(s == null ? '' : s)
     return v.toFixed(p);
   }
 
-  function cssVar(name, fallback) {
-    if (typeof getComputedStyle !== 'function' || !document.documentElement) return fallback;
-    var v = getComputedStyle(document.documentElement).getPropertyValue(name);
-    v = v ? v.trim() : '';
-    return v || fallback;
-  }
-
   /* --------------------------------------------------------------- 比例尺 */
 
   /**

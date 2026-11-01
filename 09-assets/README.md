@@ -25,6 +25,24 @@ python -m http.server 8000
 # 然后打开 http://127.0.0.1:8000/09-assets/sparkline/demo.html
 ```
 
+## 从 JS 画东西时：主题色要按**作用域**读
+
+本库的主题是容器级的 —— `[data-theme="dark"]` 可以只罩住一块区域。
+所以 JS 资产**不能**只读 `document.documentElement`：
+
+```js
+// ❌ 暗容器里的图表会拿到浅色令牌（实测 1.01:1，字看不见）
+getComputedStyle(document.documentElement).getPropertyValue('--text-primary')
+
+// ✅ 由渲染目标往上找作用域
+getComputedStyle(el.closest('[data-theme]') || document.documentElement)
+  .getPropertyValue('--text-primary')
+```
+
+判"当前是明还是暗"要量 `--paper` 的**亮度**，不要读 `data-theme` 属性、也不要拿令牌值和字面量比
+（`theme-toggle.js` 只把 `data-theme-current` 写在 `:root` 上，容器永远读不到）。
+`theme-scope-gate` 的 ⑥ 会检查这一点：新加的 JS 资产若从根读颜色，门禁直接红。
+
 ## 图标：本库不内置，需要就自己内联
 
 要"关闭""警告""箭头"这类图形时，**一律内联 SVG** ——

@@ -182,7 +182,9 @@ var c = ChartAdapter.create(document.getElementById('chart'), {
 // ↑ 就这样。主题、y 轴从 0、字号、网格边距都已经合规了。</code></pre>
   </div>
   <p class="note">
-    换主题时调 <code>ChartAdapter.refresh(c)</code>，图表会跟着变
+    换主题时调 <code>c = ChartAdapter.refresh(c)</code>，图表会跟着变 ——
+    <strong>它会返回一个新实例</strong>（ECharts 的主题在 init 时绑定，换主题必须重建），
+    不接返回值就会拿到一个已 dispose 的旧实例
     （配合 <code>01-tokens/theme-toggle.js</code>）。
   </p>
 </div>

@@ -56,6 +56,17 @@ fi
 
 fail=0
 TIMING="${TIMING:-}"
+# 门禁耗时缓存：**只用于决定启动顺序**（长任务先起），不参与任何判定。
+# 上一轮结束后写在这里，下一轮开始时读一次再清空。
+# 🔴 放在仓库**外面**：content-hygiene 会把 internal/tmp 里的残留算成"临时文件残留"，
+#    而它说的是对的 —— 门禁不该往树里丢文件。只有 bash 需要读写这个缓存
+#    （门禁脚本一律不碰），所以不存在"两个世界"的问题。
+_COST_DIR="${TMPDIR:-/tmp}"
+mkdir -p "$_COST_DIR" 2>/dev/null || _COST_DIR="."
+COST_FILE="$_COST_DIR/fe-gate-cost.txt"
+OLD_COST="$_COST_DIR/fe-gate-cost.old.$$"
+BUDGET="${BUDGET:-300}"
+_T0=$(date +%s)
 # =========================================================
 # 分层：按改动范围决定要跑哪些检查（ J12）
 # ---------------------------------------------------------
@@ -117,6 +128,12 @@ MODE="${MODE:-full}"
 _ran=0        # 本轮**真的执行了**的门禁数
 _skipped=0    # 本轮**按层跳过**的门禁数
 _nojudge=0    # 本轮**跑了但判不了**的门禁数（rc=3，见 _print）
+# 独占门禁（@serial）：会**写工作树**（临时改组件文件再还原）。
+# 🔴 为什么它们不能和别的门禁并发：并发会把"改到一半的文件"喂给正在读的判据 ——
+#    那既是假红（读到坏文件）也是假绿（读到已被改回的文件，掩盖了变异）。
+#    ✅ 试过"给它们一份副本、与主泳道同时跑"：**不可行**，已回退。
+#       副本里没有 .git ⇒ selftest-all 的「不得弄脏工作区」判据被跳过（判据变弱）；
+#       beh-reverse 在副本里出现假红。省 3 分钟不值得让判据少一条。
 _layer_of() { # _layer_of <命令...>  → 回显 static / component
   local a
   for a in "$@"; do
@@ -204,6 +221,24 @@ _enqueue() { # _enqueue <名字> <层> <kind: run|report> <serial> <命令...>
   _ran=$((_ran+1))
 }
 
+# 上一轮的耗时（秒）。没记录就按 5s 估 —— 估错的代价只是顺序不最优。
+_cost_of() {
+  local n="$1" v
+  v=$(awk -v n="$n" '$2==n {print $1; f=1; exit} END{if(!f) print 5}' \
+      "$OLD_COST" 2>/dev/null)
+  echo "${v:-5}"
+}
+
+# 每 20 条往 stderr 打一行。
+# 🔴 为什么必须有：门禁结果是在**全部跑完之后**才按源码顺序打印的，
+#    过程中日志一个字都没有 ⇒ 一次 20 分钟的跑动看起来跟卡死完全一样
+#    （已经因此被误判过一次）。进度走 stderr，不污染按序打印的正文。
+_progress() { # _progress <已启动> <总数>
+  [ "$1" -eq "$2" ] && return 0
+  [ $(( $1 % 20 )) -ne 0 ] && return 0
+  printf '  … 已启动 %d/%d（%ds）\n' "$1" "$2" "$(( $(date +%s) - _T0 ))" >&2
+}
+
 _start() { # _start <idx> —— 执行一条，只落 rc / 耗时 / 原始输出
   local i="$1" t0 t1 r
   t0=$(date +%s)
@@ -225,6 +260,7 @@ _print() { # _print <idx> —— 按注册顺序打印，诊断逻辑与旧版�
   rcv=$(cat "$GATE_TMP/rc.$i" 2>/dev/null || echo 1)
   dtv=$(cat "$GATE_TMP/dt.$i" 2>/dev/null || echo 0)
   out=$(cat "$GATE_TMP/out.$i" 2>/dev/null || true)
+  echo "$dtv $name" >> "$COST_FILE"
   [ -n "$TIMING" ] && echo "$dtv $name" >> "$TIMING"
 
   # 🔴 2026-10-30（E153）：第三态 —— 「跑了但判不了」不许冒充 PASS。
@@ -289,8 +325,10 @@ _print() { # _print <idx> —— 按注册顺序打印，诊断逻辑与旧版�
 flush_all() { # 串行独占的先跑 → 其余并发 → 全部跑完再按序打印
   local total=${#T_NAME[@]}
   [ "$total" -eq 0 ] && return 0
-  local par="${PARALLEL:-4}"
-  case "$par" in ''|*[!0-9]*) par=4 ;; esac
+  # 默认 6 路：实测 12 核 / 222 道门禁，4 路约 9 分钟、6 路约 4 分钟。
+  # 并发只影响**顺序与墙钟**，不影响任何判据 —— 每道门禁的输出各自落盘。
+  local par="${PARALLEL:-6}"
+  case "$par" in ''|*[!0-9]*) par=6 ;; esac
   local i
 
   # 串行门禁（@serial）：先独占执行完
@@ -302,12 +340,38 @@ flush_all() { # 串行独占的先跑 → 其余并发 → 全部跑完再按序
 
   if [ "$par" -gt 1 ]; then
     local -a pid
+    local -a queue=()
     for ((i = 0; i < total; i++)); do
       [ "${T_KIND[$i]:-}" = echo ] && continue
       [ "${T_KIND[$i]:-}" = skip ] && continue
       [ "${T_SER[$i]:-0}" = 1 ] && continue
+      queue+=("$i")
+    done
+
+    # 🔴 长任务先起（LPT）。并发总时长几乎由"最后启动的那个长任务"决定：
+    #    按注册顺序起时 visual(75s) / zoom-reflow(135s) 这类排在后面，
+    #    轮到它们时别的 worker 已经空转，尾部只能干等。
+    #    代价估计来自上一轮实测（$OLD_COST）；没有记录就按原顺序跑，
+    #    所以第一次跑不会有收益，第二次起才有 —— 这不是缺陷，是测量需要样本。
+    local -a order=()
+    if [ -s "$OLD_COST" ]; then
+      local _line
+      while IFS= read -r _line; do
+        [ -n "$_line" ] && order+=("$_line")
+      done < <(for i in "${queue[@]}"; do
+                 printf '%s %s\n' "$(_cost_of "${T_NAME[$i]}")" "$i"
+               done | sort -rn -k1,1 | awk '{print $2}')
+      [ "${#order[@]}" -eq "${#queue[@]}" ] || order=("${queue[@]}")
+    else
+      order=("${queue[@]}")
+    fi
+
+    local launched=0
+    for i in "${order[@]}"; do
       _start "$i" &
       pid[$i]=$!
+      launched=$((launched + 1))
+      _progress "$launched" "${#order[@]}"
       while :; do
         local alive=0 k
         for k in "${!pid[@]}"; do
@@ -686,7 +750,10 @@ run "skel-lever"  node 05-audit/skeleton-lever-check.js
 run "theme-css"   node 05-audit/theme-css-gate.js
 # 容器级作用域：`[data-theme]` 挂在容器（不是根）上也能换肤，含嵌套回退
 #   ① 容器内令牌取该作用域的值 ② 组件（按钮 / 气泡）跟着变 ③ 作用域内对比度
-#   ④ 焦点环用暗色加强版 ⑤ 组件里不许再有 `prefers-color-scheme` 分支
+#   ④ 焦点环用暗色加强版 ⑤ 组件里不许再有 `prefers-color-scheme` 分支（扫描面含 09-assets）
+#   ⑥ JS 资产（如 echarts 适配器）必须跟随容器作用域：暗容器里调色板要变暗、
+#      主题名要区分、暗容器里的亮区要回退。⑥-a 静态查"只读根"的指纹，
+#      ⑥-b 在真浏览器里量 —— 只查文本查不出"读了根但值恰好一样"。
 #   🔴 首跑抓到两件事：L2 别名在不同作用域不会重新求值（必须在每个作用域重声明）；
 #      badge / tooltip 仍按系统偏好分支。两条都已修
 run "theme-scope" node 05-audit/theme-scope-gate.js
@@ -712,7 +779,9 @@ run "webview-probe-run" node 05-audit/webview-probe-check.js
 #   ⚠️ 这也是"暗色人工核对"的替代品：visual 只拍浅色，暗色回归无人看。
 run "token-resolved" node 05-audit/token-resolved-gate.js
 run "accent-gate" $PY 05-audit/accent-gate.py
-run "perf-gate"   node 05-audit/perf-gate.js
+# 首屏毫秒是**机器负载的函数**：6 路并发时 overlay 实测 390ms（空载 214ms）。
+# 和别的门禁一起跑时，量的不是产品，是排队 ⇒ 必须独占。
+run "perf-gate"   @serial node 05-audit/perf-gate.js
 run "size-budget" $PY 05-audit/size-baseline.py
 # dist 新鲜度：源码 sha256 变了而 dist 没重建 ⇒ 红（防"交付出去的是旧产物"）
 run "dist-fresh"  $PY 05-audit/build-dist.py --check
@@ -1204,6 +1273,8 @@ run "selftest-all"  @serial $PY 05-audit/selftest-all.py
 #                「RC=0 但输出说跑不起来 ⇒ 必须判红」（判据 ④）。
 run "selftest-all-rev" @serial $PY 05-audit/selftest-all.py --selftest
 # ---------------------------------------------------------------------------
+cp -f "$COST_FILE" "$OLD_COST" 2>/dev/null || : > "$OLD_COST"
+: > "$COST_FILE"
 flush_all
 
 # 🔴 结论必须放在**最后**（0.8.9 修）
@@ -1232,6 +1303,13 @@ else
 fi
 if [ "$MODE" != "full" ]; then
   echo "       收尾与发版前请跑 MODE=full（$_ran + $_skipped 道全部执行）。"
+fi
+_el=$(( $(date +%s) - _T0 ))
+echo "本轮墙钟 ${_el}s（预算 ${BUDGET}s，并发 ${PARALLEL:-6}）"
+if [ "$_el" -gt "$BUDGET" ]; then
+  # 🔴 超预算**不算门禁失败**：慢是工具的问题，不是产品的问题，
+  #    把它记成 FAIL 会让"0 失败"这句话失去含义。但必须嚷出来。
+  echo "   ⚠️ 超出预算 $(( _el - BUDGET ))s —— 看上面耗时最高的几道，别加门禁加在这一层。"
 fi
 
 exit $fail

@@ -128,4 +128,4 @@ RootWebArea "图表规范 · frontend-lib"
     listitem "不能只用颜色区分系列" [level=1]
       ListMarker "• "
   heading "6 · 怎么用（下次直接照抄）" [level=2]
-  paragraph "换主题时调 ChartAdapter.refresh(c) ，图表会跟着变 （配合 01-tokens/theme-to"
+  paragraph "换主题时调 c = ChartAdapter.refresh(c) ，图表会跟着变 —— 它会返回一个新实例 （ECha"

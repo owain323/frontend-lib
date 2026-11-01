@@ -8,8 +8,8 @@
   ],
   "totals": {
     "sourceFiles": 77,
-    "sourceBytes": 899324,
-    "distGzip": 108617
+    "sourceBytes": 902639,
+    "distGzip": 108894
   },
   "files": [
     {
@@ -1020,15 +1020,15 @@
     },
     {
       "source": "09-assets/echarts-adapter/echarts-adapter.js",
-      "sourceSha256": "2a242e350750705518aab6d99697263cf32921756b70e44a3213d1cdcef459b9",
-      "sourceBytes": 10322,
-      "sourceGzip": 4116,
+      "sourceSha256": "d9cb619004274c418e8082ac2d0834fdf91bb2f89dee06728bde28cca59b961a",
+      "sourceBytes": 13904,
+      "sourceGzip": 5606,
       "outputs": [
         {
           "path": "dist/09-assets/echarts-adapter/echarts-adapter.js",
           "kind": "stripped",
-          "bytes": 4625,
-          "gzip": 1875
+          "bytes": 5748,
+          "gzip": 2252
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
@@ -1078,15 +1078,15 @@
     },
     {
       "source": "09-assets/scientific-plot/scientific-plot.js",
-      "sourceSha256": "3f0a5951ea906cd64583cf6e56ff4f40d4d2a205c74a4dbc141e9cb46caeff13",
-      "sourceBytes": 27000,
-      "sourceGzip": 9810,
+      "sourceSha256": "c68916559ee7f91c4ba6166d7f23d63cc52a32f7e44b1f8a548d54e5fafd5472",
+      "sourceBytes": 26733,
+      "sourceGzip": 9711,
       "outputs": [
         {
           "path": "dist/09-assets/scientific-plot/scientific-plot.js",
           "kind": "stripped",
-          "bytes": 23973,
-          "gzip": 8556
+          "bytes": 23706,
+          "gzip": 8456
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
