@@ -33,13 +33,35 @@ shot-baseline.py — 视觉回归基线（总 G2）
         否则每个开发者都会被假红烦到关掉门禁。
 
 ===========================================================================
+🔴 G2-06D：**一次加载拍三套**（浅色 / 暗色 / RTL）
+---------------------------------------------------------------------------
+  原来三套各跑一次本脚本，每页至少被加载两次，RTL 子集再第三次：
+  47 + 47 + 15 = **109 次加载**。现在 **47 次**，图还是 109 张。
+
+  合并的**前提**不是"看起来一样"，而是逐字节一样：
+      109 / 109 张与三套既有基线**逐字节相同**（`--check` 会打出这个数）。
+  任何一张不同 ⇒ 整个合并作废；不许用 `--update` 把差异盖过去。
+
+  ⚠️ 合并唯一的真风险是**状态污染**（主题 / dir / 滚动位置 / 组件交互状态
+     从上一张图漏到下一张）。所以顺序是 浅 → RTL → 暗，每页重新 goto、
+     媒体特性每页重设、dir 按**加载时的原值**复位。
+  ⚠️ 冻结 CSS 的覆盖范围要**枚举到实际会动的选择器**（E241）：
+     `*` 选不到 UA shadow 里的 `::file-selector-button`，它自带 120ms 过渡，
+     切暗色时照跑 ⇒ 会截到中间态。补上那条之后，"切完立刻拍"即逐字节一致，
+     不需要任何 sleep 魔法数字。
+  ⚠️ 门禁条目从三条（visual / visual-dark / visual-rtl）合成一条（visual），
+     所以**条目数** 225 → 223；判据数没变（仍是 109 张）。别拿条目数当覆盖率。
+
+===========================================================================
 用法
 ---------------------------------------------------------------------------
-  python 05-audit/shot-baseline.py --record     # 录基线（首次跑）
-  python 05-audit/shot-baseline.py --check      # 门禁：与基线 diff
+  python 05-audit/shot-baseline.py --record     # 录基线（三套一次录完）
+  python 05-audit/shot-baseline.py --check      # 门禁：一次加载拍三套并逐套 diff
   python 05-audit/shot-baseline.py --update     # 显式重录（改 CSS 前先问自己）
   python 05-audit/shot-baseline.py --list       # 列出所有受管页面
   python 05-audit/shot-baseline.py --check --threshold 2.0
+  python 05-audit/shot-baseline.py --check --scheme dark   # 只复现暗色这一套
+  python 05-audit/shot-baseline.py --check --dir rtl       # 只复现 RTL 这一套
 """
 import sys
 import os
@@ -276,15 +298,21 @@ def _pages_exist():
 
 
 SHOOT_JS = r"""
-/* 🔴🔴 I1：**单进程批量截图**（原来每页一次 node 调用）
- * ---------------------------------------------------------------------------
- * 原来：23 个页面 ⇒ 23 次 `node` 冷启动 + 23 次浏览器启动
- *      ⇒ 实测 74 秒（占全量门禁 402 秒的 18%）
- * 现在：**一个 node 进程 + 一个浏览器 + 复用同一个 page**
- *      ⇒ 只付一次启动成本（~2 秒）
+/* ==========================================================================
+ * G2-06D：**一次页面加载 → 三套截图**
+ * --------------------------------------------------------------------------
+ * 原来三套（浅色 / 暗色 / RTL）各跑一次本脚本 ⇒ 每页至少被加载两次（浅 + 暗），
+ * RTL 子集再第三次：47 + 47 + 15 = 109 次加载。现在 47 次。
  *
- * ⚠️ 关键点：必须**复用同一个 page**（只改 goto），
- *   新建 page 的成本约 300-500ms/次，23 次就 10 秒。
+ * 顺序是**浅 → RTL → 暗**，不是随手排的：
+ *   · 暗色是唯一"改主题"的一步，放最后 ⇒ 每页只切一次主题；
+ *   · RTL 基线本来就是在**浅色**下拍的，所以 RTL 必须排在暗色之前；
+ *   · 拍完 RTL 立刻把 dir 复位成**加载时的原值**（不是写死 ltr）——
+ *     暗色基线是 LTR 的，带着 rtl 去拍就是"暗色 + RTL"的混合体。
+ *
+ * ⚠️ 这一步唯一的真风险是**状态污染**：主题、dir、滚动位置、组件交互状态
+ *    都可能从上一张图漏到下一张。所以每页都从头 goto、媒体特性每页重设、
+ *    dir 按原值复位。任何一张图不一致 ⇒ 整个合并不成立（G2-06D 工单）。
  */
 const fs = require('fs');
 // 🔴 用**绝对路径** require，而不是 require('05-audit/browser.js')
@@ -293,6 +321,39 @@ const fs = require('fs');
 //   而截图失败原先只打印一行 ⇒ 视觉回归"假通过"。
 const { launch } = require(process.env.FL_BROWSER || './browser.js');
 const TASKS = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+
+/* 冻结动画 / 过渡。
+ * 🔴 `*` **选不到 UA shadow 里的伪元素**（E241，实测）：
+ *    `<input type=file>` 的 `::file-selector-button` 自带
+ *    `transition: background var(--dur-fast)`（120ms）。切暗色时它照跑，
+ *    于是合并在"切完就拍"时截到**中间态**：暗色 46/47，峰值通道差 5/255。
+ *    ⇒ 冻结集必须**枚举到实际会动的选择器**，不能写个 `*` 就以为覆盖全了。
+ *    实测：补上这一条之后，"切暗色 → 立刻截图"与基线**逐字节一致**，
+ *    不需要 `sleep(150)` 这类魔法数字（见 G2-06D 的等价复核）。 */
+const FROZEN = '*,*::before,*::after{animation:none !important;' +
+  'transition:none !important;caret-color:transparent !important}' +
+  'input::file-selector-button{animation:none !important;transition:none !important}';
+
+/* 字体就位 → 图片 load/error → 两帧。与旧版**逐条一致**：判据不跟着改。 */
+const settle = (p) => p.evaluate(async () => {
+  var jobs = [];
+  if (document.fonts && document.fonts.ready) jobs.push(document.fonts.ready);
+  var imgs = [].slice.call(document.images || []);
+  imgs.forEach(function (im) {
+    if (im.complete) return;
+    jobs.push(new Promise(function (res) { im.onload = res; im.onerror = res; }));
+  });
+  if (jobs.length) {
+    await Promise.race([
+      Promise.all(jobs),
+      new Promise(function (r) { setTimeout(r, 3000); }),
+    ]);
+  }
+  await new Promise(function (r) {
+    requestAnimationFrame(function () { requestAnimationFrame(r); });
+  });
+});
+
 (async () => {
   /* ⚠️ 这里**不要**随手加 `showScrollbars` —— 量具一换，全基线作废。
      实测记档：基线 31 张里 28 张宽 393（headless 默认 `--hide-scrollbars`），
@@ -302,8 +363,8 @@ const TASKS = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
      若改成 showScrollbars，28 张会集体变 378，把"换了仪器"误记成"产品变了"。 */
   const b = await launch();
   const p = await b.newPage();
-  let ok = 0;
-  const T = { boot: 0, goto: 0, settle: 0, shot: 0 };
+  const okBy = { light: 0, rtl: 0, dark: 0 };
+  const T = { boot: 0, goto: 0, settle: 0, shot: 0, switch: 0 };
   const _m = () => Date.now();
   for (const t of TASKS) {
     try {
@@ -322,92 +383,70 @@ const TASKS = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
          ② 2× 会让基线从 2.7MB 涨到 7.2MB，代价换不来等价的判据提升。 */
       await p.setViewport({ width: t.w, height: t.h, deviceScaleFactor: 1 });
       T.boot += _m() - _t0; _t0 = _m();
-      /* 🔴 明暗两套基线：媒体特性**每页都要重设** —— page 是复用的，
-         上一页留下的 prefers-color-scheme 会带到下一页。 */
+      /* 🔴 媒体特性**每页都要重设** —— page 是复用的，
+         上一页留下的 prefers-color-scheme 会带到下一页。
+         这里显式设 light：本页的起点永远是"浅色"，暗色由循环里再切。 */
       await p.emulateMediaFeatures([
-        { name: 'prefers-color-scheme', value: t.scheme === 'dark' ? 'dark' : 'light' }]);
-      /* 🔴  I1 优化（**基于分项实测**，不是猜）：
-       *   实测 goto(networkidle0) = 35.5s（60%）、固定 settle = 16.3s（28%）、
-       *   截图只 6.6s（11%）⇒ **瓶颈全在"等"**。
-       *   ⇒ ① 等待条件放宽到 domcontentloaded（DOM 就绪即可开始渲染）
-       *   ② settle 由 700ms 降到 300ms（配合 ① 补偿）
-       *   ⚠️ 风险：可能截到"未渲染完"的页面 ⇒ **必须验证 23/23 观感一致**。
-       *   ⚠️ 之所以敢放宽：本库是**纯静态**页面（无 XHR/轮询），
-       *      networkidle0 的 500ms 静默期在这里纯属浪费。 */
+        { name: 'prefers-color-scheme', value: 'light' }]);
+      /* 🔴 等待条件 domcontentloaded（不是 networkidle0）：
+       *   实测 goto(networkidle0) 占 60% 的时间，而本库是纯静态页面
+       *   （无 XHR / 轮询），networkidle0 的 500ms 静默期纯属浪费。
+       *   "到底渲染完了没有"由下面的 settle 判据负责，不靠这个等待条件。 */
       await p.goto(t.url, { waitUntil: 'domcontentloaded' });
       T.goto += _m() - _t0; _t0 = _m();
-      /* 🔴 暗色要**两条路一起设**，缺一不可：
-           ① `emulateMediaFeatures` 走的是 `@media (prefers-color-scheme: dark)` 那段
-           ② `data-theme="dark"` 走的是 `[data-theme="dark"]` 那段
-         这两段是**两套规则**（theme-sync 保证它们逐条一致，但它们是两份代码）。
-         只设一个 ⇒ 只测了一半路径，另一半坏了照样绿。
-         必须在 goto **之后**设：页面加载前设会被它的脚本覆盖掉。 */
-      if (t.scheme === 'dark') {
-        await p.evaluate(() => {
-          document.documentElement.setAttribute('data-theme', 'dark');
-        });
-      }
-
-      /* 🔴 RTL 基线（--dir rtl）：在 goto **之后**改 dir，只让 CSS 反应。
-         ----------------------------------------------------------------
-         为什么不改 HTML：这一维要验的是"**样式表**在另一种书写方向下渲染成
-         什么样"，不是"页面作者会不会写 dir"。改动 HTML 会连带触发页面脚本
-         重跑，测出来的东西就说不清是谁的责任了。
-
-         ⚠️ 改 dir 会让整页重排 ⇒ 必须重走一遍"字体就位 + 两帧"，
-            否则会截到重排中途的一帧，RTL 基线从此偶发假红。 */
-      if (t.dirn === 'rtl') {
-        await p.evaluate(() => { document.documentElement.dir = 'rtl'; });
-      }
-
-      /* 🔴 0.8.0：把"猜一个 300ms"换成"等一个确定条件"（原本是 t.wait || 300）
-         ----------------------------------------------------------------
-         实测踩到：视觉门禁**偶发假红**。刚跑完别的浏览器任务、机器忙的时候，
-         300ms 可能不够字体与图片解码完 ⇒ 同一个页面截出全页 0.135% 差异、
-         21 个块超阈 ⇒ 报"观感不一致"。立刻重跑就绿。
-
-         ⇒ 这是典型的**时序竞态**，而竞态型假红最伤信任：
-           它看起来像真回归，实际什么都没坏。连跑 3 次全绿才敢说它是噪声。
-
-         新判据不依赖"机器有多快"：
-           ① `document.fonts.ready` —— 字体就位（字体一变，所有文字宽度都变）
-           ② 等所有 `<img>` 的 load/error —— 不靠"大概加载完了"
-           ③ 再等**两帧** —— 确保字体就位后的重排与绘制已经提交
-         比固定 sleep 更快，而且不可能截到半成品。
-         ⚠️ 保留总超时兜底：某张图 404 不能把门禁挂死（goto 的 timeout 管这里）。 */
-      await p.evaluate(async () => {
-        var jobs = [];
-        if (document.fonts && document.fonts.ready) jobs.push(document.fonts.ready);
-        var imgs = [].slice.call(document.images || []);
-        imgs.forEach(function (im) {
-          if (im.complete) return;
-          jobs.push(new Promise(function (res) {
-            im.onload = res; im.onerror = res;
-          }));
-        });
-        if (jobs.length) {
-          await Promise.race([
-            Promise.all(jobs),
-            new Promise(function (r) { setTimeout(r, 3000); }),
-          ]);
-        }
-        await new Promise(function (r) {
-          requestAnimationFrame(function () { requestAnimationFrame(r); });
-        });
-      });
+      await settle(p);
       T.settle += _m() - _t0; _t0 = _m();
 
-      /* 🔴 冻结所有动画再截图（原来就有这条，务必保留）
+      /* 冻结所有动画再截图（原来就有这条，务必保留）
          —— 同一份代码连截两次会不一致（spinner / 骨架屏扫光是 infinite），
             门禁必然假红。⚠️ `none` 而不是 `paused`：paused 会停在任意帧。 */
-      await p.addStyleTag({
-        content: '*,*::before,*::after{animation:none !important;' +
-                 'transition:none !important;caret-color:transparent !important}',
-      });
+      await p.addStyleTag({ content: FROZEN });
       await new Promise((r) => setTimeout(r, 120));
-      await p.screenshot({ path: t.out, fullPage: true });
-      T.shot += _m() - _t0;
-      ok++;
+
+      /* 记下**加载时**的 dir 原值：RTL 拍完要按原值复位，
+         写死 'ltr' 会把"本来没有 dir 属性"变成"dir=''" （不是同一棵树）。 */
+      const dir0 = await p.evaluate(
+        () => document.documentElement.getAttribute('dir'));
+
+      for (const kind of t.order) {
+        const _s0 = _m();
+        if (kind === 'rtl') {
+          /* 🔴 RTL：在 goto **之后**改 dir，只让 CSS 反应。
+             为什么不改 HTML：这一维要验的是"**样式表**在另一种书写方向下渲染成
+             什么样"，不是"页面作者会不会写 dir"。改动 HTML 会连带触发页面脚本
+             重跑，测出来的东西就说不清是谁的责任了。
+             ⚠️ 改 dir 会让整页重排 ⇒ 必须重走一遍字体/图片/两帧，
+                否则会截到重排中途的一帧。 */
+          await p.evaluate(() => { document.documentElement.dir = 'rtl'; });
+          await settle(p);
+        } else if (kind === 'dark') {
+          /* 🔴 暗色要**两条路一起设**，缺一不可：
+               ① `emulateMediaFeatures` 走 `@media (prefers-color-scheme: dark)`
+               ② `data-theme="dark"` 走 `[data-theme="dark"]`
+             这两段是**两套规则**（theme-sync 保证它们逐条一致，但它们是两份代码）。
+             只设一个 ⇒ 只测了一半路径，另一半坏了照样绿。 */
+          await p.emulateMediaFeatures([
+            { name: 'prefers-color-scheme', value: 'dark' }]);
+          await p.evaluate(() => {
+            document.documentElement.setAttribute('data-theme', 'dark');
+          });
+          await settle(p);
+        }
+        T.switch += _m() - _s0;
+        await p.screenshot({ path: t.out[kind], fullPage: true });
+        T.shot += _m() - _s0;
+        okBy[kind]++;
+
+        if (kind === 'rtl') {
+          /* 复位：先把方向还回去，再让布局重新稳定。
+             不复位就切暗色 ⇒ 拍出来是"暗色 + RTL"，与暗色基线不是一回事。 */
+          await p.evaluate((prev) => {
+            if (prev === null) document.documentElement.removeAttribute('dir');
+            else document.documentElement.setAttribute('dir', prev);
+          }, dir0);
+          await settle(p);
+        }
+      }
     } catch (e) {
       console.log('  [FAIL] ' + t.label + '：' + String(e).slice(0, 80));
     }
@@ -418,12 +457,19 @@ const TASKS = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
   const n = TASKS.length || 1;
   console.log('TIMING goto=' + (T.goto / 1000).toFixed(1) +
               's settle=' + (T.settle / 1000).toFixed(1) +
+              's switch=' + (T.switch / 1000).toFixed(1) +
               's shot=' + (T.shot / 1000).toFixed(1) +
               's viewport=' + (T.boot / 1000).toFixed(1) +
               's  (per page: goto=' + (T.goto / n / 1000).toFixed(2) +
               's shot=' + (T.shot / n / 1000).toFixed(2) + 's)');
-  console.log('SHOT_OK=' + ok);
-  process.exit(ok === TASKS.length ? 0 : 1);
+  console.log('SHOT_OK light=' + okBy.light + ' rtl=' + okBy.rtl +
+              ' dark=' + okBy.dark);
+  const want = TASKS.reduce((a, t) => {
+    for (const k of t.order) a[k] = (a[k] || 0) + 1;
+    return a;
+  }, {});
+  const okAll = Object.keys(want).every((k) => (okBy[k] || 0) === want[k]);
+  process.exit(okAll ? 0 : 1);
 })();
 """
 
@@ -500,37 +546,84 @@ def _start_server():
     return srv, port
 
 
-def shoot(outdir):
-    """对每个受管页面截图到 outdir"""
-    os.makedirs(outdir, exist_ok=True)
+SET_ORDER = ('light', 'rtl', 'dark')     # **截图顺序**：浅 → RTL → 暗（见 SHOOT_JS 头）
+SET_PRINT = ('light', 'dark', 'rtl')     # **打印顺序**：与旧版三道门禁的先后一致
+
+
+def _suffix(kind):
+    """目录后缀。与旧版逐字相同 —— **基线路径一个字节都不能变**。"""
+    s = '-' + PLAT
+    if kind == 'dark':
+        s += '-dark'
+    elif kind == 'rtl':
+        s += '-rtl'
+    return s
+
+
+def dirs_for(kind, mode):
+    base = {'baseline': '_baseline', 'current': '_current', 'diff': '_diff'}[mode]
+    return os.path.join(SHOTS, base + _suffix(kind))
+
+
+def build_tasks(mode, kinds, port):
+    """一页一条任务，任务里带本次要拍的那几套输出路径。"""
+    rtl_keys = {(r[0], r[1]) for r in RTL_PAGES}
+    tasks = []
+    for d, f, label, path in _pages_exist():
+        out = {}
+        for k in kinds:
+            if k == 'rtl' and (d, f) not in rtl_keys:
+                continue
+            out[k] = os.path.join(dirs_for(k, mode), shot_name(d, f))
+        if not out:
+            continue
+        tasks.append({
+            'url': 'http://127.0.0.1:%d/%s/%s' % (port, d, f),
+            'out': out,
+            'w': VIEWPORT[0], 'h': VIEWPORT[1],
+            'label': label,
+            'order': [k for k in SET_ORDER if k in out],
+        })
+    return tasks
+
+
+def shoot(mode, kinds):
+    """一次加载截 kinds 指定的那几套。返回 (ok_by, want_by)。
+
+    🔴 mode 只有两个值：`baseline`（--record / --update）与 `current`（--check）。
+       record 与 check 共用同一段代码 —— 否则"录的"与"比的"迟早分叉。
+    """
+    outdirs = {k: dirs_for(k, mode) for k in kinds}
+    # 🔴 先清空目标目录。`_current` 里留着**上一轮**的图时，
+    #    "本轮这一页没截到"会拿旧图去比 ⇒ 假绿，而且报告长得完全正常。
+    #    （E35 家族里最阴的一种：错的不是判据，是"比的到底是不是这次的图"。）
+    for k in kinds:
+        d = outdirs[k]
+        if os.path.isdir(d):
+            shutil.rmtree(d)
+        os.makedirs(d, exist_ok=True)
+
     node = _which_node()
     if not node:
-        print('  [FAIL] 找不到 node')
-        return 0
+        raise _ShootFailed('找不到 node')
+
+    import json as _json
+    import tempfile
+    import time as _time
+
     srv, port = _start_server()
-    ok = 0
+    tmpdir = tempfile.mkdtemp(prefix='fl-shoot-')
     try:
-        # ----  I1：一次 node 截全部（原来每页一次）----
-        import json as _json
-        import time as _time
-        pages = _pages_exist()
+        tasks = build_tasks(mode, kinds, port)
+        want = {k: sum(1 for t in tasks if k in t['out']) for k in kinds}
         _t0 = _time.time()
-        tasks = []
-        for d, f, label, path in pages:
-            tasks.append({
-                'url': 'http://127.0.0.1:%d/%s/%s' % (port, d, f),
-                'out': os.path.join(outdir, shot_name(d, f)),
-                'w': VIEWPORT[0], 'h': VIEWPORT[1],
-                'label': label, 'wait': 300,
-                'scheme': SCHEME, 'dirn': DIRN,
-            })
-        tmp_js = os.path.join(outdir, '_shoot.js')
-        tmp_jsn = os.path.join(outdir, '_shoot.json')
+        tmp_js = os.path.join(tmpdir, 'shoot.js')
+        tmp_jsn = os.path.join(tmpdir, 'tasks.json')
         io.open(tmp_js, 'w', encoding='utf-8', newline='\n').write(SHOOT_JS)
         io.open(tmp_jsn, 'w', encoding='utf-8', newline='\n').write(_json.dumps(tasks))
         # 🔴 子进程必须继承 NODE_PATH：puppeteer-core 装在受管 workspace 里
         env = dict(os.environ)
-        # 🔴 并把browser.js 的绝对路径传进去，避免子进程 CWD 不确定
+        # 🔴 并把 browser.js 的绝对路径传进去，避免子进程 CWD 不确定
         env['FL_BROWSER'] = os.path.join(ROOT, '05-audit', 'browser.js')
         # ⚠️ 必须把 NODE_MODULES 也接上：check-all.sh 用**它**传受管目录，
         #    而本脚本原先只认本地 node_modules ⇒ 受管环境下 puppeteer 找不到
@@ -540,40 +633,40 @@ def shoot(outdir):
                          os.path.join(ROOT, 'node_modules'),
                          env.get('NODE_PATH', '')) if p])
         r = subprocess.run([node, tmp_js, tmp_jsn], capture_output=True,
-                           timeout=300, env=env, cwd=ROOT)
-        os.remove(tmp_js)
-        os.remove(tmp_jsn)
+                           timeout=420, env=env, cwd=ROOT)
         _dt = _time.time() - _t0
-        print('  [I1] 一次进程截 %d 页，用时 %.1f 秒（原来约 74 秒）'
-              % (len(tasks), _dt))
-        ok = 0
-        for line in (r.stdout or b'').decode('utf-8', 'replace').splitlines():
-            if line.startswith('SHOT_OK='):
-                ok = int(line.split('=')[1])
-        for line in (r.stdout or b'').decode('utf-8', 'replace').splitlines():
+        out = (r.stdout or b'').decode('utf-8', 'replace')
+        print('  [I1] 一次加载截 %d 页 · %s（%.1f 秒）' % (
+            len(tasks),
+            ' / '.join('%s %d 张' % (k, want[k]) for k in SET_PRINT if k in want),
+            _dt))
+        ok = {k: 0 for k in kinds}
+        for line in out.splitlines():
+            if line.startswith('SHOT_OK '):
+                for part in line.split()[1:]:
+                    k, _, v = part.partition('=')
+                    if k in ok and v.isdigit():
+                        ok[k] = int(v)
+            elif line.startswith('  [FAIL]'):
+                print(line)
+        for line in out.splitlines():
             if line.startswith('TIMING '):
                 print('  [I1] 分项耗时 ' + line[7:])
-        if r.returncode != 0 and ok == 0:
-            msg = (r.stderr or b'').decode('utf-8', 'replace')[:300]
-            print('  [FAIL] 批量截图失败：%s' % msg)
-        print('  截了 %d / %d 个页面' % (ok, len(_pages_exist())))
-
-        # 🔴🔴🔴 截图失败必须**向上传递**，不能只打印
-        #   实测（2026-10-06）：截图全部失败时 ok=0，
-        #   但 diff_all拿「基线的 N 张」和「当前的 0 张」去比，
-        #   结果输出「OK  23 / 0 个页面观感一致」——
-        #   **一张图都没截，却报全绿**。
-        #   这是最危险的一类假绿：它让人以为视觉回归过了。
-        if ok == 0:
-            raise _ShootFailed('一张截图都没成功（ok=0）——'
-                                    '视觉回归**未执行**，不能算通过')
-        if ok < len(_pages_exist()):
-            print('  ⚠️ 只截到 %d / %d 页；其余页面本轮**未验证**'
-                  % (ok, len(_pages_exist())))
+        if r.returncode != 0 and sum(ok.values()) == 0:
+            print('  [FAIL] 批量截图失败：%s'
+                  % (r.stderr or b'').decode('utf-8', 'replace')[:300])
+        # 🔴 每套单独报"截了几张 / 该截几张"：只报一个总数会把
+        #    "暗色少 3 张"藏进"109 张里有 106 张"里。
+        for k in SET_PRINT:
+            if k in ok:
+                print('  %s：截了 %d / %d 张' % (k, ok[k], want[k]))
+        if sum(ok.values()) == 0:
+            raise _ShootFailed('一张截图都没成功 —— 视觉回归**未执行**，不能算通过')
     finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
         srv.shutdown()
         srv.server_close()
-    return ok
+    return ok, want
 
 
 # ============================================================================
@@ -591,32 +684,44 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import pngdiff  # noqa: E402
 
 
-def diff_all(threshold=1.0, tolerance=12):
-    """逐像素 diff 当前 vs 基线。返回 (通过数, 失败列表)"""
-    if not os.path.isdir(BASELINE):
-        return None, ['没有基线 —— 请先跑 --record']
+def diff_set(kind, threshold=1.0, tolerance=12):
+    """逐像素 diff 某一套。返回 (通过数, 失败列表, 逐字节一致数, 无基线页面)"""
+    BASE, CUR, DIF = (dirs_for(kind, m) for m in ('baseline', 'current', 'diff'))
+    if not os.path.isdir(BASE):
+        return None, ['没有基线 —— 请先跑 --record'], 0, []
 
-    bfiles = {os.path.basename(x) for x in glob.glob(os.path.join(BASELINE, '*.png'))}
-    passed, failed = 0, []
-    os.makedirs(DIFFS, exist_ok=True)
+    bfiles = {os.path.basename(x) for x in glob.glob(os.path.join(BASE, '*.png'))}
+    passed, failed, bytes_same = 0, [], 0
+    os.makedirs(DIF, exist_ok=True)
 
     # 🔴 反假绿：`_current` 为空（或根本没有刚截的图）必须**判失败**。
-    #    旧版只是逐页报"当前截图缺失"，但那 23 条 FAIL 会被误读成"图坏了"；
-    #    真实原因常常是**一次都没截**，而这种情况过去被本地残留图掩盖了。
-    fresh = [x for x in glob.glob(os.path.join(CURRENT, '*.png'))]
+    #    旧版只是逐页报"当前截图缺失"，但那 N 条 FAIL 会被误读成"图坏了"；
+    #    真实原因常常是**一次都没截**。
+    fresh = glob.glob(os.path.join(CUR, '*.png'))
     if not fresh:
         return 0, [('(全部)', 100.0,
                     '`_current` 里没有任何刚截的图 ⇒ 本次**没有可比的对象**。'
-                    ' 这不是"图不一致"，是"压根没截到"，必须判失败')]
+                    ' 这不是"图不一致"，是"压根没截到"，必须判失败')], 0, []
 
     for name in sorted(bfiles):
-        bp = os.path.join(BASELINE, name)
-        cp = os.path.join(CURRENT, name)
+        bp = os.path.join(BASE, name)
+        cp = os.path.join(CUR, name)
         if not os.path.exists(cp):
             failed.append((name, 100.0, '当前截图缺失'))
             continue
+        # 先比字节：一致就一定观感一致 —— **直接记通过，不再解码**。
+        #   （109 张全页 PNG 纯 Python 解码要 100 秒以上，而这条路本来就不需要看像素。）
+        # 逐字节数是"这次合并有没有改变像素"的**直接证据**，所以单独数出来。
         try:
-            r = pngdiff.compare(bp, cp, os.path.join(DIFFS, name),
+            same_bytes = io.open(bp, 'rb').read() == io.open(cp, 'rb').read()
+        except Exception:
+            same_bytes = False
+        if same_bytes:
+            bytes_same += 1
+            passed += 1
+            continue
+        try:
+            r = pngdiff.compare(bp, cp, os.path.join(DIF, name),
                                 tile=32, tile_pct=3.0, page_pct=0.5,
                                 tolerance=tolerance)
         except pngdiff.PngError as e:
@@ -650,7 +755,7 @@ def diff_all(threshold=1.0, tolerance=12):
             failed.append((name, r['pct'], why))
         else:
             passed += 1
-    return passed, failed
+    return passed, failed, bytes_same, sorted(bfiles)
 
 
 def _strip_block_comments(text):
@@ -770,34 +875,29 @@ def css_fingerprint():
 
 def main():
     argv = sys.argv[1:]
-    scheme = 'light'
+    # G2-06D 之后默认**一次加载截三套**。`--scheme` / `--dir` 保留下来只做
+    # 单套复现（调试用），不再参与全量门禁 —— 全量只留一道 `visual`。
+    kinds = list(SET_ORDER)
     if '--scheme' in argv:
         i = argv.index('--scheme')
         scheme = argv[i + 1] if i + 1 < len(argv) else ''
         if scheme not in ('light', 'dark'):
             print('  --scheme 只接受 light / dark')
             return 2
-    dirn = 'ltr'
+        kinds = ['dark'] if scheme == 'dark' else ['light']
     if '--dir' in argv:
         i = argv.index('--dir')
         dirn = argv[i + 1] if i + 1 < len(argv) else ''
         if dirn not in ('ltr', 'rtl'):
             print('  --dir 只接受 ltr / rtl')
             return 2
-    global BASELINE, CURRENT, DIFFS, SCHEME, DIRN
-    SCHEME = scheme
-    DIRN = dirn
-    # 目录名 = `_baseline-<平台>[-<scheme>][-rtl]`
-    #   平台放在**最前面**（紧跟 `_baseline-`）：`10-review/shots/` 下有
-    #   9 个目录时，同一个平台的排在一起才看得过来。
-    suffix = '-' + PLAT
-    if scheme != 'light':
-        suffix += '-' + scheme
-    if dirn != 'ltr':
-        suffix += '-' + dirn
-    BASELINE = os.path.join(SHOTS, '_baseline' + suffix)
-    CURRENT = os.path.join(SHOTS, '_current' + suffix)
-    DIFFS = os.path.join(SHOTS, '_diff' + suffix)
+        if kinds != list(SET_ORDER):
+            print('  --scheme 与 --dir 不能同时用（没有"暗色 + RTL"那套基线）')
+            return 2
+        kinds = ['rtl'] if dirn == 'rtl' else ['light']
+
+    global DIRN
+    DIRN = 'rtl' if kinds == ['rtl'] else 'ltr'   # 只影响 --list 的清单
 
     if '--list' in argv:
         for row in managed():
@@ -814,12 +914,6 @@ def main():
         except (IndexError, ValueError):
             print('  --threshold 需要一个数字（如 2.0）')
             return 2
-
-    # css_fingerprint() 上移到模块级：视觉戳门禁要复用同一份算法，
-    # 不能在这里留第二份（I-7 单一真源）。
-
-    def stamp_path():
-        return os.path.join(BASELINE, '_stamp.json')
 
     def head_sha():
         """
@@ -841,49 +935,61 @@ def main():
             pass
         return None
 
-    def read_stamp():
+    def read_stamp(d):
         try:
-            return json.load(io.open(stamp_path(), encoding='utf-8'))
+            return json.load(io.open(os.path.join(d, '_stamp.json'), encoding='utf-8'))
         except Exception:
             return None
 
     if '--record' in argv or '--update' in argv:
-        # ⚠️ 更新前先清空，避免残留旧图
-        if os.path.isdir(BASELINE):
-            shutil.rmtree(BASELINE)
-        os.makedirs(BASELINE, exist_ok=True)
-        # 先截到 current，再搬到 baseline（复用同一套代码 ⇒ 录的就是比的）
-        n = shoot(BASELINE)
-        # 🔴 写指纹：下次报 diff 时能判断"是代码变了，还是基线录于旧代码"
+        try:
+            ok, want = shoot('baseline', kinds)
+        except _ShootFailed as e:
+            print('  [FAIL] %s' % e)
+            return 1
+        # 🔴 少一张就不写戳：戳的作用是"证明这套基线是完整的、录在当前代码上"，
+        #    残缺的基线配上完整的戳，比没有戳更坏。
+        if any(ok[k] != want[k] for k in kinds):
+            print('  [FAIL] 有页面没截到 ⇒ 基线**不完整**，拒绝写戳')
+            return 1
         fp = css_fingerprint()
-        io.open(stamp_path(), 'w', encoding='utf-8', newline='\n').write(json.dumps(
-            {'fingerprint': fp, 'pages': n, 'head': head_sha()},
-            ensure_ascii=False, indent=2))
-        print('  已录基线：%d 个页面 → %s' % (n, os.path.relpath(BASELINE, ROOT)))
+        for k in kinds:
+            d = dirs_for(k, 'baseline')
+            io.open(os.path.join(d, '_stamp.json'), 'w', encoding='utf-8',
+                    newline='\n').write(json.dumps(
+                        {'fingerprint': fp, 'pages': ok[k], 'head': head_sha(),
+                         'sets': list(kinds)},
+                        ensure_ascii=False, indent=2))
+            print('  已录基线（%s）：%d 个页面 → %s'
+                  % (k, ok[k], os.path.relpath(d, ROOT)))
         print('  渲染指纹（CSS+JS+HTML）：%s（用于判断基线是否过期）' % fp)
-        return 0 if n else 1
+        return 0
 
     # 默认 --check
-    if not os.path.isdir(BASELINE):
+    missing = [k for k in kinds if not os.path.isdir(dirs_for(k, 'baseline'))]
+    if missing:
+        d = dirs_for(missing[0], 'baseline')
         print('  [FAIL] 本平台（%s）没有基线集：%s'
-              % (PLAT, os.path.relpath(BASELINE, ROOT)))
+              % (PLAT, os.path.relpath(d, ROOT)))
         print('         ⇒ 这台机器**判不了**观感有没有变 —— 这不叫通过。')
         print('         ⇒ 但**不要**在 CI 上随手 --record：那等于把 CI 的渲染'
               '当成标准，')
         print('           下次真回归反而看不出来。正确做法是在目标平台上录一次，')
         print('           把 png 连同 _stamp.json 一起提交。')
         return 1
-    n = shoot(CURRENT)
-    # 🔴🔴截图环节失败 ⇒ 整道门禁失败，绝不继续比 diff。
-    #   （原先只是打印一行，然后拿「基线 N 张 vs 当前 0 张」去比，
-    #    结果输出「OK 23 / 0 个页面观感一致」—— 一张没截却报全绿。）
-    if n == 0:
+
+    try:
+        ok, want = shoot('current', kinds)
+    except _ShootFailed as e:
+        # 🔴🔴截图环节失败 ⇒ 整道门禁失败，绝不继续比 diff。
+        #   （原先只是打印一行，然后拿「基线 N 张 vs 当前 0 张」去比，
+        #    结果输出「OK 23 / 0 个页面观感一致」—— 一张没截却报全绿。）
         print('')
-        print('  [FAIL] 视觉回归**未执行**：一张都没截到')
+        print('  [FAIL] 视觉回归**未执行**：%s' % e)
         print('         ⇒ 这次运行**不能算通过**（它压根没看任何东西）')
         return 1
-    # 🔴 先看基线是否录于当前 CSS（不是，但它本来就录于某个状态）
-    st = read_stamp()
+
+    st = read_stamp(dirs_for(kinds[0], 'baseline'))
     if st:
         now_fp = css_fingerprint()
         if now_fp != st.get('fingerprint'):
@@ -896,32 +1002,54 @@ def main():
             print('     ⇒ 如果这些 CSS 改动是**有意的**，请重录：--update')
             print('     ⇒ 否则这就是真回归，继续看下面的 diff：')
             print('')
-    passed, failed = diff_all(threshold=threshold)
-    if passed is None:
-        print('  [FAIL] %s' % (failed[0] if failed else '未知错误'))
-        return 1
 
-    print('  === 视觉回归（阈值 %.2f%%%s · 平台 %s）==='
-          % (threshold, '，dir=rtl' if DIRN == 'rtl' else '', PLAT))
-    compared = passed + len(failed)
-    print('  OK   %d / %d 个页面观感一致' % (passed, compared))
-    # 🔴 诚实报告：截了但**没有基线可比**的页面 = 本轮**没被验证**。
-    #    不写出来就会被当成"也通过了"（默认信任是最常见的假绿来源）。
-    bnames = {os.path.basename(x)
-              for x in glob.glob(os.path.join(BASELINE, '*.png'))}
-    unverified = [shot_name(r[0], r[1]) for r in managed()
-                  if os.path.exists(os.path.join(ROOT, r[0], r[1]))
-                  and shot_name(r[0], r[1]) not in bnames]
-    if unverified:
-        print('  ⚠️ %d 个页面**截了但没有基线**，本轮未验证（跑 --update 录基线）：'
-              % len(unverified))
-        for u in unverified:
-            print('        %s' % u)
-    for name, pct, why in failed:
-        print('  FAIL  %-34s %s' % (name, why))
-        print('        diff 图：%s' % os.path.relpath(
-            os.path.join(DIFFS, name), ROOT))
-    if failed:
+    print('  === 视觉回归（阈值 %.2f%% · 平台 %s · 一次加载 %d 套）==='
+          % (threshold, PLAT, len(kinds)))
+    rc = 0
+    total_pass = total_cmp = total_bytes = 0
+    for k in [x for x in SET_PRINT if x in kinds]:
+        label = {'light': '浅色', 'dark': '暗色 ', 'rtl': 'RTL  '}.get(k, k)
+        if ok[k] == 0:
+            print('  %s [FAIL] 一张都没截到 ⇒ 这套**未执行**，不能算通过' % label)
+            rc = 1
+            continue
+        if ok[k] < want[k]:
+            # 截了一部分：如实说"哪些没验证"，并且**判失败**（少一页就是少一页覆盖）
+            print('  %s [FAIL] 只截到 %d / %d 页 ⇒ 其余页面本轮**未验证**'
+                  % (label, ok[k], want[k]))
+            rc = 1
+        passed, failed, bytes_same, allnames = diff_set(k, threshold)
+        if passed is None:
+            print('  %s [FAIL] %s' % (label, failed[0]))
+            rc = 1
+            continue
+        compared = passed + len(failed)
+        total_pass += passed
+        total_cmp += compared
+        total_bytes += bytes_same
+        print('  %s OK %2d / %2d 个页面观感一致（逐字节 %d / %d）'
+              % (label, passed, compared, bytes_same, compared))
+        # 🔴 诚实报告：截了但**没有基线可比**的页面 = 本轮**没被验证**。
+        #    不写出来就会被当成"也通过了"（默认信任是最常见的假绿来源）。
+        unverified = [shot_name(r[0], r[1]) for r in managed()
+                      if os.path.exists(os.path.join(ROOT, r[0], r[1]))
+                      and shot_name(r[0], r[1]) not in set(allnames)]
+        if k != 'light':
+            unverified = []
+        if unverified:
+            print('  ⚠️ %s：%d 个页面**截了但没有基线**，本轮未验证（跑 --update）：'
+                  % (label, len(unverified)))
+            for u in unverified:
+                print('        %s' % u)
+        for name, pct, why in failed:
+            print('  %s FAIL  %-34s %s' % (label, name, why))
+            print('        diff 图：%s' % os.path.relpath(
+                os.path.join(dirs_for(k, 'diff'), name), ROOT))
+        if failed:
+            rc = 1
+
+    print('  —— 合计：%d 张逐字节一致 / %d 张比过' % (total_bytes, total_cmp))
+    if rc:
         print('')
         print('  ⇒ 如果这是**有意**的视觉改动，用：--update 重录基线')
         print('    如果不是，说明某处 CSS 被改坏了（而行为契约抓不到这类问题）')

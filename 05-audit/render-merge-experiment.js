@@ -2,8 +2,10 @@
 /**
  * G2-06 等价实验：**一次页面加载 → 三次截图**，与现有三趟独立渲染逐字节比对。
  *
- * ⚠️ 这是**实验**，不是门禁。它不写基线、不改任何既有判据、不进 check-all。
- *    它的唯一结论是：合并后的 PNG 与独立跑出来的 PNG 是否完全相同。
+ * ⚠️ 这是**复核工具**，不是门禁。它不写基线、不改任何既有判据、不进 check-all。
+ *    G2-06D 之后生产已经按这套方式跑（`shot-baseline.py` 一次加载拍三套），
+ *    所以本脚本的作用变成**第二意见**：用另一份实现自己拍一遍，
+ *    与三套基线逐字节比 —— 如果生产那趟把差异藏起来了，这里会露出来。
  *    任何一张不同 ⇒ 停下来报告，不许用"更新基线"把差异盖过去。
  *
  * 🔴 五趟里只有三趟产 PNG（这是必须先纠正的事实）：
@@ -34,15 +36,17 @@ const VIEW = { width: 393, height: 852 };
 const argv = process.argv.slice(2);
 const SHOW = (n) => (argv.indexOf('--limit') >= 0 ? +argv[argv.indexOf('--limit') + 1] : n);
 const ONLY = argv.indexOf('--only') >= 0 ? argv[argv.indexOf('--only') + 1] : '';
-/* 切换后额外等待（毫秒）。默认 0 = **如实暴露**差异；
-   实测 `02-primitives/upload` 的 `::file-selector-button` 有 120ms 的 transition，
-   而冻结 CSS 的 `*` **选不到 UA shadow 里的伪元素** ⇒ 0ms 时截到中间态。
-   设 150ms 后 47/47 + 15/15 全部逐字节一致 ⇒ 差异是时序，不是产品。 */
+/* 切换后额外等待（毫秒）。默认 **0**：冻结集补上 `::file-selector-button`
+   之后，"切完立刻拍"就是终态（G2-06D 实测 109/109 逐字节一致）。
+   `--wait N` 只留作对照实验：用来证明"不加冻结也一致"这种说法到底靠不靠得住。 */
 const WAIT = argv.indexOf('--wait') >= 0 ? +argv[argv.indexOf('--wait') + 1] : 0;
 const KEEP = argv.indexOf('--keep') >= 0;
 
+/* 与 shot-baseline.py 的冻结集**同步**（E241）：`*` 选不到 UA shadow 里的
+   `::file-selector-button`，它自带 120ms 过渡，切暗色时照跑。 */
 const FROZEN_CSS = '*,*::before,*::after{animation:none !important;' +
-  'transition:none !important;caret-color:transparent !important}';
+  'transition:none !important;caret-color:transparent !important}' +
+  'input::file-selector-button{animation:none !important;transition:none !important}';
 
 function sha(buf) {
   return crypto.createHash('sha256').update(buf).digest('hex');
@@ -178,7 +182,7 @@ async function settle(p) {
     console.log('\n  🔴 一张都没比上 ⇒ 这不是"等价"，是**没有测到**（基线目录名或平台不对）');
   } else {
     console.log('\n  ✅ 所有比到的 PNG 都与独立渲染逐字节相同');
-    console.log('     独立三趟的历史耗时：visual 112s + visual-dark 109s + visual-rtl 43s = 264s');
+    console.log('     独立三趟（G2-06D 之前）：visual 112s + visual-dark 109s + visual-rtl 43s = 264s');
     console.log('     合并一趟实测：' + (ms / 1000).toFixed(1) + 's');
   }
   return diff.length || err.length ? 1 : 0;

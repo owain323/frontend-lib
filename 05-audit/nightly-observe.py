@@ -74,6 +74,8 @@ PENDING = ('queued', 'in_progress', 'pending', 'waiting', 'requested')
 #   fixed   —— 修复提交/动作；空串表示"已知但还没有修复"。
 SIGS = [
     dict(
+        # G2-06D 把 visual / -dark / -rtl 合成了一条 `visual`；旧名留在这里
+        # 只为认得**改动之前**的 CI 运行记录。
         gates=('visual-stamp', 'visual', 'visual-dark', 'visual-rtl'),
         pat=r'基线录于|渲染指纹与基线不符',
         cls='环境',

@@ -30,9 +30,9 @@ visual-stamp-gate.py — 基线必须录在当前代码上（指纹过期即红�
      别的平台的戳与这次改动无关；本平台的戳不存在就红，不许放行
 
 修复方式（不许在代码里放行）：
-    python 05-audit/shot-baseline.py --update                # 浅色
-    python 05-audit/shot-baseline.py --update --scheme dark  # 暗色
-    python 05-audit/shot-baseline.py --update --dir rtl      # RTL
+    python 05-audit/shot-baseline.py --update
+    ⇒ G2-06D 之后一条命令**一次录三套**（浅 / 暗 / RTL），三份戳同时重写。
+      要单独复现某一套才用 `--scheme dark` / `--dir rtl`（那两条不写戳）。
 
 用法：
     python 05-audit/visual-stamp-gate.py
