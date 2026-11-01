@@ -288,7 +288,7 @@ MD = r'[*_`]{0,3}'
 
 
 def _num(after, group=True):
-    """数字（前后允许 Markdown 强调符）+ 紧跟其后的上下文。
+    """**数字在前、标签在后**：`N 个组件` / `N components`。
 
     group=False 用于未登记扫描：那里不要捕获组，免得和别的分支搅在一起。
     """
@@ -302,21 +302,34 @@ def _num(after, group=True):
 # 不做这个区分的话，任何"共 N 个X"都会被当成组件数，误报比漏报更烦人。
 CN_TOTAL_TAIL = r'个(?=\s*[（(。，,、；;！!?？\n]|\s*$)'
 
+
+def _labelled(label, after='', group=True):
+    """**标签在前、数字在后**：`stable 40` / `primitives (17)` / `Components (40)`。
+
+    🔴 为什么必须单独有一个
+       `_num()` 的形态是"数字 + 量词"，而 `stable **39**` 是"标签 + 数字"。
+       0.24.1 只把前一种换成了 `_num`，后一种仍写死 `\\s+(\\d+)` —— 于是
+       `stable **39**` 静默不匹配；而同一行里的 `**40** components` 是好的，
+       门禁照样绿。**声称支持 Markdown 强调符，就必须让每一个数字提取都支持。**
+    """
+    n = r'(\d+)' if group else r'\d+'
+    return label + r'\s*' + MD + r'\s*' + n + after
+
 CLAIMS = [
     ('components.total', 'llms.txt',         _num(r'components\b'),                    'llms.txt 组件数'),
     ('components.total', 'llms-full.txt',    _num(r'components\b'),                    'llms-full 组件数'),
-    ('components.total', 'llms-full.txt',    r'Components\s*\(\s*(\d+)\s*\)',          'llms-full 章节标题'),
-    ('pitfallsAll',      'llms-full.txt',    r'Known failure modes\s*\(\s*(\d+)\s*\)', 'llms-full 翻车点章节'),
+    ('components.total', 'llms-full.txt',    r'Components\s*\(\s*' + _num(r'\)'),      'llms-full 章节标题'),
+    ('pitfallsAll',      'llms-full.txt',    r'Known failure modes\s*\(\s*' + _num(r'\)'), 'llms-full 翻车点章节'),
     ('components.total', 'AGENTS.md',        _num(r'components\b'),                    'AGENTS.md 契约说明'),
     ('components.total', 'index.html',       _num(r'个组件'),                          '首页'),
     ('components.total', '404.html',         _num(r'个组件'),                          '404 页'),
     ('components.total', 'guide/index.html', _num(r'个组件'),                          '文档站索引'),
     ('components.total', 'README.md',        _num(r'components\b'),                    '英文 README 总数'),
-    ('components.byMaturity.stable', 'README.md', r'stable\s+(\d+)',                   '英文 README 成熟度'),
-    ('components.byMaturity.beta',   'README.md', r'beta\s+(\d+)',                     '英文 README 成熟度'),
+    ('components.byMaturity.stable', 'README.md',        _labelled('stable'),                   '英文 README 成熟度'),
+    ('components.byMaturity.beta',   'README.md',        _labelled('beta'),                     '英文 README 成熟度'),
     ('components.total', 'README.zh-CN.md',  _num(r'个组件'),                          '中文 README 总数'),
     ('components.total', 'README.zh-CN.md',  r'共\s*' + _num(CN_TOTAL_TAIL),           '中文 README 概览'),
-    ('components.byMaturity.stable', 'README.zh-CN.md', r'stable\s+(\d+)',             '中文 README 成熟度'),
+    ('components.byMaturity.stable', 'README.zh-CN.md',  _labelled('stable'),             '中文 README 成熟度'),
 ]
 
 # 「未登记扫描」的范围：这些文件里出现下列任一形态，必须被 CLAIMS 全部覆盖。
@@ -326,7 +339,7 @@ SCAN_FILES = ['README.md', 'README.zh-CN.md', 'llms.txt', 'llms-full.txt', 'AGEN
 SCAN_RE = '|'.join([
     _num(r'(?:个组件|components\b)', group=False),
     r'共\s*' + _num(CN_TOTAL_TAIL, group=False),
-    r'(?:stable|beta|alpha)\s+\d+',
+    _labelled(r'(?:stable|beta|alpha)', group=False),
 ])
 
 # 分节标题里的按层计数（`### primitives (17)` / `### recipes · 整页配方（5）`）。
@@ -423,7 +436,8 @@ def check_listings(root, facts):
             tier = fact.rsplit('.', 1)[-1]
             want = _fact_value(facts, fact)
             want_ids = sorted(ids_by_tier.get(tier, []))
-            head = re.compile(r'^###\s+' + pat + r'\b[^\n]*?[（(]\s*(\d+)\s*[）)]\s*$')
+            head = re.compile(r'^###\s+' + pat + r'\b[^\n]*?[（(]\s*'
+                              + _num(r'[）)]\s*$'))
             seen = False
             for i, ln in enumerate(lines):
                 m = head.match(ln)

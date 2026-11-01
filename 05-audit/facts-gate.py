@@ -39,6 +39,7 @@ from __future__ import annotations
 import io
 import json
 import os
+import re
 
 import sys
 import tempfile
@@ -399,6 +400,55 @@ def selftest():
         io.open(p, 'w', encoding='utf-8', newline='\n').write(s)
         e = _facts.check_claims(tmp, _fresh(tmp))
         check('S22 `共 3 个步骤` 不误报', not [m for _, m in e if '写着 3' in m],
+              '; '.join(m for _, m in e[:2]))
+
+    # S24 结构性断言：**每一个**含数字的声明正则都必须容忍 Markdown 强调符。
+    #     0.24.1 的教训 —— 只把一部分换成了 _num，`stable **39**` 就静默漏了，
+    #     而同一行的 `**40** components` 是好的 ⇒ 门禁绿。这条不验行为，验形状：
+    #     含 \d 的 pattern 里必须出现 MD 那段字符类。
+    bad = [label for _f, _r, pat, label in _facts.CLAIMS
+           if re.search(r'\\d', pat) and _facts.MD not in pat]
+    check('S24 所有含数字的声明正则都走 _num/_labelled', not bad,
+          '这些还在自己抓数字：%s' % '; '.join(bad))
+
+    # ---- 标签在前的写法（`stable 40` / `### primitives (17)`）也必须容忍加粗
+    #     每条都断言**具体诊断**：若正则不认加粗，报的会是"找不到数字"
+    #     或"找不到分节标题"，那条断言就抓不到 —— 这本身就是区分度。
+    def _edit(root, rel, old, new):
+        p = os.path.join(root, rel)
+        s = io.open(p, encoding='utf-8').read()
+        assert s.count(old) == 1, '夹具里找不到 %r' % old
+        io.open(p, 'w', encoding='utf-8', newline='\n').write(s.replace(old, new))
+
+    with tempfile.TemporaryDirectory() as tmp_readme:
+        _mk_root(tmp_readme)
+        _edit(tmp_readme, 'README.md', '(stable 3 / beta 0)', '(stable **2** / beta 0)')
+        e = _facts.check_claims(tmp_readme, _fresh(tmp_readme))
+        check('S25 `stable **2**`（实际 3）被抓', any('写着 2' in m for _, m in e),
+              '; '.join(m for _, m in e[:2]))
+
+    with tempfile.TemporaryDirectory() as tmp_readme:
+        _mk_root(tmp_readme)
+        _edit(tmp_readme, 'README.md', '(stable 3 / beta 0)', '(stable 3 / beta **1**)')
+        e = _facts.check_claims(tmp_readme, _fresh(tmp_readme))
+        check('S26 `beta **1**`（实际 0）被抓', any('写着 1' in m for _, m in e),
+              '; '.join(m for _, m in e[:2]))
+
+    with tempfile.TemporaryDirectory() as tmp_readme:
+        _mk_root(tmp_readme)
+        _edit(tmp_readme, 'README.md', '### primitives (1)', '### primitives (**2**)')
+        e = _facts.check_listings(tmp_readme, _fresh(tmp_readme))
+        # 认不出加粗的话会报"找不到分节标题"，所以这里必须断言"写着 2"
+        check('S27 `### primitives (**2**)`（实际 1）被抓',
+              any('分节标题写着 2' in m for _, m in e),
+              '; '.join(m for _, m in e[:2]))
+
+    with tempfile.TemporaryDirectory() as tmp_readme:
+        _mk_root(tmp_readme)
+        _edit(tmp_readme, 'README.md', '(stable 3 / beta 0)', '(stable **3** / beta **0**)')
+        f = _fresh(tmp_readme)
+        e = _facts.check_claims(tmp_readme, f) + _facts.check_listings(tmp_readme, f)
+        check('S28 `stable **3**` / `beta **0**` 正确时保持绿', not e,
               '; '.join(m for _, m in e[:2]))
 
     # ---- P1：pitfalls 字段类型（每条都要求"报清楚且不抛异常"）
