@@ -235,8 +235,15 @@ case "${2:-}" in
     case "${STUB_NPM:-absent}" in
       present) exit 0 ;;
       flaky)
-        if [ -f "${STUB_FLIP:-/nonexistent}" ]; then exit 0; fi
-        : > "${STUB_FLIP:-/nonexistent}" 2>/dev/null
+        # 🔴 没给 STUB_FLIP 就**报错**，不许退回 `/nonexistent` 那种哨兵：
+        #    哨兵在非 root 的 Linux 上写不进去 ⇒ 永远不翻转 ⇒ 用例静默失败。
+        #    CI 实测就是这么红的（本地 Windows 与 WSL-as-root 恰好可写）。
+        if [ -z "${STUB_FLIP:-}" ]; then
+          echo 'selftest 桩：flaky 需要 STUB_FLIP' >&2
+          exit 9
+        fi
+        if [ -f "$STUB_FLIP" ]; then exit 0; fi
+        : > "$STUB_FLIP"
         exit 1 ;;
       *) exit 1 ;;
     esac ;;
@@ -283,8 +290,17 @@ PY
     STUB_NPM="$1" STUB_GH="$2" STUB_CODE="$3" STUB_BODY="$4" \
       PATH="$tmp/bin:$PATH" bash "$tmp/05-audit/release-run.sh" probe 2>/dev/null
   }
+  # 🔴 WAIT_STEP / WAIT_TRIES / STUB_FLIP 三个都必须显式传：
+  #   · 不传步长 ⇒ 走默认 18×10s，flaky 那一例要跑 180 秒（CI 实测 171s）；
+  #   · 不传 STUB_FLIP ⇒ 桩退回哨兵 `/nonexistent`，而**非 root 的 Linux**
+  #     写不进去 ⇒ flip 永远不翻转 ⇒ "等到 present"那条必然失败。
+  #     Windows 与 WSL-as-root 恰好可写，所以本地全绿、CI 红 ——
+  #     夹具依赖了运行身份的权限，比判据写错更难查。
+  #   ⇒ 现在桩也会在缺 STUB_FLIP 时**直接报错**，不再静默退化。
   verify_stub() {
-    STUB_NPM="$1" STUB_GH="$2" STUB_CODE="$3" STUB_BODY="$4" \
+    WAIT_STEP=0 WAIT_TRIES=5 \
+      STUB_NPM="$1" STUB_GH="$2" STUB_CODE="$3" STUB_BODY="$4" \
+      STUB_FLIP="$tmp/flip" \
       PATH="$tmp/bin:$PATH" bash "$tmp/05-audit/release-run.sh" verify 2>/dev/null
   }
 
