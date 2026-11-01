@@ -30,6 +30,8 @@
  *   ⑥ 每个**结构类型**至少 1 页在采样集里（G2-02：类型由 DOM 算，不由人挑）
  *   ⑦ 每个类型的代表必须落在**度量最大那一档**（≥ 全集最大值的 90%，跨平台余量）
  *   ⑧ 采样集里的每个路径都必须存在于页面全集（防手写页面名 / 死链）
+ *   ⑨ 判据自检：类型在全集里 0 命中（触发条件写错）；或命中但**度量恒为 0**
+ *      （那样 ⑦ 的 `best < 0 * 0.9` 恒为 false ⇒ 安静地永远通过）
  *
  * 🔴 ⑥⑦⑧ 存在的理由：①–⑤ 都是"对**被测的那几页**下结论"。
  *    页面集本身选错了，前五条会**全绿**地告诉你"打印没问题"。
@@ -188,13 +190,21 @@ function pyExe() {
   return process.platform === 'win32' ? 'python' : 'python3';
 }
 
+/** 可预期的失败：只打一行原因，不甩栈（栈会淹没原因，见 check-all 的失败输出规范） */
+function friendly(msg) {
+  const e = new Error(msg);
+  e.friendly = true;
+  return e;
+}
+
 /** 受管页面全集：**唯一来源**是 shot-baseline.py */
 function pagesFromShotBaseline() {
   const r = spawnSync(pyExe(), [path.join(__dirname, 'shot-baseline.py'), '--list'],
     { encoding: 'utf8', timeout: 60000 });
-  if (r.error) throw new Error('取页面全集失败：' + r.error.message);
+  if (r.error) throw friendly('取页面全集失败：' + r.error.message
+    + '（用 PY 指定解释器；没有 python 就取不到页面全集）');
   if (r.status !== 0) {
-    throw new Error('取页面全集失败：shot-baseline.py --list 退出码 ' + r.status
+    throw friendly('取页面全集失败：shot-baseline.py --list 退出码 ' + r.status
       + '：' + String(r.stderr || '').trim().slice(0, 200));
   }
   const out = [];
@@ -203,7 +213,7 @@ function pagesFromShotBaseline() {
     if (m && m[1] === 'OK') out.push('/' + m[2]);
   }
   if (out.length < 40) {
-    throw new Error('页面全集只解析到 ' + out.length + ' 个（<40）⇒ 解析规则与'
+    throw friendly('页面全集只解析到 ' + out.length + ' 个（<40）⇒ 解析规则与'
       + ' `shot-baseline.py --list` 的输出格式不一致。**不许当成"没有页面"**，'
       + '那会让覆盖判据永远绿。');
   }
@@ -266,6 +276,14 @@ function typeErrs(pages, universe, types) {
     if (!st.members.length) {
       errs.push('⑥ 类型 ' + t + '（' + cfg.what + '）：全集里 0 页命中'
         + ' ⇒ 触发条件写错了（判据自己也可能是坏的）');
+      continue;
+    }
+    if (st.max <= 0) {
+      // 🔴 类型命中、度量却恒为 0 ⇒ 触发条件与度不是一回事（判据自己写错了）。
+      //    不报错的话 ⑦ 会安静通过：`best < 0 * 0.9` 永远是 false。
+      errs.push('⑨ 类型 ' + t + '（' + cfg.what + '）：' + st.members.length
+        + ' 页命中，但度量 `' + cfg.metric + '` 最大值为 0'
+        + ' ⇒ 触发条件与度量不一致，⑦ 会恒真。改触发条件或换度量。');
       continue;
     }
     if (!st.chosen.length) {
@@ -662,6 +680,15 @@ async function selftest() {
     const e4 = typeErrs(full, U, fakeType).join(' | ');
     report(/类型 overlay.*0 页命中/.test(e4), '⑨ 类型在全集里 0 页 ⇒ 报"触发条件写错"');
 
+    /* ⑨-b：类型命中、度量恒为 0 ⇒ 必须报"触发条件与度量不一致"，
+       否则 ⑦ 的 `best < max * within` 恒为 false（判据安静地永远通过） */
+    const zeroMetric = Object.assign({}, T, {
+      ghostly: { metric: 'nope', what: '不存在的度量', within: 0.9 },
+    });
+    const U2 = [{ url: '/x.html', types: ['ghostly'], m: { maxOverflow: 5, controls: 1 } }];
+    const e5 = typeErrs([['x', '/x.html']], U2, zeroMetric).join(' | ');
+    report(/类型 ghostly.*最大值为 0/.test(e5), '⑨ 度量恒为 0 ⇒ 报"与触发条件不一致"');
+
     /* ⑩ 元反向：把类型表清空，同一组"坏样本"必须不再报错
           —— 证明上面那些红确实来自类型判据，而不是别的分支 */
     report(typeErrs(noFormAtAll, U, {}).length === 0, '元反向：类型表清空后同一坏样本不再红');
@@ -674,6 +701,6 @@ async function selftest() {
 }
 
 main().then((rc) => process.exit(rc || 0)).catch((e) => {
-  console.error(e && e.stack ? e.stack : e);
+  console.error('  🔴 ' + ((e && e.friendly && e.message) || (e && e.stack) || e));
   process.exit(2);
 });

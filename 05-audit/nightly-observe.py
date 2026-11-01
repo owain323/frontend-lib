@@ -61,6 +61,10 @@ WORKFLOW = 'gate.yml'
 API = 'repos/{owner}/{repo}/actions/workflows/' + WORKFLOW + '/runs'
 UNKNOWN = '未分类'
 
+# 还没出结果的运行。**既不算绿也不算红** ——
+#   ⚠️ 把它当"打断"会让人以为刚红了一次，而它其实还在跑（观察者最不该制造假红）。
+PENDING = ('queued', 'in_progress', 'pending', 'waiting', 'requested')
+
 # ---------------------------------------------------------------------------
 # 已知红因的记忆
 # ---------------------------------------------------------------------------
@@ -219,11 +223,21 @@ def build_rows(runs, log_of):
     return rows
 
 
+def is_pending(row):
+    return row['conclusion'] in PENDING
+
+
 def scheduled_streak(rows):
-    """连续绿：只看**定时**运行。取消（cancelled）既不是绿也不是红。"""
+    """连续绿：只看**定时**运行。
+
+    取消（cancelled）既不是绿也不是红；还没出结果（queued/in_progress）更不是 ——
+    两种都**打断不了**序列，但也都**不能算绿**（绿要一次跑完的成功）。
+    """
     n = 0
     for row in rows:                       # rows 已按新→旧排序
         if row['event'] != 'schedule':
+            continue
+        if is_pending(row):
             continue
         if row['conclusion'] != 'success':
             return n, row
@@ -276,6 +290,10 @@ def render(rows, others):
         print('  定时运行连续绿：%d 次 —— 被 %s（%s）打断：%s'
               % (streak, blocker['id'], blocker['sha'],
                  blocker['gates'] or blocker['conclusion']))
+    pending = [r for r in rows if is_pending(r)]
+    if pending:
+        print('  另有 %d 次定时运行**还没出结果**（既不算绿也不算红）：%s'
+              % (len(pending), '、'.join(str(r['id']) for r in pending)))
     print('  窗口内非定时运行 %d 次（**不计入**稳定性序列）：' % len(others))
     for r in others[:4]:
         print('    %s %-16s %-11s %s' % (r['at'], r['conclusion'], r['event'], r['sha']))
@@ -357,6 +375,16 @@ def selftest():
     ok = streak == 1 and blocker is not None and blocker['id'] == 2
     bad += 0 if ok else 1
     print('  %s  %-24s 期望=1 实得=%d' % ('OK ' if ok else 'X  ', '取消打断连续绿', streak))
+
+    # 还在跑（in_progress）既不算绿也不算红，**不许**当成"被打断"
+    rows = build_rows([_run(1, '2026-11-03', 'schedule', 'in_progress'),
+                       _run(2, '2026-11-02', 'schedule', 'success')], lambda _i: (None, '不取'))
+    streak, blocker = scheduled_streak(rows)
+    ok = streak == 1 and blocker is None
+    bad += 0 if ok else 1
+    print('  %s  %-24s 期望=1/无打断 实得=%d/%s'
+          % ('OK ' if ok else 'X  ', '未出结果不打断连续绿', streak,
+             '无' if blocker is None else blocker['id']))
 
     print()
     if bad:

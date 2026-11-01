@@ -113,12 +113,18 @@ def main():
                .replace('%d', str(LIMIT), 1)
                .replace('%s', json.dumps(ACCENT_RGB), 1))
         tmp = os.path.join(HERE, '_accent_tmp.js')
-        with open(tmp, 'w', encoding='utf-8') as f:
-            f.write(fmt)
-        r = subprocess.run([node, tmp], capture_output=True, text=True,
-                           encoding='utf-8', errors='replace', timeout=180,
-                           cwd=HERE)
-        os.remove(tmp)
+        # 🔴 临时文件必须写在仓库里（node 要在 HERE 下解析相对路径），所以
+        #    删除**必须走 finally**：超时/异常会让文件留在树里，而
+        #    selftest-all 会把它算到**下一个被测脚本**头上（E229 的复发源）。
+        try:
+            with open(tmp, 'w', encoding='utf-8') as f:
+                f.write(fmt)
+            r = subprocess.run([node, tmp], capture_output=True, text=True,
+                               encoding='utf-8', errors='replace', timeout=180,
+                               cwd=HERE)
+        finally:
+            if os.path.exists(tmp):
+                os.remove(tmp)
         import json
         lines = [l for l in r.stdout.strip().split('\n') if l.startswith('[')]
         if not lines:
