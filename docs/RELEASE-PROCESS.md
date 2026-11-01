@@ -1,7 +1,7 @@
 # 发布流程与版本不可变规则
 
-> 本文规定**渠道语义**与**版本不可变**两条规则。怎么核验一个已发布版本，见
-> [VERIFY-RELEASE.md](VERIFY-RELEASE.md)。
+> 本文规定**渠道语义、版本不可变、生成链顺序、发布状态机与恢复步骤**。
+> 怎么核验一个已发布版本，见 [VERIFY-RELEASE.md](VERIFY-RELEASE.md)。
 
 ---
 
@@ -27,7 +27,9 @@
 
 ---
 
-## 2. 版本不可变（四条硬规则）
+## 2. 版本不可变
+
+### 2.1 四条硬规则
 
 1. **已发布版本的产物不得修改。** 不重发、不覆盖、不在本地改完之后用同一版本号再发一次。
 2. **发现已发布版本有错 ⇒ 进下一个 patch 版本。** 错误本身要登记（见第 3 节），但修正只能向前走。
@@ -36,9 +38,22 @@
 
 这四条的目的是让「`0.24.1` 是什么」有一个**唯一且不会变**的答案。只要允许同版本号在不同时间、不同渠道悄悄演变，任何核验都没有意义——你核对的可能是另一份东西。
 
+### 2.2 打 tag 的唯一正确形式
+
+```bash
+git tag -a v0.24.2 -m "source-commit: <40 位提交 SHA>"
+git push origin v0.24.2      # 只推这一个，不要 git push --tags
+```
+
+- 必须是 **annotated tag**：轻量 tag 没有 message，也就没有可核的声明。
+- `source-commit` 必须是**完整 40 位**：短 SHA 有歧义空间，而这条记录的全部价值就是"没有歧义地指认一个提交"。
+- 发布门禁会核三件事：tag 消息里的声明 == tag 实际指向的提交；该提交被至少一个远端分支包含；tag 内 `VERSION` 与当前版本一致。
+- 从 `0.24.2` 起这是**硬性要求**；更早的 tag 没有该字段是历史事实，门禁对它们走兼容判据（只核"是否属于某个远端分支"）。
+- 它**不能**证明"这个提交是当时最合适的发布提交"。那条判断属于评审，不属于门禁。
+
 ---
 
-## 3. 发现已发布版本有错时的处理顺序
+## 3. 发现已发布版本有错时
 
 1. **确认影响面**：哪些文件、哪些消费者、是否影响 API 或行为。
 2. **在仓库与文档站修正**（这两处可以立即更新；npm 已发布包不动）。
@@ -50,8 +65,122 @@
 
 ---
 
-## 4. 本文档当前的覆盖范围
+## 4. 生成链：什么由什么生成，顺序是什么
 
-本文只规定渠道语义与版本不可变规则。
+### 4.1 生成器与依赖顺序
 
-**尚未写入**的部分：生成物与源文件的对应关系、发布前检查的确切范围、发布中断后的恢复步骤。在这些内容补齐之前，不要从本文推断「发布前检查了哪些东西」——本文没有做这个承诺。
+仓库里没有 `regen-all` 之类的编排脚本。顺序是**由依赖决定的**，不是约定：
+
+| 顺序 | 生成器 | 真值输入 | 输出 | 改写源文件？ |
+|---|---|---|---|---|
+| 1 | `gen-ai-contract.py` | `ai/components.meta.json` + 组件 CSS/JS + `ai/behaviors.json` | `ai/components.json`、`ai/tokens.json` | 否 |
+| 2 | `gen-tokens-tree.py` | `01-tokens/tokens.css` | `ai/tokens.tree.json` | 否 |
+| 3 | `make-tiersnippet.py` | `01-tokens/tokens.css` | `04-recipes/tierA-tokens.css` | **是**（写进源目录） |
+| 4 | `gen-behavior.py` | `01-tokens/behavior/*.js` | 组件 JS 里的内联 core 段 | **是**（就地改写） |
+| 5 | `gen-docs.py` | `ai/components.json` + 各组件 `README.md` | `guide/`、`index.html`、`404.html` | 否 |
+| 6 | `gen-llms.py` | `ai/components.json` + `ai/pitfalls*.json` + `ai/behaviors.json` | `llms-full.txt` | 否 |
+| 7 | `fix-start-here.py` | `ai/components.json` | `ai/START-HERE.md` 的表格段 | 是（局部） |
+| 8 | `build-dist.py` | `01`–`04`、`09` 的 CSS/JS | `dist/` | 否 |
+
+两条必须记住的推论：
+
+- **第 3、4 步写回源文件**，所以它们必须排在 `build-dist.py` **之前**。反过来做，`dist` 里装的是旧源。
+- **第 1 步是第 5、6、7 步的输入**，所以 `ai/components.json` 变了却不重跑下游，页面与 `llms-full.txt` 会各自停在上一个版本。
+
+这不是推测。把顺序颠倒（先 `build-dist` 再 `make-tiersnippet`）后，`dist-fresh` 会明确报：
+
+```
+源码改过但 dist 没重建：04-recipes/tierA-tokens.css
+```
+
+而按正确顺序重跑同一处改动，`dist-fresh` 是绿的。失败信息点名了文件，所以能确认红的原因是**产物过期**，不是环境噪声。
+
+### 4.2 冻结点：发布前到底检查了什么
+
+发布前跑的是 `npm run publish:check`，它等于：
+
+```
+check-all.sh --fast      # 静态层（跳过所有需要浏览器的判据）
+pack-smoke.sh            # npm pack → 装进空项目 → 解析入口
+```
+
+`--fast` 覆盖第 4.1 节**全部 8 个生成器**的产物新鲜度（每个生成器都有对应的 `--check` 判据；其中 `gen-docs` 与 `gen-llms` 由同一道 `docs-site` 门禁覆盖）。所以"入库产物 == 生成器现算"在发布前是被验过的。
+
+它**不覆盖**任何需要浏览器的判据。其中与发布物直接相关的是 `dist` 的语义一致性：
+
+- `dist-parity-check.js`（CSS 经 CSSOM 逐条比对）
+- `dist-js-parity-gate.js`（JS 的可观测行为）
+
+这两道属于 component 层，`--fast` 会跳过它们。**因此发布工作流里单独、无条件地跑这两步**（见 5.1）。这条不写在别处，只写在这里，因为"发布前跑过全部门禁"是一句会骗人的话。
+
+---
+
+## 5. 发布状态机
+
+两条链**不是**一条链。它们各自独立，用提交 SHA 关联，但不能互相推断。
+
+### 5.1 npm 链（tag 触发）
+
+| 态 | 含义 | 探测方式（只读） |
+|---|---|---|
+| `TAGGED` | 存在 annotated tag `v<版本>` | `git cat-file -t v<版本>` |
+| `GATES_OK` | `publish:check` + dist 语义比对全绿 | 工作流日志 |
+| `NPM_PUBLISHED` | registry 上有该版本，且 provenance 指向本 tag 的提交 | `bash 05-audit/release-run.sh probe` |
+| `RELEASE_CREATED` | GitHub Release 存在 | 同上 |
+
+工作流按这个顺序落地：
+
+1. 校验 tag 名 == `package.json.version`，检查 `NPM_TOKEN`；
+2. `npm ci`；
+3. **probe**（只读）：输出 `npm=… release=… provenance=…`；
+4. `publish:check`；
+5. 装 Chromium，跑两道 `dist` 语义比对（**无条件**，不受第 6 步的跳过影响）；
+6. `npm publish --provenance`，**仅当** `npm != present`；
+7. `gh release create`，**仅当** `release != present`；
+8. **verify**（`if: always()`）：npm + provenance + Release 三者齐备才算完成。
+
+第 5 步之所以无条件：如果它和 `npm publish` 共用同一个 `if`，恢复一次半完成的发布会**在没跑 dist 校验的情况下**继续建 Release —— 那等于把发布验证变成可跳过的装饰。
+
+第 3 步之所以不能只看「版本存在」：`npm view` 只能回答「这个版本在不在」，不能回答「它是不是我们发的」。probe 会取 attestation 里的 `gitCommit` 与 tag 指向比对；不一致就判失败，而不是跳过。
+
+### 5.2 站点链（主分支触发）
+
+| 态 | 含义 | 探测方式 |
+|---|---|---|
+| `COMMIT_PUSHED` | 主分支上有提交 | `git rev-parse HEAD` |
+| `SITE_DEPLOYED` | Pages 部署记录指向某个提交 | `gh api repos/{owner}/{repo}/deployments?environment=github-pages` |
+
+这条链没有"npm 版本"的概念：它部署的是主分支的当前状态。两条链的提交**可以不同**，见第 1 节。
+
+---
+
+## 6. 发布中断后怎么恢复
+
+先探测，再决定，不要重头再来：
+
+```bash
+bash 05-audit/release-run.sh probe
+```
+
+| probe 输出 | 含义 | 该做什么 |
+|---|---|---|
+| `npm=absent release=absent` | 全新发布 | 正常跑完工作流 |
+| `npm=present provenance=ok release=absent` | npm 已发、Release 没建 | **重跑同一条工作流**；发布步骤会自动跳过，只补 Release |
+| `npm=present provenance=ok release=present` | 已完成 | 不需要动作；`verify` 会打印回执 |
+| `npm=present provenance=mismatch` | registry 上的版本不是这个 tag 构建的 | **停**。这不是"已完成"，是"发错了"。按第 3 节处理 |
+| `npm=present provenance=absent` | 该版本不是本工作流发的（可能是手工发布） | **停**，人工判断来源 |
+| `npm=absent release=present` | 异常态（Release 有、包没有） | 人工核对；不要在没弄清原因前重发 |
+
+禁止的恢复方式：
+
+- 删除 tag 重新打 —— 那会改写"当时发布了什么"。
+- `npm unpublish` 之后再发同版本 —— 版本号不可变规则不允许。
+- 只手工 `gh release create` 而不跑 `verify` —— 回执是"三者同时成立"的唯一记录。
+
+---
+
+## 7. 本文档的边界
+
+本文覆盖：渠道语义、版本不可变、生成链顺序、冻结点范围、发布状态机、恢复步骤。
+
+本文**不**覆盖：视觉回归基线、体积预算、组件行为契约等与"发布身份"无关的门禁；也不承诺对发布物做逐文件完整性校验（见 [VERIFY-RELEASE.md](VERIFY-RELEASE.md) 第 4 节）。
