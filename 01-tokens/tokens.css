@@ -651,7 +651,9 @@
    用 @media 是目前兼容性最好的做法。
    ---------------------------------------------------------------- */
 
-@media (prefers-color-scheme: dark) {
+/* `screen and` 承重：暗色是屏幕概念，纸没有深色模式。
+   缺了它，暗色令牌在 print 里照样生效 ⇒ 浅字配被丢弃的深底。 */
+@media screen and (prefers-color-scheme: dark) {
   /* ========================================================================
      第二次修正（上一版被 真机实测否决）
      ------------------------------------------------------------------------
@@ -839,6 +841,7 @@
 /* === END: light-via-attr === */
 
 /* === BEGIN: dark-via-attr（由 05-audit/theme-sync.py 生成，勿手改）=== */
+@media screen {
 :root[data-theme="dark"],
 [data-theme="dark"] {
   --raw-accent: #7AA9DE;
@@ -912,6 +915,7 @@
   --tooltip-fg: var(--raw-tooltip-fg);
   --warning: var(--raw-warning);
   --warning-bg: var(--raw-warning-bg);
+}
 }
 /* === END: dark-via-attr === */
 
@@ -1065,3 +1069,17 @@ input[type="submit"],
      为什么是 44px：**WCAG 2.5.5 Target Size (Level AAA)** 要求 44×44 CSS px。
      ⚠️ 注意区分：
        · WCAG 2.5.8（AA 级）只要 24×24 */
+
+/* ============================================================================
+   打印（print）—— 纸没有主题：暗色已被上面的 `@media screen and` 关在屏幕里。
+   剩下的只有一处：实心控件的字。打印丢弃背景色，而它们的
+   `--text-on-accent` 是 #ffffff ⇒ 白纸白字（实测产物 2.30:1）。
+   改这两个令牌一处，好过改 8 个组件。
+   ========================================================================== */
+@media print {
+  :root {
+    color-scheme: light;          /* 表单控件/滚动条别跟着系统去暗色 */
+    --text-on-accent: #15181c;
+    --text-on-solid:  #15181c;
+  }
+}

@@ -102,7 +102,8 @@ def load_tokens(path, mode='light'):
     #      要按 **CSS 层叠语义**取整份文件：后面出现的覆盖前面出现的
     #      （暗色 raw 覆盖浅色 raw），语义令牌的 `var()` 解析时就用最终值。
     #    这与浏览器行为一致 —— 同一份 `:root`，暗色只是覆盖了一层。
-    i = css.find('@media (prefers-color-scheme: dark)')
+    _m = re.search(r'@media[^{]*prefers-color-scheme:\s*dark', css)
+    i = _m.start() if _m else -1
     if i < 0 or mode == 'dark':
         seg = css
     else:
@@ -198,10 +199,10 @@ def check_inline_sync(tokens, root, mode='light'):
         # dark 模式：只截取 @media dark 之后的部分
         scope = s
         if mode == 'dark':
-            i = s.find('@media (prefers-color-scheme: dark)')
-            if i < 0:
+            _m = re.search(r'@media[^{]*prefers-color-scheme:\s*dark', s)
+            if not _m:
                 continue          # 该文件本来就没有暗色块，跳过
-            scope = s[i:]
+            scope = s[_m.start():]
         for k, v in tokens.items():
             m = re.search(re.escape(k) + r'\s*:\s*(#[0-9a-fA-F]{3,6})', scope)
             if m and m.group(1).lower() != v.lower():

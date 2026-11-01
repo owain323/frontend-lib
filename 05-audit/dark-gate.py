@@ -61,9 +61,10 @@ def parse(path):
     src = open(path, encoding='utf-8').read()
     # 去掉注释，避免把说明里的数字当值
     src = re.sub(r'/\*.*?\*/', lambda m: '\n' * m.group(0).count('\n'), src, flags=re.S)
-    i = src.find('@media (prefers-color-scheme: dark)')
-    if i < 0:
+    _m = re.search(r'@media[^{]*prefers-color-scheme:\s*dark', src)
+    if not _m:
         return {}, {}
+    i = _m.start()
     light_src = src[:i]
     dark_src = src[i:]
 

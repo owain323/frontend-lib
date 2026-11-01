@@ -27,7 +27,7 @@ Every subcommand accepts `--json`; failures print `{"ok":false,...}` and exit no
 
 | id | class | tier | maturity | css | js | what it is | pitfalls |
 |---|---|---|---|---|---|---|---|
-| `bar` | `bar` | asset | stable | 5.3 KB | `bar.js` | 柱状图：堆叠/分组两种语义、超量程裁剪、图例 | `chart-multiline-label` |
+| `bar` | `bar` | asset | stable | 6.5 KB | `bar.js` | 柱状图：堆叠/分组两种语义、超量程裁剪、图例 | `chart-multiline-label` |
 | `model-viewer` | `mv` | asset | stable | 4.0 KB | `model-viewer.js` | 3D 模型查看器：令牌驱动样式，不含渲染库本体 | — |
 | `scientific-plot` | `splot` | asset | stable | 3.9 KB | `scientific-plot.js` | 二维科学绘图：折线/区间带/对数轴，纯令牌驱动、零依赖 | `chart-multiline-label` |
 | `sparkline` | `sparkline` | asset | stable | 7.2 KB | `sparkline.js` | 迷你趋势图：无坐标轴、纯形状，适合表格内嵌的一行走势 | `chart-multiline-label` |

@@ -691,6 +691,17 @@ run "theme-css"   node 05-audit/theme-css-gate.js
 #      badge / tooltip 仍按系统偏好分支。两条都已修
 run "theme-scope" node 05-audit/theme-scope-gate.js
 run "theme-scope-rev" node 05-audit/theme-scope-gate.js --selftest
+# 打印产物：读 page.pdf() 的**产物**，不读 getComputedStyle。
+#   🔴 为什么不能读计算样式（两条实测）：
+#     ① `emulateMediaType('print')` 在本环境并不真的切换媒体类型
+#        （`matchMedia('print')` 仍为 false）⇒ 量到的还是屏幕；
+#     ② Chromium 在 printBackground:false 时会改写文字色
+#        （#E4E7EA→#929496、#FFF→#ABABAB），声明色与纸面色是两个数。
+#   判据：① 每段文字对白纸 ≥4.5:1 ② 暗色与浅色的产物颜色分布完全相同
+#         ③ 页数 / 文字 run 数与基线一致 ④ 无横向溢出
+#   @component：只进全量层（发布快速路径不承担浏览器打印验证的成本）
+run "print"     node 05-audit/print-gate.js
+run "print-rev" node 05-audit/print-gate.js --selftest
 # 探针页自身要能跑：静态判据只能证明"清单写全了"，证明不了探测函数没写坏
 run "webview-probe-run" node 05-audit/webview-probe-check.js
 # 全部令牌的**解析值**（107 个 × 4 种明暗组合）：

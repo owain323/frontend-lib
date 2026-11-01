@@ -130,6 +130,15 @@
 .bar__label--max   { fill: var(--text-primary); font-weight: 700; }
 .bar__label--clip  { fill: var(--danger, #c0392b); font-weight: 700; }
 
+/* 打印：描边去掉。
+   那圈 `var(--surface)` 光晕在屏幕上是为了把标注从深色柱子上"抠"出来；
+   纸上没有深色柱子（底色被丢弃），光晕反而变成一圈**白色文字轮廓**。
+   实测（0.24.2，`examples/finance-report`）：`stroke: none` 之后，
+   产物里 4 段 #FFFFFF 的文字 run 消失，最差对比度从 1.00:1 升到 5.72:1。 */
+@media print {
+  .bar__label { stroke: none; }
+}
+
 /* ---------- 越界说明 ---------- */
 .bar__note {
   margin: var(--sp-2) 0 0;
@@ -154,13 +163,19 @@
   }
 }
 
-/* ---------- 暗色下容器要跟着换 ---------- */
-@media (prefers-color-scheme: dark) {
-  .bar {
-    background: var(--surface, #1a1c1e);
-    border-color: var(--border-decor);
-  }
-  .bar__label {
-    stroke: var(--surface, #1a1c1e);
-  }
-}
+/* ---------- 暗色：**不在这里写分支** ----------
+   这里原来有一段针对 `prefers-color-scheme: dark` 的媒体查询块，
+   里面只有两条：`.bar` 的 background 与 `.bar__label` 的 stroke。
+   ⚠️ 那段文字在这里**故意不照抄**：多个门禁拿这个字符串当锚点，
+      注释里出现字面量会把它们带偏（E199 踩过一次）。
+   它做的只有一件事：把 `var()` 的**兜底值**从 #fff 换成暗色值。
+   令牌在的时候（本库的正式用法）两条声明解析结果完全相同 ⇒ 纯冗余。
+
+   代价却是真的：
+     · 它让这个资产自己长出一个主题分支，绕过令牌层
+       （`theme-scope-gate` 判据⑤ 只扫 02/03/04，扫不到 09-assets，
+        所以这条分支一直绿着存在）；
+     · 打印时它照样命中 ⇒ SVG 描边在纸上用暗色值，而底色已被丢弃。
+
+   ⇒ 主题一律由令牌承担。没有令牌时用的是浅色兜底（#fff），
+     这正是"没装令牌就别指望暗色"的应有行为。 */

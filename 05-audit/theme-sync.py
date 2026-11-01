@@ -189,19 +189,27 @@ def light_aliases(css):
     return out
 
 
-def _region(begin, end, selector, raws, aliases):
+def _region(begin, end, selector, raws, aliases, wrap=None):
     rows = ['  %s: %s;' % (k, v) for k, v in sorted(raws.items())]
     rows.append('')
     rows += ['  %s: %s;' % (k, v) for k, v in sorted(aliases.items())]
-    return begin + '\n' + selector + ' {\n' + '\n'.join(rows) + '\n}\n' + end
+    body = selector + ' {\n' + '\n'.join(rows) + '\n}\n'
+    if wrap:
+        # 🔴 暗色是**屏幕**概念。包一层 `@media screen` 之后，print 媒体里
+        #    这段不再命中 ⇒ 打印回落到浅色令牌。
+        #    不加这一层，打印时白纸上是 #E4E7EA 的字（实测 3.04:1）。
+        body = wrap + ' {\n' + body + '}\n'
+    return begin + '\n' + body + end
 
 
 def build_region(dark, aliases):
     # 🔴 列表第一个保留 `:root` 限定：根元素上的特异性不降级（与旧行为逐字等价）。
     #    第二个 `[data-theme="dark"]` 才是容器级作用域的入口，见
     #    docs/RFC-THEME-SCOPE.md D1。
+    #    `wrap='@media screen'`：强制暗同样只在屏幕上生效 —— 打印不认主题。
     return _region(BEGIN, END,
-                   ':root[data-theme="dark"],\n' + SEL_DARK, dark, aliases)
+                   ':root[data-theme="dark"],\n' + SEL_DARK, dark, aliases,
+                   wrap='@media screen')
 
 
 def build_light_region(light, aliases):
@@ -215,6 +223,14 @@ def _region_block(region, begin):
     i = masked.find('{', start)
     if i < 0:
         return None, None
+    # ⚠️ 暗色段被 `@media screen` 包着：跳过这层包装再取规则块。
+    #    不跳的话，拿到的"选择器"是 `@media screen`，
+    #    回写的声明体会被塞到错的位置。
+    if masked[start:i].strip().startswith('@'):
+        start = i + 1
+        i = masked.find('{', start)
+        if i < 0:
+            return None, None
     sel = masked[start:i].strip()
     body, _ = find_block(masked, i)
     return sel, body

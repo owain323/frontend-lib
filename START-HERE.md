@@ -70,7 +70,7 @@
 | detail-page | `04-recipes/detail-page/detail-page.css` | 190 | — |  |
 | report | `04-recipes/report/report.css` | 364 | — |  |
 | table | `04-recipes/table/table.css` | 409 | — |  |
-| bar | `09-assets/bar/bar.css` | 166 | **必需 320** (`bar.js`) |  |
+| bar | `09-assets/bar/bar.css` | 181 | **必需 320** (`bar.js`) |  |
 | model-viewer | `09-assets/model-viewer/model-viewer.css` | 143 | **必需 423** (`model-viewer.js`) |  |
 | scientific-plot | `09-assets/scientific-plot/scientific-plot.css` | 141 | **必需 610** (`scientific-plot.js`) |  |
 | sparkline | `09-assets/sparkline/sparkline.css` | 158 | **必需 508** (`sparkline.js`) |  |

@@ -108,7 +108,10 @@ def extract(src):
             if depth == 0:
                 light = plain[i:j + 1]
                 break
-    k = plain.index('@media (prefers-color-scheme: dark)')
+    _m = re.search(r'@media[^{]*prefers-color-scheme:\s*dark', plain)
+    if not _m:
+        raise SystemExit('tokens.css 里找不到暗色 @media 段')
+    k = _m.start()
     depth = 0
     for j in range(k, len(plain)):
         if plain[j] == '{':

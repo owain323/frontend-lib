@@ -22,6 +22,14 @@
                 transition: all 200ms; }
 .btn--naive:hover { filter: brightness(1.08); transform: scale(1.05); }
 .btn--naive:disabled { opacity: 0.5; }
+/* 🔴 打印：反例按钮的底色会被丢弃，白字就成了白纸白字。
+   实测（0.24.2，Chromium，printBackground:false）：产物里 6 段文字是
+   #ABABAB，对白纸 2.30:1。这里换成描边 + 正文墨色 —— 反例照样看得出
+   "它长得像按钮"，但纸上读得出来。 */
+@media print {
+  .btn--naive { background: transparent; color: var(--text-primary);
+                  outline: 1px dashed currentColor; }
+}
 </style>
 </head>
 <body class="page">

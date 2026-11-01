@@ -145,7 +145,7 @@
 
 }
 
-@media (prefers-color-scheme: dark) {
+@media screen and (prefers-color-scheme: dark) {
 
 :root:not([data-theme="light"]) {
   --paper:           #14171A;
@@ -163,8 +163,8 @@
   --text-primary:    #E4E7EA;
   --text-secondary:  #AEB6C0;
   --text-tertiary:   #9BA3AD;
-  --text-on-accent:  #0D1114;
-  --text-on-solid:   #0D1114;
+  --text-on-accent:  #15181c;
+  --text-on-solid:   #15181c;
   --skeleton-bg:       #2E343C;
   --skeleton-shimmer:   rgba(255, 255, 255, 0.06);
 
