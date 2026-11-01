@@ -11,8 +11,9 @@
 #       的基线；历史 tag 的 Linux 基线多数已经过期 ⇒ 一片红，且红得没有意义
 #
 #   ⇒ 只推**要发布的那一个**：`git push origin v0.24.0`
-#   ⇒ 本地留着但没发布过的里程碑 tag（v0.17–v0.23 就是这种），
+#   ⇒ 本地留着但没发布过的里程碑 tag（v0.12.1 与 v0.17.0–v0.23.0，共 9 个），
 #      **保留、不推、也不删** —— 它们是本地历史锚点，删了就找不回来。
+#      推之前先 `git tag --list | sort -V` 核对；不要 `git push --tags`。
 # ============================================================================
 # 为什么需要这个工作流
 # ---------------------------------------------------------------------------
@@ -112,15 +113,40 @@ jobs:
       - name: 安装依赖
         run: npm ci
 
+      # 🔴 先探测、再动手（2026-11 加）：
+      #   原来是一条直线 ⇒ npm 成功、Release 失败后重跑必然撞 403，流程卡死。
+      #   probe 只读，输出 `npm=… release=… provenance=…` 给下面两步当条件。
+      #   ⚠️ npm 已存在时它还会核对 provenance 里的 gitCommit 是否等于本 tag：
+      #      只看"版本存在"就跳过，等于把**任何**已存在的包当成我们发的那个。
+      - name: 探测发布状态（只读）
+        id: probe
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash 05-audit/release-run.sh probe >> "$GITHUB_OUTPUT"
+
       - name: 发布前门禁（与 prepublishOnly 同一套）
         run: npm run publish:check
 
+      # 🔴 这两步**不**受"npm 已存在就跳过"影响（2026-11 加）：
+      #   如果它们与 npm 发布共用同一个 if，恢复一次半完成的发布时
+      #   会在**没跑 dist 校验**的情况下继续建 Release —— 那等于把发布验证
+      #   变成了可跳过的装饰。所以：dist 校验无条件执行。
+      - name: 安装 Chromium（dist 语义比对需要）
+        run: npx playwright install --with-deps chromium
+
+      - name: dist 语义比对（CSSOM / JS 行为）
+        run: |
+          node 05-audit/dist-parity-check.js
+          node 05-audit/dist-js-parity-gate.js
+
       - name: 发布到 npm（带 provenance）
+        if: steps.probe.outputs.npm != 'present'
         run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: 建 GitHub Release（正文取自 CHANGELOG 对应一节）
+        if: steps.probe.outputs.release != 'present'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -139,6 +165,13 @@ jobs:
           gh release create "$GITHUB_REF_NAME" \
             --title "v$V" \
             --notes-file release-notes.md
+
+      # 回执必须**永远**跑：失败时它就是"到底发到哪一步"的唯一记录。
+      - name: 发布回执（npm + provenance + Release 三者齐备才算完成）
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash 05-audit/release-run.sh verify
 
       # 🔴 门禁红了要能**看图**，不能只有一行"FAIL"。
       #   diff 图和当前截图都在这里，下载下来就能判断是"真回归"还是"环境变了"。

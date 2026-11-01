@@ -550,6 +550,12 @@ def main():
         print('  OK dist 与源码新鲜度一致（%d 个产物都对得上源 sha256）'
               % sum(len(e['outputs'])
                     for e in json.loads(io.open(MANIFEST, encoding='utf-8').read())['files']))
+        # 🔴 这句限定不是客套：本判据**只**比"源 sha 是否与 manifest 记录一致"，
+        #   产物内容本身没有被比对（手改 dist 不会被这里发现）。
+        #   实测：给 dist 加注释、改掉一条声明，`--check` 仍然 OK。
+        #   ⇒ 写在输出里，避免下一个人把它当成"产物完整性判据"。
+        print('     只核源 sha；产物内容未比对 —— 语义由 dist-parity / '
+              'dist-js-parity 守，逐字没有任何判据')
         return 0
 
     man = build()

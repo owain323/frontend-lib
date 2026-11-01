@@ -116,6 +116,115 @@ function parseDir(dir) {
   return { files: files, fatal: null };
 }
 
+/* ==========================================================================
+   ⑤ release.yml 的发布契约（结构断言，不是文本匹配）
+   --------------------------------------------------------------------------
+   为什么需要它：`release.yml` 曾经是一条直线 —— npm 成功、Release 失败后
+   重跑必然撞 403；而"跳过已发布版本"这个修法本身会带来新的漏洞：
+   如果 dist 校验与 npm 发布共用同一个 `if`，恢复一次半完成的发布会
+   **在没跑 dist 校验的情况下继续**。
+
+   所以这里判的是**步骤之间的关系**，不是"有没有某个字符串"：
+     · probe 必须在 npm publish 之前
+     · npm publish 必须被 probe 的 npm 状态门控
+     · gh release create 必须被 probe 的 release 状态门控
+     · 两个 dist 校验必须在 publish 之前，且**不得**被 npm 状态门控
+     · 回执必须 always() 且排在最后
+   存在性不在这里判：`release-gate.py [13]` 保证这个文件必须在。
+   ========================================================================== */
+function releaseProblems(doc, name) {
+  var errs = [];
+  var oks = [];
+  var jobs = doc.jobs || {};
+  var job = null;
+  var jid = null;
+
+  Object.keys(jobs).forEach(function (k) {
+    var ss = (jobs[k] || {}).steps;
+    if (!Array.isArray(ss)) return;
+    if (ss.some(function (s) { return /npm\s+publish/.test((s && s.run) || ''); })) {
+      job = ss;
+      jid = k;
+    }
+  });
+  if (!job) {
+    errs.push(name + '：没有任何 job 执行 `npm publish`');
+    return { errs: errs, oks: oks };
+  }
+  var tag = name + ' › ' + jid;
+
+  function runOf(st) { return (st && st.run) || ''; }
+  function at(needle) {
+    for (var i = 0; i < job.length; i++) {
+      if (runOf(job[i]).indexOf(needle) >= 0) return i;
+    }
+    return -1;
+  }
+  function condOf(st) { return (st && st['if']) || ''; }
+
+  var pub = at('npm publish');
+  var probe = at('release-run.sh probe');
+
+  if (probe < 0) {
+    errs.push(tag + '：没有 `release-run.sh probe` 这一步（只读探测）' +
+      ' ⇒ 重跑时无法判断哪一步已完成（npm 已发布会被当成失败重试）');
+  } else if (probe > pub) {
+    errs.push(tag + '：`probe` 必须在 `npm publish` **之前**');
+  } else {
+    oks.push(tag + ' 先探测再发布');
+  }
+
+  if (condOf(job[pub]).indexOf('steps.probe.outputs.npm') < 0) {
+    errs.push(tag + '：`npm publish` 没有按 probe 的 npm 状态门控' +
+      ' ⇒ 重跑必然撞 403（版本已存在）');
+  } else {
+    oks.push(tag + ' npm 发布受状态门控');
+  }
+
+  var gh = at('gh release create');
+  if (gh < 0) {
+    errs.push(tag + '：没有 `gh release create`');
+  } else if (condOf(job[gh]).indexOf('steps.probe.outputs.release') < 0) {
+    errs.push(tag + '：`gh release create` 没有按 probe 的 release 状态门控' +
+      ' ⇒ Release 已存在时重跑会 422');
+  } else {
+    oks.push(tag + ' Release 创建受状态门控');
+  }
+
+  ['dist-parity-check.js', 'dist-js-parity-gate.js'].forEach(function (f) {
+    var i = at(f);
+    if (i < 0) {
+      errs.push(tag + '：发布路径里没有 `' + f + '`' +
+        ' ⇒ dist 的内容在发布时无人核对（只有源 sha 与体积）');
+      return;
+    }
+    if (i > pub) {
+      errs.push(tag + '：`' + f + '` 必须在 `npm publish` **之前**');
+    }
+    var c = condOf(job[i]);
+    if (/probe|npm/.test(c)) {
+      errs.push(tag + '：`' + f + '` 被 npm 存在性条件门控（if: ' + c + '）' +
+        ' ⇒ 续跑一次半完成的发布时会**跳过** dist 校验');
+    } else {
+      oks.push(tag + ' ' + f + ' 无条件执行');
+    }
+  });
+
+  var vf = at('release-run.sh verify');
+  if (vf < 0) {
+    errs.push(tag + '：没有 `release-run.sh verify` 回执');
+  } else if (String(condOf(job[vf])).indexOf('always()') < 0) {
+    errs.push(tag + '：回执必须是 `if: always()`' +
+      ' ⇒ 否则失败路径上不会留下"到底发到哪一步"的记录');
+  } else if (vf < pub) {
+    errs.push(tag + '：回执必须在发布动作**之后**');
+  } else {
+    oks.push(tag + ' 有 always() 回执');
+  }
+
+  return { errs: errs, oks: oks };
+}
+
 /** 核心判据。返回 { errs:[], oks:[] } —— 纯函数，便于反向控制造突变体。 */
 function check(dir) {
   var errs = [];
@@ -232,6 +341,19 @@ function check(dir) {
     });
   });
 
+  /* ⑤ 发布契约（只在 release.yml 存在时判；存在性由 release-gate [13] 守） */
+  var relFile = null;
+  parsed.files.forEach(function (f) {
+    if (f.name === 'release.yml' && f.doc) relFile = f;
+  });
+  if (relFile) {
+    var rp = releaseProblems(relFile.doc, relFile.name);
+    rp.errs.forEach(function (e) { errs.push(e); });
+    rp.oks.forEach(function (o) { oks.push(o); });
+  } else {
+    oks.push('没有 release.yml ⇒ 跳过发布契约（存在性由 release-gate 守）');
+  }
+
   return { errs: errs, oks: oks };
 }
 
@@ -263,21 +385,21 @@ var GOOD = [
   '',
 ].join('\n');
 
-function tmpDirWith(content) {
+function tmpDirWith(content, fname) {
   var d = fs.mkdtempSync(path.join(os.tmpdir(), 'wf-gate-'));
   var wf = path.join(d, '.github', 'workflows');
   fs.mkdirSync(wf, { recursive: true });
   /* content === null ⇒ 造一个**空**的 workflow 目录（测"视野为空"） */
   if (content !== null) {
-    fs.writeFileSync(path.join(wf, 'gate.yml'), content);
+    fs.writeFileSync(path.join(wf, fname || 'gate.yml'), content);
   }
   return d;
 }
 
 function selftest() {
   var bad = 0;
-  function expect(why, content, needle) {
-    var d = tmpDirWith(content);
+  function expect(why, content, needle, fname) {
+    var d = tmpDirWith(content, fname);
     var r = check(path.join(d, '.github', 'workflows'));
     var hit = needle
       ? r.errs.some(function (e) { return e.indexOf(needle) >= 0; })
@@ -293,8 +415,8 @@ function selftest() {
   /* 反向方向：样本**必须绿**。
      ⚠️ 只测"会红"是不够的 —— 一道永远红的门禁也能"抓到问题"。
         这里专门测"不该红的时候不许红"，否则加严判据时会把合格配置误伤。 */
-  function expectGreen(why, content) {
-    var d = tmpDirWith(content);
+  function expectGreen(why, content, fname) {
+    var d = tmpDirWith(content, fname);
     var r = check(path.join(d, '.github', 'workflows'));
     var ok = r.errs.length === 0;
     process.stdout.write('  [' + (ok ? 'OK  ' : 'FAIL') + '] ' + why + '\n');
@@ -360,6 +482,84 @@ function selftest() {
     process.stdout.write('         errs=' + JSON.stringify(r.errs) + '\n');
   }
   try { fs.rmSync(d, { recursive: true, force: true }); } catch (e) { /* 忽略 */ }
+
+  /* ===== 发布契约（release.yml 的结构断言）=============================
+     每个突变体只改一个开关；其中「dist 被 npm 条件门控」与「dist 无条件」
+     唯一的差别就是一行 `if` —— 若判据退化成"有没有这两步"，前者会绿，
+     而那正是"续跑时跳过发布校验"的漏洞。
+     ==================================================================== */
+  function releaseFixture(o) {
+    o = o || {};
+    var dist = o.dist || 'before';   /* before | after | absent | gated */
+    var L = [];
+    L.push('name: release');
+    L.push('on:');
+    L.push('  push:');
+    L.push('    tags:');
+    L.push("      - 'v*'");
+    L.push('jobs:');
+    L.push('  publish:');
+    L.push('    timeout-minutes: 25');
+    L.push('    steps:');
+    L.push('      - run: npm ci');
+
+    function pushDist(gated) {
+      if (gated) {
+        L.push("      - if: steps.probe.outputs.npm != 'present'");
+        L.push('        run: |');
+      } else {
+        L.push('      - run: |');
+      }
+      L.push('          node 05-audit/dist-parity-check.js');
+      L.push('          node 05-audit/dist-js-parity-gate.js');
+    }
+
+    if (o.probe !== false) {
+      L.push('      - id: probe');
+      L.push('        run: bash 05-audit/release-run.sh probe');
+    }
+    if (dist === 'before' || dist === 'gated') pushDist(dist === 'gated');
+
+    if (o.publishIf === false) {
+      L.push('      - run: npm publish --provenance');
+    } else {
+      L.push("      - if: steps.probe.outputs.npm != 'present'");
+      L.push('        run: npm publish --provenance');
+    }
+
+    if (dist === 'after') pushDist(false);
+
+    if (o.releaseIf === false) {
+      L.push('      - run: gh release create v9');
+    } else {
+      L.push("      - if: steps.probe.outputs.release != 'present'");
+      L.push('        run: gh release create v9');
+    }
+
+    if (o.verifyIf === false) {
+      L.push('      - run: bash 05-audit/release-run.sh verify');
+    } else {
+      L.push('      - if: always()');
+      L.push('        run: bash 05-audit/release-run.sh verify');
+    }
+    return L.join('\n') + '\n';
+  }
+
+  expectGreen('release.yml 完整 ⇒ 必须绿', releaseFixture({}), 'release.yml');
+  expect('release.yml 没有 probe ⇒ 必须红',
+    releaseFixture({ probe: false }), '探测', 'release.yml');
+  expect('npm publish 没有状态门控 ⇒ 必须红',
+    releaseFixture({ publishIf: false }), '状态门控', 'release.yml');
+  expect('Release 创建没有状态门控 ⇒ 必须红',
+    releaseFixture({ releaseIf: false }), '状态门控', 'release.yml');
+  expect('dist 校验被 npm 条件门控 ⇒ 必须红（续跑会跳过校验）',
+    releaseFixture({ dist: 'gated' }), '跳过', 'release.yml');
+  expect('dist 校验排在 publish 之后 ⇒ 必须红',
+    releaseFixture({ dist: 'after' }), '之前', 'release.yml');
+  expect('发布路径没有 dist 校验 ⇒ 必须红',
+    releaseFixture({ dist: 'absent' }), 'dist-parity-check.js', 'release.yml');
+  expect('回执缺 always() ⇒ 必须红',
+    releaseFixture({ verifyIf: false }), 'always', 'release.yml');
 
   process.stdout.write('\n' + (bad ? '  ❌ 反向控制有 ' + bad + ' 条没抓到' : '  ✅ 反向控制全绿') + '\n');
   return bad ? 1 : 0;

@@ -74,13 +74,15 @@ python -m http.server 8000 &
 | `build-dist.py` | 生成 `dist/`（真值永远是源码） |
 | `gen-ai-contract.py` | 从源码生成 `ai/*.json`（成熟度、能力面） |
 | `shot-baseline.py` | 视觉基线录制 / 比对（`--update` 才写） |
-| `publish.sh` | 发布（人工触发，跑 `prepublishOnly`） |
+| `publish.sh` | 发布前**诊断**（不发布）：registry / 版本五处 / 工作区 / tag |
 
 ---
 
 ## 五、不要做的事
 
-- **不要手改 `dist/`**：它是产物，`dist-fresh` 会红。
+- **不要手改 `dist/`**：它是产物。`dist-fresh` **只核源 sha，看不见产物改动**
+  （实测：手改 `dist` 后 `--check` 仍然 OK）；产物语义由 `dist-parity` /
+  `dist-js-parity` 守，**逐字没有任何判据**。
 - **不要手改 `ai/*.json`**：`gen-ai-contract --check` 会红。
 - **不要在门禁里写死绝对路径或本机用户名**：换台机器就静默失效
   （`ERRORS.md` E26 / E35）。

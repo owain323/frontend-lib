@@ -1,106 +1,83 @@
 #!/usr/bin/env bash
-# publish.sh — 一键发布（交互只有 npm 登录那一步）
+# publish.sh — 发布前诊断（**不发布任何东西**）
 #
-# 用法（在仓库根目录，或任意位置用绝对路径）：
-#     bash 05-audit/publish.sh
+# MANUAL-ONLY: 由人在打 tag 之前手动跑；它不是门禁，也不被任何流程自动调用。
 #
-# 它做什么：
-#   ① 检查 npm 登录状态（没登录就带你登录）
-#   ② 检查 registry 不是镜像源（镜像源 publish 会 403，且错误看起来像权限问题）
-#   ③ 检查版本号五处一致
-#   ④ 真正执行 npm publish —— 它会先跑 prepublishOnly（fast 门禁 + 打包实装冒烟），
-#      门禁红就**什么都不会发出去**
+# ============================================================================
+# 为什么它不再发布
+# ----------------------------------------------------------------------------
+#   这里原来直接执行 `npm publish`。那意味着仓库里存在**第二条发布路径**：
+#   不查 tag、不查工作区是否干净、不带 `--provenance`。
+#   两条路径的保障不同，等于后门开在文档旁边。
 #
-# 它不做什么：
-#   - 不改版本号（那是人的决定，见 docs/RELEASING.md 第 1 步）
-#   - 不跳过任何检查
+#   ⇒ 现在发布只有一条：打 annotated tag `v<版本>` → release.yml。
+#     本脚本只回答"现在能不能发"，四个检查全是只读的。
 #
-# 为什么这个脚本存在：
-#   发布这一步必须由账号持有人在一个能交互的终端里跑一次 —— 这是发布流程
-#   本身的约束，不是可以绕过的麻烦。把前面能自动化的都自动化，
-#   只把这一步压到"回车"。
+#   ⚠️ 诚实边界：持有 npm token 的人仍可在任何机器上手发，仓库内的
+#      判据拦不住。能做的是让**被文档承认的路径**只有 tag 这一条，
+#      并让本地不再提供默认的发布动作。
+# ============================================================================
+set -uo pipefail
+cd "$(dirname "$0")/.." || exit 2
 
-set -euo pipefail
-cd "$(dirname "$0")/.."
+PY="${PY:-python3}"
+command -v "$PY" >/dev/null 2>&1 || PY=python
 
-VER="$(cat VERSION)"
-echo
-echo "============================================="
-echo "  发布 agentcss@$VER"
-echo "============================================="
-echo
+VER="$(tr -d '[:space:]' < VERSION 2>/dev/null)"
+fail=0
+say() { printf '%s\n' "$*"; }
 
-# ---------- ① 登录 ----------
-echo "① npm 认证"
+say "============================================="
+say "  发布前诊断 agentcss@$VER（不会发布）"
+say "============================================="
 
-# 两条路都支持：
-#   a) 你已经 `npm login` 过（凭据在 ~/.npmrc）—— 下面直接复用
-#   b) 仓库根有一个 `.npm-token` 文件（npm 的 Automation Token）
-#      —— 它已被 .gitignore 挡住，不会误提交；用完请删掉
-#
-# 为什么先看 b：某些环境里 `npm login` 要开浏览器，登不进去。
-# 但**无论哪条路，凭据都不进仓库、不进聊天记录**。
-TMPRC=""
-if [ -f .npm-token ]; then
-  echo "   发现 .npm-token（本地文件，不入库）"
-  TOKEN="$(tr -d '[:space:]' < .npm-token)"
-  if [ -z "$TOKEN" ]; then
-    echo "   ✗ .npm-token 是空的"
-    exit 1
-  fi
-  TMPRC="$(mktemp)"
-  chmod 600 "$TMPRC"
-  printf '//registry.npmjs.org/:_authToken=%s\n' "$TOKEN" > "$TMPRC"
-  # shellcheck disable=SC2064
-  trap 'rm -f "$TMPRC"' EXIT
-  export NPM_CONFIG_USERCONFIG="$TMPRC"
-  echo "   ✓ 用 .npm-token 认证（发布完请删掉这个文件）"
-elif npm whoami >/dev/null 2>&1; then
-  echo "   已登录：$(npm whoami)"
-else
-  echo "   还没登录。接下来 npm 会提示你登录（浏览器授权或输入一次性验证码）。"
-  echo
-  npm login
-  echo
-  echo "   登录后身份：$(npm whoami)"
-fi
-
-# ---------- ② registry ----------
-echo
-echo "② registry"
-REG="$(npm config get registry)"
+# ---------- ① registry ----------
+REG="$(npm config get registry 2>/dev/null || echo unknown)"
 if [ "$REG" != "https://registry.npmjs.org/" ]; then
-  echo "   ✗ 当前是 $REG"
-  echo
-  echo "     这是镜像源，**只能读不能发**。直接 publish 会得到 403，"
-  echo "     而那个报错看起来像权限问题，很容易查错方向。"
-  echo
-  echo "     两种修法（任选一）："
-  echo "       a) 确认你在仓库目录里执行（仓库根的 .npmrc 已经设好了）"
-  echo "       b) 临时指定：npm publish --registry=https://registry.npmjs.org/"
-  exit 1
+  say "✗ registry = $REG（镜像只能读不能发）"
+  fail=1
+else
+  say "✓ registry = $REG"
 fi
-echo "   ✓ $REG"
 
-# ---------- ③ 版本一致 ----------
-echo
-echo "③ 版本号"
-python 05-audit/bump-version.py --check
+# ---------- ② 版本五处一致 ----------
+if ! "$PY" 05-audit/bump-version.py --check >/dev/null 2>&1; then
+  say "✗ 版本五处不一致 ⇒ 跑 $PY 05-audit/bump-version.py --check 看详情"
+  fail=1
+else
+  say "✓ 版本五处一致"
+fi
 
-# ---------- ④ 发布 ----------
-echo
-echo "④ npm publish"
-echo "   会先跑门禁（约 2–3 分钟）。门禁红 ⇒ 自动中止，什么都没发出去。"
-echo
-npm publish
+# ---------- ③ 工作区干净 ----------
+# 发布必须来自一个**确定的提交**：脏工作区发出去的包，gitHead 指向的
+# 提交里根本没有这些改动。
+DIRTY="$(git status --porcelain 2>/dev/null | head -5)"
+if [ -n "$DIRTY" ]; then
+  say "✗ 工作区不干净 —— 这些改动不在任何提交里："
+  printf '%s\n' "$DIRTY" | sed 's/^/    /'
+  fail=1
+else
+  say "✓ 工作区干净"
+fi
 
-echo
-echo "============================================="
-echo "  发完了。核对五件事（docs/RELEASING.md 第四节）："
-echo "============================================="
-echo "   1) npm view agentcss version        应为 $VER"
-echo "   2) 打开 https://www.npmjs.com/package/agentcss 看 README 渲染"
-echo "   3) 新目录里 npm i agentcss 再 import 一次"
-echo "   4) git tag 已推：git ls-remote --tags origin v$VER"
-echo "   5) 若发了坏版本：发 patch，**不要**强行覆盖已发布版本"
-echo
+# ---------- ④ tag 锚点 ----------
+KIND="$(git cat-file -t "v$VER" 2>/dev/null || true)"
+if [ "$KIND" != "tag" ]; then
+  say "✗ 没有 annotated tag v$VER（当前：${KIND:-不存在}）"
+  fail=1
+else
+  say "✓ v$VER 是 annotated tag"
+fi
+
+say ""
+if [ "$fail" != "0" ]; then
+  say "⇒ 先修上面的问题。发布仍然只有一条路径："
+else
+  say "⇒ 诊断通过。发布只有一条路径："
+fi
+say "     git tag -a v$VER -m \"source-commit: <40 位提交>\""
+say "     git push origin v$VER        # 只推这一个 tag，不要 git push --tags"
+say ""
+say "   npm publish 只发生在 release.yml 里（带 --provenance）。"
+say "   本地不再提供发布动作：没有 tag 与干净工作区，就没有可信的来源签名。"
+exit "$fail"
