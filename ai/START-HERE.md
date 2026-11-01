@@ -74,9 +74,10 @@
 | 成熟度 | `ai/components.json` 的 `maturity` 是**算出来的**（判据在 `ai/components.meta.json`），不是人写的 |
 | 有没有 demo | 组件目录下有 `demo.html` 就能直接跑起来对照 |
 | 有没有门禁守 | `05-audit/check-all.sh`（`npm run gate`）一次跑全，逐项打印 `PASS`/`FAIL`/`SKIP` |
-| 浏览器支持 | README「浏览器支持」表：桌面 Chrome/Edge/Firefox 已验证；**iOS/Android WebView 未在真机验证** |
+| 浏览器支持 | README「浏览器支持」表：桌面 Chrome/Edge/Firefox 已验证（自动化）；iOS Safari / 微信 / 企微 / QQ 等 7 个入口**人工实测过能力探针**（`🔍`，无回归保护）；**Android 系统 WebView 无数据** |
 
-⚠️ **未在真机验证的项就是没验证**，不要替它打包票。
+⚠️ **`🔍` 只表示「人工试过一次」，不是「已验证」**。它没有自动化守着，
+也不代表页面在真机上能用 —— 别把两者混着说，更不要替它打包票。
 
 ## 5 · 什么时候应当沿用宿主项目现有技术
 

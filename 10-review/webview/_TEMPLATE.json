@@ -1,0 +1,13 @@
+{
+  "_status": "TEMPLATE",
+  "_note": "这是格式模板，不是实测数据。真机跑完 capability-probe.html 后，把「复制结果」得到的 JSON 原样存成 results/<序号>-<设备>-<入口>.json，并删掉这三个下划线开头的说明字段。",
+  "_itemsKeyNote": "items 的键必须与 capability-probe.html 里 var ITEMS 的能力名逐字一致 —— 名字对不上就等于没测。",
+  "ua": null,
+  "viewport": null,
+  "prefersDark": null,
+  "scannedAt": null,
+  "supported": null,
+  "total": null,
+  "missing": [],
+  "items": {}
+}

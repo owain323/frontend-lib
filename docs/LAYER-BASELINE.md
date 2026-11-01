@@ -1,6 +1,6 @@
 # `@layer` 的 WebView 基线（W12）
 
-> **当前状态：部分验证（7 行），且已出现 1 个阻塞样本。**
+> **当前状态：7 行真机人工实测，且已出现 1 个阻塞样本。**
 > 已有 7 行真机实测。**`@layer` 6 行通过、1 行不通过**：
 >
 > | 入口 | 结果 |
@@ -18,6 +18,14 @@
 >
 > 按下面第三节的判据：**已有一行 `@layer` 不通过 ⇒ 当前不能无条件切层**，
 > 只能走 `@supports at-rule(@layer)` 双写，或者不切。
+>
+> 🔍 **证据等级：人工实测，不是自动化覆盖。**
+> 这 7 行是在真实设备上打开探针页、人工录入的结果 —— 有完整 UA、可复跑，但**没有回归保护**：
+> 某个浏览器下次升级，不会有任何门禁因此变红。
+> ⇒ 它支撑的结论是「我们在这 7 个环境里试过，结果如下」，
+> 不是「我们保证这 7 个环境一直能用」。
+> 逐项结果（7 行 × 15 项）、15 项全集与复核方法见
+> [`10-review/webview/RESULTS.md`](../10-review/webview/RESULTS.md)。
 
 ---
 
@@ -132,6 +140,21 @@ Android 上 Chrome ≠ 系统 WebView ≠ 各家 App 内置 WebView。**入口�
 | iPad · Safari（**用户口述为平板**；UA 是桌面版 = iPad 请求桌面网站，视口 834×1210 与 iPad Pro 11" 一致） | Safari 26.6.1（桌面版 UA） | `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.1 Safari/605.1.15` | 15 / 15 | 无 | 见采集所在提交（git log） | 项目所有者（真机） | VERIFIED |
 | iPhone · QQ 浏览器（**用户口述为手机**；视口 430×736 @3x） | QQ 浏览器 20.6.6（MQQBrowser，WKWebView） | `Mozilla/5.0 (iPhone; CPU iPhone OS 26_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 MQQBrowser/20.6.6 Mobile/15E148 Safari/604.1 QBWebViewUA/2 QBWebViewType/1 WKType/1` | 15 / 15 | 无 | 见采集所在提交（git log） | 项目所有者（真机） | VERIFIED |
 
+### 四·一、这 7 行的证据强度与复核
+
+| 问题 | 答案 |
+|---|---|
+| 数据怎么来的 | 在真实设备上打开 `10-review/webview/capability-probe.html`，把页面输出的结果贴进上表 |
+| 有没有原始记录 | 🔴 **没有入库**。当时探针把 JSON POST 回采集端，落的是本机文件，仓库里只留下转录进表格的结论 |
+| 逐项结果在哪看 | [`10-review/webview/RESULTS.md`](../10-review/webview/RESULTS.md) —— 7 行 × 15 项矩阵 |
+| 别人怎么复核 | 同上文件「怎么自己复核一行」：取 UA → 在目标设备复跑探针 → 比对 `N / 15` 与缺失项 |
+| 日期锚点 | 表格「测试日期」列写的是「见采集所在提交（git log）」；用 `git blame` + 该行 UA 的唯一片段定位 |
+| 有没有自动化守着 | **没有**。人工一次性实测，浏览器升级不会触发任何门禁 |
+
+⚠️ 上表「状态」列的 `VERIFIED` 是 `webview-probe-gate.py` 的**结构判据**（UA 完整可复核、无占位符、
+8 列齐全），**不是**「自动化验证过」。它和 `SUPPORT.md` 里的 `✅ 已验证` 同名不同义 ——
+读这一列时别把两者当成一回事。
+
 ---
 
 ## 五、刻意不写的东西
@@ -153,6 +176,8 @@ UA 是证据，版本传闻不是。
 |---|---|---|
 | `10-review/ios/index.html` | **观感与交互**在 Safari 下对不对（按钮、键盘弹起、暗色） | 人眼看，逐条对 |
 | `10-review/webview/capability-probe.html` | **能力**在目标 WebView 里有没有（`@layer` 等 15 项） | 机器判定，人只负责贴 JSON |
+| `10-review/webview/RESULTS.md` | 那 15 项**分别是什么**、每台设备**逐项**如何、别人怎么复跑一遍 | 随实测更新 |
 
-两者不能互相替代：能力全支持而观感崩了，和观感正常但 `@layer` 被整段丢弃，
-是两种完全不同的事故。
+三者不能互相替代：能力全支持而观感崩了，和观感正常但 `@layer` 被整段丢弃，
+是两种完全不同的事故；而"知道有 15 项"和"知道这 15 项各自是什么"也不是一件事 ——
+前者只是计数，后者才能判断某个缺失要不要紧。

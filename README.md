@@ -266,10 +266,13 @@ not — is in [`docs/STABILITY.md`](docs/STABILITY.md).
 
 ## Browser support
 
-[`SUPPORT.md`](SUPPORT.md) lists every engine with the evidence behind its status. Two conventions matter there:
+[`SUPPORT.md`](SUPPORT.md) lists every engine with the evidence behind its status. Three conventions matter there:
 
 - **Verified** means an automated check runs **in that engine** and the job reports its own user agent as proof.
+- **Tested once** (`🔍`) means exactly that: one manual run on a real device, with a full UA and a per-capability result, but **no automated check watching it**. A browser update will not turn anything red. It never counts as verified, and the two never add up.
 - **Not claimed** means exactly that. A row that has not been tested is not written as supported.
+
+Mobile WebView support is where that distinction bites. Seven entry points have been probed by hand — per-capability results in [`10-review/webview/RESULTS.md`](10-review/webview/RESULTS.md) — while Android System WebView still has **no data at all**. None of the seven was checked for soft-keyboard, safe-area, scroll-bounce or 200 % text behaviour: "15/15 capabilities" is not "the page works on a phone".
 
 ## Theming
 

@@ -412,7 +412,8 @@ bash 05-audit/check-all.sh       # 全量门禁约 130 项，本机约 8 分钟
 
 ### 明确不承诺的
 
-- **未在 iOS / Android 真机 WebView 上验证**（见下一节）。
+- **不承诺「移动 WebView 支持」**：只在 7 个具体入口上人工跑过能力探针，
+  没有自动化守着，也没做过真机整页验收（见下一节）。Android 系统 WebView **没有任何数据**。
 - 不做虚拟滚动：大表格的行数上限交给调用方判断。
 - 不提供 React / Vue 组件，只提供 CSS 类与可选的行为脚本。
 - `scientific-plot` 不做插值、回归或任何统计计算，也不宣称显著性。
@@ -422,13 +423,24 @@ bash 05-audit/check-all.sh       # 全量门禁约 130 项，本机约 8 分钟
 
 | 环境 | 状态 |
 |---|---|
-| Chrome / Edge（桌面） | 已验证 |
-| Firefox（桌面） | 已验证 |
-| iOS Safari / WKWebView | **未在真机验证** |
-| Android WebView | **未在真机验证** |
+| Chrome / Edge（桌面） | ✅ 已验证（自动化） |
+| Firefox（桌面） | ✅ 已验证（自动化） |
+| iOS Safari / 微信 / 企微 / QQ 浏览器 | 🔍 人工实测 15/15（无自动化） |
+| Android 微信 | 🔍 人工实测 14/15（缺 `scrollbar-width`，有私有回退） |
+| Android 百度浏览器 | 🔍 人工实测 11/15（缺 `@layer`，阻塞切层） |
+| Android 系统 WebView | ❌ 无数据 |
+| Android Chrome（移动版） | ⚠️ 仅桌面引擎模拟移动视口 |
+
+**`✅` 与 `🔍` 不能相加。** `✅` 是「有自动化检查在这个引擎里跑，有人守着」；
+`🔍` 是「在真实设备上人工试过一次，之后没人再看」——
+浏览器升级只会被前者发现。逐项结果、完整 UA 与复核方法见
+[`docs/LAYER-BASELINE.md`](docs/LAYER-BASELINE.md) 与
+[`10-review/webview/RESULTS.md`](10-review/webview/RESULTS.md)。
 
 ⚠️ 定位里写「移动 Web」指的是**设计取向**（触控优先、命中区不小于 44px），
-不代表已在真机 WebView 上跑过完整测试。生产前请在自己的目标环境验证。
+不代表已被自动化覆盖，更不代表页面在真机上就能用：
+软键盘、安全区、回弹、200% 字号、读屏这些**一项都没验过**。
+生产前请在自己的目标环境验证 —— 尤其是 Android 系统 WebView，那是目前唯一 0 数据的入口。
 
 ## 主题定制
 

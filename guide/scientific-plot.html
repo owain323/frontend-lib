@@ -106,7 +106,7 @@ python -m http.server 8000
 # 打开
 http://127.0.0.1:8000/09-assets/scientific-plot/demo.html</code></pre>
 <h2 id="s8">已知限制<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
-<ul><li>未在 iOS / Android 真机 WebView 上验证（与库整体一致）。</li><li>刻度标签未做&quot;相邻标签重叠时自动抽稀&quot;（对数轴跨大数量级时已按 10 的幂简化）。</li><li>无数据点级别的无障碍替代（图表整体有 <code>aria-label</code>，逐点值需调用方在页面上另给文本等价说明， demo.html 第 5 节演示了做法）。</li></ul>
+<ul><li>未做过真机整页验收：图表在真实设备上的 DPR、字号、滚动表现都没有验过。能力探针那 7 行只测 CSS 能力，不覆盖画布渲染。</li><li>刻度标签未做&quot;相邻标签重叠时自动抽稀&quot;（对数轴跨大数量级时已按 10 的幂简化）。</li><li>无数据点级别的无障碍替代（图表整体有 <code>aria-label</code>，逐点值需调用方在页面上另给文本等价说明， demo.html 第 5 节演示了做法）。</li></ul>
     </article>
     <nav class="g-pager" aria-label="上一页 / 下一页">
       <a class="g-pager__link g-pager__link--prev" href="model-viewer.html"><span>上一页</span>model-viewer — 惰性加载的 3D 模型查看器</a>
