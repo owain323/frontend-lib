@@ -112,3 +112,13 @@ benchmark/results/
 
 # npm pack 产物（本地发布用，不进仓库）
 *.tgz
+
+# --- Python 字节码缓存（2026-11 加）---
+# `05-audit/bump-version.py` 会 import 同目录的 `_changelog.py`，
+# 于是每跑一次版本脚本就冒出 `05-audit/__pycache__/`。
+# 它不入库，但会让 `git status` 变脏 —— 而 `publish.sh` 的判据正是
+# 「工作区干净」，于是**跑过一次 bump 之后就再也过不了发布诊断**。
+# ⚠️ v0.24.2 的 CI 红灯就是这一条的镜像：临时仓库里缺这条规则，
+#    夹具比真实仓库更脏，导致两条正例失败。
+__pycache__/
+*.pyc
