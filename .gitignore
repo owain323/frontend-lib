@@ -122,3 +122,6 @@ benchmark/results/
 #    夹具比真实仓库更脏，导致两条正例失败。
 __pycache__/
 *.pyc
+
+# 工作区工具目录（会话记忆等），与 `internal/` 同类：不入库，但不该让 git status 变脏
+.workbuddy/
