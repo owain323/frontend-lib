@@ -85,7 +85,7 @@
 | `heading-outline.js`（人工工具） | **全部 HTML：96 页 / 887 个标题** | 0 处跳级 · 每页恰好 1 个 `h1` · DOM 标题数 == 无障碍树 heading 数 |
 | `a11y-ax.js` 可访问性树 | **全部 `demo.html`（现 40 个）**；清单与磁盘不一致即红 | 0 个无名控件；40 份朗读序列快照在 `10-review/a11y-tree/` |
 | `contrast.py` / `dark-contrast.js` | 亮 / 暗两套，逐对实算 | 正文 ≥ 4.5:1 |
-| `zoom-reflow.js` | 40 页 × 3 条 AA 硬项 | 320px 不横滚 · 200% 不裁字 · 焦点不被遮挡 |
+| `zoom-reflow.js` | 43 页（40 个组件 demo + 3 个文档页）× 3 条 AA 硬项；每页 1 次加载，改视口 / 字号后等**布局稳定**（指纹连续 3 帧不变，超时判红） | 320px 不横滚 · 200% 不裁字 · 焦点不被遮挡 |
 | `focus-ring-check` / `focus-return-check` / `keyboard-nav` | 焦点可见、焦点归还、键盘路径 | 全绿 |
 
 ### 人工（**已执行一轮，仍缺人耳与第二平台**）

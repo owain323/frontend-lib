@@ -26,6 +26,29 @@
  *      只判 fixed/sticky 是有意的：普通元素重叠本来就该由 z-index 解决，
  *      而吸顶栏遮挡是**设计副作用**，用户滚到哪儿都躲不掉。
  *
+ * 一次加载还是三次加载（G2-06C）
+ * ---------------------------------------------------------------------------
+ *   原来是每页 **3 次 goto**：320 宽一次、1280+200% 一次、1280 默认再一次。
+ *   三次加载换来的是"每次测量都在干净页面上" —— 但代价是 43 页 × 2 次多余加载。
+ *
+ *   改成 **1 次 goto + 改视口/字号**。等价性不是"看起来一样"：
+ *   `05-audit/zoom-merge-experiment.js` 用同一套探针把两种执行结构逐页比对，
+ *   43/43 页四项测量（重排 / 200% / 裁切 / 遮挡）完全相同（G2-06B）。
+ *
+ *   ⚠️ 保留的边界，必须写清楚：独立加载会**重置页面状态**，合并执行会
+ *   **保留同一页面的运行状态**。若将来某个组件在第一次测量后改写自己的内部
+ *   状态（例如 resize 里只改一次的开关），第二次测量就可能与独立版不同。
+ *   当前 43 页没有这种行为，但这是"这 43 页没有"，不是"以后不会有"。
+ *   ⇒ 实验脚本保留为**差异验证工具**：`npm run ci:zoom-merge` 逐页复核。
+ *
+ * 布局稳定等待（同一个工单）
+ * ---------------------------------------------------------------------------
+ *   合并的前提是"改视口/字号之后量到的是稳定后的布局"。
+ *   固定 sleep 只证明"睡够了"，证明不了"布局不动了"；两帧 rAF 只覆盖
+ *   同步提交，覆盖不了 `ResizeObserver` 回调、字体切换、按视口补资源这些
+ *   延后一拍的布局。⇒ 这里判的是**布局指纹连续 N 帧不变**，
+ *   超时就**报错**（`LAYOUT_UNSTABLE`）—— 不许"量到了就往下走"。
+ *
  * 用法
  * ---------------------------------------------------------------------------
  *   node 05-audit/zoom-reflow.js            # 判全部页面
@@ -154,6 +177,113 @@ const occludedProbe = () => {
   return bad;
 };
 
+/* ---------- 布局稳定等待（G2-06C） ----------
+ * 判据不是"等了多久"，而是"布局还动不动"。
+ *
+ * 指纹 = 滚动容器四个尺寸 + 根字号 + body 下前 N 个元素的 offset 盒。
+ * 🔴 为什么用 offset* 而**不用** getBoundingClientRect：
+ *    rect 含 transform，spinner / 骨架屏扫光这类**无限动画**每帧都在改 rect，
+ *    用它当指纹 ⇒ 这些页面永远"不稳定" ⇒ 把正常页判成超时假红。
+ *    offsetWidth/Height/Top/Left 是布局盒，不受 transform 影响 ——
+ *    这正是"重排有没有落地"该看的东西。
+ *
+ * 两帧预热是保留的（覆盖同步布局提交），之后连续 need 帧指纹一致才算稳定。
+ */
+const STABLE = { need: 3, timeout: 1500, maxEls: 600 };
+
+/* 在页面里执行：返回 {ok, frames, ms} 或 {ok:false, ...}。 */
+function watchLayout(need, timeout, maxEls) {
+  const fingerprint = () => {
+    const de = document.scrollingElement || document.documentElement;
+    const parts = [de.scrollWidth, de.clientWidth, de.scrollHeight, de.clientHeight,
+      Math.round(parseFloat(getComputedStyle(document.documentElement).fontSize))];
+    const nodes = document.body ? document.body.querySelectorAll('*') : [];
+    const n = Math.min(nodes.length, maxEls);
+    parts.push(n);
+    for (let i = 0; i < n; i++) {
+      const el = nodes[i];
+      parts.push(el.offsetWidth, el.offsetHeight, el.offsetTop, el.offsetLeft);
+    }
+    return parts.join(',');
+  };
+
+  return new Promise((resolve) => {
+    let warm = 2;         // 两帧预热：先让浏览器把这次改动提交掉
+    let frames = 0;
+    let same = 0;
+    let prev = null;
+    const t0 = performance.now();
+    const tick = () => {
+      if (warm > 0) { warm--; requestAnimationFrame(tick); return; }
+      frames++;
+      const fp = fingerprint();
+      if (prev !== null && fp === prev) same++; else same = 0;
+      prev = fp;
+      if (same >= need) {
+        resolve({ ok: true, frames, same, ms: Math.round(performance.now() - t0) });
+        return;
+      }
+      if (performance.now() - t0 >= timeout) {
+        resolve({ ok: false, frames, same, ms: Math.round(performance.now() - t0) });
+        return;
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+}
+
+/**
+ * 等布局稳定。不稳定 ⇒ 抛 LAYOUT_UNSTABLE，**不许继续测量**。
+ * （继续测量的后果是把"没量到稳定态"报成"达标"，这正是本库反复踩的坑。）
+ */
+async function settle(p, label, opts) {
+  const o = Object.assign({}, STABLE, opts || {});
+  const r = await p.evaluate(watchLayout, o.need, o.timeout, o.maxEls);
+  if (!r.ok) {
+    const e = new Error('布局 ' + r.ms + 'ms 内未稳定（' + label + '，' + r.frames + ' 帧仍变化）');
+    e.code = 'LAYOUT_UNSTABLE';
+    throw e;
+  }
+  return r;
+}
+
+/* ---------- 单页测量：一次加载，三段测量 ----------
+ * 顺序与旧版一致：320 重排 → 1280 + 200% → 复位后查焦点遮挡。
+ * 每一步之间只改视口/字号，然后等**稳定**，不再重新加载。
+ */
+/* 加载次数**由执行者自己数**，不由页面清单推算 —— 后者永远等于"页数"，
+ * 谁也证不了"每页只 goto 了一次"。 */
+const LOADS = { goto: 0 };
+
+async function measure(p, rel, id) {
+  const waits = [];
+
+  /* --- 1.4.10 重排：320 CSS px --- */
+  await p.setViewport({ width: 320, height: 640 });
+  LOADS.goto++;
+  await p.goto(BASE + '/' + rel, { waitUntil: 'networkidle0', timeout: 15000 });
+  waits.push(await settle(p, id + ' @320'));
+  const reflow = await p.evaluate(overflowProbe);
+
+  /* --- 1.4.4 文本 200% ---
+     视口与根字号一起下：最终状态才是被测状态，中间态不参与判定。
+     但**必须**等它稳定 —— 否则量到的是"重排还没提交"的那一帧。 */
+  await p.setViewport({ width: 1280, height: 900 });
+  await p.evaluate(() => { document.documentElement.style.fontSize = '32px'; });
+  waits.push(await settle(p, id + ' @200%'));
+  const zoom = await p.evaluate(overflowProbe);
+  const clipped = await p.evaluate(clipProbe);
+
+  /* --- 2.4.11 焦点不被遮挡 ---
+     复位：内联样式置空 ⇒ 落回 CSS 里的值，与"从未改过"等价。 */
+  await p.evaluate(() => { document.documentElement.style.fontSize = ''; });
+  waits.push(await settle(p, id + ' @reset'));
+  const occl = await p.evaluate(occludedProbe);
+
+  return { reflow, zoom, clipped, occl, waits };
+}
+
 /* ---------- 自检：合成页面上判据必须给出正确结论 ---------- */
 async function selftest() {
   const { launch: launchB } = require('./browser');
@@ -216,14 +346,40 @@ async function selftest() {
   if (!ok) bad++;
   await p.close();
 
+  /* ⑥ 静态页面 ⇒ 稳定等待必须**放行**（防"等到永远"把正常页拖死） */
+  p = await page_('<body style="margin:0"><div style="width:100px;height:20px">静止</div></body>');
+  let st = null;
+  let stErr = '';
+  try { st = await settle(p, '静态页'); } catch (e) { stErr = e.code || e.message; }
+  ok = !stErr && st && st.ok && st.same >= STABLE.need;
+  console.log('  ' + (ok ? 'OK ' : 'RED') + ' 静止页面 ⇒ 稳定等待放行（' +
+              (stErr ? stErr : st.frames + ' 帧 / ' + st.ms + 'ms') + '）');
+  if (!ok) bad++;
+  await p.close();
+
+  /* ⑦ 每帧都在改布局的页面 ⇒ 稳定等待必须**超时判红**
+   *   （防"等不到就算稳定"：那会把没量到的东西报成达标） */
+  p = await page_(
+    '<body style="margin:0"><div id="g" style="width:10px;height:10px"></div>' +
+    '<script>var g=document.getElementById("g"),h=10;' +
+    '(function loop(){h=(h%900)+11;g.style.height=h+"px";requestAnimationFrame(loop);})();</script>' +
+    '</body>');
+  stErr = '';
+  try { await settle(p, '抖动页', { timeout: 400 }); } catch (e) { stErr = e.code || 'wrong-error'; }
+  ok = stErr === 'LAYOUT_UNSTABLE';
+  console.log('  ' + (ok ? 'OK ' : 'RED') + ' 每帧改布局 ⇒ 稳定等待超时判红（' +
+              (stErr || '没有报错 —— 假绿') + '）');
+  if (!ok) bad++;
+  await p.close();
+
   await b.close();
   console.log('');
   console.log(bad ? '  ⇒ 🔴 判据自检 ' + bad + ' 条不成立' : '  ⇒ ✅ 判据自检全部成立');
   return bad ? 1 : 0;
 }
 
-(async () => {
-  if (process.argv.includes('--selftest')) process.exit(await selftest());
+async function main() {
+  if (process.argv.includes('--selftest')) return selftest();
   const only = process.argv.slice(2).find((a) => !a.startsWith('--'));
 
   try {
@@ -234,45 +390,37 @@ async function selftest() {
     });
   } catch (e) {
     console.error('  🔴 读不到 ' + BASE + ' —— 没有取证，不是"跳过"。');
-    process.exit(2);
+    return 2;
   }
 
   const browser = await launch();
   const list = pages().filter(([id]) => !only || id === only);
   let fails = 0, done = 0;
+  let maxWait = 0, maxWaitId = '';
 
   for (const [id, rel] of list) {
     const p = await browser.newPage();
     const bad = [];
     try {
-      /* --- 1.4.10 重排：320 CSS px --- */
-      await p.setViewport({ width: 320, height: 640 });
-      await p.goto(BASE + '/' + rel, { waitUntil: 'networkidle0', timeout: 15000 });
-      const reflow = await p.evaluate(overflowProbe);
-      if (reflow.over > 1) {
-        bad.push('1.4.10 320px 横向溢出 ' + reflow.over + 'px' +
-                 (reflow.culprits.length ? '（' + reflow.culprits.join(' / ') + '）' : ''));
+      const m = await measure(p, rel, id);
+      for (const w of m.waits) {
+        if (w.ms > maxWait) { maxWait = w.ms; maxWaitId = id; }
       }
 
-      /* --- 1.4.4 文本 200% --- */
-      await p.setViewport({ width: 1280, height: 900 });
-      await p.goto(BASE + '/' + rel, { waitUntil: 'networkidle0', timeout: 15000 });
-      await p.evaluate(() => { document.documentElement.style.fontSize = '32px'; });
-      await new Promise((r) => setTimeout(r, 120));
-      const zoom = await p.evaluate(overflowProbe);
-      const clipped = await p.evaluate(clipProbe);
-      if (zoom.over > 1) {
-        bad.push('1.4.4 200% 文本横向溢出 ' + zoom.over + 'px' +
-                 (zoom.culprits.length ? '（' + zoom.culprits.join(' / ') + '）' : ''));
+      if (m.reflow.over > 1) {
+        bad.push('1.4.10 320px 横向溢出 ' + m.reflow.over + 'px' +
+                 (m.reflow.culprits.length ? '（' + m.reflow.culprits.join(' / ') + '）' : ''));
       }
-      if (clipped.length) bad.push('1.4.4 200% 后文字被裁 ' + clipped.join(' / '));
-
-      /* --- 2.4.11 焦点不被遮挡 --- */
-      await p.goto(BASE + '/' + rel, { waitUntil: 'networkidle0', timeout: 15000 });
-      const occl = await p.evaluate(occludedProbe);
-      if (occl.length) bad.push('2.4.11 焦点被吸顶元素遮挡：' + occl.join(' / '));
+      if (m.zoom.over > 1) {
+        bad.push('1.4.4 200% 文本横向溢出 ' + m.zoom.over + 'px' +
+                 (m.zoom.culprits.length ? '（' + m.zoom.culprits.join(' / ') + '）' : ''));
+      }
+      if (m.clipped.length) bad.push('1.4.4 200% 后文字被裁 ' + m.clipped.join(' / '));
+      if (m.occl.length) bad.push('2.4.11 焦点被吸顶元素遮挡：' + m.occl.join(' / '));
     } catch (e) {
-      bad.push('页面打不开：' + String(e).slice(0, 50));
+      /* 稳定等待超时**不能**降级成"跳过"或"通过"：没量到就是没量到。 */
+      if (e && e.code === 'LAYOUT_UNSTABLE') bad.push('布局未稳定：' + e.message);
+      else bad.push('页面打不开：' + String(e).slice(0, 50));
     }
     await p.close();
 
@@ -290,13 +438,30 @@ async function selftest() {
   console.log('');
   if (!done) {
     console.error('  🔴 一页都没判 ⇒ 假绿');
-    process.exit(2);
+    return 2;
   }
-  console.log('  判了 ' + done + ' 页 · 失败 ' + fails);
+  console.log('  判了 ' + done + ' 页 · 失败 ' + fails +
+              ' · 加载 ' + LOADS.goto + ' 次（每页 1 次）· 最长布局等待 ' +
+              maxWait + 'ms' + (maxWaitId ? '（' + maxWaitId + '）' : ''));
+  if (LOADS.goto !== done) {
+    console.log('  ⇒ 🔴 执行结构变了：' + done + ' 页却 goto 了 ' + LOADS.goto +
+                ' 次（合并的意义就是每页只加载一次）');
+    return 1;
+  }
   if (fails) {
     console.log('  ⇒ 🔴 未通过（WCAG 1.4.4 / 1.4.10 / 2.4.11）');
-    process.exit(1);
+    return 1;
   }
   console.log('  ⇒ ✅ 320px 不横滚 · 200% 文本不溢出不被裁 · 焦点不被吸顶元素遮挡');
-  process.exit(0);
-})();
+  return 0;
+}
+
+module.exports = { pages, measure, settle, watchLayout, STABLE, LOADS,
+                   overflowProbe, clipProbe, occludedProbe };
+
+if (require.main === module) {
+  main().then((rc) => process.exit(rc)).catch((e) => {
+    console.error('  🔴 ' + (e && e.message ? e.message : e));
+    process.exit(2);
+  });
+}
