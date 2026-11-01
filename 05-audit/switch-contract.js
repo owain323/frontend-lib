@@ -72,14 +72,40 @@ const AXE = require.resolve('axe-core');
   add('Enter 不切换（真实按键，APG 要求）', c2 === c1);
 
   // 滑块位移随状态变化
-  const moved = await p.evaluate(() => {
+  //
+  // 🔴 原写法比的是 computed transform 的**字符串**：点击前 `none`，
+  //    点击后立刻读是 `matrix(1, 0, 0, 1, 0, 0)` —— 位移还是 0，但字符串变了
+  //    ⇒ 恒 PASS。这是"量具比错了对象"，不是"位移没变"。
+  //    而在并发负载下，过渡还没被创建时读到 `none` → `none` ⇒ 又变成假红。
+  //    同一个判据同时会假绿和假红，根因都是一个：**读的是中间态**。
+  //    ⇒ 取矩阵的 tx 分量，并且**等过渡真正结束**再读。
+  const moved = await p.evaluate(async () => {
     const el = document.getElementById('s1');
     const th = document.querySelector('.switch__thumb');
-    const a = getComputedStyle(th).transform;
+    const tx = () => {
+      const t = getComputedStyle(th).transform;
+      if (!t || t === 'none') return 0;
+      const m = t.match(/matrix\(([^)]+)\)/);
+      return m ? (parseFloat(m[1].split(',')[4]) || 0) : 0;
+    };
+    const settled = async () => {
+      // 两帧：先让 transition 被创建出来，否则 getAnimations() 返回空
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const as = th.getAnimations ? th.getAnimations() : [];
+      if (as.length) await Promise.all(as.map(a => a.finished.catch(() => {})));
+      else await new Promise(r => setTimeout(r, 250));
+    };
+    // 🔴 起点必须先落到稳定态：上面 `Space` 刚把状态切成 true，
+    //    但它的过渡可能还没走完（实测此处 tx 仍是 0，而 checked 已是 true）。
+    //    在中间态上取 `a`，后面点击又把目标改回 0 ⇒ 位移 0→0，判据必然误判。
+    await settled();
+    const a = tx();
     el.click();
-    const b = getComputedStyle(th).transform;
+    await settled();
+    const b = tx();
     el.click();
-    return a !== b;
+    await settled();
+    return Math.abs(b - a) > 1;   // 实测位移 18px，1px 容差足够区分"有/没有"
   });
   add('滑块位移随状态变化', moved);
 
