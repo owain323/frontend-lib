@@ -80,9 +80,10 @@ python -m http.server 8000 &
 
 ## 五、不要做的事
 
-- **不要手改 `dist/`**：它是产物。`dist-fresh` **只核源 sha，看不见产物改动**
-  （实测：手改 `dist` 后 `--check` 仍然 OK）；产物语义由 `dist-parity` /
-  `dist-js-parity` 守，**逐字没有任何判据**。
+- **不要手改 `dist/`**：它是产物。`dist-fresh` 有两段判据 ——
+  ① 源 sha 与 `dist/manifest.json` 记录一致；② **产物字节 == 生成器现算字节**
+  （不写盘，逐文件比）。所以手改 `dist` 会红，而且报出从第几个字节开始不一样。
+  产物语义另有 `dist-parity` / `dist-js-parity` 在浏览器里比 CSSOM 与 JS 行为。
 - **不要手改 `ai/*.json`**：`gen-ai-contract --check` 会红。
 - **不要在门禁里写死绝对路径或本机用户名**：换台机器就静默失效
   （`ERRORS.md` E26 / E35）。

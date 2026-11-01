@@ -32,7 +32,7 @@ Pico 在 README 上按产物逐个公布体积；Open Props 的 CDN 清单里
 用法
 ---------------------------------------------------------------------------
   python3 05-audit/build-dist.py            # 重建 dist/
-  python3 05-audit/build-dist.py --check    # 只校验新鲜度（源码 sha256 是否还对得上）
+  python3 05-audit/build-dist.py --check    # 两段校验：源 sha 对得上 + 产物字节 == 现算
   python3 05-audit/build-dist.py --selftest # 反向控制：证明压缩器会被判据抓到
 ===========================================================================
 """
@@ -47,6 +47,16 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DIST = os.path.join(ROOT, 'dist')
 MANIFEST = os.path.join(DIST, 'manifest.json')
+
+# 🔴 干跑开关（2026-11 加）。
+#   `--check` 要回答的不再只是「源 sha 变没变」，而是
+#   「仓库里的 dist 是不是**这份生成器**现在的输出」。
+#   后者只能靠现算一遍再逐字节比 —— 但现算不能真写盘（那会把问题抹掉）。
+#   ⇒ 设成 dict 时 `write_out` 只收集、`build` 跳过孤儿清理。
+#   ⚠️ 之前 `--check` 只核源 sha：实测给 dist 加注释、把 `--sp-4` 改掉，
+#      它照样打印 OK —— 而 05-audit/README.md 却写着「不要手改 dist」，
+#      等于一道不存在的保护被当成存在。这条开关就是为了把那个缺口补上。
+_DRY = None
 
 # 与 size-baseline.py 保持同一口径（vendor 是第三方，不算我们自己的产物）
 SRC_DIRS = ('01-tokens', '02-primitives', '03-patterns', '04-recipes',
@@ -345,6 +355,10 @@ def build():
     }
     write_out('dist/manifest.json',
               json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
+    # 干跑到此为止：清理孤儿是**写操作**，`--check` 不许改仓库。
+    # 孤儿由 `check_freshness()` 单独报（它只读）。
+    if _DRY is not None:
+        return manifest
     # 🔴 产物形态一变（例如 D1 把 stripped 去掉），旧文件会**留在 dist 里**
     #   而 build 只说"重建了 N 个产物" —— 残留文件照样被打进 tarball。
     #   实测：切换产物形态后 `--check` 报 39 个孤儿 `*.min.css`，
@@ -370,6 +384,10 @@ def build():
 
 
 def write_out(rel, text):
+    # 干跑：只收集，不落盘（见文件顶部 `_DRY`）
+    if _DRY is not None:
+        _DRY[rel] = text
+        return
     p = os.path.join(ROOT, rel)
     os.makedirs(os.path.dirname(p), exist_ok=True)
     # ⚠️ newline='' ⇒ 不把 \n 换成 \r\n（Windows 下 io.open 默认会换；dist 是产物，
@@ -432,6 +450,45 @@ def check_freshness():
     for rel in orphans(man):
         bad.append('孤儿产物（没有任何源码产出它）：' + rel
                    + ' ⇒ 多半是重命名后没删干净，直接删文件')
+    return bad
+
+
+def expected_outputs():
+    """现算一遍产物，**不写盘**。返回 {相对路径: 文本}（含 dist/manifest.json）。"""
+    global _DRY
+    _DRY = {}
+    try:
+        build()
+        return dict(_DRY)
+    finally:
+        _DRY = None
+
+
+def diff_content(want):
+    """把 `want` 与磁盘上的同名文件**逐字节**比。返回问题列表。
+
+    🔴 与 `check_freshness()` 的分工（2026-11 之前这里是个洞）：
+      · 新鲜度：manifest 记的源 sha == 现在的源 sha ⇒ 回答「建完之后源码动过没」
+      · 内容  ：磁盘字节 == 生成器现算字节   ⇒ 回答「仓库里的产物是不是这份生成器的输出」
+       两者**不等价**。反例（实测）：manifest 一字不改，直接往
+       `dist/01-tokens/tokens.css` 里加注释、再把 `--sp-4` 的值改掉 ——
+       只有前者时 `--check` 打印 OK。这也是为什么必须有一条比内容。
+    ⚠️ 缺失的文件不在这里报（`check_freshness` 已经报过，重复报会淹没真问题）。
+    """
+    bad = []
+    for rel in sorted(want):
+        p = os.path.join(ROOT, rel)
+        if not os.path.isfile(p):
+            continue
+        have = io.open(p, 'rb').read()
+        exp = want[rel].encode('utf-8')
+        if have == exp:
+            continue
+        i, n = 0, min(len(have), len(exp))
+        while i < n and have[i] == exp[i]:
+            i += 1
+        bad.append('产物与生成器现算不一致：%s（第 %d 字节起，磁盘 %d B / 现算 %d B）'
+                   % (rel, i + 1, len(have), len(exp)))
     return bad
 
 
@@ -533,6 +590,42 @@ def selftest():
             ok = False
         else:
             print('  [OK]   只换换行符（LF⇄CRLF）仍然新鲜 ⇒ 判据看的是内容')
+    # ⑥ 🔴 内容判据必须能红，而且必须比新鲜度更强（2026-11 加）
+    #    背景：`--check` 原先只核源 sha。实测给 dist 加注释、再改一条声明，
+    #    它照样打印 OK；而 README 写着「不要手改 dist，dist-fresh 会红」——
+    #    那是一条**不存在的保护**。⇒ 这里同时钉两件事：
+    #      新鲜度**看不见**这处改动（否则说明两段串台），内容判据**必须看见**。
+    #    ⚠️ 只测「会红」不够：一道永远红的判据也能"抓到问题"。
+    #       所以再加一条元反向 —— 把真值同步换成被改过的字节，必须不再红，
+    #       证明红来自**字节不等**，不是文件存在性/大小/时间之类的旁证。
+    victim = 'dist/01-tokens/tokens.css'
+    want = expected_outputs()           # 干净真值（不写盘）
+    vp = os.path.join(ROOT, victim)
+    if victim not in want or not os.path.isfile(vp):
+        print('  [FAIL] 找不到内容判据的夹具 %s' % victim)
+        ok = False
+    else:
+        raw = io.open(vp, 'rb').read()
+        mutated = raw + b'\n/* dist-probe */\n'
+        try:
+            io.open(vp, 'wb').write(mutated)
+            fresh = check_freshness()
+            diff = diff_content(want)
+            meta = diff_content({victim: mutated.decode('utf-8')})
+        finally:
+            io.open(vp, 'wb').write(raw)
+        if fresh:
+            print('  [FAIL] 只改产物却报了新鲜度问题 ⇒ 两段判据串台了')
+            ok = False
+        elif not any(victim in b for b in diff):
+            print('  [FAIL] 反向控制失效：手改了 dist，内容判据没抓到')
+            ok = False
+        elif any(victim in b for b in meta):
+            print('  [FAIL] 元反向失效：真值就是被改过的字节，却仍然判红')
+            ok = False
+        else:
+            print('  [OK]   手改 dist ⇒ 新鲜度不动、内容判据抓到；'
+                  '真值同步后不再红（判的确实是字节）')
     return 0 if ok else 1
 
 
@@ -547,15 +640,24 @@ def main():
                 print('        ' + b)
             print('        ⇒ 跑 python 05-audit/build-dist.py 重建')
             return 1
-        print('  OK dist 与源码新鲜度一致（%d 个产物都对得上源 sha256）'
-              % sum(len(e['outputs'])
-                    for e in json.loads(io.open(MANIFEST, encoding='utf-8').read())['files']))
-        # 🔴 这句限定不是客套：本判据**只**比"源 sha 是否与 manifest 记录一致"，
-        #   产物内容本身没有被比对（手改 dist 不会被这里发现）。
-        #   实测：给 dist 加注释、改掉一条声明，`--check` 仍然 OK。
-        #   ⇒ 写在输出里，避免下一个人把它当成"产物完整性判据"。
-        print('     只核源 sha；产物内容未比对 —— 语义由 dist-parity / '
-              'dist-js-parity 守，逐字没有任何判据')
+        man = json.loads(io.open(MANIFEST, encoding='utf-8').read())
+        n_out = sum(len(e['outputs']) for e in man['files'])
+        # 第二段：产物字节 == 生成器现算字节（不写盘，见 `_DRY`）
+        want = expected_outputs()
+        diff = diff_content(want)
+        if diff:
+            print('  [FAIL] dist 里的产物不是这份生成器的输出：')
+            for b in diff[:20]:
+                print('        ' + b)
+            if len(diff) > 20:
+                print('        … 另有 %d 个' % (len(diff) - 20))
+            print('        ⇒ 跑 python 05-audit/build-dist.py 重建'
+                  '（不要手改 dist：它每次都会被覆盖）')
+            return 1
+        print('  OK dist 与源码逐字节一致（%d 个产物 / %d 个源文件）'
+              % (n_out, len(man['files'])))
+        print('     判据两段：① 源 sha 与 manifest 记录一致 '
+              '② 产物字节 == 生成器现算字节（%d 个文件逐个比）' % len(want))
         return 0
 
     man = build()
