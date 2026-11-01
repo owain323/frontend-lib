@@ -211,7 +211,7 @@ do_verify() {
 # "版本存在就算已完成"，后者会通过，而它正是最危险的那种假绿。
 # ============================================================================
 selftest() {
-  local tmp sha body_ok body_bad out rc bad=0
+  local tmp sha body_ok body_bad out rc bad=0 total=0
 
   tmp="$(mktemp -d)"
   mkdir -p "$tmp/05-audit" "$tmp/bin"
@@ -297,17 +297,35 @@ PY
   #     Windows 与 WSL-as-root 恰好可写，所以本地全绿、CI 红 ——
   #     夹具依赖了运行身份的权限，比判据写错更难查。
   #   ⇒ 现在桩也会在缺 STUB_FLIP 时**直接报错**，不再静默退化。
+  # ⚠️ 这里**合并 stderr**（`2>&1`）：回执的结论行在 stdout，但"为什么是这个结论"
+  #    在 stderr（重试了几次、哪一步不可达）。只留 stdout 就没法断言"它到底等没等"。
   verify_stub() {
     WAIT_STEP=0 WAIT_TRIES=5 \
       STUB_NPM="$1" STUB_GH="$2" STUB_CODE="$3" STUB_BODY="$4" \
       STUB_FLIP="$tmp/flip" \
-      PATH="$tmp/bin:$PATH" bash "$tmp/05-audit/release-run.sh" verify 2>/dev/null
+      PATH="$tmp/bin:$PATH" bash "$tmp/05-audit/release-run.sh" verify 2>&1
   }
 
   chk() {
     local ok=1
+    total=$((total + 1))
     [ "$2" = "$3" ] || ok=0
     case "$4" in *"$5"*) ;; *) ok=0 ;; esac
+    if [ "$ok" = "1" ]; then
+      printf '  OK  %-52s\n' "$1"
+    else
+      printf '  X   %-52s rc=%s 期望=%s 输出=%s\n' "$1" "$3" "$2" "$4"
+      bad=$((bad + 1))
+    fi
+  }
+
+  # 「不许出现」也是一条判据：unreadable 时**不该**去重试，
+  # 否则"网断了"会被 18×10s 拖成三分钟，最后还是同一个结论。
+  chk_not() {
+    local ok=1
+    total=$((total + 1))
+    [ "$2" = "$3" ] || ok=0
+    case "$4" in *"$5"*) ok=0 ;; esac
     if [ "$ok" = "1" ]; then
       printf '  OK  %-52s\n' "$1"
     else
@@ -343,11 +361,26 @@ PY
   out="$(verify_stub flaky present 200 "$body_ok")"; rc=$?
   chk '回执：registry 索引延迟 ⇒ 等到 present 再判' 0 "$rc" "$out" 'npm=present'
 
+  # ④ 真的没发出去：等满次数之后必须判失败，而且要说清"absent"，不是"超时"
+  out="$(verify_stub absent present 200 "$body_ok")"; rc=$?
+  chk '回执：npm 始终缺席 ⇒ 判失败且写明 absent' 1 "$rc" "$out" 'npm=absent'
+
+  # ⑤ 包在、Release 在，但 attestation 指向**别的提交** ⇒ 身份不符，必须拒绝。
+  #    若判据退化成"版本存在就算完成"，这一条会绿 —— 它是最危险的假绿。
+  out="$(verify_stub present present 200 "$body_bad")"; rc=$?
+  chk '回执：provenance 指向别的提交 ⇒ 拒绝' 1 "$rc" "$out" 'provenance=mismatch'
+
+  # ⑥ registry 不可达：判 2（环境不可用），且**一次都不重试** ——
+  #    "网断了"等下去不会变，重试只会把 3 分钟浪费在同一个结论上。
+  out="$(verify_stub unreachable present 200 '')"; rc=$?
+  chk '回执：registry 不可达 ⇒ rc=2' 2 "$rc" "$out" 'registry 不可达'
+  chk_not '回执：不可达时不重试（不等索引延迟）' 2 "$rc" "$out" '第 1 次重试'
+
   rm -rf "$tmp"
   if [ "$bad" = "0" ]; then
-    log '  release-run 反向测试：8/8 通过'
+    log "  release-run 反向测试：$total/$total 通过"
   else
-    log "  release-run 反向测试：$bad 条未通过"
+    log "  release-run 反向测试：$bad/$total 条未通过"
   fi
   return "$bad"
 }

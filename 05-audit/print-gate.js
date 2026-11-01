@@ -39,9 +39,16 @@
  *    实测教训：`form` 类在旧集合里只有 1 个控件（全集最大 13 个），
  *    `wide` 代表只有 294px（全集最大 370px）—— 两条都能被前五条判绿。
  *
- *   ⑪ 字体必须**嵌入**：每个 `/BaseFont` 都要带六位子集前缀（`AAAAAA+SegoeUI`）。
- *      没有前缀 = 只是"引用了这个字体名"，文件里没带字形 ⇒ 换台机器就换字体。
- *   ⑫ 页数与"含 `BT` 的内容流数"一致：少一页就是空白页。
+ *   ⑪ 字体**引用链**必须闭合（G2-07）：
+ *      Font →(/DescendantFonts)→ CIDFont → /FontDescriptor → /FontFile{,2,3}，
+ *      目标对象必须存在、是流、长度非 0，并有 /ToUnicode 或 /Encoding+宽度表。
+ *      ⚠️ **不再**用"`/BaseFont` 有没有六位子集前缀"当嵌入证据 ——
+ *      前缀只说明名字按子集命名，不说明文件里带了字形（两者会独立出错，见自检）。
+ *      Type3（字形在 /CharProcs）与标准 14 字体允许不嵌入。
+ *   ⑫ 每一页都必须有文本算子（G2-08）。
+ *      ⚠️ 这是「页面文本操作存在性检查」，**不是**「空白页证明」：
+ *      白字压白纸、被裁切、不可见渲染模式、被遮挡的内容都有文本算子。
+ *      真正判空白要栅格化后比纸色，不在本解析器范围。
  *
  * ⚠️ 这些判据**不覆盖**（写在这里是为了不让它被当成"打印全过"）：
  *   · 字体回退：字体缺失时 Chromium 仍会嵌一个回退字体，产物照样"有字"；
@@ -51,7 +58,8 @@
  *     "看得见的部分有没有被切"。要判它得算字形宽度（字体度量表），解析器里没有。
  *     现在能兜裁切的只有「run 数与基线不一致」这一条间接判据。
  *   · 页眉页脚 / 页码 / 章节分页：本库没有这些，也没有判据；
- *   · 空白页：靠 ③④ 间接兜（内容不见了 ⇒ run 数变），不是直接检测。
+ *   · 空白页：⑫ 只证明"这一页没有文字对象"，不证明"纸上是空的"；
+ *     ③④ 用"页数 + run 数"间接兜，也不是直接检测。
  *   · ⑤ 量的是 794px 视口下的**屏幕**布局（没扣 10mm×2 页边，也不是 print 媒体）
  *     ⇒ 只能当近似，不能当"打印没被裁"。
  *   这几条要么需要逐页解析内容流，要么需要"打印版式"这个尚不存在的概念。
@@ -471,23 +479,175 @@ function countPages(raw) {
   return (raw.match(/\/Type\s*\/Page[^s]/g) || []).length;
 }
 
+/* ------------------------------------------------------------ 字体嵌入（G2-07） */
+
 /**
- * 字体是否嵌入。
- * Chromium 嵌入时会造**子集**并加六位大写前缀：`/BaseFont /AAAAAA+SegoeUI`。
- * 没有前缀 ⇒ 它只是"引用了这个字体名"，文件里没带字形 ⇒ 换台机器就换字体。
+ * 顶层间接对象表：`obj 号 → 字典正文`。
+ *
+ * ⚠️ 只索引**顶层** `N 0 obj`。Chromium 产物实测 679 个对象、**0 个** `/Type /ObjStm`
+ *    （对象流是别的生成器常用的压缩手段）。一旦出现对象流，本解析器会**少看到对象**，
+ *    表现为"引用指向不存在的对象" —— 那是宁可误报不可漏报的方向。
+ * ⚠️ `endobj` 用 `indexOf` 找，若某个流的二进制里恰好含这 6 个字节，会截断后面
+ *    的对象。同样只会导致误报，不会导致假绿。
  */
-function parseFonts(raw) {
-  const all = (raw.match(/\/BaseFont\s*\/([A-Za-z0-9+#,_-]+)/g) || [])
-    .map((x) => x.replace(/^\/BaseFont\s*\//, ''));
-  const uniq = Array.from(new Set(all));
-  return { fonts: uniq.length, notEmbedded: uniq.filter((f) => !/^[A-Z]{6}\+/.test(f)) };
+function pdfObjects(raw) {
+  const objs = new Map();
+  const re = /(?:^|[\r\n\s])(\d+)\s+0\s+obj\b/g;
+  let m;
+  let guard = 0;
+  while ((m = re.exec(raw)) !== null) {
+    if (++guard > 20000) break;          // 防御：畸形文件不许把门禁挂死
+    const start = m.index + m[0].length;
+    let end = raw.indexOf('endobj', start);
+    if (end < 0) end = raw.length;
+    objs.set(+m[1], raw.slice(start, end));
+    re.lastIndex = end;                  // 跳过 stream 数据，不在二进制里空转
+  }
+  return objs;
 }
 
-/** 读 PDF：页数 + 文字颜色直方图 + 字体嵌入 + 空白页 */
+/** 从字典正文里取一个 `/Key N 0 R` 引用；没有就返回 null。 */
+function refOf(body, key) {
+  const m = new RegExp('/' + key + '\\s+(\\d+)\\s+0\\s+R').exec(body || '');
+  return m ? +m[1] : null;
+}
+
+/** 从字典正文里取一个 `/Key [N 0 R M 0 R …]` 数组引用。 */
+function refsOf(body, key) {
+  const m = new RegExp('/' + key + '\\s*\\[([^\\]]*)\\]').exec(body || '');
+  if (!m) return [];
+  return [...m[1].matchAll(/(\d+)\s+0\s+R/g)].map((x) => +x[1]);
+}
+
+/** PDF 的 14 个标准字体：允许不嵌入（阅读器自带替代字形）。 */
+const STD14 = /^(Helvetica|Times|Courier|Symbol|ZapfDingbats)(-|$)/;
+
+/**
+ * 字体是否**真的**带上了字体程序（G2-07）。
+ *
+ * 🔴 为什么不能看 `/BaseFont` 有没有六位子集前缀
+ *   前缀只说明"这个字体名是按子集命名的"，**不**说明文件里带了字形。两者会独立出错：
+ *     · 名字带前缀、FontDescriptor 却没有 FontFile  → 旧判据绿，实际没有字形；
+ *     · 名字不带前缀、字体却以完整形式嵌入          → 旧判据红，实际有字形。
+ *   决定"换台机器会不会换字"的是这条引用链：
+ *     Font ─┬─ /FontDescriptor ─┬─ /FontFile2  (TrueType)
+ *           │                    ├─ /FontFile3  (CFF / OpenType)
+ *           │                    └─ /FontFile   (Type1)
+ *           └─ /DescendantFonts → CIDFont → 同上（Type0 复合字体）
+ *
+ * ⚠️ 本判据**不校验**：字形内容（TrueType/CFF 表结构）、CMap 的码位正确性。
+ *    它验的是"引用链闭合、流非空、有字符映射的声明"，不是"字形画得对"。
+ */
+function fontChain(raw) {
+  const objs = pdfObjects(raw);
+  const problems = [];
+  const programs = new Set();
+  let type3 = 0;
+  let std14 = 0;
+
+  /* 🔴 先按 BaseFont **分组**，再按组判定。
+     实测踩到：Chromium 把 CIDFont 子对象写在页面附近（obj 476），把 Type0 父对象
+     写在文件前部（obj 4）—— 物理顺序与逻辑顺序相反。原来"先遇到谁就按谁判"，
+     于是先判了 CIDFont（它没有 /ToUnicode，映射在父上）⇒ 每个字体都报
+     "没有字符映射"，11 个页面 × 2 配色全红。
+     一个字体的父与子是**共同**描述它的，必须合并看。 */
+  const groups = new Map();
+  for (const [num, body] of objs) {
+    if (!/\/Type\s*\/Font\b/.test(body)) continue;
+    const base = (/\/BaseFont\s*\/([A-Za-z0-9+#,_-]+)/.exec(body) || [])[1] || null;
+    const key = base || ('#' + num);
+    if (!groups.has(key)) {
+      groups.set(key, { label: base || ('obj' + num), subs: [], bodies: [] });
+    }
+    const g = groups.get(key);
+    g.subs.push((/\/Subtype\s*\/([A-Za-z0-9]+)/.exec(body) || [])[1] || '');
+    g.bodies.push(body);
+  }
+
+  for (const [, g] of groups) {
+    const merged = g.bodies.join('\n');
+    const label = g.label;
+
+    /* Type3：字形是 PDF 里的绘制过程（/CharProcs），本来就在文件里，不需要 FontFile。 */
+    if (g.subs.indexOf('Type3') >= 0) {
+      type3 += 1;
+      if (!/\/CharProcs\s*(\d+\s+0\s+R|<<\/)/.test(merged)) {
+        problems.push(label + ' 是 Type3 但没有 /CharProcs（没有字形定义）');
+      }
+      continue;
+    }
+
+    /* FontDescriptor：父或子任一带了就算（Type0 自身不带，子带）。 */
+    let descNum = null;
+    for (const b of g.bodies) {
+      const d = refOf(b, 'FontDescriptor');
+      if (d !== null) { descNum = d; break; }
+    }
+    const isStd = STD14.test(label.replace(/^[A-Z]{6}\+/, ''));
+    if (isStd) std14 += 1;
+
+    if (descNum === null) {
+      if (isStd) continue;
+      problems.push(label + '（' + (g.subs.join('/') || '无 Subtype') + '）没有 /FontDescriptor'
+        + ' ⇒ 字形没有进文件');
+      continue;
+    }
+    const desc = objs.get(descNum);
+    if (desc === undefined) {
+      problems.push(label + ' 的 /FontDescriptor ' + descNum + ' 0 R 指向不存在的对象');
+      continue;
+    }
+
+    let ffKey = null;
+    let ffNum = null;
+    for (const k of ['FontFile2', 'FontFile3', 'FontFile']) {
+      const n = refOf(desc, k);
+      if (n !== null) { ffKey = k; ffNum = n; break; }
+    }
+    if (ffNum === null) {
+      if (isStd) continue;
+      problems.push(label + ' 的 FontDescriptor ' + descNum
+        + ' 没有 /FontFile /FontFile2 /FontFile3 ⇒ 只声明了字体名，没有字形');
+      continue;
+    }
+    const ff = objs.get(ffNum);
+    if (ff === undefined) {
+      problems.push(label + ' 的 /' + ffKey + ' ' + ffNum + ' 0 R 指向不存在的对象');
+      continue;
+    }
+    if (!/\bstream\b/.test(ff)) {
+      problems.push(label + ' 的 /' + ffKey + ' ' + ffNum + ' 0 R 不是流对象');
+      continue;
+    }
+    const len = (/\/Length\s+(\d+)/.exec(ff) || [])[1];
+    if (!len || +len === 0) {
+      problems.push(label + ' 的 /' + ffKey + ' 流长度为空');
+      continue;
+    }
+    programs.add(ffNum);
+
+    /* 字符映射：组内任一对象有 /ToUnicode，或有 /Encoding + 宽度表。只验声明存在。 */
+    const hasToUni = g.bodies.some((b) => refOf(b, 'ToUnicode') !== null);
+    const hasEnc = /\/Encoding\s*(\/|[<]|\d+\s+0\s+R)/.test(merged);
+    const hasWidths = /\/Widths\s*\[/.test(merged) || /\/W\s*\[/.test(merged);
+    if (!hasToUni && !(hasEnc && hasWidths)) {
+      problems.push(label + ' 没有字符映射（既无 /ToUnicode，也无 /Encoding + 宽度表）');
+    }
+  }
+
+  return {
+    fonts: groups.size,
+    names: [...groups.keys()],
+    programs: programs.size,
+    type3, std14, problems,
+  };
+}
+
+/** 读 PDF：页数 + 文字颜色直方图 + 字体引用链 + 无文本算子的页 */
 function analyze(buf) {
   const raw = Buffer.from(buf).toString('latin1');
   const pages = countPages(raw);
-  const { fonts, notEmbedded } = parseFonts(raw);
+  const chain = fontChain(raw);
 
   const hist = {};
   let runs = 0;
@@ -520,10 +680,18 @@ function analyze(buf) {
   }
   return {
     pages, runs, hist, worst: runs ? worst : Infinity, worstColor, below,
-    // 👇 G2-03：两个 PDF 侧维度（裁切见下方注释，暂不可测）
-    fonts, notEmbedded,
+    /* G2-07：字体**引用链**（不再是"名字有没有前缀"）。
+       G2-08：`pagesWithoutText` 只说明"这一页没有文本算子"，
+       不等于"页面空白" —— 白字压白纸、被裁掉、不可见渲染模式都算"有算子"。
+       真正的空白页要靠"渲染后像素与纸同色"来判，那需要栅格化，不在本解析器范围。 */
+    fonts: chain.fonts,
+    fontNames: chain.names,
+    programs: chain.programs,
+    type3: chain.type3,
+    std14: chain.std14,
+    fontProblems: chain.problems,
     textStreams,
-    blankPages: Math.max(0, pages - textStreams),
+    pagesWithoutText: Math.max(0, pages - textStreams),
   };
 }
 
@@ -606,13 +774,16 @@ function judge(result, baseline) {
          Chrome 把内容画在一个 2250×3275 的矩形里，再用 `re W n` 裁到纸面 ——
          路径坐标越出纸边是**常态**（实测 2091pt vs 纸宽 596pt），bbox 判不出"看得见的部分"
          有没有被切。要判它得算字形宽度，那需要字体度量表。 */
-      if (g.notEmbedded.length) {
-        errs.push('⑪ ' + tag + '：字体没有嵌入：' + g.notEmbedded.join('、')
-          + ' ⇒ 打印机会用别的字体替换，版式会变');
+      if (g.fontProblems.length) {
+        errs.push('⑪ ' + tag + '：' + g.fontProblems.length
+          + ' 处字体引用链不完整：' + g.fontProblems.slice(0, 3).join('；')
+          + (g.fontProblems.length > 3 ? ' …（共 ' + g.fontProblems.length + ' 处）' : '')
+          + ' ⇒ 打印机会换字体，版式会变');
       }
-      if (g.blankPages > 0) {
-        errs.push('⑫ ' + tag + '：' + g.blankPages + ' 页没有任何绘制指令'
-          + '（共 ' + g.pages + ' 页，有内容的 ' + g.pagesWithOps + ' 页）');
+      if (g.pagesWithoutText > 0) {
+        errs.push('⑫ ' + tag + '：' + g.pagesWithoutText + ' 页没有文本算子'
+          + '（共 ' + g.pages + ' 页，有文本算子的 ' + g.textStreams + ' 页）'
+          + ' —— 注意这只说明"没有文字对象"，不证明"页面空白"');
       }
     }
   }
@@ -624,6 +795,31 @@ function judge(result, baseline) {
 async function main() {
   const argv = process.argv.slice(2);
   if (argv.indexOf('--selftest') >= 0) return selftest();
+
+  /* `--pdf <文件>`：对一份**已生成的** PDF 单独跑判据，不改基线、不影响 PASS/FAIL。
+     用途：判断"某个真实产物到底哪里不合格"时，不必重跑 18 个 PDF。 */
+  const pi = argv.indexOf('--pdf');
+  if (pi >= 0) {
+    const f = argv[pi + 1];
+    if (!f || !fs.existsSync(f)) {
+      console.error('  🔴 找不到文件：' + f);
+      return 2;
+    }
+    const a = analyze(fs.readFileSync(f));
+    console.log(JSON.stringify({
+      pages: a.pages,
+      textStreams: a.textStreams,
+      pagesWithoutText: a.pagesWithoutText,
+      runs: a.runs,
+      worst: Math.round(a.worst * 100) / 100,
+      fonts: a.fonts,
+      programs: a.programs,
+      type3: a.type3,
+      std14: a.std14,
+      fontProblems: a.fontProblems,
+    }, null, 2));
+    return (a.fontProblems.length || a.pagesWithoutText > 0) ? 1 : 0;
+  }
 
   const update = argv.indexOf('--update') >= 0;
 
@@ -693,9 +889,24 @@ async function main() {
     errs.slice(0, 14).forEach((e) => console.log('        ' + e));
     return 1;
   }
+  /* 汇总里必须报"判据实际看了多少字体"：
+     否则 ⑪ 在 0 个字体上通过，也会打印成一模一样的 OK（空转的绿）。 */
+  const names = new Set();
+  const progs = new Set();
+  let t3 = 0;
+  for (const name of Object.keys(result)) {
+    for (const sc of ['light', 'dark']) {
+      const a = result[name][sc];
+      (a.fontNames || []).forEach((x) => names.add(x));
+      progs.add(a.programs);
+      t3 = Math.max(t3, a.type3);
+    }
+  }
   console.log('  OK  ' + PAGES.length + ' 个页面 × 2 种屏幕配色：'
     + '每段文字 ≥ ' + MIN_CONTRAST + ':1，暗色与浅色产物一致，'
     + '且 ' + Object.keys(TYPES).length + ' 个结构类型各有代表（代表落在度量最大那一档）');
+  console.log('      ⑪ 实际检查 ' + names.size + ' 个字体名（含 Type3 ' + t3
+    + ' 个）；单页最多 ' + Math.max(...progs) + ' 个字体程序；⑫ 每页都有文本算子');
   return 0;
 }
 
@@ -836,15 +1047,82 @@ async function selftest() {
     report(typeErrs(noFormAtAll, U, {}).length === 0, '元反向：类型表清空后同一坏样本不再红');
 
     /* ---------- ⑪⑫ 的纯函数自检（G2-03）---------- */
-    const f1 = parseFonts('/Type /Font /BaseFont /Arial');
-    report(f1.notEmbedded.indexOf('Arial') >= 0, '⑪ 未带子集前缀的字体 ⇒ 判"没嵌入"');
-    const f2 = parseFonts('/Type /Font /BaseFont /AAAAAA+SegoeUI /BaseFont /BAAAAA+MicrosoftYaHei');
-    report(f2.notEmbedded.length === 0, '⑪ 带六位子集前缀 ⇒ 判"已嵌入"');
-    /* 元反向：把判据换成"恒不报"，同一份坏样本必须不再红
-       —— 证明上面那条红来自 parseFonts，而不是别处顺手报的 */
-    const neverFlags = () => ({ fonts: 1, notEmbedded: [] });
-    report(neverFlags('/BaseFont /Arial').notEmbedded.length === 0,
-      '元反向：判据换成恒不报 ⇒ 同一坏样本不再红');
+    /* ---- ⑪ 字体引用链（G2-07）：正反样本都用手写的 9 个对象 ---- */
+    const mkPdf = (objs) => 'x\n' + objs.map((o, i) => (i + 1) + ' 0 obj\n' + o + '\nendobj\n').join('');
+    const FONT_OK = mkPdf([
+      '<< /Type /Font /Subtype /Type0 /BaseFont /AAAAAA+SegoeUI /Encoding /Identity-H'
+        + ' /DescendantFonts [2 0 R] /ToUnicode 5 0 R >>',
+      '<< /Type /Font /Subtype /CIDFontType2 /BaseFont /AAAAAA+SegoeUI /FontDescriptor 3 0 R /W [0 [1]] >>',
+      '<< /Type /FontDescriptor /FontName /AAAAAA+SegoeUI /FontFile2 4 0 R >>',
+      '<< /Length 1234 /Filter /FlateDecode >>\nstream\nBINARY\nendstream',
+      '<< /Length 99 >>\nstream\nCMAP\nendstream',
+    ]);
+    const fc = fontChain(FONT_OK);
+    report(fc.problems.length === 0 && fc.programs === 1,
+      '⑪ 完整链 Font→Descendant→Descriptor→FontFile2 ⇒ 绿', 'problems=' + fc.problems.join('|'));
+
+    /* 🔴 关键反例：**名字带六位子集前缀，但描述符没有 FontFile**。
+       旧判据（看前缀）在这里给绿 —— 这正是它证明不了的结论。 */
+    const PREFIX_NO_FILE = mkPdf([
+      '<< /Type /Font /Subtype /TrueType /BaseFont /AAAAAA+SegoeUI /FontDescriptor 2 0 R /Encoding /WinAnsiEncoding /Widths [500] >>',
+      '<< /Type /FontDescriptor /FontName /AAAAAA+SegoeUI >>',
+    ]);
+    const bad = fontChain(PREFIX_NO_FILE);
+    report(bad.problems.length === 1 && /没有 \/FontFile/.test(bad.problems[0]),
+      '⑪ 有子集前缀但没有 FontFile ⇒ 红（旧判据在这里是绿的）', bad.problems.join('|'));
+
+    /* 元反向：把判据换回"只看前缀"，同一份反例必须**不再红**
+       —— 证明上面那条红来自引用链，而不是别处顺手报的。 */
+    const prefixOnly = (raw) => {
+      const all = (raw.match(/\/BaseFont\s*\/([A-Za-z0-9+#,_-]+)/g) || [])
+        .map((x) => x.replace(/^\/BaseFont\s*\//, ''));
+      return all.filter((f) => !/^[A-Z]{6}\+/.test(f));
+    };
+    report(prefixOnly(PREFIX_NO_FILE).length === 0,
+      '元反向：换回"只看前缀" ⇒ 同一反例不再红');
+
+    /* 没前缀但有完整字体程序：旧判据在这里给红（误报），新判据给绿。 */
+    const FULL_FONT = mkPdf([
+      '<< /Type /Font /Subtype /TrueType /BaseFont /Arial /FontDescriptor 2 0 R /Encoding /WinAnsiEncoding /Widths [500] >>',
+      '<< /Type /FontDescriptor /FontName /Arial /FontFile2 3 0 R >>',
+      '<< /Length 4096 >>\nstream\nTTF\nendstream',
+    ]);
+    report(fontChain(FULL_FONT).problems.length === 0,
+      '⑪ 无子集前缀但带完整 FontFile2 ⇒ 绿（旧判据在这里是红的）');
+    report(prefixOnly(FULL_FONT).length === 1,
+      '元反向：换回"只看前缀" ⇒ 同一份合规文件被误报');
+
+    report(fontChain(mkPdf([
+      '<< /Type /Font /Subtype /TrueType /BaseFont /Arial /FontDescriptor 9 0 R /Encoding /WinAnsiEncoding /Widths [500] >>',
+    ])).problems.some((x) => /指向不存在的对象/.test(x)),
+      '⑪ FontDescriptor 引用悬空 ⇒ 红');
+    report(fontChain(mkPdf([
+      '<< /Type /Font /Subtype /TrueType /BaseFont /X /FontDescriptor 2 0 R /Encoding /WinAnsiEncoding /Widths [500] >>',
+      '<< /Type /FontDescriptor /FontName /X /FontFile2 9 0 R >>',
+    ])).problems.some((x) => /FontFile2 9 0 R 指向不存在的对象/.test(x)),
+      '⑪ FontFile 引用悬空 ⇒ 红');
+    report(fontChain(mkPdf([
+      '<< /Type /Font /Subtype /TrueType /BaseFont /X /FontDescriptor 2 0 R /Encoding /WinAnsiEncoding /Widths [500] >>',
+      '<< /Type /FontDescriptor /FontName /X /FontFile2 3 0 R >>',
+      '<< /Length 0 >>\nstream\nendstream',
+    ])).problems.some((x) => /流长度为空/.test(x)),
+      '⑪ FontFile 流长度为 0 ⇒ 红');
+    /* Type3 与标准 14 是**合规**的不嵌入，不许误报 */
+    report(fontChain(mkPdf([
+      '<< /Type /Font /Subtype /Type3 /CharProcs 2 0 R /Encoding 3 0 R /Widths [500] >>',
+      '<< /Length 10 >>\nstream\nD\nendstream',
+      '<< /Type /Encoding /Differences [0 /A] >>',
+    ])).problems.length === 0, '⑪ Type3（字形在 /CharProcs 里）⇒ 绿，不要求 FontFile');
+    report(fontChain(mkPdf([
+      '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding /Widths [500] >>',
+    ])).problems.length === 0, '⑪ 标准 14 字体不带 FontFile ⇒ 绿（阅读器有替代字形）');
+    /* 非标准字体、无描述符、无前缀 ⇒ 红（这才是旧判据唯一抓得到的形态） */
+    report(fontChain(mkPdf([
+      '<< /Type /Font /Subtype /TrueType /BaseFont /SomeWeirdFont >>',
+    ])).problems.some((x) => /没有 \/FontDescriptor/.test(x)),
+      '⑪ 非标准字体没有 FontDescriptor ⇒ 红');
+
+    /* ---- ⑫ 只数 /Page，不把 /Pages 算成页 ---- */
     report(countPages('/Type /Page /Type /Page /Type /Pages') === 2,
       '⑫ 只数 /Page，不把 /Pages 算成页');
   } finally {
