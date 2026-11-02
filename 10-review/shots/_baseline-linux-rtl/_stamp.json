@@ -1,5 +1,10 @@
 {
-  "fingerprint": "d6c9d6fd4cccd6bb",
+  "fingerprint": "fd1d5a0708f67614",
   "pages": 15,
-  "head": "1bb47e1"
+  "head": "c54c658",
+  "sets": [
+    "light",
+    "rtl",
+    "dark"
+  ]
 }
