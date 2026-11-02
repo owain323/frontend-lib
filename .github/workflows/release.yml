@@ -62,7 +62,14 @@ jobs:
     #   （见文件末尾的 shoot-baseline job）—— 手动点一下不该顺手把包发出去。
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    # 🔴 25 分钟不够。实测 0.25.0：门禁 13.5 分 + 装 Chromium + dist 语义比对，
+    #   到 `npm publish` 那一步只剩 100 秒 ⇒ 21:01:28 被 job 超时**掐断**，
+    #   包已经传上去了（含 provenance），但后面的"建 Release"被跳过，
+    #   于是 npm 有 0.25.0、GitHub 没有对应 Release —— 三者不齐。
+    # ⚠️ 这个超时是**硬取消**，不是优雅退出：它会把流程停在任意一步，
+    #   而 npm 的发布是**不可重来**的（同版本不能再发）。
+    #   ⇒ 宁可放宽，也不要卡在最后一步。
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
