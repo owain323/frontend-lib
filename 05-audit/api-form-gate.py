@@ -506,7 +506,15 @@ def main():
         for item in bad_globals:
             cid, g = item[0], item[1]
             why = item[2] if len(item) > 2 else 'absent'
-            tag = '（探针表没登记）' if why == 'probe-missing' else '（页面里探不到）'
+            if why == 'probe-missing':
+                tag = '（探针表没登记）'
+            else:
+                # 🔴 absent 与 error 必须分开说：error 是**量不到**（导航失败 /
+                #    连接被拒 / 浏览器崩了），absent 才是"页面里真没有"。
+                #    以前两者都印"页面里探不到"，于是 16 个 error 被读成
+                #    "16 个组件同时消失"，修的人去翻契约生成器（E265）。
+                e = (rt.get(g) or {}).get('error')
+                tag = ('（量不到：%s）' % e) if e else '（页面里探不到）'
             print('     %-14s global=%-16s %s' % (cid, g, tag))
         print('')
         if any(len(i) > 2 and i[2] == 'probe-missing' for i in bad_globals):
