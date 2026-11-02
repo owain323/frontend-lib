@@ -23,6 +23,8 @@
  */
 
 const { launch } = require('./browser.js');
+/* 端口从环境变量来：由 _probe.py 起服务后通过 BASE 传下来（同 global-api-probe.js） */
+const BASE = process.env.BASE || 'http://127.0.0.1:8000';
 
 /* 在页面上下文里执行：按组件名创建实例并取形状。
  *⚠️ 用字符串注入而不是 new Function 传函数 ——
@@ -127,7 +129,7 @@ const TARGETS = [
     let page;
     try {
       page = await browser.newPage();
-      await page.goto('http://127.0.0.1:8000' + url,
+      await page.goto(BASE + url,
         { waitUntil: 'domcontentloaded' });
       await new Promise((r) => setTimeout(r, 300));
       const info = await page.evaluate(probeScript(name));
@@ -143,7 +145,7 @@ const TARGETS = [
   let sp;
   try {
     sp = await browser.newPage();
-    await sp.goto('http://127.0.0.1:8000/02-primitives/date-range/demo.html',
+    await sp.goto(BASE + '/02-primitives/date-range/demo.html',
       { waitUntil: 'domcontentloaded' });
     await new Promise((r) => setTimeout(r, 300));
     result.DateRangeStatics = await sp.evaluate(() => {

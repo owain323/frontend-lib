@@ -121,6 +121,17 @@ class Server(object):
         return None
 
     def ensure(self):
+        # ⓪ 环境给了 BASE（check-all / with-server 起的那个）⇒ **直接用它**，
+        #    绝不自己再起一个。理由：一个套件里两个门禁各起一个服务时，
+        #    先起来的那个退出时会 terminate 掉自己的服务 ——
+        #    而另一个还在用它 ⇒ 后半程全是 net::ERR_CONNECTION_REFUSED。
+        #    实测（2026-11-02 CI）：24 个页面里前 6 个探到，其余 18 个连接被拒。
+        env_base = os.environ.get('BASE')
+        if env_base and self.is_ours(env_base):
+            self.base = env_base
+            self.own = False          # 不是我们起的，退出时不许杀
+            return True
+
         # ① 8000 上是**本仓库**的服务 ⇒ 复用（历史行为，别动）
         if port_open(PORT) and self.is_ours('http://127.0.0.1:%d' % PORT):
             self.base = 'http://127.0.0.1:%d' % PORT
@@ -132,14 +143,10 @@ class Server(object):
         #       而在 8000 空着时换随机端口，会让那些脚本**集体拿不到数据**
         #       —— 实测：改完第一版 CI 上 api-contract 立刻红
         #       「拿不到运行时形状」。⇒ 只在 8000 被别人占着时才换端口。
-        if not port_open(PORT):
-            base = self._spawn(PORT)
-            if base:
-                self.base = base
-                return True
-
-        # ③ 8000 被别人的服务占着 ⇒ 换空闲端口自己起。
-        #    绝不复用别人的服务（E265：那会把 404 记成"组件不存在"）。
+        # ② 没有 BASE ⇒ **独占一个空闲端口**。不复用 8000，也不去抢 8000：
+        #    实测（CI）：复用 8000 时，先起的那个门禁退出会 terminate 掉服务，
+        #    另一个还在用它 ⇒ 22 个页面里后 16 个全是
+        #    net::ERR_CONNECTION_REFUSED。谁起谁停，才没有这个竞态。
         port = self.free_port()
         base = self._spawn(port)
         if base:
