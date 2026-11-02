@@ -1077,19 +1077,12 @@ input[type="submit"],
    改这两个令牌一处，好过改 8 个组件。
    ========================================================================== */
 /* ==========================================================================
-   X · 打印工具类（注意：这两个**不是令牌**）
-   --------------------------------------------------------------------------
-   放在 tokens.css 而不是新建 `01-tokens/print.css`，是一个有意的取舍：
-   `build-dist.py` 会自动收录新 .css ⇒ dist 要重建、`dist-parity` 要复比、
-   `doc-facts` 会扫 01-tokens 下每个 .css、`01-tokens/README.md` 的人工描述
-   也会对不上。为两条工具类引入这一串连锁，与收益不成比例。
-
-   ⚠️ 这也是**唯一**会让屏幕 CSSOM 增加内容的地方：`.print-only` 在屏幕上
-      是 display:none。它只作用于新类名，现有页面不用它 ⇒ 像素零影响。
+   X · 打印（工具类 + 全局策略）
+   放这里而不是新建 print.css：新 .css 会连带 dist / docs / README 一串连锁。
+   完整说明（收窄层级的理由、为什么没写 thead、代价）见 docs/PRINT.md。
    ========================================================================== */
 
-/* 屏幕上隐藏、纸上显示。用于"打印版专用"的标题 / 页眉 / 落款。
-   放在块级元素上（div / p / h2 …）；行内场景请自己写 display。 */
+/* 屏幕上隐藏、纸上显示（块级元素用）。 */
 .print-only { display: none; }
 
 @media print {
@@ -1099,58 +1092,21 @@ input[type="submit"],
     --text-on-solid:  #15181c;
   }
 
-  /* 使用者控制器：给任何元素加 .no-print，纸上就没有它。
-     ⚠️ 这里必须 !important —— 这个类的用途就是盖掉使用者自己写的 display，
-        不加就永远可能被覆盖，等于没提供这个能力。全库只有这一处 !important。 */
+  /* 使用者控制器：加 .no-print 的元素不上纸。全库唯一的 !important ——
+     不加就永远可能被使用者自己写的 display 覆盖，等于没提供这个能力。 */
   .no-print { display: none !important; }
-
   .print-only { display: block; }
 
-  /* ── 只属于屏幕的东西，不上纸 ──────────────────────────────────────────
-     三条纪律，都是为了"宁可少藏，不可多藏"：
-
-     ① 全部用**类选择器**，不用裸 `button`。
-        `.accordion__trigger` 是个 `<button>`，但标题文字装在它里面 ——
-        按标签选择器会连正文一起干掉。
-
-     ② 刻意**收窄层级**：
-        · `.tabs__list`（标签栏）而不是 `.tabs` —— 后者会把 `.tabs__panel` 藏掉
-        · `.nav__list` / `.nav__toggle`（链接与汉堡）而不是 `.nav` ——
-          `.nav__brand` 里可能是页面标题
-        · `.accordion__marker`（箭头）而不是 `.accordion__heading` —— 标题要留
-
-     ③ **`.btn` 与 `.upload` 刻意不在清单里**（这是实测后改的主意）：
-        · `guide/button.html` 是**按钮组件文档页**，也是 print-gate 的采样页 ——
-          把 `.btn` 全局隐藏，打印"按钮组件文档"就只剩标题，什么也看不见。
-          组件展示页里的按钮是**内容**，不是操作。
-        · `.upload` 是带状态的表单控件（已上传哪个文件），和 `.input` 同类，
-          不是纯操作。
-        ⇒ 业务页要排除操作按钮，给那个容器加 `.no-print` 即可（类已在上面提供）。
-           这条差异写进 `docs/` 的打印说明，不靠猜。 */
-  .toast,
-  .tooltip,
-  .popover,
-  .overlay,
-  .skeleton,
-  .tabs__list,
-  .nav__list,
-  .nav__toggle,
-  .pagination,
+  /* 浮层与纯导航。不用裸 button（accordion 标题在 button 里），
+     不动 .btn / .upload（文档页会空、表单控件有状态）。见 docs/PRINT.md。 */
+  .toast, .tooltip, .popover, .overlay, .skeleton,
+  .tabs__list, .nav__list, .nav__toggle, .pagination,
   .accordion__marker { display: none !important; }
 
-  /* ── 分页控制：不让表格行 / 图 / 卡片被从中间切断 ──────────────────────
-
-     ⚠️ **没有写** `thead { display: table-header-group }`：
-        那是 `thead` 的 HTML 默认值，Chrome 默认就让表头每页重复，
-        而本库没有任何规则覆盖它（已 grep 确认）。
-        写一条与默认值相同的声明，只会让下一个人以为"表头重复是我们加的"。
-
-     ⚠️ 代价说清楚：`.card` / `.metric` 高于一页时，Chrome 会忽略 avoid
-        并强制切断（这是规范行为，不是缺陷）；高于半页时会被整体推到下一页
-        ⇒ **页数可能变多**。宁可多一页，不要在纸中间切一半。 */
+  /* 不跨页切断。代价：高于半页的卡片会被整体推到下一页 ⇒ 页数可能变多。 */
   tr, img, figure, svg,
   .card, .metric, .sparkline, .splot { break-inside: avoid; }
 
-  /* 孤行寡行：段首/段尾不要只留一行孤零零在另一页 */
+  /* 孤行寡行：段首/段尾不要只留一行在另一页 */
   p, li, blockquote { orphans: 2; widows: 2; }
 }

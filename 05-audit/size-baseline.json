@@ -45,8 +45,8 @@
       "raw": 4647
     },
     "01-tokens/tokens.css": {
-      "gzip": 20881,
-      "raw": 55168
+      "gzip": 21812,
+      "raw": 57442
     },
     "01-tokens/typography.css": {
       "gzip": 3401,
@@ -269,11 +269,11 @@
       "raw": 18560
     },
     "04-recipes/tierA-tokens.css": {
-      "gzip": 2079,
-      "raw": 5331
+      "gzip": 2083,
+      "raw": 5342
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 310690,
-  "total_raw": 782175
+  "total_gzip": 311625,
+  "total_raw": 784460
 }
