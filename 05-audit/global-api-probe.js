@@ -57,6 +57,12 @@ const TARGETS = {
   Theme: '/10-review/ios/index.html',
 };
 
+/* 🔴 端口从环境变量来，不写死。写死 8000 的后果实测过：
+   8000 被别的进程占着时，16 个全局全部"探不到"，门禁报的是
+   「ai/components.json 声明了浏览器里不存在的 global」—— 把量具的问题
+   说成了实现的问题。`_probe.py` 现在会起一个自己的端口并通过 BASE 传下来。 */
+const BASE = process.env.BASE || 'http://127.0.0.1:8000';
+
 /* 按页面分组，一个页面只开一次 tab */
 const BY_PAGE = {};
 for (const [name, url] of Object.entries(TARGETS)) {
@@ -71,8 +77,7 @@ for (const [name, url] of Object.entries(TARGETS)) {
     let page;
     try {
       page = await browser.newPage();
-      await page.goto('http://127.0.0.1:8000' + url,
-        { waitUntil: 'domcontentloaded' });
+      await page.goto(BASE + url, { waitUntil: 'domcontentloaded' });
       await new Promise((r) => setTimeout(r, 280));
 
       const got = await page.evaluate((want) => {

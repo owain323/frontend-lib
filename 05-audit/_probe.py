@@ -37,9 +37,19 @@ import socket
 import subprocess
 import sys
 import time
+import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PORT = 8000
+
+# 🔴 canary：**不能拿"端口有人应答"当"服务是我们的"**
+#   实测（2026-11-02，CI 上真实发生、本地可复现）：8000 被另一个进程占着
+#   （它服务的是别的根目录）⇒ 每个 demo 页 404 ⇒ 探针拿到 16 个 absent
+#   ⇒ 门禁报「ai/components.json 声明了浏览器里不存在的 global」。
+#   16 个组件同时"消失"显然不是实现坏了，是**量具连错了地方**。
+#   同一课在 with-server.sh 里已经学过一遍（"只要有人应答就算就绪"改成 canary），
+#   这里补上：取一个只有本仓库才有的文件，200 且够大才算"是我们的"。
+CANARY_PATH = '/01-tokens/tokens.css'
 
 
 def port_open(port=PORT, host='127.0.0.1', timeout=1.0):
@@ -59,28 +69,53 @@ class Server(object):
     def __init__(self):
         self.proc = None
         self.own = False
+        self.base = 'http://127.0.0.1:%d' % PORT
+
+    @staticmethod
+    def is_ours(base):
+        """canary：这个端口上跑的**是不是本仓库**的静态服务。"""
+        try:
+            r = urllib.request.urlopen(base + CANARY_PATH, timeout=2)
+            return r.getcode() == 200 and len(r.read()) > 1000
+        except Exception:
+            return False
+
+    @staticmethod
+    def free_port():
+        s = socket.socket()
+        try:
+            s.bind(('127.0.0.1', 0))
+            return s.getsockname()[1]
+        finally:
+            s.close()
 
     def ensure(self):
-        if port_open():
-            return True                    # 复用已有的
+        # ① 8000 上是本仓库的服务 ⇒ 复用（历史行为，别动）
+        if port_open(PORT) and self.is_ours('http://127.0.0.1:%d' % PORT):
+            self.base = 'http://127.0.0.1:%d' % PORT
+            return True
+        # ② 否则**换一个空闲端口自己起** —— 绝不复用别人的服务，
+        #    也绝不因为"8000 被占"就报"实现坏了"。
+        port = self.free_port()
         py = sys.executable or 'python'
         for cand in (py, 'python3', 'python'):
             try:
                 self.proc = subprocess.Popen(
-                    [cand, '-m', 'http.server', str(PORT)],
+                    [cand, '-m', 'http.server', str(port), '--bind', '127.0.0.1'],
                     cwd=ROOT,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL)
             except Exception:
                 continue
-            # 等它起来（最多 6 秒）
-            for _ in range(30):
+            base = 'http://127.0.0.1:%d' % port
+            for _ in range(40):
                 time.sleep(0.2)
-                if port_open():
+                if self.is_ours(base):
                     self.own = True
+                    self.base = base
                     return True
             break
-        return port_open()
+        return False
 
     def close(self):
         if self.proc and self.own:
@@ -113,7 +148,12 @@ def run_probe(js_rel_path, timeout=420):
     if not os.path.isfile(js):
         return None
     with Server() as _srv:
-        p = subprocess.run([node, js], cwd=ROOT,
+        # 🔴 BASE 必须**传下去**：探测脚本不该自己猜端口。
+        #    以前它写死 :8000，于是"服务其实在别的端口"这种事只能靠
+        #    运气（8000 恰好也是我们的）才不炸。
+        env = dict(os.environ)
+        env['BASE'] = _srv.base
+        p = subprocess.run([node, js], cwd=ROOT, env=env,
                            capture_output=True, timeout=timeout)
     out = (p.stdout or b'').decode('utf-8', 'replace')
     i = out.find('{')

@@ -196,6 +196,25 @@ def check_globals(decls, rt, targets=None):
     return bad
 
 
+def all_absent(decls, rt):
+    """**全部**声明的全局都 absent ⇒ 这不是"契约写错了"，是**没有取证**。
+
+    实测（E265）：静态服务被别的进程占着时，16 个全局同时"消失"，
+    而门禁打印的是「ai/components.json 声明了浏览器里不存在的 global」——
+    报告指着产品，实际问题在环境。修的人会去翻契约生成器，翻不到。
+
+    ⇒ 「一个都没量到」和「量到了但都不对」必须是两句不同的话。
+    """
+    named = [(c, g) for c, g in (decls or []) if g]
+    if not named:
+        return False
+    for _c, g in named:
+        a = rt.get(g)
+        if a and not a.get('absent') and not a.get('error'):
+            return False
+    return True
+
+
 def js_comments(text):
     """取出 JS 里所有注释（块注释 + 行注释）。只用于**看注释里写了什么**。"""
     out = []
@@ -313,6 +332,20 @@ def selftest():
         ok = False
     else:
         print('  [OK]   页面里 absent 的全局 ⇒ 抓到')
+
+    # ③b 「全部 absent」必须是"没有取证"，不是"契约写错了"（E265）
+    all_gone = {'Bar': {'absent': True}, 'Tabs': {'absent': True}}
+    if not all_absent([('bar', 'Bar'), ('tabs', 'Tabs')], all_gone):
+        print('  [FAIL] 全部 absent 没被判成"没有取证" ⇒ 会把量具问题说成实现问题')
+        ok = False
+    else:
+        print('  [OK]   全部 absent ⇒ 判"没有取证"')
+    if all_absent([('bar', 'Bar'), ('tabs', 'Tabs')], {'Bar': {'absent': True},
+                                                     'Tabs': {'form': 'construct'}}):
+        print('  [FAIL] 只有一个探到时也报了"没有取证" ⇒ 判据过宽')
+        ok = False
+    else:
+        print('  [OK]   只要有一个探到 ⇒ 不算"没有取证"')
 
     # ④b 探针表漏登记 ⇒ 必须红，且理由必须是 probe-missing（不能混成"探不到"）
     #     真事故（0.11.2）：加 nav.js 导出 `Nav` 后没人把它补进 TARGETS，
@@ -459,6 +492,13 @@ def main():
     if decls is None:
         print('  FAIL  读不到 ai/components.json')
         return 1
+    if all_absent(decls, rt):
+        print('  FAIL  探针把**全部**声明的全局都记成 absent ⇒ 这是**没有取证**，')
+        print('        不是实现坏了。先查量具：')
+        print('          · 静态服务是不是本仓库的（canary：/01-tokens/tokens.css 200 且够大）')
+        print('          · 05-audit/browser.js 能不能找到浏览器')
+        return 1
+
     bad_globals = check_globals(decls, rt, probe_targets())
     if bad_globals:
         print('')

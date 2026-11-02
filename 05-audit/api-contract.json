@@ -1,40 +1,20 @@
 {
   "Combobox": {
-    "add": "method",
-    "destroy": "method",
-    "remove": "method",
-    "setOptions": "method",
-    "tags": "getter"
+    "__error": "Combobox 未挂载"
   },
   "DateRange": {
-    "clear": "method",
-    "from": "getter",
-    "set": "method",
-    "setPreset": "method",
-    "to": "getter",
-    "valid": "getter"
+    "__error": "DateRange 未挂载"
   },
   "DateRangeStatics": {
-    "addDays": "static-method",
-    "addMonths": "static-method",
-    "create": "static-method",
-    "iso": "static-method",
-    "quarterOf": "static-method",
-    "quarterRange": "static-method"
+    "__error": "DateRange 全局不存在"
   },
   "Dropdown": {
-    "close": "method",
-    "destroy": "method",
-    "open": "method"
+    "__error": "Dropdown 未挂载"
   },
   "Select": {
-    "close": "method",
-    "open": "method",
-    "value": "accessor"
+    "__error": "Select 未挂载"
   },
   "Tree": {
-    "destroy": "method",
-    "focusAt": "method",
-    "selected": "getter"
+    "__error": "Tree 未挂载"
   }
 }
