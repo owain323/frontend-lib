@@ -89,14 +89,8 @@ class Server(object):
         finally:
             s.close()
 
-    def ensure(self):
-        # ① 8000 上是本仓库的服务 ⇒ 复用（历史行为，别动）
-        if port_open(PORT) and self.is_ours('http://127.0.0.1:%d' % PORT):
-            self.base = 'http://127.0.0.1:%d' % PORT
-            return True
-        # ② 否则**换一个空闲端口自己起** —— 绝不复用别人的服务，
-        #    也绝不因为"8000 被占"就报"实现坏了"。
-        port = self.free_port()
+    def _spawn(self, port):
+        """在指定端口起一个自己的静态服务；起来了返回 base，否则 None。"""
         py = sys.executable or 'python'
         for cand in (py, 'python3', 'python'):
             try:
@@ -112,9 +106,35 @@ class Server(object):
                 time.sleep(0.2)
                 if self.is_ours(base):
                     self.own = True
-                    self.base = base
-                    return True
+                    return base
             break
+        return None
+
+    def ensure(self):
+        # ① 8000 上是**本仓库**的服务 ⇒ 复用（历史行为，别动）
+        if port_open(PORT) and self.is_ours('http://127.0.0.1:%d' % PORT):
+            self.base = 'http://127.0.0.1:%d' % PORT
+            return True
+
+        # ② 8000 空着 ⇒ **优先还占 8000**。
+        #    🔴 这不是偷懒：全套 30 多个探测脚本里仍有写死 :8000 的
+        #       （api-contract.js 等）。把它们全部改成读 BASE 是一次大改，
+        #       而在 8000 空着时换随机端口，会让那些脚本**集体拿不到数据**
+        #       —— 实测：改完第一版 CI 上 api-contract 立刻红
+        #       「拿不到运行时形状」。⇒ 只在 8000 被别人占着时才换端口。
+        if not port_open(PORT):
+            base = self._spawn(PORT)
+            if base:
+                self.base = base
+                return True
+
+        # ③ 8000 被别人的服务占着 ⇒ 换空闲端口自己起。
+        #    绝不复用别人的服务（E265：那会把 404 记成"组件不存在"）。
+        port = self.free_port()
+        base = self._spawn(port)
+        if base:
+            self.base = base
+            return True
         return False
 
     def close(self):
