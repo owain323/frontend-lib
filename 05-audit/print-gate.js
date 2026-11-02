@@ -256,7 +256,7 @@ async function probeTypes(universe) {
   return withPage({ width: 393, height: 852, deviceScaleFactor: 1 }, async (p) => {
     const rows = [];
     for (const url of universe) {
-      await p.goto(BASE + url, { waitUntil: 'load', timeout: 45000 });
+      await loadStyled(p, BASE + url);
       await p.evaluate(() => (document.fonts ? document.fonts.ready.then(() => 1) : 1));
       const m = await p.evaluate(PROBE);
       rows.push({ url: url, m: m, types: typesOf(m) });
@@ -715,9 +715,67 @@ function analyze(buf) {
 
 /* ---------------------------------------------------------------- 渲染 */
 
+/**
+ * 打开页面并确认**样式表真的到了**。
+ *
+ * 🔴 为什么不能只 `goto(waitUntil:'load')`：
+ *    `load` 事件只说明"该发的请求发完了"，不说明 CSS 拿到了。
+ *    实测（并发 6 跑全量）`print` 门禁两次挂在同一页：
+ *      guide-button/light：页数 4 ≠ 基线 8、文字 run 数 1528 ≠ 1975
+ *      guide-button：暗色与浅色的打印产物文字颜色不同
+ *    三条症状同源 —— **其中一个配色渲染成了裸 HTML**：
+ *    页数变少（没样式排版更紧凑）、run 数变少（没有 span 包裹）、
+ *    深浅两色看起来"不同"（其中一个压根没吃到主题变量）。
+ *
+ *    单跑必然通过，全量偶发 —— 这正是 `05-audit/http-serve.py` 头里记的那类
+ *    "页面样式没落地就被量"。它有两个后果，第二个更糟：
+ *      ① 假红（把一个好页面判成回归）
+ *      ② **假绿**（裸 HTML 的文字对比度往往"够高"，对抗度判据会一路放行）
+ *
+ *  ⇒ 判据之前先自证"我量的是这个库的页面"，不是浏览器默认样式下的 HTML。
+ *    失败重试一次（服务端的瞬时排队不值得报假红），仍然失败就明确报错。
+ */
+async function loadStyled(p, url) {
+  let why = '';
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    /* 信号一：CSS 请求本身失败（404 / 连接被拒 / file 不存在）。
+       🔴 不能用 `document.styleSheets` 判活：加载失败的 <link> **仍然占一个表对象**
+          （实测 file:// 下能看到 href，只是 cssRules 抛 SecurityError），
+          按"表对象数>0"判会把它当成加载成功 —— 等于判据自己骗自己。 */
+    const failedCss = [];
+    const onFail = (req) => {
+      if (/\.css(\?|#|$)/i.test(req.url())) failedCss.push(req.url());
+    };
+    p.on('requestfailed', onFail);
+    try {
+      await p.goto(url, { waitUntil: 'load', timeout: 45000 });
+    } finally {
+      /* puppeteer 各版本解绑方法名不一致（off / removeListener）。
+         两个都没有就留着不管：页面在 withPage 结束时关闭，监听器随之消失。 */
+      if (typeof p.off === 'function') p.off('requestfailed', onFail);
+      else if (typeof p.removeListener === 'function') p.removeListener('requestfailed', onFail);
+    }
+
+    /* 信号二：页面写了 <link rel=stylesheet>，但一张带 href 的表都没挂上。 */
+    const st = await p.evaluate(() => ({
+      links: document.querySelectorAll('link[rel~="stylesheet"]').length,
+      loaded: Array.from(document.styleSheets).filter((s) => s.href).length,
+    }));
+    const bad = failedCss.length > 0 || (st.links > 0 && st.loaded === 0);
+    if (!bad) return st;
+
+    why = failedCss.length
+      ? (failedCss.length + ' 个样式表请求失败：' + failedCss.slice(0, 3).join(', '))
+      : (st.links + ' 个 <link> 全部没挂上');
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  throw new Error('页面样式没落地（' + why + '）：' + url
+    + '\n     ⇒ 静态服务在并发下打了个嗝。判据会对裸 HTML 下结论，本页结果作废。');
+}
+
 async function render(url, scheme) {
   return withPage({ width: 794, height: 1123, deviceScaleFactor: 1 }, async (p) => {
-    await p.goto(url, { waitUntil: 'load', timeout: 45000 });
+    await loadStyled(p, url);
     await p.emulateMediaType('print');
     await p.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: scheme }]);
     await p.evaluate(() => (document.fonts ? document.fonts.ready.then(() => 1) : 1));
@@ -951,6 +1009,12 @@ const FIXTURES = {
     + 'h1{font-size:24px}p{color:#4f555e}'
     + '</style><h1>标题</h1><p>正文一段，颜色是浅色主题的正文色。</p>',
 
+  /* 引一张不存在的样式表：模拟"静态服务打嗝、CSS 全 404"。
+     这份不该被判红也不该被判绿 —— 应该**直接报错**，否则判据是在对裸 HTML 下结论。 */
+  'nostyle.html': '<!DOCTYPE html><meta charset="utf-8">'
+    + '<link rel="stylesheet" href="./no-such-sheet.css">'
+    + '<h1>标题</h1><p>正文一段。</p>',
+
   /* 🔴 探针是"白字压深色块"，不是"浅灰字压白纸"。
      实测：Chromium 在 printBackground:false 下会**改写**文字色，
      纯灰 #ABABAB 压白纸会被压暗到 7.23:1 —— 拿它当反例，判据会"抓不到"。
@@ -1168,6 +1232,20 @@ async function selftest() {
     /* ---- ⑫ 只数 /Page，不把 /Pages 算成页 ---- */
     report(countPages('/Type /Page /Type /Page /Type /Pages') === 2,
       '⑫ 只数 /Page，不把 /Pages 算成页');
+
+    /* ---- ⑬ 样式表全失败 ⇒ 必须报错，不许"判红"也不许"判绿" ----
+       这是并发下真实发生过的事：某个配色渲染成裸 HTML，
+       页数 4≠8、run 数少一截、深浅两色"看起来不同"。
+       若只当回归报红，下次有人会去改样式；若恰好对比度够高还会变假绿。
+       ⇒ 判据只能有一个动作：**这页结果作废**。 */
+    let guardThrew = '';
+    try {
+      await render('file:///' + dir.replace(/\\/g, '/') + '/nostyle.html', 'light');
+    } catch (e) {
+      guardThrew = String((e && e.message) || e);
+    }
+    report(/页面样式没落地/.test(guardThrew),
+      '⑬ 样式表全 404 ⇒ 报错而不是对裸 HTML 下结论');
   } finally {
     try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) { /* 忽略 */ }
   }

@@ -35,13 +35,13 @@ Every subcommand accepts `--json`; failures print `{"ok":false,...}` and exit no
 | `content` | `prose` | pattern | stable | 11.1 KB | — | 长文排版容器（标题/段落/列表/引用/代码） | `single-scroll-container` `line-height-constant-sync` |
 | `drawer` | `drawer` | pattern | stable | 4.5 KB | `drawer.js` | 侧边抽屉，含遮罩 | `fixed-element-inventory` |
 | `dropdown` | `dd` | pattern | stable | 3.9 KB | `dropdown.js` | 下拉菜单 | `popover-measure-after-render` |
-| `form-validation` | `form` | pattern | stable | 11.0 KB | — | 表单校验反馈与错误汇总 | — |
+| `form-validation` | `form` | pattern | stable | 11.8 KB | — | 表单校验反馈与错误汇总 | — |
 | `list` | `list` | pattern | stable | 6.1 KB | `flip.js` | 键值列表/条目列表 | `empty-state-no-decoration` `text-injection-xss` |
 | `nav` | `nav` | pattern | stable | 12.1 KB | `nav.js` | 顶部导航与目录 | — |
 | `overlay` | `toast` | pattern | stable | 12.8 KB | `overlay.js` | 吐司提示与模态遮罩 | `fixed-element-inventory` |
 | `pagination` | `pagination` | pattern | stable | 7.7 KB | `pagination.js` | 分页控件 | — |
 | `reveal` | `reveal` | pattern | stable | 4.0 KB | `reveal.js` | 入场动效：一个 data-reveal 属性六个方向，无 JS 时内容全可见 | — |
-| `states` | `state` | pattern | stable | 10.1 KB | — | 空/加载/错误/成功四种整块状态 | `empty-state-no-decoration` `text-injection-xss` |
+| `states` | `state` | pattern | stable | 10.9 KB | — | 空/加载/错误/成功四种整块状态 | `empty-state-no-decoration` `text-injection-xss` |
 | `tabs` | `tabs` | pattern | stable | 5.9 KB | `tabs.js` | 选项卡切换 | — |
 | `tooltip` | `tooltip` | pattern | stable | 3.5 KB | `tooltip.js` | 悬停/聚焦提示 | `popover-measure-after-render` `fixed-element-inventory` |
 | `tree` | `tree` | pattern | stable | 4.0 KB | `tree.js` | 可展开树形结构 | — |

@@ -40,7 +40,7 @@
 
 | 部件 | 说明 |
 |---|---|
-| `--right`（默认）/ `--left` / `--top` / `--bottom` | 四个进入方向 |
+| `.drawer--right`（默认）/ `.drawer--left` / `.drawer--top` / `.drawer--bottom` | 四个进入方向。左右是侧栏（宽度由 `--drawer-w` 定），上下是**抽屉式面板**（`min(60vh, 420px)` 高、整宽），适合移动端底部操作区 |
 | `.drawer__head` / `__title` / `__close` | 头部与关闭按钮 |
 | `.drawer__body` | 内容 |
 | `.drawer__foot` | 底部操作区 |

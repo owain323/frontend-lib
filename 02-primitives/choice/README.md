@@ -47,6 +47,22 @@ input 被 `opacity:0` 覆盖后，它自己的 `outline` 你根本看不见。
 
 `:indeterminate` **只能由 JS 设置**（`el.indeterminate = true`），CSS 不影响它。
 
+### `.choice__hint`：选项的补充说明
+
+勾选框右侧、标签下方的一行小字（`--fs-xs` + `--text-tertiary`）。用于"选了这个会怎样"
+这类**必须先看再选**的说明——比如"同意后我们会给你发月度报告"。
+
+```html
+<label class="choice choice--checkbox">
+  <input class="choice__input" type="checkbox">
+  <span class="choice__label">订阅月度报告</span>
+  <span class="choice__hint">每月 1 日发一封，可随时退订</span>
+</label>
+```
+
+⚠️ 别把这段说明塞进 `aria-describedby` 之外的地方：它是**解释**，不是标签的一部分，
+读屏应该念"订阅月度报告，复选框"，再念说明。
+
 ---
 
 ## radio 组：必须 `fieldset + legend`
@@ -87,6 +103,20 @@ input 被 `opacity:0` 覆盖后，它自己的 `outline` 你根本看不见。
 键盘行为（↑↓ 选择、Enter 确认、Esc 关闭）**全部保留**。
 
 select 用 `:focus` 不用 `:focus-visible`——和 input 一样，用户必须随时知道当前选的是哪个。
+
+结构（注意：这里的 `.select` 是**原生 select 的外壳**，与
+`02-primitives/select/select.css` 里那个自定义下拉的 `.select` **同名不同义**，
+同页面同时用两个组件会互相覆盖，详见 `05-audit/css-ownership.json`）：
+
+| 类 | 作用 |
+|---|---|
+| `.select` | 外壳（`position:relative` + `inline-flex`，给箭头定位用） |
+| `.select__control` | **原生 `<select>` 本体**，高度 44px、字号 16px 硬下限（iOS 防缩放） |
+| `.select__arrow` | 自绘箭头（必须 `pointer-events:none`，否则吃掉点击） |
+| `.select__control--auto` | 高度改 `auto`（`min-height:44px`），用于**选项文字会换行**的场合，例如多选列表式的长选项 |
+
+`.select__control--auto` 的存在理由：固定 44px 高度遇到换行文字会把第二行裁掉。
+它把 `height` 放开、`padding-block` 加到 `--sp-2`，行数变多时整块自然长高。
 
 ---
 

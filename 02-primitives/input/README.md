@@ -122,6 +122,7 @@ python 05-audit/states.py 02-primitives/input/input.css
 | 类 | 作用 | 什么时候用 |
 |---|---|---|
 | `.field__input--sm` | 小尺寸（表格 / 紧凑栏） | 表格行内、侧栏等密度高的场景 |
+| `.field__input--textarea` | 多行：`height:auto` + `min-height:88px` + `padding:--sp-3` + `resize:vertical` | 备注、说明、地址等会换行的输入；直接拿 `.field__input` 配 `<textarea>` 会被 44px 固定高度裁掉 |
 
 > ⚠️ **demo 里没有演示这一档** —— 它是留给复用者的钩子，
 > 不是"看起来有其实没有"。要用就自己加类。

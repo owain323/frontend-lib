@@ -8,8 +8,8 @@
   ],
   "totals": {
     "sourceFiles": 77,
-    "sourceBytes": 913321,
-    "distGzip": 110065
+    "sourceBytes": 914957,
+    "distGzip": 110096
   },
   "files": [
     {
@@ -617,15 +617,15 @@
     },
     {
       "source": "03-patterns/form-validation/form-validation.css",
-      "sourceSha256": "5499064392ab31b6f399e3c4ca10ff5fd251ad8d691a56249ac7c0fe765757b5",
-      "sourceBytes": 11313,
-      "sourceGzip": 4606,
+      "sourceSha256": "5467def402f0f167467274842514bf5ae00794aeb1a2e22812871365289a4570",
+      "sourceBytes": 12133,
+      "sourceGzip": 4992,
       "outputs": [
         {
           "path": "dist/03-patterns/form-validation/form-validation.css",
           "kind": "minified",
-          "bytes": 2445,
-          "gzip": 793
+          "bytes": 2452,
+          "gzip": 795
         }
       ]
     },
@@ -791,15 +791,15 @@
     },
     {
       "source": "03-patterns/states/states.css",
-      "sourceSha256": "c8e813d58c4a58d9d9788469c4dde08165a4fd7fd87dd98acbaa3c5db5fb2bf0",
-      "sourceBytes": 10379,
-      "sourceGzip": 4125,
+      "sourceSha256": "34a34325394353f8f8f0910e0e1326d3d8663741007d3d4963b1f96e50622828",
+      "sourceBytes": 11195,
+      "sourceGzip": 4474,
       "outputs": [
         {
           "path": "dist/03-patterns/states/states.css",
           "kind": "minified",
-          "bytes": 2247,
-          "gzip": 865
+          "bytes": 2399,
+          "gzip": 894
         }
       ]
     },

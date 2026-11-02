@@ -31,6 +31,18 @@ Tooltip.attach(按钮, '说明文字', 'top');
 | `text` | string | 纯文本（用 `textContent` 写入，**天然免疫注入**）|
 | `place` | `top`（默认）/ `bottom` / `inset-inline-start` / `inset-inline-end` | 方位 |
 
+`place` 原样拼进类名（`.tooltip--` + `place`），所以四个方位对应的就是这四个类：
+
+| 类 | 出现位置 |
+|---|---|
+| `.tooltip--top` | 在触发元素**下方**，箭头朝上（默认） |
+| `.tooltip--bottom` | 在触发元素**上方**，箭头朝下 |
+| `.tooltip--inset-inline-start` | 在触发元素**右侧**，箭头朝左。用逻辑属性，RTL 下自动镜像到左边 |
+| `.tooltip--inset-inline-end` | 在触发元素**左侧**，箭头朝右。同样随书写方向镜像 |
+
+⚠️ 方位名容易读反：`--top` 指的是**箭头朝上**，所以气泡在下方。
+换成"气泡在哪边"去想会写错。
+
 公开 API 只有 `Tooltip.attach()`，**没有** `show` / `hide` ——
 显隐由 hover / focus / click 自动驱动。
 

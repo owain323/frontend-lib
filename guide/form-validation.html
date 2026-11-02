@@ -118,14 +118,30 @@ e.textContent = v === '' ? '金额不能为空' : '最多两位小数，例如 1
 <hr>
 <h2 id="s8">五、无障碍要点<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
 <ol><li>错误汇总：<code>role=&quot;alert&quot;</code> + 提交后焦点移到它</li><li>汇总条目：<code>&lt;a href=&quot;#id&quot;&gt;</code>，不要 <code>div onclick</code></li><li>错误文案：<code>role=&quot;alert&quot;</code>（动态出现时读出）+ <code>aria-describedby</code>（聚焦时听到）</li><li>字段加 <code>aria-invalid=&quot;true&quot;</code></li><li><strong>异步校验时不要禁用输入框</strong> —— 用户会以为不能打字了。保持可输入，旁边给小提示</li></ol>
+<h3 id="s9">异步校验的 pending 态两个类<a class="anchor" href="#s9" aria-label="本节直链">#</a></h3>
+<div class="table"><table>
+<thead><tr>
+<th>类</th><th>加在哪</th><th>作用</th>
+</tr></thead>
+<tbody>
+<tr><td><code>.field--checking</code></td><td><code>.field</code> 上</td><td>标记&quot;这一格正在校验&quot;。目前只作状态标记（并占住 <code>::after</code>，防止有人改用 padding 挤位置）</td></tr>
+<tr><td><code>.field__checking-hint</code></td><td><code>.field</code> 里、输入框后</td><td>显示一个小转圈 + 文字（&quot;正在检查用户名…&quot;）。转圈用 <code>::before</code> 画，配色走 <code>--accent</code> / <code>--border-control</code></td></tr>
+</tbody>
+</table></div>
+<pre class="code" tabindex="0"><code class="language-html">&lt;div class=&quot;field field--checking&quot;&gt;
+  &lt;label class=&quot;field__label&quot; for=&quot;u&quot;&gt;用户名&lt;/label&gt;
+  &lt;input class=&quot;field__input&quot; id=&quot;u&quot; aria-describedby=&quot;u-check&quot;&gt;
+  &lt;span class=&quot;field__checking-hint&quot; id=&quot;u-check&quot;&gt;正在检查是否可用…&lt;/span&gt;
+&lt;/div&gt;</code></pre>
+<p>⚠️ 校验结束要把 <code>.field--checking</code> 摘掉、把 hint 换成错误或成功提示 —— <strong>留着不摘，用户会以为一直在转圈</strong>，这比不显示更糟。</p>
 <hr>
-<h2 id="s9">反例<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
+<h2 id="s10">反例<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
 <ul><li>❌ <strong>oninput 实时报错</strong> —— 噪音，会让人放弃填表</li><li>❌ <strong>没有错误汇总</strong> —— WCAG 3.3.1 要求错误可识别</li><li>❌ <strong>汇总条目用 <code>div onclick</code></strong> —— 键盘不可达</li><li>❌ <strong>提交失败/成功后焦点不动</strong> —— 会重复提交</li><li>❌ <strong>异步校验时禁用输入框</strong> —— 用户以为不能打字了</li><li>❌ <strong>错误文案只说&quot;格式错误&quot;</strong> —— 3.3.3 要求给建议</li><li>❌ <strong>用 <code>:has()</code> 做校验时机控制</strong> —— 逻辑塞进样式层，不可测；且兼容性不稳</li></ul>
 <hr>
-<h2 id="s10">门禁<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
+<h2 id="s11">门禁<a class="anchor" href="#s11" aria-label="本节直链">#</a></h2>
 <pre class="code" tabindex="0"><code class="language-bash">python3 05-audit/states.py 01-tokens 02-primitives 03-patterns 04-recipes</code></pre>
 <p>⚠️ <strong>必须 <code>--dir</code> 扫全目录，不能只扫单个文件。</strong> <code>.field</code> 的态定义在 <code>input.css</code> 里，只扫 <code>form-validation.css</code> 会误报&quot;缺 disabled/focus&quot;。</p>
-<h3 id="s11">库内两处反模式钩子<a class="anchor" href="#s11" aria-label="本节直链">#</a></h3>
+<h3 id="s12">库内两处反模式钩子<a class="anchor" href="#s12" aria-label="本节直链">#</a></h3>
 <p><code>form-validation.css</code> 末尾的反模式清单里，<strong>刻意用注释写了几条真实的错误写法</strong> （<code>oninput</code> 报错、没有汇总等）。<code>states.py</code> 的反模式扫描已改成在去注释后的文本上跑，所以那些注释<strong>不会</strong>被误判成真代码。改这个脚本时别把这个修复弄丢了。</p>
     </article>
     <nav class="g-pager" aria-label="上一页 / 下一页">
@@ -135,7 +151,7 @@ e.textContent = v === '' ? '金额不能为空' : '最多两位小数，例如 1
   </main>
   <aside class="g-side">
     <p class="g-side__title" id="toc-title">本页目录</p>
-    <ul class="g-toc"><li><a href="#s2">一、校验时机（本组件最关键的判断）</a></li><li><a href="#s4">二、错误汇总（提交失败时必做）</a></li><li><a href="#s5">三、焦点管理（最容易漏）</a></li><li><a href="#s6">四、错误文案：给建议，不给判断</a></li><li><a href="#s8">五、无障碍要点</a></li><li><a href="#s9">反例</a></li><li><a href="#s10">门禁</a></li></ul>
+    <ul class="g-toc"><li><a href="#s2">一、校验时机（本组件最关键的判断）</a></li><li><a href="#s4">二、错误汇总（提交失败时必做）</a></li><li><a href="#s5">三、焦点管理（最容易漏）</a></li><li><a href="#s6">四、错误文案：给建议，不给判断</a></li><li><a href="#s8">五、无障碍要点</a></li><li><a href="#s10">反例</a></li><li><a href="#s11">门禁</a></li></ul>
   </aside>
 </div>
 <footer class="g-foot">

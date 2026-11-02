@@ -1065,6 +1065,9 @@ run "perf"         $PY 05-audit/perf-gate.py
 #   它用临时账本（FL_BUDGET）逼出每个分支，并核对真账本 sha 未变。
 run "budget-self" @serial $PY 05-audit/budget-selftest.py
 run "coverage"    $PY 05-audit/coverage-gate.py
+# 反向控制：孤儿类 / 幻影类 / 未登记重名 / 登记过期 / 水位上涨 五条判据
+# 都必须能红。喂的是合成数据，所以不需要碰真仓库。
+run "coverage-rev" $PY 05-audit/coverage-gate.py --selftest
 # ---------- 视觉回归（ G2 · 最慢，放最后）----------
 # 零依赖：比对走 05-audit/pngdiff.py（纯标准库，已与 Pillow 逐字节对齐）
 #

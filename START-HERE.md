@@ -55,8 +55,8 @@
 | 树形 | `03-patterns/tree/tree.css` | 122 | **必需 464** (`tree.js`) | 层级数据（文件 / 组织 / 分类）要展开就要 |
 | 侧边抽屉 | `03-patterns/drawer/drawer.css` | 129 | **必需 361** (`drawer.js`) | 要从侧边滑出面板就要 |
 | 弹窗 / 吐司 | `03-patterns/overlay/overlay.css` | 338 | **必需 684** (`overlay.js`) | 需要弹层（吐司 / 模态）就要 |
-| 状态（空 / 加载 / 错 / 成功） | `03-patterns/states/states.css` | 252 | — | **凡是会异步取数就要** |
-| 表单校验 | `03-patterns/form-validation/form-validation.css` | 263 | — | 提交前要校验就要 |
+| 状态（空 / 加载 / 错 / 成功） | `03-patterns/states/states.css` | 269 | — | **凡是会异步取数就要** |
+| 表单校验 | `03-patterns/form-validation/form-validation.css` | 274 | — | 提交前要校验就要 |
 | 列表增删 | `03-patterns/list/list.css` | 162 | 可选 201 (`flip.js`，FLIP 增删动画，纯增强) | 列表会动态增删就要 |
 | 导航 / 目录 | `03-patterns/nav/nav.css` | 314 | **必需 425** (`nav.js`) · 可选 111 (`toc.js`，自动生成目录，纯增强) | 顶部要导航，或长文要目录就要 |
 | 长文排版 | `03-patterns/content/content.css` | 286 | — | 写文档 / 长文就要 |

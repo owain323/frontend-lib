@@ -57,6 +57,19 @@
 <tr><td><code>place</code></td><td><code>top</code>（默认）/ <code>bottom</code> / <code>inset-inline-start</code> / <code>inset-inline-end</code></td><td>方位</td></tr>
 </tbody>
 </table></div>
+<p><code>place</code> 原样拼进类名（<code>.tooltip--</code> + <code>place</code>），所以四个方位对应的就是这四个类：</p>
+<div class="table"><table>
+<thead><tr>
+<th>类</th><th>出现位置</th>
+</tr></thead>
+<tbody>
+<tr><td><code>.tooltip--top</code></td><td>在触发元素<strong>下方</strong>，箭头朝上（默认）</td></tr>
+<tr><td><code>.tooltip--bottom</code></td><td>在触发元素<strong>上方</strong>，箭头朝下</td></tr>
+<tr><td><code>.tooltip--inset-inline-start</code></td><td>在触发元素<strong>右侧</strong>，箭头朝左。用逻辑属性，RTL 下自动镜像到左边</td></tr>
+<tr><td><code>.tooltip--inset-inline-end</code></td><td>在触发元素<strong>左侧</strong>，箭头朝右。同样随书写方向镜像</td></tr>
+</tbody>
+</table></div>
+<p>⚠️ 方位名容易读反：<code>--top</code> 指的是<strong>箭头朝上</strong>，所以气泡在下方。换成&quot;气泡在哪边&quot;去想会写错。</p>
 <p>公开 API 只有 <code>Tooltip.attach()</code>，<strong>没有</strong> <code>show</code> / <code>hide</code> —— 显隐由 hover / focus / click 自动驱动。</p>
 <h2 id="s4">🔴 用 <code>aria-describedby</code>，不是 <code>aria-label</code><a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
 <p>tooltip 与触发元素的关系是<strong>描述</strong>，不是<strong>命名</strong>。 <code>aria-label</code> 会<strong>覆盖</strong>元素本来的可访问名——按钮上的文字会被抹掉。</p>

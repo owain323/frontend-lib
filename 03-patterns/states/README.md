@@ -36,6 +36,21 @@
 
 骨架屏必须标 `aria-hidden="true"`，否则屏幕阅读器会把它读成一堆无意义色块。
 
+### 形状变体（本文件自带一份，注意与 primitive 重复）
+
+| 类 | 形状 |
+|---|---|
+| `.skeleton` | 底块（底色 `--surface-sunken`，圆角 `--r-sm`，带微光扫过） |
+| `.skeleton--text` | 一行文字（`height:1em`，下边距 `0.35em`）；`:last-child` 收窄到 70%，看起来像段落结尾 |
+| `.skeleton--title` | 标题行（`height:1.4em`，宽度 60%） |
+| `.skeleton--avatar` | 头像（`40×40`，`--r-pill` 全圆），配 `.skeleton--text` 做列表项占位 |
+| `.skeleton--block` | 大块内容区（`height:120px`） |
+
+> ⚠️ **`02-primitives/skeleton/skeleton.css` 里另有一份实现**，两者已分叉
+> （底色令牌、高度写法、变体集合都不同：那边有 `--circle` 没有 `--avatar`/`--title`）。
+> 谁后加载谁生效。已登记在 `05-audit/css-ownership.json`，去重计划在 0.26.0。
+> **本文件只用 `.skeleton` 时，请引 primitive 那份，别两边都引。**
+
 ---
 
 ## 300ms 延迟（需要 JS，约 10 行）

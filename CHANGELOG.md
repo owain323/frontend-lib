@@ -16,11 +16,69 @@
 
 （无）
 
-## [0.25.0] - 2026-11-02
+## [0.25.0] - 2026-11-03
 
 **次版本：新增一个子命令（`agentcss pdf`）+ 新增契约字段（`printPolicy` / `pageBudget`）
 + 修一处打印行为（模态遮罩）。不改类名、不改令牌、不改既有 JS 的调用方式 ——
 下游不改代码即可升级；不打印的话，`@media print` 之外一个字节都没变。**
+
+### 修复：`coverage-gate` 的 CSS 覆盖率从"写在注释里"变成"真的算"
+
+docstring 承诺了「每个组件 CSS 里的 class，是否至少被一个契约或 demo 引用到」，
+但代码里**没有任何提取 CSS class 的逻辑** —— 实际只判"有没有 demo、契约里提没提路径"。
+现在实装成四条机械判据，全部 100% 硬门禁：
+
+| 判据 | 含义 | 现状 |
+|---|---|---|
+| **孤儿类** | CSS 里定义了，demo / 组件 JS / 契约 / README 四处都没提 | 0（原有 25 个，全部补文档或删规则） |
+| **幻影类** | README 写到、全库却没有这个类 | 0（3 个历史警告性提及显式豁免） |
+| **未渲染类** | 只被 README 认领，demo / JS / 契约一次没碰 | 41 / 472（棘轮钉住，不得变多） |
+| **跨组件同名主体** | 同一类名被两个组件声明为规则主体 | 5 条，全部登记在 `css-ownership.json` |
+
+⚠️ 三处**判据口径**是踩过坑才定下来的，写在这里免得后人改回去：
+
+- **剥注释、`url(...)`、字符串**再取类名。否则 `data:image/svg+xml,...http://www.w3.org/`
+  能读出 `.org` / `.w3` 这种假类名（实测 2 处）。
+- **"定义"用全部选择器，"占用类名"只用规则主体。** `.switch--lg .switch__track` 这种
+  修饰符没有自己的规则，只看主体会把它误判成"CSS 里不存在"（实测多报 12 条幻影）；
+  反过来 `.list__actions .btn` 是 list 在上下文里覆盖 button，不是 list 占用了 `.btn`
+  （按"任意出现"判重名会多报 9 条噪音）。
+- **幻影要排除交叉引用**：form-validation 的 README 写 `.field`（那是 input 的）。
+  判据改成"别处也没有才算幻影"，并且**存在于本组件 JS 里也算真实存在**
+  （`.accordion--many` 是纯行为开关，一行样式都没有）。
+
+反向控制 5 条（孤儿 / 幻影 / 未登记重名 / 登记过期 / 水位上涨）全部在
+`--selftest` 里，另在真仓库上逐条注入验证过会红。
+
+### 修复：三处样式缺陷（都是上面这把尺子量出来的）
+
+| 缺陷 | 实测症状 | 修法 |
+|---|---|---|
+| `.field__error` 的"该不该显示"取决于 CSS 加载顺序 | input.css 先 → `display:none` ✅；form-validation.css 先 → `display:flex`，**首屏把全部错误提示挂出来** | 把默认隐藏抬成 `.field .field__error`（0,2,0），顺序不再是变量。错误元素必须在 `.field` 内（结构契约本来就如此） |
+| `states.css` 里的骨架屏动画**无视** `prefers-reduced-motion` | 该文件自带一份完整的 `.skeleton` 实现，`:after` 的 `animation` 无条件生效；而 states 的 demo 没引 skeleton.css ⇒ 减少动态效果的用户照样看到闪烁 | 包进 `@media (prefers-reduced-motion: no-preference)` + 补 `reduce` 档 |
+| `.select` 同名不同义（choice vs select） | choice 的是**原生 `<select>` 外壳**（`inline-flex`+`align-items:center`），select 的是**自定义下拉根**（`inline-block`+`min-width:12rem`）。实测两序结果不同：先 choice 后 select 时原生外壳丢垂直居中 | **未改**（改名是破坏性变更）。登记在 `css-ownership.json`，0.26.0 处理 |
+
+另：`.skeleton*` 两份实现已分叉（底色令牌、高度、变体集合、reduced-motion 全不同），
+同样登记待去重。
+
+### 文档：25 个类从"代码里有、文档里没有"变成能查到
+
+它们都是真实公开 API，只是从没写进 README —— 照着旧文档用的人根本不知道有这些能力。
+补齐的包括 `.card__footer`、`.choice__hint`、`.select__control--auto`、
+`.field__input--textarea`、`.accordion--flush` / `.accordion__hint` / `cols-*` / `.acc-table`、
+`.task-list-item`、`.drawer--left` / `--top` / `--bottom`、
+`.field--checking` / `.field__checking-hint`、`.list__note`、`.skeleton--avatar`、
+`.tooltip--bottom` / `--inset-inline-start` / `--inset-inline-end`、
+`.rep__lede`、`.cell--na`、`.table--compact`。
+
+顺带修掉 **BEM 简写**：drawer 的 `--left` / overlay 的 `--warning` 这类写法
+没法直接抄进 `class=""`，一律改成完整类名。
+
+### 新增：`05-audit/css-ownership.json` 与 `05-audit/css-coverage-baseline.json`
+
+前者登记跨组件同名类的归属与理由（`kind: split` = 有意拆分，`kind: conflict` = 真冲突待改），
+**登记过期也判失败**（现实中不再重名就必须删掉，白条不许腐烂）。
+后者是"文档有、demo 没渲染"的水位，只能降不能升，`--record` 显式重录。
 
 ### 修复：外部审计查出的交互缺陷（select / overlay）
 

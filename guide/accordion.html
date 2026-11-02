@@ -66,8 +66,19 @@
 <tr><td><code>.accordion__heading</code></td><td>heading 包装（真实 <code>&lt;h2&gt;</code>–<code>&lt;h6&gt;</code>）</td></tr>
 <tr><td><code>.accordion__trigger</code></td><td>原生 <code>&lt;button&gt;</code></td></tr>
 <tr><td><code>.accordion__panel</code></td><td>内容区</td></tr>
+<tr><td><code>.accordion__hint</code></td><td>标题下方的补充说明（<code>--fs-xs</code> + <code>--text-secondary</code>，<code>display:block</code>）。放&quot;展开后有什么&quot;这类预期，能显著减少无谓展开</td></tr>
+<tr><td><code>.accordion--flush</code></td><td>去掉外框与背景，融进已有卡片 / 侧栏里（<code>border:0; background:transparent</code>）</td></tr>
+<tr><td><code>.accordion__panel-inner.cols-auto</code></td><td>面板内容按内容宽度自动分列（<code>auto-fit</code> + <code>minmax(200px,1fr)</code>），窄了自动塌成一列</td></tr>
+<tr><td><code>.accordion__panel-inner.cols-2</code> / <code>.cols-3</code></td><td>固定两列 / 三列；<strong>≥720px 才分列</strong>，窄屏塌成一列</td></tr>
+<tr><td><code>.acc-table</code></td><td>面板里的表格：<code>width:100%</code> + <code>border-collapse</code>，<strong>窄屏横向滚动而不挤压换行</strong>（表格一旦换行，列头和数据就对不上）</td></tr>
 </tbody>
 </table></div>
+<p><code>cols-*</code> 加在 <code>.accordion__panel-inner</code> 上，不是加在 <code>.accordion__panel</code> 上：</p>
+<pre class="code" tabindex="0"><code class="language-html">&lt;div class=&quot;accordion__panel&quot;&gt;
+  &lt;div class=&quot;accordion__panel-inner cols-2&quot;&gt;
+    &lt;p&gt;左栏&lt;/p&gt;&lt;p&gt;右栏&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
 <h2 id="s4">两种模式<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
 <div class="table"><table>
 <thead><tr>

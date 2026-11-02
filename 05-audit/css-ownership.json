@@ -1,0 +1,49 @@
+{
+  "_note": "跨组件「同名主体类」登记表。同一个类名被两个组件的规则主体（选择器最右那段、且没有祖先/兄弟组合）声明时，同特异性 ⇒ 后加载的那个静默覆盖前一个。未登记的会被 coverage-gate 判失败；登记过期（现实中已不再重名）也判失败 —— 白条不许腐烂。",
+  "_kinds": {
+    "split": "有意的职责拆分（外观 vs 行为），已把顺序依赖消除掉",
+    "conflict": "真冲突：两份定义含义不同，靠加载顺序决定结果，待改名或去重"
+  },
+  "duplicates": {
+    ".field__error": {
+      "owners": [
+        "02-primitives/input",
+        "03-patterns/form-validation"
+      ],
+      "kind": "split",
+      "reason": "input 定外观（flex + 叹号图标 + 危险色），form-validation 定可见性（默认藏、data-dirty 后显示）。原来两边都是单类选择器、同特异性，实测「form-validation 先、input 后」会让首屏把全部错误挂出来。已把 form-validation 的默认隐藏抬成 `.field .field__error`（0,2,0），顺序不再是变量。"
+    },
+    ".select": {
+      "owners": [
+        "02-primitives/choice",
+        "02-primitives/select"
+      ],
+      "kind": "conflict",
+      "reason": "choice 的 `.select` 是**原生** <select> 的外壳（display:inline-flex + align-items:center），select 的 `.select` 是**自定义**下拉的根（display:inline-block + min-width:12rem）。实测两序结果不同：先 choice 后 select 时原生外壳变 inline-block、丢垂直居中。同一页面无法同时可靠使用两个组件。改名是破坏性变更，待 0.26.0 处理（choice 侧改 .select-native，保留一版别名）。"
+    },
+    ".skeleton": {
+      "owners": [
+        "02-primitives/skeleton",
+        "03-patterns/states"
+      ],
+      "kind": "conflict",
+      "reason": "states.css 里内嵌了一份完整的 skeleton 实现，与 02-primitives/skeleton 已分叉：底色令牌（--sk-base vs --skeleton-bg）、高度、变体集合（有 --title/--avatar、无 --circle）、reduced-motion 处理全都不一样。本次已修掉 states 那份无条件动画的 a11y 洞，剩余差异待 0.26.0 去重（states 改为依赖 skeleton.css）。"
+    },
+    ".skeleton--block": {
+      "owners": [
+        "02-primitives/skeleton",
+        "03-patterns/states"
+      ],
+      "kind": "conflict",
+      "reason": "同上，两份 skeleton 实现各自定义的形状变体。"
+    },
+    ".skeleton--text": {
+      "owners": [
+        "02-primitives/skeleton",
+        "03-patterns/states"
+      ],
+      "kind": "conflict",
+      "reason": "同上。两边的行高与下边距写法不同：skeleton 用 padding-bottom + margin-bottom，states 用 height:1em + margin-block。"
+    }
+  }
+}

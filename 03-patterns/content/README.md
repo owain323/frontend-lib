@@ -25,6 +25,17 @@
 .prose > table { ... }
 ```
 
+**唯一的例外是 `.task-list-item`。** 它不是我们发明的：GFM 的任务列表会把
+`<li>` 渲染成 `<li class="task-list-item"><input type="checkbox" disabled>`，
+类名由渲染器给出，我们只能去接。所以 `content.css` 里只有它是类选择器：
+
+| 类 | 谁来加 | 我们做什么 |
+|---|---|---|
+| `.task-list-item` | markdown 渲染器（GFM 任务列表） | 去掉原生项目符号（`list-style:none`）、把复选框从缩进里拉回来（`margin-inline-start:-1.5em`）；`disabled` 的复选框用 `accent-color` 表达状态，**不用 opacity**（灰到看不清等于没表达） |
+
+⚠️ 只有 `.prose .task-list-item` 生效——任务列表必须出现在文章正文里，
+裸的 `<ul>` 不接管。
+
 结果：**从任何 CommonMark 兼容渲染器拿到的 HTML，不需要任何后处理就能正确显示。**
 
 唯一的自定义类名是 `.prose`——它不改变语义，只是"这块是正文"的标记。

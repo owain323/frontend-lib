@@ -169,8 +169,8 @@
       "raw": 20953
     },
     "03-patterns/form-validation/form-validation.css": {
-      "gzip": 4606,
-      "raw": 11313
+      "gzip": 4992,
+      "raw": 12133
     },
     "03-patterns/list/flip.js": {
       "gzip": 3391,
@@ -217,8 +217,8 @@
       "raw": 6802
     },
     "03-patterns/states/states.css": {
-      "gzip": 4125,
-      "raw": 10379
+      "gzip": 4474,
+      "raw": 11195
     },
     "03-patterns/tabs/tabs.css": {
       "gzip": 2704,
@@ -274,6 +274,6 @@
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 315185,
-  "total_raw": 793751
+  "total_gzip": 315920,
+  "total_raw": 795387
 }

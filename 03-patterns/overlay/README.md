@@ -21,7 +21,7 @@
 | `.toast-region` | 通知容器（`role="status"` `aria-live="polite"`）|
 | `.toast` | 单条通知 |
 | `.toast__title` / `__desc` / `__body` | 通知内部结构 |
-| `.toast--success` / `--error` / `--warning` | 三种变体（**靠底色 + 图标双编码**，不只靠颜色）|
+| `.toast--success` / `.toast--error` / `.toast--warning` | 三种变体（**靠底色 + 图标双编码**，不只靠颜色）|
 
 ⚠️ **这张表曾经有三行是假的**（2026-11-02 修）：`.overlay` 这个类全库
 没有任何 CSS 定义（真实的遮罩叫 `.dialog-backdrop`）、`.toast__icon` 与

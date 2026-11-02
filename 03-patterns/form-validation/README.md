@@ -117,6 +117,24 @@ e.textContent = v === '' ? '金额不能为空' : '最多两位小数，例如 1
 4. 字段加 `aria-invalid="true"`
 5. **异步校验时不要禁用输入框** —— 用户会以为不能打字了。保持可输入，旁边给小提示
 
+### 异步校验的 pending 态两个类
+
+| 类 | 加在哪 | 作用 |
+|---|---|---|
+| `.field--checking` | `.field` 上 | 标记"这一格正在校验"。目前只作状态标记（并占住 `::after`，防止有人改用 padding 挤位置） |
+| `.field__checking-hint` | `.field` 里、输入框后 | 显示一个小转圈 + 文字（"正在检查用户名…"）。转圈用 `::before` 画，配色走 `--accent` / `--border-control` |
+
+```html
+<div class="field field--checking">
+  <label class="field__label" for="u">用户名</label>
+  <input class="field__input" id="u" aria-describedby="u-check">
+  <span class="field__checking-hint" id="u-check">正在检查是否可用…</span>
+</div>
+```
+
+⚠️ 校验结束要把 `.field--checking` 摘掉、把 hint 换成错误或成功提示 ——
+**留着不摘，用户会以为一直在转圈**，这比不显示更糟。
+
 ---
 
 ## 反例

@@ -56,6 +56,21 @@
 | `.card--row` | 横向排列（图左文右） |
 | `.card--selected` | 选中态 |
 
+| 部件 | 用途 |
+|---|---|
+| `.card__body` | 内容区（内边距都在这里，**不是可选的**） |
+| `.card__footer` | 底部条：上边框分隔 + 两端对齐（左说明 / 右操作），字号取 `--fs-xs` |
+
+```html
+<div class="card">
+  <div class="card__body"><p>本月营收 1,280,000</p></div>
+  <div class="card__footer">
+    <span>数据截至 10 月 31 日</span>
+    <a href="/reports">查看明细</a>
+  </div>
+</div>
+```
+
 依赖：`01-tokens/tokens.css` + `01-tokens/typography.css`（正文）+
 `01-tokens/page.css`（`.wrap` / `.small` 等页面骨架）。
 

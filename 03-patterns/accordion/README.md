@@ -38,6 +38,21 @@
 | `.accordion__heading` | heading 包装（真实 `<h2>`–`<h6>`）|
 | `.accordion__trigger` | 原生 `<button>` |
 | `.accordion__panel` | 内容区 |
+| `.accordion__hint` | 标题下方的补充说明（`--fs-xs` + `--text-secondary`，`display:block`）。放"展开后有什么"这类预期，能显著减少无谓展开 |
+| `.accordion--flush` | 去掉外框与背景，融进已有卡片 / 侧栏里（`border:0; background:transparent`） |
+| `.accordion__panel-inner.cols-auto` | 面板内容按内容宽度自动分列（`auto-fit` + `minmax(200px,1fr)`），窄了自动塌成一列 |
+| `.accordion__panel-inner.cols-2` / `.cols-3` | 固定两列 / 三列；**≥720px 才分列**，窄屏塌成一列 |
+| `.acc-table` | 面板里的表格：`width:100%` + `border-collapse`，**窄屏横向滚动而不挤压换行**（表格一旦换行，列头和数据就对不上） |
+
+`cols-*` 加在 `.accordion__panel-inner` 上，不是加在 `.accordion__panel` 上：
+
+```html
+<div class="accordion__panel">
+  <div class="accordion__panel-inner cols-2">
+    <p>左栏</p><p>右栏</p>
+  </div>
+</div>
+```
 
 ## 两种模式
 

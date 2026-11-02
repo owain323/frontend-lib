@@ -142,7 +142,18 @@
       "脏"是**正交标记**（一个字段可以同时是 dirty 且 state=invalid）。
       塞进同一个属性 ⇒ 两个维度互斥，表达不了组合。
    ------------------------------------------------------------------------ */
-.field__error { display: none; }
+/* 🔴 这里必须是 `.field .field__error`（两段），不能只写 `.field__error`。
+   原因：`02-primitives/input/input.css` 给 `.field__error` 定了**外观**
+   （`display:flex` + 图标 + 危险色），本文件给它定**可见性**（默认藏起来）。
+   两条同特异性（0,1,0）⇒ 谁后加载谁赢。实测：
+
+     input.css 先、本文件后 → display:none  ✅ 校验前不报红
+     本文件先、input.css 后 → display:flex  🔴 首屏把全部错误都挂出来
+
+   也就是说"错误提示该不该显示"取决于打包器的 CSS 顺序 —— 用户永远不会想到
+   去查这个。加一层 `.field` 把特异性抬到 (0,2,0)，顺序就不再是变量。
+   代价：错误元素必须在 `.field` 内（本库的结构契约就是这么定的）。 */
+.field .field__error { display: none; }
 .field[data-dirty] .field__error { display: flex; }
 
 /* 错误汇总展开时，全部错误强制显示，不管字段脏不脏 —— 那是用户主动要看清单。

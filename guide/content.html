@@ -57,6 +57,16 @@
 <pre class="code" tabindex="0"><code class="language-css">.prose &gt; h2 { ... }
 .prose &gt; pre &gt; code { ... }
 .prose &gt; table { ... }</code></pre>
+<p><strong>唯一的例外是 <code>.task-list-item</code>。</strong> 它不是我们发明的：GFM 的任务列表会把 <code>&lt;li&gt;</code> 渲染成 <code>&lt;li class=&quot;task-list-item&quot;&gt;&lt;input type=&quot;checkbox&quot; disabled&gt;</code>，类名由渲染器给出，我们只能去接。所以 <code>content.css</code> 里只有它是类选择器：</p>
+<div class="table"><table>
+<thead><tr>
+<th>类</th><th>谁来加</th><th>我们做什么</th>
+</tr></thead>
+<tbody>
+<tr><td><code>.task-list-item</code></td><td>markdown 渲染器（GFM 任务列表）</td><td>去掉原生项目符号（<code>list-style:none</code>）、把复选框从缩进里拉回来（<code>margin-inline-start:-1.5em</code>）；<code>disabled</code> 的复选框用 <code>accent-color</code> 表达状态，<strong>不用 opacity</strong>（灰到看不清等于没表达）</td></tr>
+</tbody>
+</table></div>
+<p>⚠️ 只有 <code>.prose .task-list-item</code> 生效——任务列表必须出现在文章正文里，裸的 <code>&lt;ul&gt;</code> 不接管。</p>
 <p>结果：<strong>从任何 CommonMark 兼容渲染器拿到的 HTML，不需要任何后处理就能正确显示。</strong></p>
 <p>唯一的自定义类名是 <code>.prose</code>——它不改变语义，只是&quot;这块是正文&quot;的标记。</p>
 <hr>
