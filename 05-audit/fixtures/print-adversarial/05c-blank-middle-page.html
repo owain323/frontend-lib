@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>近空白页（中间一页无字）</title>
+<style>
+  @page { size: A4; margin: 12mm 10mm; }
+  body { margin: 0; font: 14px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
+          color: #15181c; background: #fff; }
+  h1 { font-size: 20px; margin: 0 0 10px; }
+  h2 { font-size: 16px; margin: 0 0 8px; }
+  p { margin: 0 0 6px; }
+  .gap { height: 500px; break-before: page; break-after: page; }
+</style>
+</head>
+<body>
+  <h1>第一页</h1>
+  <p>第一页有字。</p>
+  <div class="gap"></div>
+  <h1>第三页</h1>
+  <p>第二页只有一块空白占位，一个字都没有。</p>
+</body>
+</html>

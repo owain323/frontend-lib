@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>一行表</title>
+<style>
+  @page { size: A4; margin: 12mm 10mm; }
+  body { margin: 0; font: 14px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
+          color: #15181c; background: #fff; }
+  h1 { font-size: 20px; margin: 0 0 10px; }
+  h2 { font-size: 16px; margin: 0 0 8px; }
+  p { margin: 0 0 6px; }
+  table { width: 100%; border-collapse: collapse; break-inside: avoid; }
+  th, td { border: 1px solid #c9ced6; padding: 6px 8px; text-align: left; font-size: 12px; }
+  th { background: #f4f6f8; }
+</style>
+</head>
+<body>
+  <h1>只有一行数据的表</h1>
+  <p>表的标题行必须只出现一次。若打印引擎把 thead 重复到第二页，页数会变成 2，而第二页只有一行表头 —— 这就是要抓的那个缺陷。</p>
+  <table>
+    <thead><tr><th>科目</th><th>本期</th><th>上期</th><th>变动</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>营业收入</td><td>1,284</td><td>1,103</td><td>+16.4%</td><td>主因是华东区新增两家经销商</td></tr>
+    </tbody>
+  </table>
+</body>
+</html>

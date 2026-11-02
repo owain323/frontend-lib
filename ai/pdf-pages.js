@@ -34,10 +34,38 @@ function countPageObjects(raw) {
   return (raw.match(/\/Type\s*\/Page[^s]/g) || []).length;
 }
 
-/** 页树根声明的 `/Count`（取第一个；没有则 null）。 */
+/**
+ * 页树**根节点**声明的 `/Count`（拿不到则 null）。
+ *
+ * 🔴 不能取"文件里第一个 `/Count`" —— 那是**叶节点**的数。
+ *    实测一份 50 页的 Chromium 产物：文件里 8 个 `/Count`，依次是
+ *    `8,8,8,8,8,8,2,50` —— 只有最后一个（根节点）是 50。
+ *    按"第一个"取会读成 8，于是 `pages=50` 与 `countFromTree=8` 打架，
+ *    导出器据此报"两套说法不一致，无法判定预算" —— **用户拿着一份 50 页的
+ *    正常文档，被一个读法错误挡在门外**。
+ *
+ * 正确路径：catalog `/Type /Catalog` → 它的 `/Pages N 0 R` → 对象 N 的 `/Count`。
+ * 对象内的键序不保证，所以两侧各开一个窗口找；找不到就返回 null
+ * （null 表示"没有交叉核对"，`agree` 为真 —— 宁可少一道核对，
+ *  也不能拿一个错数字去否决用户的文件）。
+ */
 function countFromTree(raw) {
-  const m = /\/Count\s+(\d+)/.exec(raw);
-  return m ? +m[1] : null;
+  const s = Buffer.isBuffer(raw) ? raw.toString('latin1') : String(raw);
+  const cat = s.search(/\/Type\s*\/Catalog/);
+  if (cat < 0) return null;
+
+  /* 键序不固定：在 catalog 前后各取一段找 /Pages 引用 */
+  const win = s.slice(Math.max(0, cat - 2000), cat + 2000);
+  const ref = /\/Pages\s+(\d+)\s+0\s+R/.exec(win);
+  if (!ref) return null;
+
+  /* 找 `N 0 obj` 本身，再在它后面找 /Count。
+     ⚠️ 不用 `[\s\S]*?endobj` 截取：流数据里可能**恰好**出现 endobj 的字节。 */
+  const at = s.search(new RegExp('(^|[^0-9])' + ref[1] + '\\s+0\\s+obj'));
+  if (at < 0) return null;
+  const body = s.slice(at, at + 2000);
+  const c = /\/Count\s+(\d+)/.exec(body);
+  return c ? +c[1] : null;
 }
 
 /** 第一张纸的 `/MediaBox [x0 y0 x1 y1]` → `{width, height}`（pt，1/72 英寸）。 */

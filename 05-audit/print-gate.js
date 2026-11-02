@@ -670,14 +670,24 @@ function analyze(buf) {
   const hist = {};
   let runs = 0;
   let textStreams = 0;
+  let textStreamsLoose = 0;
   for (const st of streams(buf)) {
     const txt = st.toString('latin1');
     /* 🔴 只认带 `BT` 的流当"这一页有文字"。
        试过用"有绘制指令的流数"判空白页 —— 132 个流里只有 8 个真带文字，
        其余是字体 / ICC 等二进制，inflate 出来的字节会**偶然匹配** `m`/`l` 这类算子
        ⇒ 计数虚高 ⇒ 空白页判据恒不触发（又一个"安静地永远通过"）。
-       只认 `BT`：少报（可能漏一张全图页），但不会把有字的页判成空的。 */
+       只认 `BT`：少报（可能漏一张全图页），但不会把有字的页判成空的。
+
+       🔴 但**只认 BT 还不够**：字体 / cmap 的二进制里也会偶然出现 `BT` 两个字节。
+       实测一份 50 页产物：50 页却有 51 个"含 BT 的流"。
+       而 ⑫ 算的是 `无字页 = 页数 − 文本流数` —— 一个**差**。
+       多计一个流，正好抵掉一张真没字的纸 ⇒ 空白页被判成"没有空白页"。
+       所以要求同一流里还有 `Tf`（选字体）与 `Tj`/`TJ`（真的在写字）：
+       三个算子同时偶然出现，概率低到可以忽略；实测 10 个夹具逐个精确。 */
     if (txt.indexOf('BT') < 0) continue;
+    textStreamsLoose += 1;
+    if (!/\bTf\b/.test(txt) || !/(Tj|TJ)/.test(txt)) continue;
     textStreams += 1;
     const r = scanOps(txt, [0, 0, 0, 0]);
     runs += r.runs;
@@ -709,6 +719,7 @@ function analyze(buf) {
     std14: chain.std14,
     fontProblems: chain.problems,
     textStreams,
+    textStreamsLoose,
     pagesWithoutText: Math.max(0, pages - textStreams),
   };
 }
@@ -881,6 +892,7 @@ function judge(result, baseline) {
 async function main() {
   const argv = process.argv.slice(2);
   if (argv.indexOf('--selftest') >= 0) return selftest();
+  if (argv.indexOf('--adversarial') >= 0) return adversarial();
 
   /* `--pdf <文件>`：对一份**已生成的** PDF 单独跑判据，不改基线、不影响 PASS/FAIL。
      用途：判断"某个真实产物到底哪里不合格"时，不必重跑 18 个 PDF。 */
@@ -895,6 +907,7 @@ async function main() {
     console.log(JSON.stringify({
       pages: a.pages,
       textStreams: a.textStreams,
+      textStreamsLoose: a.textStreamsLoose,
       pagesWithoutText: a.pagesWithoutText,
       runs: a.runs,
       worst: Math.round(a.worst * 100) / 100,
@@ -1251,6 +1264,149 @@ async function selftest() {
   }
 
   console.log(bad ? '  ❌ 反向控制有 ' + bad + ' 条没通过' : '  ✅ 反向控制全绿');
+  return bad ? 1 : 0;
+}
+
+/* ------------------------------------------------------------ 对抗夹具
+ *
+ * 为什么单开一组：前面那些用例测的是"判据判得对不对"，被喂的是**合成数字**。
+ * 这一组测的是"判据拿到真实极端页面还认不认得出来" —— 喂的是真浏览器渲染出来的
+ * PDF，六个面：50 页 / 一行表 / 200 列 / 嵌套浮层 / 近空白页 / 单块超一页。
+ *
+ * 每条都必须给出**可证伪的**结论，而不是"没崩"：
+ *   ① 50 页      —— 页数必须**正好** 50。多一页 = 尾部多出一张空页；少一页 = 两页并了。
+ *   ② 一行表      —— 必须 1 页。thead 若被重复到第二页，就会出现"只有表头的第二张纸"。
+ *   ③ 200 列      —— 必须判出横向溢出；配一份压进纸面的对照，证明不是"见大表就红"。
+ *   ④ 嵌套浮层    —— 打印态下两层遮罩都得落回正常流，正文标题与两层弹窗的字都不能丢。
+ *   ⑤ 近空白页    —— 一个字符也算字（⑫ 不许误报）；首屏真没字时必须抓得到。
+ *   ⑥ 单块超一页  —— 与"同内容可拆分"的对照组比 run 数：少了就是**静默丢字**。
+ *
+ * ⚠️ 这些数字都是**实测**的，不是设计目标。改渲染参数（视口 / 边距 / printBackground）
+ *    会让它们变，届时要么改夹具，要么承认判据变了 —— 不许直接把断言放宽到不报错。
+ */
+const ADV_DIR = path.join(ROOT, '05-audit', 'fixtures', 'print-adversarial');
+
+/* 夹具清单写死在这里，是为了让"少了一个文件"变成**有名字的失败**。
+   没有这条前置：夹具被误删时 puppeteer 在 goto 上抛栈，
+   读起来像门禁坏了，实际是"这一面根本没测"——而"没测"绝不能算过。 */
+const ADV_FILES = [
+  '01-fifty-pages.html',
+  '02-one-row-table.html',
+  '03-200-cols.html',
+  '03b-200-cols-fixed.html',
+  '04-nested-overlays.html',
+  '05-near-blank.html',
+  '05b-blank-first-page.html',
+  '05c-blank-middle-page.html',
+  '06-block-over-one-page.html',
+  '06b-block-breakable.html',
+];
+
+async function adversarial() {
+  let bad = 0;
+  let total = 0;
+  const report = (ok, why, extra) => {
+    total += 1;
+    console.log('  [' + (ok ? 'OK  ' : 'FAIL') + '] ' + why + (extra ? '  ' + extra : ''));
+    if (!ok) bad += 1;
+  };
+
+  const missing = ADV_FILES.filter((n) => !fs.existsSync(path.join(ADV_DIR, n)));
+  if (missing.length) {
+    console.log('  ❌ 对抗夹具不齐：缺 ' + missing.length + '/' + ADV_FILES.length
+      + ' 个 —— ' + missing.join(', '));
+    console.log('     重新生成：python 05-audit/fixtures/print-adversarial/_gen.py');
+    return 1;
+  }
+  const url = (name) => 'file:///' + path.join(ADV_DIR, name).replace(/\\/g, '/');
+  const shot = async (name) => analyze((await render(url(name), 'light')).pdf);
+
+  /* ① 50 页：页数是硬数字 */
+  const p50 = await shot('01-fifty-pages.html');
+  report(p50.pages === 50, '① 50 页：页数正好 50',
+    'pages=' + p50.pages + (p50.pages > 50 ? '（多了 ' + (p50.pages - 50) + ' 页 ⇒ 尾部空页）' : ''));
+  report(p50.pagesWithoutText === 0 && p50.textStreams === p50.pages,
+    '① 50 页：文本流与页数**逐个**对上（不是"差为 0"）',
+    'textStreams=' + p50.textStreams + '/' + p50.pages
+      + ' 宽松计数=' + p50.textStreamsLoose);
+
+  /* ② 一行表：表头不许重复出一张只有表头的纸 */
+  const p1 = await shot('02-one-row-table.html');
+  report(p1.pages === 1, '② 一行表：整表落在一页里', 'pages=' + p1.pages);
+
+  /* ③ 200 列：判据必须在真页面上有牙，同时不能"见大表就红" */
+  const wide = await render(url('03-200-cols.html'), 'light');
+  const wideFixed = await render(url('03b-200-cols-fixed.html'), 'light');
+  report(wide.overflow > 0, '③ 200 列：判出横向溢出（判据④在真页面上是有牙的）',
+    'overflow=' + wide.overflow + 'px');
+  report(wideFixed.overflow === 0, '③ 对照：同样 200 列压进纸面后不报溢出',
+    'overflow=' + wideFixed.overflow + 'px');
+
+  /* ④ 嵌套浮层：两层遮罩都要落回正常流，字一个都不能少 */
+  const dom = await withPage({ width: 794, height: 1123, deviceScaleFactor: 1 }, async (p) => {
+    await loadStyled(p, url('04-nested-overlays.html'));
+    await p.emulateMediaType('print');
+    await p.evaluate(() => (document.fonts ? document.fonts.ready.then(() => 1) : 1));
+    return p.evaluate(() => {
+      const seen = (sel) => {
+        const el = document.querySelector(sel);
+        if (!el) return { found: false };
+        const s = getComputedStyle(el);
+        const r = el.getBoundingClientRect();
+        return {
+          found: true,
+          pos: s.position,
+          bg: s.backgroundColor,
+          visible: s.display !== 'none' && s.visibility !== 'hidden' && r.height > 0,
+        };
+      };
+      return {
+        a: seen('#bd-a'), b: seen('#bd-b'),
+        title: seen('#page-title'),
+        ta: seen('#t-a'), tb: seen('#t-b'),
+      };
+    });
+  });
+  const flat = (x) => x.pos !== 'fixed' && (x.bg === 'rgba(0, 0, 0, 0)' || x.bg === 'transparent');
+  report(dom.a.found && dom.b.found && flat(dom.a) && flat(dom.b),
+    '④ 嵌套浮层：两层遮罩都落回正常流、且不铺底色',
+    'A pos=' + dom.a.pos + ' bg=' + dom.a.bg + ' · B pos=' + dom.b.pos + ' bg=' + dom.b.bg);
+  report(dom.title.visible && dom.ta.visible && dom.tb.visible,
+    '④ 正文标题与两层弹窗的字都还在（没有被 visibility:hidden 吞掉）',
+    'title=' + dom.title.visible + ' A=' + dom.ta.visible + ' B=' + dom.tb.visible);
+
+  /* ⑤ 近空白页：一个字符也算字；首屏真空了必须抓得到 */
+  const near = await shot('05-near-blank.html');
+  report(near.pages === 1 && near.pagesWithoutText === 0,
+    '⑤ 只有一个字符的页：不许判成"没有文本算子"',
+    'pages=' + near.pages + ' textStreams=' + near.textStreams);
+  const blankFirst = await shot('05b-blank-first-page.html');
+  report(blankFirst.pagesWithoutText >= 1,
+    '⑤ 首屏只有占位块：必须报出"有一页没有文本算子"',
+    'pages=' + blankFirst.pages + ' 无字页=' + blankFirst.pagesWithoutText);
+  /* 🔴 这条盯的是 ⑫ 的算法本身：`无字页 = 页数 − 文本流数` 是个差，
+     不是逐页判定。三页文档里中间一页无字 ⇒ 差必须是 1；
+     差算成 0（比如把"有 BT 的流"按页去重错了）就说明 ⑫ 已经瞎了。 */
+  const blankMid = await shot('05c-blank-middle-page.html');
+  report(blankMid.pages === 3 && blankMid.pagesWithoutText === 1,
+    '⑤ 三页文档里中间一页无字：无字页数必须正好 1（不是 0，也不是 3）',
+    'pages=' + blankMid.pages + ' 无字页=' + blankMid.pagesWithoutText
+      + ' textStreams=' + blankMid.textStreams);
+
+  /* ⑥ 单块超一页：与可拆分对照组比 run 数，少了就是静默丢字 */
+  const unbreakable = await shot('06-block-over-one-page.html');
+  const breakable = await shot('06b-block-breakable.html');
+  report(unbreakable.runs === breakable.runs,
+    '⑥ 超一页的不可拆块：文字 run 数与可拆分的对照组一致（没有静默丢字）',
+    'unbreakable=' + unbreakable.runs + ' breakable=' + breakable.runs
+      + '（页数 ' + unbreakable.pages + ' vs ' + breakable.pages + '）');
+  report(unbreakable.pages >= 2,
+    '⑥ 超一页的块确实占了多页（若只有 1 页，说明内容被裁掉了）',
+    'pages=' + unbreakable.pages);
+
+  console.log(bad
+    ? '  ❌ 对抗夹具 ' + bad + '/' + total + ' 条没通过'
+    : '  ✅ 对抗夹具全绿（' + total + ' 条 · 6 个面）');
   return bad ? 1 : 0;
 }
 

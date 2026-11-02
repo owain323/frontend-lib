@@ -214,6 +214,59 @@ function main() {
     const r0 = cli(['pdf', panelOn, '--out', out('w.pdf'), '--max-pages=0']);
     check('E9′ 预算 0 被拒（0 不许被当成无界）', r0.status === 2, 'rc=' + r0.status);
 
+    /* ---------------------------------------------------------------
+     * E13 长文档的页树：`/Count` 必须解析到**根**，不是叶节点
+     * ---------------------------------------------------------------
+     * 🔴 这个 bug 是被 50 页样本抓出来的：
+     *    Chromium 的分层页树里，文件里第一个 `/Count` 是**叶节点**的数。
+     *    实测一份 50 页产物：8 个 `/Count` = 8,8,8,8,8,8,2,50 —— 只有最后一个是根。
+     *    旧实现取第一个 ⇒ `pages=50` vs `countFromTree=8` ⇒ 导出器报
+     *    "两套说法不一致，无法判定预算" ⇒ **用户的正常长文档被读法错误挡在门外**。
+     */
+    const pagesMod = require(path.join(ROOT, 'ai', 'pdf-pages.js'));
+
+    /* ① 纯函数：合成一份"叶节点 /Count 在前、根在后"的字节 */
+    const N = 50;
+    const objs = [];
+    objs.push('1 0 obj\n<</Type /Pages /Count 8 /Kids [2 0 R]>>\nendobj\n');
+    objs.push('2 0 obj\n<</Type /Catalog /Pages 9 0 R>>\nendobj\n');
+    let kids = '';
+    for (let i = 0; i < N; i += 1) {
+      objs.push((100 + i) + ' 0 obj\n<</Type /Page /Parent 9 0 R>>\nendobj\n');
+      kids += (100 + i) + ' 0 R ';
+    }
+    objs.push('9 0 obj\n<</Type /Pages /Count ' + N + ' /Kids [' + kids + ']>>\nendobj\n');
+    const nested = pagesMod.inspect(Buffer.from('%PDF-1.7\n' + objs.join(''), 'latin1'));
+    check('E13 分层页树：/Count 取根节点的数',
+      nested.pages === N && nested.countFromTree === N && nested.agree,
+      'pages=' + nested.pages + ' tree=' + nested.countFromTree);
+
+    /* ② 元反向：把"取第一个 /Count"那份旧逻辑拿回来，同一定义必须读成 8
+          —— 证明上面那条绿来自**定位到根**，不是这份样本恰好只有一个 /Count */
+    const firstCount = (s) => {
+      const m = /\/Count\s+(\d+)/.exec(String(s));
+      return m ? +m[1] : null;
+    };
+    const legacy = firstCount('%PDF-1.7\n' + objs.join(''));
+    check('E13′ 元反向：旧读法在同样本上读成 8（证明差别是定位方式）',
+      legacy === 8, '旧读法=' + legacy);
+
+    /* ③ 端到端：真长文档带预算导出，两向都要给出**正确的结论** */
+    /* ⚠️ 变量名不能叫 longDoc：外层同名的 `const longDoc`（02-long.html）会被这个
+       块**遮蔽**，于是同一块里更早的引用（E5/E10）全部落进 TDZ ——
+       报错指向第 122 行，跟这里毫无关系。 */
+    const longFifty = path.join(ROOT, '05-audit', 'fixtures', 'print-adversarial',
+      '01-fifty-pages.html');
+    const rOk = cli(['pdf', longFifty, '--out', out('long-ok.pdf'), '--max-pages=60']);
+    const rOver = cli(['pdf', longFifty, '--out', out('long-over.pdf'), '--max-pages=40']);
+    /* 40 页预算那份必须是"超预算"（退出码 5），不能是"无法判定"（退出码 4）：
+       两者的区别是"你的文档超了"还是"我读不懂" —— 后者会让使用者去查 PDF 有没有坏。 */
+    check('E13 端到端：50 页文档 · 预算 60 ⇒ 通过',
+      rOk.status === 0, 'rc=' + rOk.status);
+    check('E13 端到端：50 页文档 · 预算 40 ⇒ 报超预算（不是"无法判定"）',
+      rOver.status === 5, 'rc=' + rOver.status
+        + ' 提到无法判定=' + /无法判定/.test(String(rOver.stderr)));
+
     console.log('');
     console.log('  ' + (bad ? '❌ 有 ' + bad + ' 条没通过' : '✅ 全部通过')
       + '（' + Math.round((Date.now() - t0) / 1000) + 's）');

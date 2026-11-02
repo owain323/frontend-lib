@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>近空白页（首屏无字）</title>
+<style>
+  @page { size: A4; margin: 12mm 10mm; }
+  body { margin: 0; font: 14px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
+          color: #15181c; background: #fff; }
+  h1 { font-size: 20px; margin: 0 0 10px; }
+  h2 { font-size: 16px; margin: 0 0 8px; }
+  p { margin: 0 0 6px; }
+  .spacer { height: 700px; break-after: page; }
+</style>
+</head>
+<body>
+  <div class="spacer"></div>
+  <h1>这一页在第一张纸之后</h1>
+  <p>第一张纸上只有一块空白占位，没有任何文字 —— 判据 ⑫ 必须报出来。</p>
+</body>
+</html>

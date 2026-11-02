@@ -781,6 +781,11 @@ run "theme-scope-rev" node 05-audit/theme-scope-gate.js --selftest
 #   @component：只进全量层（发布快速路径不承担浏览器打印验证的成本）
 run "print"     node 05-audit/print-gate.js
 run "print-rev" node 05-audit/print-gate.js --selftest
+# 打印**对抗夹具**：六个极端页面（50 页 / 一行表 / 200 列 / 嵌套浮层 /
+#   近空白页 / 单块超一页），喂的是真浏览器渲染出来的 PDF，不是合成数字。
+#   与 print-rev 的分工：rev 证明"判据判得对"，这条证明"判据拿到真实极端页还认得出来"。
+#   12 条都做了变异验证（拆掉 overlay 的 @media print ⇒ ④ 转红、50→51 页 ⇒ ① 转红）。
+run "print-adv" node 05-audit/print-gate.js --adversarial
 # 打印**契约**：契约 / 实现 / 运行时三向核对（上面那条只证明"印出来的好不好"，
 #   这一条证明"该印的在不在、声明的是不是真的"）。四条腿：
 #     L0 归属    —— 组件规则的选择器必须在库里真的存在（抓 .overlay 那种死选择器）
