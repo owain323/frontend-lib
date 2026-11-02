@@ -17,12 +17,37 @@
 | **纯导航不上纸** | tabs 标签栏、nav 链接、分页器、汉堡按钮、accordion 箭头 |
 | **表格不散架** | 取消滚动容器（否则只打印可视区那几行）；表头每页重复（HTML 默认行为，本库未覆盖） |
 | **不跨页切断** | 表格行、图片、图表、卡片、指标卡整体换页，不从中间切开 |
+| **折叠内容自动展开** | `tabs` 未选中的面板、`accordion` 收起的面板，打印时全部展开。**不展开 = 静默截断**：页数正常、对比度合格、内容少一半，只靠数 runs 抓不到 |
 | **孤行寡行（仅 report 配方）** | `.rep` 内的段落首尾不留单行在另一页。**不全局生效** —— 裸 `p` / `li` 会改掉宿主页面所有段落，那是 `bleed-gate` 的红线 |
 | **字体全嵌入** | 实测 87 个字体名、0 个引用链问题；不依赖阅读方装字体 |
 | **对比度** | 每一段文字对白纸 ≥ 4.5:1（实测最差 5.44:1） |
 
-这些不是"看起来对"，是 `05-audit/print-gate.js` 读**真实 PDF 产物**判出来的
-（`page.emulateMediaType('print')` 在本环境并不切换媒体类型，所以只能读产物）。
+这些不是"看起来对"，是 `05-audit/print-gate.js` 读**真实 PDF 产物**判出来的。
+
+> 早期笔记写过「`page.emulateMediaType('print')` 在本环境并不切换媒体类型」——
+> 2026-11-02 复测**这条不成立**：`emulateMediaType('print')` 之后
+> `matchMedia('print').matches === true`，computed `display` 也随之变化。
+> 所以现在可以在浏览器里直接审「打印态会显示什么」（见 `print-content-audit.js --print`）。
+> 门禁本身仍然读真实 PDF —— 那是最终产物，比任何模拟都可靠。
+
+### 折叠内容为什么要三条规则
+
+`.accordion__panel[hidden]` 同时被三样东西挡住，少一条就是"看起来展开了、一个字不印"：
+
+```css
+.accordion .accordion__panel[hidden] {
+  display: grid !important;   /* ① 组件自己写了 display:none !important */
+  grid-template-rows: 1fr;    /* ② 收起态是 0fr，不改就还是 0 高 */
+  visibility: visible;        /* ③ 组件还写了 visibility:hidden */
+}
+```
+
+三条缺任一条的实测后果：`display` 与高度都对了，但内容仍是 `visibility:hidden`，
+PDF 里一个字都不多。`tabs` 只需要第 ① 条（它没有 `!important`、没有 visibility、也不靠 grid 定高）。
+
+还有一条**特异性**的坑：`tokens.css` 在 `<head>` 里最先加载，
+不加组件根前缀（`.tabs` / `.accordion`）时同特异性的规则会被组件 CSS 覆盖 ——
+实测：不加前缀时 PDF 与改动前**逐字节相同**，规则完全没生效。
 
 ---
 

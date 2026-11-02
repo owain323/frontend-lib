@@ -1097,6 +1097,21 @@ input[type="submit"],
   .no-print { display: none !important; }
   .print-only { display: block; }
 
+  /* 打印前展开：交互折叠的内容默认不印，那属于静默截断 ——
+     一份印得漂亮但少了三分之二内容的 PDF 是废品。
+     ⚠️ 必须带组件根前缀（.tabs / .accordion）提高特异性：
+     tokens.css 在 head 里**最先加载**，同特异性的规则会被组件 CSS 覆盖
+     （实测：不加前缀时 PDF 与改动前逐字节相同，规则完全没生效）。
+     accordion 还要 !important —— 它自己的 display:none 就带 !important。 */
+  .tabs .tabs__panel[hidden] { display: block; }
+  .accordion .accordion__panel[hidden] {
+    display: grid !important;      /* ① 盖掉 .accordion__panel[hidden]{display:none !important} */
+    grid-template-rows: 1fr;       /* ② 盖掉收起态的 0fr（否则高度仍 0） */
+    visibility: visible;           /* ③ 盖掉 .accordion__panel[hidden]{visibility:hidden}
+                                      实测缺这条：display 与高度都对了，
+                                      但内容仍是 visibility:hidden ⇒ 一个字都不印。 */
+  }
+
   /* 浮层与纯导航。不用裸 button（accordion 标题在 button 里），
      不动 .btn / .upload（文档页会空、表单控件有状态）。见 docs/PRINT.md。 */
   .toast, .tooltip, .popover, .overlay, .skeleton,
