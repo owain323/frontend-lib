@@ -29,7 +29,7 @@
 | primitive | `metric` | 2.9 KB | 0.5 KB | — | **3.4 KB** | 25.1 KB | −21.7 KB |
 | primitive | `popover` | 2.9 KB | 0.8 KB | 2.2 KB | **5.9 KB** | 29.2 KB | −23.3 KB |
 | primitive | `progress` | 2.9 KB | 0.8 KB | — | **3.7 KB** | 26.2 KB | −22.5 KB |
-| primitive | `select` | 2.9 KB | 0.8 KB | 3.5 KB | **7.3 KB** | 31.5 KB | −24.2 KB |
+| primitive | `select` | 2.9 KB | 0.8 KB | 4.1 KB | **7.9 KB** | 32.9 KB | −24.9 KB |
 | primitive | `separator` | 2.9 KB | 0.2 KB | — | **3.2 KB** | 23.2 KB | −20.0 KB |
 | primitive | `skeleton` | 2.9 KB | 0.5 KB | — | **3.4 KB** | 23.8 KB | −20.4 KB |
 | primitive | `switch` | 2.9 KB | 0.8 KB | — | **3.7 KB** | 30.2 KB | −26.5 KB |
@@ -42,7 +42,7 @@
 | pattern | `form-validation` | 2.9 KB | 0.8 KB | — | **3.7 KB** | 26.4 KB | −22.7 KB |
 | pattern | `list` | 2.9 KB | 0.6 KB | — | **3.5 KB** | 24.3 KB | −20.8 KB |
 | pattern | `nav` | 2.9 KB | 1.2 KB | 2.6 KB | **6.8 KB** | 33.0 KB | −26.2 KB |
-| pattern | `overlay` | 2.9 KB | 1.2 KB | 3.3 KB | **7.4 KB** | 37.1 KB | −29.7 KB |
+| pattern | `overlay` | 2.9 KB | 1.2 KB | 3.5 KB | **7.6 KB** | 38.1 KB | −30.5 KB |
 | pattern | `pagination` | 2.9 KB | 0.8 KB | 2.6 KB | **6.3 KB** | 32.4 KB | −26.1 KB |
 | pattern | `reveal` | 2.9 KB | 0.3 KB | 1.2 KB | **4.4 KB** | 26.4 KB | −22.0 KB |
 | pattern | `states` | 2.9 KB | 0.8 KB | — | **3.8 KB** | 25.9 KB | −22.1 KB |
@@ -52,8 +52,8 @@
 
 ## 三、全库
 
-- 全部组件都用上（min，含 tokens 一份）：**69.3 KB**
-- 源码版（带注释）全库 gzip：353.3 KB
+- 全部组件都用上（min，含 tokens 一份）：**70.2 KB**
+- 源码版（带注释）全库 gzip：355.7 KB
 
 > ⚠️ 源码版那个数字**不是**要付的钱：它包含我们的注释（全库 CSS 有 69% 是注释，字节口径）。
 > 它的用途只有一个 —— 让人看清"dist 到底省了多少"。

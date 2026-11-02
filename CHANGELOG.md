@@ -22,6 +22,35 @@
 + 修一处打印行为（模态遮罩）。不改类名、不改令牌、不改既有 JS 的调用方式 ——
 下游不改代码即可升级；不打印的话，`@media print` 之外一个字节都没变。**
 
+### 修复：外部审计查出的交互缺陷（select / overlay）
+
+对一个公开版本做外部抽查后，逐条复现并修掉。**都是行为修正，不改类名、不改 API 形状**
+（只新增：`select.values`、`select.destroy()`）。
+
+**select**
+
+| 缺陷 | 实测症状 | 修法 |
+|---|---|---|
+| 按钮上挂了**两个** `keydown` | 按一次 `↓` 走**两格**；关闭态按 `Enter` 打开后立刻被第二个处理器提交关闭；多选 `Enter` 选上又取消 | 合并成一个处理器，`Enter` 在关闭态只负责打开 |
+| 多选只有一个字符串状态 | `aria-multiselectable="true"` 是**谎报**；点第二项会把第一项顶掉 | 内部改成数组，`aria-selected`、按钮文本、提交值三处同源 |
+| 空选项列表 | 初始化抛 `Cannot read properties of undefined (reading 'querySelector')` | `optText(null)` 返回空串，绘制/取值全部兜底 |
+| 没有 `destroy()` | 动态移除组件后，`document` 上的 dismissable 监听与 typeahead 缓冲全留着 | 对外暴露 `destroy()`，摘 keydown/click/dismissable/typeahead 并删掉自己补的 hidden |
+| 表单集成半截 | 根里没有 `hidden` 时不建；改值不发原生事件 | 没 hidden 就按 `name` → `data-name` → 根 `id` 兜底自建；每次变值在根上派发原生 `change` |
+| 多选提交 | 一个 `hidden` 只能带一个值 | **一个值一个同名 `input[type=hidden]`**（`name="sector"` × N） |
+
+同时把「一次按键只走一格 / 关闭态 Enter 只打开 / 多选 Enter 只切一次 / 空列表不抛 /
+destroy 后不再响应 / 无 hidden 自建并派发 change」写成**精确断言**。
+旧断言只判"序列有变化"，所以「一次走两格」能从门禁底下过去。
+
+**overlay**
+
+| 缺陷 | 实测症状 | 修法 |
+|---|---|---|
+| `inert` 释放固定写 `false` | 页面原本 `inert` 的区域，开关一次弹层就被**误解锁** | 引用计数条目里记 `prev`，降为 0 时还原原值 |
+| 嵌套时跳过所有 `.dialog-backdrop` | 开 A 再开 B，A 既没 `inert` 也没 `aria-hidden` ⇒ **两个 dialog 同时暴露给读屏** | 只跳过自己这一层，别的弹层照常隔离 |
+| 背景只快照一次 | 弹层开着时插入 `body` 的节点（toast / portal / 埋点 iframe）不受隔离 | `MutationObserver` 盯 `body` 直接子节点；backdrop 被外部摘掉时**自愈回收**（防幽灵观察器锁死后续焦点） |
+| `focusIsMine` 是死变量 | 关外层时会把焦点从内层抢走 | 真的用它把关：不是我的焦点就不还原 |
+
 ### 修复：探针把「端口有人应答」当成「服务是我们的」
 
 发布工作流在 CI 上报过一句很吓人的话：

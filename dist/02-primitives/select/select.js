@@ -232,8 +232,24 @@ if (!list.id) list.id = 'select-list-' + (++uid);
 
 var options = [].slice.call(list.querySelectorAll('[role="option"]'));
 var isMulti = !!opt.multiple;
-var selected = opt.value != null ? String(opt.value) : null;
+
+var values = [];
 var activeIdx = -1;
+var destroyed = false;
+
+function valueOfOpt(o) { return o ? o.getAttribute('data-value') : null; }
+function hasValue(v) { return v != null && values.indexOf(String(v)) >= 0; }
+function seed(v) {
+if (v == null) return;
+var arr = Object.prototype.toString.call(v) === '[object Array]' ? v : [v];
+var next = [];
+for (var i = 0; i < arr.length; i++) {
+var s = arr[i] == null ? '' : String(arr[i]);
+if (s && next.indexOf(s) < 0) next.push(s);
+}
+values = isMulti ? next : next.slice(0, 1);
+}
+seed(opt.value);
 
 list.setAttribute('role', 'listbox');
 if (isMulti) list.setAttribute('aria-multiselectable', 'true');
@@ -268,38 +284,97 @@ onHit: function (i) { setActive(i, 1); },
 
 function selectedIdx() {
 for (var i = 0; i < options.length; i++) {
-if (options[i].getAttribute('data-value') === selected) return i;
+if (hasValue(valueOfOpt(options[i]))) return i;
 }
 return -1;
 }
 function valueText() {
-var i = selectedIdx();
-return i < 0 ? (opt.placeholder || '请选择') : optText(options[i]);
+var texts = [];
+for (var i = 0; i < options.length; i++) {
+if (hasValue(valueOfOpt(options[i]))) texts.push(optText(options[i]));
 }
+return texts.length ? texts.join('、') : (opt.placeholder || '请选择');
+}
+
 function optText(o) {
+if (!o) return '';
 var t = o.querySelector('.select__opt-text');
 return ((t || o).textContent || '').replace(/[✓\s]/g, '').trim();
 }
 
-function paint() {
-var v = valueText();
+function value() {
+return isMulti ? values.slice() : (values.length ? values[0] : null);
+}
+
+function syncHidden() {
+var all = [].slice.call(root.querySelectorAll('input[type="hidden"]'));
+var mine = [];
+var author = [];
+all.forEach(function (i) {
+if (i.getAttribute('data-select-value') === '1') mine.push(i);
+else author.push(i);
+});
+var name = opt.name || root.getAttribute('data-name') ||
+(author[0] && author[0].name) || (mine[0] && mine[0].name) ||
+root.id || '';
+var slots = author.concat(mine);
+var want = values.slice();
+for (var i = 0; i < want.length; i++) {
+var inp = slots[i];
+if (!inp) {
+inp = document.createElement('input');
+inp.type = 'hidden';
+inp.setAttribute('data-select-value', '1');
+root.appendChild(inp);
+slots.push(inp);
+}
+if (name) inp.name = name;
+else inp.removeAttribute('name');
+inp.value = want[i];
+}
+for (var j = want.length; j < slots.length; j++) {
+var extra = slots[j];
+if (extra.getAttribute('data-select-value') === '1') {
+if (extra.parentNode) extra.parentNode.removeChild(extra);
+} else {
+extra.value = '';
+}
+}
+}
+
+function paint(silent) {
+var label = valueText();
+var empty = selectedIdx() < 0;
 var vEl = btn.querySelector('.select__value');
 if (vEl) {
-vEl.textContent = v;
-vEl.classList.toggle('select__value--placeholder', selectedIdx() < 0);
+vEl.textContent = label;
+vEl.classList.toggle('select__value--placeholder', empty);
 }
+
+if (empty) btn.removeAttribute('title');
+else btn.setAttribute('title', label);
 options.forEach(function (o) {
-var on = o.getAttribute('data-value') === selected;
+var on = hasValue(valueOfOpt(o));
 o.setAttribute('aria-selected', on ? 'true' : 'false');
 var ck = o.querySelector('.select__check');
 if (ck) ck.textContent = on ? '✓' : '';
 });
+syncHidden();
+if (silent) return;
+flEmit(root, 'fl-change', { value: value(), values: values.slice(), text: label });
+if (opt.onChange) opt.onChange(value(), label);
 
-var hidden = root.querySelector('input[type="hidden"]');
-if (hidden) hidden.value = selected == null ? '' : selected;
-flEmit(root, 'fl-change',
-{ value: selected, text: optText(options[selectedIdx()] || options[0]) });
-if (opt.onChange) opt.onChange(selected, optText(options[selectedIdx()] || options[0]));
+var ev = null;
+if (typeof window.Event === 'function') {
+try { ev = new window.Event('change', { bubbles: true }); } catch (e) { ev = null; }
+}
+if (!ev) {
+try {
+ev = document.createEvent('Event');
+ev.initEvent('change', true, false);
+} catch (e2) { ev = null; }
+}
+if (ev) root.dispatchEvent(ev);
 }
 
 function setActive(i, dir) {
@@ -357,93 +432,105 @@ if (opt.onClose) opt.onClose();
 function commit(i) {
 var o = options[i];
 if (!o || o.getAttribute('aria-disabled') === 'true') return;
+var v = valueOfOpt(o);
 if (isMulti) {
 
-selected = o.getAttribute('data-value') === selected ? null : o.getAttribute('data-value');
-} else {
-selected = o.getAttribute('data-value');
+var k = values.indexOf(v);
+if (k >= 0) values.splice(k, 1);
+else values.push(v);
+paint();
+return;
+}
+values = [v];
+paint();
 close(true);
 }
-paint();
-}
 
-btn.addEventListener('keydown', function (e) {
+function onBtnKey(e) {
+if (destroyed) return;
 var k = e.key;
-if (k === 'ArrowDown' || k === 'ArrowUp' || k === 'Enter' || k === ' ' ||
-k === 'Spacebar' || (k === 'Alt' && false)) {
-if (k === 'ArrowDown' || k === 'ArrowUp') {
+var opened = !list.hidden;
+
+if (k === 'ArrowDown' || k === 'ArrowUp' || k === 'Enter' || k === ' ' || k === 'Spacebar') {
 e.preventDefault();
-if (list.hidden) { open(); return; }
-var dir = k === 'ArrowDown' ? 1 : -1;
-setActive(activeIndex() + dir, dir);
+if (!opened) {
+open();
+
+if (k === 'ArrowUp' && options.length) setActive(options.length - 1, -1);
 return;
 }
-e.preventDefault();
-if (list.hidden) open();
-else if (activeIdx >= 0) commit(activeIdx);
-return;
-}
-
-if (k === 'ArrowDown' && e.altKey) { e.preventDefault(); open(); return; }
-
-if (list.hidden && (k === 'Home' || k === 'End')) {
-e.preventDefault(); open();
-if (k === 'Home') setActive(0);
-else setActive(options.length - 1);
-return;
-}
-});
-
-function onListKey(e) {
-var k = e.key;
-if (k === 'ArrowDown') { e.preventDefault(); setActive(activeIndex() + 1, 1); return; }
-if (k === 'ArrowUp')   { e.preventDefault(); setActive(activeIndex() - 1, -1); return; }
-if (k === 'Home')      { e.preventDefault(); setActive(0, 1); return; }
-if (k === 'End')       { e.preventDefault(); setActive(options.length - 1, -1); return; }
-
-if (k === 'Tab') { close(false); return; }
-if (k === 'Enter' || k === ' ' || k === 'Spacebar') {
-e.preventDefault();
+if (k === 'ArrowDown') { setActive(activeIndex() + 1, 1); return; }
+if (k === 'ArrowUp') { setActive(activeIndex() - 1, -1); return; }
 if (activeIdx >= 0) commit(activeIdx);
 return;
 }
+if (k === 'Home' || k === 'End') {
+e.preventDefault();
+if (!opened) open();
+if (options.length) setActive(k === 'Home' ? 0 : options.length - 1, k === 'Home' ? 1 : -1);
+return;
+}
+if (k === 'Tab') { if (opened) close(false); return; }
 
-if (k.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+if (k && k.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+if (!opened) open();
 e.preventDefault();
 typeahead.type(k);
 }
+
 }
+btn.addEventListener('keydown', onBtnKey);
 
-btn.addEventListener('keydown', function (e) {
-
-if (list.hidden) return;
-var k = e.key;
-
-if (k === 'Escape' || k === 'Esc' || k === 'ArrowDown' || k === 'ArrowUp' ||
-k === 'Home' || k === 'End' || k === 'Enter' || k === ' ' ||
-k === 'Spacebar' || k === 'Tab') {
-
-if (list.hidden) return;
-onListKey(e);
-return;
-}
-if (k.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) onListKey(e);
-});
-
-btn.addEventListener('click', function () {
+function onBtnClick() {
+if (destroyed) return;
 if (list.hidden) open(); else close();
-});
-list.addEventListener('click', function (e) {
+}
+function onListClick(e) {
+if (destroyed) return;
 var o = e.target.closest ? closest(e.target, '[role="option"]') : null;
 if (!o) return;
 commit(options.indexOf(o));
-});
+}
+btn.addEventListener('click', onBtnClick);
+list.addEventListener('click', onListClick);
 
+var initialValues = values.slice();
+var form = closest(root, 'form');
+function onFormReset() {
+setTimeout(function () {
+if (destroyed) return;
+values = initialValues.slice();
 paint();
+}, 0);
+}
+if (form) form.addEventListener('reset', onFormReset);
+
+paint(true);
+
 return {
 open: open, close: close,
-get value() { return selected; },
-set value(v) { selected = v == null ? null : String(v); paint(); },
+get value() { return value(); },
+set value(v) { seed(v); paint(); },
+get values() { return values.slice(); },
+set values(v) { seed(v); paint(); },
+
+destroy: function () {
+if (destroyed) return;
+destroyed = true;
+btn.removeEventListener('keydown', onBtnKey);
+btn.removeEventListener('click', onBtnClick);
+list.removeEventListener('click', onListClick);
+if (form) form.removeEventListener('reset', onFormReset);
+dismiss.destroy();
+typeahead.destroy();
+fr.clear();
+list.hidden = true;
+btn.setAttribute('aria-expanded', 'false');
+btn.removeAttribute('aria-activedescendant');
+
+[].slice.call(root.querySelectorAll('input[type="hidden"][data-select-value="1"]'))
+.forEach(function (i) { if (i.parentNode) i.parentNode.removeChild(i); });
+},
 };
 }
 

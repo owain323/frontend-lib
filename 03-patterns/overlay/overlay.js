@@ -116,17 +116,19 @@
     for (var i = 0; i < inertRefs.length; i++) {
       if (inertRefs[i].node === node) { inertRefs[i].count++; return; }
     }
-    inertRefs.push({ node: node, count: 1 });
+    /* 🔴 记下**打开之前**的状态：页面可能本来就把某块设为 inert
+       （比如另一个弹层、或宿主自己的锁屏）。固定写回 false 会把它误解锁。 */
+    inertRefs.push({ node: node, count: 1, prev: node.inert === true });
     node.inert = true;
   }
 
-  /** 还一个引用；降到 0 才真正解锁。 */
+  /** 还一个引用；降到 0 才真正还原。 */
   function inertRelease(node) {
     for (var i = 0; i < inertRefs.length; i++) {
       if (inertRefs[i].node !== node) continue;
       inertRefs[i].count--;
       if (inertRefs[i].count <= 0) {
-        node.inert = false;
+        node.inert = inertRefs[i].prev === true;
         inertRefs.splice(i, 1);
       }
       return;
@@ -578,17 +580,58 @@
     var nodes = Array.prototype.slice.call(
       document.body.querySelectorAll('body > *')
     );
-    nodes.forEach(function (n) {
-      /* 任何已有的 backdrop（外层）都跳过 —— 它们自己管自己的 */
-      if (n.classList.contains('dialog-backdrop')) return;
-      if (useInert) {
-        inerted.push(n);
-        inertAcquire(n);
-      } else {
-        ariaed.push(n);
-        ariaAcquire(n);
-      }
-    });
+    /* 🔴 以前这里 `if (n.classList.contains('dialog-backdrop')) return;`
+       —— 把所有已存在的弹层（外层 dialog）当成"它自己管自己"跳过了。
+       实际后果：开 A 再开 B，A 既没 inert 也没 aria-hidden，
+       **两个 dialog 同时暴露给读屏**，Tab 也能从 B 走回 A（有 inert 时
+       虽然背景被锁，但 A 和 B 都是"前景"，只是在同一个 body 下并列）。
+       ⇒ 正解：只跳过**自己**这一层 backdrop，别的弹层照常隔离。 */
+    function isolate(n) {
+      if (!n || n === backdrop) return;
+      if (useInert) { inerted.push(n); inertAcquire(n); }
+      else { ariaed.push(n); ariaAcquire(n); }
+    }
+    nodes.forEach(isolate);
+
+    /* 🔴 只在 open 时拍一次快照是不够的：弹层开着的时候，
+       宿主页面完全可能再往 body 里插东西（toast、埋点 iframe、框架的 portal）。
+       那些节点不在快照里 ⇒ 不受隔离 ⇒ 读屏和 Tab 都能进。
+       ⇒ 用 MutationObserver 补：**只盯 body 的直接子节点**（与快照口径一致），
+          且不隔离新出现的 backdrop —— 那是"又开了一层"，它会自己隔离别人。 */
+    var mo = null;
+    if (typeof window.MutationObserver === 'function') {
+      mo = new window.MutationObserver(function (records) {
+        /* 🔴 自愈：如果这一层的 backdrop 已经被**外部**从 DOM 里摘掉
+           （框架卸载、测试清理、别人 innerHTML='' 都会这么干），
+           那 close() 永远不会跑 ⇒ 观察器成了幽灵：
+           它会继续把之后插入 body 的节点一个个设成 inert，且没人释放。
+           症状：后续任何 dialog 都抢不回焦点（目标节点被幽灵锁着）。
+           ⇒ 一旦发现自己已不在文档里，就地回收。 */
+        if (!document.documentElement.contains(backdrop)) {
+          if (mo) { mo.disconnect(); mo = null; }
+          if (closed) return;              /* 正常 close 已还过，别还第二次 */
+          closed = true;
+          inerted.forEach(inertRelease);
+          ariaed.forEach(ariaRelease);
+          inerted = [];
+          ariaed = [];
+          if (uninstallIsolation) { uninstallIsolation(); uninstallIsolation = null; }
+          unlockScroll();
+          return;
+        }
+        for (var r = 0; r < records.length; r++) {
+          var added = records[r].addedNodes;
+          for (var a = 0; a < added.length; a++) {
+            var n = added[a];
+            if (!n || n.nodeType !== 1) continue;
+            if (n.classList && n.classList.contains('dialog-backdrop')) continue;
+            if (n.inert === true || n.getAttribute('aria-hidden') === 'true') continue;
+            isolate(n);
+          }
+        }
+      });
+      mo.observe(document.body, { childList: true });
+    }
 
     function close() {
       if (closed) return;
@@ -616,6 +659,7 @@
         if (openStack[si] === stackEntry) { openStack.splice(si, 1); break; }
       }
       if (uninstallIsolation) { uninstallIsolation(); uninstallIsolation = null; }
+      if (mo) { mo.disconnect(); mo = null; }
 
       /* ⭐ 引用计数：还一个引用，降到 0 才真的解锁 ⇒ 与关闭顺序无关 */
       inerted.forEach(inertRelease);
@@ -623,9 +667,11 @@
       ariaed.forEach(ariaRelease);
       unlockScroll();
 
-      /* 🔴 焦点必须回到**触发它的那个元素**。
-         不还的话，键盘用户要重新 Tab 一遍才能回到原处。 */
-      fr.restore();
+      /* 🔴 焦点必须回到**触发它的那个元素**，但**只在焦点还是我的时候**。
+         `focusIsMine` 这个判断以前算了却没用（死变量）⇒ 关外层时会把
+         焦点从内层手里抢走。现在真的拿它把关。 */
+      if (focusIsMine) fr.restore();
+      else fr.clear();
       /* ⚠️ 不写 `document.body.focus()`：body 默认不可聚焦，
          那行从来没起过作用，只会让人以为"有兜底"。 */
     }

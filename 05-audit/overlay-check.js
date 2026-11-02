@@ -13,6 +13,7 @@ const REPO = path.resolve(__dirname, '..');
  *      （不归位 ⇒ 键盘用户被扔回页面顶部，得重新 Tab 一遍）
  */
 (async () => {
+  const trim = () => {};
   const r = await kit.check({
     name: 'overlay',
     url: 'http://127.0.0.1:8000/03-patterns/overlay/demo.html',
@@ -810,6 +811,73 @@ const REPO = path.resolve(__dirname, '..');
         return { ok: true,
                  note: '无 inert 时：focus() 被拉回、连按 8 次 Tab 未逃出、mousedown 被拦、' +
                        'click 监听未被调用 ✅（交互隔离与 aria-hidden 是两条独立契约）' };
+      },
+      /* ============ 外部审计（2026-11）补的三条：状态还原 / 嵌套 / 动态节点 ============ */
+
+      /* ⑧ 页面原本就 inert 的区域，开关一次弹层后必须还锁着 */
+      '预置 inert 的节点开关后仍锁着': async (p) => {
+        const r = await p.evaluate(async () => {
+          const n = document.createElement('div');
+          n.id = 'pre-inert';
+          document.body.appendChild(n);
+          n.inert = true;
+          const d = window.Overlay.dialog({ title: 'A', body: 'x' });
+          await new Promise((res) => setTimeout(res, 60));
+          d.close();
+          await new Promise((res) => setTimeout(res, 60));
+          return { after: n.inert };
+        }).catch((e) => ({ after: false, err: String(e.message).slice(0, 60) }));
+        return { ok: r.after === true,
+                 note: '打开前 inert=true → 关闭后 inert=' + r.after +
+                       (r.err ? ' 🔴 探针抛错：' + r.err : '') +
+                       (r.after === true ? ' ✅ 原样还原' : ' 🔴 被误解锁') };
+      },
+
+      /* ⑨ 嵌套：下层弹层必须被隔离，不能两个 dialog 同时暴露给读屏 */
+      '嵌套时下层弹层被隔离': async (p) => {
+        const r = await p.evaluate(async () => {
+          const A = window.Overlay.dialog({ title: 'A', body: 'A' });
+          await new Promise((res) => setTimeout(res, 80));
+          const B = window.Overlay.dialog({ title: 'B', body: 'B' });
+          await new Promise((res) => setTimeout(res, 80));
+          const ab = A.el.closest('.dialog-backdrop');
+          const res = {
+            inert: ab.inert === true,
+            aria: ab.getAttribute('aria-hidden'),
+            chain: (function () {
+              let n = ab;
+              while (n && n !== document.body) { if (n.inert) return true; n = n.parentElement; }
+              return false;
+            })(),
+          };
+          B.close(); A.close();
+          await new Promise((res2) => setTimeout(res2, 60));
+          return res;
+        }).catch((e) => ({ inert: false, aria: null, chain: false, err: String(e.message).slice(0, 60) }));
+        const ok = r.inert || r.aria === 'true' || r.chain;
+        return { ok, note: 'A 的 backdrop：inert=' + r.inert + ' · 祖先链 inert=' + r.chain +
+                           ' · aria-hidden=' + r.aria + (r.err ? ' 🔴 探针抛错：' + r.err : '') +
+                           (ok ? ' ✅ 已隔离' : ' 🔴 两个 dialog 同时暴露') };
+      },
+
+      /* ⑩ 打开期间新插入 body 的背景节点，也必须被隔离 */
+      '打开后新增的背景节点被隔离': async (p) => {
+        const r = await p.evaluate(async () => {
+          const C = window.Overlay.dialog({ title: 'C', body: 'C' });
+          await new Promise((res) => setTimeout(res, 80));
+          const late = document.createElement('div');
+          late.id = 'late-node';
+          document.body.insertBefore(late, document.body.firstChild);
+          await new Promise((res) => setTimeout(res, 80));
+          const res = { inert: late.inert === true, aria: late.getAttribute('aria-hidden') };
+          C.close();
+          await new Promise((res2) => setTimeout(res2, 60));
+          return res;
+        }).catch((e) => ({ inert: false, aria: null, err: String(e.message).slice(0, 60) }));
+        return { ok: r.inert || r.aria === 'true',
+                 note: '新增节点 inert=' + r.inert + ' · aria-hidden=' + r.aria +
+                       (r.err ? ' 🔴 探针抛错：' + r.err : '') +
+                       (r.inert || r.aria === 'true' ? ' ✅ 已隔离' : ' 🔴 漏网') };
       },
     },
   });

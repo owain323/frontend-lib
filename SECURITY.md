@@ -48,8 +48,11 @@ combobox 那处 `innerHTML` 当前是安全的（已转义），但缺一道门�
 | 打过的 tag（`v0.8.8` 起） | ✅ 修安全相关缺陷并回移植 |
 | `v0.8.8` 之前 | ❌ 无 tag、无锚点，无法可靠回溯 |
 
-**本库尚未发布到 npm**（`agentcss` 这个名字已实测未被占用，但还没占住）。
-安装方式见 `README.md` 的「安装」一节 —— 里面写的是当前**真实可用**的路径。
+**本库已发布到 npm**：包名 `agentcss`，首次发布 2026-10-18（`0.0.0-stage`），
+`dist-tags.latest` 指向最新稳定版；从 `0.16.0` 起的版本带 **SLSA provenance**
+（`npm view agentcss@<版本> dist.attestations` 可查，证明产物由本仓库的
+release 工作流构建，不是本地 `npm publish` 上传的）。
+安装方式见 `README.md` 的「安装」一节；装哪个版本可以 `npm view agentcss version` 查。
 
 ### 版本与提交点的锚点
 

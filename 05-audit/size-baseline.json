@@ -49,8 +49,8 @@
       "raw": 58893
     },
     "01-tokens/typography.css": {
-      "gzip": 3401,
-      "raw": 7139
+      "gzip": 3390,
+      "raw": 7117
     },
     "02-primitives/badge/badge.css": {
       "gzip": 2810,
@@ -65,8 +65,8 @@
       "raw": 10625
     },
     "02-primitives/choice/choice.css": {
-      "gzip": 6060,
-      "raw": 17175
+      "gzip": 6037,
+      "raw": 17144
     },
     "02-primitives/combobox/combobox.css": {
       "gzip": 2893,
@@ -113,8 +113,8 @@
       "raw": 4540
     },
     "02-primitives/select/select.js": {
-      "gzip": 7758,
-      "raw": 21764
+      "gzip": 9148,
+      "raw": 25412
     },
     "02-primitives/separator/separator.css": {
       "gzip": 1310,
@@ -129,8 +129,8 @@
       "raw": 20982
     },
     "02-primitives/timeline/timeline.css": {
-      "gzip": 3340,
-      "raw": 7286
+      "gzip": 3324,
+      "raw": 7272
     },
     "02-primitives/upload/upload.css": {
       "gzip": 7801,
@@ -193,12 +193,12 @@
       "raw": 4316
     },
     "03-patterns/overlay/overlay.css": {
-      "gzip": 5553,
-      "raw": 13221
+      "gzip": 5507,
+      "raw": 13135
     },
     "03-patterns/overlay/overlay.js": {
-      "gzip": 10012,
-      "raw": 27556
+      "gzip": 11104,
+      "raw": 30547
     },
     "03-patterns/pagination/pagination.css": {
       "gzip": 3407,
@@ -274,6 +274,6 @@
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 312799,
-  "total_raw": 787265
+  "total_gzip": 315185,
+  "total_raw": 793751
 }

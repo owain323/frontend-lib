@@ -29,8 +29,10 @@
   },
   "Select": {
     "close": "method",
+    "destroy": "method",
     "open": "method",
-    "value": "accessor"
+    "value": "accessor",
+    "values": "accessor"
   },
   "Tree": {
     "destroy": "method",

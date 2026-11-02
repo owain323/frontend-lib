@@ -61,9 +61,10 @@ const sel = Select.create(元素, { multiple: false, value: 'b', label: '选项'
 | 打开后焦点 | **落在选中项**（不是第一项，也不是按钮）|
 | `↑` `↓` | 循环上下移动 |
 | `Home` / `End` | 跳首/ 末 |
-| `Enter` / `Space` | 选中并关闭 |
+| `Enter` / `Space` | 单选：选中并关闭；**多选：切换该项、列表不关** |
 | `Esc` | 关闭，并**把焦点还给按钮** |
 | `Alt` + `↓` | 直接打开 |
+| 关闭态打字 | 打开并跳到首个匹配项（同原生 `<select>`） |
 
 **① 为什么强调"落在选中项"**：这是 APG 明确要求的，也是最常做错的一条。
 打开后焦点在第一项，用户按一次`↓` 就跳到第二项 —— 原来选的那项被跳过了。
@@ -72,6 +73,41 @@ const sel = Select.create(元素, { multiple: false, value: 'b', label: '选项'
 按钮上。这是 APG「select-only combobox」的合法形态 —— 拿 `document.activeElement`
 去要求它落进 `<ul>` 会判成缺陷，实际不是。本库的判据也是按前一种断的
 （`opener-path-check` 里这条组件的 `focus` 声明为 `activedesc`）。
+
+## 多选与表单提交
+
+`multiple: true` 时：
+
+- 内部状态是**数组**，`aria-multiselectable="true"` 与 `aria-selected` 都按它写
+  —— 不是"写着多选、其实只有一个值"。
+- 按钮文本按勾选顺序拼成 `A、B、C`，过长由 CSS 截断，`title` 里保留全量。
+- **提交值一个选项一个 `input[type=hidden]`，同名多条**：
+
+  ```html
+  <input type="hidden" name="sector" value="a">
+  <input type="hidden" name="sector" value="c">
+  ```
+
+  name 依次取 `create({name})` → 根上的 `data-name` → 作者自己写的 hidden 的 name → 根元素 `id`。
+  一个都不给的话多选提交不出去，所以最后一档兜底到 `id`。
+
+- 每次值变化都会在**根元素上派发原生 `change`**（冒泡），
+  React 受控组件 / `form.reset` 监听器认的是这个；`fl-change` 仍然发，给本库自己的使用者。
+
+## API
+
+```js
+const sel = Select.create(el, { multiple: true, value: ['a', 'c'], name: 'sector' });
+
+sel.value          // 单选：字符串或 null；多选：数组
+sel.values         // 数组副本（多选常用）
+sel.value = 'b'    // 赋值后立即重绘 + 派发 change
+sel.open() / sel.close()
+sel.destroy()      // 摘掉 keydown/click/dismissable/typeahead，删掉自己补的 hidden
+```
+
+`destroy()` 之前没暴露过：动态移除组件时 `document` 上的 dismissable 监听、
+typeahead 缓冲、按钮上的 keydown 会一直留着。现在必须调，重复调是安全的。
 
 ## 类型搜索（typeahead）
 
@@ -109,4 +145,8 @@ const sel = Select.create(元素, { multiple: false, value: 'b', label: '选项'
 
 ## 门禁
 
-`05-audit/select-check.js` —— 覆盖键盘契约与 ARIA 属性同步。
+`05-audit/select-check.js` —— 覆盖键盘契约、ARIA 同步、多值与表单提交。
+
+外部审计（2026-11）指出"↑↓ 一次走两格、多选 Enter 选上又取消、空列表抛错、
+没有 destroy"之后，这四条变成了**精确断言**（一次按键只准走一格、Enter 只准切一次、
+空列表不准抛、destroy 后不准再响应）。旧断言只判"序列有变化"，所以双处理器能混过去。

@@ -276,8 +276,26 @@
 
     var options = [].slice.call(list.querySelectorAll('[role="option"]'));
     var isMulti = !!opt.multiple;
-    var selected = opt.value != null ? String(opt.value) : null;
+    /* 🔴 真多值：以前多选也只有一个 `selected` 字符串，而 aria-multiselectable
+       照样写 "true" —— ARIA 在**谎报**能力。现在统一用数组存值，
+       单选只是"长度 0 或 1"的特例，两条路径共用同一份状态。 */
+    var values = [];
     var activeIdx = -1;
+    var destroyed = false;
+
+    function valueOfOpt(o) { return o ? o.getAttribute('data-value') : null; }
+    function hasValue(v) { return v != null && values.indexOf(String(v)) >= 0; }
+    function seed(v) {
+      if (v == null) return;
+      var arr = Object.prototype.toString.call(v) === '[object Array]' ? v : [v];
+      var next = [];
+      for (var i = 0; i < arr.length; i++) {
+        var s = arr[i] == null ? '' : String(arr[i]);
+        if (s && next.indexOf(s) < 0) next.push(s);
+      }
+      values = isMulti ? next : next.slice(0, 1);
+    }
+    seed(opt.value);
 
     list.setAttribute('role', 'listbox');
     if (isMulti) list.setAttribute('aria-multiselectable', 'true');
@@ -317,38 +335,102 @@
 
     function selectedIdx() {
       for (var i = 0; i < options.length; i++) {
-        if (options[i].getAttribute('data-value') === selected) return i;
+        if (hasValue(valueOfOpt(options[i]))) return i;
       }
       return -1;
     }
     function valueText() {
-      var i = selectedIdx();
-      return i < 0 ? (opt.placeholder || '请选择') : optText(options[i]);
+      var texts = [];
+      for (var i = 0; i < options.length; i++) {
+        if (hasValue(valueOfOpt(options[i]))) texts.push(optText(options[i]));
+      }
+      return texts.length ? texts.join('、') : (opt.placeholder || '请选择');
     }
+    /* ⚠️ 空列表也会被调用（初始化 / 清空后重绘）：必须能接住 undefined，
+       老实现直接 o.querySelector 会抛 "Cannot read properties of undefined"。 */
     function optText(o) {
+      if (!o) return '';
       var t = o.querySelector('.select__opt-text');
       return ((t || o).textContent || '').replace(/[✓\s]/g, '').trim();
     }
 
-    function paint() {
-      var v = valueText();
+    /** 对外值：单选给字符串（无值 null），多选给数组副本 */
+    function value() {
+      return isMulti ? values.slice() : (values.length ? values[0] : null);
+    }
+
+    /* 表单承接：作者写了几个 hidden 就复用几个，不够的自动补同 name 的兄弟节点。
+       多选必须"一个值一个 input"，否则提交出去只有最后一个 —— 那是假多选。 */
+    function syncHidden() {
+      var all = [].slice.call(root.querySelectorAll('input[type="hidden"]'));
+      var mine = [];
+      var author = [];
+      all.forEach(function (i) {
+        if (i.getAttribute('data-select-value') === '1') mine.push(i);
+        else author.push(i);
+      });
+      var name = opt.name || root.getAttribute('data-name') ||
+                 (author[0] && author[0].name) || (mine[0] && mine[0].name) ||
+                 root.id || '';   /* 兜底用根元素 id：没有 name 的话多选压根提交不出去 */
+      var slots = author.concat(mine);
+      var want = values.slice();
+      for (var i = 0; i < want.length; i++) {
+        var inp = slots[i];
+        if (!inp) {
+          inp = document.createElement('input');
+          inp.type = 'hidden';
+          inp.setAttribute('data-select-value', '1');
+          root.appendChild(inp);
+          slots.push(inp);
+        }
+        if (name) inp.name = name;
+        else inp.removeAttribute('name');
+        inp.value = want[i];
+      }
+      for (var j = want.length; j < slots.length; j++) {
+        var extra = slots[j];
+        if (extra.getAttribute('data-select-value') === '1') {
+          if (extra.parentNode) extra.parentNode.removeChild(extra);
+        } else {
+          extra.value = '';        /* 作者自己的 input 留着，只是清空 */
+        }
+      }
+    }
+
+    function paint(silent) {
+      var label = valueText();
+      var empty = selectedIdx() < 0;
       var vEl = btn.querySelector('.select__value');
       if (vEl) {
-        vEl.textContent = v;
-        vEl.classList.toggle('select__value--placeholder', selectedIdx() < 0);
+        vEl.textContent = label;
+        vEl.classList.toggle('select__value--placeholder', empty);
       }
+      /* 多选标签会被 CSS 截断：title 里留全量，鼠标悬停能看全 */
+      if (empty) btn.removeAttribute('title');
+      else btn.setAttribute('title', label);
       options.forEach(function (o) {
-        var on = o.getAttribute('data-value') === selected;
+        var on = hasValue(valueOfOpt(o));
         o.setAttribute('aria-selected', on ? 'true' : 'false');
         var ck = o.querySelector('.select__check');
         if (ck) ck.textContent = on ? '✓' : '';
       });
-      /* hidden input 承接表单值（自建组件最容易漏的）*/
-      var hidden = root.querySelector('input[type="hidden"]');
-      if (hidden) hidden.value = selected == null ? '' : selected;
-      flEmit(root, 'fl-change',
-             { value: selected, text: optText(options[selectedIdx()] || options[0]) });
-      if (opt.onChange) opt.onChange(selected, optText(options[selectedIdx()] || options[0]));
+      syncHidden();
+      if (silent) return;
+      flEmit(root, 'fl-change', { value: value(), values: values.slice(), text: label });
+      if (opt.onChange) opt.onChange(value(), label);
+      /* 🔴 原生 change：宿主表单 / 框架（React 受控、form.reset 监听）认的是这个，
+         只发 fl-change 等于"只有本库自己知道值变了"。 */
+      var ev = null;
+      if (typeof window.Event === 'function') {
+        try { ev = new window.Event('change', { bubbles: true }); } catch (e) { ev = null; }
+      }
+      if (!ev) {
+        try {
+          ev = document.createEvent('Event');
+          ev.initEvent('change', true, false);
+        } catch (e2) { ev = null; }
+      }
+      if (ev) root.dispatchEvent(ev);
     }
 
     /**
@@ -428,112 +510,120 @@
     function commit(i) {
       var o = options[i];
       if (!o || o.getAttribute('aria-disabled') === 'true') return;
+      var v = valueOfOpt(o);
       if (isMulti) {
-        /* 多选：再点一次取消 */
-        selected = o.getAttribute('data-value') === selected ? null : o.getAttribute('data-value');
-      } else {
-        selected = o.getAttribute('data-value');
-        close(true);                              /* 选中并关闭 + 归位 */
+        /* 多选：再点一次取消；不关闭列表（APG 多选 listbox 语义） */
+        var k = values.indexOf(v);
+        if (k >= 0) values.splice(k, 1);
+        else values.push(v);
+        paint();
+        return;
       }
+      values = [v];
       paint();
+      close(true);                                /* 选中并关闭 + 归位 */
     }
 
-    /* ---------- 键盘（APG Select）---------- */
-    btn.addEventListener('keydown', function (e) {
+    /* ---------- 键盘（APG Select）----------
+       🔴 只允许**一个** keydown 处理器。
+       以前这里挂了两个：一个是 ↑↓/Enter，一个是 onListKey（↑↓/Home/End/Enter/字符）。
+       同一事件两个监听器都跑 ⇒ 按一次 ↓ 走两格、多选 Enter 选上又取消、
+       关闭态 Enter 打开后立刻被第二个处理器提交关闭。
+       ⚠️ 而旧契约只断言"序列变了"，所以这个 bug 从门禁底下过去了。 */
+    function onBtnKey(e) {
+      if (destroyed) return;
       var k = e.key;
-      if (k === 'ArrowDown' || k === 'ArrowUp' || k === 'Enter' || k === ' ' ||
-          k === 'Spacebar' || (k === 'Alt' && false)) {
-        if (k === 'ArrowDown' || k === 'ArrowUp') {
-          e.preventDefault();
-          if (list.hidden) { open(); return; }
-          var dir = k === 'ArrowDown' ? 1 : -1;
-          setActive(activeIndex() + dir, dir);
+      var opened = !list.hidden;
+
+      if (k === 'ArrowDown' || k === 'ArrowUp' || k === 'Enter' || k === ' ' || k === 'Spacebar') {
+        e.preventDefault();
+        if (!opened) {
+          open();
+          /* APG：↑ 打开时游标落**末项**，↓ 打开落选中项 */
+          if (k === 'ArrowUp' && options.length) setActive(options.length - 1, -1);
           return;
         }
+        if (k === 'ArrowDown') { setActive(activeIndex() + 1, 1); return; }
+        if (k === 'ArrowUp') { setActive(activeIndex() - 1, -1); return; }
+        if (activeIdx >= 0) commit(activeIdx);     /* 多选：切一次、不关闭 */
+        return;
+      }
+      if (k === 'Home' || k === 'End') {
         e.preventDefault();
-        if (list.hidden) open();
-        else if (activeIdx >= 0) commit(activeIdx);
+        if (!opened) open();
+        if (options.length) setActive(k === 'Home' ? 0 : options.length - 1, k === 'Home' ? 1 : -1);
         return;
       }
-      /* Alt+↓ 直接打开（不改值）*/
-      if (k === 'ArrowDown' && e.altKey) { e.preventDefault(); open(); return; }
-      /* Home/End */
-      if (list.hidden && (k === 'Home' || k === 'End')) {
-        e.preventDefault(); open();
-        if (k === 'Home') setActive(0);
-        else setActive(options.length - 1);
-        return;
-      }
-    });
+      if (k === 'Tab') { if (opened) close(false); return; }
 
-    /* 🔴 焦点常驻按钮 ⇒ 键盘事件主要落在 btn 上。
-       这里把 btn 的 handler 也挂一份完整逻辑（Esc/类型搜索/Home/End），
-       否则它们永远收不到事件。 */
-    function onListKey(e) {
-      var k = e.key;
-      if (k === 'ArrowDown') { e.preventDefault(); setActive(activeIndex() + 1, 1); return; }
-      if (k === 'ArrowUp')   { e.preventDefault(); setActive(activeIndex() - 1, -1); return; }
-      if (k === 'Home')      { e.preventDefault(); setActive(0, 1); return; }
-      if (k === 'End')       { e.preventDefault(); setActive(options.length - 1, -1); return; }
-      /* ③ Esc 关闭 + 焦点还按钮
-         🔴 加 stopPropagation（**组合契约**抓到的真问题）：
-         本组件常被放进 drawer / dialog 里。
-         原来只 preventDefault ⇒ 事件**继续冒泡**到外层弹层
-         ⇒ **按一次 Esc 把内外两层一起关掉**。
-         ⚠️ 单组件契约**测不到这个**（它没有外层）——
-            所以必须有"组合契约"这种真嵌套的测试。
-         ⇒ 正解：内层弹层"吃掉"这个键时必须 stopPropagation。
-         层级弹层的 Esc 语义本来就是"只关最上面那层"。 */
-      /* Esc 已由 dismissable 核接管（见上面的 flDismissable）：
-         核把它挂在 btn 上冒泡、并 stopPropagation ⇒ 只关最内层，
-         组件里不再各写一份（原先手写 10 处、分布 7 个文件）。 */
-      if (k === 'Tab') { close(false); return; }
-      if (k === 'Enter' || k === ' ' || k === 'Spacebar') {
-        e.preventDefault();
-        if (activeIdx >= 0) commit(activeIdx);
-        return;
-      }
-      /* ④ 类型搜索 —— 已移到 typeahead 核（见上面的 flTypeahead）。
-         ⚠️ 核不监听键盘：Enter / Space / Tab 在本组件各有语义，
-            只有"单个可打印字符"才算打字。 */
-      if (k.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      /* 单个可打印字符 = 类型搜索（Enter/Space/Tab 各有语义，不能算打字） */
+      if (k && k.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (!opened) open();                       /* 关闭态打字：先开再定位 */
         e.preventDefault();
         typeahead.type(k);
       }
+      /* Esc 由 dismissable 核接管（挂在 btn 上、且 stopPropagation）：
+         只关最内层，组件里不再写第二份。 */
     }
-    /* 挂在按钮上（焦点常驻处）*/
-    btn.addEventListener('keydown', function (e) {
-      /* 列表没开时，btn 自己的 handler 已经处理了开合；开了之后交给 onListKey */
-      if (list.hidden) return;
-      var k = e.key;
-      /* 这些键在"已打开"状态下由 onListKey 统一处理 */
-      if (k === 'Escape' || k === 'Esc' || k === 'ArrowDown' || k === 'ArrowUp' ||
-          k === 'Home' || k === 'End' || k === 'Enter' || k === ' ' ||
-          k === 'Spacebar' || k === 'Tab') {
-        /* Enter/Space 在关闭态要"打开"，交给 btn 原 handler */
-        if (list.hidden) return;
-        onListKey(e);
-        return;
-      }
-      if (k.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) onListKey(e);
-    });
+    btn.addEventListener('keydown', onBtnKey);
 
     /* ---------- 点击 ---------- */
-    btn.addEventListener('click', function () {
+    function onBtnClick() {
+      if (destroyed) return;
       if (list.hidden) open(); else close();
-    });
-    list.addEventListener('click', function (e) {
+    }
+    function onListClick(e) {
+      if (destroyed) return;
       var o = e.target.closest ? closest(e.target, '[role="option"]') : null;
       if (!o) return;
       commit(options.indexOf(o));
-    });
+    }
+    btn.addEventListener('click', onBtnClick);
+    list.addEventListener('click', onListClick);
+
+    /* 🔴 表单 reset：hidden input 会被浏览器清空，而组件内部状态不会跟着变
+       ⇒ 重置后 UI 还显示旧值，提交却是空的。监听 form 的 reset，
+       等浏览器把 DOM 重置完（下一个宏任务）再把状态改回初始值。 */
+    var initialValues = values.slice();
+    var form = closest(root, 'form');   /* 用模块内兜底，别直接调 Element.closest（老 WebView 没有） */
+    function onFormReset() {
+      setTimeout(function () {
+        if (destroyed) return;
+        values = initialValues.slice();
+        paint();
+      }, 0);
+    }
+    if (form) form.addEventListener('reset', onFormReset);
     /* 点外部关闭已由 dismissable 核接管（document 捕获阶段判定）。 */
 
-    paint();
+    /* 初始化重绘不派发 change：原生 select 也不会在挂载时发一次 */
+    paint(true);
+
     return {
       open: open, close: close,
-      get value() { return selected; },
-      set value(v) { selected = v == null ? null : String(v); paint(); },
+      get value() { return value(); },
+      set value(v) { seed(v); paint(); },
+      get values() { return values.slice(); },
+      set values(v) { seed(v); paint(); },
+      /* 🔴 对外必须能销毁：动态移除组件时，document 上的 dismissable 监听、
+         typeahead 缓冲、btn 上的 keydown 都要摘掉，否则越挂越多。 */
+      destroy: function () {
+        if (destroyed) return;
+        destroyed = true;
+        btn.removeEventListener('keydown', onBtnKey);
+        btn.removeEventListener('click', onBtnClick);
+        list.removeEventListener('click', onListClick);
+        if (form) form.removeEventListener('reset', onFormReset);
+        dismiss.destroy();
+        typeahead.destroy();
+        fr.clear();
+        list.hidden = true;
+        btn.setAttribute('aria-expanded', 'false');
+        btn.removeAttribute('aria-activedescendant');
+        /* 只删我们自己补出来的 hidden（作者写的那几个不动） */
+        [].slice.call(root.querySelectorAll('input[type="hidden"][data-select-value="1"]'))
+          .forEach(function (i) { if (i.parentNode) i.parentNode.removeChild(i); });
+      },
     };
   }
 

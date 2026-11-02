@@ -240,6 +240,199 @@ const REPO = path.resolve(__dirname, '..');
         });
         return r;
       },
+      /* ================= 以下为外部审计发现后补的硬判据 =================
+         共同点：**都断言"精确值"，不是"有变化"**。
+         上一版 ↑↓ 用例只断言"序列变了"，所以"一次按键走两格"能混过去。 */
+
+      /* ① 一次按键只走一格（回归：btn 上挂了两个 keydown） */
+      '一次 ↓ 只走一格': async (p) => {
+        await p.reload();
+        await new Promise((r) => setTimeout(r, 400));
+        await p.evaluate(() => document.querySelector('#s1 [data-select-btn]').click());
+        await new Promise((r) => setTimeout(r, 200));
+        const read = () => p.evaluate(() => {
+          const btn = document.querySelector('#s1 [data-select-btn]');
+          const ad = btn.getAttribute('aria-activedescendant');
+          const all = [...document.querySelectorAll('#s1 [role="option"]')];
+          return { i: ad ? all.indexOf(document.getElementById(ad)) : -1, n: all.length };
+        });
+        const a = await read();
+        await p.keyboard.press('ArrowDown');
+        await new Promise((r) => setTimeout(r, 150));
+        const b = await read();
+        const step = b.i < 0 || a.i < 0 ? -99 : ((b.i - a.i) % a.n + a.n) % a.n;
+        return { ok: step === 1,
+                 note: '打开后游标 ' + a.i + ' → 按一次 ↓ → ' + b.i + '（' + a.n + ' 项，步长 ' + step + '）' +
+                       (step === 1 ? ' ✅' : ' 🔴 应为 1') };
+      },
+
+      /* ② 关闭态按 Enter 只打开，不许顺手提交 */
+      '关闭态 Enter 只打开不提交': async (p) => {
+        await p.reload();
+        await new Promise((r) => setTimeout(r, 400));
+        const before = await p.evaluate(() => ({
+          hidden: document.querySelector('#s1 [data-select-list]').hidden,
+          value: document.querySelector('#s1 input[type=hidden]').value,
+        }));
+        await p.focus('#s1 [data-select-btn]');
+        await p.keyboard.press('Enter');
+        await new Promise((r) => setTimeout(r, 250));
+        const after = await p.evaluate(() => ({
+          hidden: document.querySelector('#s1 [data-select-list]').hidden,
+          value: document.querySelector('#s1 input[type=hidden]').value,
+          expanded: document.querySelector('#s1 [data-select-btn]').getAttribute('aria-expanded'),
+        }));
+        return { ok: before.hidden === true && after.hidden === false && after.value === before.value,
+                 note: '按键前 hidden=' + before.hidden + ' 值=' + before.value +
+                       ' → 按键后 hidden=' + after.hidden + ' 值=' + after.value +
+                       ' expanded=' + after.expanded +
+                       (after.hidden === false && after.value === before.value ? ' ✅ 只打开'
+                         : ' 🔴 打开后又被提交关掉了') };
+      },
+
+      /* ③ 多选：Enter 只切一次，且不关闭列表 */
+      '多选 Enter 只切一次且不关闭': async (p) => {
+        await p.reload();
+        await new Promise((r) => setTimeout(r, 400));
+        await p.evaluate(() => document.querySelector('#s2 [data-select-btn]').click());
+        await new Promise((r) => setTimeout(r, 200));
+        await p.keyboard.press('ArrowDown');
+        await new Promise((r) => setTimeout(r, 120));
+        await p.keyboard.press('Enter');
+        await new Promise((r) => setTimeout(r, 200));
+        const once = await p.evaluate(() => ({
+          n: document.querySelectorAll('#s2 [role="option"][aria-selected="true"]').length,
+          hidden: document.querySelector('#s2 [data-select-list]').hidden,
+        }));
+        await p.keyboard.press('Enter');
+        await new Promise((r) => setTimeout(r, 200));
+        const twice = await p.evaluate(() =>
+          document.querySelectorAll('#s2 [role="option"][aria-selected="true"]').length);
+        return { ok: once.n === 1 && once.hidden === false && twice === 0,
+                 note: '第一次 Enter 选中 ' + once.n + ' 项、列表' + (once.hidden ? '关着 🔴' : '仍开着') +
+                       '；再按一次剩 ' + twice + ' 项（应为 0，来回切换）' +
+                       (once.n === 1 && once.hidden === false && twice === 0 ? ' ✅' : ' 🔴') };
+      },
+
+      /* ④ 多选：真的是多值（ARIA / 提交值 / 按钮文本三处一致） */
+      '多选是真多值（ARIA+提交+文本）': async (p) => {
+        await p.reload();
+        await new Promise((r) => setTimeout(r, 400));
+        await p.evaluate(() => {
+          document.querySelector('#s2 [data-select-btn]').click();
+          const opts = [...document.querySelectorAll('#s2 [role="option"]')];
+          opts[0].click();
+          opts[2].click();
+        });
+        await new Promise((r) => setTimeout(r, 250));
+        const r = await p.evaluate(() => {
+          const root = document.querySelector('#s2');
+          const sel = [...root.querySelectorAll('[role="option"][aria-selected="true"]')]
+            .map((o) => o.textContent.replace(/[✓\s]/g, '').trim());
+          const hs = [...root.querySelectorAll('input[type=hidden]')];
+          return {
+            ms: root.querySelector('[data-select-list]').getAttribute('aria-multiselectable'),
+            sel, btn: root.querySelector('[data-select-btn]').textContent.replace(/\s+/g, ' ').trim(),
+            inputs: hs.map((i) => i.name + '=' + i.value),
+          };
+        });
+        const names = r.inputs.map((s) => s.split('=')[0]);
+        const sameName = r.inputs.length === r.sel.length && r.inputs.length === 2 &&
+          names[0] !== '' && names[0] === 'sector' && names[1] === 'sector';
+        const textOK = r.sel.every((t) => r.btn.indexOf(t) >= 0);
+        return { ok: r.ms === 'true' && r.sel.length === 2 && sameName && textOK,
+                 note: '选中 ' + r.sel.length + ' 项 [' + r.sel.join('/') + ']、提交值 ' +
+                       (r.inputs.join(' & ') || '(无)') + '、按钮「' + r.btn + '」' +
+                       (sameName ? ' ✅ 同名多条' : ' 🔴 提交值不是多值') };
+      },
+
+      /* ⑤ 空选项列表：不许在初始化时炸 */
+      '空选项列表不抛错': async (p) => {
+        const r = await p.evaluate(() => {
+          const root = document.createElement('div');
+          root.className = 'select';
+          root.innerHTML = '<button class="select__btn" data-select-btn type="button"></button>' +
+                           '<ul class="select__list" data-select-list hidden></ul>';
+          document.body.appendChild(root);
+          try { window.Select.create(root); return { err: null }; }
+          catch (e) { return { err: String(e.message).slice(0, 90) }; }
+        });
+        return { ok: !r.err, note: r.err ? '🔴 抛错：' + r.err : '空列表初始化不抛错 ✅' };
+      },
+
+      /* ⑥ 对外必须能销毁（动态移除组件时不留监听器） */
+      '对外有 destroy() 且真的摘干净': async (p) => {
+        const r = await p.evaluate(() => {
+          const root = document.createElement('div');
+          root.className = 'select';
+          root.innerHTML = '<button class="select__btn" data-select-btn type="button"></button>' +
+                           '<ul class="select__list" data-select-list hidden>' +
+                           '<li role="option" data-value="x">X</li></ul>';
+          document.body.appendChild(root);
+          const inst = window.Select.create(root);
+          const has = typeof inst.destroy === 'function';
+          if (!has) return { has, opened: null };
+          inst.destroy();
+          root.querySelector('[data-select-btn]').click();   /* 销毁后点开：不该开 */
+          return { has, opened: !root.querySelector('[data-select-list]').hidden };
+        });
+        return { ok: r.has === true && r.opened === false,
+                 note: r.has ? (r.opened ? '🔴 destroy 后仍能打开（监听器没摘）' : 'destroy 后不再响应 ✅')
+                             : '🔴 返回对象没有 destroy' };
+      },
+
+      /* ⑦b 表单 reset：hidden 被浏览器清空后，组件状态也得跟着回初始值 */
+      '表单 reset 后状态回到初始值': async (p) => {
+        const r = await p.evaluate(async () => {
+          const form = document.createElement('form');
+          const root = document.createElement('div');
+          root.className = 'select';
+          root.innerHTML = '<button class="select__btn" data-select-btn type="button">' +
+                             '<span class="select__value">请选择</span></button>' +
+                           '<ul class="select__list" data-select-list hidden>' +
+                           '<li role="option" data-value="a">A</li>' +
+                           '<li role="option" data-value="b">B</li></ul>' +
+                           '<input type="hidden" name="k" value="a">';
+          form.appendChild(root);
+          document.body.appendChild(form);
+          const inst = window.Select.create(root, { value: 'a' });
+          inst.value = 'b';
+          const mid = inst.value;
+          form.reset();
+          await new Promise((res) => setTimeout(res, 60));
+          const after = inst.value;
+          const hidden = root.querySelector('input[type=hidden]').value;
+          const label = root.querySelector('.select__value').textContent.trim();
+          return { mid, after, hidden, label };
+        });
+        return { ok: r.mid === 'b' && r.after === 'a' && r.hidden === 'a' && r.label === 'A',
+                 note: '设成 ' + r.mid + ' → reset 后 value=' + r.after + ' · hidden=' + r.hidden +
+                       ' · 按钮「' + r.label + '」' +
+                       (r.after === 'a' && r.hidden === 'a' ? ' ✅' : ' 🔴 重置后状态不一致') };
+      },
+
+      /* ⑦ 表单集成：没给 hidden 就自建；改值要派发 change */
+      '无 hidden 时自建 + 派发 change': async (p) => {
+        const r = await p.evaluate(() => {
+          const root = document.createElement('div');
+          root.className = 'select';
+          root.setAttribute('data-name', 'city');
+          root.innerHTML = '<button class="select__btn" data-select-btn type="button"></button>' +
+                           '<ul class="select__list" data-select-list hidden>' +
+                           '<li role="option" data-value="y">Y</li>' +
+                           '<li role="option" data-value="z">Z</li></ul>';
+          document.body.appendChild(root);
+          let fired = 0;
+          root.addEventListener('change', () => fired++);
+          const inst = window.Select.create(root);
+          inst.value = 'y';
+          const hs = [...root.querySelectorAll('input[type=hidden]')];
+          return { n: hs.length, name: hs[0] ? hs[0].name : '', val: hs[0] ? hs[0].value : '', fired };
+        });
+        return { ok: r.n === 1 && r.name === 'city' && r.val === 'y' && r.fired >= 1,
+                 note: '自建 ' + r.n + ' 个（name=' + r.name + ' value=' + r.val + '）、change ' +
+                       r.fired + ' 次' + (r.n === 1 && r.fired >= 1 ? ' ✅' : ' 🔴') };
+      },
     },
   });
   process.exit(kit.report(r));

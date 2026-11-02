@@ -62,7 +62,8 @@ Two more paths that resolve to the same content:
 
 ```bash
 # Pin an exact version and get a tarball byte-identical to the published one
-npm install https://github.com/owain323/frontend-lib/releases/download/v0.11.3/agentcss-0.11.3.tgz
+# （把 <版本> 换成 `npm view agentcss version` 的输出 —— 不写死，免得又过期）
+npm install https://github.com/owain323/frontend-lib/releases/download/v<版本>/agentcss-<版本>.tgz
 
 # Track master (unreleased commits)
 npm install github:owain323/frontend-lib

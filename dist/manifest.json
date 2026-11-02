@@ -8,8 +8,8 @@
   ],
   "totals": {
     "sourceFiles": 77,
-    "sourceBytes": 906682,
-    "distGzip": 109157
+    "sourceBytes": 913321,
+    "distGzip": 110065
   },
   "files": [
     {
@@ -416,15 +416,15 @@
     },
     {
       "source": "02-primitives/select/select.js",
-      "sourceSha256": "f7f42ba996a10d517d30a65c4386c1ffae575a3745dfc19d2e3b172d8b098d19",
-      "sourceBytes": 21764,
-      "sourceGzip": 7758,
+      "sourceSha256": "cbf6f833c0fd0baa0c8c5b0b84e048c297112b3f295039d372fea94d5d47492b",
+      "sourceBytes": 25412,
+      "sourceGzip": 9148,
       "outputs": [
         {
           "path": "dist/02-primitives/select/select.js",
           "kind": "stripped",
-          "bytes": 11567,
-          "gzip": 3579
+          "bytes": 13570,
+          "gzip": 4240
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
@@ -718,15 +718,15 @@
     },
     {
       "source": "03-patterns/overlay/overlay.js",
-      "sourceSha256": "c3d81aff8c0b36e2e9dd4f242a75ea39fc91122dd2eeb2a433405f52124e51ec",
-      "sourceBytes": 27556,
-      "sourceGzip": 10012,
+      "sourceSha256": "7ac47081111bcb8359703fca1cc50b7cd1a52cad00e392df3306e506440061fd",
+      "sourceBytes": 30547,
+      "sourceGzip": 11104,
       "outputs": [
         {
           "path": "dist/03-patterns/overlay/overlay.js",
           "kind": "stripped",
-          "bytes": 11311,
-          "gzip": 3362
+          "bytes": 12262,
+          "gzip": 3609
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"

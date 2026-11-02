@@ -64,7 +64,7 @@ npm install agentcss
 
 ```bash
 # ① 钉住某一版、且拿到与我们验证过的那一份**逐字节一致**的 tarball
-npm install https://github.com/owain323/frontend-lib/releases/download/v0.11.3/agentcss-0.11.3.tgz
+npm install https://github.com/owain323/frontend-lib/releases/download/v<版本>/agentcss-<版本>.tgz
 
 # ② 想跟着 master 走（未发布的最新提交）
 npm install github:owain323/frontend-lib

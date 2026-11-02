@@ -61,7 +61,8 @@ function inertAcquire(node) {
 for (var i = 0; i < inertRefs.length; i++) {
 if (inertRefs[i].node === node) { inertRefs[i].count++; return; }
 }
-inertRefs.push({ node: node, count: 1 });
+
+inertRefs.push({ node: node, count: 1, prev: node.inert === true });
 node.inert = true;
 }
 
@@ -70,7 +71,7 @@ for (var i = 0; i < inertRefs.length; i++) {
 if (inertRefs[i].node !== node) continue;
 inertRefs[i].count--;
 if (inertRefs[i].count <= 0) {
-node.inert = false;
+node.inert = inertRefs[i].prev === true;
 inertRefs.splice(i, 1);
 }
 return;
@@ -417,17 +418,43 @@ var ariaed = [];
 var nodes = Array.prototype.slice.call(
 document.body.querySelectorAll('body > *')
 );
-nodes.forEach(function (n) {
 
-if (n.classList.contains('dialog-backdrop')) return;
-if (useInert) {
-inerted.push(n);
-inertAcquire(n);
-} else {
-ariaed.push(n);
-ariaAcquire(n);
+function isolate(n) {
+if (!n || n === backdrop) return;
+if (useInert) { inerted.push(n); inertAcquire(n); }
+else { ariaed.push(n); ariaAcquire(n); }
+}
+nodes.forEach(isolate);
+
+var mo = null;
+if (typeof window.MutationObserver === 'function') {
+mo = new window.MutationObserver(function (records) {
+
+if (!document.documentElement.contains(backdrop)) {
+if (mo) { mo.disconnect(); mo = null; }
+if (closed) return;
+closed = true;
+inerted.forEach(inertRelease);
+ariaed.forEach(ariaRelease);
+inerted = [];
+ariaed = [];
+if (uninstallIsolation) { uninstallIsolation(); uninstallIsolation = null; }
+unlockScroll();
+return;
+}
+for (var r = 0; r < records.length; r++) {
+var added = records[r].addedNodes;
+for (var a = 0; a < added.length; a++) {
+var n = added[a];
+if (!n || n.nodeType !== 1) continue;
+if (n.classList && n.classList.contains('dialog-backdrop')) continue;
+if (n.inert === true || n.getAttribute('aria-hidden') === 'true') continue;
+isolate(n);
+}
 }
 });
+mo.observe(document.body, { childList: true });
+}
 
 function close() {
 if (closed) return;
@@ -445,13 +472,15 @@ for (var si = openStack.length - 1; si >= 0; si--) {
 if (openStack[si] === stackEntry) { openStack.splice(si, 1); break; }
 }
 if (uninstallIsolation) { uninstallIsolation(); uninstallIsolation = null; }
+if (mo) { mo.disconnect(); mo = null; }
 
 inerted.forEach(inertRelease);
 
 ariaed.forEach(ariaRelease);
 unlockScroll();
 
-fr.restore();
+if (focusIsMine) fr.restore();
+else fr.clear();
 
 }
 
