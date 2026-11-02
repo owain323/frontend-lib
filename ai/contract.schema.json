@@ -52,6 +52,17 @@
       ],
       "$comment": "详见 ai/profiles.json。三档决定『允许多不成熟的东西进入文档』。"
     },
+    "pageBudget": {
+      "type": "integer",
+      "minimum": 1,
+      "$comment": [
+        "页数上限（建议值）。只在 paper 介质下必填 —— screen 介质里它是多余的字。",
+        "🔴 没有默认值：页数取决于内容，任何全局默认都是猜的。",
+        "   猜一个数比不写更坏：它会让『这份报告该印几页』变成一个没人负责的数字。",
+        "语义是**报错**，不是警告：超了要停下来给出路（拆文档 / 进附录 / 自己删），",
+        "   而不是悄悄印出 40 页。导出时对应 `agentcss pdf --max-pages=N`。"
+      ]
+    },
     "capabilities": {
       "$ref": "#/definitions/capabilities",
       "$comment": [

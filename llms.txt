@@ -21,7 +21,12 @@ npx agentcss ai tokens --json --set=dark
 npx agentcss ai pitfalls --json --component=table
 npx agentcss ai validate ai/components.json --schema=components --json
 npx agentcss ai check page.json --profile=strict --json
+npx agentcss ai pdf page.html --out page.pdf --max-pages=8   # HTML → PDF (zero deps: uses your Chrome)
 ```
+
+Print / PDF: `--medium=paper` is the obligation switch — only then are `printPolicy`
+and `pageBudget` enforced. Per-component paper behaviour lives in
+`ai/components.json` → `printPolicy`. `@page` is owned by the exporter, not the library.
 
 Every subcommand accepts `--json`. On failure it prints
 `{"ok":false,"command":"…","error":{"kind":"…","message":"…"}}` and exits non-zero,

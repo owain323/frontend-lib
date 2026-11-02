@@ -1,6 +1,6 @@
 {
   "cli": {
-    "subcommands": 11
+    "subcommands": 12
   },
   "components": {
     "byMaturity": {

@@ -31,6 +31,9 @@ var fs = require('fs');
 var path = require('path');
 var validate = require('./validate.js');
 var patch = require('./patch.js');
+/* 打印导出。⚠️ 只在 `pdf` 子命令里用 —— 主路径不许因为它多加载任何东西
+   （`require` 是同步的，放在文件顶部是为了不把 CLI 拆成两截，代价是 ~2 KB 源码）。 */
+var pdfExport = require('./pdf.js');
 
 var AI = __dirname;
 
@@ -107,17 +110,22 @@ function flag(name, def) {
 // ---------------------------------------------------------------- check
 function cmdCheck(args) {
   var file = args[0];
-  if (!file) die('用法：ai check <doc.json> [--profile=creative|standard|strict]');
+  if (!file) die('用法：ai check <doc.json> [--profile=creative|standard|strict] [--medium=screen|paper]');
   var doc = readJSON(file);
   var profile = flag('profile', doc.profile || 'standard');
-  var r = validate.validateDoc(doc, { profile: profile });
+  /* 介质是**与档位正交**的第二根轴（评审 §3.7）：
+     strict+paper 与 creative+paper 都必须合法，做成第四个 profile 会把两维压成一维。
+     默认 screen ⇒ 今天所有调用零成本；paper 才追加打印义务。 */
+  var medium = flag('medium', 'screen');
+  var r = validate.validateDoc(doc, { profile: profile, medium: medium });
   var json = isJson();
 
   if (json) {
     out(r);
     process.exit(r.ok ? 0 : 1);
   }
-  process.stdout.write('  === 契约校验（档位：' + r.profile + '）===\n\n');
+  process.stdout.write('  === 契约校验（档位：' + r.profile
+    + '，介质：' + r.medium + '）===\n\n');
   if (r.errors.length === 0) {
     process.stdout.write('  OK  ' + Object.keys(doc.nodes || {}).length +
       ' 个节点，无违规\n');
@@ -629,6 +637,97 @@ function cmdProfile() {
   process.exit(0);
 }
 
+// ---------------------------------------------------------------- pdf
+/* 退出码与其它子命令分开：调用方（CI / 编辑器）要能分清
+   ① 参数写错 ② 这台机器上没有浏览器 ③ 渲染失败 ④ 超预算。
+   合成一个 1 的话，"没有 Chrome"会被当成"页面有错"去查，方向就错了。 */
+var PDF_EXIT = {
+  usage: 2, 'no-chrome': 3, render: 4, timeout: 4, unreadable: 4, 'over-budget': 5
+};
+
+function cmdPdf(args) {
+  /* ⚠️ pdf 的参数错误一律退出 2（与 PDF_EXIT.usage 一致），**不能走 die()** ——
+     die() 退出 1，而 1 在这套约定里表示"进程/未分类失败"。
+     两种用法错误给两个退出码，调用方就没法按码分支了。 */
+  function bad(msg) {
+    if (isJson()) out({ ok: false, command: 'pdf', code: 'usage', message: msg });
+    else process.stderr.write('  [FAIL] ' + msg + '\n');
+    process.exit(PDF_EXIT.usage);
+  }
+  var src = args[0];
+  if (!src) {
+    bad('用法：agentcss pdf <页面.html|URL> --out <file.pdf> '
+      + '[--paper=a4|letter|a5|a3|legal] [--margin="18mm 15mm"] '
+      + '[--max-pages=N] [--chrome=<path>] [--json]');
+  }
+  var remote = /^https?:\/\//i.test(src);
+  var outFile = flag('out', null);
+  if (outFile === null || outFile === true) {
+    /* 远程地址推不出本地文件名，必须显式给 —— 猜一个出来只会让人找不到文件在哪 */
+    if (remote) bad('远程地址必须显式给 --out');
+    outFile = src.replace(/\.(html?|xhtml)$/i, '') + '.pdf';
+  }
+  var budget = flag('max-pages', null);
+  if (budget === true) bad('--max-pages 后面要跟数字（不设 = 无界）');
+  /* 先按字符串校验再转数字：让报错里出现**使用者打进去的那串字符**。
+     直接 Number() 再报错时，`abc` 已经变成 NaN，报「收到 NaN/null」是在念实现细节（E264）。 */
+  if (budget !== null && !/^\d+$/.test(String(budget))) {
+    bad('--max-pages 必须是 ≥1 的整数，收到 ' + JSON.stringify(String(budget)));
+  }
+  var chrome = flag('chrome', null);
+  if (chrome === true) bad('--chrome 后面要跟可执行文件路径');
+
+  var r = pdfExport.exportPdf({
+    src: src,
+    out: outFile,
+    paper: flag('paper', pdfExport.DEFAULT_PAPER),
+    margin: flag('margin', pdfExport.DEFAULT_MARGIN),
+    budget: budget === null ? null : Number(budget),
+    chrome: chrome
+  });
+
+  var box = r.mediaBox
+    ? Math.round(r.mediaBox.width) + '×' + Math.round(r.mediaBox.height) + 'pt' : '?';
+  var report = {
+    ok: r.ok,
+    command: 'pdf',
+    code: r.ok ? null : r.code,
+    message: r.ok ? null : r.message,
+    out: r.out || null,
+    pages: r.pages === undefined ? null : r.pages,
+    budget: r.budget === undefined ? null : r.budget,
+    paper: r.paper || null,
+    paperSize: box,
+    margin: r.margin || null,
+    bytes: r.bytes || null,
+    injected: r.injected === undefined ? null : r.injected,
+    chrome: r.chrome || null,
+    ms: r.ms || null
+  };
+  if (isJson()) {
+    out(report);
+    process.exit(r.ok ? 0 : (PDF_EXIT[r.code] || 4));
+  }
+  if (!r.ok) {
+    process.stderr.write('  [FAIL] ' + r.message + '\n');
+    if (r.code === 'over-budget') {
+      process.stderr.write('         （退出码 ' + (PDF_EXIT[r.code] || 4)
+        + '：预算超了不是渲染出错，产物是完整的）\n');
+    }
+    process.exit(PDF_EXIT[r.code] || 4);
+  }
+  process.stdout.write('  OK  ' + r.out + '\n');
+  process.stdout.write('      ' + r.pages + ' 页 · ' + report.paperSize + ' · '
+    + (r.margin ? '边距 ' + r.margin : '边距由页面决定')
+    + ' · ' + r.bytes + ' 字节 · ' + r.ms + ' ms\n');
+  process.stdout.write('      预算 ' + (r.budget === null ? '未设（无界）' : r.budget + ' 页')
+    + ' · ' + (r.injected
+      ? '纸幅 ' + r.paper
+      : '纸幅由页面自己的 CSS 决定（远程页面：未注入 @page，--paper/--margin 不生效）')
+    + '\n');
+  process.exit(0);
+}
+
 function cmdCapabilities() {
   var doc = readJSON(path.join(AI, 'capabilities.json'));
   if (isJson()) { out(doc); process.exit(0); }
@@ -656,7 +755,8 @@ var CMDS = {
   tree: cmdTree,
   profile: cmdProfile,
   capabilities: cmdCapabilities,
-  pitfalls: cmdPitfalls
+  pitfalls: cmdPitfalls,
+  pdf: cmdPdf
 };
 
 function main() {
@@ -664,7 +764,7 @@ function main() {
   if (!argv.length || argv[0] === 'help' || argv[0] === '--help') {
     process.stdout.write(
       'agentcss ai —— 独立校验入口（零依赖、不联网、不依赖任何模型）\n\n' +
-      '  ai check        <doc.json> [--profile=creative|standard|strict] [--json]\n' +
+      '  ai check        <doc.json> [--profile=creative|standard|strict] [--medium=screen|paper] [--json]\n' +
       '  ai validate     <file.json> --schema=contract|components|tokens|tokensAudience|tokensTree|deprecations|patch [--json]\n' +
       '  ai diff         <改动前.json> <改动后.json> [--json]   按语义 id 比对\n' +
       '  ai patch        <doc.json> <patch.json> [-o out.json] [--json]\n' +
@@ -675,6 +775,12 @@ function main() {
       '  ai pitfalls     [--component=<id>] [--scope=component|layout|process|writing] [--tag=<t>] [--json]\n' +
       '  ai profile      [--json]   列出三档及其差异\n' +
       '  ai capabilities [--json]   列出可协商的能力\n' +
+      '  ai pdf          <页面.html|URL> --out <file.pdf> [--paper=a4|letter|a5|a3|legal]\n' +
+      '                  [--margin="18mm 15mm"] [--max-pages=N] [--chrome=<path>] [--json]\n' +
+      '                  HTML → PDF。零依赖（用你机器上已装的 Chrome），@page 由导出方给。\n' +
+      '\n' +
+      '  打印：`--medium=paper` 才会校验 printPolicy 与 pageBudget；默认 screen 零成本。\n' +
+      '  每个组件的纸面行为：ai/components.json 的 printPolicy。\n' +
       '\n' +
       '  每个子命令都支持 --json；失败时输出 {ok:false, command, error} 并以非 0 退出。\n' +
       '  前缀 `ai` 可写可不写：`agentcss ai components` 与 `agentcss components` 等价。\n');

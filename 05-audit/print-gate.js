@@ -49,6 +49,11 @@
  *      ⚠️ 这是「页面文本操作存在性检查」，**不是**「空白页证明」：
  *      白字压白纸、被裁切、不可见渲染模式、被遮挡的内容都有文本算子。
  *      真正判空白要栅格化后比纸色，不在本解析器范围。
+ *   ⑬ 页数不得超过**写在源码里**的预算（评审 §6.1）。
+ *      ③ 是"和上次比有没有变"，⑬ 是"和该有的页数比"。两者缺一不可：
+ *      CSS 改动让 7 页变 13 页，跑一次 `--update` 之后 ③ 就绿了 ——
+ *      而 ⑬ 不会，因为预算**不经 `--update` 重录**。
+ *      预算数字的来源写在 PAGES 的注释里（基线页数 × 1.4），不是拍脑袋。
  *
  * ⚠️ 这些判据**不覆盖**（写在这里是为了不让它被当成"打印全过"）：
  *   · 字体回退：字体缺失时 Chromium 仍会嵌一个回退字体，产物照样"有字"；
@@ -80,6 +85,9 @@ const path = require('path');
 const zlib = require('zlib');
 const { spawnSync } = require('child_process');
 const { withPage } = require('./browser.js');
+/* 页数解析与导出器（ai/pdf.js）共用一份实现：两处各写一次，
+   两个数会在某次改动后不一致，而两边都"通过"（E31）。 */
+const pdfPages = require('../ai/pdf-pages.js');
 
 const ROOT = path.dirname(__dirname);
 const BASE = process.env.BASE || 'http://127.0.0.1:8000';
@@ -105,23 +113,31 @@ const OUT = path.join(ROOT, '05-audit', 'print-baseline.json');
  *     类型不靠人写，靠 `probeTypes()` 在真实 DOM 上算（见 ⑥⑦⑧）。
  */
 const DOC_PAGES = [
-  ['root-index', '/index.html'],
-  ['guide-index', '/guide/index.html'],
-  ['guide-button', '/guide/button.html'],
+  ['root-index', '/index.html', 7],
+  ['guide-index', '/guide/index.html', 9],
+  ['guide-button', '/guide/button.html', 12],
 ];
 const KEEP_PAGES = [
-  ['recipe-report', '/04-recipes/report/demo.html'],
-  ['recipe-analysis-report', '/04-recipes/analysis-report/demo.html'],
-  ['example-finance-report', '/examples/finance-report/index.html'],
+  ['recipe-report', '/04-recipes/report/demo.html', 7],
+  ['recipe-analysis-report', '/04-recipes/analysis-report/demo.html', 6],
+  ['example-finance-report', '/examples/finance-report/index.html', 10],
 ];
 const TYPE_REPS = [
-  ['type-wide-table', '/04-recipes/table/demo.html'],       // wide 370px / 9 张表
-  ['type-form', '/02-primitives/choice/demo.html'],          // form 13 个控件
-  ['type-grid-media', '/02-primitives/upload/demo.html'],    // grid 4 列 / media 28 个 svg
+  ['type-wide-table', '/04-recipes/table/demo.html', 7],       // wide 370px / 9 张表
+  ['type-form', '/02-primitives/choice/demo.html', 5],          // form 13 个控件
+  ['type-grid-media', '/02-primitives/upload/demo.html', 6],    // grid 4 列 / media 28 个 svg
 ];
+/* 第三个数字 = 页数预算（⑬）。**只在这里改，不从基线文件读** ——
+   基线是 `--update` 写的，预算要是也写进基线，"翻倍之后重录一次"就把证据洗掉了。
+   数字来源：0.24.2 的基线页数 × 1.4 向上取整（5→7 / 6→9 / 8→12 / 4→6 / 3→5 / 7→10）。
+   1.4 这个系数是照着"分页通胀断崖"定的：实测块高 520px 时页数 +92%，
+   1.4 倍一定抓得住它；而正常的段落增删离 1.4 倍还远。 */
 /* ⚠️ `code`（代码块）没有单独的代表页：`/guide/button.html` 本身就是全集里代码最多的一页
    （preChars 339）。再加一页只是多 2 个 PDF，不多抓一个类型 —— 基线数量不是覆盖率。 */
 const PAGES = DOC_PAGES.concat(KEEP_PAGES, TYPE_REPS);
+
+/** 页数预算表（⑬）。由 PAGES 派生，不单独维护 —— 两处写必然漂移（E31）。 */
+const PAGE_BUDGET = PAGES.reduce((m, p) => { m[p[0]] = p[2]; return m; }, {});
 
 /* 结构类型：**触发条件写在判据里，不写在文档里** —— 文档会漂，DOM 不会。
    metric 决定"谁算最大实例"；`within` 是跨平台渲染差异的容差（见 ⑦）。 */
@@ -476,7 +492,9 @@ function hex(rgb) {
 /** 读 PDF：页数 + 文字颜色直方图 */
 /** 页数：`/Type /Page`（排除 `/Pages`）。 */
 function countPages(raw) {
-  return (raw.match(/\/Type\s*\/Page[^s]/g) || []).length;
+  /* 判据用的是「/Type /Page 对象数」——历史基线就是按它录的。
+     页树 `/Count` 只用来做交叉核对，不参与判定（两者不一致时报到 ⑬ 的说明里）。 */
+  return pdfPages.countPageObjects(raw.toString('latin1'));
 }
 
 /* ------------------------------------------------------------ 字体嵌入（G2-07） */
@@ -739,6 +757,16 @@ function judge(result, baseline) {
   const errs = [];
   for (const name of Object.keys(result)) {
     const r = result[name];
+
+    /* ⑬ 页数预算。**写在 PAGES 里，不从基线读** —— 否则跑一次 `--update`
+       就把"翻倍"重录成了新常态，判据等于自己把证据洗掉。
+       只看 light：两套配色判据 ② 已经要求产物一致，页数不一致会在别处红。 */
+    const budget = PAGE_BUDGET[name];
+    if (budget && r.light.pages > budget) {
+      errs.push('⑬ ' + name + '：页数 ' + r.light.pages + ' 超过预算 ' + budget
+        + '（预算写在 PAGES 里，--update 不会重录它）');
+    }
+
     for (const scheme of ['light', 'dark']) {
       const got = r[scheme];
       const tag = name + '/' + scheme;
@@ -842,6 +870,7 @@ async function main() {
       result[name][scheme] = a;
       const line = '  ' + (name + '/' + scheme).padEnd(34)
         + ' pages=' + String(a.pages).padStart(2)
+        + '/' + String(PAGE_BUDGET[name] || '?').padEnd(2)
         + ' runs=' + String(a.runs).padStart(5)
         + ' worst=' + a.worst.toFixed(2) + ':1';
       console.log(line);
@@ -904,6 +933,7 @@ async function main() {
   }
   console.log('  OK  ' + PAGES.length + ' 个页面 × 2 种屏幕配色：'
     + '每段文字 ≥ ' + MIN_CONTRAST + ':1，暗色与浅色产物一致，'
+    + '页数都在预算内（⑬：基线 × 1.4），'
     + '且 ' + Object.keys(TYPES).length + ' 个结构类型各有代表（代表落在度量最大那一档）');
   console.log('      ⑪ 实际检查 ' + names.size + ' 个字体名（含 Type3 ' + t3
     + ' 个）；单页最多 ' + Math.max(...progs) + ' 个字体程序；⑫ 每页都有文本算子');
@@ -1045,6 +1075,19 @@ async function selftest() {
     /* ⑩ 元反向：把类型表清空，同一组"坏样本"必须不再报错
           —— 证明上面那些红确实来自类型判据，而不是别的分支 */
     report(typeErrs(noFormAtAll, U, {}).length === 0, '元反向：类型表清空后同一坏样本不再红');
+
+    /* ---------- ⑬ 页数预算：纯函数，喂合成结果 ---------- */
+    const synth = (n) => {
+      const one = () => ({ pages: n, runs: 1, worst: 9, hist: {}, overflow: 0,
+        fontProblems: [], pagesWithoutText: 0 });
+      return { 'root-index': { light: one(), dark: one() } };
+    };
+    const budget = PAGE_BUDGET['root-index'];
+    report(judge(synth(budget), null).length === 0,
+      '⑬ 页数正好等于预算 ⇒ 判绿（边界在内）', '预算=' + budget);
+    const over = judge(synth(budget + 1), null).join(' | ');
+    report(/⑬ root-index：页数 \d+ 超过预算/.test(over),
+      '⑬ 超预算 1 页 ⇒ 判红并点名', '预算=' + budget);
 
     /* ---------- ⑪⑫ 的纯函数自检（G2-03）---------- */
     /* ---- ⑪ 字体引用链（G2-07）：正反样本都用手写的 9 个对象 ---- */

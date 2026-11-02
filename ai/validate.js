@@ -368,8 +368,55 @@ function validateDoc(doc, opt) {
       '）不允许携带扩展字段' });
   }
 
+  // ---- 介质：paper 才追加的打印义务（评审 §6.2）
+  //
+  // 🔴 为什么这一节不能省（"打印不是已经在 CSS 里做了吗"）
+  //    CSS 里做的是**行为**（隐藏什么、展开什么），它回答不了三个问题：
+  //      ① 这份文档准备印几页？没有 pageBudget，"几百张纸"是惊喜而不是错误；
+  //      ② 文档里 `pagination:"server"` 的表格，纸上会不会只剩一页？
+  //      ③ 用了 `printPolicy:"omit"` 的组件，作者知道它不会印出来吗？
+  //    前两个是错，第三个是提示。三条都只在 paper 介质下成立 ——
+  //    所以默认 screen 时一条都不跑（95% 的人不该为打印付任何注意力）。
+  var medium = opt.medium || 'screen';
+  if (['screen', 'paper'].indexOf(medium) < 0) {
+    errors.push({ path: '/medium',
+      msg: '未知介质 ' + medium + '（可用：screen / paper）' });
+    medium = 'screen';
+  }
+  if (medium === 'paper') {
+    if (doc.pageBudget === undefined || doc.pageBudget === null) {
+      errors.push({ path: '/pageBudget',
+        msg: 'paper 介质下必须声明 pageBudget（页数上限，正整数）。'
+          + '页数取决于内容，库不给默认值 —— 猜一个数字比不给更坏' });
+    }
+    var omitSeen = {};
+    ids.forEach(function (id) {
+      var n = nodes[id];
+      if (n.kind === 'text' || n.kind === 'slot') return;
+      var c = comps[n.kind];
+      if (!c) return;                       // 未知组件上面已经报过，不重复计错
+      if (!Array.isArray(c.printPolicy)) {
+        errors.push({ path: '/nodes/' + id, msg: '组件 ' + n.kind
+          + ' 在契约里没有 printPolicy 字段 —— paper 介质下无法判断它在纸上会发生什么' });
+      }
+      if (c.pagination === 'server') {
+        errors.push({ path: '/nodes/' + id, msg: '组件 ' + n.kind
+          + ' 是服务端分页（pagination:"server"）：纸上只有当前一页，'
+          + '而导出的文件看起来是完整的 —— 要全量数据必须先换 client 分页' });
+      }
+      if (omitSeen[n.kind]) return;         // 同一个组件只提示一次
+      (Array.isArray(c.printPolicy) ? c.printPolicy : []).forEach(function (r) {
+        if (r.policy !== 'omit' || omitSeen[n.kind]) return;
+        omitSeen[n.kind] = true;
+        warnings.push({ path: '/nodes/' + id, msg: '组件 ' + n.kind + ' 的 '
+          + r.selector + ' 声明 omit：这部分**不会出现在纸上**'
+          + (r.why ? '（' + r.why + '）' : '') });
+      });
+    });
+  }
+
   return { ok: errors.length === 0, errors: errors, warnings: warnings,
-           profile: profileName };
+           profile: profileName, medium: medium };
 }
 
 module.exports = {

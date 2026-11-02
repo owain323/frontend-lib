@@ -248,13 +248,19 @@ node 05-audit/print-gate.js --pdf 某文件.pdf
 
 ## 七、这些保证由谁守着
 
-上面每一条都是**可断言的**，不是文档承诺。守它的有三个东西：
+上面每一条都是**可断言的**，不是文档承诺。守它的有五个东西：
 
 | 工具 | 它回答的问题 | 它答不了什么 |
 |---|---|---|
 | `ai/components.json` 的 `printPolicy` | 这个组件在纸上会发生什么？（机器可读，AI 消费这一份） | 它只是声明，不等于生效 |
 | `print-policy-gate.js` | 声明的都真的生效了吗？有没有没声明的隐藏？ | 它不判"印出来好不好看" |
-| `print-gate.js` | 印出来的 PDF 合格吗？ | 它数得清 run，数不出"少了一半内容" |
+| `print-gate.js` | 按 Ctrl+P 印出来的 PDF 合格吗？ | 它数得清 run，数不出"少了一半内容" |
+| `print-content-audit.js` | 该印的在不在？（屏幕可见 → 纸上消失？） | 它只在浏览器里量，不读 PDF |
+| `agentcss pdf` + `pdf-export-gate.js` | **导出成文件**这条路能用吗？（§八） | 它不做视觉比对 |
+
+前四个判的是"浏览器里按 Ctrl+P"，最后一个判的是"导出一份文件" ——
+**这是两条不同的渲染路径**（CDP `page.pdf()` vs Chrome 命令行 `--print-to-pdf`），
+`@page` 的来源与底色默认都不同。所以前者全绿推不出后者能用，两边各有各的判据。
 
 `printPolicy` 是**有限枚举**，每个值对应一组能在浏览器里量的断言：
 
@@ -322,3 +328,123 @@ python3 05-audit/gen-ai-contract.py            # 重新生成 ai/components.json
 node 05-audit/print-policy-gate.js             # 四条腿
 node 05-audit/print-policy-gate.js --selftest  # 反向控制
 ```
+
+---
+
+## 八、导出一份 PDF：`agentcss pdf`
+
+上面七节讲的是"在浏览器里按 Ctrl+P 会怎样"。这一节讲**产出一份文件**——
+这中间差一个东西：`@page`。
+
+### 8.1 分工：`@media print` 管行为，`@page` 管版式
+
+```
+组件库  → @media print   隐藏什么 / 展开什么 / 不跨页切断     （行为）
+导出器  → @page          纸多大 / 边距多少                    （版式）
+```
+
+🔴 **`@page` 绝不能写进 `tokens.css`。** 实测：同一份页面，库里多一条
+`@page` 规则，产物从 943 runs 变成 978 runs —— 使用者的边距控制会**静默失效**，
+而且没有任何报错。纸多大、边距多少，是"这份东西交给谁"决定的，
+不是某个按钮决定的。所以它属于导出路径，不属于组件库。
+
+```bash
+npx agentcss pdf report.html --out report.pdf          # 默认 A4 / 18mm 15mm
+npx agentcss pdf report.html --out report.pdf --paper=letter --margin="20mm"
+npx agentcss pdf report.html --out report.pdf --max-pages=8
+```
+
+`--paper` 支持 `a4` / `letter` / `a5` / `a3` / `legal`。边距是 CSS 简写
+（`18mm`、`"18mm 15mm"`、四段都认）。这两个参数靠**注入一条 `@page` 规则**实现，
+注入位置在使用者样式之后 —— 否则同特异性会被盖掉（E254 的同一个病）。
+
+零运行时依赖：用使用者机器上**已装好的** Chrome / Chromium / Edge。
+找不到就明确报错（退出码 3），不静默降级成空文件。指定位置：
+
+```bash
+npx agentcss pdf report.html --out report.pdf --chrome="C:/Program Files/Google/Chrome/Application/chrome.exe"
+# 或环境变量 AGENTCSS_CHROME / CHROME_PATH
+```
+
+### 8.2 页数预算：超了报错，不替你截断
+
+```bash
+npx agentcss pdf report.html --out report.pdf --max-pages=8
+```
+
+```
+[FAIL] 超出页数预算：12 页 > 8 页（A4，595×842pt，边距 18mm 15mm）
+  产出文件保留在：…/report.pdf
+  三条出路（按代价从低到高）：
+   ① 拆文档   把一章拆成单独文件分别导出
+   ② 进附录   明细移到附录，正文只留汇总 —— 需要作者改内容
+   ③ 截断     **本工具不代做**。静默丢内容正是这套判据在防的事
+```
+
+退出码 `5`。**没有全局默认预算** —— 页数取决于内容，任何默认值都是猜的。
+不传 `--max-pages` 就是无界，工具会明确说"预算未设（无界）"而不是假装有个上限。
+
+为什么不实现 `--on-exceed=truncate`：一个会替你悄悄删掉后半份报告的工具，
+比一个报错停下的工具危险得多。真要截断，请删掉要删的段落再导出 ——
+那样它会出现在 `git diff` 里，有人会看见。
+
+### 8.3 `--medium=paper`：校验时的打印义务
+
+`ai check` 多了一根**与档位正交**的轴：
+
+```bash
+npx agentcss ai check doc.json --medium=paper
+```
+
+`screen`（默认）下什么都不变 —— 95% 的人不该看到"打印"两个字。
+`paper` 下追加三条义务：
+
+| 判据 | 结果 | 为什么 |
+|---|---|---|
+| 必须声明 `pageBudget` | 错 | 没有它，"印了 40 页"是惊喜不是错误 |
+| 不允许 `pagination:"server"` 的组件 | 错 | 纸上只有当前一页，而文件看起来完整 |
+| 用了 `printPolicy:"omit"` 的组件 | 提示 | 那部分不会出现在纸上，作者得知道 |
+
+为什么不做成第四个 `profile`：档位是"允许多不成熟的东西进来"，
+介质是"这份东西给屏幕还是给纸"。`strict+paper` 与 `creative+paper` 都必须合法，
+压成一维就会丢掉四种组合里的两种。
+
+### 8.4 一条必须知道的观测差异：底色
+
+| | 底色 | 白字压深色块 |
+|---|---|---|
+| 浏览器打印对话框（默认不勾"背景图形"） | 丢弃 | 被压成 #ABABAB，看起来发灰 |
+| `agentcss pdf` | **保留** | 白字压深蓝，可读 |
+
+两者不是谁错了，是两个产品。所以 `print-gate` 的对比度判据（对白纸量）
+只对对话框那一路成立；导出产物走的是 8.5 那套判据，不套用对比度。
+
+### 8.5 这条路谁守着
+
+```bash
+node 05-audit/pdf-export-gate.js            # E1–E12 + 三条反向，约 11s，不需要静态服务
+node 05-audit/pdf-export-gate.js --selftest # 只跑"必须红"的几条，约 0.3s
+```
+
+| 判据 | 它问什么 | 实测抓到过什么 |
+|---|---|---|
+| E1 | 真的产出了一份 PDF 吗 | 退出码 0 但文件不存在 |
+| E2 | 同一输入两次导出结果一样吗 | 异步渲染没排完 ⇒ 页数会变 |
+| E3 | `--paper` 真的换纸幅吗 | 注入逻辑被改坏 ⇒ 回落成 Letter 612×792 |
+| E4/E5 | 预算的两向：以内通过、超出报错 | 超限不给退出码 5 |
+| E6 | 库的打印规则到得了产物里吗 | 删掉 `.tabs__panel[hidden]` 那条 ⇒ 隐藏面板的字消失 |
+| E7 | `--margin` 真的影响页数吗 | 不注入 `@page` 时 60mm 与 10mm 页数相同 |
+| E8/E9″ | 没有浏览器时说人话吗；报错回显原始输入吗 | 退出码不对 / `abc` 被报成 `null` |
+| E11 | 产物本身合格吗（字体链 / 每页有文本） | 交给 `print-gate --pdf` 的分析器判，不重复实现解析 |
+
+🔴 E3 与 E7 是同一件事的两面：`@page` 注入是这套东西唯一的技术前提。
+把它改坏，门禁必须红 —— 实测过：注释掉注入那行，E3 报
+`a4=612×792pt`（回落成 Letter），E7 报 `10mm=2 页 / 60mm=2 页`。
+
+### 8.6 不覆盖什么
+
+- **远程 URL 不注入 `@page`**：拿不到远程页面的字节，硬注入等于假装改了它。
+  这类导出会明确打印"（远程页面：未注入 @page）"，纸幅由页面自己的 CSS 决定。
+- **视觉正确**：底色位置、边框粗细、图片裁切 —— 要栅格化比对，没做。
+- **页眉页脚 / 页码**：`--no-pdf-header-footer` 已关掉 Chrome 的默认页眉页脚，
+  但本工具不生成自己的。需要页码请用 `@page` + `counter(page)` 自己写。
