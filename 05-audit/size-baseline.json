@@ -45,8 +45,8 @@
       "raw": 4647
     },
     "01-tokens/tokens.css": {
-      "gzip": 22271,
-      "raw": 58531
+      "gzip": 22427,
+      "raw": 58893
     },
     "01-tokens/typography.css": {
       "gzip": 3401,
@@ -193,8 +193,8 @@
       "raw": 4316
     },
     "03-patterns/overlay/overlay.css": {
-      "gzip": 5205,
-      "raw": 12252
+      "gzip": 5553,
+      "raw": 13221
     },
     "03-patterns/overlay/overlay.js": {
       "gzip": 10012,
@@ -274,6 +274,6 @@
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 312295,
-  "total_raw": 785934
+  "total_gzip": 312799,
+  "total_raw": 787265
 }

@@ -1110,9 +1110,14 @@ input[type="submit"],
 
   /* 浮层与纯导航。不用裸 button（accordion 标题在 button 里），
      不动 .btn / .upload（文档页会空、表单控件有状态）。见 docs/PRINT.md。 */
-  .toast, .tooltip, .popover, .overlay, .skeleton,
+  .toast, .tooltip, .popover, .skeleton,
   .tabs__list, .nav__list, .nav__toggle, .pagination,
   .accordion__marker { display: none !important; }
+
+  /* ⚠️ 模态的遮罩规则**不在这里**，在 03-patterns/overlay/overlay.css。
+     原因不是洁癖：`.dialog-backdrop { position: static }` 写在这里会被
+     overlay.css 里同特异性的 `position: fixed` 盖掉 —— 规则写了、不生效、
+     不报错（E254 的同一个形状，2026-11-02 由 print-policy-gate 的 L3 抓到）。 */
 
   /* 不跨页切断。代价：高于半页的卡片会被整体推到下一页 ⇒ 页数可能变多。 */
   tr, img, figure, svg,

@@ -13,7 +13,7 @@
 | 行为 | 说明 |
 |---|---|
 | **强制浅色** | 屏幕上是暗色主题，纸上照样是深字白纸（`color-scheme: light`） |
-| **浮层不上纸** | toast / tooltip / popover / overlay / skeleton 自动隐藏 |
+| **浮层不上纸** | toast / tooltip / popover / skeleton 自动隐藏 |
 | **纯导航不上纸** | tabs 标签栏、nav 链接、分页器、汉堡按钮、accordion 箭头 |
 | **表格不散架** | 取消滚动容器（否则只打印可视区那几行）；表头每页重复（HTML 默认行为，本库未覆盖） |
 | **不跨页切断** | 表格行、图片、图表、卡片、指标卡整体换页，不从中间切开 |
@@ -87,11 +87,40 @@ PDF 里一个字都不多。`tabs` 只需要第 ① 条（它没有 `!important`
 ⇒ 业务页要排除操作区，给那个容器加 `.no-print`（见上）。
 这条边界是"宁可少藏，不可多藏"。
 
+### 模态（`.dialog`）：遮罩不隐藏，拉回正常流
+
+屏幕上开着 dialog 时打印，`.dialog-backdrop` 的 computed 是
+`position: fixed; inset: 0; background: rgba(21,24,28,.4)` —— 直接印，
+**整页是 40% 黑**。实测（2026-11-02，`print-policy-gate` 的标本页）：
+
+| 做法 | 结果 |
+|---|---|
+| 隐藏遮罩 `display: none` | 纸面干净了，但 `.dialog` 是它的子节点 ⇒ **弹窗里的字一起消失**，不报错 |
+| **拉回正常流**（本库的选择） | 没有 fixed 遮罩、没有 `100vh` 限高，内容完整，接在文档末尾 |
+
+```css
+@media print {
+  .dialog-backdrop { position: static; inset: auto; display: block;
+                     padding: 0; background: none; }
+  .dialog { max-height: none; overflow: visible; }
+}
+```
+
+顺带量过一个相关项：dialog 打开时 `overlay.js` 会给 `body` 加
+`data-scroll-locked`（`overflow: hidden`）。**它不会裁掉纸面** ——
+body 高度是 auto，实测打印态 `scrollHeight === clientHeight`（2372 = 2372），
+页数与不打开 dialog 时相同（都是 2 页）。所以不需要为它加打印规则。
+
+🔴 这条规则写在 `03-patterns/overlay/overlay.css`，**不能**写进 `tokens.css`：
+tokens 先加载，同特异性的 `position: static` 会被这里的 `position: fixed`
+盖掉 —— 规则写了、不生效、不报错，与下面 §「折叠内容为什么要三条规则」
+里那条特异性坑是同一个病。这次是写完当场被门禁 L3 抓到的。
+
 ### 自动隐藏清单（逐条理由）
 
 | 选择器 | 为什么 |
 |---|---|
-| `.toast` `.tooltip` `.popover` `.overlay` | 只在屏幕交互中存在，纸上没有对应物；`.overlay` 还带 `position: fixed` 遮罩，印出来会盖住整页 |
+| `.toast` `.tooltip` `.popover` | 只在屏幕交互中存在，纸上没有对应物 |
 | `.skeleton` | 加载占位符，纸上永远是"未加载完"的假象 |
 | `.tabs__list` | **只藏标签栏，不藏 `.tabs__panel`**（后者是内容） |
 | `.nav__list` `.nav__toggle` | **只藏链接与汉堡，不藏 `.nav__brand`**（后者可能是页面标题） |
@@ -214,3 +243,61 @@ node 05-audit/print-gate.js --pdf 某文件.pdf
 
 **屏幕不受影响**由另一道守着：`shot-baseline.py --check` 的 109 张截图逐字节比对。
 本目录所有规则改完，那 109 张必须一个字节都不变 —— 变了就是规则漏到屏幕了。
+
+---
+
+## 七、这些保证由谁守着
+
+上面每一条都是**可断言的**，不是文档承诺。守它的有三个东西：
+
+| 工具 | 它回答的问题 | 它答不了什么 |
+|---|---|---|
+| `ai/components.json` 的 `printPolicy` | 这个组件在纸上会发生什么？（机器可读，AI 消费这一份） | 它只是声明，不等于生效 |
+| `print-policy-gate.js` | 声明的都真的生效了吗？有没有没声明的隐藏？ | 它不判"印出来好不好看" |
+| `print-gate.js` | 印出来的 PDF 合格吗？ | 它数得清 run，数不出"少了一半内容" |
+
+`printPolicy` 是**有限枚举**，每个值对应一组能在浏览器里量的断言：
+
+| policy | 含义 | 断言（`print-policy-gate` L3） |
+|---|---|---|
+| `omit` | 内容不上纸 | 打印态 `display: none` |
+| `expand` | 放开屏幕上的限制（隐藏/收起/限高/固定定位） | `display≠none`、`visibility≠hidden`、`position≠fixed`、`max-height:none`、`overflow` 不裁、有文字时高度 > 0 |
+| `reveal` | 只在纸上出现 | 屏幕 `display:none` 且打印态不是 `none` |
+| `keep-together` | 不跨页切断 | `break-inside: avoid` |
+| `allow-break` | 退出 `keep-together` | `break-inside: auto` |
+
+⚠️ **什么叫"没声明"**：`printPolicy: []` 是明确值「原样保留」。缺字段才算漏 ——
+门禁会红。这条区分很重要：空的数组是结论，缺的字段是疏忽，两者不能长得一样。
+
+门禁分四条腿（少一条就有一类失效看不见）：
+
+```
+L0 归属      组件规则的选择器必须在该组件 CSS（打印块之外）里真的存在
+             ⇒ 抓「藏一个库里不存在的类」。实测抓到 `.overlay`：
+               tokens.css 一直在隐藏它，而全库没有任何 CSS 定义过它，
+               真正的遮罩 `.dialog-backdrop` 反而没被处理
+L1 声明→实现 契约里每条规则，全库 print 块里都要有值相符的声明
+L2 实现→声明 每条会丢内容的声明都要有规则认领（display:none / visibility:hidden /
+             max-height:0 / opacity:0 / break-inside …）
+L3 声明→生效 在真浏览器的 print 媒体下量标本页的计算值
+             ⇒ 抓「写了不生效」。实测抓到自己刚写的 `.dialog-backdrop`
+               规则被 overlay.css 同特异性盖掉
+```
+
+反向控制 7 条（覆盖四条腿），其中两条是历史事故的**逐字复刻**：
+E254（去掉 `.tabs ` 前缀，让组件 CSS 同特异性盖掉它）与
+E255（只删 `visibility: visible`，display 与高度全对、一个字不印）。
+
+想加一个新组件的打印行为，流程是三步，顺序不能换：
+
+1. 在 `ai/components.meta.json` 的该组件下写 `printPolicy`（`why` 必须能回答"不这么做会怎样"）
+2. 在 CSS 里实现；**库级**行为写 `01-tokens/tokens.css`，**组件自己的**写组件 CSS
+   （写反了会被同特异性盖掉，且不报错）
+3. 在 `05-audit/fixtures/print-policy/probe.html` 补标本 —— 没有标本就没有证据，
+   L3 会报「命中 0 个元素」
+
+```bash
+python3 05-audit/gen-ai-contract.py            # 重新生成 ai/components.json
+node 05-audit/print-policy-gate.js             # 四条腿
+node 05-audit/print-policy-gate.js --selftest  # 反向控制
+```

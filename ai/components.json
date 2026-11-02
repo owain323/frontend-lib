@@ -2,7 +2,7 @@
   "schemaVersion": "1.0.0",
   "generatedBy": "05-audit/gen-ai-contract.py",
   "libraryVersion": "0.24.2",
-  "$comment": "机器可读的组件契约。slots = BEM 元素名（在本库里元素名就是插槽名），states.enum = 组件会在 DOM 上写出的 data-* 取值，states.legacyClass = 仍未收敛到 data 属性的历史状态类（INVARIANT I-8 未达标）。",
+  "$comment": "机器可读的组件契约。slots = BEM 元素名（在本库里元素名就是插槽名），states.enum = 组件会在 DOM 上写出的 data-* 取值，states.legacyClass = 仍未收敛到 data 属性的历史状态类（INVARIANT I-8 未达标）。printPolicy = 这个组件在纸上会发生什么（空数组 = 原样保留）；pagination = 内容是否被分页裁过（server 不许与 expand 同时出现，否则展开的只是当前一页）。",
   "maturityCriteria": {
     "alpha": "缺 demo.html 或缺 05-audit 下的专属门禁 ⇒ 还没被机器验证过，不要用",
     "beta": "有 demo + 专属门禁，但**下面至少有一条没过**：① 状态仍用 .is-* class 表达（违反 INVARIANT I-8）；② 该收编到微行为核的行为还是**手写副本**（manual）或**根本没做**（gap） ⇒ 改一处不会全库跟着变（I-14 的病）",
@@ -10,6 +10,46 @@
     "$note": "成熟度是【计算出来的】，不是拍的。手写把某个组件改成 stable 而它还有 manual / gap ⇒ 门禁会红。",
     "$whyFourth": "🔴 为什么第四条判据不能省：用前三条时多数组件会**全是 stable** ⇒ ladder 没有任何鉴别力（对标 Primer 六档阶梯，每档都有硬判据）。补上「行为欠账」这一条后：**stable 40 / beta 0**（本行由生成器算出，不要手改）。全库达标时 ladder 靠**正向控制**证明还有鉴别力（maturity-gate ③：塞一条合成债务必须降 beta），不是靠\"总得留几个 beta\"。",
     "$strictImpact": "✅ strict 档位放行全部 40 个组件 —— 没有任何组件带着未收编的手写行为或未做的行为（本行由生成器算出，不要手改）"
+  },
+  "printDefaults": {
+    "$comment": "库级打印约定：不属于任何组件，只由 01-tokens/tokens.css 兑现。policy 是有限枚举，每个值对应一组浏览器断言 （见 05-audit/print-policy-gate.js）。",
+    "rules": [
+      {
+        "selector": ".no-print",
+        "policy": "omit",
+        "why": "使用者显式排除操作区；全库唯一的 !important"
+      },
+      {
+        "selector": ".print-only",
+        "policy": "reveal",
+        "why": "只在纸上出现（打印版标题 / 落款 / 水印）"
+      },
+      {
+        "selector": "tr",
+        "policy": "keep-together",
+        "why": "切开的表行在下一页没有表头，读不出来"
+      },
+      {
+        "selector": "img",
+        "policy": "keep-together",
+        "why": "图片切一半等于没有这张图"
+      },
+      {
+        "selector": "figure",
+        "policy": "keep-together",
+        "why": "图与图注是一个整体"
+      },
+      {
+        "selector": "svg",
+        "policy": "keep-together",
+        "why": "图表都是 svg；切开后右半页是空白"
+      },
+      {
+        "selector": ".print-allow-break",
+        "policy": "allow-break",
+        "why": "退出开关：高块想省纸就加它（520px 块实测 −48% 页）"
+      }
+    ]
   },
   "summary": {
     "total": 40,
@@ -45,6 +85,8 @@
         "jsAlso": [],
         "demo": "09-assets/bar/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [],
       "slots": [
         "bar__bar",
         "bar__grid",
@@ -106,6 +148,19 @@
         "jsAlso": [],
         "demo": "09-assets/model-viewer/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [
+        {
+          "selector": ".mv__btn",
+          "policy": "omit",
+          "why": "「加载 3D 模型」按钮由 JS 生成，纸上点了没反应"
+        },
+        {
+          "selector": ".mv__hint",
+          "policy": "omit",
+          "why": "拖拽旋转的操作提示在纸上不成立"
+        }
+      ],
       "slots": [
         "mv__btn",
         "mv__cap",
@@ -154,6 +209,14 @@
         "jsAlso": [],
         "demo": "09-assets/scientific-plot/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [
+        {
+          "selector": ".splot",
+          "policy": "keep-together",
+          "why": "图、坐标轴、图例必须同页"
+        }
+      ],
       "slots": [
         "splot__anno",
         "splot__anno-dot",
@@ -220,6 +283,14 @@
         "jsAlso": [],
         "demo": "09-assets/sparkline/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [
+        {
+          "selector": ".sparkline",
+          "policy": "keep-together",
+          "why": "趋势线切开就是两条断线"
+        }
+      ],
       "slots": [],
       "variants": [],
       "states": {
@@ -259,6 +330,19 @@
         "jsAlso": [],
         "demo": "03-patterns/accordion/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [
+        {
+          "selector": ".accordion .accordion__panel[hidden]",
+          "policy": "expand",
+          "why": "收起的面板也要展开；display / 行轨道 / visibility 三条缺一就一个字不印"
+        },
+        {
+          "selector": ".accordion__marker",
+          "policy": "omit",
+          "why": "展开箭头是交互提示；只藏箭头，不藏标题"
+        }
+      ],
       "slots": [
         "accordion__heading",
         "accordion__hint",
@@ -320,6 +404,8 @@
         "jsAlso": [],
         "demo": "03-patterns/content/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [],
       "slots": [],
       "variants": [],
       "states": {
@@ -359,6 +445,8 @@
         "jsAlso": [],
         "demo": "03-patterns/drawer/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [],
       "slots": [
         "drawer__body",
         "drawer__close",
@@ -414,6 +502,8 @@
         "jsAlso": [],
         "demo": "03-patterns/dropdown/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [],
       "slots": [
         "dd__btn",
         "dd__caret",
@@ -472,6 +562,8 @@
         "jsAlso": [],
         "demo": "03-patterns/form-validation/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [],
       "slots": [
         "form__actions",
         "form__notice",
@@ -529,6 +621,8 @@
         "jsAlso": [],
         "demo": "03-patterns/list/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [],
       "slots": [
         "list__actions",
         "list__item",
@@ -582,6 +676,19 @@
         ],
         "demo": "03-patterns/nav/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [
+        {
+          "selector": ".nav__list",
+          "policy": "omit",
+          "why": "导航链接是纯导航；不藏 .nav__brand（可能是标题）"
+        },
+        {
+          "selector": ".nav__toggle",
+          "policy": "omit",
+          "why": "汉堡按钮只在窄屏交互中存在"
+        }
+      ],
       "slots": [
         "nav__brand",
         "nav__inner",
@@ -646,6 +753,24 @@
         "jsAlso": [],
         "demo": "03-patterns/overlay/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [
+        {
+          "selector": ".toast",
+          "policy": "omit",
+          "why": "通知是瞬时反馈，纸上没有对应物"
+        },
+        {
+          "selector": ".dialog-backdrop",
+          "policy": "expand",
+          "why": "fixed 半透明遮罩印出来盖满整页；拉回流式而不是隐藏（隐藏会吞掉弹窗内容）"
+        },
+        {
+          "selector": ".dialog",
+          "policy": "expand",
+          "why": "弹窗自己限高 100vh 且可滚；纸上不限高，否则只印可视区那几行"
+        }
+      ],
       "slots": [
         "toast__body",
         "toast__close",
@@ -707,6 +832,14 @@
         "jsAlso": [],
         "demo": "03-patterns/pagination/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [
+        {
+          "selector": ".pagination",
+          "policy": "omit",
+          "why": "纸上翻不了页；印出来只会让人以为还有下一页"
+        }
+      ],
       "slots": [
         "pagination__ellipsis",
         "pagination__item",
@@ -762,6 +895,8 @@
         "jsAlso": [],
         "demo": "03-patterns/reveal/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [],
       "slots": [],
       "variants": [],
       "states": {
@@ -815,6 +950,8 @@
         "jsAlso": [],
         "demo": "03-patterns/states/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [],
       "slots": [
         "state__action",
         "state__desc",
@@ -872,6 +1009,19 @@
         "jsAlso": [],
         "demo": "03-patterns/tabs/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [
+        {
+          "selector": ".tabs .tabs__panel[hidden]",
+          "policy": "expand",
+          "why": "不展开就只印第一个 tab（实测少印 68% 字）；前缀丢了这个规则等于没写"
+        },
+        {
+          "selector": ".tabs__list",
+          "policy": "omit",
+          "why": "标签栏是导航；只藏它，面板是内容"
+        }
+      ],
       "slots": [
         "tabs__list",
         "tabs__panel",
@@ -928,6 +1078,14 @@
         "jsAlso": [],
         "demo": "03-patterns/tooltip/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [
+        {
+          "selector": ".tooltip",
+          "policy": "omit",
+          "why": "气泡靠 hover 出现，纸上没有 hover"
+        }
+      ],
       "slots": [],
       "variants": [
         "tooltip--bottom",
@@ -980,6 +1138,8 @@
         "jsAlso": [],
         "demo": "03-patterns/tree/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [],
       "slots": [
         "tree__count",
         "tree__item",
@@ -1032,6 +1192,8 @@
         "jsAlso": [],
         "demo": "02-primitives/badge/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [],
       "slots": [],
       "variants": [
         "badge--clickable",
@@ -1080,6 +1242,8 @@
         "jsAlso": [],
         "demo": "02-primitives/button/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [],
       "slots": [
         "btn__label",
         "btn__spinner"
@@ -1137,6 +1301,14 @@
         "jsAlso": [],
         "demo": "02-primitives/card/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [
+        {
+          "selector": ".card",
+          "policy": "keep-together",
+          "why": "切开后下半张没有标题"
+        }
+      ],
       "slots": [
         "card__body",
         "card__desc",
@@ -1193,6 +1365,8 @@
         "jsAlso": [],
         "demo": "02-primitives/choice/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [],
       "slots": [
         "choice__group",
         "choice__hint",
@@ -1249,6 +1423,8 @@
         "jsAlso": [],
         "demo": "02-primitives/combobox/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [],
       "slots": [
         "combo__empty",
         "combo__field",
@@ -1309,6 +1485,8 @@
         "jsAlso": [],
         "demo": "02-primitives/date-range/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [],
       "slots": [
         "drange__clear",
         "drange__error",
@@ -1365,6 +1543,8 @@
         "jsAlso": [],
         "demo": "02-primitives/delta/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [],
       "slots": [],
       "variants": [
         "delta--arrow",
@@ -1408,6 +1588,8 @@
         "jsAlso": [],
         "demo": "02-primitives/input/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [],
       "slots": [
         "field__error",
         "field__hint",
@@ -1465,6 +1647,14 @@
         "jsAlso": [],
         "demo": "02-primitives/metric/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [
+        {
+          "selector": ".metric",
+          "policy": "keep-together",
+          "why": "数字、单位、标签是一个整体，切开就分家"
+        }
+      ],
       "slots": [
         "metric__foot",
         "metric__label",
@@ -1513,6 +1703,14 @@
         "jsAlso": [],
         "demo": "02-primitives/popover/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [
+        {
+          "selector": ".popover",
+          "policy": "omit",
+          "why": "同 tooltip；且 position:fixed 会盖住正文"
+        }
+      ],
       "slots": [
         "popover__arrow",
         "popover__desc",
@@ -1569,6 +1767,8 @@
         "jsAlso": [],
         "demo": "02-primitives/progress/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [],
       "slots": [
         "progress__bar"
       ],
@@ -1630,6 +1830,8 @@
         "jsAlso": [],
         "demo": "02-primitives/select/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [],
       "slots": [
         "select__btn",
         "select__caret",
@@ -1690,6 +1892,8 @@
         "jsAlso": [],
         "demo": "02-primitives/separator/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [],
       "slots": [],
       "variants": [
         "separator--both",
@@ -1736,6 +1940,14 @@
         "jsAlso": [],
         "demo": "02-primitives/skeleton/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [
+        {
+          "selector": ".skeleton",
+          "policy": "omit",
+          "why": "加载占位符；纸上永远是「还没加载完」的假象"
+        }
+      ],
       "slots": [],
       "variants": [
         "skeleton--block",
@@ -1790,6 +2002,8 @@
         "jsAlso": [],
         "demo": "02-primitives/switch/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [],
       "slots": [
         "switch__input",
         "switch__label",
@@ -1840,6 +2054,8 @@
         "jsAlso": [],
         "demo": "02-primitives/timeline/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [],
       "slots": [
         "timeline__body",
         "timeline__item",
@@ -1885,6 +2101,8 @@
         "jsAlso": [],
         "demo": "02-primitives/upload/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [],
       "slots": [
         "upload__browse",
         "upload__dropzone",
@@ -1953,6 +2171,14 @@
         "jsAlso": [],
         "demo": "04-recipes/analysis-report/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [
+        {
+          "selector": ".report__aside",
+          "policy": "expand",
+          "why": "屏幕 sticky + 限高 + 可滚；不放开就只印可视区那几行"
+        }
+      ],
       "slots": [
         "report__aside",
         "report__body",
@@ -2008,6 +2234,8 @@
         "jsAlso": [],
         "demo": "04-recipes/app-shell/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [],
       "slots": [
         "shell__brand",
         "shell__brand-mark",
@@ -2073,6 +2301,8 @@
         "jsAlso": [],
         "demo": "04-recipes/detail-page/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [],
       "slots": [],
       "variants": [],
       "states": {
@@ -2127,6 +2357,24 @@
         "jsAlso": [],
         "demo": "04-recipes/report/demo.html"
       },
+      "pagination": "none",
+      "printPolicy": [
+        {
+          "selector": ".rep__aside",
+          "policy": "omit",
+          "why": "边注是并排布局的产物；纸上没有第二栏，留着会被挤成 12em 一行"
+        },
+        {
+          "selector": ".rep__fig",
+          "policy": "keep-together",
+          "why": "图与图注同页；高于一整页时 avoid 会被静默忽略"
+        },
+        {
+          "selector": ".rep table",
+          "policy": "keep-together",
+          "why": "表格不从行中断；跨页表头由 HTML 默认重复"
+        }
+      ],
       "slots": [
         "rep__aside",
         "rep__body",
@@ -2192,6 +2440,14 @@
         "jsAlso": [],
         "demo": "04-recipes/table/demo.html"
       },
+      "pagination": "client",
+      "printPolicy": [
+        {
+          "selector": ".table",
+          "policy": "expand",
+          "why": "屏幕是横向滚动容器（70vh 限高）；不放开只印可视区，最经典的静默截断"
+        }
+      ],
       "slots": [
         "table__bar",
         "table__cap",

@@ -15,13 +15,18 @@
 
 | 类 | 作用 |
 |---|---|
-| `.overlay` | 遮罩层（`role="dialog"` 的宿主） |
+| `.dialog-backdrop` | 遮罩层（`position: fixed` 铺满视口，`role="dialog"` 的宿主） |
 | `.dialog` | 弹窗面板 |
-| `.dialog__title` / `__body` / `__actions` | 弹窗内部结构 |
-| `.toast-region` | 通知容器（`role="status" aria-live="polite"`）|
+| `.dialog__title` / `__desc` / `__actions` | 弹窗内部结构 |
+| `.toast-region` | 通知容器（`role="status"` `aria-live="polite"`）|
 | `.toast` | 单条通知 |
-| `.toast__icon` / `__body` | 通知内部结构 |
+| `.toast__title` / `__desc` / `__body` | 通知内部结构 |
 | `.toast--success` / `--error` / `--warning` | 三种变体（**靠底色 + 图标双编码**，不只靠颜色）|
+
+⚠️ **这张表曾经有三行是假的**（2026-11-02 修）：`.overlay` 这个类全库
+没有任何 CSS 定义（真实的遮罩叫 `.dialog-backdrop`）、`.toast__icon` 与
+`.dialog__body` 同样不存在。它们是从早期版本抄下来的名字 ——
+照着写的人会得到"样式没生效，但也不报错"。
 
 ⚠️ **三种 toast 变体在本 demo 里没有演示** ——
 它们是给复用者的钩子，样式已备好，需要你自己触发。

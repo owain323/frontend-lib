@@ -56,15 +56,16 @@
 <th>类</th><th>作用</th>
 </tr></thead>
 <tbody>
-<tr><td><code>.overlay</code></td><td>遮罩层（<code>role=&quot;dialog&quot;</code> 的宿主）</td></tr>
+<tr><td><code>.dialog-backdrop</code></td><td>遮罩层（<code>position: fixed</code> 铺满视口，<code>role=&quot;dialog&quot;</code> 的宿主）</td></tr>
 <tr><td><code>.dialog</code></td><td>弹窗面板</td></tr>
-<tr><td><code>.dialog__title</code> / <code>__body</code> / <code>__actions</code></td><td>弹窗内部结构</td></tr>
-<tr><td><code>.toast-region</code></td><td>通知容器（<code>role=&quot;status&quot; aria-live=&quot;polite&quot;</code>）</td></tr>
+<tr><td><code>.dialog__title</code> / <code>__desc</code> / <code>__actions</code></td><td>弹窗内部结构</td></tr>
+<tr><td><code>.toast-region</code></td><td>通知容器（<code>role=&quot;status&quot;</code> <code>aria-live=&quot;polite&quot;</code>）</td></tr>
 <tr><td><code>.toast</code></td><td>单条通知</td></tr>
-<tr><td><code>.toast__icon</code> / <code>__body</code></td><td>通知内部结构</td></tr>
+<tr><td><code>.toast__title</code> / <code>__desc</code> / <code>__body</code></td><td>通知内部结构</td></tr>
 <tr><td><code>.toast--success</code> / <code>--error</code> / <code>--warning</code></td><td>三种变体（<strong>靠底色 + 图标双编码</strong>，不只靠颜色）</td></tr>
 </tbody>
 </table></div>
+<p>⚠️ <strong>这张表曾经有三行是假的</strong>（2026-11-02 修）：<code>.overlay</code> 这个类全库没有任何 CSS 定义（真实的遮罩叫 <code>.dialog-backdrop</code>）、<code>.toast__icon</code> 与 <code>.dialog__body</code> 同样不存在。它们是从早期版本抄下来的名字 —— 照着写的人会得到&quot;样式没生效，但也不报错&quot;。</p>
 <p>⚠️ <strong>三种 toast 变体在本 demo 里没有演示</strong> —— 它们是给复用者的钩子，样式已备好，需要你自己触发。 <code>[data-state=&quot;valid&quot;]</code> 同理（见 <code>states/README.md</code>）。</p>
 <div class="table"><table>
 <thead><tr>

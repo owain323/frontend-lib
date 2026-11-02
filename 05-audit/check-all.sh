@@ -768,16 +768,28 @@ run "theme-css"   node 05-audit/theme-css-gate.js
 run "theme-scope" node 05-audit/theme-scope-gate.js
 run "theme-scope-rev" node 05-audit/theme-scope-gate.js --selftest
 # 打印产物：读 page.pdf() 的**产物**，不读 getComputedStyle。
-#   🔴 为什么不能读计算样式（两条实测）：
-#     ① `emulateMediaType('print')` 在本环境并不真的切换媒体类型
-#        （`matchMedia('print')` 仍为 false）⇒ 量到的还是屏幕；
+#   🔴 为什么门禁仍然读产物，而不是读计算样式：
+#     ① `emulateMediaType('print')` 只切**媒体查询**，不改版式宽度 ——
+#        纸面的行宽、分页位置、字体回退都不在它的模拟范围里；
 #     ② Chromium 在 printBackground:false 时会改写文字色
 #        （#E4E7EA→#929496、#FFF→#ABABAB），声明色与纸面色是两个数。
+#   ⚠️ 2026-11-02 更正：旧注释写「emulateMediaType('print') 在本环境并不真的
+#      切换媒体类型」—— 复测不成立（matchMedia('print').matches === true，
+#      computed display 也跟着变）。上面两条理由与它无关，读产物的决定不变。
 #   判据：① 每段文字对白纸 ≥4.5:1 ② 暗色与浅色的产物颜色分布完全相同
 #         ③ 页数 / 文字 run 数与基线一致 ④ 无横向溢出
 #   @component：只进全量层（发布快速路径不承担浏览器打印验证的成本）
 run "print"     node 05-audit/print-gate.js
 run "print-rev" node 05-audit/print-gate.js --selftest
+# 打印**契约**：契约 / 实现 / 运行时三向核对（上面那条只证明"印出来的好不好"，
+#   这一条证明"该印的在不在、声明的是不是真的"）。四条腿：
+#     L0 归属    —— 组件规则的选择器必须在库里真的存在（抓 .overlay 那种死选择器）
+#     L1 声明→实现 —— 契约里每条规则在 print 块里都有相符声明（抓"写了就忘"）
+#     L2 实现→声明 —— 每条会丢内容的声明都有规则认领（抓"顺手加个 display:none"）
+#     L3 声明→生效 —— 真浏览器 print 媒体下量标本页（抓"被更特的规则盖掉"，E254）
+#   反向控制 7 条覆盖四条腿，含 E254（去掉 .tabs 前缀）与 E255（删 visibility）的逐字复刻。
+run "print-policy"     node 05-audit/print-policy-gate.js
+run "print-policy-rev" node 05-audit/print-policy-gate.js --selftest
 # 探针页自身要能跑：静态判据只能证明"清单写全了"，证明不了探测函数没写坏
 run "webview-probe-run" node 05-audit/webview-probe-check.js
 # 全部令牌的**解析值**（107 个 × 4 种明暗组合）：

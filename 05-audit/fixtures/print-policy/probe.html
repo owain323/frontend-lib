@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>打印契约标本页 · print-policy-gate · frontend-lib</title>
+<!--
+  ============================================================================
+  这是 print-policy-gate 的**标本页**，不是示例页。
+  ----------------------------------------------------------------------------
+  每个标本对应 ai/components.json 里的一条 printPolicy 记录。
+  门禁在 print 媒体下量它们的计算值：声明 omit 的必须是 display:none，
+  声明 expand 的必须真的展开（不是"看起来展开了"）。
+
+  🔴 为什么不用各组件的 demo.html 当标本：
+    ① 有些状态 demo 里根本没有（收起的面板、只在 JS 里生成的气泡），
+       拿 demo 当标本 ⇒ 选择器命中 0 个元素 ⇒ 断言恒真（假绿）；
+    ② demo 会随文档需要改，契约不该跟着文档的文字漂。
+
+  🔴 为什么 link 顺序必须 tokens 在前、组件在后：
+    这正是 E254 的场景 —— tokens.css 在 <head> 里最先加载，
+    同特异性的规则会被后加载的组件 CSS 盖掉。标本页复刻这个顺序，
+    门禁才量得到「规则被盖掉」这种失效（它不报错，只是不生效）。
+
+  ⚠️ 不要加进 shot-baseline 的页面全集：它没有"观感"信息。
+  ============================================================================
+-->
+<link rel="stylesheet" href="../../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../../01-tokens/page.css">
+<!-- 下面这些 link 的顺序**本身**就是被测对象：
+     库级规则（tokens.css）写得不够特异，就会被后加载的组件 CSS 盖掉，
+     而且不报错、产物看起来完全正常（E254）。反向控制会把 tokens.css
+     就地改写成「去掉 .tabs 前缀」的版本，验证门禁真的看得见这件事。 -->
+<link rel="stylesheet" href="../../../02-primitives/button/button.css">
+<link rel="stylesheet" href="../../../02-primitives/card/card.css">
+<link rel="stylesheet" href="../../../02-primitives/metric/metric.css">
+<link rel="stylesheet" href="../../../02-primitives/popover/popover.css">
+<link rel="stylesheet" href="../../../02-primitives/skeleton/skeleton.css">
+<link rel="stylesheet" href="../../../03-patterns/accordion/accordion.css">
+<link rel="stylesheet" href="../../../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../../../03-patterns/overlay/overlay.css">
+<link rel="stylesheet" href="../../../03-patterns/pagination/pagination.css">
+<link rel="stylesheet" href="../../../03-patterns/tabs/tabs.css">
+<link rel="stylesheet" href="../../../03-patterns/tooltip/tooltip.css">
+<link rel="stylesheet" href="../../../04-recipes/analysis-report/analysis-report.css">
+<link rel="stylesheet" href="../../../04-recipes/report/report.css">
+<link rel="stylesheet" href="../../../04-recipes/table/table.css">
+<link rel="stylesheet" href="../../../09-assets/model-viewer/model-viewer.css">
+<link rel="stylesheet" href="../../../09-assets/scientific-plot/scientific-plot.css">
+<link rel="stylesheet" href="../../../09-assets/sparkline/sparkline.css">
+<style>
+  /* 标本页自己的排布，不参与任何断言。 */
+  .fx { border-top: 1px dashed var(--border-decor); padding: var(--sp-3) 0; }
+  .fx > b { display: block; font: 600 var(--fs-xs)/1.6 var(--mono);
+            color: var(--text-secondary); margin-bottom: var(--sp-2); }
+</style>
+</head>
+<body class="page">
+<main class="wrap">
+
+<h1>打印契约标本页</h1>
+<p>每块标本上方的小字是它对应的 <code>printPolicy</code> 选择器。门禁按选择器量，不按这块文字量。</p>
+
+<!-- ============ 库级（printDefaults → 01-tokens/tokens.css） ============ -->
+<div class="fx"><b>.no-print → omit</b>
+  <div class="no-print">这段在纸上不该出现。</div>
+</div>
+
+<div class="fx"><b>.print-only → reveal</b>
+  <div class="print-only">内部资料 · 请勿外传（只在纸上出现）</div>
+</div>
+
+<div class="fx"><b>tr / img / figure / svg → keep-together</b>
+  <table class="table">
+    <thead><tr><th>科目</th><th>金额</th></tr></thead>
+    <tbody>
+      <tr><td>营业收入</td><td>1,294.06</td></tr>
+      <tr><td>营业成本</td><td>812.40</td></tr>
+    </tbody>
+  </table>
+  <figure>
+    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='40'%3E%3Crect width='120' height='40' fill='%23888'/%3E%3C/svg%3E" alt="标本图" width="120" height="40">
+    <figcaption>图注：一个 img 与一个 figure</figcaption>
+  </figure>
+  <svg width="80" height="20" role="img" aria-label="标本折线"><path d="M0 18 L20 12 L40 15 L60 6 L80 9" fill="none" stroke="currentColor"/></svg>
+</div>
+
+<div class="fx"><b>.print-allow-break → allow-break</b>
+  <div class="card print-allow-break"><div class="card__body">加了这个类的卡片允许跨页切断。</div></div>
+</div>
+
+<!-- ============ tabs ============ -->
+<div class="fx"><b>.tabs .tabs__panel[hidden] → expand ／ .tabs__list → omit</b>
+  <div class="tabs">
+    <div class="tabs__list" role="tablist">
+      <button class="tabs__tab" role="tab" aria-selected="true">已选中</button>
+      <button class="tabs__tab" role="tab" aria-selected="false">未选中</button>
+    </div>
+    <div class="tabs__panel" role="tabpanel">第一个面板照常可见。</div>
+    <div class="tabs__panel" role="tabpanel" hidden>第二个面板在屏幕上是 hidden，纸上必须展开。</div>
+  </div>
+</div>
+
+<!-- ============ accordion ============ -->
+<div class="fx"><b>.accordion .accordion__panel[hidden] → expand ／ .accordion__marker → omit</b>
+  <div class="accordion">
+    <button class="accordion__trigger" aria-expanded="false">
+      收起的分组<span class="accordion__marker" aria-hidden="true"></span>
+    </button>
+    <div class="accordion__panel" hidden>
+      <div class="accordion__panel-inner">收起面板里的正文，纸上必须印出来。</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ overlay（toast / dialog） ============ -->
+<div class="fx"><b>.toast → omit</b>
+  <div class="toast" role="status">
+    <div class="toast__body"><div class="toast__title">文件已删除</div></div>
+  </div>
+</div>
+
+<div class="fx"><b>.dialog-backdrop → expand ／ .dialog → expand</b>
+  <div class="dialog-backdrop">
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="fx-dlg-t">
+      <h2 class="dialog__title" id="fx-dlg-t">把这份报告标记为已审？</h2>
+      <div class="dialog__desc">弹窗正文：遮罩不该盖满纸面，但这段字也不该消失。</div>
+      <div class="dialog__actions"><button class="btn">取消</button><button class="btn">确认</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ tooltip / popover / skeleton ============ -->
+<div class="fx"><b>.tooltip → omit</b>
+  <span class="tooltip" role="tooltip">气泡提示只在悬停时出现。</span>
+</div>
+
+<div class="fx"><b>.popover → omit</b>
+  <div class="popover"><p class="popover__title">浮层标题</p><p class="popover__desc">浮层说明</p></div>
+</div>
+
+<div class="fx"><b>.skeleton → omit</b>
+  <span class="skeleton skeleton--text" aria-hidden="true" style="width:60%"></span>
+</div>
+
+<!-- ============ nav / pagination ============ -->
+<div class="fx"><b>.nav__list → omit ／ .nav__toggle → omit</b>
+  <header class="nav">
+    <div class="nav__inner">
+      <a class="nav__brand" href="#">品牌名</a>
+      <button class="nav__toggle" aria-expanded="false" aria-label="打开菜单"><span></span></button>
+      <ul class="nav__list"><li><a class="nav__link" href="#">链接一</a></li><li><a class="nav__link" href="#">链接二</a></li></ul>
+    </div>
+  </header>
+</div>
+
+<div class="fx"><b>.pagination → omit</b>
+  <nav class="pagination" aria-label="分页">
+    <ul class="pagination__list"><li><a class="pagination__link" href="#">1</a></li><li><a class="pagination__link" href="#">2</a></li></ul>
+  </nav>
+</div>
+
+<!-- ============ card / metric / 图表 ============ -->
+<div class="fx"><b>.card → keep-together</b>
+  <div class="card"><div class="card__body">卡片不从中间被切开。</div></div>
+</div>
+
+<div class="fx"><b>.metric → keep-together</b>
+  <dl class="metric">
+    <dt class="metric__label">营业总收入</dt>
+    <dd class="metric__value">1,294.06<span class="metric__unit">亿元</span></dd>
+  </dl>
+</div>
+
+<div class="fx"><b>.sparkline → keep-together</b>
+  <span class="sparkline" data-spark="12,18,15,24,22,31,28"></span>
+</div>
+
+<div class="fx"><b>.splot → keep-together</b>
+  <figure class="splot">
+    <svg class="splot__svg" width="200" height="80" role="img" aria-label="标本图">
+      <g class="splot__grid"><line x1="0" y1="40" x2="200" y2="40"/></g>
+      <path class="splot__band" d="M0 20 L200 20 L200 60 L0 60 Z"/>
+      <path class="splot__line" d="M0 50 L50 30 L100 45 L150 20 L200 35" fill="none" stroke="currentColor"/>
+    </svg>
+    <figcaption>图注：坐标轴、网格、图例要同页</figcaption>
+  </figure>
+</div>
+
+<!-- ============ report / analysis-report ============ -->
+<div class="fx"><b>.rep__aside → omit ／ .rep__fig → keep-together ／ .rep table → keep-together</b>
+  <div class="rep">
+    <div class="rep__grid">
+      <div class="rep__main">
+        <p class="rep-p">正文段落。</p>
+        <figure class="rep__fig">
+          <svg width="160" height="60" role="img" aria-label="报告插图"><rect width="160" height="60" fill="none" stroke="currentColor"/></svg>
+          <figcaption>报告插图</figcaption>
+        </figure>
+        <table><thead><tr><th>科目</th><th>金额</th></tr></thead><tbody><tr><td>营业成本</td><td>812.40</td></tr></tbody></table>
+      </div>
+      <aside class="rep__aside"><p>边注：屏幕上的第二栏，纸上没有位置。</p></aside>
+    </div>
+  </div>
+</div>
+
+<div class="fx"><b>.report__aside → expand</b>
+  <div class="report">
+    <div class="report__body">
+      <div class="report__main"><p class="rep-p">正文段落。</p></div>
+      <aside class="report__aside"><p>辅助栏：屏幕上 sticky 且限高可滚，纸上必须全展开。</p></aside>
+    </div>
+  </div>
+</div>
+
+<!-- ============ table / model-viewer ============ -->
+<div class="fx"><b>.table → expand</b>
+  <div class="table">
+    <table>
+      <thead><tr><th>科目</th><th>金额</th></tr></thead>
+      <tbody>
+        <tr><td>营业收入</td><td>1,294.06</td></tr>
+        <tr><td>营业成本</td><td>812.40</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="fx"><b>.mv__btn → omit ／ .mv__hint → omit</b>
+  <!-- 这两个元素平时由 model-viewer.js 生成；标本页直接写出来，
+       避免为了量两条 display:none 去加载 WebGL。 -->
+  <div class="mv">
+    <button class="mv__btn" type="button">加载 3D 模型</button>
+    <p class="mv__hint">拖拽旋转，滚轮缩放</p>
+  </div>
+</div>
+
+</main>
+</body>
+</html>

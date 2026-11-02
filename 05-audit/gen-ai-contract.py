@@ -31,7 +31,7 @@ Open Props:  JS/JSON 是真值 → 生成 CSS
 哪些字段是机械抽的，哪些是人声明的
 ----------------------------------------------------------------------------
   机械（本脚本从源码抽）：files / elements / variants / states / aria / uses
-  人工（ai/components.meta.json）：rootClass / purpose / tier
+  人工（ai/components.meta.json）：rootClass / purpose / tier / printPolicy / pagination
 
   ⚠️ 为什么 rootClass 必须人声明：实测根类命名毫无规律 ——
      button→.btn  content→.prose  dropdown→.dd  date-range→.drange
@@ -91,6 +91,40 @@ SCAN = [
 # 🔴 契约里出现的 tier 必须都在这里登记 —— byTier 统计只认这张表。
 #   少一个 ⇒ 契约里那一档计数恒为 0，且没人会发现（这正是本条存在的意义）。
 ALL_TIERS = ('primitive', 'pattern', 'recipe', 'asset')
+
+# ---------------------------------------------------------------- 打印策略（0.25.0）
+# 🔴 为什么策略必须是**有限枚举**：
+#   上一轮的教训是「CSS 里写了规则，没有任何东西能断言它真的生效」
+#   （tokens.css 的 print 规则被组件 CSS 同特异性盖掉，PDF 逐字节不变）。
+#   如果这里允许自由文本，契约就只是又一份散文 —— 谁都能写，
+#   没人能反驳。枚举的每一个值都对应一组**可在浏览器里量**的断言
+#   （见 05-audit/print-policy-gate.js），写错值 = 门禁红。
+#
+#   六个值的语义边界（不是同义词，别合并）：
+#     omit         内容不上纸。selector 等于 rootClass ⇒ 整个组件消失
+#     expand       打印时把屏幕上的限制放开（隐藏 / 收起 / 限高 / 固定定位），
+#                  目的是「内容全在纸上」。它**不是**版式调整
+#     reveal       只在纸上出现（屏幕上 display:none）
+#     keep-together 不跨页切断
+#     allow-break  退出 keep-together（给高块省纸）
+#     keep         （缺省）原样保留 —— 用空数组表达，不写这个值
+#
+#   ⚠️ 为什么没有 `omit-parts`：隐藏粒度由 selector 自己说明
+#      （等于 rootClass 是整块，是 `__` 部件就是少一块）。
+#      多一个值就多一处「两个名字指同一件事」的争论，而判据一模一样。
+PRINT_POLICIES = ('omit', 'expand', 'reveal', 'keep-together', 'allow-break')
+
+# 🔴 内容分页：`server` 与 `expand` 不能同时出现。
+#   服务端分页的组件 DOM 里只有**当前一页**的行；展开它 = 印出一页却
+#   看起来完整 ⇒ 页数正常、对比度合格、内容少 90%，正是静默截断的教科书案例。
+#   今天没有任何组件声明 server（这条规则处于守夜状态，由 gate 的反向控制
+#   证明它能开火），但字段必须先存在，否则将来有人加的时候没有地方写。
+PAGINATIONS = ('none', 'client', 'server')
+
+# 单个选择器：允许后代（空格）/ 子代（>）/ 相邻（+）组合，但**不许逗号**。
+#   逗号会让「一条记录认领一条声明」这句话失效 —— 一条记录认领 8 个选择器时，
+#   「谁有权改坏它」就没有答案了（这正是 L2 要判的东西）。
+RE_PRINT_SELECTOR = re.compile(r'^[^,{};]+$')
 
 # ---------------------------------------------------------------- 抽取正则
 RE_ELEMENT = re.compile(r'\.([A-Za-z][A-Za-z0-9-]*)__([A-Za-z0-9-]+)')
@@ -215,7 +249,62 @@ def dedicated_gates(cid, layer_dir):
     return sorted(set(named) | set(declared))
 
 
-def scan_component(cid, cdir, tier, meta, layer_dir):
+def validate_print_policy(owner, rules, claimed):
+    """校验一份 printPolicy（组件或库级），返回规范化后的 list。
+
+    🔴 为什么把校验放在生成器而不是门禁里：
+      契约是**生成物**。生成器拒绝写出一份非法契约，比"写出来再让门禁骂"
+      早一步 —— 非法值进不了 components.json，下游（AI 消费者、门禁、
+      CLI）就不必各自防一遍。
+      但**语义**校验（选择器在 CSS 里真的存在、值真的生效）不在这一层：
+      那需要读 CSS 与真浏览器，属于 print-policy-gate 的活。
+
+    这里只判四件事（都能静态判、都不需要浏览器）：
+      ① policy 是六个有限值之一（拼错 `ommit` 会安静地什么都不做）
+      ② selector 是单个选择器（带逗号会让"一条记录认领一组声明"含糊）
+      ③ why 不是空话（< 8 字 ⇒ 等于没解释）
+      ④ 同一个选择器不能被认领两次（两个组件抢一条声明 ⇒ 谁都能改坏它）
+    """
+    if not isinstance(rules, list):
+        raise SystemExit('[FAIL] %s 的 printPolicy 必须是数组' % owner)
+    out = []
+    for i, r in enumerate(rules):
+        where = '%s.printPolicy[%d]' % (owner, i)
+        if not isinstance(r, dict):
+            raise SystemExit('[FAIL] %s 不是对象' % where)
+        extra = set(r) - {'selector', 'policy', 'why'}
+        if extra:
+            raise SystemExit('[FAIL] %s 有不认识的字段 %s'
+                             % (where, ', '.join(sorted(extra))))
+        sel = (r.get('selector') or '').strip()
+        pol = (r.get('policy') or '').strip()
+        why = (r.get('why') or '').strip()
+        if not sel:
+            raise SystemExit('[FAIL] %s 缺 selector' % where)
+        if not RE_PRINT_SELECTOR.match(sel):
+            raise SystemExit(
+                '[FAIL] %s 的 selector %r 不合法 —— 必须是单个选择器'
+                '（不能带逗号 / 花括号；打印策略的粒度就是一条声明）'
+                % (where, sel))
+        if pol not in PRINT_POLICIES:
+            raise SystemExit(
+                '[FAIL] %s 的 policy %r 不在枚举里（%s）—— 拼错的值会'
+                '安静地什么都不做' % (where, pol, ' / '.join(PRINT_POLICIES)))
+        if len(why) < 8:
+            raise SystemExit(
+                '[FAIL] %s 的 why 太短（%r）—— 打印策略的每一条都要能'
+                '回答「不这么做会怎样」' % (where, why))
+        if sel in claimed:
+            raise SystemExit(
+                '[FAIL] 选择器 %r 被认领了两次（%s 与 %s）—— '
+                '同一条声明只能有一个归属，否则两边都能改坏它'
+                % (sel, claimed[sel], owner))
+        claimed[sel] = owner
+        out.append({'selector': sel, 'policy': pol, 'why': why})
+    return out
+
+
+def scan_component(cid, cdir, tier, meta, layer_dir, claimed):
     css_path = first(cdir, cid + '.css')
     if css_path is None:
         cands = [f for f in os.listdir(cdir) if f.endswith('.css')]
@@ -320,6 +409,18 @@ def scan_component(cid, cdir, tier, meta, layer_dir):
     else:
         maturity = 'stable'
 
+    pagination = (meta.get('pagination') or 'none').strip()
+    if pagination not in PAGINATIONS:
+        raise SystemExit('[FAIL] %s 的 pagination %r 不在枚举里（%s）'
+                         % (cid, pagination, ' / '.join(PAGINATIONS)))
+    print_rules = validate_print_policy(cid, meta.get('printPolicy') or [], claimed)
+    if pagination == 'server' and any(r['policy'] == 'expand' for r in print_rules):
+        raise SystemExit(
+            '[FAIL] %s：pagination=server 与 printPolicy=expand 不能同时成立。\n'
+            '       服务端分页时 DOM 里只有当前一页的行，展开它 = 印出一页却\n'
+            '       看起来完整（页数正常、对比度合格、内容少九成）。\n'
+            '       要印全部就先把分页拿掉，或者把这条策略改成 omit。' % cid)
+
     return {
         'id': cid,
         'tier': meta.get('tier', tier),
@@ -346,6 +447,11 @@ def scan_component(cid, cdir, tier, meta, layer_dir):
             'jsAlso': js_also,
             'demo': os.path.relpath(demo_path, ROOT).replace('\\', '/') if demo_path else None,
         },
+        # 🔴 打印契约（0.25.0）：这个组件**在纸上**会发生什么。
+        #    `[]` 是明确值「原样保留」，不是"忘了填" —— 缺字段才算漏。
+        #    policy 的每个取值对应一组浏览器断言，见 print-policy-gate.js。
+        'pagination': pagination,
+        'printPolicy': print_rules,
         'slots': elements,
         'variants': variants,
         'states': {
@@ -553,6 +659,14 @@ def build():
         meta_all = json.load(f)
     metas = meta_all['components']
 
+    # 🔴 选择器认领表必须在**扫描第一个组件之前**建好，并且先认领库级规则：
+    #    先组件后库级的话，`.no-print` 这类会被某个组件"顺手"先认领，
+    #    报错信息里的归属就取决于扫描顺序（不可复现的报错比没有报错更糟）。
+    claimed = {}
+    defaults = meta_all.get('printDefaults') or {}
+    default_rules = validate_print_policy(
+        'printDefaults', defaults.get('rules') or [], claimed)
+
     comps = []
     seen = set()
     for rel, tier in SCAN:
@@ -573,7 +687,7 @@ def build():
                 raise SystemExit(
                     '[FAIL] 目录 %s/%s 有 CSS，但 components.meta.json 里没有它 —— '
                     '新组件必须先登记' % (rel, cid))
-            comps.append(scan_component(cid, d, tier, metas[cid], rel))
+            comps.append(scan_component(cid, d, tier, metas[cid], rel, claimed))
 
     extra = sorted(set(metas) - seen)
     if extra:
@@ -594,8 +708,19 @@ def build():
             '机器可读的组件契约。slots = BEM 元素名（在本库里元素名就是插槽名），'
             'states.enum = 组件会在 DOM 上写出的 data-* 取值，'
             'states.legacyClass = 仍未收敛到 data 属性的历史状态类（INVARIANT I-8 未达标）。'
+            'printPolicy = 这个组件在纸上会发生什么（空数组 = 原样保留）；'
+            'pagination = 内容是否被分页裁过（server 不许与 expand 同时出现，'
+            '否则展开的只是当前一页）。'
         ),
         'maturityCriteria': maturity_criteria(comps, meta_all['maturityCriteria']),
+        'printDefaults': {
+            '$comment': (
+                '库级打印约定：不属于任何组件，只由 01-tokens/tokens.css 兑现。'
+                'policy 是有限枚举，每个值对应一组浏览器断言 '
+                '（见 05-audit/print-policy-gate.js）。'
+            ),
+            'rules': default_rules,
+        },
         'summary': {
             'total': len(comps),
             'byMaturity': summary,

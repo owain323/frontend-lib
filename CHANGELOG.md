@@ -14,7 +14,82 @@
 
 ## [Unreleased]
 
-（无）
+**下一版是次版本（新增契约字段 + 修一处打印行为），发版号在发版时再落。**
+不改类名、不改令牌、不改 JS —— 下游不改代码即可升级。
+
+### 新增：打印契约 `printPolicy`（机器可读，进 `ai/components.json`）
+
+打印行为此前只存在于 `tokens.css` 的一个 `@media print` 块里，没有任何东西
+能回答三个问题：契约写的实现了吗、CSS 里每条隐藏都声明了吗、声明了真的生效吗。
+
+现在每个组件在 `ai/components.json` 里有一条 `printPolicy`，`policy` 是
+**有限枚举**，每个值对应一组能在浏览器里量的断言：
+
+| policy | 含义 | 断言 |
+|---|---|---|
+| `omit` | 内容不上纸 | 打印态 `display: none` |
+| `expand` | 放开屏幕上的限制（隐藏 / 收起 / 限高 / 固定定位） | `display≠none`、`visibility≠hidden`、`position≠fixed`、`max-height:none`、`overflow` 不裁、有文字时高度 > 0 |
+| `reveal` | 只在纸上出现 | 屏幕 `display:none` 且打印态不是 `none` |
+| `keep-together` | 不跨页切断 | `break-inside: avoid` |
+| `allow-break` | 退出 `keep-together` | `break-inside: auto` |
+
+- 规则 31 条：库级 7（`printDefaults`）+ 组件 24（16 个组件）。
+- `printPolicy: []` 是明确值「原样保留」；**缺字段才算漏**（门禁红）。
+- 新增 `pagination`（`none` / `client` / `server`）。`server` 与 `expand`
+  不能同时成立：服务端分页只有当前一页，展开它 = 印出一页却看起来完整。
+  今天没有组件声明 `server`，这条规则处于守夜状态，由反向控制证明它能开火。
+- 生成器（`gen-ai-contract.py`）在**写出契约之前**校验枚举、选择器形状、
+  `why` 不能是空话、同一选择器不许被认领两次。
+
+`ai/components.json` 53.2 KB → 61.1 KB（+7.8 KB）。
+
+### 新增：`05-audit/print-policy-gate.js` —— 契约 / 实现 / 运行时三向核对
+
+四条腿，各抓一类失效：
+
+| 腿 | 它问什么 | 实测抓到过什么 |
+|---|---|---|
+| L0 归属 | 选择器在库里真的存在吗 | `.overlay`（见下） |
+| L1 声明→实现 | 契约里的规则在 print 块里有相符声明吗 | 故意删一条即红 |
+| L2 实现→声明 | 每条会丢内容的声明都有规则认领吗 | 塞一条裸 `display:none` 即红 |
+| L3 声明→生效 | 真浏览器 print 媒体下真的生效吗 | 自己刚写的规则被同特异性盖掉（E258） |
+
+**反向控制 7 条（覆盖四条腿），全绿**，其中两条是历史事故的逐字复刻：
+E254（去掉 `.tabs ` 前缀让组件 CSS 盖掉它）、E255（只删 `visibility: visible`，
+display 与高度全对、一个字不印）。全量门禁从 223 → 225 道。
+
+### 修复：屏幕上开着 dialog 时打印，整页 40% 黑
+
+`tokens.css` 的隐藏清单里有 `.overlay`，而**全库没有任何 CSS 定义过这个类**
+（`grep -rn '\.overlay' --include=*.css` 只命中 tokens 自己那一行）。
+真正的遮罩叫 `.dialog-backdrop`，它不在清单里，于是照印：computed 是
+`position: fixed; inset: 0; background: rgba(21,24,28,.4)`。
+
+现在**不隐藏遮罩，而是拉回正常流**（`position: static` / 无 padding / 无底色；
+`.dialog` 取消 100vh 限高）。隐藏会让 `.dialog`（它是遮罩的子节点）里的字
+一起消失 —— 那正是本轮在修的静默截断，不能自己再造一个。
+
+规则写在 `03-patterns/overlay/overlay.css`，**不能**写进 `tokens.css`：
+tokens 先加载、同特异性，会被 `position: fixed` 盖掉（写完当场被 L3 抓到）。
+
+### 修复：`03-patterns/overlay/README.md` 的三行假类名
+
+`.overlay`、`.toast__icon`、`.dialog__body` 三个类在库里都不存在
+（真实名字分别是 `.dialog-backdrop`、不存在、`.dialog__desc`）。
+照着写的人会得到「样式没生效，但也不报错」。
+
+### 体积
+
+`overlay.css` 5.1 → 5.4 KB（+969 B，其中约 600 B 是注释）。
+全量 raw +1,331 B / gzip +504 B（+0.16%）。按惯例重录基线，数字在这里写明。
+
+### 屏幕零影响
+
+109 张截图**逐字节一致**（47 浅色 + 47 暗色 + 15 RTL）。只有 3 个
+`_stamp.json` 变了 —— 因为渲染指纹含 CSS 全集，改了 CSS 就必然要重录戳。
+`print-gate` 的 18 份 PDF 页数与 run 数**与改动前完全相同**（没有任何采样页
+开着 dialog，这正好是「无对话时改动是惰性的」那条控制）。
+
 
 ## [0.24.2] - 2026-11-01
 

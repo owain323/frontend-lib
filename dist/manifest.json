@@ -8,8 +8,8 @@
   ],
   "totals": {
     "sourceFiles": 77,
-    "sourceBytes": 905526,
-    "distGzip": 109123
+    "sourceBytes": 906857,
+    "distGzip": 109157
   },
   "files": [
     {
@@ -175,15 +175,15 @@
     },
     {
       "source": "01-tokens/tokens.css",
-      "sourceSha256": "421f4aeb1175db458d29e7b48bbd684439dd8e48f0221356d018dc5fa343119b",
-      "sourceBytes": 58531,
-      "sourceGzip": 22271,
+      "sourceSha256": "9d594b6ac72cd01619e17f6dba6d818784543877e8327cbc7b1c723278fccd2d",
+      "sourceBytes": 58893,
+      "sourceGzip": 22427,
       "outputs": [
         {
           "path": "dist/01-tokens/tokens.css",
           "kind": "minified",
-          "bytes": 12347,
-          "gzip": 3011
+          "bytes": 12337,
+          "gzip": 3006
         }
       ]
     },
@@ -704,15 +704,15 @@
     },
     {
       "source": "03-patterns/overlay/overlay.css",
-      "sourceSha256": "c8763967e25cf6f9821573c24d3d29a9bd57c8a25a040e42774e5c5cc18c0e0f",
-      "sourceBytes": 12252,
-      "sourceGzip": 5205,
+      "sourceSha256": "f838595de7337d9d420b170ba5362ca916e425a9d80a85071b4086c797b365cf",
+      "sourceBytes": 13221,
+      "sourceGzip": 5553,
       "outputs": [
         {
           "path": "dist/03-patterns/overlay/overlay.css",
           "kind": "minified",
-          "bytes": 3415,
-          "gzip": 1172
+          "bytes": 3559,
+          "gzip": 1211
         }
       ]
     },

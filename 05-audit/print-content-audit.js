@@ -64,8 +64,11 @@ const DECLARED = [
   ['.toast', 'omit: toast'],
   ['.tooltip', 'omit: tooltip'],
   ['.popover', 'omit: popover'],
-  ['.overlay', 'omit: overlay'],
   ['.skeleton', 'omit: skeleton'],
+  /* ⚠️ 这里曾经有一条 `.overlay`。2026-11-02 查 print-policy-gate 时发现：
+     全库没有任何 CSS 定义过 `.overlay`（真正的遮罩叫 `.dialog-backdrop`），
+     那条"声明排除"在给一个不存在的类发通行证。死条目比没有条目更坏 ——
+     它会让人以为「这一块已经审过了」。 */
   ['.pagination', 'omit: pagination'],
   ['.tabs__list', 'omit: tab 标签栏'],
   ['.nav__list', 'omit: 导航链接'],

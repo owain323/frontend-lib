@@ -28,6 +28,24 @@
     "maturityCriteria": {
       "type": "object"
     },
+    "printDefaults": {
+      "type": "object",
+      "required": [
+        "rules"
+      ],
+      "properties": {
+        "rules": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/printRule"
+          }
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "$comment": "库级打印约定：不属于任何组件，只由 01-tokens/tokens.css 兑现（.no-print / tr / img 这些）。"
+    },
     "summary": {
       "type": "object"
     },
@@ -213,6 +231,84 @@
         },
         "behaviorRef": {
           "type": "string"
+        },
+        "pagination": {
+          "type": "string",
+          "enum": [
+            "none",
+            "client",
+            "server"
+          ],
+          "$comment": [
+            "内容是否被分页裁过（缺省 = none）。",
+            "",
+            "🔴 server 不许与 printPolicy 里的 expand 同时出现：",
+            "   服务端分页时 DOM 里只有当前一页的行，展开它 = 印出一页却看起来完整。",
+            "   页数正常、对比度合格、内容少九成 —— 这是静默截断的教科书案例。",
+            "   由 gen-ai-contract.py 与 print-policy-gate.js 双向拦。"
+          ]
+        },
+        "printPolicy": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/printRule"
+          },
+          "$comment": [
+            "这个组件在纸上会发生什么。空数组 = 原样保留（**明确值**，不是漏填）。",
+            "",
+            "🔴 为什么是记录数组而不是一句话：",
+            "   一个组件可以同时有多种打印行为（tabs = 展开面板 + 隐藏标签栏）。",
+            "   写成单个枚举就必须撒谎，而撒谎的契约比没有契约更坏。"
+          ]
+        }
+      }
+    },
+    "printRule": {
+      "type": "object",
+      "required": [
+        "selector",
+        "policy",
+        "why"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "selector": {
+          "type": "string",
+          "$comment": [
+            "单个 CSS 选择器（不许逗号）。",
+            "",
+            "🔴 为什么必须是单个：一条记录只认领一条声明。",
+            "   带逗号的记录会让「谁有权改坏它」没有答案，",
+            "   而 print-policy-gate 的 L2（实现 → 声明）正是按这条线判的。"
+          ]
+        },
+        "policy": {
+          "type": "string",
+          "enum": [
+            "omit",
+            "expand",
+            "reveal",
+            "keep-together",
+            "allow-break"
+          ],
+          "$comment": [
+            "有限枚举。每个值对应一组**可在浏览器里量**的断言（print-policy-gate L3）：",
+            "  omit          → 打印态 display === none",
+            "  expand        → 打印态 display≠none、visibility≠hidden、position≠fixed、",
+            "                   max-height=none、overflow 不裁切、高度>0（有文本时）",
+            "  reveal        → 屏幕 display===none 且打印态 display≠none",
+            "  keep-together → break-inside === avoid",
+            "  allow-break   → break-inside === auto",
+            "",
+            "⚠️ 没有 omit-parts：隐藏粒度由 selector 自己说明",
+            "   （等于 rootClass ⇒ 整块；是 __ 部件 ⇒ 少一块）。",
+            "   两个名字指同一件事、判据一模一样，只会多一处争论。"
+          ]
+        },
+        "why": {
+          "type": "string",
+          "minLength": 8,
+          "$comment": "必须能回答「不这么做会怎样」。写不出来的策略，多半是不该有的策略。"
         }
       }
     }
