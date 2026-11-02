@@ -1105,4 +1105,36 @@ input[type="submit"],
   .no-print { display: none !important; }
 
   .print-only { display: block; }
+
+  /* ── 只属于屏幕的东西，不上纸 ──────────────────────────────────────────
+     三条纪律，都是为了"宁可少藏，不可多藏"：
+
+     ① 全部用**类选择器**，不用裸 `button`。
+        `.accordion__trigger` 是个 `<button>`，但标题文字装在它里面 ——
+        按标签选择器会连正文一起干掉。
+
+     ② 刻意**收窄层级**：
+        · `.tabs__list`（标签栏）而不是 `.tabs` —— 后者会把 `.tabs__panel` 藏掉
+        · `.nav__list` / `.nav__toggle`（链接与汉堡）而不是 `.nav` ——
+          `.nav__brand` 里可能是页面标题
+        · `.accordion__marker`（箭头）而不是 `.accordion__heading` —— 标题要留
+
+     ③ **`.btn` 与 `.upload` 刻意不在清单里**（这是实测后改的主意）：
+        · `guide/button.html` 是**按钮组件文档页**，也是 print-gate 的采样页 ——
+          把 `.btn` 全局隐藏，打印"按钮组件文档"就只剩标题，什么也看不见。
+          组件展示页里的按钮是**内容**，不是操作。
+        · `.upload` 是带状态的表单控件（已上传哪个文件），和 `.input` 同类，
+          不是纯操作。
+        ⇒ 业务页要排除操作按钮，给那个容器加 `.no-print` 即可（类已在上面提供）。
+           这条差异写进 `docs/` 的打印说明，不靠猜。 */
+  .toast,
+  .tooltip,
+  .popover,
+  .overlay,
+  .skeleton,
+  .tabs__list,
+  .nav__list,
+  .nav__toggle,
+  .pagination,
+  .accordion__marker { display: none !important; }
 }
