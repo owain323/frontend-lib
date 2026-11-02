@@ -790,6 +790,26 @@ run "print-rev" node 05-audit/print-gate.js --selftest
 #   反向控制 7 条覆盖四条腿，含 E254（去掉 .tabs 前缀）与 E255（删 visibility）的逐字复刻。
 run "print-policy"     node 05-audit/print-policy-gate.js
 run "print-policy-rev" node 05-audit/print-policy-gate.js --selftest
+# 内容完整性（2026-11-02 转**硬判据**）：屏幕上看得见的字，纸上必须还在。
+#   判据① 契约违约：printPolicy 声明 expand 的字，纸上仍不印 ⇒ 红
+#   判据② 静默：屏幕可见、纸上消失、且没有任何 omit 声明 ⇒ 红
+#   判据③ 屏幕也看不见 ⇒ 不算（关闭的菜单 / 未触发的空态 / a11y 反例）
+#   🔴 没有白名单：上一版靠一张手写的 DECLARED 清单，条目只会越来越长、
+#      判据越来越松（实测绝对口径下列出 17 条 337 字，逐条看全是关闭态菜单）。
+#      现在「为什么这块不上纸」由 ai/components.json 的 printPolicy 回答，
+#      而「闭着的菜单」由判据③ 直接排除 —— 不需要人维护名单。
+#   13 页 22s；--all 是 47 页的发布前扫查（69s，不进每次全量）。
+run "print-content"     node 05-audit/print-content-audit.js
+run "print-content-rev" node 05-audit/print-content-audit.js --selftest
+# 消费者实装：真 pack、真装进空目录、真渲染、真打印。
+#   为什么 pack-smoke 还不够：它判的是**结构**（包里有那些文件、exports 解析得出来、
+#   JS 语法对）。结构对 ≠ 能用 —— `<link href="node_modules/agentcss/...">` 这类路径
+#   只有装完才成立，而「样式引了但 --accent 解析成空」不会被任何结构判据抓到。
+#   六条：C1 零 404 / C2 令牌与组件样式生效 / C3 行为（tabs.js 自动初始化）/
+#        C4 打印展开 / C5 契约可查（含文档教的 `ai` 前缀写法）/ C6 A 档令牌在包里。
+#   ⚠️ 它会 `npm pack` + `npm install` 到**系统临时目录**（约 7s），跑完自清。
+run "consumer"     node 05-audit/consumer-smoke.js
+run "consumer-rev" node 05-audit/consumer-smoke.js --selftest
 # 探针页自身要能跑：静态判据只能证明"清单写全了"，证明不了探测函数没写坏
 run "webview-probe-run" node 05-audit/webview-probe-check.js
 # 全部令牌的**解析值**（107 个 × 4 种明暗组合）：

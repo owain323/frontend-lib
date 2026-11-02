@@ -190,6 +190,21 @@ fi
 #      已经包含这条；这里只保留事故记录，防止以后有人以为漏了。
 echo "  OK    文档路径检查已并入第 4 步（pack-closure --dir）"
 
+# ---------- 8. 真渲染一次（消费者实装）----------
+# 🔴 前面七步判的全是**结构**：包里有那些文件、exports 解析得出来、JS 语法对。
+#   结构对 ≠ 能用。第 8 步拿这个已经装好的目录真开一次浏览器：
+#   页面引的每个文件都在（零 404）、--accent 解析得出、.btn 背景不是透明、
+#   tabs.js 自动初始化并响应点击、打印态折叠面板被展开、CLI 契约查得到。
+#   判据只有一份：05-audit/consumer-smoke.js --dir（全量门禁里也跑它，
+#   只是那边自己 pack 一遍）—— E31：同一判定写两遍必然漂移。
+if ! node "$REPO_ROOT/05-audit/consumer-smoke.js" --dir "$WORK/consumer" > "$WORK/render.txt" 2>&1; then
+  echo "  FAIL  🔴 装完之后页面用不了："
+  sed 's/^/        /' "$WORK/render.txt"
+  exit 1
+fi
+sed -n '/消费者实装冒烟/,$p' "$WORK/render.txt" | sed 's/^/  /' | head -12
+echo "  OK    装完之后真的能渲染、能打印、契约查得到"
+
 echo ""
 echo "  ⇒ 用户装到的东西与我们以为的一致。"
 exit 0

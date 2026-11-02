@@ -676,10 +676,24 @@ function main() {
       '  ai profile      [--json]   列出三档及其差异\n' +
       '  ai capabilities [--json]   列出可协商的能力\n' +
       '\n' +
-      '  每个子命令都支持 --json；失败时输出 {ok:false, command, error} 并以非 0 退出。\n');
+      '  每个子命令都支持 --json；失败时输出 {ok:false, command, error} 并以非 0 退出。\n' +
+      '  前缀 `ai` 可写可不写：`agentcss ai components` 与 `agentcss components` 等价。\n');
     process.exit(0);
   }
   var name = argv.shift();
+  /* 🔴 `ai` 是可选的**前缀别名**（2026-11-02 补）：
+     帮助里的命令一直写成 `ai components`，AGENTS.md / llms.txt / STABILITY.md /
+     VERIFY-RELEASE.md 也都教 `npx agentcss ai components --json` ——
+     而分发器只认 `components`，于是「照着文档敲第一条命令」直接得到
+     「未知子命令：ai」。消费者视角的硬伤：文档里最靠前的那条命令不能用，
+     后面写得再准也读不到。
+     两种写法都认，免得已经抄下去的人再改一遍。 */
+  if (name === 'ai') {
+    name = argv.length ? argv.shift() : '';
+    if (!name) {
+      die('`agentcss ai` 后面要跟子命令（可用：' + Object.keys(CMDS).join(' / ') + '）');
+    }
+  }
   CURRENT_CMD = name;
   var fn = CMDS[name];
   if (!fn) die('未知子命令：' + name + '（可用：' + Object.keys(CMDS).join(' / ') + '）');

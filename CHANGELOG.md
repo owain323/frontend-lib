@@ -78,6 +78,52 @@ tokens 先加载、同特异性，会被 `position: fixed` 盖掉（写完当场
 （真实名字分别是 `.dialog-backdrop`、不存在、`.dialog__desc`）。
 照着写的人会得到「样式没生效，但也不报错」。
 
+### 新增：内容完整性审计转**硬判据**（`print-content-audit`）
+
+之前它只报告不判红，理由是「先出清单 → 写进 printPolicy → 再转硬判据」。
+printPolicy 落地之后这一步做了，而且**没有引入白名单**：
+
+| 判据 | 条件 |
+|---|---|
+| ① 契约违约 | 命中 `expand` 的字，打印仍不印 ⇒ 红 |
+| ② 静默消失 | 屏幕可见 → 纸上消失，且无 `omit` 声明 ⇒ 红 |
+| ③ 不算 | 屏幕也看不见 ⇒ 交互状态 / 未触发的空态 / a11y 反例 |
+
+判据① 咬的是「藏起它的**正是**契约承诺要展开的那个元素」—— 所以
+`tabs` 的未选中面板（屏幕上也隐藏）照样能抓到，而那正是少印 68% 的那一次。
+实测：13 页采样集 / 47 页全站都是 0 违约；把 `tokens.css` 里那条
+`.tabs .tabs__panel[hidden]` 临时删掉，`pattern-tabs` 立刻红出 **7 条契约违约
+/ 84 字**，并逐条指出是哪个 `#panel` 把字藏起来了。
+
+反向控制 14 条：判定表 + 真 DOM 扫描 + 一个 `data:` 页走完整管线，
+同时抓出 `silent` 与 `contract`。
+
+### 新增：消费者实装冒烟（`consumer-smoke`）
+
+`pack-smoke.sh` 判的全是**结构**：包里有那些文件、exports 解析得出来、JS 语法对。
+结构对 ≠ 能用。新加的第 8 步真开一次浏览器，六条判据：
+
+```
+C1 零 404     页面引的每个包内文件都在
+C2 样式生效   --accent 解析得出、.btn 背景不是透明
+C3 行为生效   tabs.js 自动初始化，点第二个 tab 真的切过去
+C4 打印生效   打印态未选中面板被展开（引了 tokens.css 才成立）
+C5 契约可查   npx agentcss ai components --json → 40 个组件、40 条 printPolicy
+C6 A 档在包   04-recipes/tierA-tokens.css 在包里
+```
+
+反向控制 4 条（少一个文件 / 不引 tokens 各自都必须红）。全量门禁里也跑它
+（自己 pack 一遍），`pack-smoke.sh` 则复用已经装好的目录 —— 判据只有一份。
+
+### 修复：文档里最靠前的那条命令不能用
+
+`AGENTS.md` / `llms.txt` / `docs/STABILITY.md` / `docs/VERIFY-RELEASE.md` 与
+CLI 自己的帮助都教 `npx agentcss ai components --json`，而分发器只认
+`components` ⇒ 照抄第一条命令得到「未知子命令：ai」。
+
+现在 `ai` 是可选的**前缀别名**，两种写法都通；帮助里也写明了这一点。
+这是消费者视角最贵的一类错误：文档第一条就打脸，后面写得再准也读不到。
+
 ### 体积
 
 `overlay.css` 5.1 → 5.4 KB（+969 B，其中约 600 B 是注释）。
