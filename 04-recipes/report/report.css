@@ -361,4 +361,9 @@
   .rep__fig,
   .rep table { break-inside: avoid; }
   .rep__pull { border-inline-start-width: 2px; }
+  /* 孤行寡行：段首/段尾不要只留一行在另一页。
+     ⚠️ 必须带 `.rep` 前缀 —— 裸 `p` / `li` 会改掉宿主页面所有段落，
+        那是 `bleed-gate` 的硬红线（组件只影响自己）。
+     其他配方 / 使用者的页面要这一条，自己写同样的三行即可。 */
+  .rep p, .rep li, .rep blockquote { orphans: 2; widows: 2; }
 }

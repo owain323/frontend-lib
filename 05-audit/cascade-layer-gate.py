@@ -191,6 +191,16 @@ def classify(hit):
     for prelude in reversed(hit['ctx']):
         if '[hidden]' in prelude.lower():
             return '正确性（`[hidden]` 必须真的隐藏）'
+    # 打印媒体下的可见性控制（2026-11-02 加，随 P2 一起进来）。
+    #   纸张上没有交互，屏幕专属元素必须**真的**不出现；而组件样式加载在
+    #   tokens.css **之后**，同特异性下后加载者胜 ⇒ 不用 !important 会被
+    #   组件自己的 `display` 盖掉，等于没提供这个能力。
+    #   ⚠️ 只放行「@media print + display:none」这一种形态，不是放开 !important：
+    #      打印块里的其它 !important（比如改字号）仍然归不了类、仍然红。
+    if any(p.strip().lower().startswith('@media print') for p in hit['ctx']):
+        d = hit['decl'].lower()
+        if 'display' in d and 'none' in d:
+            return '打印媒体（只在屏幕上存在的东西不上纸）'
     return None
 
 
@@ -249,7 +259,7 @@ def check(layers, hits, ready=None):
                 '%s:%d 有无法归类的 `!important`：`%s`\n'
                 '      上下文：%s\n'
                 '      ⇒ 分层后它的层序会反转并压过使用者的 `!important`。'
-                '      要么归到一个已批准理由（无障碍偏好 / `[hidden]` 正确性），'
+                '      要么归到一个已批准理由（无障碍偏好 / `[hidden]` 正确性 / 打印媒体），'
                 '      要么改用特异性解决。'
                 % (h['file'], h['line'], h['decl'][:60],
                    ' › '.join(c.strip()[:40] for c in h['ctx'][-2:]) or '(顶层)'))

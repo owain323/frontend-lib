@@ -1107,6 +1107,7 @@ input[type="submit"],
   tr, img, figure, svg,
   .card, .metric, .sparkline, .splot { break-inside: avoid; }
 
-  /* 孤行寡行：段首/段尾不要只留一行在另一页 */
-  p, li, blockquote { orphans: 2; widows: 2; }
+  /* ⚠️ 这里**没有** `p, li, blockquote { orphans/widows }` ——
+     裸标签选择器会改掉宿主页面所有段落（`bleed-gate` 的硬红线）。
+     孤行寡行只在库里自己的文档容器内生效，见 `04-recipes/report/report.css`。 */
 }

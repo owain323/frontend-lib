@@ -8,8 +8,8 @@
   ],
   "totals": {
     "sourceFiles": 77,
-    "sourceBytes": 904052,
-    "distGzip": 109051
+    "sourceBytes": 904592,
+    "distGzip": 109054
   },
   "files": [
     {
@@ -175,15 +175,15 @@
     },
     {
       "source": "01-tokens/tokens.css",
-      "sourceSha256": "d8e45e6e245ca216d65d3c5a376fde07fd6205f897c026d670ab84ecfdf1b97a",
-      "sourceBytes": 57442,
-      "sourceGzip": 21812,
+      "sourceSha256": "16471a5c9878202651c710b9343439732134760ab160ebea702bbcadf6671e8c",
+      "sourceBytes": 57597,
+      "sourceGzip": 21879,
       "outputs": [
         {
           "path": "dist/01-tokens/tokens.css",
           "kind": "minified",
-          "bytes": 12199,
-          "gzip": 2969
+          "bytes": 12160,
+          "gzip": 2942
         }
       ]
     },
@@ -949,15 +949,15 @@
     },
     {
       "source": "04-recipes/report/report.css",
-      "sourceSha256": "41a609adb315ba750c2125bbd0682dd562a3cd84de9500d68e26d907b3906b50",
-      "sourceBytes": 16085,
-      "sourceGzip": 6400,
+      "sourceSha256": "6a871c03d6f43b0b43cabfef60d4ce842412b9c53c1ac47080d35a24802c5f3e",
+      "sourceBytes": 16470,
+      "sourceGzip": 6611,
       "outputs": [
         {
           "path": "dist/04-recipes/report/report.css",
           "kind": "minified",
-          "bytes": 4163,
-          "gzip": 1173
+          "bytes": 4217,
+          "gzip": 1203
         }
       ]
     },
