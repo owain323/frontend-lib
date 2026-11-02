@@ -146,16 +146,21 @@ label.f { display: block; margin-bottom: var(--sp-1); font-size: var(--fs-sm); }
 <script>
 (function () {
   var log = document.getElementById('log');
+  function show(v, text) {
+    var hidden = document.querySelector('#s1 input[type=hidden]');
+    log.textContent = 'value=' + v + '  文字=「' + text + '」  hidden=' +
+                      (hidden ? hidden.value : '(无)') + '  [aria-current 项带 ✓]';
+  }
   var s1 = Select.create(document.getElementById('s1'), {
     label: '投资市场',
     value: 'a',                       /* 默认选中 A 股主板 */
     placeholder: '请选择市场',
-    onChange: function (v, text) {
-      var hidden = document.querySelector('#s1 input[type=hidden]');
-      log.textContent = 'value=' + v + '  文字=「' + text + '」  hidden=' +
-                        (hidden ? hidden.value : '(无)') + '  [aria-current 项带 ✓]';
-    },
+    onChange: show,
   });
+  /* 🔴 初始化**不派发** change（和原生 <select> 一致：挂载不是用户操作），
+     所以这里手动补一次回显 —— 否则页面一开始只有一句占位话，
+     看不出组件已经带着默认值、hidden input 也已经填好了。 */
+  show(s1.value, document.querySelector('#s1 .select__value').textContent.trim());
 
   Select.create(document.getElementById('s2'), {
     label: '板块', multiple: true, placeholder: '请选择板块',
