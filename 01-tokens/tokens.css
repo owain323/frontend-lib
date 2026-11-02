@@ -1118,6 +1118,10 @@ input[type="submit"],
   tr, img, figure, svg,
   .card, .metric, .sparkline, .splot { break-inside: avoid; }
 
+  /* 退出开关：高块想省纸就加这个类（标定表见 docs/PRINT.md）。
+     必须写在上一条之后 —— 同特异性靠顺序取胜，不靠 !important。 */
+  .print-allow-break { break-inside: auto; }
+
   /* ⚠️ 这里**没有** `p, li, blockquote { orphans/widows }` ——
      裸标签选择器会改掉宿主页面所有段落（`bleed-gate` 的硬红线）。
      孤行寡行只在库里自己的文档容器内生效，见 `04-recipes/report/report.css`。 */

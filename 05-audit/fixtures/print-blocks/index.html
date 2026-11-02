@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>分页代价夹具 · 等高块</title>
+<!--
+  为什么单独一个夹具
+  ---------------------------------------------------------------------------
+  `break-inside: avoid` 的代价 = 页尾放不下时留下的空隙。它只有在**块高与
+  页高有确定比例**时才可算，所以必须用等高块。在真实研报里（表格 + 段落 +
+  卡片混排），表格自己就把页面切碎了，卡片填进空隙里不产生额外代价 ——
+  实测「avoid 与 auto 页数完全相同」，量不出任何东西。
+
+  这个页面只做一件事：N 个等高块，测 avoid / auto 的页数差。
+  块高由 URL 参数 h 控制（px），数量由 n 控制。默认 h=420 n=60。
+
+  用法
+    /05-audit/fixtures/print-blocks/index.html?h=420&n=60
+    /05-audit/fixtures/print-blocks/index.html?h=260&n=90
+-->
+<link rel="stylesheet" href="../../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../../02-primitives/card/card.css">
+<style>
+  /* 不引用 card.css：那会把 padding / border / 阴影一起带进来，
+     块高就不等于 h 了，实验的"等高等比"前提被破坏。
+     这里只要一个干净的、确定高度的盒子。 */
+  html, body { margin: 0; }
+  .blk {
+    height: var(--h, 420px);
+    box-sizing: border-box;
+    border: 1px solid #c9d1db;
+    padding: 8px 12px;
+    margin: 0 0 12px;
+    font: 14px/1.5 system-ui, sans-serif;
+    color: #15181c;
+    background: #fff;
+    overflow: hidden;
+    /* ⚠️ 这里**不能**写 break-inside —— 夹具的 <style> 在 tokens.css 之后，
+       同特异性会盖掉 tokens.css 里的 .card{break-inside:avoid}，
+       于是 .print-allow-break 也测不出来（实测：加了退出开关页数仍是 50）。
+       块的 avoid 必须来自**库自己**的规则，否则测的不是生产路径。 */
+  }
+  .blk h3 { margin: 0 0 4px; font-size: 15px; }
+  .blk p { margin: 0; }
+</style>
+</head>
+<body>
+<div id="host"></div>
+<script>
+  const q = new URLSearchParams(location.search);
+  const H = Math.max(60, parseInt(q.get('h') || '420', 10));
+  const N = Math.max(1, parseInt(q.get('n') || '60', 10));
+  document.documentElement.style.setProperty('--h', H + 'px');
+
+  const host = document.getElementById('host');
+  const frag = document.createDocumentFragment();
+  for (let i = 1; i <= N; i++) {
+    const el = document.createElement('section');
+    el.className = 'blk card';
+    el.innerHTML = '<h3>块 ' + i + ' / ' + N + '</h3>'
+      + '<p>高度 ' + H + 'px。这一块的唯一作用是占据确定的垂直空间，'
+      + '以便计算 break-inside: avoid 在页尾留下多少空隙。</p>';
+    frag.appendChild(el);
+  }
+  host.appendChild(frag);
+
+  document.documentElement.setAttribute('data-ready', '1');
+</script>
+</body>
+</html>

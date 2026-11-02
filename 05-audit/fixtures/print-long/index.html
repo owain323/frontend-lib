@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>长文档打印夹具 · 50 页量级 · frontend-lib</title>
+<!--
+  这是**打印夹具**，不是示例页。用途：测 break-inside: avoid 在长文档下的
+  累计代价 —— 8 页文档上 7→8（+14%）不代表 50 页上也是 +14%。
+
+  ⚠️ 不要加进 shot-baseline 的页面全集：它是 50 页，视觉基线要录 50 张 PNG，
+     而它没有任何"观感"信息（内容由 JS 生成，每次一样）。
+
+  内容为什么不写死在 HTML 里：1400 行表格手写没法维护，而且改动一个字就要
+  改 1400 处。这里用固定数据 + 循环生成，**每次生成结果完全相同**（没有随机数）。
+-->
+<link rel="stylesheet" href="../../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../../01-tokens/page.css">
+<link rel="stylesheet" href="../../../04-recipes/report/report.css">
+<link rel="stylesheet" href="../../../04-recipes/table/table.css">
+<link rel="stylesheet" href="../../../02-primitives/card/card.css">
+<style>
+  body { margin: 0; }
+  .fx-wrap { max-width: 46rem; margin: 0 auto; padding: var(--sp-6) var(--sp-4); }
+</style>
+</head>
+<body>
+<div class="fx-wrap">
+<article class="rep rep--finance">
+  <header class="rep__head">
+    <p class="rep__kicker">打印夹具 · 长文档</p>
+    <h1>示例公司年度分析（14 章 · 约 50 页）</h1>
+    <p class="rep__lede">
+      本页唯一用途是量出「不跨页切断」在长文档上的累计代价。数据是构造的，
+      科目名、表结构、段落长度都按真实研报的形态来 —— 如果换成 lorem ipsum，
+      测出来的页数没有参考价值。
+    </p>
+    <p class="rep__meta">构造数据 · 不对应任何真实公司 · 不构成投资建议</p>
+  </header>
+  <div id="chapters"></div>
+</article>
+</div>
+
+<script>
+/* 固定数据：没有随机数、没有 Date.now()，每次生成完全一致。 */
+const CHAPTERS = [
+  ['营业收入结构', '按产品线与地区拆分，观察收入集中度与增长来源。'],
+  ['成本与毛利', '营业成本构成、毛利率变动，以及价格与销量的贡献拆分。'],
+  ['期间费用', '销售、管理、研发三项费用的绝对额与费用率。'],
+  ['研发投入', '研发费用资本化比例、研发人员结构、在研项目进度。'],
+  ['资产结构', '流动与非流动资产的主要科目，以及占总资产比重。'],
+  ['负债与偿债', '有息负债期限结构、流动比率、利息保障倍数。'],
+  ['现金流量', '经营、投资、筹资三类现金流，以及自由现金流口径。'],
+  ['分部数据', '四个报告分部的收入、利润与资产占用。'],
+];
+
+const SUBJECTS = [
+  '主营业务收入', '其他业务收入', '营业成本', '税金及附加',
+  '销售费用', '管理费用', '研发费用', '财务费用',
+  '投资收益', '公允价值变动', '信用减值损失', '资产减值损失',
+  '营业利润', '营业外收入', '营业外支出', '利润总额',
+  '所得税费用', '净利润', '归母净利润', '少数股东损益',
+  '货币资金', '应收账款', '存货', '固定资产',
+  '在建工程', '无形资产', '商誉', '长期待摊费用',
+  '短期借款', '应付账款',
+];
+
+const SEGMENTS = ['分部 A', '分部 B', '分部 C', '分部 D'];
+
+/* 确定性伪随机：给定种子返回固定序列（不用 Math.random） */
+function seeded(seed) {
+  let x = seed;
+  return function () {
+    x = (x * 1103515245 + 12345) % 2147483648;
+    return x / 2147483648;
+  };
+}
+
+function fmt(n) {
+  return n.toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
+function tableFor(chapterIndex) {
+  const rnd = seeded(1000 + chapterIndex * 37);
+  const rows = [];
+  for (const seg of SEGMENTS) {
+    for (const subject of SUBJECTS) {
+      const base = 800 + Math.floor(rnd() * 9200);
+      const y24 = base;
+      const y25 = Math.round(base * (0.86 + rnd() * 0.4));
+      const yoy = ((y25 / y24 - 1) * 100).toFixed(1);
+      const share = (rnd() * 18 + 0.2).toFixed(1);
+      rows.push('<tr>'
+        + '<td>' + seg + '</td>'
+        + '<td>' + subject + '</td>'
+        + '<td class="num">' + fmt(y24) + '</td>'
+        + '<td class="num">' + fmt(y25) + '</td>'
+        + '<td class="num">' + (yoy >= 0 ? '+' : '') + yoy + '%</td>'
+        + '<td class="num">' + share + '%</td>'
+        + '</tr>');
+    }
+  }
+  return '<table class="table table--dense"><caption>' + '单位：万元</caption>'
+    + '<thead><tr><th>分部</th><th>科目</th><th class="num">2024</th>'
+    + '<th class="num">2025</th><th class="num">同比</th><th class="num">占比</th></tr></thead>'
+    + '<tbody>' + rows.join('') + '</tbody></table>';
+}
+
+function paragraphs(chapterIndex, title, lede) {
+  const rnd = seeded(500 + chapterIndex * 13);
+  const out = ['<p class="rep__lede">' + lede + '</p>'];
+  for (let i = 1; i <= 3; i++) {
+    const a = (rnd() * 40 + 3).toFixed(1);
+    const b = (rnd() * 25 + 1).toFixed(1);
+    out.push('<p>' + title + '的第 ' + i + ' 项观察：报告期内该项为 ' + a
+      + ' 亿元，占总计的 ' + b + '%，同比变化的方向与上一章一致。'
+      + '这一段的作用是占据真实排版下的行数 —— 段落长度会影响分页位置，'
+      + '而分页位置正是本夹具要测的东西。若把段落压成一行，'
+      + '表格的 break-inside 行为会与真实文档不同。</p>');
+  }
+  return out.join('');
+}
+
+const host = document.getElementById('chapters');
+CHAPTERS.forEach(function (entry, i) {
+  const title = entry[0];
+  const lede = entry[1];
+  const sec = document.createElement('section');
+  sec.className = 'rep__sec';
+  /* 三个 ~0.35 页高的卡片：这是**能测出 avoid 代价**的结构。
+     表格那种跨 3 页的大块，Chrome 会直接忽略 break-inside: avoid（规范行为），
+     avoid 与 auto 页数一模一样 —— 那种块测不出任何东西。 */
+  let cards = '';
+  for (let k = 1; k <= 3; k++) {
+    const r2 = seeded(900 + i * 7 + k);
+    cards += '<section class="card" style="min-height:12rem"><h3>' + title
+      + ' · 要点 ' + k + '</h3><p>该要点用于占据约三分之一页高。'
+      + '高度不足以跨页、又足够大，因此 break-inside: avoid 会把它整体推到下一页，'
+      + '并在此页留下空隙 —— 这正是长文档里"烧纸"的来源。'
+      + '数值 ' + (r2() * 100).toFixed(1) + '%，' + (r2() * 100).toFixed(1) + '%。</p></section>';
+  }
+  sec.innerHTML = '<h2>' + (i + 1) + '. ' + title + '</h2>'
+    + paragraphs(i, title, lede)
+    + '<figure class="rep__fig">' + tableFor(i)
+    + '<figcaption class="rep__cap">表 ' + (i + 1) + ' · ' + title + '（构造数据）</figcaption></figure>'
+    + cards;
+  host.appendChild(sec);
+});
+
+/* 让 print-gate / 脚本能等到内容就绪 */
+document.documentElement.setAttribute('data-fixture-ready', '1');
+</script>
+</body>
+</html>
