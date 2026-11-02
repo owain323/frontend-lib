@@ -177,9 +177,11 @@ C3 行为生效   tabs.js 自动初始化，点第二个 tab 真的切过去
 C4 打印生效   打印态未选中面板被展开（引了 tokens.css 才成立）
 C5 契约可查   npx agentcss ai components --json → 40 个组件、40 条 printPolicy
 C6 A 档在包   04-recipes/tierA-tokens.css 在包里
+C7 导出可用   npx agentcss pdf 在装好的包上产出一份真 PDF（1 页 / 注入 @page）
 ```
 
-反向控制 4 条（少一个文件 / 不引 tokens 各自都必须红）。全量门禁里也跑它
+反向控制 4 条（少一个文件 / 不引 tokens 各自都必须红）。C7 是「下载之后能不能用」
+最后一块拼图：它跑的是 `node_modules/agentcss/ai/pdf.js`，不是仓库里的那份。全量门禁里也跑它
 （自己 pack 一遍），`pack-smoke.sh` 则复用已经装好的目录 —— 判据只有一份。
 
 ### 修复：文档里最靠前的那条命令不能用

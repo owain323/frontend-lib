@@ -19,6 +19,7 @@
      C4 打印生效    打印态未选中的面板 display !== none（折叠面板要被展开）
      C5 契约可查    npx agentcss ai components --json 解析出 40 个组件且带 printPolicy
      C6 复制路径    04-recipes/tierA-tokens.css（A 档）在包里，且能单独生效
+     C7 导出可用    npx agentcss pdf 在**装好的包**上产出一份真 PDF（不是在我们仓库里）
 
    为什么 C5 也算「能用」：这个库的定位是「人可以直接复制 CSS，AI 读契约」。
    契约查不到 = AI 消费者那半边不可用，而 pack-smoke 只判它「在不在包里」。
@@ -234,6 +235,29 @@ async function runChecks(dir, pkgRel, opts) {
     + ' 带 printPolicy=' + withPolicy
     + ' ｜无前缀写法=' + (ok2 ? '通' : '不通') + parseErr);
 
+  /* C7 导出：**用消费者身份**跑 `npx agentcss pdf`。
+     🔴 为什么必须在装好的包里跑：这条路上有三个只在"装完"才成立的前提 ——
+        ① `files` 白名单有没有把 ai/pdf.js、ai/pdf-pages.js 带上
+           （少了任何一个，整条 CLI 在 `require` 阶段就崩，C5 也会跟着红）
+        ② 相对路径的 CSS 在 file:// 下能不能解析（我们的临时文件落在同目录）
+        ③ 调用的是"已发布的 chrome 解析逻辑"，不是仓库里的 devDependency
+     仓库内跑通 ≠ 装完能用，这正是本文件存在的理由。 */
+  const pdfOut = 'consumer-export.pdf';
+  const rp = spawnSync('npx', ['--no-install', 'agentcss', 'pdf', 'index.html',
+    '--out', pdfOut, '--json'],
+    { cwd: dir, encoding: 'utf8', shell: process.platform === 'win32', timeout: 120000 });
+  let jp = null;
+  try { jp = JSON.parse(rp.stdout); } catch (e) { /* 下面判 */ }
+  const pdfPath = path.join(dir, pdfOut);
+  const pdfHead = fs.existsSync(pdfPath)
+    ? fs.readFileSync(pdfPath).slice(0, 5).toString('latin1') : '';
+  add('C7', rp.status === 0 && !!jp && jp.ok === true && jp.pages >= 1
+    && pdfHead === '%PDF-' && jp.injected === true,
+    'rc=' + rp.status + ' 页=' + (jp && jp.pages) + ' 头=' + JSON.stringify(pdfHead)
+    + ' 注入=' + (jp && jp.injected) + (jp && jp.code ? ' code=' + jp.code : '')
+    + (jp ? '' : ' ｜stdout=' + JSON.stringify(String(rp.stdout || '').slice(0, 60))));
+  try { fs.unlinkSync(pdfPath); } catch (e) { /* 已删 */ }
+
   return out;
 }
 
@@ -310,7 +334,7 @@ async function main() {
   console.log('  ' + '-'.repeat(74));
   const bad = all.filter((c) => !c.ok);
   console.log('  ' + (bad.length ? '🔴 ' + bad.length + ' 条不通过'
-    : '✅ 6 条全过：装完之后页面能用、能打印、契约可查'));
+    : '✅ ' + all.length + ' 条全过：装完之后页面能用、能打印、能导出、契约可查'));
   console.log('');
   if (own) rmrf(own.work);
   return bad.length ? 1 : 0;

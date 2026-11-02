@@ -816,7 +816,8 @@ run "pdf-export-rev" node 05-audit/pdf-export-gate.js --selftest
 #   JS 语法对）。结构对 ≠ 能用 —— `<link href="node_modules/agentcss/...">` 这类路径
 #   只有装完才成立，而「样式引了但 --accent 解析成空」不会被任何结构判据抓到。
 #   六条：C1 零 404 / C2 令牌与组件样式生效 / C3 行为（tabs.js 自动初始化）/
-#        C4 打印展开 / C5 契约可查（含文档教的 `ai` 前缀写法）/ C6 A 档令牌在包里。
+#        C4 打印展开 / C5 契约可查（含文档教的 `ai` 前缀写法）/ C6 A 档令牌在包里 /
+#        C7 在**装好的包**上真的导出一份 PDF（npx agentcss pdf）。
 #   ⚠️ 它会 `npm pack` + `npm install` 到**系统临时目录**（约 7s），跑完自清。
 run "consumer"     node 05-audit/consumer-smoke.js
 run "consumer-rev" node 05-audit/consumer-smoke.js --selftest
