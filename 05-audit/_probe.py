@@ -90,12 +90,22 @@ class Server(object):
             s.close()
 
     def _spawn(self, port):
-        """在指定端口起一个自己的静态服务；起来了返回 base，否则 None。"""
+        """在指定端口起一个自己的静态服务；起来了返回 base，否则 None。
+
+        🔴 必须用 `05-audit/http-serve.py`，**不能**用 `python -m http.server`。
+           本仓库 0.11.15 就为此写过一次复盘：`socketserver` 的
+           `request_queue_size` 默认 5，而一个页面要拉十来个资源；
+           多个浏览器同时开页 ⇒ 瞬时排队超过 5 ⇒ 内核直接拒绝 ⇒
+           **页面 JS 没落地就被量** ⇒ 全局"探不到"。
+           Windows 上单跑不容易撞上，Linux CI 上必撞（实测：16 个全局里
+           前 6 个（02-primitives）能探到，后面的全 absent —— 先到的抢到了连接）。
+        """
         py = sys.executable or 'python'
+        serve = os.path.join(ROOT, '05-audit', 'http-serve.py')
         for cand in (py, 'python3', 'python'):
             try:
                 self.proc = subprocess.Popen(
-                    [cand, '-m', 'http.server', str(port), '--bind', '127.0.0.1'],
+                    [cand, serve, str(port)],
                     cwd=ROOT,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL)
