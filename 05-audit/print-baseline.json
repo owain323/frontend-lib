@@ -224,7 +224,7 @@
     },
     "guide-button": {
       "light": {
-        "pages": 7,
+        "pages": 8,
         "runs": 1975,
         "worst": 5.44,
         "hist": {
@@ -238,7 +238,7 @@
         }
       },
       "dark": {
-        "pages": 7,
+        "pages": 8,
         "runs": 1975,
         "worst": 5.44,
         "hist": {

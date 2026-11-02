@@ -1137,4 +1137,20 @@ input[type="submit"],
   .nav__toggle,
   .pagination,
   .accordion__marker { display: none !important; }
+
+  /* ── 分页控制：不让表格行 / 图 / 卡片被从中间切断 ──────────────────────
+
+     ⚠️ **没有写** `thead { display: table-header-group }`：
+        那是 `thead` 的 HTML 默认值，Chrome 默认就让表头每页重复，
+        而本库没有任何规则覆盖它（已 grep 确认）。
+        写一条与默认值相同的声明，只会让下一个人以为"表头重复是我们加的"。
+
+     ⚠️ 代价说清楚：`.card` / `.metric` 高于一页时，Chrome 会忽略 avoid
+        并强制切断（这是规范行为，不是缺陷）；高于半页时会被整体推到下一页
+        ⇒ **页数可能变多**。宁可多一页，不要在纸中间切一半。 */
+  tr, img, figure, svg,
+  .card, .metric, .sparkline, .splot { break-inside: avoid; }
+
+  /* 孤行寡行：段首/段尾不要只留一行孤零零在另一页 */
+  p, li, blockquote { orphans: 2; widows: 2; }
 }
