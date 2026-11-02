@@ -801,7 +801,7 @@ run "print-policy-rev" node 05-audit/print-policy-gate.js --selftest
 #   13 页 22s；--all 是 47 页的发布前扫查（69s，不进每次全量）。
 run "print-content"     node 05-audit/print-content-audit.js
 run "print-content-rev" node 05-audit/print-content-audit.js --selftest
-# 导出路径（评测 §6.1/§6.2）：`agentcss pdf` 真的能产出一份合格的 PDF 吗。
+# 导出路径：`agentcss pdf` 真的能产出一份合格的 PDF 吗。
 #   为什么不能只靠 print-gate：那边判的是 **CDP `page.pdf()`**（我们自己的渲染），
 #   使用者用的是 **Chrome 命令行 `--print-to-pdf`**（另一条路）。两条路的 @page
 #   来源与底色默认都不同 ⇒ print-gate 全绿推不出导出能用。

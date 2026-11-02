@@ -198,7 +198,7 @@
    🔴 不做这个态，"全选"复选框就没法正确表达中间状态。 */
 .choice--checkbox .choice__input:indeterminate ~ .choice__label .choice__mark {
   /* 🔴 由「深蓝满色块」改为「白底 + accent 描边 + accent 横线」。
-     评审意见满色块"感觉比较差" —— 确实，半选塞一整块深色视觉太重。
+     满色块的问题：半选塞一整块深色，视觉太重。
      描边式同样能表达"部分选中"，且更轻。 */
   background: var(--surface);
   border-color: var(--accent);

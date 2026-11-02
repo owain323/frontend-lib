@@ -113,7 +113,7 @@ function cmdCheck(args) {
   if (!file) die('用法：ai check <doc.json> [--profile=creative|standard|strict] [--medium=screen|paper]');
   var doc = readJSON(file);
   var profile = flag('profile', doc.profile || 'standard');
-  /* 介质是**与档位正交**的第二根轴（评审 §3.7）：
+  /* 介质是**与档位正交**的第二根轴：
      strict+paper 与 creative+paper 都必须合法，做成第四个 profile 会把两维压成一维。
      默认 screen ⇒ 今天所有调用零成本；paper 才追加打印义务。 */
   var medium = flag('medium', 'screen');

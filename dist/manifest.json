@@ -8,7 +8,7 @@
   ],
   "totals": {
     "sourceFiles": 77,
-    "sourceBytes": 906857,
+    "sourceBytes": 906682,
     "distGzip": 109157
   },
   "files": [
@@ -189,9 +189,9 @@
     },
     {
       "source": "01-tokens/typography.css",
-      "sourceSha256": "9fe778bb9b94505bccf0af89e652980b6bb559f3c0c308fe1c4df4541adcddde",
-      "sourceBytes": 7139,
-      "sourceGzip": 3401,
+      "sourceSha256": "06bb40d6ec19431f890b8a4d67813a573ba8d24093f57c4a2db0c4a75d8626e3",
+      "sourceBytes": 7117,
+      "sourceGzip": 3390,
       "outputs": [
         {
           "path": "dist/01-tokens/typography.css",
@@ -245,9 +245,9 @@
     },
     {
       "source": "02-primitives/choice/choice.css",
-      "sourceSha256": "030fc343c06afb091725b4652d6772c74447e142bcad61e26ea1e471847493d2",
-      "sourceBytes": 17175,
-      "sourceGzip": 6060,
+      "sourceSha256": "dbfa41502434fcd3b0e7a296b998551791367fe063f4a5d3f4fbf1eb107768f8",
+      "sourceBytes": 17144,
+      "sourceGzip": 6037,
       "outputs": [
         {
           "path": "dist/02-primitives/choice/choice.css",
@@ -473,9 +473,9 @@
     },
     {
       "source": "02-primitives/timeline/timeline.css",
-      "sourceSha256": "a19a8358fd9dc0b4ee6ebcf214f59f56c1a80a26ff3203f4f5248dee0e79ef41",
-      "sourceBytes": 7286,
-      "sourceGzip": 3340,
+      "sourceSha256": "18b7d7e81c9112416f70269534c123522b9447e1b8c1947245485aac8d8d67eb",
+      "sourceBytes": 7272,
+      "sourceGzip": 3324,
       "outputs": [
         {
           "path": "dist/02-primitives/timeline/timeline.css",
@@ -704,9 +704,9 @@
     },
     {
       "source": "03-patterns/overlay/overlay.css",
-      "sourceSha256": "f838595de7337d9d420b170ba5362ca916e425a9d80a85071b4086c797b365cf",
-      "sourceBytes": 13221,
-      "sourceGzip": 5553,
+      "sourceSha256": "4ed8fd2dacc35ebcae9b72bbefda0555248bffbe8a1ae0d62ca4e0b02ccd7e05",
+      "sourceBytes": 13135,
+      "sourceGzip": 5507,
       "outputs": [
         {
           "path": "dist/03-patterns/overlay/overlay.css",
@@ -1020,9 +1020,9 @@
     },
     {
       "source": "09-assets/echarts-adapter/echarts-adapter.js",
-      "sourceSha256": "d9cb619004274c418e8082ac2d0834fdf91bb2f89dee06728bde28cca59b961a",
-      "sourceBytes": 13904,
-      "sourceGzip": 5606,
+      "sourceSha256": "7f898bd4bfc0d810f54eeddde9e1285b8e347c63d81e79b8a24225a0e9dc98cc",
+      "sourceBytes": 13882,
+      "sourceGzip": 5598,
       "outputs": [
         {
           "path": "dist/09-assets/echarts-adapter/echarts-adapter.js",

@@ -18,7 +18,7 @@
     "  L5 granted + 棘轮            只增不减的腐烂（下降必须重录）",
     "",
     "⚠️ 量的是**剥掉注释后的 UTF-8 字节**（浏览器不解析注释），",
-    "   且经 _bytes.read_norm 归一化（行尾不影响结果，见 internal/ERRORS.md E188 邻域）。"
+    "   且经 _bytes.read_norm 归一化（行尾不影响结果）。"
   ],
 
   "ceilingEffectiveBytes": 176128,

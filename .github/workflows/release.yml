@@ -225,7 +225,7 @@ jobs:
       - name: 装 CI 字体（与判基线时同一套）
         run: bash 05-audit/ci-fonts.sh
       - run: npm ci
-      - name: 录三套基线（G2-06D：一次加载拍三套）
+      - name: 录三套基线（一次加载拍三套）
         run: |
           set -eu
           python3 05-audit/shot-baseline.py --record

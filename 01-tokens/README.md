@@ -255,7 +255,7 @@ node ai/cli.js tree   [--set=light|dark] [--cat=color]   # 第二种
 1. **必须排在 `tokens.css` 之后** —— 同权重靠顺序定胜负。
 2. **不许写进 `tokens.css`** —— 那会让六个靠词法读 CSS 的工具静默读错
    （`contrast` / `gen-ai-contract` / `gen-tokens-tree` / `token-audience` /
-   `theme-sync`）。真实事故见 `internal/ERRORS.md` 的 E137。
+   `theme-sync`）。真实事故：一条 `@layer` 让六个工具同时读错，且都没有报错。
 3. 选择器是 `:root[data-market="intl"]` (0,2,0)，**不是** `:where(...)` (0) ——
    `:where()` 抢不过 `:root` 的 (0,1,0)，写了等于没写（E135）。
 

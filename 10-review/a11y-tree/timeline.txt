@@ -43,7 +43,7 @@ RootWebArea "timeline · 时间轴"
       listitem "10-29 季报披露" [level=1]
         time "10-29"
     paragraph "content: "" + 8×8 的圆角盒子：视觉一样，字形 0 个。 装饰不该占用“读得出来的字符”这个稀缺资源。"
-    paragraph "两栏的字形数差 1 —— 那 1 个就是圆点。这不是洁癖： 伪元素里的字符会参与可访问名计算 （本库 `internal"
+    paragraph "两栏的字形数差 1 —— 那 1 个就是圆点。这不是洁癖： 伪元素里的字符会参与可访问名计算 （实测：侧栏被读屏念成 “"
     heading "什么时候不该用它" [level=2]
     list
       listitem "状态要区分时 （已披露 / 待披露 / 停牌）：用 badge 配文字。 本组件 故意不给状态配色 —— 颜色在强制色、" [level=1]

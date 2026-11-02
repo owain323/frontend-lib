@@ -51,7 +51,7 @@
    * @param {string} fallback
    * @param {Element} [ctx]  作用域元素；默认根元素
    *
-   * 🔴 为什么必须有 ctx（G2-05）
+   * 🔴 为什么必须有 ctx
    *   本库的主题是**容器级**的：`[data-theme="dark"]` 可以只罩住一块区域
    *   （tokens.css 里 `[data-theme="dark"]` 与 `:root[data-theme="dark"]` 并列）。
    *   只读 `document.documentElement` 的话，暗容器里的图表会拿到**浅色**令牌：
@@ -137,7 +137,7 @@
   /**
    * 这个作用域是不是暗色 —— 读它**实际解析出来**的 `--paper` 算相对亮度。
    *
-   * 🔴 为什么不用 `data-theme` / `data-theme-current` 属性（G2-05）
+   * 🔴 为什么不用 `data-theme` / `data-theme-current` 属性
    *   · `data-theme-current` 只由 theme-toggle.js 写在 `:root` 上；
    *     容器级暗色永远不会设置它 ⇒ 属性判定在容器里恒为「浅色」。
    *   · 就算改用 `data-theme`，也只回答了「声明了什么」，没回答「算出什么色」。
