@@ -59,11 +59,13 @@
   &lt;button class=&quot;dd__btn&quot; data-dd-btn aria-haspopup=&quot;menu&quot; aria-expanded=&quot;false&quot;&gt;
     &lt;span&gt;操作&lt;/span&gt;&lt;span class=&quot;dd__caret&quot; aria-hidden=&quot;true&quot;&gt;&lt;/span&gt;
   &lt;/button&gt;
-  &lt;div class=&quot;dd__menu&quot; data-dd-menu role=&quot;menu&quot;&gt;
-    &lt;button class=&quot;dd__item&quot; role=&quot;menuitem&quot; data-value=&quot;edit&quot;&gt;编辑&lt;/button&gt;
-    &lt;hr class=&quot;dd__sep&quot; data-dd-sep role=&quot;separator&quot;&gt;
-    &lt;button class=&quot;dd__item&quot; role=&quot;menuitem&quot; data-value=&quot;del&quot;&gt;删除&lt;/button&gt;
-  &lt;/div&gt;
+  &lt;!-- ⚠️ 必须是 ul + li：JS 按 `li` 逐个补 role=&quot;menuitem&quot; / tabindex=&quot;-1&quot;。
+       写成 &lt;div&gt;/&lt;button&gt; 的列表，键盘导航会整个失效（没有可被 JS 接管的项）。 --&gt;
+  &lt;ul class=&quot;dd__menu&quot; data-dd-menu hidden&gt;
+    &lt;li data-value=&quot;edit&quot;&gt;编辑&lt;/li&gt;
+    &lt;li data-dd-sep&gt;&lt;/li&gt;
+    &lt;li data-value=&quot;del&quot;&gt;删除&lt;/li&gt;
+  &lt;/ul&gt;
 &lt;/div&gt;</code></pre>
 <div class="table"><table>
 <thead><tr>
@@ -72,9 +74,9 @@
 <tbody>
 <tr><td><code>.dd</code></td><td>根</td></tr>
 <tr><td><code>.dd__btn</code> / <code>[data-dd-btn]</code></td><td>触发按钮</td></tr>
-<tr><td><code>.dd__menu</code> / <code>[data-dd-menu]</code></td><td>菜单本体，<strong>必需</strong></td></tr>
-<tr><td><code>.dd__item</code></td><td>菜单项，带 <code>data-value</code></td></tr>
-<tr><td><code>.dd__sep</code> / <code>[data-dd-sep]</code></td><td>分隔线</td></tr>
+<tr><td><code>.dd__menu</code> / <code>[data-dd-menu]</code></td><td>菜单本体（<code>&lt;ul&gt;</code>），<strong>必需</strong></td></tr>
+<tr><td><code>.dd__item</code></td><td>菜单项（<code>&lt;li&gt;</code>），带 <code>data-value</code>。<strong>类名由 JS 自动补</strong>，不用手写</td></tr>
+<tr><td><code>.dd__sep</code> / <code>[data-dd-sep]</code></td><td>分隔线。只写 <code>data-dd-sep</code> 即可：<code>role=&quot;separator&quot;</code> + <code>aria-hidden</code> + <code>.dd__sep</code> 都由 JS 补（漏写类名时它渲染高度是 <strong>0px</strong>，两组菜单项直接贴着）</td></tr>
 <tr><td><code>.dd__check</code></td><td>多选勾选位</td></tr>
 <tr><td><code>.dd--end</code></td><td>菜单右对齐</td></tr>
 </tbody>
@@ -120,7 +122,7 @@ menu.setAttribute('role', 'menu');</code></pre>
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.25.1 · 零第三方运行时依赖 · 组件数 40</p>
+  <p>v0.25.2 · 零第三方运行时依赖 · 组件数 40</p>
 </footer>
 </body>
 </html>

@@ -49,20 +49,35 @@ const REPO = path.resolve(__dirname, '..');
       '错误文案具体（能说出怎么改）': async (p) => {
         const r = await p.evaluate(() => {
           const vague = ['有误', '错误', '无效', '不合法', 'error', 'invalid'];
-          const ids = [...document.querySelectorAll('[aria-describedby]')]
-            .map((e) => e.getAttribute('aria-describedby')).filter(Boolean);
-          const texts = [...new Set(ids)].map((id) => {
-            const el = document.getElementById(id);
-            return el ? (el.textContent || '').trim() : '';
-          }).filter(Boolean);
+          /* 🔴 0.25.2 修两个错（都会**稳定误报**，实测）：
+             ① **范围错**：原来扫"所有 aria-describedby 指向的文本"，
+                于是帮助文字（.field__hint）和"校验中"提示
+                （.field__checking-hint）也被当成错误文案审 ——
+                可它们根本不是错误。这条判据只管**错误文案**：
+                .field__error / role=alert / aria-invalid 字段所指向的说明。
+             ② **阈值错**：原来用 `t.length <= 最长含糊词长度 + 2`
+                （= 9）当"含糊"的判据，等于"凡是 ≤9 字都算含糊"，
+                与内容无关。实测把 8 个字的正常提示判成了"太含糊"。
+                改成：太短（<4 字）或**只由含糊词构成**（≤6 字且含含糊词）。 */
+          const nodes = [...document.querySelectorAll('.field__error, [role="alert"]')];
+          [...document.querySelectorAll('[aria-invalid="true"][aria-describedby]')]
+            .forEach((e) => {
+              (e.getAttribute('aria-describedby') || '').split(/\s+/).forEach((id) => {
+                const el = id ? document.getElementById(id) : null;
+                if (el) nodes.push(el);
+              });
+            });
+          const texts = [...new Set(nodes)]
+            .map((el) => (el.textContent || '').trim())
+            .filter((t) => t.length > 0);
           if (!texts.length) return { ok: true, note: '无错误文案（跳过）' };
-          const tooShort = texts.filter((t) => t.length < 6);
+          const tooShort = texts.filter((t) => t.length < 4);
           const tooVague = texts.filter((t) =>
-            vague.some((v) => t === v || t.length <= v.length + 2));
+            t.length <= 6 && vague.some((v) => t.toLowerCase().indexOf(v) >= 0));
           return { ok: tooShort.length === 0 && tooVague.length === 0,
                    note: tooVague.length ? '🔴 太含糊：' + tooVague.join(' | ')
                         : (tooShort.length ? '🔴 太短：' + tooShort.join(' | ')
-                                          : texts.length + ' 条文案都具体') };
+                                          : texts.length + ' 条错误文案都具体') };
         });
         return r;
       },

@@ -124,8 +124,8 @@ return r;
 }
 
 var CLS = {
-top: 'top', bottom: 'bottom',
-start: 'inset-inline-start', end: 'inset-inline-end',
+top: 'tooltip--top', bottom: 'tooltip--bottom',
+start: 'tooltip--inset-inline-start', end: 'tooltip--inset-inline-end',
 };
 
 function resolve(el, place) {
@@ -147,7 +147,7 @@ var pos = resolve(el, place);
 var id = 'tt' + (++uid);
 var tip = document.createElement('div');
 tip.id = id;
-tip.className = 'tooltip tooltip--' + CLS[pos];
+tip.className = 'tooltip ' + CLS[pos];
 tip.setAttribute('role', 'tooltip');
 tip.textContent = text;
 

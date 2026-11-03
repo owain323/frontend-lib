@@ -106,6 +106,48 @@
 
   </div>
 
+  <h2 class="rule-bottom">尺寸与布局：小尺寸 / 多行 / 标签在左</h2>
+  <p class="note">
+    这三档不是"好看的选项"，是<strong>三种不同的约束</strong>：
+    密度（表格行内）、行数（会换行的说明）、方向（标签在左的表单）。
+    写错哪一个都是"内容被裁掉"或"标签跑到控件上面"。
+  </p>
+  <div class="grid">
+
+    <div class="cell">
+      <h3><code>field__input--sm</code></h3>
+      <p>视觉 36px、命中区仍 <strong>44px</strong>（min-height 兜底）。用在表格行内、侧栏这类密度高的地方。</p>
+      <div class="field">
+        <label class="field__label" for="sm1">科目编码</label>
+        <input class="field__input field__input--sm" id="sm1" value="1122" autocomplete="off">
+      </div>
+    </div>
+
+    <div class="cell">
+      <h3><code>field__input--textarea</code></h3>
+      <p>直接拿 <code>.field__input</code> 配 <code>&lt;textarea&gt;</code> 会被 44px 固定高度<strong>裁掉</strong>。这一档放开高度、留 88px 起，并允许纵向拉伸。</p>
+      <div class="field">
+        <label class="field__label" for="ta1">备注</label>
+        <textarea class="field__input field__input--textarea" id="ta1" rows="3"
+                  placeholder="差异原因、审批说明…"></textarea>
+      </div>
+    </div>
+
+    <div class="cell">
+      <h3><code>field--row</code></h3>
+      <p>标签在左、控件在右，标签宽度固定 88px ⇒ 一列输入框的<strong>起点能对齐</strong>。480px 以下自动回退纵向。</p>
+      <div class="field field--row">
+        <label class="field__label" for="rw1">账期</label>
+        <input class="field__input" id="rw1" value="2026-09" autocomplete="off">
+      </div>
+      <div class="field field--row">
+        <label class="field__label" for="rw2">口径</label>
+        <input class="field__input" id="rw2" value="合并报表" autocomplete="off">
+      </div>
+    </div>
+
+  </div>
+
   <h2 class="rule-bottom">对比：常见写法 vs 本库写法</h2>
   <div class="cmp cmp--wide-first">
     <div class="cmp__pane cmp__bad" data-bad=".field__error|count|=0">

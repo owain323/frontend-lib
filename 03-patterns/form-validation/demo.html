@@ -21,6 +21,8 @@ p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6
 .good { background: var(--surface-sunken); }
 .bad h3 { color: var(--danger); }
 .good h3 { color: var(--success); }
+/* 校验中示例只放一个字段，别撑满整行 —— 撑满了会让人以为"整页都在查" */
+.checking-box { max-width: 460px; }
 .btn { display:inline-flex; align-items:center; justify-content:center; height:44px;
          padding:0 var(--sp-5); border:1px solid transparent; border-radius:var(--r-sm);
          font-size:var(--fs-sm); font-weight:500; cursor:pointer; font-family:inherit;
@@ -89,6 +91,24 @@ p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6
     三层时机：<code>onblur</code> 首次校验 → 之后才实时（字段"脏"过）→ <code>onsubmit</code> 全量校验并弹汇总。<br>
     🔴 <strong>刻意没用 <code>:has()</code></strong>：它是 CSS Level 4，某项目 上 WebView 版本不确定，
     而且把逻辑硬塞进样式层不可测。控制权交给 JS 加 <code>data-dirty</code> 属性。
+  </div>
+
+  <h3 class="rule-bottom">第三种状态：异步校验中（<code>field--checking</code>）</h3>
+  <div class="box checking-box">
+    <div class="field field--checking">
+      <label class="field__label" for="uname">用户名</label>
+      <input class="field__input" id="uname" value="data_team" autocomplete="username"
+             aria-describedby="uname-checking">
+      <span class="field__checking-hint" id="uname-checking">正在检查是否可用…</span>
+    </div>
+    <p class="small" style="margin-top:var(--sp-3)">
+      🔴 <strong>校验中绝不能把输入框置灰或禁用</strong> —— 用户会以为"不让打字了"，
+      于是停在那里等，而其实他完全可以接着改。
+      正确做法只有一条：<strong>保持可输入</strong>，旁边给一个小的 pending 指示。
+      <br>这个指示器是<strong>原地旋转</strong>（12px），不是全屏 spinner：
+      它只说明"这一项在查"，不代表"整个页面在忙"。
+      <code>prefers-reduced-motion</code> 下放慢到 1.2s 但不停（停了会被当成卡死）。
+    </p>
   </div>
 
   <h2 class="rule-bottom">二、完整表单：提交后出错误汇总</h2>

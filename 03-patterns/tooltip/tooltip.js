@@ -157,10 +157,14 @@ var flDismissable = function (opts) {
     return r;
   }
 
-  /* 逻辑方位 ⇒ 类名后缀。CSS 里只有 --inset-inline-start / --inset-inline-end */
+  /* 逻辑方位 ⇒ 完整类名。CSS 里只有 --inset-inline-start / --inset-inline-end。
+     🔴 为什么写整串而不是 `'tooltip--' + CLS[pos]`：拼出来的名字
+     在源码里 grep 不到，改 CSS 时无法反查谁在用；覆盖率门禁也只能看到
+     一段前缀，于是四个方位长期被记成"只被 README 认领"
+     —— 而它们其实每次 hover 都在渲染。 */
   var CLS = {
-    top: 'top', bottom: 'bottom',
-    start: 'inset-inline-start', end: 'inset-inline-end',
+    top: 'tooltip--top', bottom: 'tooltip--bottom',
+    start: 'tooltip--inset-inline-start', end: 'tooltip--inset-inline-end',
   };
 
   /**
@@ -195,7 +199,7 @@ var flDismissable = function (opts) {
     var id = 'tt' + (++uid);
     var tip = document.createElement('div');
     tip.id = id;
-    tip.className = 'tooltip tooltip--' + CLS[pos];
+    tip.className = 'tooltip ' + CLS[pos];
     tip.setAttribute('role', 'tooltip');
     tip.textContent = text;
 

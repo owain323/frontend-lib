@@ -16,13 +16,15 @@
     "wide": {
       "what": "横向溢出风险",
       "metric": "maxOverflow",
-      "members": 13,
+      "members": 15,
       "pages": [
+        "/02-primitives/choice/demo.html",
         "/02-primitives/switch/demo.html",
         "/03-patterns/list/demo.html",
         "/03-patterns/nav/demo.html",
         "/02-primitives/popover/demo.html",
         "/02-primitives/upload/demo.html",
+        "/03-patterns/accordion/demo.html",
         "/04-recipes/table/demo.html",
         "/04-recipes/analysis-report/demo.html",
         "/04-recipes/app-shell/demo.html",
@@ -108,8 +110,9 @@
     "media": {
       "what": "矢量/位图",
       "metric": "mediaCount",
-      "members": 11,
+      "members": 12,
       "pages": [
+        "/02-primitives/button/demo.html",
         "/02-primitives/choice/demo.html",
         "/02-primitives/metric/demo.html",
         "/02-primitives/upload/demo.html",
@@ -126,7 +129,7 @@
     "form": {
       "what": "表单控件",
       "metric": "controls",
-      "members": 11,
+      "members": 12,
       "pages": [
         "/02-primitives/input/demo.html",
         "/02-primitives/choice/demo.html",
@@ -134,6 +137,7 @@
         "/02-primitives/select/demo.html",
         "/02-primitives/combobox/demo.html",
         "/02-primitives/date-range/demo.html",
+        "/03-patterns/content/demo.html",
         "/03-patterns/form-validation/demo.html",
         "/02-primitives/popover/demo.html",
         "/02-primitives/upload/demo.html",
@@ -144,10 +148,11 @@
     "table": {
       "what": "表格",
       "metric": "tables",
-      "members": 11,
+      "members": 12,
       "pages": [
         "/03-patterns/content/demo.html",
         "/02-primitives/popover/demo.html",
+        "/03-patterns/accordion/demo.html",
         "/03-patterns/pagination/demo.html",
         "/09-assets/model-viewer/demo.html",
         "/04-recipes/table/demo.html",
@@ -225,12 +230,12 @@
     "guide-button": {
       "light": {
         "pages": 8,
-        "runs": 1975,
+        "runs": 2321,
         "worst": 5.44,
         "hist": {
-          "#606770": 183,
-          "#15181C": 1433,
-          "#4F555E": 347,
+          "#606770": 336,
+          "#15181C": 1477,
+          "#4F555E": 496,
           "#1B4D8F": 6,
           "#C0392B": 3,
           "#2F6B3A": 1,
@@ -239,12 +244,12 @@
       },
       "dark": {
         "pages": 8,
-        "runs": 1975,
+        "runs": 2321,
         "worst": 5.44,
         "hist": {
-          "#606770": 183,
-          "#15181C": 1433,
-          "#4F555E": 347,
+          "#606770": 336,
+          "#15181C": 1477,
+          "#4F555E": 496,
           "#1B4D8F": 6,
           "#C0392B": 3,
           "#2F6B3A": 1,
@@ -333,12 +338,12 @@
     "type-wide-table": {
       "light": {
         "pages": 5,
-        "runs": 1523,
+        "runs": 1719,
         "worst": 5.44,
         "hist": {
-          "#15181C": 775,
-          "#4F555E": 456,
-          "#606770": 148,
+          "#15181C": 853,
+          "#4F555E": 536,
+          "#606770": 186,
           "#000000": 4,
           "#2F6B3A": 77,
           "#C0392B": 63
@@ -346,12 +351,12 @@
       },
       "dark": {
         "pages": 5,
-        "runs": 1523,
+        "runs": 1719,
         "worst": 5.44,
         "hist": {
-          "#15181C": 775,
-          "#4F555E": 456,
-          "#606770": 148,
+          "#15181C": 853,
+          "#4F555E": 536,
+          "#606770": 186,
           "#000000": 4,
           "#2F6B3A": 77,
           "#C0392B": 63
@@ -361,26 +366,28 @@
     "type-form": {
       "light": {
         "pages": 3,
-        "runs": 576,
+        "runs": 721,
         "worst": 5.44,
         "hist": {
-          "#15181C": 91,
+          "#15181C": 101,
           "#4F555E": 168,
-          "#606770": 293,
+          "#606770": 426,
           "#1B4D8F": 11,
+          "#101010": 2,
           "#C0392B": 6,
           "#2F6B3A": 7
         }
       },
       "dark": {
         "pages": 3,
-        "runs": 576,
+        "runs": 721,
         "worst": 5.44,
         "hist": {
-          "#15181C": 91,
+          "#15181C": 101,
           "#4F555E": 168,
-          "#606770": 293,
+          "#606770": 426,
           "#1B4D8F": 11,
+          "#101010": 2,
           "#C0392B": 6,
           "#2F6B3A": 7
         }

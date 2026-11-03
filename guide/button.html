@@ -80,6 +80,7 @@
   &lt;svg ...&gt;&lt;/svg&gt;
 &lt;/button&gt;</code></pre>
 <p>变体：<code>primary</code> / <code>secondary</code> / <code>ghost</code> / <code>danger</code> 尺寸：<code>sm</code>(32) / <code>md</code>(44) / <code>lg</code>(52)</p>
+<blockquote><p>⚠️ <code>.btn--icon.btn--sm</code> 是 <strong>32×32</strong>，只满足 WCAG 2.2 的 AA（24px），<br><strong>不满足 44px 的 AAA</strong>。它只适用于表格行、标签条这类鼠标为主、相邻控件<br>本身就很密的位置；触屏主流程请用 <code>md</code>。<br>（所以演示页不放它：<code>button-check</code> 第 ③ 条要求整页可点元素 ≥44px，<br>放进来必然红 —— 那个红是对的。同类取舍见 <code>upload</code> 的 32px 移除按钮，<br>它在 <code>05-audit/tap-target.js</code> 里是<strong>登记过的</strong>例外。）</p></blockquote>
 <hr>
 <h2 id="s4">🔴 最关键的一个判断：<code>disabled</code> 还是 <code>aria-disabled</code><a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
 <p>这两个不是同义词，选错会直接伤到键盘用户。</p>
@@ -120,7 +121,7 @@
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.25.1 · 零第三方运行时依赖 · 组件数 40</p>
+  <p>v0.25.2 · 零第三方运行时依赖 · 组件数 40</p>
 </footer>
 </body>
 </html>

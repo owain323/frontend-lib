@@ -4,6 +4,59 @@ const path = require('path');
 const REPO = path.resolve(__dirname, '..');
 
 /**
+ * 方位判据的公共壳：点开某个方向的抽屉 → 量它贴在哪条边 → Esc 关掉。
+ *
+ * 🔴 为什么必须逐方位量（0.25.2 实测）：
+ *   四个方向的按钮一直在 demo 里，但**从来没有判据量过落位**。
+ *   原来 CSS 只有容器一条 `justify-content: flex-end`，于是：
+ *     left   → left=860（贴在右边，和 right 一模一样）
+ *     bottom → top=0   （贴在顶上，和 top 一模一样）
+ *   两个方向是错的，控制台干净、契约全绿、肉眼不点开也看不出。
+ *   ⇒ 判据要量"矩形贴哪条边"，不能只量"类名加上了"。
+ *     （类名对、位置错，正是这个 bug 的原始形态。）
+ */
+function dirCase(place, cls, edge) {
+  return async (p) => {
+    await p.evaluate((pl) => {
+      const b = document.querySelector('[data-place="' + pl + '"]');
+      if (b) b.click();
+    }, place);
+    await new Promise((r) => setTimeout(r, 420));
+    const m = await p.evaluate(() => {
+      const d = document.querySelector('.drawer');
+      if (!d) return { missing: true };
+      const r = d.getBoundingClientRect();
+      return {
+        cls: d.className,
+        left: r.left, top: r.top, right: r.right, bottom: r.bottom,
+        w: r.width, h: r.height,
+        vw: window.innerWidth, vh: window.innerHeight,
+      };
+    });
+    /* 收尾：无论判据成败都关掉，别把状态漏给下一条 */
+    await p.keyboard.press('Escape');
+    await new Promise((r) => setTimeout(r, 420));
+
+    if (m.missing) return { ok: false, note: '🔴 抽屉没打开 ⇒ 这条测不到' };
+    const hasCls = (' ' + m.cls + ' ').indexOf(' ' + cls + ' ') >= 0;
+    /* 容差 1px：亚像素取整不该让判据红 */
+    const near = (a, b) => Math.abs(a - b) <= 1;
+    let okEdge;
+    if (edge === 'right') okEdge = near(m.right, m.vw) && m.w < m.vw;
+    else if (edge === 'left') okEdge = near(m.left, 0) && m.w < m.vw;
+    else if (edge === 'top') okEdge = near(m.top, 0) && m.h < m.vh;
+    else okEdge = near(m.bottom, m.vh) && m.h < m.vh;
+
+    const box = '矩形 ' + Math.round(m.left) + ',' + Math.round(m.top) + ' ' +
+                Math.round(m.w) + '×' + Math.round(m.h) + '（视口 ' + m.vw + '×' + m.vh + '）';
+    if (!hasCls) return { ok: false, note: '🔴 类名里没有 ' + cls + '：' + m.cls };
+    return { ok: okEdge,
+             note: box + (okEdge ? ' ⇒ 贴 ' + edge + ' 边 ✅'
+                                 : ' ⇒ 🔴 没贴 ' + edge + ' 边') };
+  };
+}
+
+/**
  * drawer-check.js — 抽屉契约（总 D2 /
  *
  * 依据 APG Dialog。三条硬要求全部**真键盘**实测：
@@ -234,6 +287,12 @@ const REPO = path.resolve(__dirname, '..');
         await new Promise((x) => setTimeout(x, 420));
         return r;
       },
+
+      /* ⑩ 四个方位各自贴哪条边（0.25.2 补：此前只测 right） */
+      '⑩ 方位 right：贴内联终点': dirCase('right', 'drawer--right', 'right'),
+      '⑩ 方位 left：贴内联起点': dirCase('left', 'drawer--left', 'left'),
+      '⑩ 方位 top：贴上边': dirCase('top', 'drawer--top', 'top'),
+      '⑩ 方位 bottom：贴下边': dirCase('bottom', 'drawer--bottom', 'bottom'),
     },
   });
   process.exit(kit.report(r));

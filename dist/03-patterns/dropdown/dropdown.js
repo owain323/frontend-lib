@@ -314,6 +314,10 @@ String(li.className).indexOf('dd__item') < 0) {
 li.className = li.className ? (li.className + ' dd__item') : 'dd__item';
 }
 if (li.hasAttribute('data-dd-sep')) {
+
+if (String(li.className).indexOf('dd__sep') < 0) {
+li.className = li.className ? (li.className + ' dd__sep') : 'dd__sep';
+}
 li.setAttribute('role', 'separator');
 li.setAttribute('aria-hidden', 'true');
 } else if (!li.hasAttribute('role')) {

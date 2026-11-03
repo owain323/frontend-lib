@@ -28,6 +28,17 @@ RootWebArea "tabs · 标签页"
       tab "第二段"
     tabpanel "第一段"
       paragraph "方向键 只移动焦点 ，需按 Enter 才切 —— 读屏不会不停播报。"
+    heading "纵向（设置页侧栏那种）" [level=2]
+    paragraph "加 .tabs--vertical ，并把 tablist 的 aria-orientation 改成 vertical"
+    tablist "账户设置" [orientation=vertical]
+      tab "基本资料" [selected=true]
+      tab "安全"
+      tab "通知"
+    tabpanel "基本资料"
+      paragraph "头像、显示名、所属工作区。"
+      paragraph "修改头像（可 Tab 到）"
+        button "修改头像（可 Tab 到）"
+    paragraph "试 ↓ ↑ ：选中线应该在 文字右侧 （RTL 下换到左侧）。"
     heading "键盘契约（APG / Radix）" [level=2]
     paragraph "Tab 进入组时落在 当前选中 的 tab；再按 Tab 进面板 ← → 上一个 / 下一个 tab（并激活） Home"
     paragraph "roving tabindex ：一组 tab 里只有一个是 tabindex="0" ， 其余全是 -1 。否则 Ta"

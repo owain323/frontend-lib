@@ -122,6 +122,40 @@
 
 
 
+  <h2 class="rule-top">7 · 缺失值与紧凑密度（对账表这种"一屏二十行"的场合）</h2>
+  <p class="note">
+    <code>table--compact</code> 把字号降到 <code>--fs-xs</code>、内边距收到
+    <code>--sp-1 --sp-2</code> —— <strong>只给数字表、对账表用</strong>，
+    正文表格用了会读不动。
+    <br><code>cell--na</code> 是缺失值的统一写法：灰色、居中、不留空。
+    <strong>空格子和 0 是两件事</strong>：空格子读者分不清"没有数据"还是"漏了"，
+    0 会被当成真实数值参与心算。
+  </p>
+  <div class="table table--compact">
+    <table>
+      <caption class="table__cap">表 G · 银行对账明细（示例，含缺失值）</caption>
+      <thead>
+        <tr>
+          <th scope="col">科目</th>
+          <th scope="col" class="num">期初</th>
+          <th scope="col" class="num">本期发生</th>
+          <th scope="col" class="num">期末</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><th scope="row">银行存款</th><td class="num">1,204,300</td><td class="num">318,200</td><td class="num">1,522,500</td></tr>
+        <tr><th scope="row">应收账款</th><td class="num">884,120</td><td class="cell--na">—</td><td class="num">884,120</td></tr>
+        <tr><th scope="row">其他应收款</th><td class="cell--na">N/A</td><td class="num">12,400</td><td class="num">12,400</td></tr>
+        <tr><th scope="row">预付账款</th><td class="num">46,700</td><td class="num">3,100</td><td class="num">49,800</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="table__foot">
+    两处缺失值用了两种写法（<code>—</code> 与 <code>N/A</code>）：
+    会计表里 <code>—</code> 表示"本期无发生"，<code>N/A</code> 表示"未取到数"。
+    混用会让人以为两者是同一件事 —— <strong>选一种并在表注里说明</strong>。
+  </p>
+
   <h2 class="rule-bottom">对比：错写法 vs 本库写法</h2>
   <div class="cmp">
     <div class="cmp__pane cmp__bad" data-bad="td.num--pos|glyphs|=5">

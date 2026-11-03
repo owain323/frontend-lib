@@ -316,6 +316,33 @@
 <p class="note">只做纯图标栏、不接抽屉的话，第 4 节那种写法（图标 + <code>aria-label</code>）
 也成立；但只要你会用 <code>data-shell-nav</code>，就把文字留在 DOM 里 ——
 一份标记同时满足两种形态。</p>
+  <h2>8 · 平面外壳（<code>shell--flat</code>）：融进纸面，不画第二层框</h2>
+  <div class="demo" style="padding:0">
+    <div class="shell shell--flat shell-demo--short">
+      <header class="shell__topbar">
+        <h2 class="shell__title">内嵌在报告里的外壳</h2>
+      </header>
+      <nav class="shell__side" aria-label="主导航（平面外壳）">
+        <ul class="shell__side-group">
+          <li><a class="shell__link" href="#" aria-current="page">概览</a></li>
+          <li><a class="shell__link" href="#">明细</a></li>
+        </ul>
+      </nav>
+      <div class="shell__main">
+        <div class="shell__content">
+          <div class="ph">外壳底色改回纸色（--paper）</div>
+          <div class="ph">主区边线透明 ⇒ 不与外层的卡片边框重影</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="note">
+    什么时候用：外壳<strong>本身已经在卡片 / 弹窗 / 报告版式里</strong>。
+    这时它再自带一层底色和左边线，就会和外层边框形成"双重描边" ——
+    两条相距 1px 的线，看上去像渲染错位。
+    <br>什么时候别用：外壳是整页容器。那时它需要自己的边界，
+    <code>--flat</code> 会让侧栏和主区糊成一片。
+  </p>
 
 </main>
 <!-- shell-nav.js 依赖 Drawer（抽屉的行为层）。顺序不能反：

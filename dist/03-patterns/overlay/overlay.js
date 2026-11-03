@@ -150,6 +150,12 @@ document.removeEventListener('click', onPointer, true);
 };
 }
 
+var TOAST_VARIANT = {
+success: 'toast--success',
+error:   'toast--error',
+warning: 'toast--warning'
+};
+
 function toast(opts) {
 opts = opts || {};
 
@@ -164,7 +170,7 @@ document.body.appendChild(region);
 }
 
 var el = document.createElement('div');
-el.className = 'toast' + (opts.variant ? ' toast--' + opts.variant : '');
+el.className = 'toast' + (TOAST_VARIANT[opts.variant] ? ' ' + TOAST_VARIANT[opts.variant] : '');
 
 var body = document.createElement('div');
 body.className = 'toast__body';

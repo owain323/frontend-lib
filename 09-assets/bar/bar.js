@@ -23,8 +23,12 @@
   var NS = 'http://www.w3.org/2000/svg';
   var uid = 0;
   /* 分类色 5 个（bar.css 里的 .bar__s0..s4），与 scientific-plot 的 ramp 对齐。
-     超过 5 个系列请由调用方给 `series[i].cls` 自定义 —— 颜色循环会造成误读。 */
-  var SERIES_STYLES = 5;
+     超过 5 个系列请由调用方给 `series[i].cls` 自定义 —— 颜色循环会造成误读。
+     🔴 写成**完整类名数组**而不是 `'bar__s' + n`：
+        拼串在源码里搜不到 `bar__s4`，改配色时无法反查谁在用；
+        也让 .bar__s4 一直躺在覆盖率门禁的"只被 README 认领"名单里。 */
+  var SERIES_CLS = ['bar__s0', 'bar__s1', 'bar__s2', 'bar__s3', 'bar__s4'];
+  var SERIES_STYLES = SERIES_CLS.length;
 
   /* ==================================================================== *
    * 铁律二的核心：哪些点值得标数字
@@ -193,7 +197,7 @@
         yy = padT + plotH - vt;
 
         rect = el('rect', {
-          'class': 'bar__bar bar__s' + (s % SERIES_STYLES) +
+          'class': 'bar__bar ' + SERIES_CLS[s % SERIES_STYLES] +
                    (series[s].cls ? ' ' + series[s].cls : ''),
           x: x, y: yy, width: barW, height: vt - vb,
         });
@@ -277,7 +281,7 @@
         var li = document.createElement('li');
         li.className = 'bar__legend-item';
         var sw = document.createElement('span');
-        sw.className = 'bar__legend-swatch bar__s' + (si % SERIES_STYLES) +
+        sw.className = 'bar__legend-swatch ' + SERIES_CLS[si % SERIES_STYLES] +
                        (se.cls ? ' ' + se.cls : '');
         /* 🔴 用 textContent，不用 innerHTML —— 系列名来自调用方的数据 */
         li.appendChild(sw);

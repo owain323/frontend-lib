@@ -188,9 +188,24 @@
     }
   }
 
+  /* 方位 ⇒ 类名。两个理由都用完整字面量，不拼 `'drawer--' + place`：
+     ① 拼出来的名字源码里 grep 不到，改 CSS 时无法反查谁在用，
+        覆盖率门禁也认不出（4 个方位因此长期被记成"只被 README 认领"）。
+     ② 它是**白名单**：`{place:'tp'}` 原本会拼出 `drawer--tp`，没有任何 CSS
+        命中 ⇒ 抽屉按默认规则贴右侧、**不报错**。现在未知值退回 right。
+     `start`/`end` 是逻辑别名，落到同两个类（见 drawer.css「四个方向」）。 */
+  var PLACE_CLASS = {
+    right:  'drawer--right', end:   'drawer--right',
+    left:   'drawer--left',  start: 'drawer--left',
+    top:    'drawer--top',
+    bottom: 'drawer--bottom'
+  };
+
   function open(opt) {
     opt = opt || {};
     var place = opt.place || 'right';
+    var placeCls = PLACE_CLASS[place];
+    if (!placeCls) placeCls = PLACE_CLASS.right;
 
     /* ⭐ 记住"打开那一刻的焦点"—— 关闭时要还回去。
        （必须在插入 DOM **之前**记录，否则会记到新节点上。）
@@ -206,7 +221,7 @@
     if (opt.label) host.setAttribute('aria-label', opt.label);
 
     var d = document.createElement('aside');
-    d.className = 'drawer drawer--' + place;
+    d.className = 'drawer ' + placeCls;
     d.setAttribute('role', 'dialog');
     d.setAttribute('aria-modal', 'true');
     if (!d.id) d.id = 'drawer-' + (new Date()).getTime();

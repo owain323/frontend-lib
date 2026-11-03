@@ -26,6 +26,7 @@ RootWebArea "列表 · 增删的平滑过渡"
         button "移除"
       listitem "五粮液 14,188 条记录 · 消费 +1.87% 移除" [level=1]
         button "移除"
+    paragraph "共 8 条 · 插入顺序" [live=polite]
     heading "请试这四件事" [level=2]
     paragraph "1. 删中间任意一条。 上下两行会 平滑滑过去 ， 不是瞬间跳位。盯着两行之间的缝隙看。"
     paragraph "2. 点"按记录数排序"。 整列重排，每一行各自从旧位置滑到新位置—— 这也是 FLIP，只是位移不为零。"

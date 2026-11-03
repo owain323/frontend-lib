@@ -19,6 +19,9 @@ RootWebArea "card · hover 无跳动"
     paragraph "默认带阴影。只用在浮层、弹窗。列表里全用它，阴影会互相打架。"
     heading "selected" [level=3]
     paragraph "用 inset box-shadow 做内描边，不是改 border-width —— 同样为了不跳动。"
+    heading "compact" [level=3]
+    paragraph "内边距 24→16、标题降到正文大小。用在"一屏要放十几张"的清单里。"
+    button "查看"
     heading "整卡可点：Tab 一下试试" [level=2]
     heading "点标题，整卡可点" [level=3]
       link "点标题，整卡可点"

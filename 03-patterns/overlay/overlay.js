@@ -252,6 +252,19 @@
      🔴 绝不抢焦点。role="status" 会被屏幕阅读器自动播报，
         focus() 会打断用户当前正在做的事。
   */
+  /* 变体 ⇒ 类名。🔴 两个理由，都不是"为了好看"：
+     ① **白名单**：`toast({variant:'warn'})` 原本会拼出 `toast--warn`，
+        没有任何 CSS 命中 ⇒ 一条本该是黄色的警示条渲染成普通白条，
+        不报错、控制台干净。现在未知值退回无变体（至少不假装有语义）。
+     ② **写完整字面量**：`'toast--' + variant` 在源码里搜不到
+        `toast--success`，覆盖率门禁认不出"谁在用这个类"
+        （实测 success / warning 因此长期躺在"只被 README 认领"名单里）。 */
+  var TOAST_VARIANT = {
+    success: 'toast--success',
+    error:   'toast--error',
+    warning: 'toast--warning'
+  };
+
   function toast(opts) {
     opts = opts || {};
 
@@ -266,7 +279,7 @@
     }
 
     var el = document.createElement('div');
-    el.className = 'toast' + (opts.variant ? ' toast--' + opts.variant : '');
+    el.className = 'toast' + (TOAST_VARIANT[opts.variant] ? ' ' + TOAST_VARIANT[opts.variant] : '');
 
     var body = document.createElement('div');
     body.className = 'toast__body';

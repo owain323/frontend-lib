@@ -59,6 +59,11 @@
   min-height: 44px;               /* 触摸目标 44px：视觉方框只有 20px */
   cursor: pointer;
   user-select: none;
+  /* 🔴 0.25.2 补：`.choice__hint` 要能落到标签**下方**（README 的承诺）。
+     没有 wrap 时，它作为第三个 flex item 会被挤到标签右侧、
+     还因为 label 是 flex:1 而被推到最右边 —— 文档写"下方"，实际在右边。
+     只有存在 hint 时才换行，单子元素的既有布局一个像素都不动。 */
+  flex-wrap: wrap;
 }
 
 .choice__label {
@@ -187,6 +192,11 @@
   font-size: var(--fs-xs);
   color: var(--text-tertiary);
   line-height: 1.5;
+  /* 独占一行，并与标签**文字**左对齐：
+     缩进 = 勾选框 20px + label 内 gap（--sp-2）。
+     （20px 与 `.choice__mark` 的 width 是同一个值，改一处要连着改。） */
+  flex: 1 0 100%;
+  margin-inline-start: calc(20px + var(--sp-2));
 }
 
 /* ============================================================================

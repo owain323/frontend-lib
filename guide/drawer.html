@@ -69,12 +69,14 @@
 <th>部件</th><th>说明</th>
 </tr></thead>
 <tbody>
-<tr><td><code>.drawer--right</code>（默认）/ <code>.drawer--left</code> / <code>.drawer--top</code> / <code>.drawer--bottom</code></td><td>四个进入方向。左右是侧栏（宽度由 <code>--drawer-w</code> 定），上下是<strong>抽屉式面板</strong>（<code>min(60vh, 420px)</code> 高、整宽），适合移动端底部操作区</td></tr>
+<tr><td><code>.drawer--right</code>（默认）/ <code>.drawer--left</code> / <code>.drawer--top</code> / <code>.drawer--bottom</code></td><td>四个进入方向。左右是侧栏（宽度由 <code>min(420px, 92vw)</code> 定），上下是<strong>抽屉式面板</strong>（<code>min(60vh, 420px)</code> 高、整宽），适合移动端底部操作区</td></tr>
 <tr><td><code>.drawer__head</code> / <code>__title</code> / <code>__close</code></td><td>头部与关闭按钮</td></tr>
 <tr><td><code>.drawer__body</code></td><td>内容</td></tr>
 <tr><td><code>.drawer__foot</code></td><td>底部操作区</td></tr>
 </tbody>
 </table></div>
+<blockquote><p>⚠️ <strong>左右是逻辑轴，不是物理轴</strong>：<code>--left</code> = 内联起点、<code>--right</code> = 内联终点。<br>LTR 下就是字面意思；<code>dir=&quot;rtl&quot;</code> 时整个外壳镜像（<code>--right</code> 会出现在左边）。<br>抽屉是&quot;布局家具&quot;，整页镜像时必须跟着镜像 —— 只有&quot;指向某侧的箭头&quot;<br>（如 tooltip 的小三角）才该保持物理方向。<br>JS 另外接受 <code>start</code> / <code>end</code> 两个别名，落到同两个类，这样跨方向写一份配置就够。</p></blockquote>
+<blockquote><p>🔴 0.25.2 修：<code>.drawer--left</code> / <code>--bottom</code> <strong>此前只改了边框和动画，位置没动</strong> ——<br>两个方向都出现在和默认方向一样的位置上，不报错、控制台干净，<br>因为四个方位<strong>从来没有判据量过落位</strong>。现在 <code>drawer-check</code> 逐个量矩形贴哪条边。</p></blockquote>
 <h2 id="s5">启用<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
 <pre class="code" tabindex="0"><code class="language-js">Drawer.open({ place: 'right' });   // 默认就是 right</code></pre>
 <p>全局只导出 <code>open</code>（不是 <code>create</code>）—— DOM 由 JS 建。</p>
@@ -110,7 +112,7 @@
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.25.1 · 零第三方运行时依赖 · 组件数 40</p>
+  <p>v0.25.2 · 零第三方运行时依赖 · 组件数 40</p>
 </footer>
 </body>
 </html>

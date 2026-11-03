@@ -129,7 +129,7 @@
 <tr><td><code>.field__input--textarea</code></td><td>多行：<code>height:auto</code> + <code>min-height:88px</code> + <code>padding:--sp-3</code> + <code>resize:vertical</code></td><td>备注、说明、地址等会换行的输入；直接拿 <code>.field__input</code> 配 <code>&lt;textarea&gt;</code> 会被 44px 固定高度裁掉</td></tr>
 </tbody>
 </table></div>
-<blockquote><p>⚠️ <strong>demo 里没有演示这一档</strong> —— 它是留给复用者的钩子，<br>不是&quot;看起来有其实没有&quot;。要用就自己加类。</p></blockquote>
+<blockquote><p>这三档在 demo 的「尺寸与布局」一节里都有实例。<br>早先这里写的是&quot;demo 里没有演示&quot; —— 那是个坏主意：没有渲染过的 CSS<br>等于没人验证过（<code>--textarea</code> 一旦被别的规则盖掉，谁都不会发现）。</p></blockquote>
 <h2 id="s9">🔴 移动端必填：inputmode 与 autocomplete<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
 <p>这两个属性<strong>不影响桌面</strong>，但<strong>决定手机上用户体验</strong>：</p>
 <h3 id="s10">1 · <code>inputmode</code> —— 决定<strong>弹出哪种键盘</strong><a class="anchor" href="#s10" aria-label="本节直链">#</a></h3>
@@ -165,7 +165,7 @@ autocomplete=&quot;off&quot;</code></pre>
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.25.1 · 零第三方运行时依赖 · 组件数 40</p>
+  <p>v0.25.2 · 零第三方运行时依赖 · 组件数 40</p>
 </footer>
 </body>
 </html>

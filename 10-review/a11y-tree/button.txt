@@ -41,6 +41,17 @@ RootWebArea "button · 七态矩阵"
     button "md 44"
     button "lg 52"
     paragraph "md = 44px 是 WCAG 2.5.5 增强级的触摸目标尺寸，来自手指物理尺寸，不是审美。 sm 只在表格行内等鼠"
+    heading "两种形态：方形图标按钮 / 占满一行" [level=2]
+    heading ".btn--icon · 只有图标" [level=3]
+    paragraph "宽高相等（ --md 44、 --lg 52、 --sm 32），所以图标必须是 唯一内容 。 ⇒ 读屏读不到文字，必须"
+    button "刷新数据"
+    button "新建"
+    button "收起侧栏"
+    paragraph ".btn--icon.btn--sm 是 32×32：只够 WCAG 2.2 的 AA（24px）， 不满足 44px "
+    heading ".btn--block · 占满容器" [level=3]
+    paragraph "不是 width:100% 的按钮，而是 display:flex 的容器 ⇒ 内容自动居中，多个子元素（图标 + 文字"
+    button "提交审批"
+    paragraph "外面这个 280px 的框就是它的容器：按钮正好铺满，不多不少。 宽度来自容器而不是按钮自己 ⇒ 放进窄侧栏、弹窗底部都"
     heading "对比：常见的错写法 vs 本库写法" [level=2]
     heading "常见写法（某项目 现状）" [level=3]
     button "hover 看我"

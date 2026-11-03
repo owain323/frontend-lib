@@ -168,6 +168,49 @@ const AXE = require.resolve('axe-core');
   add('Tab 不逐个穿过同组的其它 tab（' + seq.slice(0, 2).join(',') + '）',
       seq.indexOf('t2') === -1 && seq.indexOf('t3') === -1);
 
+  /* ── 纵向变体：`tabs--vertical` 与 aria-orientation 必须**成对**改 ──
+     🔴 为什么单列一组判据：只加类不改 aria-orientation，屏幕上竖着，
+        读屏却告诉用户"横向、按左右键" ⇒ 用户按 ↑↓ 没反应，
+        按 ←→ 反而跳了（因为 JS 两种键都收）。两边不一致才是真缺陷。 */
+  const vg = await p.evaluate(() => {
+    const list = document.querySelector('[aria-orientation="vertical"]');
+    if (!list) return null;
+    const tabs = [...list.querySelectorAll('[role="tab"]')];
+    const tops = tabs.map((t) => Math.round(t.getBoundingClientRect().top));
+    const lefts = tabs.map((t) => Math.round(t.getBoundingClientRect().left));
+    const panel = list.parentNode.querySelector('[role="tabpanel"]');
+    return {
+      dir: getComputedStyle(list).flexDirection,
+      tops: tops, lefts: lefts,
+      listW: Math.round(list.getBoundingClientRect().width),
+      panelW: Math.round(panel.getBoundingClientRect().width),
+    };
+  });
+  add('纵向 tablist 真的竖排（flex-direction=' + (vg ? vg.dir : '无此 tablist') + '）',
+      !!vg && vg.dir === 'column' &&
+      vg.tops[0] < vg.tops[1] && vg.tops[1] < vg.tops[2] &&
+      Math.abs(vg.lefts[0] - vg.lefts[2]) <= 1);
+  add('纵向时面板在 tablist 右侧（' + (vg ? vg.listW + 'px < ' + vg.panelW + 'px' : '—') + '）',
+      !!vg && vg.panelW > vg.listW);
+
+  await p.evaluate(() => document.getElementById('v1').focus());
+  await p.keyboard.press('ArrowDown');
+  await new Promise((r) => setTimeout(r, 160));
+  const vd = await p.evaluate(() => ({
+    sel: document.getElementById('v2').getAttribute('aria-selected'),
+    focus: document.activeElement === document.getElementById('v2'),
+    old: document.getElementById('v1').getAttribute('aria-selected'),
+  }));
+  add('纵向：↓ 切到下一项并聚焦（v2 selected=' + vd.sel + '，v1 selected=' + vd.old + '）',
+      vd.sel === 'true' && vd.focus && vd.old === 'false');
+  await p.keyboard.press('ArrowUp');
+  await new Promise((r) => setTimeout(r, 160));
+  const vu = await p.evaluate(() => ({
+    sel: document.getElementById('v1').getAttribute('aria-selected'),
+    focus: document.activeElement === document.getElementById('v1'),
+  }));
+  add('纵向：↑ 回到上一项', vu.sel === 'true' && vu.focus);
+
   // ── axe
   await p.addScriptTag({ path: AXE });
   const a = await p.evaluate(async () => {

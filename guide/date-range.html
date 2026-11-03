@@ -75,7 +75,7 @@
 <tr><td><code>[data-dr-error]</code></td><td>错误容器，<code>role=&quot;alert&quot;</code></td></tr>
 <tr><td><code>[data-dr-summary]</code></td><td>选中区间的摘要（如「共 92 天」）</td></tr>
 <tr><td><code>[data-dr-clear]</code></td><td>清除，<strong>不可省</strong></td></tr>
-<tr><td><code>.drange--disabled</code></td><td>整体禁用</td></tr>
+<tr><td><code>.drange--disabled</code></td><td>视觉禁用（预设与清除置灰、hover 不变色）。<strong>它只管观感</strong> —— 真正不可用还要给内部 <code>input</code> / <code>button</code> 加原生 <code>disabled</code>，见 demo 第 3 节</td></tr>
 </tbody>
 </table></div>
 <p>⚠️ 标记名是 <strong><code>data-dr-*</code></strong>（<code>dr</code> 缩写），不是 <code>data-drange-*</code>。</p>
@@ -131,7 +131,7 @@ if (msg) {
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.25.1 · 零第三方运行时依赖 · 组件数 40</p>
+  <p>v0.25.2 · 零第三方运行时依赖 · 组件数 40</p>
 </footer>
 </body>
 </html>

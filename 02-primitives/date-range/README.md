@@ -37,7 +37,7 @@
 | `[data-dr-error]` | 错误容器，`role="alert"` |
 | `[data-dr-summary]` | 选中区间的摘要（如「共 92 天」）|
 | `[data-dr-clear]` | 清除，**不可省** |
-| `.drange--disabled` | 整体禁用 |
+| `.drange--disabled` | 视觉禁用（预设与清除置灰、hover 不变色）。**它只管观感** —— 真正不可用还要给内部 `input` / `button` 加原生 `disabled`，见 demo 第 3 节 |
 
 ⚠️ 标记名是 **`data-dr-*`**（`dr` 缩写），不是 `data-drange-*`。
 

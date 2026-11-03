@@ -47,6 +47,16 @@ RootWebArea "content · 正文渲染 · frontend-lib"
     heading "4 · 代码与链接" [level=2]
     paragraph "详细口径见 内部数据字典 。"
       link "内部数据字典"
+    heading "5 · 待办清单" [level=2]
+    paragraph "Markdown 的 - [x] 语法渲染成的样子。它是 正文里的一行 ， 所以只去掉列表圆点、把勾选框对齐到行的左缘，"
+    list
+      listitem [level=1]
+        checkbox "核对 2026 Q1 收入口径" [disabled=true checked=true]
+      listitem [level=1]
+        checkbox "补齐 26 家公司的三张表" [disabled=true checked=true]
+      listitem [level=1]
+        checkbox "复核应收账款周转天数" [disabled=true]
+    paragraph "为什么勾选框要带 disabled ：这是 已渲染的正文 ， 不是可填的表单。可点的复选框会让读者以为"改了会保存"。"
     heading "对比：错写法 vs 本库写法" [level=2]
     heading "❌ 常见写法：裸 <hr>" [level=3]
     paragraph "默认 <hr> 自带上下两条 inset 边框，不清 height 和 border-top 出来就是一条粗双线 —— "

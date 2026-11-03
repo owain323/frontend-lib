@@ -121,6 +121,23 @@ th { font-size: var(--fs-xs); color: var(--text-secondary); font-weight: 500; }
 
 
 
+  <h2 class="rule-top">7 · 表格页脚里的精简分页（不占一行位置）</h2>
+  <p class="note">
+    数据表底部通常只有一两行的空间：<b>状态文字可以省，播报区不能省</b>。
+    <br>做法是把 <code>data-pg-live</code> 挂在一个 <code>.pagination__sr</code> 上 ——
+    <b>视觉上不占位，读屏照常播报</b>（用 <code>clip</code> 裁掉，不是 <code>display:none</code>；
+    后者会把整块移出无障碍树，播报就没了）。
+    <br>⚠️ 省略 <code>data-pg-status</code> 是允许的（JS 里有判空）；
+    省略 <code>data-pg-live</code> 则等于"翻页了但不告诉读屏"。
+  </p>
+  <div class="demo-box">
+    <nav class="pagination" aria-label="明细表分页"
+         data-pagination data-total="248" data-page-size="20" data-page="7" id="pg2">
+      <ul class="pagination__list" data-pg-list></ul>
+      <p class="pagination__sr" data-pg-live aria-live="polite"></p>
+    </nav>
+  </div>
+
   <h2 class="rule-bottom">对比：错写法 vs 本库写法</h2>
   <div class="cmp">
     <div class="cmp__pane cmp__bad" data-bad="li.pagination__item|count|>7">
@@ -200,6 +217,12 @@ pg.onChange = function (page) {
   }
 };
 load(pg.page);
+
+/* 精简分页（页脚用）：没有 data-pg-status，播报区挂在 .pagination__sr 上 */
+var pg2 = Pagination.create(document.getElementById('pg2'));
+pg2.onChange = function (page) {
+  document.getElementById('pg2').setAttribute('data-page', String(page));
+};
 </script>
 </body>
 </html>

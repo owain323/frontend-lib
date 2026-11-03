@@ -42,6 +42,22 @@ RootWebArea "date-range · 日期区间 · frontend-lib"
     button "上季度"
     button "上月"
     button "去年同期"
+    heading "3 · 只读区间：drange--disabled + 原生 disabled" [level=2]
+    paragraph "一件事要拆成两半做，缺一半就假。 · .drange--disabled 负责 观感 ：预设与清除置灰、hover 不再"
+    LabelText "开始"
+    Date "开始" [disabled=true]
+      spinbutton "年 年" [disabled=true]
+      spinbutton "月 月" [disabled=true]
+      spinbutton "日 日" [disabled=true]
+    LabelText "结束"
+    Date "结束" [disabled=true]
+      spinbutton "年 年" [disabled=true]
+      spinbutton "月 月" [disabled=true]
+      spinbutton "日 日" [disabled=true]
+    button "清除" [disabled=true]
+    button "本季度" [disabled=true]
+    button "上季度" [disabled=true]
+    paragraph "这一块是 已发布报表的冻结区间 ：读者要看懂区间，但不能改它。 留着可编辑只会让人以为自己填错了。"
     heading "对比：错写法 vs 本库写法" [level=2]
     heading "❌ 常见写法：错误只改边框颜色" [level=3]
     paragraph "结束日期早于开始日期，界面上只是"红了一圈"：色觉障碍用户看不出来，灰度打印也看不出来，而且 没有一句话 告诉你错在哪。"

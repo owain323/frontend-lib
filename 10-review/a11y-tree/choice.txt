@@ -9,6 +9,9 @@ RootWebArea "checkbox / radio / select · 键盘行为验证"
     checkbox "导入时跳过表头行"
     LabelText "导入时跳过表头行"
     paragraph "整个 label 都能点（input 透明铺满了它），但视觉方框只有 20px—— 触摸目标是 44px 。"
+    checkbox "订阅月度报告"
+    LabelText "订阅月度报告"
+    paragraph ".choice__hint 是 解释 ，不是标签的一部分： 它排在标签下方、和文字左对齐，并且用 aria-descri"
     heading "indeterminate（第三态）" [level=2]
     checkbox "全选（下面 3 项）" [checked=mixed]
     LabelText "全选（下面 3 项）"
@@ -37,6 +40,14 @@ RootWebArea "checkbox / radio / select · 键盘行为验证"
       option "最近一年"
       option "自定义区间…"
     paragraph "用原生 select，不做自定义下拉。 移动端会弹出系统带 wheel 的原生选择器、语言跟随系统、无障碍由系统保证。 "
+    LabelText "导出字段（可多选）"
+    listbox "导出字段（可多选）" [multiselectable=true orientation=vertical]
+      option "科目编码" [selected=true]
+      option "科目名称" [selected=true]
+      option "期初余额（跨年调整后，含上年重分类的说明会换行）"
+      option "本期发生额（借贷方分开列示，便于与总账核对）"
+      option "期末余额"
+    paragraph ".select__control--auto ：固定 44px 高度遇到换行文字会把第二行 裁掉 ， 所以多选列表 / "
     heading "disabled" [level=2]
     checkbox "导出 PDF（需要专业版）" [disabled=true]
     LabelText "导出 PDF（需要专业版）"

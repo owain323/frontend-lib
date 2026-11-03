@@ -31,6 +31,22 @@ RootWebArea "input · 五态矩阵"
     paragraph "aria-describedby 把说明挂到输入框，聚焦时屏幕阅读器会一起读出来。"
     LabelText "金额"
     textbox "金额"
+    heading "尺寸与布局：小尺寸 / 多行 / 标签在左" [level=2]
+    paragraph "这三档不是"好看的选项"，是 三种不同的约束 ： 密度（表格行内）、行数（会换行的说明）、方向（标签在左的表单）。 写错"
+    heading "field__input--sm" [level=3]
+    paragraph "视觉 36px、命中区仍 44px （min-height 兜底）。用在表格行内、侧栏这类密度高的地方。"
+    LabelText "科目编码"
+    textbox "科目编码"
+    heading "field__input--textarea" [level=3]
+    paragraph "直接拿 .field__input 配 <textarea> 会被 44px 固定高度 裁掉 。这一档放开高度、留 88"
+    LabelText "备注"
+    textbox "备注"
+    heading "field--row" [level=3]
+    paragraph "标签在左、控件在右，标签宽度固定 88px ⇒ 一列输入框的 起点能对齐 。480px 以下自动回退纵向。"
+    LabelText "账期"
+    textbox "账期"
+    LabelText "口径"
+    textbox "口径"
     heading "对比：常见写法 vs 本库写法" [level=2]
     heading "常见写法" [level=3]
     paragraph "placeholder 当 label —— 一输入就消失 只把边框变红 —— WCAG 1.4.1 禁止只靠颜色传达信"

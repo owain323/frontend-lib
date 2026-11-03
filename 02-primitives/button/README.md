@@ -46,6 +46,13 @@
 变体：`primary` / `secondary` / `ghost` / `danger`
 尺寸：`sm`(32) / `md`(44) / `lg`(52)
 
+> ⚠️ `.btn--icon.btn--sm` 是 **32×32**，只满足 WCAG 2.2 的 AA（24px），
+> **不满足 44px 的 AAA**。它只适用于表格行、标签条这类鼠标为主、相邻控件
+> 本身就很密的位置；触屏主流程请用 `md`。
+> （所以演示页不放它：`button-check` 第 ③ 条要求整页可点元素 ≥44px，
+> 放进来必然红 —— 那个红是对的。同类取舍见 `upload` 的 32px 移除按钮，
+> 它在 `05-audit/tap-target.js` 里是**登记过的**例外。）
+
 ---
 
 ## 🔴 最关键的一个判断：`disabled` 还是 `aria-disabled`

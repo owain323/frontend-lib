@@ -16,6 +16,8 @@
 .cell p { margin: 0 0 var(--sp-4); font-size: var(--fs-xs);
              color: var(--text-tertiary); line-height: 1.55; }
 .row { display: flex; gap: var(--sp-3); flex-wrap: wrap; align-items: center; }
+/* 给 btn--block 一个"容器边界"，否则它会铺满整页、看不出"占满容器"这件事 */
+.narrow { max-width: 280px; }
 /* 反例演示用 */
 .btn--naive { height: 44px; padding: 0 var(--sp-5); border: none; border-radius: var(--r-sm);
                 background: var(--accent); color: #fff; cursor: pointer; font-size: var(--fs-sm);
@@ -125,6 +127,56 @@
     md = 44px 是 WCAG 2.5.5 增强级的触摸目标尺寸，来自手指物理尺寸，不是审美。
     sm 只在表格行内等鼠标场景用。
   </p>
+
+  <h2 class="rule-bottom">两种形态：方形图标按钮 / 占满一行</h2>
+  <div class="grid">
+    <div class="cell">
+      <h3><code>.btn--icon</code> · 只有图标</h3>
+      <p>
+        宽高相等（<code>--md</code> 44、<code>--lg</code> 52、<code>--sm</code> 32），所以图标必须是<strong>唯一内容</strong>。
+        ⇒ 读屏读不到文字，必须显式给 <code>aria-label</code>，
+        否则念出来只有"按钮"两个字。
+      </p>
+      <div class="row">
+        <button class="btn btn--md btn--secondary btn--icon" aria-label="刷新数据">
+          <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+               aria-hidden="true" focusable="false"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg>
+        </button>
+        <button class="btn btn--md btn--primary btn--icon" aria-label="新建">
+          <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+               aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+        <button class="btn btn--md btn--secondary btn--icon" aria-label="收起侧栏">
+          <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+               aria-hidden="true" focusable="false"><path d="M15 6l-6 6 6 6"/></svg>
+        </button>
+      </div>
+      <p style="margin-top:var(--sp-3); font-size:var(--fs-xs); color:var(--text-tertiary)">
+        <code>.btn--icon.btn--sm</code> 是 32×32：只够 WCAG 2.2 的 AA（24px），
+        <strong>不满足 44px 的 AAA</strong> ⇒ 所以这里<strong>故意不演示</strong>它。
+        它只该出现在表格行、标签条这类鼠标为主、相邻控件本身就很密的地方；
+        触屏主流程请用 md。契约第 ③ 条要求本页所有可点元素 ≥44px，
+        放一颗 32px 的按钮进来就会红 —— 那个红是对的。
+      </p>
+    </div>
+    <div class="cell">
+      <h3><code>.btn--block</code> · 占满容器</h3>
+      <p>
+        不是 <code>width:100%</code> 的按钮，而是 <code>display:flex</code> 的容器
+        ⇒ 内容自动居中，多个子元素（图标 + 文字）也不会各靠一边。
+      </p>
+      <div class="narrow">
+        <button class="btn btn--md btn--primary btn--block">提交审批</button>
+      </div>
+      <p style="margin-top:var(--sp-3); font-size:var(--fs-xs); color:var(--text-tertiary)">
+        外面这个 280px 的框就是它的容器：按钮正好铺满，不多不少。
+        宽度来自容器而不是按钮自己 ⇒ 放进窄侧栏、弹窗底部都不会溢。
+      </p>
+    </div>
+  </div>
 
   <h2 class="rule-bottom">对比：常见的错写法 vs 本库写法</h2>
   <div class="cmp cmp--wide-first">

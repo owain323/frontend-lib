@@ -607,14 +607,22 @@ def selftest():
     else:
         raw = io.open(vp, 'rb').read()
         mutated = raw + b'\n/* dist-probe */\n'
+        # 🔴 基线化（2026-11）：不能假设"此刻仓库一定干净"。
+        #   `selftest-all` 是 **6 路并发**跑的，别的门禁的自检会**临时改源码**
+        #   （例如 hardcode-gate 往 CSS 里注入一个 #fff 再还原）。
+        #   只要撞上那个窗口，check_freshness() 就会因为"源码 sha 变了"报脏，
+        #   而这条判据会把它误读成"两段判据串台" —— 实测 0.25.2 的全量里
+        #   就这样红过一次（单独跑这条自检是绿的）。
+        #   ⇒ 判"改动前后**结论没变**"，而不是"改动后必须是干净的"。
+        fresh_before = bool(check_freshness())
         try:
             io.open(vp, 'wb').write(mutated)
-            fresh = check_freshness()
+            fresh_after = bool(check_freshness())
             diff = diff_content(want)
             meta = diff_content({victim: mutated.decode('utf-8')})
         finally:
             io.open(vp, 'wb').write(raw)
-        if fresh:
+        if fresh_after != fresh_before:
             print('  [FAIL] 只改产物却报了新鲜度问题 ⇒ 两段判据串台了')
             ok = False
         elif not any(victim in b for b in diff):

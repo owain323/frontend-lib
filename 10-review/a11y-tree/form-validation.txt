@@ -15,6 +15,10 @@ RootWebArea "表单校验 · 时机 / 汇总 / 焦点"
     LabelText "金额"
     textbox "金额"
     paragraph "打字时安安静静。 失焦那一刻 才校验； 之后你回来修改才会实时提示（因为你已经知道它的规则了）。 这时才叫"帮助"而不是"
+    heading "第三种状态：异步校验中（field--checking）" [level=3]
+    LabelText "用户名"
+    textbox "用户名"
+    paragraph "🔴 校验中绝不能把输入框置灰或禁用 —— 用户会以为"不让打字了"， 于是停在那里等，而其实他完全可以接着改。 正确做"
     heading "二、完整表单：提交后出错误汇总" [level=2]
     paragraph "什么都不填，直接点提交。焦点会移到汇总上，汇总里每条可点击跳转。"
     form "公司名称 金额 备注 提交 重置"

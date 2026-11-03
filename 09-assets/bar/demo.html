@@ -82,6 +82,16 @@
 <button class="btn" id="try">不给 max，看会发生什么</button>
 <div id="err"></div>
 
+<h2>5 · 五个系列 = 五档分类色；第 6 个必须自带 <code>cls</code></h2>
+<p class="note">
+  <code>bar.css</code> 只提供 <code>.bar__s0</code>–<code>.bar__s4</code> 五档分类色
+  （与 <code>scientific-plot</code> 的 ramp 对齐）。超过五个系列时，本库
+  <b>不会循环取色</b>——循环会让两个不同的系列拿到同一个颜色，读者会以为它们是同一类。
+  <br>⇒ 第 6 个系列起，请由调用方给 <code>series[i].cls</code>。
+  下面这张图正好用满五档：五根柱子五种颜色，都能在基线截图里逐色核对。
+</p>
+<div class="bar" id="b5"></div>
+
 </main>
 
 <script src="bar.js"></script>
@@ -154,6 +164,23 @@
     threshold: 1,
     series: [{ name: '早于 09:00 的件数', values: [5, 0, 1, 0, 2, 0, 1, 0, 9, 6, 5, 7] }],
     ariaLabel: '每日 09:00 前的事项数，含阈值线 1',
+  });
+
+  /* 5 · 五系列 = 五档分类色（.bar__s0..s4 全部真的渲染出来） */
+  Bar.draw({
+    host: document.getElementById('b5'),
+    mode: 'group',
+    max: 9,
+    height: 190,
+    labels: LBL.slice(0, 6),
+    series: [
+      { name: '受理', values: [3, 4, 5, 2, 6, 4] },
+      { name: '审核', values: [2, 3, 4, 5, 3, 6] },
+      { name: '放款', values: [4, 2, 3, 4, 5, 3] },
+      { name: '对账', values: [5, 5, 2, 3, 4, 2] },
+      { name: '归档', values: [1, 6, 6, 1, 2, 5] },
+    ],
+    ariaLabel: '六天五个环节的并列分组柱状图，五档分类色',
   });
 
   /* 4 · 演示"量程必填" */

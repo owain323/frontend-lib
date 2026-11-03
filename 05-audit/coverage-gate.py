@@ -30,9 +30,16 @@ coverage-gate.py — 覆盖率门禁（ H9）
            CSS 里却不存在。⇒ 文档承诺了不存在的东西。**失败。**
            （例外见 PHANTOM_EXEMPT：明确写着"已在某版本移除"的历史说明。）
 
-       ②c **未渲染类**：只被 README 认领，demo / JS / 契约一次都没碰过
+       ②c **未被文本引用类**：只被 README 认领，demo / JS / 契约一次都没碰过
            ⇒ 视觉回归永远看不到它。**棘轮**：不得比基线多
            （`css-coverage-baseline.json`；`--record` 重录）。
+
+           ⚠️ 口径（0.25.2 写死，别再靠猜）：这条判的是**文本**，不是"渲染"。
+              判据是在 demo / JS / 契约里找这个类名的**字面量**，
+              所以 JS 用拼串生成的类名看不见 —— 实测 41 条里有 10 条
+              （tooltip 四方位、drawer 四方向、toast 两变体）其实每次交互都在渲染。
+              ⇒ 遇到拼接请把它改成完整字面量映射（见 E288），
+                不要为了"让数字好看"往 demo 里塞一个不用的元素。
 
        ②d **跨组件同名主体**：同一个类名被两个不同组件声明为规则主体。
            同特异性 ⇒ 后加载的那个静默覆盖前一个（E254 那类事故）。
@@ -425,13 +432,14 @@ def css_report(comps, contracts_text):
     new_un, fixed_un = diff_unrendered(unrendered_all, baseline.get('unrendered') or [])
     if new_un:
         bad = True
-        print('  🔴 未渲染类变多了（%d 个）：只被 README 认领，demo / JS / 契约一次都没碰过' % len(new_un))
+        print('  🔴 未被文本引用的类变多了（%d 个）：只被 README 认领，demo / JS / 契约一次都没碰过' % len(new_un))
         for x in new_un:
             print('         + %s' % x)
         print('     ⇒ 视觉回归永远看不到它。给它补 demo，或 `--record` 显式接受水位')
+        print('     ⚠️ 这是**文本**口径：JS 拼串生成的类名会被漏看（见 E288）')
         print('')
     if fixed_un:
-        print('  ✅ 未渲染类比基线少了 %d 个（记得 `--record` 固化新水位）：%s'
+        print('  ✅ 未被文本引用的类比基线少了 %d 个（记得 `--record` 固化新水位）：%s'
               % (len(fixed_un), ', '.join(fixed_un[:6]) + (' …' if len(fixed_un) > 6 else '')))
         print('')
 

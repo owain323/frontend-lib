@@ -9,6 +9,9 @@
 <link rel="stylesheet" href="../../01-tokens/typography.css">
 <link rel="stylesheet" href="../../01-tokens/page.css">
 <link rel="stylesheet" href="card.css">
+<!-- 底栏里的动作按钮：卡片本身不定义按钮样式，演示页直接引 button.css
+     （同一个库里的组件组合，不是复制一份按钮样式）。 -->
+<link rel="stylesheet" href="../button/button.css">
 <style>
 p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6; }
 .grid3 { display: grid; gap: var(--sp-4); grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
@@ -111,6 +114,16 @@ p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6
       <div class="card__body">
         <h3 class="card__title">selected</h3>
         <p class="card__desc">用 inset box-shadow 做内描边，不是改 border-width —— 同样为了不跳动。</p>
+      </div>
+    </div>
+    <div class="card card--compact">
+      <div class="card__body">
+        <h3 class="card__title">compact</h3>
+        <p class="card__desc">内边距 24→16、标题降到正文大小。用在"一屏要放十几张"的清单里。</p>
+      </div>
+      <div class="card__footer">
+        <span class="small">更新于 09-12</span>
+        <button class="btn btn--md btn--secondary">查看</button>
       </div>
     </div>
   </div>

@@ -60,6 +60,27 @@ RootWebArea "分页 ·· frontend-lib"
     paragraph "每个按钮 44×44px ，走 --sz-touch 令牌 （ WCAG 2.5.5 Level AAA 的要求；AA "
     heading "6 · 窄屏" [level=2]
     paragraph "页码窗口会换行，状态文本另起一行 ⇒ 不产生横向溢出 。"
+    heading "7 · 表格页脚里的精简分页（不占一行位置）" [level=2]
+    paragraph "数据表底部通常只有一两行的空间： 状态文字可以省，播报区不能省 。 做法是把 data-pg-live 挂在一个 .pa"
+    navigation "明细表分页"
+      list
+        listitem "‹" [level=1]
+          button "上一页"
+        listitem "1" [level=1]
+          button "第 1 页"
+        listitem [level=1]
+        listitem "6" [level=1]
+          button "第 6 页"
+        listitem "7" [level=1]
+          button "第 7 页（当前页）" [disabled=true]
+        listitem "8" [level=1]
+          button "第 8 页"
+        listitem [level=1]
+        listitem "13" [level=1]
+          button "第 13 页"
+        listitem "›" [level=1]
+          button "下一页"
+      paragraph [live=polite]
     heading "对比：错写法 vs 本库写法" [level=2]
     heading "❌ 常见写法：页码全铺开" [level=3]
     paragraph "12 个页码硬塞进一行，窄屏上要么换行、要么每个都挤到点不中。而 4~10 页其实是读者最不会去点的区间。"

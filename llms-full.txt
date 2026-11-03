@@ -1,6 +1,6 @@
 # agentcss — full reference (one file)
 
-> Generated from `ai/components.json` + `ai/pitfalls*.json` + `ai/behaviors.json` at version **0.25.1**.
+> Generated from `ai/components.json` + `ai/pitfalls*.json` + `ai/behaviors.json` at version **0.25.2**.
 > Do not edit by hand: run `python 05-audit/gen-llms.py` (freshness is gated).
 > Short version: `llms.txt`. Machine contract: `ai/*.json`.
 
@@ -33,7 +33,7 @@ Every subcommand accepts `--json`; failures print `{"ok":false,...}` and exit no
 | `sparkline` | `sparkline` | asset | stable | 7.2 KB | `sparkline.js` | 迷你趋势图：无坐标轴、纯形状，适合表格内嵌的一行走势 | `chart-multiline-label` |
 | `accordion` | `accordion` | pattern | stable | 18.0 KB | `accordion.js` | 可折叠分组 | — |
 | `content` | `prose` | pattern | stable | 11.1 KB | — | 长文排版容器（标题/段落/列表/引用/代码） | `single-scroll-container` `line-height-constant-sync` |
-| `drawer` | `drawer` | pattern | stable | 4.5 KB | `drawer.js` | 侧边抽屉，含遮罩 | `fixed-element-inventory` |
+| `drawer` | `drawer` | pattern | stable | 5.9 KB | `drawer.js` | 侧边抽屉，含遮罩 | `fixed-element-inventory` |
 | `dropdown` | `dd` | pattern | stable | 3.9 KB | `dropdown.js` | 下拉菜单 | `popover-measure-after-render` |
 | `form-validation` | `form` | pattern | stable | 11.8 KB | — | 表单校验反馈与错误汇总 | — |
 | `list` | `list` | pattern | stable | 6.1 KB | `flip.js` | 键值列表/条目列表 | `empty-state-no-decoration` `text-injection-xss` |
@@ -48,7 +48,7 @@ Every subcommand accepts `--json`; failures print `{"ok":false,...}` and exit no
 | `badge` | `badge` | primitive | stable | 6.1 KB | — | 状态标签：计数、分类、结果标记 | — |
 | `button` | `btn` | primitive | stable | 15.7 KB | — | 动作触发：主/次/危险/纯文字四档 | — |
 | `card` | `card` | primitive | stable | 10.4 KB | — | 内容容器：媒体+正文+操作区三段 | — |
-| `choice` | `choice` | primitive | stable | 16.7 KB | — | 单选/多选/原生 select 外观的统一控件 | — |
+| `choice` | `choice` | primitive | stable | 17.4 KB | — | 单选/多选/原生 select 外观的统一控件 | — |
 | `combobox` | `combo` | primitive | stable | 7.0 KB | `combobox.js` | 可搜索 + 可多选标签的输入控件 | — |
 | `date-range` | `drange` | primitive | stable | 6.0 KB | `date-range.js` | 日期区间选择，含预设快捷范围 | — |
 | `delta` | `delta` | primitive | stable | 5.5 KB | — | 变化量：涨跌方向 + 符号 + 颜色。只描述往哪边变，不判断好坏（等于好恶是 … | — |

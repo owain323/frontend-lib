@@ -45,7 +45,7 @@
 <tr><td><strong>来源</strong></td><td>原创。2px 抬起一条来自对 <code>animal-island-ui</code> 的观察（那套设计里最认同的一条）</td></tr>
 <tr><td><strong>实测</strong></td><td><code>states.py</code> 零缺失（card 形态：focus HIGH / hover LOW）</td></tr>
 <tr><td><strong>适用</strong></td><td>精简档 / B / C，纯 CSS</td></tr>
-<tr><td><strong>依赖</strong></td><td><code>01-tokens/tokens.css</code>  + <code>01-tokens/typography.css</code>（<code>.note</code> 提示框） + <code>01-tokens/page.css</code>（页面骨架：<code>.wrap</code> / <code>.lede</code> / <code>.note</code>）</td></tr>
+<tr><td><strong>依赖</strong></td><td><code>01-tokens/tokens.css</code>  + <code>01-tokens/typography.css</code>（<code>.note</code> 提示框） + <code>01-tokens/page.css</code>（页面骨架：<code>.wrap</code> / <code>.lede</code> / <code>.note</code>）。底栏要放<strong>按钮</strong>时再加 <code>02-primitives/button/button.css</code>（本目录 demo 已引入）</td></tr>
 </tbody>
 </table></div>
 <hr>
@@ -101,6 +101,7 @@
     &lt;a href=&quot;/reports&quot;&gt;查看明细&lt;/a&gt;
   &lt;/div&gt;
 &lt;/div&gt;</code></pre>
+<blockquote><p>底栏右侧放<strong>按钮</strong>也行（dense 列表里更常见），但要额外引入<br><code>02-primitives/button/button.css</code> —— 卡片本身不定义按钮样式。<br>⚠️ 别放<strong>裸链接</strong>当主操作：文字链接的命中区只有一行高（约 17px），<br>触屏上点不中；卡片契约第 ③ 条要求可点元素 ≥44px，会直接红。</p></blockquote>
 <p>依赖：<code>01-tokens/tokens.css</code> + <code>01-tokens/typography.css</code>（正文）+ <code>01-tokens/page.css</code>（<code>.wrap</code> / <code>.small</code> 等页面骨架）。</p>
 <hr>
 <h2 id="s3">唯一的核心判据：hover 不能有布局跳动<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
@@ -169,7 +170,7 @@
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.25.1 · 零第三方运行时依赖 · 组件数 40</p>
+  <p>v0.25.2 · 零第三方运行时依赖 · 组件数 40</p>
 </footer>
 </body>
 </html>

@@ -164,9 +164,18 @@ inerts = [];
 }
 }
 
+var PLACE_CLASS = {
+right:  'drawer--right', end:   'drawer--right',
+left:   'drawer--left',  start: 'drawer--left',
+top:    'drawer--top',
+bottom: 'drawer--bottom'
+};
+
 function open(opt) {
 opt = opt || {};
 var place = opt.place || 'right';
+var placeCls = PLACE_CLASS[place];
+if (!placeCls) placeCls = PLACE_CLASS.right;
 
 var fr = flFocusReturn({});
 fr.save();
@@ -177,7 +186,7 @@ host.setAttribute('data-drawer-host', '');
 if (opt.label) host.setAttribute('aria-label', opt.label);
 
 var d = document.createElement('aside');
-d.className = 'drawer drawer--' + place;
+d.className = 'drawer ' + placeCls;
 d.setAttribute('role', 'dialog');
 d.setAttribute('aria-modal', 'true');
 if (!d.id) d.id = 'drawer-' + (new Date()).getTime();

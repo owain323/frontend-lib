@@ -94,3 +94,12 @@ RootWebArea "应用外壳 · app-shell"
       link "勾稽校验"
     paragraph "文字包在 .shell__link-label 里：rail 状态下它被 视觉隐藏 ， 但仍在可访问树里（读屏念「总览」"
     paragraph "只做纯图标栏、不接抽屉的话，第 4 节那种写法（图标 + aria-label ） 也成立；但只要你会用 data-sh"
+    heading "8 · 平面外壳（shell--flat）：融进纸面，不画第二层框" [level=2]
+    heading "内嵌在报告里的外壳" [level=2]
+    navigation "主导航（平面外壳）"
+      list
+        listitem "概览" [level=1]
+          link "概览"
+        listitem "明细" [level=1]
+          link "明细"
+    paragraph "什么时候用：外壳 本身已经在卡片 / 弹窗 / 报告版式里 。 这时它再自带一层底色和左边线，就会和外层边框形成"双重描"

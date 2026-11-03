@@ -37,6 +37,50 @@ RootWebArea "accordion · 折叠面板"
       button "可用"
     heading "未开通（禁用）" [level=3]
       button "未开通（禁用）" [disabled=true]
+    heading "面板里怎么排：分列 / 表格 / 标题下的一句话" [level=2]
+    paragraph "这一块同时演示四个"藏在面板里"的类，所以 四个都展开 （多开模式）： · .accordion--flush 去掉外框"
+    heading "指标口径 展开可看 4 个字段的定义（不展开也能看到这句）" [level=3]
+      button "指标口径 展开可看 4 个字段的定义（不展开也能看到这句）" [expanded=true]
+    region "指标口径 展开可看 4 个字段的定义（不展开也能看到这句）"
+      paragraph "营业总收入 ：含主营业务与其他业务收入，不含投资收益。"
+      paragraph "营业成本 ：与收入同口径，不含期间费用。"
+      paragraph "期间费用 ：销售、管理、研发、财务四项之和。"
+      paragraph "归母净利润 ：扣除少数股东损益后的净利润。"
+    heading "三期对比 三列并排，适合"同类不同期"" [level=3]
+      button "三期对比 三列并排，适合"同类不同期"" [expanded=true]
+    region "三期对比 三列并排，适合"同类不同期""
+      paragraph "2024 收入 1,284,300 万元"
+      paragraph "2025 收入 1,402,110 万元"
+      paragraph "2026 收入 1,536,880 万元"
+    heading "自适应列 按内容宽度自动分列，窄了自己塌成一列" [level=3]
+      button "自适应列 按内容宽度自动分列，窄了自己塌成一列" [expanded=true]
+    region "自适应列 按内容宽度自动分列，窄了自己塌成一列"
+      paragraph "字段：证券代码"
+      paragraph "字段：行业分类"
+      paragraph "字段：上市日期"
+      paragraph "字段：交易所"
+      paragraph "字段：审计机构"
+    heading "附表：近三期数据 表格不换行，窄屏横向滚动" [level=3]
+      button "附表：近三期数据 表格不换行，窄屏横向滚动" [expanded=true]
+    region "附表：近三期数据 表格不换行，窄屏横向滚动"
+      table "营业总收入与同比（单位：万元）"
+        caption "营业总收入与同比（单位：万元）"
+        row
+          columnheader "期间"
+          columnheader "营业总收入"
+          columnheader "同比"
+        row
+          rowheader "2024 年度"
+          cell "1,284,300"
+          cell "—"
+        row
+          rowheader "2025 年度"
+          cell "1,402,110"
+          cell "+9.17%"
+        row
+          rowheader "2026 年度"
+          cell "1,536,880"
+          cell "+9.61%"
     heading "结构要求（APG 原文）" [level=2]
     paragraph "heading 包住 button ，不是 button 套 heading："
     paragraph "<h3><button aria-expanded="true">标题</button></h3>"

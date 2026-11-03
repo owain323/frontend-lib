@@ -63,6 +63,21 @@ p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6
     <p class="small" style="margin-top:var(--sp-3)">
       整个 label 都能点（input 透明铺满了它），但视觉方框只有 20px——<strong>触摸目标是 44px</strong>。
     </p>
+
+    <div class="choice choice--checkbox">
+      <input class="choice__input" type="checkbox" id="c1b" aria-describedby="c1b-hint">
+      <label class="choice__label" for="c1b">
+        <span class="choice__mark"></span>
+        <span>订阅月度报告</span>
+      </label>
+      <span class="choice__hint" id="c1b-hint">每月 1 日发一封，可随时退订</span>
+    </div>
+    <p class="small" style="margin-top:var(--sp-3)">
+      <code>.choice__hint</code> 是<strong>解释</strong>，不是标签的一部分：
+      它排在标签下方、和文字左对齐，并且用 <code>aria-describedby</code> 关联 ——
+      读屏念"订阅月度报告，复选框"，再补一句说明。
+      （写进 label 里会变成名字的一部分，念起来像"订阅月度报告每月1日发一封可随时退订"。）
+    </p>
   </div>
 
   <h2 class="rule-bottom">indeterminate（第三态）</h2>
@@ -168,6 +183,29 @@ p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6
       这里只改了外观（<code>appearance:none</code> + 自绘箭头），
       <span class="kbd">↑</span><span class="kbd">↓</span> 选择、<span class="kbd">Enter</span> 确认、Esc 关闭全部保留。
       箭头写了 <code>pointer-events:none</code>，否则它会吃掉点击。
+    </p>
+
+    <!-- 选项文字会换行 / 多选列表：高度必须放开，否则第二行被裁掉 -->
+    <div class="field" style="margin-top:var(--sp-5)">
+      <label class="field__label" for="s2">导出字段（可多选）</label>
+      <div class="select">
+        <select class="select__control select__control--auto" id="s2" multiple size="4"
+                aria-describedby="s2-hint">
+          <option selected>科目编码</option>
+          <option selected>科目名称</option>
+          <option>期初余额（跨年调整后，含上年重分类的说明会换行）</option>
+          <option>本期发生额（借贷方分开列示，便于与总账核对）</option>
+          <option>期末余额</option>
+        </select>
+      </div>
+      <span class="field__hint" id="s2-hint">
+        按住 <span class="kbd">Ctrl</span> / <span class="kbd">⌘</span> 多选
+      </span>
+    </div>
+    <p class="small" style="margin-top:var(--sp-3)">
+      <code>.select__control--auto</code>：固定 44px 高度遇到换行文字会把第二行<strong>裁掉</strong>，
+      所以多选列表 / 长选项要把高度放开（<code>height:auto</code> + <code>min-height:44px</code>）。
+      这是原生 select，箭头就不需要了 —— 它本来就不是"点开下拉"的交互。
     </p>
   </div>
 

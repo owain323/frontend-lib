@@ -13,6 +13,10 @@
 <style>
 .log { font-family: var(--mono); font-size: var(--fs-xs);
          color: var(--text-secondary); min-height: 1.5em; }
+/* 键帽：用真正的 <kbd> 元素，不是 span+class（后者会被 refs 判成"未定义的类"） */
+kbd { display: inline-block; padding: 2px 7px; border: 1px solid var(--border-control);
+        border-bottom-width: 2px; border-radius: 5px; background: var(--surface);
+        font-family: var(--mono); font-size: 11px; color: var(--text-primary); }
 </style>
 </head>
 <body class="page">
@@ -85,6 +89,36 @@
       <p>按了 Enter 才到这里。</p>
     </div>
   </div>
+
+  <h2 class="rule-top">纵向（设置页侧栏那种）</h2>
+  <p class="note">
+    加 <code>.tabs--vertical</code>，并把 tablist 的
+    <code>aria-orientation</code> 改成 <code>vertical</code> ——
+    <strong>两件事必须同时做</strong>：只改 CSS 的话，键盘仍然是
+    <code>←</code> <code>→</code> 切换，而屏幕阅读器被告知"横向"，
+    于是它提示用户按左右键；用户按上下键，没反应。
+  </p>
+  <div class="tabs tabs--vertical" data-tabs>
+    <div class="tabs__list" role="tablist" aria-orientation="vertical" aria-label="账户设置">
+      <button class="tabs__tab" role="tab" id="v1" aria-controls="vp1"
+              aria-selected="true">基本资料</button>
+      <button class="tabs__tab" role="tab" id="v2" aria-controls="vp2"
+              aria-selected="false">安全</button>
+      <button class="tabs__tab" role="tab" id="v3" aria-controls="vp3"
+              aria-selected="false">通知</button>
+    </div>
+    <div class="tabs__panel" role="tabpanel" id="vp1" aria-labelledby="v1">
+      <p>头像、显示名、所属工作区。</p>
+      <p><button class="btn btn--md btn--secondary">修改头像（可 Tab 到）</button></p>
+    </div>
+    <div class="tabs__panel" role="tabpanel" id="vp2" aria-labelledby="v2" hidden>
+      <p>两步验证、登录设备、API 令牌。</p>
+    </div>
+    <div class="tabs__panel" role="tabpanel" id="vp3" aria-labelledby="v3" hidden>
+      <p>周报邮件、异常告警的接收范围。</p>
+    </div>
+  </div>
+  <p class="log">试 <kbd>↓</kbd> <kbd>↑</kbd>：选中线应该在<strong>文字右侧</strong>（RTL 下换到左侧）。</p>
 
   <h2 class="rule-top">键盘契约（APG / Radix）</h2>
   <div class="box">

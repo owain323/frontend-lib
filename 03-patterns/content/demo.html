@@ -81,6 +81,23 @@
   <h2>4 · 代码与链接</h2>
   <pre><code>const f = (x) =&gt; x * 2;   // 纯 ES5 时代写法</code></pre>
   <p>详细口径见 <a href="#main">内部数据字典</a>。</p>
+
+  <h2>5 · 待办清单</h2>
+  <p>Markdown 的 <code>- [x]</code> 语法渲染成的样子。它是<strong>正文里的一行</strong>，
+     所以只去掉列表圆点、把勾选框对齐到行的左缘，其余跟普通列表一致。</p>
+  <ul>
+    <li class="task-list-item">
+      <label><input type="checkbox" checked disabled> 核对 2026 Q1 收入口径</label>
+    </li>
+    <li class="task-list-item">
+      <label><input type="checkbox" checked disabled> 补齐 26 家公司的三张表</label>
+    </li>
+    <li class="task-list-item">
+      <label><input type="checkbox" disabled> 复核应收账款周转天数</label>
+    </li>
+  </ul>
+  <p><strong>为什么勾选框要带 <code>disabled</code></strong>：这是<em>已渲染的正文</em>，
+     不是可填的表单。可点的复选框会让读者以为"改了会保存"。</p>
 </div>
 
 

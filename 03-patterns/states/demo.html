@@ -56,6 +56,12 @@ p.lead { color: var(--text-secondary); }
  }
 .lbl { font-size: var(--fs-xs); color: var(--text-tertiary);
          margin-bottom: var(--sp-2); display: block; }
+/* 列表项骨架：头像 + 两行 —— 结构与真实行一致（.row 的 padding 与 gap 对齐） */
+.sk-list { border: 1px solid var(--border-decor); border-radius: var(--r-sm);
+             padding: var(--sp-2) 0; max-width: 420px; }
+.sk-row { display: flex; align-items: center; gap: var(--sp-3);
+            padding: var(--sp-3) var(--sp-4); }
+.sk-lines { flex: 1; min-width: 0; }
 </style>
 </head>
 <body class="page">
@@ -140,6 +146,31 @@ p.lead { color: var(--text-secondary); }
 
   <hr class="rule">
 
+  <h2>列表项的骨架：头像占位 + 两行文字</h2>
+  <p>
+    <code>skeleton--avatar</code> 是 40×40 的全圆占位，专门配 <code>skeleton--text</code>
+    做「头像 + 姓名 + 副标题」这种列表项。宽度节奏要跟真内容一致，
+    否则内容到位时头像会把文字挤走 —— 那正是骨架屏要避免的事。
+  </p>
+  <div class="sk-list" role="status" aria-live="polite" aria-label="正在加载公司列表">
+    <div class="sk-row">
+      <div class="skeleton skeleton--avatar" aria-hidden="true"></div>
+      <div class="sk-lines">
+        <div class="skeleton skeleton--text" aria-hidden="true"></div>
+        <div class="skeleton skeleton--text" aria-hidden="true"></div>
+      </div>
+    </div>
+    <div class="sk-row">
+      <div class="skeleton skeleton--avatar" aria-hidden="true"></div>
+      <div class="sk-lines">
+        <div class="skeleton skeleton--text" aria-hidden="true"></div>
+        <div class="skeleton skeleton--text" aria-hidden="true"></div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="rule">
+
   <h2>300ms：不显示比闪一下好</h2>
   <p>
     请求在 300ms 内返回时<strong>不要显示加载态</strong>。骨架屏闪一下比不显示更糟 ——
@@ -218,7 +249,14 @@ var VIEWS = {
       '<div class="state__action">' +
       '<button class="btn btn--sm btn--primary" type="button">重试</button>' +
       '<button class="btn btn--sm btn--secondary" type="button">复制诊断信息</button>' +
-      '</div></div>';
+      '</div>' +
+      /* 技术细节放这里、并且折叠起来：主文案说"我该怎么办"，
+         细节留给要把它贴给技术支持的人。默认摊开会把所有人都吓一遍。 */
+      '<details class="state__more">' +
+      '<summary>诊断信息</summary>' +
+      '<div class="state__detail">sqlite3 · SELECT … FROM financial_facts WHERE ws=19 · err: SQLITE_BUSY (database is locked) · 12,480 ms · trace 8f2c41a7</div>' +
+      '</details>' +
+      '</div>';
   }
 };
 

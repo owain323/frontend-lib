@@ -76,6 +76,36 @@
   <div class="log" id="log2">（试着填一个 2019 年或 2027 年 ⇒ 会报错）</div>
 </div>
 
+<h2 class="rule-bottom">3 · 只读区间：<code>drange--disabled</code> + 原生 <code>disabled</code></h2>
+<p class="note">
+  <strong>一件事要拆成两半做，缺一半就假。</strong>
+  <br>· <code>.drange--disabled</code> 负责<strong>观感</strong>：预设与清除置灰、hover 不再变色；
+  <br>· 原生 <code>disabled</code> 属性负责<strong>行为</strong>：点不动、Tab 跳过、
+  读屏念"不可用"。
+  <br>只有类名 ⇒ 看着灰但点得动（最糟的一种）；只有属性 ⇒ 灰得不对，hover 还会亮。
+</p>
+<div class="pad">
+  <div class="drange drange--disabled" id="d3">
+    <div class="drange__field">
+      <label class="drange__label" for="f3">开始</label>
+      <input class="drange__input" type="date" id="f3" data-dr-from value="2026-01-01" disabled>
+    </div>
+    <span class="drange__sep" aria-hidden="true">→</span>
+    <div class="drange__field">
+      <label class="drange__label" for="t3">结束</label>
+      <input class="drange__input" type="date" id="t3" data-dr-to value="2026-03-31" disabled>
+    </div>
+    <button class="drange__clear" type="button" data-dr-clear disabled>清除</button>
+    <div class="drange__error" data-dr-error role="alert" hidden></div>
+    <div class="drange__summary" data-dr-summary aria-live="polite"></div>
+    <div class="drange__presets" data-dr-presets></div>
+  </div>
+  <p class="small">
+    这一块是<strong>已发布报表的冻结区间</strong>：读者要看懂区间，但不能改它。
+    留着可编辑只会让人以为自己填错了。
+  </p>
+</div>
+
 
 
   <h2 class="rule-bottom">对比：错写法 vs 本库写法</h2>
@@ -131,9 +161,19 @@
     presets: ['thisQ', 'lastQ', 'lastM', 'yoy'],
     onChange: function (v, ok) {
       log2.textContent = 'from=' + (v.from || '(空)') + '  to=' + (v.to || '(空)') +
-                         '  valid=' + ok + '（范围 2020-01-01 ~ 2026-12-31）';
+                        '  valid=' + ok + '（范围 2020-01-01 ~ 2026-12-31）';
     },
   });
+
+  /* 只读区间：先 create（预设按钮是 JS 生成的），再把内部控件逐个设 disabled。
+     ⚠️ 顺序不能反 —— 反了的话 bindPresets 会重建一批可点的按钮，
+     类名还在、却又能点了（"看着灰但点得动"那种假禁用）。 */
+  var d3 = document.getElementById('d3');
+  DateRange.create(d3, { presets: ['thisQ', 'lastQ'] });
+  Array.prototype.forEach.call(
+    d3.querySelectorAll('input, button'),
+    function (el) { el.disabled = true; }
+  );
 })();
 </script>
 </body>

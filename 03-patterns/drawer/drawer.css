@@ -26,7 +26,10 @@
      统一走令牌后，暗色跟随自动生效。 */
   background: var(--scrim);
   display: flex;
-  /* 抽屉从右侧滑入（可改成 left / top / bottom）*/
+  /* 默认停在内联终点侧（LTR 右 / RTL 左）。
+     🔴 0.25.2 修：原来只有这一条，于是 `--left` / `--bottom` **只改了边框和动画、
+     位置一点没动**。1280×800 实测：left 的 left=860（应 0）、bottom 的 top=0（应贴底）。
+     两个方向是错的，却控制台干净、契约全绿。⇒ 落位交给各方向的 auto margin / align-self。 */
   justify-content: flex-end;
 }
 
@@ -44,11 +47,24 @@
   overflow: hidden;
 }
 
-.drawer--left  { border-inline-start: 0; border-inline-end: 1px solid var(--border-decor); }
-.drawer--top   { width: 100%; height: min(60vh, 420px); border-inline-start: 0;
-                border-bottom: 1px solid var(--border-decor); }
-.drawer--bottom { width: 100%; height: min(60vh, 420px); border-inline-start: 0;
-                border-top: 1px solid var(--border-decor); }
+/* ---------- 四个方向 ----------
+   ⚠️ 名字沿用 0.x 的物理叫法（left / right），**实现是逻辑轴**：
+     `--left` = 内联起点（LTR 左 / RTL 右），`--right` = 内联终点。
+   抽屉是"布局家具"，整页镜像时必须跟着镜像；只有"指向某侧的箭头"
+   （tooltip 的小三角）才该保持物理方向。本文件本来写的就全是逻辑属性
+   （border-inline-start/end），语义一直是逻辑的，这里只是让它落地。
+
+   落位靠抽屉自己的 auto margin / align-self（容器是 flex row）：
+     主轴 auto margin 吃掉剩余空间（优先于 justify-content）；
+     交叉轴 align-self 把固定高度的抽屉推到上/下边。
+   `--right` 不需要额外规则：容器默认的 `justify-content: flex-end`
+   就落在内联终点侧 —— 这也解释了为什么它一直是唯一没坏的方向。 */
+.drawer--left   { margin-inline-end: auto;   /* 推到内联起点 */
+                  border-inline-start: 0; border-inline-end: 1px solid var(--border-decor); }
+.drawer--top    { align-self: flex-start; width: 100%; height: min(60vh, 420px);
+                  border-inline-start: 0; border-bottom: 1px solid var(--border-decor); }
+.drawer--bottom { align-self: flex-end;   width: 100%; height: min(60vh, 420px);
+                  border-inline-start: 0; border-top: 1px solid var(--border-decor); }
 
 /* ---------- 头 ---------- */
 .drawer__head {

@@ -276,6 +276,36 @@ RootWebArea "table · 专业数据表格 · frontend-lib"
         cell "0.0%"
         cell "0.00%"
     paragraph "注： 零值两边都不带符号 —— 会计列不写 + ， 市场列用 delta--flat 。 「0.0%」被读成「涨了 0."
+    heading "7 · 缺失值与紧凑密度（对账表这种"一屏二十行"的场合）" [level=2]
+    paragraph "table--compact 把字号降到 --fs-xs 、内边距收到 --sp-1 --sp-2 —— 只给数字表、对"
+    table "表 G · 银行对账明细（示例，含缺失值）"
+      caption "表 G · 银行对账明细（示例，含缺失值）"
+      row
+        columnheader "科目"
+        columnheader "期初"
+        columnheader "本期发生"
+        columnheader "期末"
+      row
+        rowheader "银行存款"
+        cell "1,204,300"
+        cell "318,200"
+        cell "1,522,500"
+      row
+        rowheader "应收账款"
+        cell "884,120"
+        cell "—"
+        cell "884,120"
+      row
+        rowheader "其他应收款"
+        cell "N/A"
+        cell "12,400"
+        cell "12,400"
+      row
+        rowheader "预付账款"
+        cell "46,700"
+        cell "3,100"
+        cell "49,800"
+    paragraph "两处缺失值用了两种写法（ — 与 N/A ）： 会计表里 — 表示"本期无发生"， N/A 表示"未取到数"。 混用会让"
     heading "对比：错写法 vs 本库写法" [level=2]
     heading "❌ 常见写法：只靠红绿 + 连字符" [level=3]
     paragraph "涨的那行没有 + ，跌的用连字符 - ：灰度打印、色觉障碍、以及"只扫一列符号"的读法，全都不成立；连字符还比真减号窄，"

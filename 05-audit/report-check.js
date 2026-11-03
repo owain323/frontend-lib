@@ -442,6 +442,76 @@ const DIR = REPO + '/04-recipes/report';
                  note: hasThree ? '三套 profile 都在取舍表里，且每条写了「放弃了什么」'
                                 : '🔴 取舍表不完整' };
       },
+
+      /* 兼容别名必须与主名**逐项相同** —— 它存在的唯一目的就是"老页面不掉样式"。
+         只断言"类名在 CSS 里出现过"是不够的：分组选择器被拆开、
+         或者别名那条规则被后写的规则覆盖，都会让老页面静默掉样式。 */
+      'rep__lede 与 rep__standfirst 同一条规则': async (p) => {
+        const r = await p.evaluate(() => {
+          const a = document.querySelector('.rep__standfirst');
+          if (!a) return { missing: true };
+          const probe = document.createElement('p');
+          probe.className = 'rep__lede';
+          probe.textContent = '别名探针';
+          a.parentNode.insertBefore(probe, a.nextSibling);
+          const ka = getComputedStyle(a);
+          const kb = getComputedStyle(probe);
+          const keys = ['fontSize', 'lineHeight', 'maxWidth', 'color'];
+          const diff = keys.filter((k) => ka[k] !== kb[k])
+                           .map((k) => k + ': ' + ka[k] + ' ≠ ' + kb[k]);
+          const out = { diff: diff, fs: ka.fontSize, mw: ka.maxWidth };
+          probe.parentNode.removeChild(probe);
+          return out;
+        });
+        if (r.missing) return { ok: false, note: '🔴 页面上找不到 .rep__standfirst' };
+        return { ok: r.diff.length === 0,
+                 note: r.diff.length ? '🔴 别名与主名不同：' + r.diff.join('；')
+                                     : '字号 ' + r.fs + ' · 行长 ' + r.mw + ' 完全一致 ✅' };
+      },
+
+      /* 宽通道：`.rep__wide` / `.rep__fig--wide` 都必须真的**越过行长**。
+         🔴 判据用**探针 + 几何**，不用"CSS 里写了 max-width:none"：
+            0.11.2 之前这个类就是空的 —— 父容器压着，写什么都没用。
+         做法：在同一篇正文里插一个块，先量（应被行长压住），
+            再加类量一次。两个值必须拉开，否则通道是假的。
+         ⚠️ 必须在 **finance** 版里量：它是唯一"行长(30em=420) < 正文列(544)"的
+            profile。magazine 的 42em 比列还宽 ⇒ 通道在那一版**本来就不起作用**，
+            在那里量只会得到"没变化"，然后误判成坏了。 */
+      '宽通道真的比正文宽': async (p) => {
+        const r = await p.evaluate(() => {
+          const body = document.querySelector('.rep--finance .rep__body');
+          if (!body) return { missing: true };
+          const text = body.querySelector('.rep__sec p');
+          if (!text) return { missing: true };
+          const wText = Math.round(text.getBoundingClientRect().width);
+
+          function delta(baseCls, wideCls, html) {
+            const el = document.createElement('div');
+            el.className = baseCls;
+            el.innerHTML = html;
+            body.appendChild(el);
+            const off = Math.round(el.getBoundingClientRect().width);
+            el.className = baseCls + ' ' + wideCls;
+            const on = Math.round(el.getBoundingClientRect().width);
+            el.parentNode.removeChild(el);
+            return { off: off, on: on };
+          }
+          const t = delta('table', 'rep__wide', '<table><tbody><tr><td>x</td></tr></tbody></table>');
+          const f = delta('rep__fig', 'rep__fig--wide', '<p>x</p>');
+          return { wText: wText, t: t, f: f };
+        });
+        if (r.missing) return { ok: false, note: '🔴 找不到 .rep--finance 的正文列' };
+        const capped = Math.abs(r.t.off - r.wText) <= 2;
+        const tOpen = r.t.on >= r.t.off + 20;
+        const fOpen = r.f.on >= r.f.off + 20;
+        return { ok: capped && tOpen && fOpen,
+                 note: '行长 ' + r.wText + 'px · table ' + r.t.off + '→' + r.t.on +
+                       ' · figuring ' + r.f.off + '→' + r.f.on +
+                       ((capped && tOpen && fOpen) ? ' ✅'
+                         : ' 🔴 ' + (!capped ? '默认没被行长压住（参照物取错了）'
+                                   : (!tOpen ? 'rep__wide 没打开通道'
+                                             : 'rep__fig--wide 没打开通道'))) };
+      },
     },
   });
   process.exit(kit.report(r));

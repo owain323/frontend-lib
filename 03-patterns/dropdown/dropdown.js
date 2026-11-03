@@ -359,6 +359,14 @@
         li.className = li.className ? (li.className + ' dd__item') : 'dd__item';
       }
       if (li.hasAttribute('data-dd-sep')) {
+        /* 🔴 和上面的 dd__item 同一个道理：分隔线那 1px 的高度与背景
+           全在 `.dd__sep` 这条规则里。作者只写 `data-dd-sep` 而不写类名时，
+           量到的渲染高度是 **0px**（实测），两组菜单项直接贴着 ——
+           看上去像"漏了一条分隔线"，而且没有任何报错。
+           ⇒ 由组件补类，不指望每个使用者记得写。 */
+        if (String(li.className).indexOf('dd__sep') < 0) {
+          li.className = li.className ? (li.className + ' dd__sep') : 'dd__sep';
+        }
         li.setAttribute('role', 'separator');
         li.setAttribute('aria-hidden', 'true');
       } else if (!li.hasAttribute('role')) {

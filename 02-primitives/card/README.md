@@ -5,7 +5,7 @@
 | **来源** | 原创。2px 抬起一条来自对 `animal-island-ui` 的观察（那套设计里最认同的一条） |
 | **实测** | `states.py` 零缺失（card 形态：focus HIGH / hover LOW） |
 | **适用** | 精简档 / B / C，纯 CSS |
-| **依赖** | `01-tokens/tokens.css`  + `01-tokens/typography.css`（`.note` 提示框） + `01-tokens/page.css`（页面骨架：`.wrap` / `.lede` / `.note`） |
+| **依赖** | `01-tokens/tokens.css`  + `01-tokens/typography.css`（`.note` 提示框） + `01-tokens/page.css`（页面骨架：`.wrap` / `.lede` / `.note`）。底栏要放**按钮**时再加 `02-primitives/button/button.css`（本目录 demo 已引入） |
 
 ---
 
@@ -70,6 +70,11 @@
   </div>
 </div>
 ```
+
+> 底栏右侧放**按钮**也行（dense 列表里更常见），但要额外引入
+> `02-primitives/button/button.css` —— 卡片本身不定义按钮样式。
+> ⚠️ 别放**裸链接**当主操作：文字链接的命中区只有一行高（约 17px），
+> 触屏上点不中；卡片契约第 ③ 条要求可点元素 ≥44px，会直接红。
 
 依赖：`01-tokens/tokens.css` + `01-tokens/typography.css`（正文）+
 `01-tokens/page.css`（`.wrap` / `.small` 等页面骨架）。

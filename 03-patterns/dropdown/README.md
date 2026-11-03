@@ -26,11 +26,13 @@
   <button class="dd__btn" data-dd-btn aria-haspopup="menu" aria-expanded="false">
     <span>操作</span><span class="dd__caret" aria-hidden="true"></span>
   </button>
-  <div class="dd__menu" data-dd-menu role="menu">
-    <button class="dd__item" role="menuitem" data-value="edit">编辑</button>
-    <hr class="dd__sep" data-dd-sep role="separator">
-    <button class="dd__item" role="menuitem" data-value="del">删除</button>
-  </div>
+  <!-- ⚠️ 必须是 ul + li：JS 按 `li` 逐个补 role="menuitem" / tabindex="-1"。
+       写成 <div>/<button> 的列表，键盘导航会整个失效（没有可被 JS 接管的项）。 -->
+  <ul class="dd__menu" data-dd-menu hidden>
+    <li data-value="edit">编辑</li>
+    <li data-dd-sep></li>
+    <li data-value="del">删除</li>
+  </ul>
 </div>
 ```
 
@@ -38,9 +40,9 @@
 |---|---|
 | `.dd` | 根 |
 | `.dd__btn` / `[data-dd-btn]` | 触发按钮 |
-| `.dd__menu` / `[data-dd-menu]` | 菜单本体，**必需** |
-| `.dd__item` | 菜单项，带 `data-value` |
-| `.dd__sep` / `[data-dd-sep]` | 分隔线 |
+| `.dd__menu` / `[data-dd-menu]` | 菜单本体（`<ul>`），**必需** |
+| `.dd__item` | 菜单项（`<li>`），带 `data-value`。**类名由 JS 自动补**，不用手写 |
+| `.dd__sep` / `[data-dd-sep]` | 分隔线。只写 `data-dd-sep` 即可：`role="separator"` + `aria-hidden` + `.dd__sep` 都由 JS 补（漏写类名时它渲染高度是 **0px**，两组菜单项直接贴着） |
 | `.dd__check` | 多选勾选位 |
 | `.dd--end` | 菜单右对齐 |
 

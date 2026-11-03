@@ -158,6 +158,119 @@ p { margin: 0 0 var(--sp-3); }
     </div>
   </div>
 
+  <h2 class="rule-top">面板里怎么排：分列 / 表格 / 标题下的一句话</h2>
+  <p class="note">
+    这一块同时演示四个"藏在面板里"的类，所以<strong>四个都展开</strong>（多开模式）：
+    <br>· <code>.accordion--flush</code> 去掉外框，融进已有卡片或侧栏
+    <br>· <code>accordion__hint</code> 在标题下写"展开后有什么"，减少无谓展开
+    <br>· <code>cols-2</code> / <code>cols-3</code> / <code>cols-auto</code> 给面板内容分列（≥720px 才分列）
+    <br>· <code>.acc-table</code> 面板里的表格：窄屏<strong>横向滚动</strong>，不挤压换行
+  </p>
+  <div class="accordion accordion--flush" data-accordion data-accordion-multi>
+    <div class="accordion__item">
+      <h3 class="accordion__heading">
+        <button class="accordion__trigger" aria-expanded="true">
+          <span class="accordion__label">
+            指标口径
+            <span class="accordion__hint">展开可看 4 个字段的定义（不展开也能看到这句）</span>
+          </span>
+          <span class="accordion__marker" aria-hidden="true"></span>
+        </button>
+      </h3>
+      <div class="accordion__panel">
+        <div class="accordion__panel-inner cols-2">
+          <p><strong>营业总收入</strong>：含主营业务与其他业务收入，不含投资收益。</p>
+          <p><strong>营业成本</strong>：与收入同口径，不含期间费用。</p>
+          <p><strong>期间费用</strong>：销售、管理、研发、财务四项之和。</p>
+          <p><strong>归母净利润</strong>：扣除少数股东损益后的净利润。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="accordion__item">
+      <h3 class="accordion__heading">
+        <button class="accordion__trigger" aria-expanded="true">
+          <span class="accordion__label">
+            三期对比
+            <span class="accordion__hint">三列并排，适合"同类不同期"</span>
+          </span>
+          <span class="accordion__marker" aria-hidden="true"></span>
+        </button>
+      </h3>
+      <div class="accordion__panel">
+        <div class="accordion__panel-inner cols-3">
+          <p><strong>2024</strong><br>收入 1,284,300 万元</p>
+          <p><strong>2025</strong><br>收入 1,402,110 万元</p>
+          <p><strong>2026</strong><br>收入 1,536,880 万元</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="accordion__item">
+      <h3 class="accordion__heading">
+        <button class="accordion__trigger" aria-expanded="true">
+          <span class="accordion__label">
+            自适应列
+            <span class="accordion__hint">按内容宽度自动分列，窄了自己塌成一列</span>
+          </span>
+          <span class="accordion__marker" aria-hidden="true"></span>
+        </button>
+      </h3>
+      <div class="accordion__panel">
+        <div class="accordion__panel-inner cols-auto">
+          <p>字段：证券代码</p>
+          <p>字段：行业分类</p>
+          <p>字段：上市日期</p>
+          <p>字段：交易所</p>
+          <p>字段：审计机构</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="accordion__item">
+      <h3 class="accordion__heading">
+        <button class="accordion__trigger" aria-expanded="true">
+          <span class="accordion__label">
+            附表：近三期数据
+            <span class="accordion__hint">表格不换行，窄屏横向滚动</span>
+          </span>
+          <span class="accordion__marker" aria-hidden="true"></span>
+        </button>
+      </h3>
+      <div class="accordion__panel">
+        <div class="accordion__panel-inner">
+          <table class="acc-table">
+            <caption>营业总收入与同比（单位：万元）</caption>
+            <thead>
+              <tr>
+                <th scope="col">期间</th>
+                <th scope="col" class="num">营业总收入</th>
+                <th scope="col" class="num">同比</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">2024 年度</th>
+                <td class="num">1,284,300</td>
+                <td class="num">—</td>
+              </tr>
+              <tr>
+                <th scope="row">2025 年度</th>
+                <td class="num">1,402,110</td>
+                <td class="num up">+9.17%</td>
+              </tr>
+              <tr>
+                <th scope="row">2026 年度</th>
+                <td class="num">1,536,880</td>
+                <td class="num up">+9.61%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <h2 class="rule-top">结构要求（APG 原文）</h2>
   <div class="box">
     <p><strong>heading 包住 button</strong>，不是 button 套 heading：</p>

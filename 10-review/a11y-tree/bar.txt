@@ -33,3 +33,12 @@ RootWebArea "bar · 柱状图 · frontend-lib"
     heading "4 · 🔴 量程必填：不给 max 会直接报错" [level=2]
     paragraph "铁律三： 量程不得自动适配 。 一个 400 的异常值 + 30 个 0.35 的常态值，若 Y 轴自适应到 400 ⇒"
     button "不给 max，看会发生什么"
+    heading "5 · 五个系列 = 五档分类色；第 6 个必须自带 cls" [level=2]
+    paragraph "bar.css 只提供 .bar__s0 – .bar__s4 五档分类色 （与 scientific-plot 的 r"
+    image "六天五个环节的并列分组柱状图，五档分类色"
+    list
+      listitem "受理" [level=1]
+      listitem "审核" [level=1]
+      listitem "放款" [level=1]
+      listitem "对账" [level=1]
+      listitem "归档" [level=1]

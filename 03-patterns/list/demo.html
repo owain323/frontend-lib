@@ -47,6 +47,9 @@ p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6
   </div>
 
   <ul class="list" id="list" role="list"></ul>
+  <!-- 列表末尾的一行小字：说明"这个列表本身"（条数、排序、口径），
+       不是空状态。空状态用 states 的 .state--empty（见下面）。 -->
+  <p class="list__note" id="note" aria-live="polite">共 0 条</p>
 
   <!-- 空状态：删光后显示，容器位置不变所以不跳动 -->
   <div id="empty" hidden>
@@ -165,6 +168,8 @@ var EXTRA = [
 
 var list = document.getElementById('list');
 var emptyBox = document.getElementById('empty');
+var note = document.getElementById('note');
+var mode = '插入顺序';
 var data = SEED.slice();
 var seq = 100;
 
@@ -210,6 +215,7 @@ function paint() {
   for (var i = 0; i < data.length; i++) { html += rowHtml(data[i]); }
   list.innerHTML = html;
   emptyBox.hidden = data.length > 0;
+  note.textContent = '共 ' + data.length + ' 条 · ' + mode;
 }
 
 function repaint(mutate) {
@@ -219,6 +225,7 @@ function repaint(mutate) {
     for (var i = 0; i < data.length; i++) { html += rowHtml(data[i]); }
     list.innerHTML = html;
     emptyBox.hidden = data.length > 0;
+    note.textContent = '共 ' + data.length + ' 条 · ' + mode;
   });
 }
 
@@ -254,12 +261,14 @@ document.getElementById('add').onclick = function () {
 };
 
 document.getElementById('sort').onclick = function () {
+  mode = '按记录数降序';
   repaint(function () {
     data.sort(function (a, b) { return b.rec - a.rec; });
   });
 };
 
 document.getElementById('reverse').onclick = function () {
+  mode = '按名称排序';
   repaint(function () {
     data.sort(function (a, b) { return a.name.localeCompare(b.name, 'zh-Hans-CN'); });
   });
@@ -270,6 +279,7 @@ document.getElementById('clear').onclick = function () {
 };
 
 document.getElementById('reload').onclick = function () {
+  mode = '插入顺序';
   data = SEED.slice();
   for (var i = 0; i < data.length; i++) { data[i].id = 'r' + (++seq); }
   paint();

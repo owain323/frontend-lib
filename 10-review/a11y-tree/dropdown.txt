@@ -7,6 +7,7 @@ RootWebArea "dropdown · 下拉菜单 · frontend-lib"
     paragraph "依据 APG Menu Button ： ↑↓ 移动 · Esc 关闭并 把焦点还给按钮 · Tab 关闭 · Ente"
     heading "1 · 基本用法（试试键盘）" [level=2]
     button "操作" [hasPopup=menu]
+    paragraph "菜单里的那条 分隔线 只写 data-dd-sep 就行： role="separator" 与 .dd__sep 由组"
     heading "2 · 带勾选（选中性不只靠颜色）" [level=2]
     button "排序方式" [hasPopup=menu]
     heading "3 · 靠右对齐（窄屏不出屏）" [level=2]

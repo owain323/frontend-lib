@@ -4,7 +4,8 @@
 var NS = 'http://www.w3.org/2000/svg';
 var uid = 0;
 
-var SERIES_STYLES = 5;
+var SERIES_CLS = ['bar__s0', 'bar__s1', 'bar__s2', 'bar__s3', 'bar__s4'];
+var SERIES_STYLES = SERIES_CLS.length;
 
 function pickKeyPoints(values) {
 var keys = {}, i, maxI = 0;
@@ -110,7 +111,7 @@ x = mode === 'group'
 yy = padT + plotH - vt;
 
 rect = el('rect', {
-'class': 'bar__bar bar__s' + (s % SERIES_STYLES) +
+'class': 'bar__bar ' + SERIES_CLS[s % SERIES_STYLES] +
 (series[s].cls ? ' ' + series[s].cls : ''),
 x: x, y: yy, width: barW, height: vt - vb,
 });
@@ -181,7 +182,7 @@ series.forEach(function (se, si) {
 var li = document.createElement('li');
 li.className = 'bar__legend-item';
 var sw = document.createElement('span');
-sw.className = 'bar__legend-swatch bar__s' + (si % SERIES_STYLES) +
+sw.className = 'bar__legend-swatch ' + SERIES_CLS[si % SERIES_STYLES] +
 (se.cls ? ' ' + se.cls : '');
 
 li.appendChild(sw);
