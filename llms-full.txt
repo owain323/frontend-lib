@@ -1,6 +1,6 @@
 # agentcss — full reference (one file)
 
-> Generated from `ai/components.json` + `ai/pitfalls*.json` + `ai/behaviors.json` at version **0.25.2**.
+> Generated from `ai/components.json` + `ai/pitfalls*.json` + `ai/behaviors.json` at version **0.25.3**.
 > Do not edit by hand: run `python 05-audit/gen-llms.py` (freshness is gated).
 > Short version: `llms.txt`. Machine contract: `ai/*.json`.
 

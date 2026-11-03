@@ -65,6 +65,10 @@ const PATTERNS = [
   /\brequire\s*\(\s*['"](agentcss[^'"\n]*)['"]/g,
 ];
 
+/* 占位符：文档里教「换成你的组件名」的地方，机械解析必然失败。
+   🔴 不静默跳过 —— 单列出来，让读者知道这几条没有被验证过。 */
+const PLACEHOLDER = /[<>{}*$]/;
+
 function argOf(argv, flag) {
   const i = argv.indexOf(flag);
   return i >= 0 ? argv[i + 1] : null;
@@ -96,6 +100,7 @@ function main() {
 
   const bad = [];
   const ok = [];
+  const placeholders = [];
   let scanned = 0;
 
   for (const rel of FILES) {
@@ -104,6 +109,10 @@ function main() {
     scanned += 1;
     const src = fs.readFileSync(p, 'utf8');
     for (const [spec, line] of extractSpecifiers(src)) {
+      if (PLACEHOLDER.test(spec)) {
+        placeholders.push({ file: rel, line, spec });
+        continue;
+      }
       try {
         req.resolve(spec);
         ok.push({ file: rel, line, spec });
@@ -114,10 +123,18 @@ function main() {
   }
 
   console.log('  === 文档里的 import 路径 ===');
-  console.log('  扫了 ' + scanned + ' 份文档，抽出 ' + (ok.length + bad.length) + ' 条 agentcss 字面路径');
+  console.log('  扫了 ' + scanned + ' 份文档，抽出 ' +
+    (ok.length + bad.length + placeholders.length) + ' 条 agentcss 字面路径');
 
   if (!bad.length) {
     console.log('  OK   ' + ok.length + ' 条路径全部能被消费者侧解析');
+    if (placeholders.length) {
+      /* 不静默跳过：告诉读者"这几条没人验过" */
+      console.log('  ·    ' + placeholders.length + ' 条是占位符（含 <>/{}/*），无法机械验证：');
+      for (const p of placeholders.slice(0, 6)) {
+        console.log('        ' + p.file + ':' + p.line + '  ' + p.spec);
+      }
+    }
     return 0;
   }
 
