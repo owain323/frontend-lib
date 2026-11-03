@@ -185,7 +185,21 @@ def css_files():
                 '03-patterns/*/*.css', '04-recipes/*/*.css',
                 '09-assets/*/*.css'):
         out += glob.glob(os.path.join(ROOT, pat))
-    return sorted(out)
+    return sorted(f for f in out if _rel(f) not in DERIVED)
+
+
+# 🔴 派生切片不计入合计（2026-11-03）
+#    `tokens.core.css` / `base.reset.css` 是 `tokens.css` 的**精确切片**
+#    （由 05-audit/split-tokens.py 切出来，门禁逐字节比对）。
+#    消费者只会下载其中一个入口，三个文件加起来却把同一批声明算了三遍 ——
+#    账本量的是"使用者要付多少字节"，重复计数会让**没多付一字节**的改动
+#    看起来超预算，然后逼着人去调天花板。那正是预算制度最该避免的事。
+#    ⇒ 只排除这三个**已知的**切片关系；新文件默认参与计量。
+DERIVED = {'01-tokens/tokens.core.css', '01-tokens/base.reset.css'}
+
+
+def _rel(p):
+    return os.path.relpath(p, ROOT).replace('\\', '/')
 
 
 def strip_comments(s):
@@ -258,6 +272,11 @@ def main():
 
     big_rel, big_n = max(sizes.items(), key=lambda x: x[1])
     print('  单文件 %d 个，最大 %s %s' % (len(sizes), big_rel.split('/')[-1], _fmt(big_n)))
+    skipped = sorted(DERIVED & {_rel(f) for f in glob.glob(
+        os.path.join(ROOT, '01-tokens', '*.css'))})
+    if skipped:
+        print('  派生切片（不计入，是 tokens.css 的一部分）：%s'
+              % ' · '.join(s.split('/')[-1] for s in skipped))
     print('  生效合计 %s ｜ 工作上限 %s（授予 %s + 储备 %s）｜ 天花板 %s' %
           (_fmt(total), _fmt(limit), _fmt(granted), _fmt(reserve), _fmt(ceiling)))
 

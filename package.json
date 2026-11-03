@@ -23,6 +23,8 @@
       "default": "./esm/index.mjs"
     },
     "./tokens.css": "./dist/01-tokens/tokens.css",
+    "./tokens.core.css": "./dist/01-tokens/tokens.core.css",
+    "./base.reset.css": "./dist/01-tokens/base.reset.css",
     "./typography.css": "./dist/01-tokens/typography.css",
     "./page.css": "./dist/01-tokens/page.css",
     "./esm": {

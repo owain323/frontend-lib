@@ -1,0 +1,99 @@
+/* ============================================================================
+ * base.reset.css —— 底座层：会改**整个宿主文档**的那几条规则
+ * ============================================================================
+ *
+ * 🔴 这个文件里的每一条都作用于宿主页面本身，而不只是本库的组件：
+ *    · `:focus-visible`            —— 宿主所有可聚焦元素的焦点环
+ *    · `a, button, label, …`       —— 宿主的点按高亮被关掉
+ *    · `prefers-reduced-motion`    —— 对 `*` 压掉动效（带 !important）
+ *
+ * 所以它**默认不该被引入**：先用 `tokens.core.css`，确认要这套底座再加它。
+ * 从零搭页面的人用 `tokens.css`（= core + reset，一条引入搞定）。
+ *
+ * ⚠️ 本文件是**生成物**，由 `05-audit/split-tokens.py --write` 切出来。
+ */
+
+
+
+
+/* ============================================================================
+   无障碍兜底 —— 这一段必须随 token 一起走，不许删
+   ========================================================================= */
+
+/* 尊重系统的"减少动效"设置。评委、无障碍用户、晕动症人群会开这个。
+   不写这段，前面所有动效在那些机器上就是灾难。
+
+   🔴 这是**兜底**，不是全部策略（0.9.1 起）：
+      ① 位移 / 缩放 / 旋转 —— 关掉（前庭不适的主要来源）
+      ② 真实进度（spinner / 加载中）—— **保留**，见 ai/motion-policy.json。
+         停掉进度指示会让用户以为页面卡死，比有动画更糟。
+      ③ 颜色 / 透明度 —— 允许保留但缩短到 --dur-fast（不强制，也无判据）
+      默认关、例外要写理由并由 `motion.py --reduced-audit` 核对：
+      声明了却没实现 ⇒ 红；实现了却没声明 ⇒ 也红。
+   本段的 `*` 规则必须保留 —— 它是①②③共同的底线，
+   组件要保留动画时用**更高优先级 + !important** 覆盖它（库里三处都这么做）。 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+
+/* 键盘焦点环。用 :focus-visible 而不是 :focus ——
+   前者只在键盘导航时显示，鼠标点击不会冒出难看的框。
+   🔴 只写 outline: none 而不给替代焦点指示，是无障碍事故。 */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+
+
+/* ============================================================================
+   🔴 修 iOS 实机报的「点击时出现奇怪的灰黑纺锤形闪动」
+   ----------------------------------------------------------------------------
+   原始反馈：「点击单选和复选的选项的时候会出现非常奇怪的阴影残留，
+   那个阴影居然是**纺锤形**的，或者是极快的那个**灰黑色的底色闪动**」。
+
+   ⭐ 真因（**iOS Safari 的默认行为**，不是我们的布局错）：
+     iOS Safari 会给**被点击的元素**加一层半透明灰黑遮罩
+     （约 rgba(0,0,0,0.18)），这层遮罩**跟着元素的形状与圆角** ——
+     我们的 `.choice__mark` 是**圆角方块** ⇒ 遮罩就成了「纺锤形」。
+
+     ⚠️ 而且真正被点的不是那个 mark，是**铺满整个 `.choice` 的
+        透明 input**（`opacity:0; inset:0`）⇒ 遮罩画在这个 input 上，
+        iOS 按它的圆角裁切 ⇒ 形状更怪、闪烁更明显。
+
+   ⇒ 修法（业界标准做法）：**关掉 tap highlight**。
+     本库每个控件都有自己的 `:active` / `:checked` 反馈，
+     不需要 iOS 那层系统遮罩 —— 它既不统一又难看。
+
+     ⚠️ 只在**可点元素**上关，**不要全局 `*`**
+        —— 那会把链接与按钮的原生反馈一起干掉。 */
+a,
+button,
+label,
+summary,
+input[type="checkbox"],
+input[type="radio"],
+input[type="button"],
+input[type="submit"],
+[role="button"],
+[role="switch"],
+[role="tab"],
+[role="option"],
+.choice,
+.switch,
+.btn,
+.accordion__trigger,
+.tabs__tab,
+.card,
+.list__row {
+  -webkit-tap-highlight-color: transparent;
+}

@@ -131,17 +131,20 @@
 [dir=&quot;rtl&quot;] .tip { left: auto; right: 0; }</code></pre>
 <h2 id="s8">七 · 不用 <code>@layer</code>；<code>!important</code> 必须说得清<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
 <p>交付 CSS 里 <code>@layer</code> 是 <strong>0 处</strong>，这是决定，不是遗漏：目标环境里有 Chromium 97 的内核（见<a href="../SUPPORT.md">浏览器支持矩阵</a>），它不认识 <code>@layer</code> —— <strong>整层样式会直接消失</strong>。所以&quot;未分层&quot;是当前唯一安全的选择。<code>cascade-layer-gate.py</code> 把这条变成可判状态：一旦出现第一条 <code>@layer</code>，就要求三条前提的实测记录已落档，否则红。</p>
-<p><code>!important</code> 现有 10 处，<strong>每一处都必须能被归类</strong>：</p>
+<p><code>!important</code> <strong>每一处都必须能被归类</strong>，归不了类的 ⇒ 红。判据不是&quot;清零&quot; —— 清零会逼人删掉无障碍兜底。</p>
 <div class="table"><table>
 <thead><tr>
-<th>类别</th><th>处数</th><th>为什么必须赢</th>
+<th>类别</th><th>为什么必须赢</th>
 </tr></thead>
 <tbody>
-<tr><td>无障碍偏好（<code>prefers-reduced-motion</code>）</td><td>9</td><td>操作系统级偏好，组件无权推翻</td></tr>
-<tr><td>正确性（<code>[hidden] { display: none }</code>）</td><td>1</td><td>不赢就会&quot;藏不住&quot;</td></tr>
+<tr><td>无障碍偏好（<code>prefers-reduced-motion: reduce</code>）</td><td>操作系统级偏好，组件无权推翻</td></tr>
+<tr><td>正确性（<code>[hidden] { display: none }</code>）</td><td>不赢就会&quot;藏不住&quot;</td></tr>
+<tr><td>打印媒体（<code>@media print</code> + <code>display: none</code>）</td><td>纸张上没有交互，屏幕专属元素必须真的不出现</td></tr>
 </tbody>
 </table></div>
-<p>分不了类的 <code>!important</code> ⇒ 红。判据不是&quot;清零&quot;——清零会逼人删掉无障碍兜底。</p>
+<p><strong>这里刻意不写&quot;现在有几处&quot;</strong>（I-7：同一个数字有第二个出处，就必然漂移）。要数字就跑门禁，它会把每一类的处数打出来：</p>
+<pre class="code" tabindex="0"><code class="language-bash">python 05-audit/cascade-layer-gate.py</code></pre>
+<blockquote><p>曾经的教训：这份文档写&quot;10 处（无障碍 9 + <code>[hidden]</code> 1）&quot;，而门禁当时实测<br><strong>13 处</strong>——多出来的 2 处是打印媒体，文档连这个类别都没列。<br>于是按文档去审计的人会把 2 处<strong>判成&quot;说不清&quot;</strong>，而那两处恰恰是正当的。<br>少写一个类别，比少写一个数字更坏。</p></blockquote>
 <h2 id="s9">八 · 对比度与触控的硬线<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
 <ul><li>正文 <strong>4.5:1</strong>，大字与<strong>控件</strong>边界 <strong>3:1</strong>，纯装饰不强制（但也不许拿来传信息）。</li><li>触控目标 <strong>44×44</strong>（WCAG 2.5.5）。视觉尺寸可以更小，热区要补足。</li><li><strong>禁用态用明确色值，不用 <code>opacity</code></strong>。半透明会让文字对比度随底色漂移，在暗色下直接不达标；而且&quot;看起来只是淡了点&quot;没法表达&quot;不能点&quot;。</li></ul>
 <h2 id="s10">九 · 覆盖策略：改令牌，不要改组件<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
