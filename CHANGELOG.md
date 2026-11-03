@@ -16,6 +16,89 @@
 
 （无）
 
+## [0.25.5] - 2026-11-04
+
+### 新增：`tokens.core.css`（只有变量）与 `base.reset.css`（只有底座）
+
+`tokens.css` 一直同时干两件事：定义变量，以及**改整个宿主文档**的三条规则
+（全局 `:focus-visible`、`a/button/label…` 的 `-webkit-tap-highlight-color`、
+`prefers-reduced-motion` 里对 `*` 的 `!important`）。README 的最小示例却把这套组合
+描述成"零副作用"——嵌进已有站点的人会发现宿主的焦点环与点按反馈被换掉了，
+而看不出是哪一行。
+
+冻结期不能改 `tokens.css` 的语义，所以只做加法：
+
+| 新入口 | 含什么 | 改宿主吗 |
+|---|---|---|
+| `agentcss/tokens.core.css` | 只有变量（含暗色、按语言的字体与字距） | 不会 |
+| `agentcss/base.reset.css` | 只有那三条 | 会 |
+| `agentcss/tokens.css` | 旧路，一个字节没动 | 会（同上） |
+
+两个新文件是**生成物**（`05-audit/split-tokens.py` 从 `tokens.css` 切出来），
+`token-split` 门禁逐字节比对 —— 同一事实不留第二份手写来源（I-7）。
+
+**计算样式实测**（light / dark 各一次，同一页面只换引入文件）：
+
+| | `--paper` | 焦点环 | 点按高亮 |
+|---|---|---|---|
+| core | `#f6f7f8` / `#14171A` | `auto 1px`（浏览器默认） | 保留 `0.18` |
+| tokens.css | `#f6f7f8` / `#14171A` | `solid 2px`（库的） | 被关掉 `0` |
+
+判据 5 条 + 反向控制 4 条。核心一条：**每条顶层规则必须归入 core / reset / library**，
+归不了类就红 —— 将来有人往 `tokens.css` 加第四条全局规则，会被逼着做一次显式决定。
+
+过程中自己踩的两个坑，都写进了判据：
+- 按选择器前缀归类 ⇒ 暗色令牌在 `@media screen and (prefers-color-scheme: dark)` 里，
+  被判成"库自己的东西"，core 里没有暗色；**计算样式实测 dark 下仍返回 `#f6f7f8`**。
+  改成递归判"块里是不是只有自定义属性"。
+- `_inner()` 在原文里找第一个 `{`，而块首注释里就有 `{`（举例 `.wrap { max-width }`）
+  ⇒ 切到注释中间，后面全错。索引必须从遮蔽层取。
+
+### 新增：每个 HTML 注入点都要说得清装的是什么（`xss-sink-gate`）
+
+全库 21 处 `.innerHTML` / `.insertAdjacentHTML`，此前没有任何机制阻止第 22 处悄悄进来，
+`SECURITY.md` 只写了 `combobox` 一处、并称"没有门禁守着"。现在分四类
+（清空 12 / 已转义 3 / 内部量 4 / 有意入口 2），非"赋空串"的必须在紧邻上一行写
+`/* @html-sink <kind> — <理由> */`。
+
+两处**真缺陷**已修：
+- `model-viewer` 把 `src` 的文件名拼进 `innerHTML`。文件名可以是
+  `<img src=x onerror=…>`。改成 `textContent` 组装。载荷实测：注入串只以
+  `&lt;img` 出现，`injectedImg=false`、`flag=false`。
+- `date-range` 把 `<input>` 的 `value` 拼进 `innerHTML`，而 `type=date` 在
+  Chromium 97 旧内核会回退成文本输入 ⇒ `value` 可为任意串。改成节点组装（摘要文本不变，
+  组件契约门禁仍断言「区间 2026-01-01 → 2026-01-31（31 天）」）。
+
+`raw-html` 两处（`popover` 的 `opts.html`、`drawer` 的 `opt.content`）登记在
+`SECURITY.md` 的「HTML 入口」，与代码**双向**核对（陈旧登记也红）。
+
+**这道门禁证明不了什么**：它不证明 `esc()` 的实现对，也不覆盖全部数据流。
+它证明的是"新增未声明的注入点必须显式改标记或改文档"。
+
+### 修正：文档里三处正在说谎的地方
+
+- `CONVENTIONS.md` 写「`!important` 现有 10 处（无障碍 9 + `[hidden]` 1）」，
+  门禁实测 **13 处**：多出来的 2 处是 `@media print` —— 文档连**类别**都没列。
+  按文档去审计的人会把这两处正当的写成"说不清为什么要赢"。改成类别表 + 「要数字跑门禁」。
+- `README` 说「`components.json` 里标 `beta` 的那几个组件」，实际 **40/40 stable**。
+  改成讲清四条机械判据，并写明 `stable` 量的是机制完备度、不是"久经生产"。
+- `README` 安装段还留着「发布成功之后这一行才会换上」的历史段落（上一句已写已发布）；
+  源码复制那段编号从 ② 改 ③。
+
+### 体积账本：去掉重复计数，不放宽上限
+
+`tokens.core.css` / `base.reset.css` 是 `tokens.css` 的切片，消费者只下载其中一个。
+三个文件一起计入会把同一批声明算三遍 ⇒ `perf-gate` 排除这两个**已知切片**并在输出里
+打印说明；`ceiling` / `granted` 一个都没动。
+
+### 验证
+
+- 快速层 **120 道 / 0 FAIL**；打包冒烟（含消费者侧文档路径解析）通过。
+- 视觉基线重录，但 **109 张 PNG 逐字节未变**，只有 `_stamp.json` 更新。
+- 反向控制：`xss-sink` 12 条、`token-split` 4 条，每条都证明"该红时真的红"。
+
+---
+
 ## [0.25.4] - 2026-11-03
 
 **修订版：把「类型里看不见的那 8 个全局」补上，并让这件事以后有人管。
