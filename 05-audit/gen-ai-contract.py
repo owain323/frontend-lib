@@ -472,12 +472,27 @@ def scan_component(cid, cdir, tier, meta, layer_dir, claimed):
 
 
 # ---------------------------------------------------------------- 令牌解析
+def _skip_inline_space(body, i):
+    """跳过同一行内的空白（不跨行）。"""
+    while i < len(body) and body[i] in ' \t':
+        i += 1
+    return i
+
+
 def parse_block(body):
     """
-    解析一段 CSS 声明体，返回 [(name, value, 前导注释)]。
+    解析一段 CSS 声明体，返回 [(name, value, 前导注释, 尾注释)]。
+
     ⚠️ 必须先去注释再切分号 —— 注释里有中文分号和 #080a0c 这类值，
        直接 split(';') 会把注释内容当成属性值（这个 bug 真实发生过，
        导致 --paper 整个丢失、暗色模式从未生效。见 tokens.css 里的记录）。
+
+    🔴 为什么必须区分「前导」和「尾注释」（E294，0.25.4 修）
+       旧实现只有一个 pending_note：`--a: 1; /* A 的说明 */` 里的注释被
+       下一个声明吃掉，于是 `--b` 的描述写着 A 的含义。本文件里 101 条
+       尾注释 ⇒ 最多 100 个令牌的描述整体错位一位。
+       判据不是"注释存不存在"，是"这段文字认的是哪个令牌"。
+       同一行 = 尾注释（跟着前一个声明）；换行之后 = 前导注释。
     """
     out = []
     i, n = 0, len(body)
@@ -505,10 +520,22 @@ def parse_block(body):
                 semi = n
             name = body[i:colon].strip()
             value = body[colon + 1:semi].strip()
+            # 同一行后面的注释归本条（可能是连续多个）
+            trailing = []
+            if semi < n:
+                j = _skip_inline_space(body, semi + 1)
+                while body[j:j + 2] == '/*':
+                    e = body.find('*/', j + 2)
+                    if e < 0:
+                        break
+                    trailing.append(body[j + 2:e].strip())
+                    j = _skip_inline_space(body, e + 2)
+                if trailing:
+                    semi = j - 1        # 让 i 从这里继续，避免重扫
             if name.startswith('--'):
-                out.append((name, value, pending_note))
+                out.append((name, value, pending_note, '  '.join(trailing)))
             pending_note = ''
-            i = semi + 1
+            i = max(semi + 1, i + 1)
             continue
         i += 1
     return out
@@ -563,11 +590,59 @@ def scan_tokens():
     #    全文解析 = CSS 层叠（暗色段在后面，覆盖浅色的 L1）。
     all_toks = resolve_vars(declared_tokens(css))
 
-    def note_of(note):
-        if not note:
-            return ''
-        return next((ln.strip(' *') for ln in note.splitlines()
-                     if ln.strip(' *').strip()), '')[:200]
+    # 🔴 描述清洗（E294）：旧实现 `note_of` 只取注释块第一行，
+    #    而 tokens.css 的分组注释第一行恰好是 `-------- 基底` 分隔线 ⇒
+    #    147 个令牌里 19 个的描述是分隔线，其余的首行也大多丢了后文。
+    #    现在的规则是可断言的四条：
+    #      ① 纯分隔线丢掉；行内分隔线换成空格；
+    #      ② 块首是分隔线 ⇒ 这是**分组注释**，紧随的那一行是组名，丢掉；
+    #      ③ 分组注释只有在**正文提到本令牌名**时才归属本令牌
+    #         （`--paper` 的块里写着 `paper = 页面底…`，那是它的定义；
+    #           `--text-primary` 的块讲的是"三档够用"，不是它的描述）；
+    #      ④ 前导 + 尾注释都收，按出现顺序去重拼接。
+    SEP_ONLY = re.compile(r'^[\s\-=_*~]{4,}$')
+    SEP_LEAD = re.compile(r'^[-=_*~]{4,}')          # 行首就是分隔线（组名同行）
+    SEP_RUN = re.compile(r'[-=_*~]{4,}')
+    DESC_CAP = 400
+
+    def _segments(raw):
+        """把一段注释切成有信息量的片段（已去掉分隔线/空行）。"""
+        segs = []
+        for ln in (raw or '').splitlines():
+            s = ln.strip().strip('*').strip()
+            if not s or SEP_ONLY.match(s):
+                continue
+            s = re.sub(r'\s+', ' ', SEP_RUN.sub(' ', s)).strip()
+            if s:
+                segs.append(s)
+        return segs
+
+    def note_of(lead, trail, token_name):
+        lead = lead or ''
+        segs = _segments(lead)
+        head_lines = [ln.strip() for ln in lead.strip().splitlines() if ln.strip()]
+        if head_lines and (SEP_ONLY.match(head_lines[0])
+                           or SEP_LEAD.match(head_lines[0])):
+            group = segs[1:] if segs else []       # 组名，不是描述
+            bare = token_name.lstrip('-')
+            flat = ' '.join(group).replace('-', '').replace('_', '')
+            if bare in ' '.join(group) or bare.replace('-', '') in flat:
+                segs = group
+            elif _segments(trail):
+                segs = []                           # 有尾注释就够用了
+            else:
+                segs = group                        # 没别的说法，总比空着强
+        out = []
+        for s in segs + _segments(trail):
+            if s not in out:
+                out.append(s)
+        text = ''
+        for s in out:
+            nxt = (text + ' ' + s).strip() if text else s
+            if len(nxt) > DESC_CAP:
+                return (text + '…') if text else nxt[:DESC_CAP]
+            text = nxt
+        return text
 
     def resolve_alias(v, local):
         """把 `var(--raw-x)` 换成字面值。
@@ -589,8 +664,8 @@ def scan_tokens():
         for m in re.finditer(r':root\s*\{', mode_css):
             body, _ = find_block(mode_css, m.end() - 1)
             decls = list(parse_block(body))
-            local = {n: v for n, v, _ in decls}
-            for name, value, note in decls:
+            local = {n: v for n, v, _, _ in decls}
+            for name, value, lead, trail in decls:
                 if name in res:
                     continue  # 先出现的为准（浅色块在前）
                 if name.startswith('--raw-'):
@@ -598,7 +673,7 @@ def scan_tokens():
                 value = resolve_alias(value, local)
                 item = {'$value': value, '$type': guess_type(value)}
                 # 只留第一行有效信息，避免把整段表格塞进来
-                d = note_of(note)
+                d = note_of(lead, trail, name)
                 if d:
                     item['$description'] = d
                 res[name] = item
@@ -613,8 +688,25 @@ def scan_tokens():
     masked = mask_comments(css)
     for m in re.finditer(r'@media[^{]*prefers-color-scheme:\s*dark[^{]*\{',
                          masked):
-        inner, _ = find_block(css, m.end() - 1)     # 用原文取 body（保注释）
-        for name, value, note in parse_block(inner):
+        media_body, _ = find_block(css, m.end() - 1)   # 原文 body（保注释）
+        # 🔴 只解析里面的 `:root` 块（E294）。
+        #    整个 media 体里，`:root…{` 选择器**上方**还挂着解释选择器的注释
+        #    （「⚠️ :not([data-theme="light"]) 让强制亮压过系统暗色」）。
+        #    直接对整个 body 做 parse_block ⇒ 那条注释被当成块内第一声明的
+        #    描述 ⇒ `--raw-paper` 拿到了讲选择器的话。实测踩过：
+        #    dark/--paper 的 $description 是 `⚠️ :not(...)`。
+        body_masked = mask_comments(media_body)
+        roots = list(re.finditer(r':root[^{]*\{', body_masked))
+        segments = []
+        for r in roots:
+            seg, _ = find_block(media_body, r.end() - 1)
+            segments.append(seg)
+        if not segments:
+            segments = [media_body]     # 没有 :root 就退回旧行为，别静默丢令牌
+        decls = []
+        for seg in segments:
+            decls.extend(parse_block(seg))
+        for name, value, lead, trail in decls:
             if not name.startswith('--'):
                 continue
             sem = ('--' + name[len('--raw-'):]) if name.startswith('--raw-') \
@@ -623,7 +715,7 @@ def scan_tokens():
                 continue
             val = all_toks.get(sem, value)
             item = {'$value': val, '$type': guess_type(val)}
-            d = note_of(note)
+            d = note_of(lead, trail, name)
             if d:
                 item['$description'] = d
             dark[sem] = item

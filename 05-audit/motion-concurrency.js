@@ -79,19 +79,46 @@ async function probe(page) {
       return out;
     };
 
-    /* 先确保处于隐藏态（没有 done），否则第一次切"显示"不会产生动画 */
+    /* 一次状态切换：先强制样式结算，再改属性，然后在窗口内把
+       「出现过的动画属性」求并集。返回见过的属性列表。
+
+       🔴 为什么必须 `void el.offsetWidth`（E295）
+          浏览器会把同一帧里的多次样式改动**合并**。如果只是
+          `removeAttribute` 紧接着 `setAttribute`，净变化为零 ⇒ 一条动画都不产生，
+          判据① 读到 0 个 ⇒ 误红。读一次布局属性会强制把当前样式结算进渲染树，
+          之后的那次改动才是"真的从 A 变到 B"。
+          实测：不加这一句，判据① 会间歇性读到 0 个（机器越慢越容易）。 */
+    const collect = async function (on) {
+      const seen = new Set();
+      const rec = function (e) { if (e.propertyName) { seen.add(e.propertyName); } };
+      const evs = ['transitionrun', 'transitionstart', 'animationstart'];
+      for (let i = 0; i < evs.length; i++) { el.addEventListener(evs[i], rec); }
+      try {
+        void el.offsetWidth;                       // 强制结算"当前"状态
+        if (on) { el.setAttribute('data-reveal-done', ''); }
+        else { el.removeAttribute('data-reveal-done'); }
+        const t0 = Date.now();
+        while (Date.now() - t0 < 240) {
+          const got = anims();
+          for (let i = 0; i < got.length; i++) { seen.add(got[i]); }
+          await frame();
+        }
+      } finally {
+        for (let i = 0; i < evs.length; i++) { el.removeEventListener(evs[i], rec); }
+      }
+      return Array.from(seen);
+    };
+
+    /* 先确保处于隐藏态并**结算**，否则第一次切"显示"不会产生动画 */
     el.removeAttribute('data-reveal-done');
+    void el.offsetWidth;
     await frame(); await frame();
 
     /* ---- ① 切到显示态 → 必须有动画 ---- */
-    el.setAttribute('data-reveal-done', '');
-    await frame(); await frame();
-    const showProps = anims();
+    const showProps = await collect(true);
 
     /* ---- ① 切到隐藏态 → 必须有动画 ---- */
-    el.removeAttribute('data-reveal-done');
-    await frame(); await frame();
-    const hideProps = anims();
+    const hideProps = await collect(false);
 
     /* ---- ② 快速重复触发，采样同属性并发 ---- */
     const frames = [];

@@ -520,6 +520,12 @@ run "tierA-sync" $PY 05-audit/make-tiersnippet.py --check
 run "theme-sync" $PY 05-audit/theme-sync.py --check
 # 机器可读契约（ai/components.json + ai/tokens.json）必须与源码一致
 run "ai-contract" $PY 05-audit/gen-ai-contract.py --check
+# 🔴 `--check` 只保证「JSON 与生成器一致」，**不保证生成器是对的**（E294）：
+#    0.25.2 里 101 条尾注释各错位一位 ⇒ 147 个令牌里 50 个的描述是**别人的话**，
+#    另有 19 个描述是 `-------- 分组名` 分隔线，而 `--check` 全程全绿。
+#    这道门禁按「描述必须能在**本令牌自己的相邻注释**里找到出处」判归属，
+#    五条判据各自配了反向控制（--selftest）。
+run "ai-token-desc" $PY 05-audit/ai-token-desc-gate.py
 # 🔴 `ai assets` 是**扫描生成**的：扫描逻辑写错、目录改名，输出会静默变少而没人发现。
 #    这里用另一个口径（磁盘 / 契约 / CLI 三方）对账，任一条不成立就红。（WO-03）
 run "assets-catalog" $PY 05-audit/assets-catalog-gate.py
