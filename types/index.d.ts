@@ -391,6 +391,114 @@ export interface FlipApi {
 }
 
 /* ============================================================================
+ * 资产 / 主题：`01-tokens/`、`09-assets/`、`04-recipes/` 的公开对象
+ *
+ * 🔴 为什么单列一段（0.25.2 的缺陷，0.25.3 补）：这 8 个对象都挂在 window 上，
+ *    但本文件里一个都没有 ⇒ `window.Theme.set('dark')` 在 TS 项目里直接报
+ *    "属性不存在"，用户只能写 `(window as any).Theme` —— 等于绕过类型系统。
+ *    其中 `Upload` 更明显：`esm/upload.mjs` 是**存在**的，运行时能 import，
+ *    类型里却看不见。
+ *
+ *    ⚠️ 本文件从前在这里写过一句「behavior-api 门禁核对源码 / esm 入口 /
+ *    本文件声明三者集合相等」—— 那句话**不成立**：那道门禁只比源码与 esm/，
+ *    从不读本文件（0.25.3 核实过）。现在由 `05-audit/types-globals-gate.py` 判：
+ *    源码里每个 `window.X =` / `global.X =` 都必须在这里有声明，
+ *    反过来每条声明也必须有源码依据。
+ *
+ * 为什么这 7 个不给 `export declare const`：`esm/` 里没有它们的包装模块
+ *    （只有 16 个行为脚本 + upload）。声明一个运行时取不到的具名导出，
+ *    正是本库最反对的「幻觉 API」。它们只能走 `window.X`。
+ * ========================================================================== */
+export type ThemeMode = 'light' | 'dark' | 'auto';
+
+export interface ThemeApi {
+  /** 读当前**模式**（不是"现在是深还是浅"）：auto 也算一种模式 */
+  get(): ThemeMode;
+  /** 当前实际渲染是不是深色（auto 模式下由系统决定） */
+  isDark(): boolean;
+  set(mode: ThemeMode): void;
+  toggle(): void;
+  /** 三态循环：auto → light → dark → auto */
+  cycle(): void;
+}
+
+export interface ChartApi {
+  draw(el: Element): void;
+  /** `draw` 的语义别名：数据变了，重画一次 */
+  emit(el: Element): void;
+  /** 画一个区域里所有 `.sparkline[data-spark]` */
+  update(root?: ParentNode): void;
+  /** ⚠️ 只有浏览器支持 ResizeObserver 时才存在（老 WebView 里是 undefined） */
+  observe?(el?: Element): void;
+}
+
+export interface ChartAdapterPalette {
+  accent: string;
+  danger: string;
+  success: string;
+  warn: string;
+  info: string;
+  [key: string]: string;
+}
+
+export interface ChartAdapterApi {
+  /** 读某个作用域下的 CSS 变量值（`ctx` 决定用哪套主题） */
+  cssVar(name: string, fallback?: string, ctx?: Element): string;
+  palette(ctx?: Element): ChartAdapterPalette;
+  seriesColors(n: number, p: ChartAdapterPalette): string[];
+  /** 生成 ECharts 主题对象；`name` 形如 `fe-light` / `fe-dark` */
+  theme(name: string, p?: ChartAdapterPalette | null, ctx?: Element): object;
+  themeName(ctx?: Element): string;
+  defaults(option?: object, ctx?: Element): object;
+  create(dom: HTMLElement, opt?: object): unknown;
+  /** 主题切换后重设；主题名变了会重建实例（ECharts 的主题在 init 时绑定） */
+  refresh(inst: unknown): unknown;
+}
+
+export interface ModelViewerInstance {
+  build(): void;
+  makeIdle(): void;
+  fail(msg?: string): void;
+  status(text: string): void;
+  load(): void;
+  boot(): void;
+  initScene(): void;
+}
+
+export interface BarApi {
+  draw(opt: {
+    host: HTMLElement;
+    /** 🔴 必填：本库铁律三，量程不得自动适配（漏了会抛错，不会悄悄自适应） */
+    max: number;
+    series?: unknown[];
+    height?: number;
+    mode?: 'group' | 'stack';
+  }): void;
+}
+
+export interface ScientificPlotApi {
+  render(el: Element, spec?: object): void;
+  /** 判据 / 单测用的真值入口；不承诺稳定，改版可能变 */
+  __internals: object;
+}
+
+export interface ShellNavInstance {
+  /** 已开着就直接返回现有句柄（重复点不该叠两层遮罩） */
+  open(): unknown;
+  close(): void;
+  destroy(): void;
+}
+
+export interface UploadInstance {
+  /** 收下一批文件（拖放入口，也是公开 API） */
+  add(incoming: FileList | File[], dirCount?: number): void;
+  render(): void;
+  setState(state: string): void;
+  setProgress(index: number, pct: number): void;
+  removeAt(index: number): void;
+}
+
+/* ============================================================================
  * 全局命名空间（组件脚本是 IIFE，挂到 window）
  * ========================================================================== */
 export interface FrontendLibGlobal {
@@ -412,6 +520,18 @@ export interface FrontendLibGlobal {
   Toc: TocApi;
   Reveal: RevealApi;
   FLIP: FlipApi;
+  /* ---- 资产 / 主题（没有 esm 入口，只能走 window.X） ---- */
+  Theme: ThemeApi;
+  Chart: ChartApi;
+  ChartAdapter: ChartAdapterApi;
+  /** construct 形态：`new window.ModelViewer(node)` */
+  ModelViewer: new (node: HTMLElement) => ModelViewerInstance;
+  Bar: BarApi;
+  ScientificPlot: ScientificPlotApi;
+  /** construct 形态：`new window.ShellNav(root, opts)` */
+  ShellNav: new (root: HTMLElement, opts?: object) => ShellNavInstance;
+  /** construct 形态：`new window.Upload(root, opts)` */
+  Upload: new (root: HTMLElement, opts?: object) => UploadInstance;
 }
 
 declare global {
@@ -426,7 +546,8 @@ export declare const Dropdown: FrontendLibGlobal['Dropdown'];
 export declare const Tree: FrontendLibGlobal['Tree'];
 /* 与 `global.X = …` 一一对应（16 个行为脚本全部覆盖）。
    证据：`esm/` 下的 16 个 .mjs 由 `05-audit/gen-esm.py` 从源码生成，
-   `behavior-api` 门禁核对「源码导出 / esm 入口 / 本文件声明」三者集合相等。 */
+   `behavior-api` 门禁核对「源码导出 ↔ esm 入口」两者集合相等
+   （⚠️ 它**不读本文件**；本文件的声明由 `types-globals-gate.py` 判）。 */
 export declare const Accordion: FrontendLibGlobal['Accordion'];
 export declare const Tabs: FrontendLibGlobal['Tabs'];
 export declare const Nav: FrontendLibGlobal['Nav'];
@@ -438,3 +559,6 @@ export declare const Popover: PopoverApi;
 export declare const Toc: TocApi;
 export declare const Reveal: RevealApi;
 export declare const FLIP: FlipApi;
+/* Upload 有 esm 入口（`esm/upload.mjs`）⇒ 可以具名导出；
+   其余 7 个资产/主题对象没有包装模块，只在 FrontendLibGlobal 里声明。 */
+export declare const Upload: FrontendLibGlobal['Upload'];

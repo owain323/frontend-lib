@@ -151,7 +151,11 @@ var SCHEMAS = {
   tokensAudience: 'tokens.audience.schema.json',
   tokensTree: 'tokens.tree.schema.json',
   deprecations: 'deprecations.schema.json',
-  patch: 'patch.schema.json'
+  patch: 'patch.schema.json',
+  /* behaviors 是稳定性承诺里的核心契约（微行为矩阵），
+     它的 schema 文件一直都在，但这里漏登记 ⇒ `--schema=behaviors` 报
+     "未知 schema"，等于这份契约**没有任何工具能校验**（E298）。 */
+  behaviors: 'behaviors.schema.json'
 };
 
 function cmdValidate(args) {

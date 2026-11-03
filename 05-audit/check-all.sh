@@ -1292,12 +1292,19 @@ run "demo-claim-rev" node 05-audit/demo-claim-gate.js --selftest
 #   三个不会报错的接入坑，各一条判据：
 #     A 无 DOM 加载   —— 16 个脚本曾经 16/16 在 Node 里 import 即崩（SSR 用户第一步就卡）
 #     B 幂等          —— 重复 init 会留两份 root 监听 ⇒ 单击 toggle 偶数次 ⇒"点了没反应"
-#     C ESM 入口      —— types 声明了 `export declare const Accordion`，包里却没有模块导出它
+#     C ESM 入口      —— 源码有 `global.X =`，esm/ 里却没有对应模块（两边集合必须相等）
+#   ⚠️ 这道门禁**不读** types/index.d.ts（它以前在注释里说自己读，是假的）。
+#      「类型声明 ↔ 源码全局」由下面的 types-globals 判。
 #   esm/ 是生成物：改源码后必须跑 gen-esm.py 重新生成，--check 拦住漂移。
 run "esm-gen"       $PY 05-audit/gen-esm.py --check
 run "esm-gen-rev"   $PY 05-audit/gen-esm.py --selftest
 run "behavior-api"  node 05-audit/behavior-api-gate.js
 run "behavior-api-rev" node 05-audit/behavior-api-gate.js --selftest
+# 🔴 源码里 24 个 `window.X =`，d.ts 曾经只声明 16 个（E297）：
+#    Theme / Chart / ChartAdapter / ModelViewer / Bar / ScientificPlot / ShellNav / Upload。
+#    TS 用户写 `window.Theme.set()` 直接报"属性不存在" ⇒ 只能 `as any` ⇒ 绕开类型系统。
+#    三条判据（全局→声明、声明→全局、具名导出→esm 入口）各配反向控制。
+run "types-globals" $PY 05-audit/types-globals-gate.py
 # 🔴 接入样板（0.11.15）：examples/esm-native 必须真的能打开、能点、能量。
 #   之前 examples/react-vite 的 README 自称"证明能被真实项目用上"，
 #   但那份样板没有 package.json、没有构建、从没被执行过 —— 声称的证明不是证明。

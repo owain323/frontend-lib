@@ -16,6 +16,60 @@
 
 （无）
 
+## [0.25.4] - 2026-11-03
+
+**修订版：把「类型里看不见的那 8 个全局」补上，并让这件事以后有人管。
+不改组件行为、不改类名、不改令牌值。**
+
+### 修复：8 个挂在 `window` 上的对象没有类型（E297）
+
+源码里有 **24 个** `window.X =` / `global.X =`，`types/index.d.ts` 只声明了 **16 个**：
+
+| 缺的 | 后果 |
+|---|---|
+| `Theme` / `Chart` / `ChartAdapter` / `ModelViewer` | TS 项目里 `window.Theme.set('dark')` 直接报"属性不存在" |
+| `Bar` / `ScientificPlot` / `ShellNav` | 同上（审计报告没点到这三个） |
+| `Upload` | 最刺眼：`esm/upload.mjs` **存在**，运行时能 import，类型里却看不见 |
+
+用户遇到这种情况只有两条路：`(window as any)` 或 `@ts-expect-error` —— **两条都绕开了类型系统**，
+而这个库最反对的就是绕过契约。
+
+修法：把 8 个对象的真实形状补进 `FrontendLibGlobal`（形状是逐个读源码确认的，
+不是照抄 README）；只有 `Upload` 加了具名导出 `export declare const Upload`，
+因为只有它在 `esm/` 里有包装模块。声明一个运行时取不到的具名导出，
+正是本库最反对的「幻觉 API」。
+
+### 更正：一句替门禁吹牛的注释
+
+`types/index.d.ts` 里原来写着「behavior-api 门禁核对源码 / esm 入口 / **本文件声明**
+三者集合相等」。核实：`behavior-api-gate.js` 里**一次都没出现** `index.d.ts`，
+它只比源码与 `esm/`。`check-all.sh` 里对同一道门禁的描述也有同样的问题。
+
+⇒ 两处都改成实话，并补上真正做这件事的门禁（下一条）。
+**注释替门禁承诺了它没做的事，比没有门禁更危险** —— 你会以为有人在看。
+
+### 新增门禁：类型与运行时必须对齐
+
+`05-audit/types-globals-gate.py`，三条判据：
+
+1. 源码里每个 `window.X =` / `global.X =`（排除 `==` / `===`）都必须在
+   `FrontendLibGlobal` 里有声明；
+2. 反过来，每条声明都必须能在源码里找到赋值 ⇒ 防「幻觉类型」；
+3. 每个 `export declare const X` 必须有 `esm/<kebab>.mjs` ⇒ 防「幻觉导出」。
+
+反向控制五项：新增一个没声明的全局 / 删掉 `Theme` 的声明 / 声明一个源码里没有的成员 /
+声明一个没有 esm 的具名导出 / 真实仓库必须全绿。
+
+### 修复：`--schema=behaviors` 不可用（E298）
+
+`ai/behaviors.schema.json` 一直都在，`ai/cli.js` 的 `SCHEMAS` 映射里却没有 `behaviors`
+⇒ `node ai/cli.js validate ai/behaviors.json --schema=behaviors` 报「未知 schema」。
+
+后果是这份契约**没有任何工具能校验**：`behaviors.json` 是稳定性承诺里的微行为矩阵，
+写错了只能靠人看。补一行映射即可，已验证能通过也能报错。
+
+---
+
 ## [0.25.3] - 2026-11-03
 
 **修订版：修掉四个「照着文档写会直接失败」的入口问题，并补上三层规范里缺失的那一层。
