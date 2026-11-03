@@ -70,7 +70,7 @@ npm install https://github.com/owain323/frontend-lib/releases/download/v<版本>
 npm install github:owain323/frontend-lib
 ```
 
-> 历史说明：0.9.0 曾发布成功、两分钟后被误删（`ERRORS.md` E55）；此后一段时间
+> 历史说明：0.9.0 曾发布成功、两分钟后被误删；此后一段时间
 > registry 上没有可安装版本，靠 GitHub Release 附件分发（当时的分发路径记在
 > `CHANGELOG.md` 的 0.11.2 一节）。自 0.11.2 起这条通路已恢复。
 
@@ -291,7 +291,7 @@ dist/01-tokens/tokens.css          ← 拷这个
 ```js
 import 'agentcss/dist/01-tokens/tokens.css';         // 压缩版
 import 'agentcss/dist/02-primitives/button/button.css';
-// 要可读版：import 'agentcss/01-tokens/tokens.css';
+// 要可读版（源码，注释齐全）：import 'agentcss/src/01-tokens/tokens.css';
 ```
 
 > ⚠️ **不再有 `*.min.css`**。此前 `dist/` 同时产出 `x.css`（去注释）与 `x.min.css`（压缩），
@@ -397,7 +397,7 @@ bash 05-audit/check-all.sh       # 全量门禁约 130 项，本机约 8 分钟
   `node 05-audit/scientific-plot-check.js`。
 - 想看每道门禁**自己有没有牙**：`bash 05-audit/behavior-reverse.sh`
   （对门禁做突变，验证它会红、且只红该红的那一条）。
-- 想知道**我们踩过哪些坑**：`ERRORS.md`。只记真的红过的门禁和真的做错过的事，
+- 想知道**我们踩过哪些坑**：`docs/LESSONS.md`。只记真的红过的门禁和真的做错过的事，
   每条写清症状 → 根因 → 纠正规则，规则都能照着执行。
 
 ### 经过实际验证的

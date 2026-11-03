@@ -16,6 +16,65 @@
 
 （无）
 
+## [0.25.3] - 2026-11-03
+
+**修订版：修掉四个「照着文档写会直接失败」的入口问题，并补上三层规范里缺失的那一层。
+不改组件行为、不改类名、不改任何令牌值。**
+
+### 修复：文档承诺的导入路径与实际不符（4 处）
+
+| 症状 | 根因 | 影响 |
+|---|---|---|
+| `import 'agentcss/esm/accordion.mjs'` → 解析到 `accordion.mjs.mjs` | `"./esm/*": "./esm/*.mjs"` 把扩展名又拼了第二次 | 按 API.md 接入的打包项目直接构建失败 |
+| `import { Select } from 'agentcss'` → `ERR_UNKNOWN_FILE_EXTENSION .html` | `exports["."]` 指向 `index.html` | 类型层承诺了根导入，运行时却把 HTML 当模块 |
+| `import 'agentcss/ai/components.json'` → `ERR_PACKAGE_PATH_NOT_EXPORTED` | 没有 `./ai/*` 导出 | 想通过包名读契约的工具只能猜文件系统路径 |
+| `import 'agentcss/01-tokens/tokens.css'`（README 教的"可读版"） | 该入口不存在，可读版在 `agentcss/src/...` | 读者复制即失败 |
+
+**修法**：`exports["."]` 改指 `./esm/index.mjs`；补 `./esm/*.mjs` 与 `./ai/*`；
+README 的可读版入口改成 `agentcss/src/01-tokens/tokens.css`。
+
+### 新增门禁：文档里的 import 路径必须真能解析
+
+`05-audit/doc-imports.js`，接进 `pack-smoke`。它把 6 份对外文档里出现的每个
+`agentcss/...` 字面路径，拿到消费者环境里真解析一次（只解析、不执行）。
+
+**为什么以前没抓到**：`entry-resolve` 判的是「**exports 声明的**入口」——
+它遍历 `package.json` 的 key、用包内文件套通配符；`pack-closure` 只判"文件在不在"；
+`node --check` 只判语法。三者的共同点是：**"读文档的那一方"从来没有被测过**。
+这道门禁上线当天就抓出了上表最后一行（报告里没有的第 4 处）。
+
+### 更正：聚合 ESM 入口不会摇树
+
+0.25.2 之前 API.md 写「Vite/Rollup 会按需摇树」，**这是错的**。
+`esm/*.mjs` 的形式是「副作用导入 + 把全局对象 re-export」，模块体本身就有副作用，
+打包器无法判断哪个导出没被用到。`sideEffects` 里 `**/*.js` / `**/*.mjs`
+是**按事实写的、是对的** —— 错的是那句文档。
+
+实测（esbuild）：`import { Select } from 'agentcss/esm'` 产物 **190 KB**，
+`import { Select } from 'agentcss/esm/select'` 只有 **20.8 KB**（约 9 倍）。
+文档已改成「要体积就逐个 `agentcss/esm/<组件>`」。
+
+### 补齐：三层规范缺失的第三层
+
+`docs/INVARIANT.md` 与 `docs/AI-CONTRACT.md` 一直把 `docs/GUIDANCE.md` 当作
+"建议层"来引用，但那份文件在 0.11.4 被整份移进内部目录（含发布凭证类内容），
+公开面于是只剩两层。现在补一份**只含可公开部分**的 `docs/GUIDANCE.md`，
+并在文首写明边界：凭证、账号二次因子、内部排期一律不进公开面。
+
+### 新增：可公开的教训集
+
+`docs/LESSONS.md` —— 从内部错误登记里挑出 10 条可复用规则
+（判据的错法 / 删除与清理 / 发布语义），脱敏后公开。
+README 里「想知道我们踩过哪些坑」的指向，从内部文件改到这里。
+
+### 修复：9 处指向不存在文件的引用
+
+`ERRORS.md`（在内部目录，不入库）、`docs/ROADMAP.md`、`docs/GUIDANCE.md` 被
+README / CONTRIBUTING / 05-audit/README 引用，但文件不存在。
+现在全部改指向真实文件，或去掉编号（内部条号对外部读者没有意义）。
+
+---
+
 ## [0.25.2] - 2026-11-03
 
 **修订版：把覆盖率门禁里 41 个「只被 README 认领」的类全部变成真的渲染。

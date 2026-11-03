@@ -140,6 +140,27 @@ if ! node "$REPO_ROOT/05-audit/entry-resolve.js" \
 fi
 echo "  OK    每个 exports 入口都能被 Node 解析到真实文件，入口内 import 也闭合"
 
+# ---------- 4c. 文档里写的路径，也必须能解析 ----------
+# 🔴 外部审计 2026-11-03 · P1-1 / P1-2：4b 判的是「**exports 声明的**入口」，
+#   它遍历 package.json 的 key、拿包内文件去套通配符 —— 于是天生看不见
+#   另一类事故：**文档写的路径和 exports 的组合结果不一致**。
+#     实测漏网（0.25.2）：
+#       API.md 写        agentcss/esm/accordion.mjs
+#       exports 写       "./esm/*": "./esm/*.mjs"
+#       ⇒ 通配符把 .mjs 又拼一次 ⇒ accordion.mjs.mjs ⇒ ERR_MODULE_NOT_FOUND
+#       types/index.d.ts 写 import { Select } from 'agentcss'
+#       exports["."] 指向 index.html ⇒ ERR_UNKNOWN_FILE_EXTENSION
+#   两个都躲过了 4b（不读文档）、pack-closure（只判文件在不在）、
+#   `node --check`（只判语法）。**"读文档的那一方"从来没有被测过。**
+#   ⇒ 把文档当消费者：抽出每个 agentcss 字面路径，逐个真解析。
+if ! node "$REPO_ROOT/05-audit/doc-imports.js" \
+        --consumer "$WORK/consumer" > "$WORK/docimports.txt" 2>&1; then
+  echo "  FAIL  🔴 文档里的 import 路径照抄会失败："
+  sed 's/^/        /' "$WORK/docimports.txt"
+  exit 1
+fi
+sed 's/^/  /' "$WORK/docimports.txt" | tail -2
+
 # ---------- 5. 关键文件必须在（types 是对外承诺）----------
 MISS=""
 for f in types/index.d.ts LICENSE README.md; do

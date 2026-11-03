@@ -29,23 +29,31 @@
 除了 `<script src>`，16 个交互组件的脚本还有一个 ESM 入口：
 
 ```js
-// 只要一个
+// 只要一个（推荐：只引入这一个脚本，体积最小）
 import { Accordion } from 'agentcss/esm/accordion.mjs';
 
-// 或者一次拿全（体积更大，Vite/Rollup 会按需摇树）
+// 或者一次拿全 —— ⚠️ 不会摇树，17 个行为脚本全部进产物
 import { Accordion, Tabs, Select } from 'agentcss/esm';
 ```
 
-三条容易踩的：
+四条容易踩的：
 
 1. **入口是包装，不是第二份实现**。`esm/*.mjs` 只做
    「导入副作用 + 把全局上那个对象 re-export」，所以
    `Accordion === window.Accordion` 恒成立（门禁 `behavior-api` 断言这一点）。
    它由 `05-audit/gen-esm.py` 生成，改源码后要重新生成，`esm-gen` 门禁会拦住漂移。
-2. **无 DOM 环境可以直接 import**（SSR 安全）。但自动初始化会被跳过 ——
+2. **聚合入口不会摇树**（0.25.3 更正）。`esm/*.mjs` 的形式是
+   「先 `import` 目标脚本（副作用：把对象挂到全局），再把它 re-export」——
+   模块体本身就有副作用，打包器无法判断哪个导出没被用到，只能整包收下。
+   实测（esbuild）：`import { Select } from 'agentcss/esm'` 产物 **190 KB**，
+   而 `import { Select } from 'agentcss/esm/select'` 只有 **20.8 KB**（约 9 倍）。
+   `package.json` 的 `sideEffects` 把 `**/*.js` / `**/*.mjs` 标成有副作用，
+   **这是按事实写的、是对的** —— 错的是 0.25.2 之前本文档那句"会按需摇树"。
+   ⇒ 要体积就逐个 `import 'agentcss/esm/<组件>'`。
+3. **无 DOM 环境可以直接 import**（SSR 安全）。但自动初始化会被跳过 ——
    服务端没有 DOM 可扫，到浏览器里再调 `init()`/构造函数。16 个脚本
    在 Node 里 `require` 全部成功（门禁的判据 A）。
-3. **重复初始化是安全的**。`init()` 与构造函数都做了幂等处理：
+4. **重复初始化是安全的**。`init()` 与构造函数都做了幂等处理：
    同一 root 只会有一个实例，不会出现「点一次切换两次」。
 
 ### 四种接入形态
