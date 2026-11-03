@@ -772,16 +772,63 @@ async function loadStyled(p, url) {
       links: document.querySelectorAll('link[rel~="stylesheet"]').length,
       loaded: Array.from(document.styleSheets).filter((s) => s.href).length,
     }));
-    const bad = failedCss.length > 0 || (st.links > 0 && st.loaded === 0);
+
+    /* 信号三（E296）：懒加载 iframe 必须真的加载完。
+       guide 的每个页面都把「可运行示例」嵌在 `<iframe loading="lazy">` 里，
+       而**打印产物包含它的内容**。并发 6 路时那个 iframe 可能整页没开始加载
+       ⇒ 打印版面直接腰斩。实测 guide-button/light：
+           基线 8 页 / 2321 runs  →  失败那次 4 页 / 1679 runs
+       而信号一二**看不见它**：顶层文档的 <link> 全都挂上了，判据照样"通过自检"，
+       然后拿一份少了一半的版面去跟基线比 ⇒ 报成"内容回归"，其实什么都没变。
+
+       ⇒ 先强制 eager 并触发加载，再等每个 frame 的 document 就绪且样式表挂上。
+         这不是放宽判据：真内容缺失时页数照样对不上，只是不再把
+         "iframe 没起来"算成"库改坏了"。 */
+    const fr = await p.evaluate(async () => {
+      const list = Array.from(document.querySelectorAll('iframe'));
+      const blank = (f) => {
+        try {
+          return !f.contentWindow || f.contentWindow.location.href === 'about:blank';
+        } catch (e) { return false; }
+      };
+      list.forEach((f) => { if (f.loading === 'lazy') { f.loading = 'eager'; } });
+      list.forEach((f) => {
+        const src = f.getAttribute('src');
+        if (src && blank(f)) { f.setAttribute('src', src); }
+      });
+      await Promise.all(list.map((f) => new Promise((res) => {
+        if (!blank(f)) { return res(true); }
+        let done = false;
+        const fin = (ok) => { if (!done) { done = true; res(ok); } };
+        f.addEventListener('load', () => fin(true), { once: true });
+        setTimeout(() => fin(false), 20000);
+      })));
+      const rows = list.map((f) => {
+        try {
+          const d = f.contentDocument;
+          const n = d ? Array.from(d.styleSheets).filter((s) => s.href).length : 0;
+          return { ok: !!(d && d.readyState === 'complete' && d.body), sheets: n };
+        } catch (e) { return { ok: false, sheets: 0 }; }
+      });
+      return {
+        count: list.length,
+        bad: rows.filter((r) => !r.ok || r.sheets === 0).length,
+      };
+    });
+
+    const bad = failedCss.length > 0 || (st.links > 0 && st.loaded === 0)
+      || fr.bad > 0;
     if (!bad) return st;
 
     why = failedCss.length
       ? (failedCss.length + ' 个样式表请求失败：' + failedCss.slice(0, 3).join(', '))
-      : (st.links + ' 个 <link> 全部没挂上');
+      : (st.links > 0 && st.loaded === 0)
+        ? (st.links + ' 个 <link> 全部没挂上')
+        : (fr.bad + '/' + fr.count + ' 个内嵌 iframe 没加载完或没样式');
     await new Promise((r) => setTimeout(r, 500));
   }
-  throw new Error('页面样式没落地（' + why + '）：' + url
-    + '\n     ⇒ 静态服务在并发下打了个嗝。判据会对裸 HTML 下结论，本页结果作废。');
+  throw new Error('页面没落地（' + why + '）：' + url
+    + '\n     ⇒ 静态服务在并发下打了个嗝。判据会对不完整的版面下结论，本页结果作废。');
 }
 
 async function render(url, scheme) {

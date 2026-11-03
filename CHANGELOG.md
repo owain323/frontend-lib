@@ -141,6 +141,24 @@ npm 上什么都没发出去。
 反向控制仍是「注入 `*{transition:none}` ⇒ 判据① 必须红」，仍然通过。
 连跑 5 次稳定。
 
+### 修复：打印门禁量的是「iframe 起没起来」（E296）
+
+同一轮里 `print` 也红了一次：`guide-button/light` 报 `pages=4`（基线 8）、
+`runs=1679`（基线 2321）—— 版面少了一半，但页面本身一个字节没改。
+
+根因：44 个 `guide/*.html` 每个都嵌了 `<iframe loading="lazy" src="…/demo.html">`，
+**打印产物包含 iframe 的内容**。并发 6 路时那个 iframe 可能整页没开始加载，
+版面就腰斩了 —— 而 `loadStyled()` 当时的两个信号（CSS 请求失败、顶层 `<link>`
+全没挂上）**都看不见 iframe**：顶层文档的样式表好得很。
+
+加第三个信号：强制 `loading=eager`、触发未开始的加载，然后等每个 frame
+`readyState==='complete'` **且挂上至少一张带 href 的样式表**。
+不是放宽判据 —— 真内容缺失时页数照样对不上，只是不再把"iframe 没起来"
+算成"库改坏了"。
+
+反向控制：正常 iframe → 不误伤（`bad=0`）；404 的 iframe → 变红（`bad=1`）。
+稳定性：4 路 CPU 抢占下连跑仍是 8 页 / 2321 runs。
+
 ---
 
 ## [0.25.2] - 2026-11-03
