@@ -827,7 +827,7 @@ async function loadStyled(p, url) {
         : (fr.bad + '/' + fr.count + ' 个内嵌 iframe 没加载完或没样式');
     await new Promise((r) => setTimeout(r, 500));
   }
-  throw new Error('页面没落地（' + why + '）：' + url
+  throw new Error('页面样式没落地（' + why + '）：' + url
     + '\n     ⇒ 静态服务在并发下打了个嗝。判据会对不完整的版面下结论，本页结果作废。');
 }
 
