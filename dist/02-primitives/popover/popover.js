@@ -148,6 +148,7 @@ box.setAttribute('inert', '');
 
 box.setAttribute('role', 'dialog');
 box.setAttribute('aria-label', opts.label || '');
+
 box.innerHTML =
 '<span class="popover__arrow" aria-hidden="true"></span>'+
 '<div class="popover__body">'+ (opts.html || '') + '</div>';

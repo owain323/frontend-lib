@@ -541,6 +541,16 @@ run "token-tree" $PY 05-audit/token-tree-gate.py
 # 颜色令牌分两层（D5）：`:root` 里不许再出现「语义名 = 颜色字面量」；
 #   暗色段只许覆盖 L1；L1 / L2 必须 1:1。反向控制由 selftest-all 跑。
 run "token-layer" $PY 05-audit/layer-tokens.py --check
+# 🔴 token-split（2026-11-03 新增）：变量层与底座层必须是 `tokens.css` 的精确切片。
+#  起因：README 把 `tokens.css` 说成"零副作用"，但它同时含三条**改整个宿主**的规则
+#   （全局 :focus-visible、`a,button,label…` 的点按高亮、reduced-motion 里对 `*` 的
+#   !important）。冻结期不能改它 ⇒ 加 `tokens.core.css`（只有变量）与
+#   `base.reset.css`（只有那三条），由本脚本从 tokens.css 切出来。
+#  判据：每条顶层规则必须归入 core / reset / library 之一，归不了类就红 ——
+#   将来有人往 tokens.css 加第四条全局规则，会被逼着做一次显式决定。
+#  双向：切片与 tokens.css 逐字节比对（不是"看起来差不多"）。
+run "token-split" $PY 05-audit/split-tokens.py
+run "token-split-rev" $PY 05-audit/split-tokens.py --selftest
 # 机器可读契约层：schema 只用了实现过的关键字 / Profile 有鉴别力 / Patch 可回放
 run "ai-layer"  node 05-audit/ai-layer-gate.js
 # CI 工作流配置：**真 YAML 解析**（不是正则）—— timeout-minutes 必须是整数、
@@ -1174,6 +1184,18 @@ if [ -n "$TIMING" ] && [ -s "$TIMING" ]; then
 fi
 
 run "bleed"         $PY 05-audit/bleed-gate.py
+# 🔴 xss-sink（2026-11-03 新增）：每个 HTML 注入点都必须说得清它装的是什么。
+#  起因：SECURITY.md 当时只写了 combobox 一处，实际有 21 处；其中
+#   `model-viewer` 把 src 的文件名直接拼进 innerHTML，`date-range` 把
+#   `<input>` 的 value 拼进 innerHTML（`type=date` 在 Chromium 97 旧内核会
+#   回退成文本输入 ⇒ value 可以是任意串）。修完这两处之后真正的问题还在：
+#   **没有任何东西阻止第 22 处悄悄进来**。
+#  判据：非「赋空串」的注入点必须在紧邻上一行标 `@html-sink <kind> — <理由>`；
+#        escaped 必须真调 esc()；internal 不许拼外部量；raw-html 必须登记在
+#        SECURITY.md（双向核对，陈旧登记也红）。
+#  反向控制 12 条，含"注释里的`.innerHTML =`不算注入点"与"遮蔽层吞了代码会红"。
+run "xss-sink"      $PY 05-audit/xss-sink-gate.py
+run "xss-sink-rev"  $PY 05-audit/xss-sink-gate.py --selftest
 # 🔴 rewrite-residue（2026-08-16 新增）：抓「批量替换脚本留下的拼接痕迹」。
 #  起因：`leak-fix-paths.py` 的 `RE_SLASH` 正则匹配任意引号字符串，
 #   一次运行污染了 80 个文件（含所有浏览器门禁的入口），

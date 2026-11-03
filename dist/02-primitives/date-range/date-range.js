@@ -146,7 +146,14 @@ return true;
 }
 
 function paintSummary(s) {
-if (summary) summary.innerHTML = s ? ('区间 <b>' + s + '</b>') : '';
+
+if (!summary) return;
+summary.textContent = '';
+if (!s) return;
+summary.appendChild(document.createTextNode('区间 '));
+var b = document.createElement('b');
+b.textContent = s;
+summary.appendChild(b);
 }
 
 function emit() {
@@ -186,6 +193,7 @@ presets = presets.filter(function (x) { return opt.presets.indexOf(x.key) >= 0; 
 }
 var box = root.querySelector('[data-dr-presets]');
 if (!box) return;
+
 box.innerHTML = presets.map(function (p) {
 return '<button class="drange__preset" type="button" aria-pressed="false" ' +
 'data-dr-preset="'+ p.key + '">' + p.label + '</button>';

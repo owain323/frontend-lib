@@ -210,6 +210,7 @@ head.appendChild(closeBtn);
 
 var body = document.createElement('div');
 body.className = 'drawer__body';
+
 if (typeof opt.content === 'string') body.innerHTML = opt.content;
 else if (opt.content) body.appendChild(opt.content);
 

@@ -74,14 +74,9 @@ npm install github:owain323/frontend-lib
 > registry 上没有可安装版本，靠 GitHub Release 附件分发（当时的分发路径记在
 > `CHANGELOG.md` 的 0.11.2 一节）。自 0.11.2 起这条通路已恢复。
 
-**② 源码复制**（不想装依赖）：把 `01-tokens/` 和需要的组件目录复制进你的项目。
+**③ 源码复制**（不想装依赖）：把 `01-tokens/` 和需要的组件目录复制进你的项目。
 ⚠️ 复制 `dist/` 里的版本，**别复制源码版** —— 源码版有一半以上是给人和 AI 读的注释
 （理由见下面「体积」一节）。
-
-> 为什么这里不提前写 `npm install agentcss`：
-> 写了而 registry 上还没有，照做的人会拿到 404，然后以为是自己的环境问题 ——
-> 这与本库曾经踩过的「README 教人装、装到的是别人 2017 年的包」是同一类坑。
-> 发布成功之后这一行才会换上。
 
 ## 组件一览
 
@@ -152,11 +147,36 @@ npm install github:owain323/frontend-lib
 
 **1 · 引入样式**（用你的打包器）
 
+先做一个决定：**要不要底座层**。这是全库唯一会改到宿主页面的地方。
+
+| 文件 | 含什么 | 会改宿主吗 |
+|---|---|---|
+| `agentcss/tokens.core.css` | 只有 CSS 变量（含暗色、按语言的字体与字距覆盖） | **不会** |
+| `agentcss/base.reset.css` | 全局焦点环、`a/button/label…` 的点按高亮、减少动效 | 会（三条，见下） |
+| `agentcss/tokens.css` | 上面两者的合集（旧路，行为一个字节都没变） | 会（同上三条） |
+
 ```js
+// 嵌进已有站点：只要变量，不动宿主的焦点环与点按反馈
+import 'agentcss/tokens.core.css';
+
+// 从零搭页面：一条搞定（等价于 tokens.core.css + base.reset.css）
 import 'agentcss/tokens.css';
+
 import 'agentcss/typography.css';
 import 'agentcss/primitives/button/button.css';
 ```
+
+**底座层具体改什么**（这三条作用于宿主，不只是本库组件）：
+
+1. `:focus-visible` —— 所有可聚焦元素拿到本库的焦点环（2px `--accent`）；
+2. `a, button, label, summary, input[type=checkbox]…` —— 原生点按高亮被关掉
+   （`-webkit-tap-highlight-color: transparent`）；
+3. `@media (prefers-reduced-motion: reduce)` —— 对 `*, *::before, *::after`
+   压掉动画与过渡（带 `!important`）。
+
+> 这两个文件是**生成物**：由 `05-audit/split-tokens.py` 从 `tokens.css` 切出来，
+> 门禁逐字节核对。想改令牌只有一个地方 —— `01-tokens/tokens.css`，
+> 改完跑 `python 05-audit/split-tokens.py --write`。
 
 **2 · 需要交互组件时**，引入行为脚本
 
@@ -185,11 +205,11 @@ import 'agentcss/patterns/overlay/overlay.js';
 
 ```
 dist/01-tokens/tokens.css          ← 拷这个
-01-tokens/tokens.css              ← 源码（带 31.6 KB 注释），用于阅读
+01-tokens/tokens.css              ← 源码（带全部注释），用于阅读
 ```
 
-- **别拷源码目录**除非你要读它：全库 CSS 有 68% 是注释（字节口径；字符口径会低报 12 个百分点），`page.css` 一个文件
-  17.5 KB 里 15.1 KB 是注释。
+- **别拷源码目录**除非你要读它：全库 CSS 里注释占了多数字节（精确比例见
+  `dist/COSTS.md` —— 那里是现算的，不手抄），`page.css` 单个尤其明显。
 - **JS 也拷 `dist/`**：那一份去了注释但没压缩（理由见「体积」一节）。
 
 ---
@@ -256,10 +276,11 @@ dist/01-tokens/tokens.css          ← 拷这个
 ## 体积：默认给你的已经是干净产物
 
 源码目录（`01-tokens/` `02-primitives/` …）里的 CSS **带着全部注释** ——
-实测全库 CSS 有 **约七成是注释**（精确体积由 `dist/COSTS.md` 现算），`page.css` 单个就有 86%。
+注释占了多数字节（精确体积由 `dist/COSTS.md` 现算，这里是故意不手抄的），
+`page.css` 单个更高。
 
 那些注释是写给你看的取舍理由（为什么这么定、踩过什么坑），不是写给你浏览器看的。
-**注释让你看代码时处处撞墙；从源码目录引入的话，构建工具还会把 68% 的字节原样打进产物。**
+**注释让你看代码时处处撞墙；从源码目录引入的话，构建工具还会把那部分字节原样打进产物。**
 
 **一个冻结的上限。** 整套库受一份账本约束（[`05-audit/budget.json`](05-audit/budget.json)）：
 硬天花板 + 一份「常规新增组件不用改任何数字」的储备 + 一个只在体积下降时收紧的棘轮。
@@ -528,9 +549,13 @@ npm run benchmark                        # 兼容性基准
 
 改代码时跑 `gate:fast` 即可；**提交前**再跑一次 `gate`。
 
-类型声明在 `types/index.d.ts`。改动它之前先看 `API.md` 的「稳定程度约定」，
-以及 `ai/components.json` 里标 `beta` 的那几个组件 ——
-它们定稿之前，那几部分不适合作为长期依赖引入。
+类型声明在 `types/index.d.ts`。改动它之前先看 `API.md` 的「稳定程度约定」。
+
+成熟度不是人写的，是 `ai/components.json` 里**四条机械判据**算出来的
+（有 demo + 有专属门禁 + 状态全在 `data-*` 上 + 行为零欠账）。
+当前 40 个全部满足，所以**没有 beta 组件** —— 但这四条量的是**机制完备度**，
+不是"在多少个生产项目里跑过"。把 `stable` 读成"久经生产"是误读；
+真实采用证据在 `SUPPORT.md` 与 `docs/LAYER-BASELINE.md` 里，按行查。
 
 ## 许可
 

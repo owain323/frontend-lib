@@ -75,6 +75,7 @@ btn.type = 'button';
 btn.className = 'shell__menu';
 btn.setAttribute('aria-label', o.label || ('打开' + title));
 btn.setAttribute('aria-haspopup', 'dialog');
+
 btn.innerHTML = ICON;
 btn.addEventListener('click', function () { self.open(); });
 topbar.insertBefore(btn, topbar.firstChild);

@@ -247,6 +247,8 @@
 
     var body = document.createElement('div');
     body.className = 'drawer__body';
+    /* @html-sink raw-html — `opt.content` 是有意的 HTML 入口，调用方负责净化；
+       登记在 SECURITY.md「HTML 入口（sink）」。 */
     if (typeof opt.content === 'string') body.innerHTML = opt.content;
     else if (opt.content) body.appendChild(opt.content);
 

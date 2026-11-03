@@ -175,6 +175,7 @@
     btn.className = 'shell__menu';
     btn.setAttribute('aria-label', o.label || ('打开' + title));
     btn.setAttribute('aria-haspopup', 'dialog');
+    /* @html-sink internal — ICON 是本文件的固定 SVG 常量，无插值 */
     btn.innerHTML = ICON;
     btn.addEventListener('click', function () { self.open(); });
     topbar.insertBefore(btn, topbar.firstChild);

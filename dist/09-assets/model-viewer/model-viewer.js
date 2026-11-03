@@ -68,8 +68,14 @@ this.btn.addEventListener('click', function () { self.load(); });
 this.ui.appendChild(this.btn);
 
 this.hint = el('p', 'mv__hint');
-this.hint.innerHTML = '模型 <code>' + (this.src.split('/').pop() || '—') +
-'</code> 会<b>点击后才下载</b>，首屏不占流量。';
+
+var fname = el('code', null, this.src.split('/').pop() || '—');
+var strong = el('b', null, '点击后才下载');
+this.hint.appendChild(document.createTextNode('模型 '));
+this.hint.appendChild(fname);
+this.hint.appendChild(document.createTextNode(' 会'));
+this.hint.appendChild(strong);
+this.hint.appendChild(document.createTextNode('，首屏不占流量。'));
 this.ui.appendChild(this.hint);
 
 if (!hasWebGL()) {
@@ -260,6 +266,7 @@ self.raf = requestAnimationFrame(loop);
 self.ui.innerHTML = '';
 var cap = el('p', 'mv__cap');
 var dt = Math.round(((window.performance && performance.now) ? performance.now() : Date.now()) - t0);
+
 cap.innerHTML = '模型 <b>' + fmtKB(bytes || self.lastBytes || 0) + '</b> · 引擎就绪耗时 <b>' + dt + 'ms</b>' +
 (controls ? ' · 拖动可旋转，滚轮/双指可缩放' : ' · 未加载控制器，无法拖动');
 self.node.appendChild(cap);

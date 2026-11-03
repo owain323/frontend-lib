@@ -75,11 +75,28 @@ npm install github:owain323/frontend-lib
 
 **1 · Bring in the styles** (with your bundler)
 
+First decide whether you want the **base layer**. It is the only part of this library that touches the host page.
+
+| File | Contains | Touches the host? |
+|---|---|---|
+| `agentcss/tokens.core.css` | CSS custom properties only (incl. dark and per-language overrides) | **No** |
+| `agentcss/base.reset.css` | Global focus ring, `a/button/label…` tap highlight, reduced-motion | Yes (three rules) |
+| `agentcss/tokens.css` | Both of the above combined (the old path, byte-for-byte unchanged) | Yes (same three) |
+
 ```js
+// Dropping into an existing site: variables only, host focus ring and tap feedback untouched
+import 'agentcss/tokens.core.css';
+
+// Building a page from scratch: one import (equivalent to tokens.core.css + base.reset.css)
 import 'agentcss/tokens.css';
+
 import 'agentcss/typography.css';
 import 'agentcss/primitives/button/button.css';
 ```
+
+The three base-layer rules, spelled out: a global `:focus-visible` ring; `-webkit-tap-highlight-color: transparent` on bare links/buttons/labels; and a `prefers-reduced-motion` block that overrides `*, *::before, *::after` with `!important`.
+
+> Both files are **generated** from `01-tokens/tokens.css` by `05-audit/split-tokens.py` and checked byte-for-byte by a gate. Edit the token source, then run `python 05-audit/split-tokens.py --write`.
 
 **2 · For interactive components, load the behaviour script**
 
@@ -291,7 +308,7 @@ Colour comes from tokens only. Component CSS never writes `@media (prefers-color
 
 ## Accessibility
 
-Every component carries a contract covering focus order, keyboard operation, ARIA state and contrast; the checks run in real browsers rather than only reading source text. Components that fail their own contract are marked `beta` rather than described as stable.
+Every component carries a contract covering focus order, keyboard operation, ARIA state and contrast; the checks run in real browsers rather than only reading source text. Maturity is computed from four mechanical criteria (demo + dedicated gate + state on `data-*` + zero behaviour debt), not assigned by hand. All 40 currently pass, so there is no `beta` component — that measures **mechanism completeness**, not how many production projects have shipped it.
 
 ## Development
 

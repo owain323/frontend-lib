@@ -543,6 +543,7 @@
       legendHtml = '<ul class="splot__legend">' + items.join('') + '</ul>';
     }
 
+    /* @html-sink internal — svg 由本文件生成，图例名字已过 esc() */
     el.innerHTML = svg + legendHtml;
     return {
       svg: el.firstChild,

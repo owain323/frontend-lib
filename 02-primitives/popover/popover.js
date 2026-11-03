@@ -181,6 +181,8 @@
        （加了就是模态，语义就错了）。 */
     box.setAttribute('role', 'dialog');
     box.setAttribute('aria-label', opts.label || '');
+    /* @html-sink raw-html — `opts.html` 是有意的 HTML 入口，调用方负责净化；
+       登记在 SECURITY.md「HTML 入口（sink）」。 */
     box.innerHTML =
       '<span class="popover__arrow" aria-hidden="true"></span>' +
       '<div class="popover__body">' + (opts.html || '') + '</div>';

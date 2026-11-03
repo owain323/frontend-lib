@@ -224,11 +224,13 @@
       var q = input.value.trim();
       shown = filter(q).slice(0, 50);
       if (!shown.length) {
+        /* @html-sink escaped — 插值只有 q，且过了 esc() */
         list.innerHTML = '<li class="combo__empty" role="presentation">' +
           (q ? '没有匹配「' + esc(q) + '」的选项' : '暂无可选') + '</li>';
         return;
       }
       var ql = q.toLowerCase();
+      /* @html-sink escaped — label/value 全部过 esc()；list.id / i / picked 是内部量 */
       list.innerHTML = shown.map(function (o, i) {
         var picked = tags.indexOf(o.value) >= 0;
         var label = esc(o.label);
@@ -253,6 +255,7 @@
     /* ---------- 标签 ---------- */
     function paintTags() {
       if (!tagBox) return;
+      /* @html-sink escaped — o.label 与 v 都过 esc() */
       tagBox.innerHTML = tags.map(function (v) {
         var o = ALL.filter(function (x) { return x.value === v; })[0] || { label: v };
         /* ⭐ 删除按钮有 aria-label（否则读屏只念"×"）*/
