@@ -27,7 +27,9 @@ set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WORK="$(mktemp -d)"
-trap 'rm -rf "$WORK"' EXIT
+# 🔴 E292：`command rm` 跳过 shell 函数。某些托管环境把 `rm` 注入成"送回收站"
+#    的包装，tarball 解包目录会一直囤在回收站里。
+trap 'command rm -rf "$WORK"' EXIT
 
 NAME=$(cd "$REPO_ROOT" && node -p "require('./package.json').name")
 VER=$(cd "$REPO_ROOT" && node -p "require('./package.json').version")

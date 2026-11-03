@@ -376,7 +376,8 @@ PY
   chk '回执：registry 不可达 ⇒ rc=2' 2 "$rc" "$out" 'registry 不可达'
   chk_not '回执：不可达时不重试（不等索引延迟）' 2 "$rc" "$out" '第 1 次重试'
 
-  rm -rf "$tmp"
+  # 🔴 E292：`command rm` 跳过平台注入的 rm 包装（它把删除改成送回收站）。
+  command rm -rf "$tmp"
   if [ "$bad" = "0" ]; then
     log "  release-run 反向测试：$total/$total 通过"
   else

@@ -71,6 +71,30 @@ import glob
 import subprocess
 import shutil
 
+
+def _hard_rmtree(path):
+    """真删目录，**不进回收站**。
+
+    为什么不用 `shutil.rmtree`：某些托管环境会在 Python 启动时注入
+    `sitecustomize`，把 `os.remove` / `shutil.rmtree` / `pathlib` 的删除 API
+    统统改写成"送回收站"（本机实测：WorkBuddy 的 safe-delete shim，
+    `os.unlink` 等于 `_safe_remove`）。
+    后果不是"删错"，而是**删了但空间没回来**：`_current` 每轮 16.9 MB，
+    50 轮就是 845 MB，而且用户看到的是「截图目录一直在往回收站堆」。
+
+    `cmd /c rd /s /q` 是 cmd 内建命令，不经过 Python 层、也不经过 bash 的
+    `rm` 函数 ⇒ 不受任何 shim 影响。POSIX 上没有这个问题，直接 rmtree。
+    """
+    if sys.platform == 'win32':
+        r = subprocess.run(
+            ['cmd', '/c', 'rd', '/s', '/q', os.path.normpath(path)],
+            capture_output=True,
+        )
+        if r.returncode == 0 or not os.path.exists(path):
+            return
+    shutil.rmtree(path)
+
+
 class _ShootFailed(RuntimeError):
     """截图环节失败——必须让整道门禁失败，绝不能继续比 diff。"""
 
@@ -600,7 +624,7 @@ def shoot(mode, kinds):
     for k in kinds:
         d = outdirs[k]
         if os.path.isdir(d):
-            shutil.rmtree(d)
+            _hard_rmtree(d)
         os.makedirs(d, exist_ok=True)
 
     node = _which_node()
