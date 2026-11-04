@@ -254,7 +254,8 @@
         ],
         "attrs": [
           "hidden",
-          "label"
+          "label",
+          "labelledby"
         ]
       },
       "usesOtherNamespaces": [],
