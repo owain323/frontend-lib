@@ -32,7 +32,7 @@ Every subcommand accepts `--json`; failures print `{"ok":false,...}` and exit no
 | `scientific-plot` | `splot` | asset | stable | 3.9 KB | `scientific-plot.js` | 二维科学绘图：折线/区间带/对数轴，纯令牌驱动、零依赖 | `chart-multiline-label` |
 | `sparkline` | `sparkline` | asset | stable | 7.2 KB | `sparkline.js` | 迷你趋势图：无坐标轴、纯形状，适合表格内嵌的一行走势 | `chart-multiline-label` |
 | `accordion` | `accordion` | pattern | stable | 18.0 KB | `accordion.js` | 可折叠分组 | — |
-| `content` | `prose` | pattern | stable | 11.1 KB | — | 长文排版容器（标题/段落/列表/引用/代码） | `single-scroll-container` `line-height-constant-sync` |
+| `content` | `prose` | pattern | stable | 11.9 KB | — | 长文排版容器（标题/段落/列表/引用/代码） | `single-scroll-container` `line-height-constant-sync` |
 | `drawer` | `drawer` | pattern | stable | 5.9 KB | `drawer.js` | 侧边抽屉，含遮罩 | `fixed-element-inventory` |
 | `dropdown` | `dd` | pattern | stable | 3.9 KB | `dropdown.js` | 下拉菜单 | `popover-measure-after-render` |
 | `form-validation` | `form` | pattern | stable | 11.8 KB | — | 表单校验反馈与错误汇总 | — |

@@ -180,7 +180,19 @@
   height: 0;                /* 🔴 hr 默认有 inset 边框，必须清掉 */
 }
 
-.prose > img {
+/* 🔴 必须是**后代**选择器，不是 `> img` —— 和下面 `.prose a` 同一条教训。
+ *
+ *   Markdown / CommonMark 渲染图片出来是 `<p><img></p>`，图片的父节点是 `<p>`，
+ *   不是 `.prose` 的直接子代 ⇒ `> img` **一条都匹配不上**，
+ *   于是 `max-width:100%` 从未生效。
+ *   实测（外部审计 F1）：`04-recipes/longform/content.html` 里
+ *   `<p><img width="600">`，375px 溢出 246px、320px 溢出 301px。
+ *   对"给用户和 AI 照抄的配方页"来说，这个缺陷会被原样复制出去。
+ *
+ *   `> a` → `a` 早在 0.9 就踩过一次（段落里的链接落到浏览器默认蓝，
+ *   暗色对比度 1.91:1）。同一个坑换了标签又踩一次，所以这次把范围写宽：
+ *   正文里任何位置的图片都受同一条约束。 */
+.prose img {
   max-width: 100%;
   height: auto;
   display: block;

@@ -21,24 +21,164 @@
    ========================================================================= */
 
 :root {
+  /* ================================================================ [L1] 原始值
+     ⚠️ **这一层不是给使用者用的**，它是"配色取值"本身。
+
+     换一套品牌配色 = 只改这一块的 30 个值，L2 一行都不用动；
+     暗色段也只覆盖这块（见文件末尾的 `@media (prefers-color-scheme: dark)`）。
+
+     🔴 命名带 `--raw-` 是**刻意的**：它在告诉读代码的人
+        「别在组件里 `var(--raw-*)`」—— 组件只该用 L2 的语义名。
+        `token-audience-gate` 把这一层登记为 internal。
+
+     ℹ️ 边界（别夸大它的能力）：这是"取值层"，**不是**与语义解耦的色阶标尺
+        （gray-50 / gray-100 那种）。真正的色阶标尺需要先做一次颜色聚类与命名
+        决策，是独立的后续工程（内部排期不在公开面维护，别在这里找编号）。
+        本层解决的是"换肤只改一处 + 暗色不可能漏"这两件事。
+     ---------------------------------------------------------------- */
+  --raw-paper:                #f6f7f8;
+  --raw-surface:              #ffffff;
+  --raw-surface-sunken:       #f1f3f5;
+  --raw-surface-raised:       #ffffff;
+  --raw-scrollbar-thumb:      #7A808A;
+  --raw-scrollbar-thumb-hov:  #6E747E;
+  --raw-text-primary:         #15181c;
+  --raw-text-secondary:       #4f555e;
+  --raw-text-tertiary:        #606770;
+  --raw-text-on-accent:       #ffffff;
+  --raw-text-on-solid:        #ffffff;
+  --raw-skeleton-bg:          #e9ecef;
+  --raw-skeleton-shimmer:     rgba(255, 255, 255, 0.72);
+  --raw-border-control:       #868b94;
+  --raw-border-decor:         #e2e5e9;
+  --raw-border-decor-str:     #c8cdd4;
+  --raw-danger:               #c0392b;
+  --raw-danger-hover:         #8f1e17;
+  --raw-scrim:                rgba(21, 24, 28, 0.4);
+  --raw-success:              #2f6b3a;
+  --raw-warning:              #8a5a00;
+  --raw-info:                 #1d5f8a;
+  --raw-danger-bg:            #fdeeec;
+  --raw-success-bg:           #eaf2e6;
+  --raw-warning-bg:           #fbf1dd;
+  --raw-info-bg:              #e8f1f8;
+  /* 方向色（涨跌）。当前取值与 danger / success 相同 —— 但那是**巧合**，
+     不是同一件事，所以单独命名（理由见语义层那一段）。
+     浅色：红 4.89–5.44 · 绿 5.75–5.96，四组底全部 AA。 */
+  --raw-dir-up:               #c0392b;
+  --raw-dir-down:             #2f6b3a;
+  --raw-accent:               #1b4d8f;
+  --raw-switch-on:            #1b4d8f;
+  --raw-accent-hover:         #163a6d;
+  --raw-accent-soft:          #e6eef7;
+
+  /* 气泡的一对"反色面"：浅色深底浅字，暗色换成抬高面。
+     独立成令牌是为了让组件不再按 `prefers-color-scheme` 分支（RFC-THEME-SCOPE D5）。
+     实测 16.60:1（浅）/ 11.93:1（暗）。border 浅色与气泡底同色（不可见），
+     不用 `transparent` 是因为令牌树会把它归成"非颜色"。 */
+  --raw-tooltip-bg:           #15181c;
+  --raw-tooltip-fg:           #f6f7f8;
+  --raw-tooltip-border:       #15181c;
+
   /* ---------------------------------------------------------------- 基底
      paper  = 页面底（冷灰白）。🔴 不能更浅：与 --surface 的对比度要 >= 1.06:1，
              否则页面看着就是纯白，"表面浮在底上"的分层完全消失。
      surface= 卡片/面板底，比纸底亮一档，靠明度差而非描边来分层
      ---------------------------------------------------------------- */
-  --paper:            #f6f7f8;
-  --surface:          #ffffff;
-  --surface-sunken:   #f1f3f5;   /* 内凹区：代码块、表格头、禁用底 */
+  --paper:            var(--raw-paper);
+  --surface:          var(--raw-surface);
+  --surface-sunken:   var(--raw-surface-sunken);
+  /* 🔴 浮层底（下拉/气泡/抽屉面板）。
+     这条**原本只在暗色段定义** ⇒ 浅色下 6 个组件（combobox/popover/select/
+     dropdown/tooltip/table）的 `background` 整条失效 ⇒ 实测**完全透明**。
+     浅色值 = --surface：浅色抬高靠阴影（--shadow-*），暗色才靠"面更亮"。 */
+  --surface-raised:   var(--raw-surface-raised);
+/* ============================================================================
+   🔴 滚动条令牌（判据：WCAG 2.5.5 Target Size）
+   ----------------------------------------------------------------------------
+   ⭐ 依据（5 个权威来源口径一致）：
+     · CSS Scrollbars Level 1（W3C）—— scrollbar-width / color / gutter
+     · ::-webkit-scrollbar 伪元素族 —— Chromium/WebKit 专属，
+       **唯一能给 thumb 加圆角与 hover 的方式**
+     · WCAG 1.4.11 非文本对比 —— thumb 对 track **≥ 3:1**
+
+   ⚠️ 为什么滚动条要**降彩度**、用灰色而不是品牌色：
+     滚动条是**次要**信息（"还有多少内容"），不该抢注意力。
+     行业惯例（Radix / shadcn / GitHub）都是中性灰。
+
+   ⚠️ 为什么 track 透明：轨道代表"没有内容的区域"，
+     画出来等于视觉噪声。
+   ==========================================================================*/
+  --scrollbar-size:      10px;      /* 桌面宽度；移动端由浏览器接管 */
+  --scrollbar-size-thin: 6px;       /* 代码块等次要场景 */
+  /* 🔴 色值是**脚本反解**出来的（WCAG 1.4.11 要求 thumb 对 track ≥3:1），
+     不是"看着差不多"挑的：
+       #7a808a 对 #ffffff 3.98:1 · 对 #f6f7f8 3.71:1  ✅
+     ⚠️ 第一版我随手挑的 #B4BAC4 只有 1.82:1 ⇒ 门禁直接判不合格。 */
+  --scrollbar-thumb:     var(--raw-scrollbar-thumb);   /* 中性**冷**灰（非品牌色，且保持蓝调）*/
+  --scrollbar-thumb-hov: var(--raw-scrollbar-thumb-hov);   /* hover 更深一档 · 4.06:1 */
+  --scrollbar-radius:    5px;       /* = size/2 ⇒ 胶囊形 */
+   /* 内凹区：代码块、表格头、禁用底 */
 
   /* ---------------------------------------------------------------- 文字
      三档够用了。超过三档说明信息层级没想清楚，不是 token 不够。
      全部数字由 05-audit/contrast.py 从本文件实测得出，不是手写的。
      改任何颜色后必须重跑该脚本 —— 手写注释必然漂移（已发生过）。
      ---------------------------------------------------------------- */
-  --text-primary:     #15181c; /* 16.60 / 17.81 AAA */
-  --text-secondary:   #4f555e; /* 7.01 AAA */
-  --text-tertiary:    #606770; /* 4.51 AA */
-  --text-on-accent:   #ffffff;   /* 压在下方任意 accent 上均 >= 5.2 AA */
+  --text-primary:     var(--raw-text-primary); /* 16.60 纸底 / 17.81 表面 · AAA */
+  --text-secondary:   var(--raw-text-secondary); /* 7.01 AAA */
+  /* 🔴 由 #6b7280 调深到 #606770。
+     axe-core 实测发现：#6b7280 压在**语义底色**上只有 4.13:1
+     （4.5 是正文门槛）—— 它只在白底上勉强过线（4.83），
+     一放到 --surface-sunken / --warning-bg 等底上就不达标。
+     调深后最低 4.89（压在最亮的 --surface 上），留了 0.39 余量。
+     梯度仍在：primary 17.8 / secondary 7.5 / tertiary 4.9 —— 明显分层。 */
+  --text-tertiary:    var(--raw-text-tertiary);   /* 5.33 纸底 / 4.89 最亮底(surface) · AA */ /* 4.51 AA */
+  --text-on-accent:   var(--raw-text-on-accent); /* 8.38 压在 accent 上（不是压纸底）· AAA */
+
+  /* 🔴 新增（ H9 期间由暗色门禁逼出来）：
+     「实心态」组件（filled badge 等）压在**语义色实底**上的文字色。
+     ⚠️ 为什么不能复用 --text-on-accent：
+        暗色下 --success / --danger / --warning 都**变浅**了（为在深底上更醒目），
+        实心态的底色也随之变浅 ⇒ 白字压上去只有 2.72:1。
+        ⇒ 需要一个**独立令牌**，让暗色能把它换成深字。 */
+  --text-on-solid:    var(--raw-text-on-solid); /* 亮色：实底（深色语义色）⇒ 白字 */
+  /* ---------------------------------------------------------------- 骨架屏
+     🔴 新增（对齐通行组件库的基础档位）
+        加载态是移动端最高频的状态；没有它，每个业务方都会自己造一个。 */
+  --skeleton-bg:       var(--raw-skeleton-bg);   /* 骨架底色：比纸面略深一档 */
+  --skeleton-shimmer:   var(--raw-skeleton-shimmer);  /* 微光高光 */
+  --skeleton-h:         1em;       /* 单行默认高度 */
+  --skeleton-size:      40px;      /* circle 默认直径 */
+  --skeleton-duration:  1.4s;      /* 微光扫过周期 */
+  /* ---------------------------------------------------------------- 进度条
+     🔴 新增（ I5）。组件私有参数集中在这里定义，
+        而不是散在 CSS 里用 fallback —— 否则 deps 门禁会报"未定义令牌"。
+        ⭐ --ease-out 刻意独立命名：进度条要"向前"的 feel，
+          匀速（linear）反而像卡住了。 */
+  --ease-out:        cubic-bezier(0.23, 1, 0.32, 1);
+  --progress-h:      6px;      /* 线形默认高度 */
+  --progress-dur:    240ms;    /* 宽度过渡时长 */
+  --r-full:          999px;    /* 胶囊形圆角 */
+  --ring-size:       64px;     /* 环形默认直径 */
+  --ring-thickness:  8px;      /* 环形环宽 */
+  /* 进度条的当前值。默认 0% 是**正确默认**（不是占位）——
+     实例用 JS setProperty 覆盖它（见 progress demo）。
+     ⚠️ 必须有默认值，否则"忘了设值"会渲染成 0% 且**没人发现**。 */
+  --progress:        0%;
+  /* 环形用**无单位**数值（conic-gradient 的角度计算不接受带 % 的长度）。
+     ⚠️ 这就是环形曾完全不显示的原因，别再改成 --progress。 */
+  --progress-num:    0;
+
+  /* ---------------------------------------------------------------- 气泡卡片
+     🔴 新增（ I4）。默认值是**正确默认**，
+        不是占位 —— 没定义就会静默用 0（deps 门禁会报未定义）。 */
+  --z-popover:        60;       /* 层级：高于导航，低于 dialog */
+  --popover-min-w:    200px;
+  --popover-max-w:    320px;
+  --popover-p:        var(--sp-3);
+  --popover-gap:      8px;       /* 浮层与触发器的距离 */
+  --popover-dur:      140ms;
 
   /* ---------------------------------------------------------------- 边框
      🔴 本库最容易被做错的一处，两类不许合并：
@@ -48,32 +188,83 @@
      decor   = 纯装饰分隔（卡片内线、表格行线）。WCAG 不强制。
                对它强求 3.0 会把界面做得很重很难看 —— 那是误读规范。
      ---------------------------------------------------------------- */
-  --border-control:   #868b94; /* 3.19 / 3.42 AA Large */
-  --border-decor:     #e2e5e9; /* 1.18 纯装饰，WCAG 不强制 */
-  --border-decor-str: #c8cdd4; /* 1.49 装饰，需要更强分隔时用 */
+  --border-control:   var(--raw-border-control); /* 3.19 / 3.42 AA Large */
+  --border-decor:     var(--raw-border-decor); /* 1.18 纯装饰，WCAG 不强制 */
+  --border-decor-str: var(--raw-border-decor-str); /* 1.49 装饰，需要更强分隔时用 */
 
   /* ---------------------------------------------------------------- 语义色
      全部实测 >= 5.6 AA（vs 纸底）。可当文字用，也可当底色用。
      ---------------------------------------------------------------- */
-  --danger:           #c0392b; /* 5.07 AA */
-  --success:          #2f6b3a;   /*  6.12 */
-  --warning:          #8a5a00;   /*  5.68 */
-  --info:             #1d5f8a;   /*  6.58 */
+  --danger:           var(--raw-danger);
+  --danger-hover:     var(--raw-danger-hover);   /* 危险按钮 hover：加深（浅色下加深才对）*/
+  --scrim:            var(--raw-scrim);   /* 抽屉/弹窗遮罩 */ /* 5.07 AA */
+  --success:          var(--raw-success); /* 5.96 vs 纸底 · AA */
+  --warning:          var(--raw-warning); /* 5.53 vs 纸底 · AA */
+  --info:             var(--raw-info); /* 6.41 vs 纸底 · AA */
 
   /* 语义色的浅底（用于提示条背景，不放正文） */
-  --danger-bg:        #fdeeec;
-  --success-bg:       #eaf2e6;
-  --warning-bg:       #fbf1dd;
-  --info-bg:          #e8f1f8;
+  --danger-bg:        var(--raw-danger-bg);
+  --success-bg:       var(--raw-success-bg);
+  --warning-bg:       var(--raw-warning-bg);
+  --info-bg:          var(--raw-info-bg);
+
+  /* ---------------------------------------------------------------- 方向色
+     🔴 为什么方向要独立成令牌，而不是复用 --danger / --success
+     ----------------------------------------------------------------
+     这两组读起来都是"红/绿"，但它们是**两件事**：
+
+       --danger / --success  = 好恶（错误/成功）。这是**评价**。
+       --dir-up / --dir-down = 涨跌（方向）。这是**事实**。
+
+     把两件事共用一个名字，会在这个场景里立刻暴露：
+       「研发费用同比 +38%」—— 是"涨"，但那是**坏消息**。
+       用 --danger 表示它，颜色说着"错了"，语义说着"涨了"，读者收到矛盾信号。
+
+     所以方向色单独命名，取值可以与语义色相同（当前就相同），
+     但**允许将来分开调**：金融终端普遍用比 --danger 更饱和的红。
+
+     🔴 口径可整体切换（不要在每个组件里判断）
+     ----------------------------------------------------------------
+     默认是 A 股 / 东亚口径：**红涨绿跌**。
+     给 `<html data-market="intl">`（或任意祖先）就切成国际口径：绿涨红跌。
+
+     实现方式与暗色同构 —— **换掉底层值，语义名不动**：
+       --dir-up 永远表示"涨"，组件的 CSS 只写 `color: var(--dir-up)`。
+     口径切换只改这两条令牌的指向，组件一行都不用改。
+     组件里若出现 `[data-market]` 分支，那是把全局约定抄进了组件（判据会拦）。
+
+     实测对比度（05-audit/contrast.py，四组底各算一遍）：
+       浅色：红 4.89–5.44 · 绿 5.75–5.96   （全部 AA）
+       暗色：红 5.60–6.15 · 绿 6.01–6.60   （全部 AA）
+     最差的一格是红点在 --surface-sunken 上 4.89 —— 仍 ≥ 4.5。
+     ---------------------------------------------------------------- */
+  --dir-up:           var(--raw-dir-up);     /* 涨：默认红 */
+  --dir-down:         var(--raw-dir-down);   /* 跌：默认绿 */
+
+  /* ⚠️ 口径切换的规则在 `:root` **外面**（见本块结束后的「国际口径」）。
+     第一版写在里面 —— `:root { }` 只能装声明，不能装规则块。
+     theme-sync.py 按「声明序列」解析这个块，遇到嵌套规则会把选择器切碎，
+     生成一段无效 CSS（实测：`:where(...)` 被截成 `where(...)`、第二条声明丢失）。
+     这类嵌套即使浏览器支持 CSS Nesting 也不该写：本库要兼容 Chromium 97。 */
 
   /* ---------------------------------------------------------------- 强调色
      🔴 一源原则：一个项目只选一个 accent，不要混用。
      accent 决定"可点击"的语义，混用等于取消了这层语义。
      三选一，把另外两个删掉，别全留着。
      ---------------------------------------------------------------- */
-  --accent:           #1b4d8f; /* 7.82 AAA */
-  --accent-hover:     #163a6d;   /* 白字压上去 7.73 AAA（hover 态最容易漏测） */
-  --accent-soft:      #e6eef7;   /* focus ring / 浅底，不要拿它放正文 */
+  --accent:           var(--raw-accent);
+  /* 开关开态轨道色（浅色版）：与品牌色一致；暗色下换降彩度值（见 dark 段）。
+     不用 var(--accent) —— 暗色下 accent 太亮，铺满一大块会发光。
+     ⚠️ 这段注释原本**缺开头**，导致 --switch-on 被浏览器当成坏声明丢掉
+        （实测浅色下取值为空）。已由 token-parse-gate.py 兜住。 */
+  --switch-on:         var(--raw-switch-on); /* 7.82 AAA */
+  --accent-hover:     var(--raw-accent-hover); /* 11.29 白字压上 · AAA */
+  --accent-soft:      var(--raw-accent-soft);   /* focus ring / 浅底，不要拿它放正文 */
+
+  /* 气泡（见 L1 的说明） */
+  --tooltip-bg:       var(--raw-tooltip-bg);
+  --tooltip-fg:       var(--raw-tooltip-fg);
+  --tooltip-border:   var(--raw-tooltip-border);
   /* --accent:        #0f7a6c;   薄荷绿 5.00  —— 活泼/工具类 */
   /* --accent-hover:  #0c6459;   白字 7.04 AAA */
   /* --accent-soft:   #dff1ec; */
@@ -151,13 +342,37 @@
   --lh-loose:  1.85;   /* 长段落、低龄/无障碍场景 */
 
   /* 行长：65ch 左右是阅读上限。超过就要分栏或收窄容器。
-     （裸的 --measure 已在 0.7.3 从 tokens.css 移除：它没被引用也没被文档记载，
-       版心请用 --measure-page / --measure-prose。）*/
+     ⚠️ 这里曾经有一个裸的 `--measure: 68ch`，0.7.3 移除 —— 它既没被任何组件
+        引用、也没在任何文档里出现过，而 `--measure-page`（页面列宽）与
+        `--measure-prose`（长文列宽）已经把它该管的两个场景分掉了。
+        不要再把它加回来：`token-audience-gate.py` 判据 ① 会拦住没登记受众的令牌。
+        ⇒ 版心请用下面这两个带语义后缀的。 */
+
+  /* ----------------------------------------------------------------
+     🔴 补：页面列宽 --measure-page（0.4.2）
+     此前 33 个页面各自写 `.wrap { max-width: 680px / 720 / 760 / 800 / 820 /
+     860 / 900 / 42rem / 44rem / 46rem / 52rem … }` —— 16 种写法。
+     结果就是「没有全局可改」：想改列宽要改 33 处，漏一处就不一致。
+     实测众数是 820px（8/33 页），取 52rem = 832px（干净的 rem 值，
+     且 rem 会跟随用户字号设置，px 不会）。
+     改这一个令牌 ⇒ 全部页面列宽一起变。
+     ---------------------------------------------------------------- */
+  --measure-page: 52rem;
+
+  /* 🔴 补：标题字距 --tracking-title（0.4.2）
+     大字号要收紧字距，否则标题散。此前只有 list/nav/states 三页写了
+     `letter-spacing: -0.02em`（写死值），其余 33 页没有 ⇒ 标题观感不一致。 */
+  --tracking-title: -0.02em;
 
   /* ---------------------------------------------------------------- 圆角
      一套就够。圆角混搭（卡片 20px、按钮 4px）是典型的没想清楚。
      ---------------------------------------------------------------- */
   --r-sm:    6px;
+  /* 🔴 补：内嵌小元素用的小圆角（菜单项、标签、chip）。
+     之前 dropdown.css 里凭空写了 var(--r-xs, 3px) —— 令牌不存在时
+     CSS 变量会**静默失效**（整条声明被丢弃），所以一直没被发现。
+     ⇒ 补上这个令牌（deps 门禁抓到）。 */
+  --r-xs:    3px;
   --r-md:   10px;
   --r-lg:   14px;
   --r-pill: 999px;
@@ -185,8 +400,8 @@
      （0.22,1,0.36,1 / 0.65,0,0.35,1），现已换成业界通用值 ——
      与 Tailwind v4 默认、Emil Kowalski 技能库一致。
      **曲线不该自己编**：自编的曲线没有经过大量实现验证，
-     阻尼比、重心位置都是猜的，跨浏览器表现不一致。
-      跨浏览器表现不一致。 */
+     阻尼比、重心位置都是猜的，跨浏览器表现不一致。 */
+
   /* 位移距离：动效的"幅度"也要统一，不然同样 180ms 也会感觉乱 */
   --lift-sm: 1px;
   --lift-md: 2px;
@@ -199,9 +414,67 @@
   --z-base:    0;
   --z-sticky: 10;
   --z-header: 20;
+  /* 🔴 补回：上一轮"清理重复 z 令牌"时把它误删了，
+     而 card / pagination 都在用 ⇒ 它们的 z-index 声明**静默失效**。
+     ⚠️ CSS 变量不存在时**不报错**，声明直接被丢弃 —— 这类问题只能靠门禁抓。 */
+  --z-raised:  5;   /* 浮起层（卡片悬停、下拉、内层可点元素）*/
   --z-overlay: 30;
   --z-modal:  40;
   --z-toast:  50;
+
+  /* ------------------------------------------------------------
+     命中区尺寸
+
+     之前全库到处硬写 `44px`（20 处，各组件各写一遍）⇒ 改一次要翻遍全库。
+
+     为什么是 44px：**WCAG 2.5.5 Target Size（Level AAA）** 要求 44×44 CSS px。
+     ⚠️ 别混淆：WCAG 2.5.8（AA 级）只要 24×24；本库按 AAA 做。
+     ------------------------------------------------------------ */
+  --sz-touch:    44px;   /* 最小命中区（指针）*/
+  --sz-touch-sm: 32px;   /* 次要场景（表格行内等密排）*/
+
+  /* ==========================================================================
+     🔴 补：跳过导航链接（skip link）
+     --------------------------------------------------------------------------
+     a11y-scan 报了两条违规（都因为入口页没有地标）：
+       · landmark-one-main —— 文档应有一个 <main>
+       · region           —— 所有内容应被地标包裹
+     ⇒ 修法：入口页包 <main id="main">，并提供"跳到主内容"的链接。
+
+     ⭐ 为什么要 skip link：
+     键盘用户每次进页面都要 Tab 过几十个导航链接才能到正文。
+     skip link 让它们**按一次 Tab 就能跳过**（第一次 Tab 就会出现，
+     聚焦时才显形）—— 这是 WCAG 2.4.1 Bypass Blocks 的标准做法。
+     ========================================================================== */
+}
+
+/* ============================================================================
+   容器查询的**槽位标记**（0.16.0）
+
+   `[data-cq]` 让一个元素成为"查询容器"：里面的组件按**自己所在的槽宽**
+   自适应，而不是按视口宽度。`card--row` 与 `analysis-report` 已用它切换布局。
+
+   🔴 为什么是显式属性，而不是给组件自动加 `container-type`
+     ① `container-type: inline-size` 会带上 `contain: layout style inline-size`
+        ⇒ 元素变成 fixed / absolute 后代的**包含块**。
+        若给 `.page` 或抽屉的宿主自动加上，抽屉（position: fixed）
+        会被关进那个盒子里 —— 静默的、只在特定嵌套下出现的破坏。
+     ② 库不知道"槽"在哪：同一张卡片既可能在 320px 侧栏，也可能在 900px 主列。
+        只有页面作者知道该把哪一层声明成容器。
+
+   ⇒ 契约：**加了 `data-cq` 的那一层，就是组件眼里的"窗口"**。
+     不加 ⇒ 整条容器查询不生效（实测：没有容器时 `@container` **不会**退回视口），
+     组件仍按视口断点工作 —— 与 0.15.0 完全一致。
+
+   ⚠️ 不要把它加在会承载抽屉 / 全屏浮层的祖先上（理由见 ①）。
+      它下面可以放 popover / dropdown（那些用 absolute，不受影响）。
+
+   ⚠️ 为什么在 tokens.css 而不是 page.css：tokens.css 是**唯一必须引入**的文件
+      （"只拿一个组件"的最小页面也带着它）。放在 page.css 里，
+      按需取用的页面会拿到一份永远不生效的 `@container`。
+   ========================================================================= */
+[data-cq] {
+  container-type: inline-size;
 }
 
 /* ============================================================================
@@ -209,7 +482,17 @@
    ========================================================================= */
 
 /* 尊重系统的"减少动效"设置。评委、无障碍用户、晕动症人群会开这个。
-   不写这段，前面所有动效在那些机器上就是灾难。 */
+   不写这段，前面所有动效在那些机器上就是灾难。
+
+   🔴 这是**兜底**，不是全部策略（0.9.1 起）：
+      ① 位移 / 缩放 / 旋转 —— 关掉（前庭不适的主要来源）
+      ② 真实进度（spinner / 加载中）—— **保留**，见 ai/motion-policy.json。
+         停掉进度指示会让用户以为页面卡死，比有动画更糟。
+      ③ 颜色 / 透明度 —— 允许保留但缩短到 --dur-fast（不强制，也无判据）
+      默认关、例外要写理由并由 `motion.py --reduced-audit` 核对：
+      声明了却没实现 ⇒ 红；实现了却没声明 ⇒ 也红。
+   本段的 `*` 规则必须保留 —— 它是①②③共同的底线，
+   组件要保留动画时用**更高优先级 + !important** 覆盖它（库里三处都这么做）。 */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -246,6 +529,617 @@
                    → 因此把边框拆成 control / decor 两类，这是第一版最大的收获。
    ========================================================================= */
 
+/* ============================================================================
+   i18n：度量令牌（行长控制）
+   ============================================================================
+   🔴 为什么需要这一节
+
+   中文排版用 `em` 限宽看起来"完美"，**但那是巧合**：1em = 1 个汉字宽。
+   换到英文，同样的 `max-width: 14em` 只能放约 20 个字符 ——
+   实测 84 字符的英文标题会折成 **4 行**，这是坏的排版。
+
+   `ch` 也不对：ch = "0" 的宽度，**1 汉字 ≈ 2ch**，
+   所以 13ch 只能放 6 个汉字（曾见过标题被挤成三行）。
+
+   ⇒ 结论：**没有任何单一单位能同时伺候所有语言**，必须按语言切换。
+
+   用法：组件用 `var(--measure-*)`，不写死单位。
+
+       h1 { max-width: var(--measure-title); }
+       p  { max-width: var(--measure-prose); }
+
+   ── 各语言的取值依据 ──────────────────────────────────────────────
+   | 语言        | 计量      | 正文值 | 舒适区        |
+   |-------------|-----------|--------|---------------|
+   | 中文/日韩   | em（1em=1字）| 34em | 25-35 字     |
+   | 拉丁/西里尔 | ch（1ch≈1字）| 68ch | 60-75 字符   |
+   | 阿拉伯      | ch        | 60ch   | 同上，且 RTL |
+   | 印地/泰文   | ch        | 60ch   | 连字会让 ch 偏小，取小值更安全 |
+
+   `:lang()` 选的是**内容语言**，不是界面语言 —— 这才是对的。
+   ========================================================================= */
+
+:root {
+  /* 正文行长：中文 34 字 ≈ 拉丁 68 字符，两边都落在各自的舒适区 */
+  --measure-prose:   34em;
+  --measure-title:   20em;   /* 标题比正文窄，避免大字长时间扫视 */
+  --measure-lede:    32em;   /* 导语 */
+  --measure-pull:    30em;   /* 引言块 */
+  --measure-aside:   32em;   /* 边注 */
+}
+
+/* 拉丁 / 西里尔 / 希腊：改用 ch（1ch ≈ 1 个字符宽） */
+:root:lang(en), :root:lang(en-US), :root:lang(en-GB),
+:root:lang(fr), :root:lang(de), :root:lang(es), :root:lang(pt),
+:root:lang(ru), :root:lang(el), :root:lang(tr), :root:lang(vi) {
+  --measure-prose:   68ch;
+  --measure-title:   34ch;
+  --measure-lede:    62ch;
+  --measure-pull:    58ch;
+  --measure-aside:   56ch;
+}
+
+/* 阿拉伯语：RTL，行长同样按 ch */
+:root:lang(ar) {
+  --measure-prose:   60ch;
+  --measure-title:   30ch;
+  --measure-lede:    56ch;
+  --measure-pull:    52ch;
+  --measure-aside:   50ch;
+}
+
+/* 印地 / 泰文 / 高棉 / 缅甸：连字与组合字形会让 ch 偏小，取更保守的值 */
+:root:lang(hi), :root:lang(th), :root:lang(km), :root:lang(my) {
+  --measure-prose:   56ch;
+  --measure-title:   28ch;
+  --measure-lede:    52ch;
+  --measure-pull:    48ch;
+  --measure-aside:   46ch;
+}
+
+/* 🔴 兜底：未知语言（`lang` 缺失或写了别的）走 ch 而不是 em ——
+   拉丁字母是更常见的假设；而且 ch 在等宽字体下也准。
+   中文/日韩显式命中上面的 em 分支（:root 默认值），不会落到这里。 */
+:root:lang(zh), :root:lang(zh-CN), :root:lang(zh-TW),
+:root:lang(ja), :root:lang(ko) {
+  --measure-prose:   34em;
+  --measure-title:   20em;
+  --measure-lede:    32em;
+  --measure-pull:    30em;
+  --measure-aside:   32em;
+}
+
+/* ============================================================================
+   暗色模式（prefers-color-scheme: dark）
+   ============================================================================
+   🔴 建立。**下面每个值都是按 WCAG 公式算出来的，不是"反过来"。**
+
+   ── 为什么不能把浅色反过来 ────────────────────────────────────
+   1. **纯黑底会让彩色文字发灰**（视觉上对比度下降）⇒ paper 用 #14171a 不是 #000
+   2. **明度关系要重排**：浅色是"底浅→字深"，暗色是"底深→字亮"，
+      但**中间灰阶的分布完全不同** —— 浅色的 #6b7280（tertiary）
+      在深底上完全不够用（只有 2.1:1）
+   3. **饱和色要降**：#c0392b 在深底上刺眼且显脏 ⇒ 提到 #e07a6e
+   4. **强调色方向相反**：浅色用深靛蓝（沉），暗色必须**变亮**才看得见
+      ⇒ --accent 从 #1b4d8f 变成 #7aa9de。**这不是"反色"能得出的。**
+   5. **按钮上的文字要翻过来**：浅色按钮是"蓝底白字"，
+      暗色按钮变亮 ⇒ 必须改成"**亮底深字**"（--text-on-accent: #0d1114）
+
+   ── 实测数据（WCAG 相对亮度公式算的）──────────────────────────
+   | 令牌 | 暗色值 | 在 paper 上的对比度 | 要求 |
+   |---|---|---|---|
+   | --text-primary   | #e8eaed | 14.93 | 4.5 ✅ |
+   | --text-secondary | #b8bec6 |  9.61 | 4.5 ✅ |
+   | --text-tertiary  | #959ba3 |  6.42 | 4.5 ✅ |
+   | --danger         | #e07a6e |  6.15 | 4.5 ✅ |
+   | --success        | #6faa7a |  6.60 | 4.5 ✅ |
+   | --warning        | #c99a3f |  7.01 | 4.5 ✅ |
+   | --info           | #5b9bc4 |  5.94 | 4.5 ✅ |
+   | --accent         | #7aa9de |  7.33 | 4.5 ✅ |
+   | --text-on-accent | #0d1114 |  7.73（压 accent 上）| 4.5 ✅ |
+   | --border-control | #7d848d |  4.76 | 3.0 ✅ |
+
+   ⚠️ **--text-primary 故意不用最高对比的那个**（#f2f4f6 = 16.32:1）。
+   暗色下过高的对比会**发光、刺眼**，长时间阅读更累。
+   **过线即可，不是越高越好。**
+
+   ── 底色三层（明度差必须够，否则分层直接消失）──────────────────
+   | 层 | 值 | 与 paper 的对比 |
+   |---|---|---|
+   | sunken（内凹）| #080a0c | 1.10 ✅ |
+   | paper（页面底）| #14171a | — |
+   | surface（卡片）| #1c2024 | 1.10 ✅ |
+
+   🔴 我第一版把 sunken 设成 #0f1214，与 paper 只差 **1.05** ——
+   **卡片和页面底几乎分不开**，这正是本库在浅色下踩过的坑
+   （--paper 曾经是 #fcfcfd，与白色只差 1.025）。**同样的错不能犯两次。**
+
+   ── 为什么用 @media 而不是 light-dark() ──────────────────────
+   `light-dark()` 是 2024 的新函数，**精简档 的老 WebView 不支持**。
+   用 @media 是目前兼容性最好的做法。
+   ---------------------------------------------------------------- */
+
+/* `screen and` 承重：暗色是屏幕概念，纸没有深色模式。
+   缺了它，暗色令牌在 print 里照样生效 ⇒ 浅字配被丢弃的深底。 */
+@media screen and (prefers-color-scheme: dark) {
+  /* ========================================================================
+     第二次修正（上一版被 真机实测否决）
+     ------------------------------------------------------------------------
+     反馈：「小方框变成了咖啡色」「背景变成了淡白色」
+                「主业是白色兼灰色有高级感，现在变成了暖色」
+
+     前一版的三个问题：
+       1 引入暖灰（#E8E6E3 / #1E1E1E）—— 反馈像咖啡色
+       2 --paper 被写成别处覆盖的值 —— 结果 dark 下背景是淡白
+       3 🔴 注释里写了 `#080a0c` 和中文分号
+          ⇒ 被 gen-theme-js.py 的 `[^;]+` 当成**属性值**
+          ⇒ --paper 整个丢失 ⇒ 切暗色时背景不变（实测确认）
+
+     ⭐ 本次原则：**只修该修的，色相一律保持冷灰**
+        主业的"高级感"来自冷灰（白+灰），不是暖灰 —— 这是 最终定的调。
+
+     保留三条业界共识（不改变色相）：
+       1 层级靠"表面变亮"：暗色下阴影不可见，抬高面必须更亮
+         原来的 --surface-sunken 比 paper 还深，方向是错的
+       2 正文不用纯白：纯白在深底上会 halation（字发散）
+       3 tertiary 必须够 4.5:1：用脚本算，不靠眼睛调
+     ======================================================================== */
+
+  /* 冷灰基座 -- 不用纯黑（OLED 拖影），不用暖灰（显廉价） */
+  /* ⚠️ `:not([data-theme="light"])` —— 让「强制亮」能压过系统暗色。
+     不加这层 `:not`：系统暗色 + data-theme="light" 时，本段仍会命中
+     ⇒ 使用者点了「亮」却还是暗的（三态开关里最容易被忽略的一条路径）。
+     ⇒ 强制暗由下面生成的 `[data-theme="dark"]` 段负责，两边互不干扰。 */
+:root:not([data-theme="light"]) {
+  --raw-paper:           #14171A;
+  --raw-surface:         #1C2024;
+  --raw-surface-raised:  #232830;
+  /* 凹陷面不再更黑，改为比 paper 略浅（层级靠变亮） */
+  --raw-surface-sunken:  #1A1D21;
+
+  /* 🔴滚动条（暗色）
+     ⚠️ 暗色下 thumb 要比浅色**更亮**（#4A515C）才看得见；
+        用浅色那档会变成"黑里有黑"。 */
+  --raw-scrollbar-thumb:     #6E747E;   /* 对 #14171a 3.82:1 · 对 #232830 3.15:1 ✅ */
+  --raw-scrollbar-thumb-hov: #7D828A;   /* 4.24:1 */
+
+  /* 边框 -- 冷灰，靠变亮分层 */
+  --raw-border-decor:     #2A3038;
+  --raw-border-decor-str: #3A424C;
+  --raw-border-control:   #8A9099;
+
+  /* 文本 -- 冷调白，非纯白（避免 halation） */
+  --raw-text-primary:    #E4E7EA;
+  --raw-text-secondary:  #AEB6C0;
+  /* 实算 原来的 #959ba3 对 paper 只有 4.14:1 不达 AA，提到这个值 */
+  --raw-text-tertiary:   #9BA3AD;
+  --raw-text-on-accent:  #0D1114;
+  --raw-text-on-solid:   #0D1114;   /* 暗色：success/danger/warning 都变浅了 ⇒ 实心态换深字 */
+  /* 暗色：底色比纸面**略浅**（深底上"更亮"才看得出是占位） */
+  --raw-skeleton-bg:       #2E343C;   /* 亮度差 0.032（契约要求 >0.02）*/
+  --raw-skeleton-shimmer:   rgba(255, 255, 255, 0.06);
+
+  /* 语义色 -- 沿用原有冷调 */
+  --raw-danger:          #E07A6E;
+  --raw-danger-hover:    #F09A90;
+  --raw-danger-bg:       #341D1A;
+  --raw-success:         #6FAA7A;
+  --raw-success-bg:      #16241A;
+  /* 方向色（暗色）：与 success / danger 同值，理由见浅色段。
+     暗色下红 5.60–6.15 · 绿 6.01–6.60，四组底全部 AA。 */
+  --raw-dir-up:          #E07A6E;
+  --raw-dir-down:        #6FAA7A;
+  --raw-warning:         #C99A3F;
+  /* 🔴 最终定的（第二次修正）：
+       「本身**淡黄色的那些框**你就改成**暖灰色**，
+         **在深色模式下的暖灰色**这个就很好啊」
+
+     浅色下 --warning-bg 是 #fbf1dd（淡黄）—— **保持不动**。
+     暗色下原来是 #2B2313（**深红棕**）⇒ 在冷灰背景里
+     像一块"**咖啡色**"的脏斑 ⇒ 这就是 真机实测看到的。
+
+     ⇒ 暗色下改成**暖灰**（保留一点暖调，与浅色的淡黄呼应，
+        但**不再偏红褐**，与整体的冷灰底融合）。
+     ⚠️ 只改这一个令牌，**底色/表面/文本一律不动**。 */
+  --raw-warning-bg:      #242A31;
+  --raw-info:            #5B9BC4;
+  --raw-info-bg:         #13242F;
+
+  /* 品牌色 -- 沿用原有淡蓝 */
+  --raw-accent:          #7AA9DE;
+  /* 🔴 开关开态的轨道色 -- 暗色版
+     🔴 **降彩度**：#7AA9DE 太亮，铺满一大块会发光。
+     实测：滑块是纯白 #FFF，轨道若也接近白 ⇒ 对比不足、边界糊。
+     ⇒ 轨道取**中深蓝**（#3E6EA8 族），与白滑块有清晰对比，
+        在 #1C2024 的深底上又不刺眼。 */
+  --raw-switch-on:       #3E6EA8;
+  --raw-accent-hover:    #8FB8E6;
+  --raw-accent-soft:     #1C2C3D;
+
+  /* 气泡：暗色下不再"反色"（反色会变成浅底深字，在暗界面里像个白块），
+     改用抬高面 + 正文色 —— 但只比纸面亮一档，所以必须补一条描边。
+     文字/底 11.93:1（AAA），实测见 contrast.py。 */
+  --raw-tooltip-bg:      #232830;
+  --raw-tooltip-fg:      #E4E7EA;
+  --raw-tooltip-border:  #2A3038;
+
+  --raw-scrim:           rgba(0, 0, 0, 0.62);
+  /* ⚠️ 这里原本还抄了一份 --sans/--mono/--serif/--tracking-normal —— 是死代码：
+     真正的字体栈定义在后面的 `:root`，同特异性且位置更靠后 ⇒ 无条件覆盖这里
+     （实测暗色下 --tracking-normal = 0，不是这里的 0.01em）。
+     留着还会被 theme-toggle.js 的差集规则复制成 inline style ⇒
+     inline 优先于样式表 ⇒ 强制暗色时字体被改。已删。 */
+}   /* ← :root 闭合*/
+}
+
+/* === BEGIN: light-via-attr（由 05-audit/theme-sync.py 生成，勿手改）=== */
+[data-theme="light"] {
+  --raw-accent: #1b4d8f;
+  --raw-accent-hover: #163a6d;
+  --raw-accent-soft: #e6eef7;
+  --raw-border-control: #868b94;
+  --raw-border-decor: #e2e5e9;
+  --raw-border-decor-str: #c8cdd4;
+  --raw-danger: #c0392b;
+  --raw-danger-bg: #fdeeec;
+  --raw-danger-hover: #8f1e17;
+  --raw-dir-down: #2f6b3a;
+  --raw-dir-up: #c0392b;
+  --raw-info: #1d5f8a;
+  --raw-info-bg: #e8f1f8;
+  --raw-paper: #f6f7f8;
+  --raw-scrim: rgba(21, 24, 28, 0.4);
+  --raw-scrollbar-thumb: #7A808A;
+  --raw-scrollbar-thumb-hov: #6E747E;
+  --raw-skeleton-bg: #e9ecef;
+  --raw-skeleton-shimmer: rgba(255, 255, 255, 0.72);
+  --raw-success: #2f6b3a;
+  --raw-success-bg: #eaf2e6;
+  --raw-surface: #ffffff;
+  --raw-surface-raised: #ffffff;
+  --raw-surface-sunken: #f1f3f5;
+  --raw-switch-on: #1b4d8f;
+  --raw-text-on-accent: #ffffff;
+  --raw-text-on-solid: #ffffff;
+  --raw-text-primary: #15181c;
+  --raw-text-secondary: #4f555e;
+  --raw-text-tertiary: #606770;
+  --raw-tooltip-bg: #15181c;
+  --raw-tooltip-border: #15181c;
+  --raw-tooltip-fg: #f6f7f8;
+  --raw-warning: #8a5a00;
+  --raw-warning-bg: #fbf1dd;
+
+  --accent: var(--raw-accent);
+  --accent-hover: var(--raw-accent-hover);
+  --accent-soft: var(--raw-accent-soft);
+  --border-control: var(--raw-border-control);
+  --border-decor: var(--raw-border-decor);
+  --border-decor-str: var(--raw-border-decor-str);
+  --danger: var(--raw-danger);
+  --danger-bg: var(--raw-danger-bg);
+  --danger-hover: var(--raw-danger-hover);
+  --dir-down: var(--raw-dir-down);
+  --dir-up: var(--raw-dir-up);
+  --info: var(--raw-info);
+  --info-bg: var(--raw-info-bg);
+  --paper: var(--raw-paper);
+  --scrim: var(--raw-scrim);
+  --scrollbar-thumb: var(--raw-scrollbar-thumb);
+  --scrollbar-thumb-hov: var(--raw-scrollbar-thumb-hov);
+  --skeleton-bg: var(--raw-skeleton-bg);
+  --skeleton-shimmer: var(--raw-skeleton-shimmer);
+  --success: var(--raw-success);
+  --success-bg: var(--raw-success-bg);
+  --surface: var(--raw-surface);
+  --surface-raised: var(--raw-surface-raised);
+  --surface-sunken: var(--raw-surface-sunken);
+  --switch-on: var(--raw-switch-on);
+  --text-on-accent: var(--raw-text-on-accent);
+  --text-on-solid: var(--raw-text-on-solid);
+  --text-primary: var(--raw-text-primary);
+  --text-secondary: var(--raw-text-secondary);
+  --text-tertiary: var(--raw-text-tertiary);
+  --tooltip-bg: var(--raw-tooltip-bg);
+  --tooltip-border: var(--raw-tooltip-border);
+  --tooltip-fg: var(--raw-tooltip-fg);
+  --warning: var(--raw-warning);
+  --warning-bg: var(--raw-warning-bg);
+}
+/* === END: light-via-attr === */
+
+/* === BEGIN: dark-via-attr（由 05-audit/theme-sync.py 生成，勿手改）=== */
+@media screen {
+:root[data-theme="dark"],
+[data-theme="dark"] {
+  --raw-accent: #7AA9DE;
+  --raw-accent-hover: #8FB8E6;
+  --raw-accent-soft: #1C2C3D;
+  --raw-border-control: #8A9099;
+  --raw-border-decor: #2A3038;
+  --raw-border-decor-str: #3A424C;
+  --raw-danger: #E07A6E;
+  --raw-danger-bg: #341D1A;
+  --raw-danger-hover: #F09A90;
+  --raw-dir-down: #6FAA7A;
+  --raw-dir-up: #E07A6E;
+  --raw-info: #5B9BC4;
+  --raw-info-bg: #13242F;
+  --raw-paper: #14171A;
+  --raw-scrim: rgba(0, 0, 0, 0.62);
+  --raw-scrollbar-thumb: #6E747E;
+  --raw-scrollbar-thumb-hov: #7D828A;
+  --raw-skeleton-bg: #2E343C;
+  --raw-skeleton-shimmer: rgba(255, 255, 255, 0.06);
+  --raw-success: #6FAA7A;
+  --raw-success-bg: #16241A;
+  --raw-surface: #1C2024;
+  --raw-surface-raised: #232830;
+  --raw-surface-sunken: #1A1D21;
+  --raw-switch-on: #3E6EA8;
+  --raw-text-on-accent: #0D1114;
+  --raw-text-on-solid: #0D1114;
+  --raw-text-primary: #E4E7EA;
+  --raw-text-secondary: #AEB6C0;
+  --raw-text-tertiary: #9BA3AD;
+  --raw-tooltip-bg: #232830;
+  --raw-tooltip-border: #2A3038;
+  --raw-tooltip-fg: #E4E7EA;
+  --raw-warning: #C99A3F;
+  --raw-warning-bg: #242A31;
+
+  --accent: var(--raw-accent);
+  --accent-hover: var(--raw-accent-hover);
+  --accent-soft: var(--raw-accent-soft);
+  --border-control: var(--raw-border-control);
+  --border-decor: var(--raw-border-decor);
+  --border-decor-str: var(--raw-border-decor-str);
+  --danger: var(--raw-danger);
+  --danger-bg: var(--raw-danger-bg);
+  --danger-hover: var(--raw-danger-hover);
+  --dir-down: var(--raw-dir-down);
+  --dir-up: var(--raw-dir-up);
+  --info: var(--raw-info);
+  --info-bg: var(--raw-info-bg);
+  --paper: var(--raw-paper);
+  --scrim: var(--raw-scrim);
+  --scrollbar-thumb: var(--raw-scrollbar-thumb);
+  --scrollbar-thumb-hov: var(--raw-scrollbar-thumb-hov);
+  --skeleton-bg: var(--raw-skeleton-bg);
+  --skeleton-shimmer: var(--raw-skeleton-shimmer);
+  --success: var(--raw-success);
+  --success-bg: var(--raw-success-bg);
+  --surface: var(--raw-surface);
+  --surface-raised: var(--raw-surface-raised);
+  --surface-sunken: var(--raw-surface-sunken);
+  --switch-on: var(--raw-switch-on);
+  --text-on-accent: var(--raw-text-on-accent);
+  --text-on-solid: var(--raw-text-on-solid);
+  --text-primary: var(--raw-text-primary);
+  --text-secondary: var(--raw-text-secondary);
+  --text-tertiary: var(--raw-text-tertiary);
+  --tooltip-bg: var(--raw-tooltip-bg);
+  --tooltip-border: var(--raw-tooltip-border);
+  --tooltip-fg: var(--raw-tooltip-fg);
+  --warning: var(--raw-warning);
+  --warning-bg: var(--raw-warning-bg);
+}
+}
+/* === END: dark-via-attr === */
+
+/* 🔴 涨跌口径切换（`[data-market="intl"]`）**不在本文件里**，在 `01-tokens/market.css`。
+   ----------------------------------------------------------------------------
+   原因不是洁癖：读本文件的那几个工具（contrast / gen-ai-contract /
+   gen-tokens-tree / token-audience）走 `_css.declared_tokens()`，它是**纯词法**的
+   —— 遍历所有声明、后者覆盖前者、**不看选择器**。
+   把一段**条件性**的交换规则放在这里，它们会把它当成默认值叠上去，
+   于是报告里「暗色 涨」显示成绿色，而浏览器里其实是对的 —— 门禁冤枉代码，
+   比漏判更难查（实测，见 E137）。
+   ⇒ 本文件只放「无条件声明」与「暗色媒体段」，条件规则一律外置。
+   ========================================================================= */
+
+/* ============================================================================
+   字体栈令牌
+   ============================================================================
+   🔴 补。**这是个一直存在但没人发现的缺口** ——
+   全库有 27 处引用 `var(--sans)` / `var(--mono)` / `var(--serif)`，
+   而 tokens.css **从来没定义过它们** ⇒ 全部回退到浏览器默认字体。
+   换句话说：库里"看起来有字体体系"，其实没有。
+
+   ── 为什么字体栈要按语言分 ────────────────────────────────────
+   一个字体通常**不覆盖所有文字**。Segoe UI 没有中文字形、
+   苹方没有拉丁字形 ⇒ 浏览器逐字符 fallback 到系统默认。
+   问题在于：**不同系统 fallback 到的字体不同**
+   （macOS 苹方 / Windows 微软雅黑 / Linux 思源）⇒ 同一份代码观感不一致。
+
+   ⇒ 做法：字体栈里**把各文字的字体都列上**，让浏览器在我们指定的顺序里选，
+   而不是让它按系统默认挑。
+
+   ⚠️ 全部是**系统字体**，不下载任何字体文件 ——
+   这是精简档（某项目）的硬约束，也是本库"零外部资产"的一部分。
+
+   字体栈的排列顺序：**拉丁 → 中文 → 泛型**。
+   浏览器逐字符 fallback，排在前面、优先用。
+   ========================================================================= */
+
+:root {
+  --sans:
+    /* 拉丁 */
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial,
+    /* 中文 */
+    'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
+    'Source Han Sans SC', 'Noto Sans CJK SC',
+    /* 阿拉伯 / 希伯来 / 泰文（系统通常自带相应字体）*/
+    'Geeza Pro', 'Segoe UI Historic',
+    /* 泛型 */
+    sans-serif;
+
+  --mono:
+    /* 拉丁等宽 */
+    ui-monospace, 'SF Mono', 'Cascadia Mono', 'Segoe UI Mono',
+    'Roboto Mono', Menlo, Consolas,
+    /* 中文等宽（中文通常回落到无衬线，但列出更可控）*/
+    'Sarasa Mono SC', 'Microsoft YaHei Mono',
+    monospace;
+
+  --serif:
+    /* 拉丁衬线 */
+    'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia,
+    /* 中文衬线 */
+    'Songti SC', 'SimSun', 'Noto Serif CJK SC', 'Source Han Serif SC',
+    serif;
+
+  /* 字距：默认 0。中文与拉丁的字距需求不同，
+     阿拉伯/希伯来文连字后密度更高，需要更松 —— 下面按语言覆盖。 */
+  --tracking-normal: 0;
+}
+
+/* 🔴 阿拉伯语与希伯来语：需要**更宽松的字距**。
+   阿拉伯文的字形连接后视觉密度比拉丁高，
+   同样的字距在两套文字里"挤的程度"不同。 */
+:root:lang(ar), :root:lang(fa), :root:lang(he), :root:lang(ur) {
+  --tracking-normal: 0.01em;
+}
+
+
+/* ============================================================================
+   🔴 修 iOS 实机报的「点击时出现奇怪的灰黑纺锤形闪动」
+   ----------------------------------------------------------------------------
+   原始反馈：「点击单选和复选的选项的时候会出现非常奇怪的阴影残留，
+   那个阴影居然是**纺锤形**的，或者是极快的那个**灰黑色的底色闪动**」。
+
+   ⭐ 真因（**iOS Safari 的默认行为**，不是我们的布局错）：
+     iOS Safari 会给**被点击的元素**加一层半透明灰黑遮罩
+     （约 rgba(0,0,0,0.18)），这层遮罩**跟着元素的形状与圆角** ——
+     我们的 `.choice__mark` 是**圆角方块** ⇒ 遮罩就成了「纺锤形」。
+
+     ⚠️ 而且真正被点的不是那个 mark，是**铺满整个 `.choice` 的
+        透明 input**（`opacity:0; inset:0`）⇒ 遮罩画在这个 input 上，
+        iOS 按它的圆角裁切 ⇒ 形状更怪、闪烁更明显。
+
+   ⇒ 修法（业界标准做法）：**关掉 tap highlight**。
+     本库每个控件都有自己的 `:active` / `:checked` 反馈，
+     不需要 iOS 那层系统遮罩 —— 它既不统一又难看。
+
+     ⚠️ 只在**可点元素**上关，**不要全局 `*`**
+        —— 那会把链接与按钮的原生反馈一起干掉。 */
+a,
+button,
+label,
+summary,
+input[type="checkbox"],
+input[type="radio"],
+input[type="button"],
+input[type="submit"],
+[role="button"],
+[role="switch"],
+[role="tab"],
+[role="option"],
+.choice,
+.switch,
+.btn,
+.accordion__trigger,
+.tabs__tab,
+.card,
+.list__row {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ⚠️ 关掉系统遮罩后，点下去**必须仍有反馈**（否则用户会以为没点中）。
+   下面给统一的按压反馈：轻微缩放 + 变背景。
+   ⚠️ 用 `:active`（鼠标与触摸都触发），不用 `:focus`
+      —— focus 会留下"粘住"的高亮，正是我们要避免的。 */
+.choice:active,
+.switch:active,
+.btn:active,
+.list__row:active,
+.card:active {
+  opacity: 0.82;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  /* 🔴 桌面端不用 :active 做反馈（鼠标按下就闪一下很廉价）
+     —— 桌面已有 :hover，够用了。 */
+  .choice:active,
+  .switch:active,
+  .btn:active,
+  .list__row:active,
+  .card:active { opacity: 1; }
+}
+
+  /* ==========================================================================
+     🔴 命中区尺寸令牌（做分页时发现的全库缺口）
+     --------------------------------------------------------------------------
+     为什么需要：全库到处硬写 `44px`（各组件各写一遍）⇒
+     改一次要翻遍全库，且没人能保证它们一致。
+
+     为什么是 44px：**WCAG 2.5.5 Target Size (Level AAA)** 要求 44×44 CSS px。
+     ⚠️ 注意区分：
+       · WCAG 2.5.8（AA 级）只要 24×24 */
+
+/* ============================================================================
+   打印（print）—— 纸没有主题：暗色已被上面的 `@media screen and` 关在屏幕里。
+   剩下的只有一处：实心控件的字。打印丢弃背景色，而它们的
+   `--text-on-accent` 是 #ffffff ⇒ 白纸白字（实测产物 2.30:1）。
+   改这两个令牌一处，好过改 8 个组件。
+   ========================================================================== */
+/* ==========================================================================
+   X · 打印（工具类 + 全局策略）
+   放这里而不是新建 print.css：新 .css 会连带 dist / docs / README 一串连锁。
+   完整说明（收窄层级的理由、为什么没写 thead、代价）见 docs/PRINT.md。
+   ========================================================================== */
+
+/* 屏幕上隐藏、纸上显示（块级元素用）。 */
+.print-only { display: none; }
+
+@media print {
+  :root {
+    color-scheme: light;          /* 表单控件/滚动条别跟着系统去暗色 */
+    --text-on-accent: #15181c;
+    --text-on-solid:  #15181c;
+  }
+
+  /* 使用者控制器：加 .no-print 的元素不上纸。全库唯一的 !important ——
+     不加就永远可能被使用者自己写的 display 覆盖，等于没提供这个能力。 */
+  .no-print { display: none !important; }
+  .print-only { display: block; }
+
+  /* 打印前展开折叠内容 —— 不展开 = 静默截断（页数正常、内容少一半）。
+     ⚠️ 必须带组件根前缀：tokens.css 在 head 里最先加载，同特异性的规则会被
+     组件 CSS 覆盖（实测：不加前缀时 PDF 与改动前逐字节相同）。
+     accordion 三条缺一不可。逐条理由见 docs/PRINT.md。 */
+  .tabs .tabs__panel[hidden] { display: block; }
+  .accordion .accordion__panel[hidden] {
+    display: grid !important;      /* ① 它有 display:none !important */
+    grid-template-rows: 1fr;       /* ② 收起态是 0fr */
+    visibility: visible;           /* ③ 它还有 visibility:hidden（缺这条就一个字不印） */
+  }
+
+  /* 浮层与纯导航。不用裸 button（accordion 标题在 button 里），
+     不动 .btn / .upload（文档页会空、表单控件有状态）。见 docs/PRINT.md。 */
+  .toast, .tooltip, .popover, .skeleton,
+  .tabs__list, .nav__list, .nav__toggle, .pagination,
+  .accordion__marker { display: none !important; }
+
+  /* ⚠️ 模态的遮罩规则**不在这里**，在 03-patterns/overlay/overlay.css。
+     原因不是洁癖：`.dialog-backdrop { position: static }` 写在这里会被
+     overlay.css 里同特异性的 `position: fixed` 盖掉 —— 规则写了、不生效、
+     不报错（E254 的同一个形状，2026-11-02 由 print-policy-gate 的 L3 抓到）。 */
+
+  /* 不跨页切断。代价：高于半页的卡片会被整体推到下一页 ⇒ 页数可能变多。 */
+  tr, img, figure, svg,
+  .card, .metric, .sparkline, .splot { break-inside: avoid; }
+
+  /* 退出开关：高块想省纸就加这个类（标定表见 docs/PRINT.md）。
+     必须写在上一条之后 —— 同特异性靠顺序取胜，不靠 !important。 */
+  .print-allow-break { break-inside: auto; }
+
+  /* ⚠️ 这里**没有** `p, li, blockquote { orphans/widows }` ——
+     裸标签选择器会改掉宿主页面所有段落（`bleed-gate` 的硬红线）。
+     孤行寡行只在库里自己的文档容器内生效，见 `04-recipes/report/report.css`。 */
+}
+
 /* ---- 由 md-render.py 内联自 frontend-lib/03-patterns/content/content.css ---- */
 /* ============================================================================
    frontend-lib / 03-patterns / content / content.css
@@ -268,7 +1162,13 @@
    ========================================================================= */
 
 .prose {
-  /* 正文行长：中文长文 68ch 是硬约束（超过就跳行） */
+  /* 正文行长：走语言感知令牌。
+     🔴 0.8.9 修（外部审计 P0-1b 发现）：原来这里硬写 `max-width: 68ch`，
+        而 68ch 是 tokens.css 里**拉丁语系**那一档的值
+        （中文下 --measure-prose 是 34em，拉丁下才是 68ch）
+        ⇒ 中文读者拿到的是拉丁的行宽，正文一行太长，扫视吃力。
+        ⇒ measure-gate 把扫描范围从 *.html 扩到 *.css 之后
+           才第一次看见这处硬写。 */
   max-width: var(--measure-prose);
   color: var(--text-primary);
 }
@@ -340,7 +1240,7 @@
 /* ---------------------------------------------------------------- 列表
    CommonMark 的嵌套列表是 <li> 内直接嵌 <ul>，靠缩进表达层级。 */
 .prose > ul,
-.prose > ol { padding-left: 1.5em; margin: 0; }
+.prose > ol { padding-inline-start: 1.5em; margin: 0; }
 .prose > ul { list-style: disc; }
 .prose > ol { list-style: decimal; }
 .prose li + li { margin-top: var(--sp-2); }
@@ -350,10 +1250,18 @@
 
 /* ---------------------------------------------------------------- 引用
    CommonMark 输出 <blockquote><p>…</p></blockquote> */
+/* 🔴 为什么这里**保留**竖条（0.8.4 · 全库竖条政策）
+   本库的整体立场是「去掉纯装饰的竖条」（见 typography.css / form-validation.css
+   各自的删除记录）：竖条在页面上拉出一条与内容无关的硬边。
+   ⇒ 但**引语与代码块是例外**，因为它们的竖条是**内容属性**、不是装饰：
+     · 引语 = "这是别人说的话" → 竖条是引用边界的视觉标记，
+       与学术排版的惯例一致，读者已经建立这个预期
+     · 代码块 = "这是原文"→ 同理，与 Markdown/Pandoc 的渲染结果一致
+   去掉它们，用户反而要靠缩进去猜"这段是引的还是正文"。*/
 .prose > blockquote {
   margin: var(--sp-5) 0;
   padding: 0 0 0 var(--sp-4);
-  border-left: 3px solid var(--accent);
+  border-inline-start: 3px solid var(--accent);
 }
 .prose > blockquote > p {
   color: var(--text-secondary);
@@ -366,11 +1274,13 @@
 /* ---------------------------------------------------------------- 代码块
    两种都输出 <pre><code>；围栏的带 class="language-xxx"，缩进的不带。
    🔴 不给缩进代码块硬加 class —— 规范说它没有。 */
+/* 🔴 同上：代码块保留竖条的理由见上方 .prose > blockquote 的注释
+   （竖条在这里表示"这是原文"，属内容标记而非装饰）。*/
 .prose > pre {
   margin: 0;
   padding: var(--sp-4);
   background: var(--surface-sunken);
-  border-left: 3px solid var(--border-decor-str);
+  border-inline-start: 3px solid var(--border-decor-str);
   border-radius: 0 var(--r-sm) var(--r-sm) 0;
   overflow-x: auto;
   font-family: var(--mono);
@@ -380,7 +1290,8 @@
   -webkit-overflow-scrolling: touch;
 }
 /* 缩进代码块没有左边框语言标记，给个更淡的，暗示"这是次要代码" */
-.prose > pre:not([class]) { border-left-color: var(--border-decor); }
+/* 🔴 逻辑属性：与上面 .prose > pre 的 border-inline-start 同侧。 */
+.prose > pre:not([class]) { border-inline-start-color: var(--border-decor); }
 
 /* ---------------------------------------------------------------- 表格（GFM）
    🔴 必须是 <table>，不能用 div 模拟 —— div 会让屏幕阅读器读不出行列关系。 */
@@ -392,7 +1303,7 @@
 }
 .prose > table th,
 .prose > table td {
-  text-align: left;
+  text-align: start;
   padding: var(--sp-2) var(--sp-4) var(--sp-2) 0;
   border-bottom: 1px solid var(--border-decor);
   vertical-align: top;
@@ -412,7 +1323,19 @@
   height: 0;                /* 🔴 hr 默认有 inset 边框，必须清掉 */
 }
 
-.prose > img {
+/* 🔴 必须是**后代**选择器，不是 `> img` —— 和下面 `.prose a` 同一条教训。
+ *
+ *   Markdown / CommonMark 渲染图片出来是 `<p><img></p>`，图片的父节点是 `<p>`，
+ *   不是 `.prose` 的直接子代 ⇒ `> img` **一条都匹配不上**，
+ *   于是 `max-width:100%` 从未生效。
+ *   实测（外部审计 F1）：`04-recipes/longform/content.html` 里
+ *   `<p><img width="600">`，375px 溢出 246px、320px 溢出 301px。
+ *   对"给用户和 AI 照抄的配方页"来说，这个缺陷会被原样复制出去。
+ *
+ *   `> a` → `a` 早在 0.9 就踩过一次（段落里的链接落到浏览器默认蓝，
+ *   暗色对比度 1.91:1）。同一个坑换了标签又踩一次，所以这次把范围写宽：
+ *   正文里任何位置的图片都受同一条约束。 */
+.prose img {
   max-width: 100%;
   height: auto;
   display: block;
@@ -420,14 +1343,19 @@
      这条由 viewport.py 门禁检查，本 CSS 不兜底 */
   border-radius: var(--r-sm);
 }
-.prose > a {
+/* 🔴 必须是**后代**选择器，不是 `> a`：正文链接几乎都在 `<p>` 里，
+   `> a` 只覆盖直接子链接 ⇒ 段落里的链接落到浏览器默认蓝，
+   暗色下对比度 1.91:1（`dark-contrast` 实测抓到）。 */
+.prose a {
   color: var(--accent);
   text-decoration: underline;
   text-underline-offset: 2px;
   text-decoration-thickness: 1px;
 }
-.prose > a:hover { color: var(--text-primary); }
-.prose > a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) {
+.prose a:hover { color: var(--text-primary); }
+}
+.prose a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* 外链可访问性：新窗口打开必须告知 */
 .prose > a[target="_blank"]::after {
@@ -449,9 +1377,9 @@
 /* GFM 任务列表
    CommonMark 核心不产出这个，GFM 扩展才有：
    <li class="task-list-item"><input type="checkbox" disabled> … */
-.prose .task-list-item { list-style: none; margin-left: -1.5em; }
+.prose .task-list-item { list-style: none; margin-inline-start: -1.5em; }
 .prose .task-list-item input[type="checkbox"] {
-  margin-right: var(--sp-2);
+  margin-inline-end: var(--sp-2);
   vertical-align: middle;
 }
 .prose .task-list-item input[disabled] {
@@ -490,6 +1418,28 @@
       代码块每行都会带上边框和底色。
    ========================================================================= */
 
+/* ============================================================================
+   链接
+   ============================================================================
+   暗色下浏览器默认链接蓝只有 1.91:1，几乎看不见 ⇒ 需要设 color。
+
+   🔴🔴 但**必须限定作用域**，不能写裸 `a {}`
+      裸标签选择器会命中**宿主页面的每一个链接** ——
+      也就是说：使用者引入本库后，自己站点所有 <a> 的颜色都会被改掉。
+      这正是「改一处、全库变样」的污染源之一。
+
+      正解：挂到本组件自己的根选择器上。作用域与组件一致，组件外完全不受影响。
+
+   🔴 修：这里原写 `.content a`，而本组件根类是 **`.prose`** ——
+     `.content` 全库 0 处出现 ⇒ 整段是死规则，而注释还写着它是根类。
+     文档说一套、代码是另一套 ⇒ "链接已处理"这个判断一直是假的。
+   ============================================================================ */
+.prose a:visited {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 body {
   margin: 0;
   background: var(--paper);
@@ -500,41 +1450,6 @@ body {
   -webkit-text-size-adjust: 100%;
 }
 .wrap { max-width: 72ch; margin: 0 auto; padding: var(--sp-7) var(--sp-5) var(--sp-8); }
-
-/* 🔴 暗色模式 —— 与 01-tokens/tokens.css 同步。
-   精简档 单文件不外链 CSS，所以色板必须内联一份副本。
-   由 tokens.css 同步而来，**不要手改**（contrast.py 会查漂移）。*/
-@media (prefers-color-scheme: dark) {
-  :root {
-  --paper
-  --surface
-  --surface-sunken
-  --text-primary
-  --text-secondary
-  --text-tertiary
-  --text-on-accent
-  --border-control
-  --border-decor
-  --border-decor-str
-  --danger
-  --success
-  --warning
-  --info
-  --accent
-  --accent-hover
-  --accent-soft
-  --danger-bg
-  --success-bg
-  --warning-bg
-  --info-bg
-  }
-}
-
-  /* 🔴 补（ H2a 的暗色门禁抓出来的）：
-     本页**没有给 <a> 设 color** ⇒ 浏览器默认链接蓝 rgb(0,0,238)
-     ⇒ 暗色底上只有 1.91:1，几乎看不见 ⇒ 走令牌，暗色自动跟随。 */
-  a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
-  a:visited { color: var(--accent); }
 </style>
 </head>
 <body>
@@ -591,7 +1506,7 @@ body {
 </blockquote>
 <h2>复现</h2>
 <p>工具链的成熟度足以支撑一次完整考古：</p>
-<pre><code class="language-python"># 不是原文，是按手册重述的伪代码
+<pre tabindex="0"><code class="language-python"># 不是原文，是按手册重述的伪代码
 if computer_overload():
     issue(1202)                  # 告警编号写入 AGC 计数区
     # 不停机：停机会丢掉姿态信息，地面将失去唯一的实时数据源

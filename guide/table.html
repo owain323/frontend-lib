@@ -39,7 +39,7 @@
     <article class="g-doc">
 <p>一套表格基础 + 三种用途预设。<strong>数字怎么显示由列定义决定</strong>，不由数值大小猜测。</p>
 <h2 id="s2">文件<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="文件"><table>
 <thead><tr>
 <th>文件</th><th>说明</th>
 </tr></thead>
@@ -51,7 +51,7 @@
 </table></div>
 <p>无 JS 依赖：所有交互逻辑在示例页里演示，组件本身是纯 CSS。</p>
 <h2 id="s3">三种预设<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="三种预设"><table>
 <thead><tr>
 <th>预设</th><th>用于</th><th>关键差异</th>
 </tr></thead>
@@ -75,7 +75,7 @@
   { key: 'change',    label: '同比',     format: 'signed-percent', precision: 1 },
   { key: 'temp',      label: '温度',     format: 'decimal',        precision: 2, unit: '°C' }
 ];</code></pre>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="列定义（示例页里的用法）"><table>
 <thead><tr>
 <th><code>format</code></th><th>输入 → 显示</th><th>正数加 <code>+</code>？</th>
 </tr></thead>
@@ -91,6 +91,12 @@
 <p>两条硬规则：</p>
 <ol><li><strong>不按数值大小推断语义</strong>。<code>0.25</code> 是比例还是普通测量值，只能由列定义说，不能靠「小于 1 就乘以 100」。示例页第 4 节就是这条的自证。</li><li><strong>正负号只按列语义</strong>。营收、成本、毛利率这类「量」的正数<strong>没有</strong> <code>+</code>；只有 <code>signed-*</code>（同比/变化量）才加。负数一律用真减号 <code>−</code>（不是连字符 <code>-</code>）。</li></ol>
 <h2 id="s6">无障碍<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
+<ul><li><strong>滚动容器必须能用键盘进入。</strong> <code>.table</code> 是 <code>overflow:auto</code> 的二维滚动区域，窄屏下会横向滚动；<strong>纯 CSS 无法让它被 Tab 到</strong>，必须在标记上给入口：</li></ul>
+<pre class="code" tabindex="0"><code class="language-html">  &lt;div class=&quot;table table--financial&quot; tabindex=&quot;0&quot; role=&quot;region&quot; aria-label=&quot;A 股样例数据&quot;&gt;
+    &lt;table&gt;…&lt;/table&gt;
+  &lt;/div&gt;</code></pre>
+<p>三个属性缺一不可：<code>tabindex=&quot;0&quot;</code>（进 Tab 序列）、<code>role=&quot;region&quot;</code>（成为可命名地标）、 <code>aria-label</code>（读屏要念出&quot;这是什么表&quot;）。少了它们的后果是：只用键盘的用户和部分读屏用户<strong>看不到超出可视区的列</strong>（WCAG 2.1.1）。</p>
+<blockquote><p>这条由两道门禁守着：<code>table-check.js</code> ⑮ 在 320px 下逐个量「会滚的容器有没有入口」，<br><code>a11y-scan.js</code> 在同一个页面上补跑 320px 的 <code>scrollable-region-focusable</code>。<br>桌面宽（1280）下表格不溢出，那条 axe 规则根本不会触发 —— 所以窄屏必须单独判。<br>⚠️ 只有<strong>真的会滚</strong>的容器需要 <code>tabindex</code>；不滚的容器加上去只是多一个空的 Tab 停靠点。</p></blockquote>
 <ul><li>数据表用 <code>&lt;th scope=&quot;col&quot;&gt;</code> / <code>&lt;th scope=&quot;row&quot;&gt;</code>；多级表头第一层用 <code>scope=&quot;colgroup&quot;</code>。复杂表格可用 <code>id</code> + <code>headers</code> 建立显式关联（本示例未用到，但结构支持）。</li><li>排序状态放在 <code>&lt;th aria-sort=&quot;ascending|descending&quot;&gt;</code>，<strong>不是</strong>放在按钮上。</li><li>正负<strong>不只靠颜色</strong>：颜色之外还有 <code>+</code> / <code>−</code> 符号（WCAG 1.4.1）。</li><li>粘性表头的 <code>z-index</code> 走令牌；<code>border-collapse: separate</code> 是 sticky 生效的前提。</li></ul>
 <h2 id="s7">已知限制<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
 <ul><li>不做虚拟滚动。行数上限交给调用方（&gt; 200 行请配合分页）。</li><li>排序 / 筛选 / 分页行为<strong>不与样式层捆绑</strong> —— 需要时由调用方接自己的数据层。</li><li>单位默认标在<strong>列头</strong>，不是每格重复（一列 20 个「万元」只会增加噪音）。若某列确需逐格带单位，调用方自行在格式化时拼接。</li></ul>
@@ -98,7 +104,7 @@
 <pre class="code" tabindex="0"><code>✅ 抗拉强度 (MPa)     伸长率 (%)     时效 (100 °C)
 ❌ 抗拉强度 MPa       伸长率 %       时效 100 °C</code></pre>
 <p><strong>这不是审美选择，是学科规范要求</strong>，五处权威口径一致：</p>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="🔴 单位的写法：列名 +（单位），括号不能省"><table>
 <thead><tr>
 <th>来源</th><th>要求</th>
 </tr></thead>
@@ -118,7 +124,7 @@
 <pre class="code" tabindex="0"><code class="language-bash">python -m http.server 8000
 # http://127.0.0.1:8000/04-recipes/table/demo.html</code></pre>
 <h2 id="s11">配色：与本库 <code>list</code> 的约定<strong>不同</strong>（故意的，不是笔误）<a class="anchor" href="#s11" aria-label="本节直链">#</a></h2>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="配色：与本库 list 的约定不同（故意的，不是笔误）"><table>
 <thead><tr>
 <th>组件</th><th>类名</th><th>约定</th>
 </tr></thead>
@@ -135,7 +141,7 @@
 <pre class="code" tabindex="0"><code class="language-html">&lt;td class=&quot;num&quot;&gt;&lt;span class=&quot;delta delta--up&quot;&gt;3.21%&lt;/span&gt;&lt;/td&gt;
 &lt;td class=&quot;num&quot;&gt;&lt;span class=&quot;delta delta--down&quot;&gt;1.05%&lt;/span&gt;&lt;/td&gt;
 &lt;td class=&quot;num&quot;&gt;&lt;span class=&quot;delta delta--flat&quot;&gt;0.00%&lt;/span&gt;&lt;/td&gt;</code></pre>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="涨跌幅放进表格：解题方式（0.12.1 已定）"><table>
 <thead><tr>
 <th></th><th><code>num--pos</code> / <code>num--neg</code></th><th>嵌 <code>delta</code></th>
 </tr></thead>

@@ -221,7 +221,7 @@ def is_sep_row(line):
     return '-' in line and line.count('|') >= 2 or (line.strip().startswith('|') and '---' in line)
 
 
-def render_table(rows, resolve_link):
+def render_table(rows, resolve_link, section=''):
     head, aligns = rows[0], []
     for cell in rows[1]:
         c = cell.strip()
@@ -238,7 +238,16 @@ def render_table(rows, resolve_link):
         cls = ' class="ta-%s"' % al if al != 'left' else ''
         return '<%s%s>%s</%s>' % (tag, cls, inline(text, resolve_link), tag)
 
-    out = ['<div class="table"><table>', '<thead><tr>']
+    # 🔴 表格外层是 overflow:auto 的二维滚动容器（`.table`）——
+    #   窄屏下它会横向滚动，而**纯 CSS 无法让它被键盘进入**（WCAG 2.1.1）。
+    #   外部审计 F13 实测：375px 下 axe `scrollable-region-focusable` 命中 4 处，
+    #   而 a11y 门禁固定 1280×900，那个宽度不溢出 ⇒ 一直绿。
+    #   ⇒ 生成时统一带上 tabindex / role / 可访问名；名字取**所在小节标题**，
+    #     没有标题时退到"表格"。不要在 40+ 个页面里手写第二遍。
+    label = (section or '').strip() or '表格'
+    label = label.replace('"', '\"')[:60]
+    out = ['<div class="table" tabindex="0" role="region" '
+           'aria-label="%s"><table>' % label, '<thead><tr>']
     out.append(''.join(cell('th', c, i) for i, c in enumerate(head)))
     out.append('</tr></thead>')
     if body:
@@ -329,11 +338,14 @@ def md_to_html(text, resolve_link=None, on_heading=None):
     out, heads = [], []
     i, n = 0, len(lines)
     sec = [0]
+    last_section = ['']   # 最近一个 h2/h3 的纯文本 —— 给表格的可访问名用
 
     def emit_heading(level, raw):
         sec[0] += 1
         hid = 's%d' % sec[0]
         txt = inline(raw, resolve_link)
+        if level >= 2:
+            last_section[0] = re.sub(r'<[^>]+>', '', txt).strip()
         if on_heading and level >= 2:
             on_heading(level, re.sub(r'<[^>]+>', '', txt), hid)
         if level == 1:
@@ -382,7 +394,7 @@ def md_to_html(text, resolve_link=None, on_heading=None):
             while i < n and lines[i].strip().startswith('|'):
                 rows.append(split_row(lines[i].strip()))
                 i += 1
-            out.append(render_table(rows, resolve_link))
+            out.append(render_table(rows, resolve_link, last_section[0]))
             continue
 
         if stripped.startswith('>'):

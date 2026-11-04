@@ -78,39 +78,83 @@ const path = require('path');
  *   直接把「星号 +斜杠」写进注释，会提前闭合块注释，
  *   把后面的代码全变成注释 ⇒ SyntaxError。实测踩过。
  */
-const PW_VER = 'chromium-' + '*';
-const PLAYWRIGHT_GLOBS = [
-  // Linux（CI）
-  path.join(process.env.HOME || '/root', '.cache/ms-playwright',
-    PW_VER, 'chrome-linux/chrome'),
-  // Linux（新版命名）
-  path.join(process.env.HOME || '/root', '.cache/ms-playwright',
-    'chromium_headless_shell-' + '*', 'chrome-linux/headless_shell'),
-  // macOS
-  path.join(process.env.HOME || '', 'Library/Caches/ms-playwright',
-    PW_VER, 'chrome-mac/Chromium.app/Contents/MacOS/Chromium'),
+/* ⚠️ 下面这段注释里的「星号 + 斜杠」不能直接写，会提前闭合块注释 ⇒ SyntaxError。
+   实测踩过，所以这里只用文字描述：通配必须写成字符串拼接。 */
+const PW_ROOTS = (() => {
+  const h = require('os').homedir();
+  return [
+    /* Playwright 官方的覆盖口子：装了自定义位置就必须先认它 */
+    process.env.PLAYWRIGHT_BROWSERS_PATH,
+    /* 🔴 Windows：Playwright 把浏览器装在 %LOCALAPPDATA%\ms-playwright，
+       而 `~/.cache/ms-playwright` 在 Windows 上**根本不存在**。
+       外部审计 F5 的 Linux 环境命中的是目录布局变更，
+       这一条则是 Windows 上「一直没被认到」的独立原因 —— 两者都要修。 */
+    process.env.LOCALAPPDATA && path.join(process.env.LOCALAPPDATA, 'ms-playwright'),
+    path.join(h, '.cache/ms-playwright'),          // Linux
+    path.join(h, 'Library/Caches/ms-playwright'),  // macOS
+  ].filter(Boolean);
+})();
+
+/* Playwright 换过命名（chrome-linux → chrome-linux64；
+   headless_shell → chrome-headless-shell-<平台>/chrome-headless-shell）。
+   与其维护一张「已知布局表」（下次改名再坏一次），不如按**可执行文件名**
+   在 chromium* 目录下**有界递归**找 —— 布局怎么变都还能找到。
+   代价是可能认错文件，所以名字表只收 Playwright 实际会用到的这几个。 */
+const PW_EXE = [
+  'chrome', 'chrome.exe',
+  'chrome-headless-shell', 'chrome-headless-shell.exe',
+  'headless_shell', 'headless_shell.exe',
+  'Chromium', 'Google Chrome for Testing', 'Google Chrome for Testing.exe',
 ];
 
-/** 在 PLAYWRIGHT_GLOBS 里找真实存在的那个（'*' 需要展开） */
+function scanForExe(dir, depth) {
+  let names;
+  try { names = fsx.readdirSync(dir); } catch (e) { return null; }
+  /* 先看这一层的文件，再进子目录 —— 同层优先，避免一路钻到底 */
+  const dirs = [];
+  for (const n of names) {
+    const p = path.join(dir, n);
+    let st;
+    try { st = fsx.statSync(p); } catch (e) { continue; }
+    if (st.isDirectory()) { dirs.push(p); continue; }
+    if (PW_EXE.indexOf(n) !== -1) return p;
+  }
+  if (depth <= 0) return null;
+  for (const d of dirs) {
+    const hit = scanForExe(d, depth - 1);
+    if (hit) return hit;
+  }
+  return null;
+}
+
+/** 在 Playwright 缓存目录里找真实存在的浏览器（按文件名，不认布局） */
 function findPlaywrightChrome() {
-  const dir = require('os').homedir();
-  const roots = [
-    path.join(dir, '.cache/ms-playwright'),
-    path.join(dir, 'Library/Caches/ms-playwright'),
-  ];
-  for (const root of roots) {
+  for (const root of PW_ROOTS) {
     let entries;
     try { entries = fsx.readdirSync(root); } catch (e) { continue; }
-    for (const name of entries) {
-      if (!/^chromium/.test(name)) continue;
-      for (const rel of ['chrome-linux/chrome', 'chrome-mac/Chromium.app/Contents/MacOS/Chromium',
-        'chrome-linux/headless_shell', 'chrome-win/chrome.exe']) {
-        const p = path.join(root, name, ...rel.split('/'));
-        try { if (fsx.existsSync(p)) return p; } catch (e) { /* 继续找 */ }
-      }
+    /* 优先完整版 chromium-<版本>，其次 chromium_headless_shell-<版本>：
+       完整版能打印、能截图；headless shell 够打印但少些能力。 */
+    const names = entries.filter((n) => /^chromium/.test(n))
+      .sort((a, b) => (a.indexOf('headless') === -1 ? -1 : 1)
+        - (b.indexOf('headless') === -1 ? -1 : 1));
+    for (const name of names) {
+      /* 深度 4：macOS 的 .app 包是 <名>.app/Contents/MacOS/<可执行文件>，
+       比 Linux/Windows 多两层。2 层会漏掉它。 */
+      const hit = scanForExe(path.join(root, name), 4);
+      if (hit) return hit;
     }
   }
   return null;
+}
+
+/** Playwright 自己声明的路径 —— 最权威的一个来源，但它可能指向未安装的构建 */
+function playwrightExecutable() {
+  let pw;
+  try { pw = require('playwright'); } catch (e) { return null; }
+  try {
+    const p = pw.chromium.executablePath();
+    return (p && fsx.existsSync(p)) ? p : null;
+  } catch (e) { return null; }
 }
 
 const CANDIDATES = [
@@ -122,8 +166,11 @@ const CANDIDATES = [
   '/usr/bin/google-chrome',
   '/usr/bin/chromium',
   '/usr/bin/chromium-browser',
-  // CI 上 Playwright 装的 Chromium（含版本号目录）
-  PLAYWRIGHT_GLOBS.map((g) => g)[0],
+  /* CI 上 Playwright 装的那份 Chromium。
+     ⚠️ 放在**末尾**是有意的：开发机上系统 Chrome 优先 —— 现有视觉基线就是按它
+        录的，换浏览器会让像素基线整体漂移。CI 上没有系统 Chrome，自然落到这一条。
+     先问 Playwright 自己（最权威），再按文件名扫缓存目录（布局变了也能找到）。 */
+  playwrightExecutable(),
 ];
 const CHROME = CANDIDATES.find((p) => {
   if (!p) return false;
@@ -201,7 +248,8 @@ async function launchChromium(opts) {
       '找不到 Chrome/Chromium 可执行文件。\n' +
       '  已尝试：\n' +
       CANDIDATES.filter(Boolean).map((p) => '    ' + p).join('\n') + '\n' +
-      '  以及 Playwright 缓存目录：' + PLAYWRIGHT_GLOBS.join('\n    ') + '\n' +
+      '  以及 Playwright 缓存目录：' + PW_ROOTS.join('\n    ') + '\n' +
+      '  （在这些目录下的 chromium* 里按可执行文件名递归找过，没找到）\n' +
       '  ⇒ 装一个：npx playwright install --with-deps chromium\n' +
       '  或设CHROME_PATH 指向已有的可执行文件。');
   }
@@ -388,4 +436,9 @@ async function withPage(vp, fn) {
   }
 }
 
-module.exports = { launch, newPage, withPage, CHROME, engineOf, ENGINES: ['chromium', 'webkit', 'firefox'] };
+/* findPlaywrightChrome / PW_ROOTS 也导出：**只为可测性**。
+   浏览器发现这段逻辑原来的问题恰恰是"只在恰好装了浏览器的那台机器上能验" ——
+   导出之后，`chrome-discovery-gate.js` 能用假目录树在任意机器上验它。 */
+module.exports = { launch, newPage, withPage, CHROME, engineOf,
+  findPlaywrightChrome, PW_ROOTS,
+  ENGINES: ['chromium', 'webkit', 'firefox'] };

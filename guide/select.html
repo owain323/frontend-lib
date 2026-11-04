@@ -39,7 +39,7 @@
     <article class="g-doc">
 <p>依据 <strong>APG（ARIA Authoring Practices）Select-Only Combobox</strong> 模式。</p>
 <h2 id="s2">⭐ 什么场景用、什么场景别用<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="⭐ 什么场景用、什么场景别用"><table>
 <thead><tr>
 <th>场景</th><th>用什么</th>
 </tr></thead>
@@ -63,7 +63,7 @@
     &lt;/li&gt;
   &lt;/ul&gt;
 &lt;/div&gt;</code></pre>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="结构"><table>
 <thead><tr>
 <th>部件</th><th>说明</th>
 </tr></thead>
@@ -79,7 +79,7 @@
 <p>⚠️ <code>id</code> 可以不写，<code>create()</code> 会自动补<code>select-list-N</code>。</p>
 <h2 id="s4">启用<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
 <pre class="code" tabindex="0"><code class="language-js">const sel = Select.create(元素, { multiple: false, value: 'b', label: '选项' });</code></pre>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="启用"><table>
 <thead><tr>
 <th>参数</th><th>说明</th>
 </tr></thead>
@@ -90,7 +90,7 @@
 </tbody>
 </table></div>
 <h2 id="s5">🔴 APG 的键盘契约（三条最容易漏）<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="🔴 APG 的键盘契约（三条最容易漏）"><table>
 <thead><tr>
 <th>键</th><th>行为</th>
 </tr></thead>
@@ -127,7 +127,7 @@ sel.destroy()      // 摘掉 keydown/click/dismissable/typeahead，删掉自己�
 <p>它不是在这里实现的，而是<strong>接线</strong>到共享微行为核 <code>01-tokens/behavior/typeahead.js</code>（<code>BEHAVIOR INJECT: typeahead</code> 段）—— <code>tabs</code> / <code>tree</code> 等也接同一份，所以各组件只有一半接线代码，不是各抄一遍规则。</p>
 <p>⚠️ 已知盲点（实测结论，记在 <code>select-check.js</code> 里）：把 <code>typeahead.type(k)</code> 那行接线删掉，门禁<strong>会红</strong>；但把 <code>close()</code> 里的 <code>typeahead.clear()</code> 删掉，<strong>守不住</strong>。 ⇒ 这类&quot;接线&quot;类缺陷目前只能靠人读，别把门禁绿当成&quot;接线全对&quot;。</p>
 <h2 id="s9">成熟度：beta（两条行为债，如实列出）<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="成熟度：beta（两条行为债，如实列出）"><table>
 <thead><tr>
 <th>债</th><th>现在的后果</th>
 </tr></thead>

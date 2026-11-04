@@ -37,7 +37,7 @@
     <ul class="g-meta"><li><a href="../03-patterns/nav/demo.html"><code>03-patterns/nav/demo.html</code></a></li><li><a href="../03-patterns/nav/nav.css"><code>03-patterns/nav/nav.css</code></a></li><li><a href="../03-patterns/nav/nav.js"><code>03-patterns/nav/nav.js</code></a></li><li><a href="../03-patterns/nav/toc.js"><code>03-patterns/nav/toc.js</code></a></li></ul>
 <figure class="g-live"><figcaption class="g-live__cap"><span class="g-live__tag">在这页里直接跑</span>下面是 nav —— 页头 / 目录 / 移动端抽屉 的真实示例页，全套状态都在里面；<a href="../03-patterns/nav/demo.html">单独打开</a>可以看到完整尺寸。</figcaption><iframe class="g-live__frame" src="../03-patterns/nav/demo.html" title="nav —— 页头 / 目录 / 移动端抽屉 的可运行示例" loading="lazy"></iframe></figure><script src="live.js" defer></script>
     <article class="g-doc">
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="表格"><table>
 <thead><tr>
 <th>字段</th><th>内容</th>
 </tr></thead>
@@ -52,7 +52,7 @@
 <hr>
 <h2 id="s2">一个目录，两个全局<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
 <p><code>nav/</code> 里有<strong>两个独立脚本、两个全局</strong>：</p>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="一个目录，两个全局"><table>
 <thead><tr>
 <th>文件</th><th>全局</th><th>形态</th><th>自动初始化</th>
 </tr></thead>
@@ -125,7 +125,7 @@
 <p>否则抽屉会留在打开状态，而桌面布局下 <code>nav__list</code> 是横排的—— 用户会看到一个&quot;开着但不对&quot;的菜单。</p>
 <hr>
 <h2 id="s19">三个无障碍细节<a class="anchor" href="#s19" aria-label="本节直链">#</a></h2>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="三个无障碍细节"><table>
 <thead><tr>
 <th>做法</th><th>原因</th>
 </tr></thead>
@@ -149,7 +149,7 @@
 <ul><li>❌ <strong>抽屉展开时动 <code>width</code> / <code>left</code> / <code>top</code></strong> —— 引起重排，页面抖</li><li>❌ <strong>抽屉打开后背景仍可 Tab / 可点</strong> —— 视觉是覆盖层，逻辑不是模态</li><li>❌ <strong>汉堡按钮小于 44px</strong> —— 触摸目标硬下限</li><li>❌ <strong>当前页指示用自定义 class 而非 <code>aria-current</code></strong> —— 屏幕阅读器不知道</li><li>❌ <strong>目录项允许换行</strong> —— 行高跳变，目录看着散</li><li>❌ <strong>没有 IntersectionObserver 就不做高亮</strong> —— 目录变成死链接</li><li>❌ <strong>跳过链接用 <code>display:none</code></strong> —— 移出 tab 顺序，键盘到不了</li><li>❌ <strong>页头 sticky 但没背景色</strong> —— 内容从下面透出来像重影</li></ul>
 <hr>
 <h2 id="s22">门禁<a class="anchor" href="#s22" aria-label="本节直链">#</a></h2>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="门禁"><table>
 <thead><tr>
 <th>项</th><th>能否机械检查</th>
 </tr></thead>

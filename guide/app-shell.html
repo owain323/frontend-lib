@@ -39,7 +39,7 @@
     <article class="g-doc">
 <blockquote><p>工具型页面的骨架：左边一列常驻导航、上面一条工具栏、右边是主区。<br>本库已有的四个 recipe 都是<strong>内容型</strong>版式（读 / 查 / 写 / 比），<br>缺的是<strong>工具型</strong>。</p></blockquote>
 <h2 id="s2">文件<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="文件"><table>
 <thead><tr>
 <th>文件</th><th>作用</th>
 </tr></thead>
@@ -117,7 +117,7 @@ min-height: 100dvh;   /* 正解 */</code></pre>
 <h3 id="s9">为什么不用 <code>03-patterns/nav</code><a class="anchor" href="#s9" aria-label="本节直链">#</a></h3>
 <p><code>nav.js</code> 做的是&quot;横排导航 → 全屏抽屉&quot;：它的列表<strong>常驻在文档里</strong>，抽屉和列表是同一个节点，只是移动位置。而这里的侧栏在窄屏是 <code>display: none</code>, 需要的是&quot;另建一份显示出来&quot; —— 生命周期正好相反（常驻 vs 即用即毁）。两者共用同一套核（<code>emit</code> / <code>focus-return</code> / <code>dismissable</code>），只是不共用外壳。</p>
 <h2 id="s10">变体<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="变体"><table>
 <thead><tr>
 <th>类</th><th>效果</th><th>用在哪</th>
 </tr></thead>
@@ -152,7 +152,7 @@ min-height: 100dvh;   /* 正解 */</code></pre>
 <p><code>.shell__side-group + .shell__side-group</code> 那条规则本来就是为&quot;无标签分组&quot;准备的。 rail 下硬塞一个 <code>.shell__side-label</code> 会被 CSS 藏掉（兜底，防止它折行挤散图标），但那段标记从此永远不会被看见、也不会被维护 —— 所以门禁 <code>H3</code> 判的是「rail 实例里<strong>不许出现</strong> <code>.shell__side-label</code>」，比 CSS 的容错更严。</p>
 <p>门禁：<code>H1</code> 名字来自可见文字、<code>H2</code> 品牌两段、<code>H3</code> 分组不用标签 —— 三条都落在<strong>demo 页的真实 DOM</strong> 上，不只看 fixture （教训：F12/F13/F14 验的是 fixture，而 demo 当时教的是相反写法，46 条全绿）。</p>
 <h2 id="s13">令牌<a class="anchor" href="#s13" aria-label="本节直链">#</a></h2>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="令牌"><table>
 <thead><tr>
 <th>变量</th><th>默认</th><th>说明</th>
 </tr></thead>

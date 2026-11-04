@@ -59,7 +59,7 @@
 | 表单校验 | `03-patterns/form-validation/form-validation.css` | 274 | — | 提交前要校验就要 |
 | 列表增删 | `03-patterns/list/list.css` | 162 | 可选 201 (`flip.js`，FLIP 增删动画，纯增强) | 列表会动态增删就要 |
 | 导航 / 目录 | `03-patterns/nav/nav.css` | 314 | **必需 425** (`nav.js`) · 可选 111 (`toc.js`，自动生成目录，纯增强) | 顶部要导航，或长文要目录就要 |
-| 长文排版 | `03-patterns/content/content.css` | 286 | — | 写文档 / 长文就要 |
+| 长文排版 | `03-patterns/content/content.css` | 298 | — | 写文档 / 长文就要 |
 | delta | `02-primitives/delta/delta.css` | 113 | — |  |
 | metric | `02-primitives/metric/metric.css` | 157 | — |  |
 | timeline | `02-primitives/timeline/timeline.css` | 152 | — | 有一串按时间排的事件（公告 / 大事记 / 版本记录）就要 |

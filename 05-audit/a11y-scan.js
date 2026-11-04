@@ -161,6 +161,30 @@ if (PAGES.length === 0) {
       };
     });
     totalV += r.violations.length;
+    /* 🔴 窄屏补扫（2026-11-04 · 外部审计 F13）
+       本门禁固定 1280×900，而 `scrollable-region-focusable` 只在**容器真的溢出**时
+       才触发。表格、代码块在 1280 下不溢出 ⇒ 这条规则在这里**永远不会响**，
+       于是"桌面宽全绿"被读成"无障碍没问题"。
+       实测（审计环境）：375px 下 4 处、320px 下 5 处，全是 `.table` 滚动容器。
+
+       ⇒ 同一个**已加载**页面把视口压到 320 再跑一次，只跑这一条规则。
+         不重新导航（那样会让 40 页的扫描时间翻倍），只付一次 axe 调用的代价。
+       为什么不干脆把整个门禁改成窄屏：窄屏下另有一批规则（如 tap-target）
+       会大量误报，覆盖 1280 的语义是「桌面场景」，两者不该混成一次判定。 */
+    await page.setViewport({ width: 320, height: 640 });
+    await new Promise((res) => setTimeout(res, 150));
+    const narrow = await page.evaluate(async () => {
+      const res2 = await window.axe.run(document, {
+        runOnly: { type: 'rule', values: ['scrollable-region-focusable'] },
+      });
+      return res2.violations.map((v) => ({
+        id: v.id, impact: v.impact, help: v.help + '（320px 宽）',
+        n: v.nodes.length,
+        sample: v.nodes.slice(0, 2).map((x) => x.html.slice(0, 70)),
+      }));
+    });
+    r.violations = r.violations.concat(narrow);
+    totalV += narrow.length;
     totalPass += r.passes;
     const bad = r.violations.length;
     console.log('  [' + (bad ? 'FAIL' : 'OK  ') + '] ' +

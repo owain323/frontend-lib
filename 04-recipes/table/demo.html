@@ -131,7 +131,7 @@
     <strong>空格子和 0 是两件事</strong>：空格子读者分不清"没有数据"还是"漏了"，
     0 会被当成真实数值参与心算。
   </p>
-  <div class="table table--compact">
+  <div class="table table--compact" tabindex="0" role="region" aria-label="银行对账明细">
     <table>
       <caption class="table__cap">表 G · 银行对账明细（示例，含缺失值）</caption>
       <thead>
@@ -353,7 +353,7 @@
       });
     }
 
-    var h = '<div class="table table--financial"><table>' +
+    var h = '<div class="table table--financial" tabindex="0" role="region" aria-label="A 股样例数据"><table>' +
       '<caption class="table__cap">A 股样例数据（非真实财报，量级参照公开年报）· ' +
         '金额单位：万元 · 比率为比例值</caption>' +
       '<thead><tr>';
@@ -425,7 +425,7 @@
     { label: '时效 (150 °C)',  key: 'h150' }
   ];
 
-  var a = '<div class="table table--academic"><table>' +
+  var a = '<div class="table table--academic" tabindex="0" role="region" aria-label="时效温度对铝合金拉伸性能的影响"><table>' +
     '<caption class="table__cap">表 1 · 不同时效温度下铝合金的拉伸性能（示例数据）</caption>' +
     '<thead><tr><th scope="col" rowspan="2">合金牌号</th>';
   GROUPS.forEach(function (g) {
@@ -472,7 +472,7 @@
     return fixed(p, 3).replace(/^0\./, '.');
   }
 
-  var s = '<div class="table table--stats"><table>' +
+  var s = '<div class="table table--stats" tabindex="0" role="region" aria-label="OLS 估计结果"><table>' +
     '<caption class="table__cap">表 2 · 处理效应的 OLS 估计（示例数据，n = 412）</caption>' +
     '<thead><tr>' +
     '<th scope="col">项</th>' +
@@ -512,7 +512,7 @@
       why: '缺失 ⇒ 显示 —，不是 0，也不带符号' }
   ];
 
-  var p = '<div class="table"><table>' +
+  var p = '<div class="table" tabindex="0" role="region" aria-label="同一个数在不同列定义下的显示"><table>' +
     '<caption class="table__cap">同一个数、不同的列定义 ⇒ 不同的显示</caption>' +
     '<thead><tr><th scope="col">列定义</th><th scope="col">输入</th>' +
     '<th scope="col">渲染结果</th><th scope="col">为什么</th></tr></thead><tbody>';
@@ -547,7 +547,7 @@
       expect: '显示为字面字符' }
   ];
 
-  var e2 = '<div class="table"><table>' +
+  var e2 = '<div class="table" tabindex="0" role="region" aria-label="转义演示：动态文本按文本渲染"><table>' +
     '<caption class="table__cap">动态文本按**文本**渲染，不当 HTML 解释</caption>' +
     '<thead><tr><th scope="col">列定义</th><th scope="col">原始数据</th>' +
     '<th scope="col">渲染结果</th><th scope="col">验收点</th></tr></thead><tbody>';

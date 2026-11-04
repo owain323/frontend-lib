@@ -40,7 +40,7 @@
 <p>这不是态度声明，是可以被机器验证的：登记册在 <code>ai/deprecations.json</code>，本文的两个表格由 <code>05-audit/deprecation-doc-gate.py</code> 与登记册<strong>双向比对</strong> —— 少写一行、多写一行、版本号写错一个数字，门禁都红。</p>
 <hr>
 <h2 id="s2">一 · 你会遇到的两件事<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="一 · 你会遇到的两件事"><table>
 <thead><tr>
 <th>现象</th><th>含义</th><th>你该做什么</th>
 </tr></thead>
@@ -54,7 +54,7 @@
 <h2 id="s3">二 · 迁移窗口有多长<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
 <p><strong>至少跨一个次版本。</strong></p>
 <p>具体说：<code>0.7.x</code> 里标为弃用的名字，最早到 <code>0.8.0</code> 才允许从代码里消失。同一次版本内的修订号<strong>不算窗口</strong> —— 本库一天可能发好几个修订号，用「修订号个数」当窗口等于没有窗口。</p>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="二 · 迁移窗口有多长"><table>
 <thead><tr>
 <th>你看到的</th><th>它意味着</th>
 </tr></thead>
@@ -67,7 +67,7 @@
 <hr>
 <h2 id="s4">三 · 现在登记在案的<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
 <h3 id="s5">表 A · 迁窗中（还能用，但有截止版本）<a class="anchor" href="#s5" aria-label="本节直链">#</a></h3>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="表 A · 迁窗中（还能用，但有截止版本）"><table>
 <thead><tr>
 <th>名字</th><th>类型</th><th>弃用于</th><th>最早移除于</th><th>替代</th><th>说明</th>
 </tr></thead>
@@ -77,7 +77,7 @@
 </table></div>
 <blockquote><p>这张表是<strong>空的</strong>，而且它是真的空 —— 不是&quot;还没整理&quot;。<br>上一个走完流程的名字是 <code>state--delayed</code>，它已经按承诺在 <code>0.8.0</code> 消失，<br>所以现在躺在表 B 里。</p></blockquote>
 <h3 id="s6">表 B · 已移除<a class="anchor" href="#s6" aria-label="本节直链">#</a></h3>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="表 B · 已移除"><table>
 <thead><tr>
 <th>名字</th><th>类型</th><th>移除于</th><th>替代</th><th>说明</th>
 </tr></thead>
@@ -89,7 +89,7 @@
 <hr>
 <h2 id="s7">四 · 我们管得住哪些名字，管不住哪些<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
 <p>名字分四类进基线。每类的取法都写在 <code>05-audit/deprecation-gate.py</code> 文件头，这里只说你该关心什么：</p>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="四 · 我们管得住哪些名字，管不住哪些"><table>
 <thead><tr>
 <th>类型</th><th>例子</th><th>抓得到</th><th>抓不到</th>
 </tr></thead>

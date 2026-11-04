@@ -65,6 +65,23 @@ var COLS = [
 
 ## 无障碍
 
+- **滚动容器必须能用键盘进入。** `.table` 是 `overflow:auto` 的二维滚动区域，
+  窄屏下会横向滚动；**纯 CSS 无法让它被 Tab 到**，必须在标记上给入口：
+
+  ```html
+  <div class="table table--financial" tabindex="0" role="region" aria-label="A 股样例数据">
+    <table>…</table>
+  </div>
+  ```
+
+  三个属性缺一不可：`tabindex="0"`（进 Tab 序列）、`role="region"`（成为可命名地标）、
+  `aria-label`（读屏要念出"这是什么表"）。少了它们的后果是：只用键盘的用户
+  和部分读屏用户**看不到超出可视区的列**（WCAG 2.1.1）。
+  > 这条由两道门禁守着：`table-check.js` ⑮ 在 320px 下逐个量「会滚的容器有没有入口」，
+  > `a11y-scan.js` 在同一个页面上补跑 320px 的 `scrollable-region-focusable`。
+  > 桌面宽（1280）下表格不溢出，那条 axe 规则根本不会触发 —— 所以窄屏必须单独判。
+  > ⚠️ 只有**真的会滚**的容器需要 `tabindex`；不滚的容器加上去只是多一个空的 Tab 停靠点。
+
 - 数据表用 `<th scope="col">` / `<th scope="row">`；多级表头第一层用 `scope="colgroup"`。
   复杂表格可用 `id` + `headers` 建立显式关联（本示例未用到，但结构支持）。
 - 排序状态放在 `<th aria-sort="ascending|descending">`，**不是**放在按钮上。

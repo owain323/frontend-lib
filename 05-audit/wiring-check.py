@@ -181,6 +181,13 @@ def main():
         #   各报一次 —— 那三处是**讲解用的代码块**，页面上并不会运行。
         #   ⚠️ 这与"注释里提不算"是同一条原则：判据对象是**会执行的结构**，
         #      不是文本里出现过的字样。
+        # 🔴 去掉 <style>：CSS 选择器不是接线。
+        #   实测（2026-11-04）：content.html 重新内联**当前** tokens.css 之后，
+        #   里面有 `[role="tab"]`、`.accordion__trigger` 这类选择器规则，
+        #   于是被判成「用了 role=tab / accordion__trigger 但没引对应 JS」。
+        #   判据对象是**会执行的结构**：样式表里的选择器一行 JS 也不执行。
+        #   ⚠️ 只剥内联 <style>，不剥外链 <link>：那由别的判据管。
+        body = re.sub(r'<style\b.*?</style>', '', body, flags=re.S)
         body = re.sub(r'<pre\b.*?</pre>', '', body, flags=re.S)
         # 行内代码同理：README 表格里写 `<code>data-accordion</code>` 是**名词**，
         # 不是要跑的结构。实测去掉 <pre> 之后仍剩 guide/accordion 与

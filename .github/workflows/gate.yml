@@ -93,6 +93,23 @@ jobs:
       - name: 按锁文件安装（验证 lockfile 真能装）
         run: npm ci
 
+      - name: 依赖审计（运行时 0 漏洞；开发链不允许 high 及以上）
+        # 外部审计 F3：仓库曾经带着 9 个 high + 1 个 moderate，全部在 devDependencies
+        # 链上（puppeteer-core@23 → @puppeteer/browsers → extract-zip / proxy-agent，
+        # 以及 chromium-bidi → zod）。生产用户不受影响，但 CI 与开发机受影响。
+        #
+        # 为什么要在这里加而不是放进 check-all：
+        #   npm audit 要联网，离线跑门禁时会假红；CI 一定联网，放这里最合适。
+        # 分两段判，语义不同：
+        #   ① 运行时依赖必须**零漏洞**（这一条是给使用者的承诺，任何级别都不接受）
+        #   ② 开发链只拦 high/critical —— moderate 可能是无法修的传递依赖，
+        #      把它也判红会逼着人加忽略名单，反而失去意义。
+        run: |
+          echo '--- 运行时依赖（--omit=dev）---'
+          npm audit --omit=dev --audit-level=low
+          echo '--- 含开发链（只拦 high 及以上）---'
+          npm audit --audit-level=high
+
       - name: 单元测试
         run: npm test
 

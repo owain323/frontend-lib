@@ -75,6 +75,35 @@ const DEFAULT_MARGIN = '18mm 15mm';
  *    **找不到就明确报错，不许静默降级**。
  *    漂移由 `05-audit/pdf-export-gate.js` 的 E8 交叉核对（两边都找到时必须是同一个文件）。
  */
+/* Playwright 实际会用到的可执行文件名。只收这几个 —— 名字表越宽，
+   越可能在缓存目录里认错文件（例如 README、脚本）。 */
+const PW_EXE = [
+  'chrome', 'chrome.exe',
+  'chrome-headless-shell', 'chrome-headless-shell.exe',
+  'headless_shell', 'headless_shell.exe',
+  'Chromium', 'Google Chrome for Testing', 'Google Chrome for Testing.exe',
+];
+
+/** 在 Playwright 的 chromium* 目录里按文件名找可执行文件（有界递归，depth 层） */
+function scanForExe(dir, depth) {
+  let names;
+  try { names = fs.readdirSync(dir); } catch (e) { return null; }
+  const dirs = [];
+  for (const n of names) {
+    const p = path.join(dir, n);
+    let st;
+    try { st = fs.statSync(p); } catch (e) { continue; }
+    if (st.isDirectory()) { dirs.push(p); continue; }
+    if (PW_EXE.indexOf(n) !== -1) return p;
+  }
+  if (depth <= 0) return null;
+  for (const d of dirs) {
+    const hit = scanForExe(d, depth - 1);
+    if (hit) return hit;
+  }
+  return null;
+}
+
 function chromeCandidates() {
   const out = [];
   if (process.env.AGENTCSS_CHROME) out.push(process.env.AGENTCSS_CHROME);
@@ -97,18 +126,28 @@ function chromeCandidates() {
     out.push('/usr/bin/google-chrome', '/usr/bin/google-chrome-stable',
       '/usr/bin/chromium', '/usr/bin/chromium-browser', '/snap/bin/chromium');
   }
-  /* CI 上没有系统 Chrome：Playwright 装的那份也得认，否则"能导出"只在开发机上成立 */
-  for (const root of [path.join(os.homedir(), '.cache/ms-playwright'),
-    path.join(os.homedir(), 'Library/Caches/ms-playwright')]) {
+  /* CI 上没有系统 Chrome：Playwright 装的那份也得认，否则"能导出"只在开发机上成立。
+     ⚠️ **不写死目录布局**。Playwright 改过两次命名：
+          chrome-linux/chrome        → chrome-linux64/chrome
+          chrome-linux/headless_shell → chrome-headless-shell-linux64/chrome-headless-shell
+        写死布局的结果就是"某天起突然 no-chrome"（外部审计 F5 实测：
+        干净环境里 `npm ci && npx playwright install chromium` 之后依然找不到）。
+        ⇒ 在 chromium* 目录下按**可执行文件名**有界递归找，布局怎么变都还能找到。
+     ⚠️ Windows 的根目录是 %LOCALAPPDATA%\ms-playwright —— `~/.cache` 在 Windows 上不存在。 */
+  const roots = [
+    process.env.PLAYWRIGHT_BROWSERS_PATH,
+    process.env.LOCALAPPDATA && path.join(process.env.LOCALAPPDATA, 'ms-playwright'),
+    path.join(os.homedir(), '.cache/ms-playwright'),
+    path.join(os.homedir(), 'Library/Caches/ms-playwright'),
+  ].filter(Boolean);
+  for (const root of roots) {
     let names;
     try { names = fs.readdirSync(root); } catch (e) { continue; }
     for (const n of names) {
       if (!/^chromium/.test(n)) continue;
-      for (const rel of ['chrome-linux/chrome',
-        'chrome-mac/Chromium.app/Contents/MacOS/Chromium',
-        'chrome-win/chrome.exe', 'chrome-linux/headless_shell']) {
-        out.push(path.join(root, n, ...rel.split('/')));
-      }
+      /* 深度 4：macOS 的 .app 包多两层（见 browser.js 同一处注释） */
+      const hit = scanForExe(path.join(root, n), 4);
+      if (hit) out.push(hit);
     }
   }
   return out.filter(Boolean);
@@ -351,4 +390,7 @@ function overBudgetMessage(got, budget, spec, margin, out, box, injected) {
 module.exports = {
   exportPdf, resolveChrome, normalizeMargin, paperSpec, PAPERS,
   DEFAULT_PAPER, DEFAULT_MARGIN,
+  /* 只为可测性导出：浏览器发现逻辑必须在"没有系统 Chrome"的机器上也能被验证，
+     否则它只会在 CI 上坏、而开发机永远绿。 */
+  chromeCandidates,
 };

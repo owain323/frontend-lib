@@ -863,6 +863,14 @@ run "print-content-rev" node 05-audit/print-content-audit.js --selftest
 #   ⚠️ 它会起 6 次 Chrome（约 10s），**不依赖静态服务**（全走 file://）。
 run "pdf-export"     node 05-audit/pdf-export-gate.js
 run "pdf-export-rev" node 05-audit/pdf-export-gate.js --selftest
+# 🔴 chrome-discovery（2026-11-04 加 · 起因是外部审计 F5）
+#   浏览器发现写死了 Playwright 的旧目录布局（chrome-linux/chrome、chrome-win/chrome.exe），
+#   而新版是 chrome-linux64/chrome、chrome-headless-shell-<平台>/chrome-headless-shell；
+#   另外 Windows 上 Playwright 装在 %LOCALAPPDATA%，代码却只找 ~/.cache（那条路径在
+#   Windows 上不存在）。两种坏法在"装了系统 Chrome 的开发机"上 100% 绿。
+#   ⇒ 判据用**假目录树**造七种布局，验 browser.js 与 ai/pdf.js 两个入口都能找到，
+#     并用旧写法做元反向（新布局必须让旧表失手，否则这棵树没有判别力）。
+run "chrome-discovery"     node 05-audit/chrome-discovery-gate.js
 # 消费者实装：真 pack、真装进空目录、真渲染、真打印。
 #   为什么 pack-smoke 还不够：它判的是**结构**（包里有那些文件、exports 解析得出来、
 #   JS 语法对）。结构对 ≠ 能用 —— `<link href="node_modules/agentcss/...">` 这类路径
@@ -1267,6 +1275,15 @@ run "facts-rev"       $PY 05-audit/facts-gate.py --selftest
 #   ⚠️ 它读 git 视野比对"改了 README 忘了重跑"，纯静态、~0.3 秒。
 run "docs-site"     $PY 05-audit/docs-site-gate.py
 run "docs-site-rev" $PY 05-audit/docs-site-gate.py --selftest
+# 🔴 md-inline（2026-11-04 加 · 起因是外部审计 F1）
+#   `md-render.py` 是 MANUAL-ONLY 工具，它把 tokens.css / content.css **整份内联**
+#   进单文件产物 —— 同一份样式有了第二个出处，而没有任何门禁守着它不漂移。
+#   实际后果：`04-recipes/longform/content.html` 的副本落后好几版，
+#   源文件里的 `.prose > img` 早就该改成后代选择器，产物里还是旧的 ⇒
+#   320px 溢出 301px，而"改源文件 + 跑门禁"会得到假绿（页面根本没变）。
+#   判据：标记之后的正文必须**逐字等于**当前源文件；零视野 / 死标记都判红。
+run "md-inline"     $PY 05-audit/md-inline-gate.py
+run "md-inline-rev" $PY 05-audit/md-inline-gate.py --selftest
 # 🔴 md-links（2026-10-29 加 · 起因是"文档指着四份不存在的文件"）
 #   `README.zh-CN.md` / `docs/INVARIANT.md` / `ai/START-HERE.md` 一共 9 处指向
 #   `docs/GUIDANCE.md`、`docs/BENCHMARK.md`、`docs/ROADMAP.md`、`docs/RELEASING.md`

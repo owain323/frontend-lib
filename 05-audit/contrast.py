@@ -196,13 +196,60 @@ def check_inline_sync(tokens, root, mode='light'):
                 s = fh.read()
         except OSError:
             continue
+        # 🔴 整份内联的产物交给 md-inline-gate，这里不重复判（2026-11-04）
+        #    md-render 生成的单文件页会把 tokens.css **整份**写进 <style>。
+        #    那种情况下"副本 != 源"这件事已经由 md-inline-gate 用**逐字相等**判过
+        #    （它比这里更强：一个字符不同就红）。
+        #    而这里再按 var() 解析一遍，只会把**解析口径的差异**报成"漂移" ——
+        #    实测：content.html 与 tokens.css 逐字相同，却报
+        #    --text-on-accent / --text-on-solid 两个 token 不一致
+        #    （暗色块里显式覆盖成 #15181c，而本函数的解析结果仍是浅色 #ffffff）。
+        #    ⇒ 两道门禁分工：文本级一致性归 md-inline-gate，
+        #      值级比对只用于**部分内联**的页面（那才是真正会写错的地方）。
+        try:
+            with open(os.path.join(root, '01-tokens', 'tokens.css'),
+                      encoding='utf-8') as _tf:
+                _src_tokens = _tf.read()
+        except OSError:
+            _src_tokens = ''
+        if _src_tokens:
+            _flat = lambda x: '\n'.join(l.rstrip() for l in x.strip().splitlines())
+            if _flat(_src_tokens) in _flat(s):
+                continue
+
         # dark 模式：只截取 @media dark 之后的部分
         scope = s
         if mode == 'dark':
             _m = re.search(r'@media[^{]*prefers-color-scheme:\s*dark', s)
             if not _m:
                 continue          # 该文件本来就没有暗色块，跳过
-            scope = s[_m.start():]
+                # 🔴 只取**这个 @media 的花括号块**，不是"从这里到文件末尾"。
+            #    原来的截尾写法会把块后面的浅色定义也卷进来，于是
+            #    暗色块里没重定义的 token 会命中浅色值 ⇒ 报"漂移"（全是假的）。
+            #    实测：content.html 重新内联当前 tokens.css 后，
+            #    --raw-paper 报 tokens=#14171A / 文件=#f6f7f8（后者是浅色值）。
+            _open = s.find('{', _m.end())
+            _depth, _i = 0, _open
+            while _i < len(s):
+                if s[_i] == '{':
+                    _depth += 1
+                elif s[_i] == '}':
+                    _depth -= 1
+                    if _depth == 0:
+                        break
+                _i += 1
+            if _open < 0 or _i >= len(s):
+                continue
+            scope = s[_open + 1:_i]
+        # 🔴 先剥掉 CSS 注释再取值（2026-11-04 修）
+        #    判据原来是直接对**裸文本**做 re.search，于是
+        #        /* --accent-hover:  #0c6459;   白字 7.04 AAA */
+        #    这种"改色留痕"的注释会被当成当前值 ⇒ 报"内联副本漂移"，
+        #    而真实值在它上一行（var(--raw-accent-hover) 解析出的 #8FB8E6）。
+        #    实测触发点：md-render 重新把**当前** tokens.css 内联进 content.html 之后，
+        #    contrast 立刻报 --accent-hover / --accent-soft 两处"漂移"——
+        #    两处都只是注释。判据读注释=读历史，不是读现状。
+        scope = re.sub(r'/\*.*?\*/', '', scope, flags=re.S)
         for k, v in tokens.items():
             m = re.search(re.escape(k) + r'\s*:\s*(#[0-9a-fA-F]{3,6})', scope)
             if m and m.group(1).lower() != v.lower():

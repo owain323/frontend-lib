@@ -157,8 +157,8 @@
       "raw": 18415
     },
     "03-patterns/content/content.css": {
-      "gzip": 4675,
-      "raw": 11377
+      "gzip": 5053,
+      "raw": 12202
     },
     "03-patterns/drawer/drawer.css": {
       "gzip": 2719,
@@ -282,6 +282,6 @@
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 339641,
-  "total_raw": 855096
+  "total_gzip": 340019,
+  "total_raw": 855921
 }

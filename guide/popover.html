@@ -40,7 +40,7 @@
 <p>通行系统的必备件。<strong>非模态</strong>——背景仍可交互，这是它与 dialog 的根本区别。</p>
 <h2 id="s2">⭐ 该用哪一个（记不住就问这句）<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
 <blockquote><p><strong>用户需要&quot;在里面操作&quot;吗？</strong><br>不需要 → <code>tooltip</code><br>需要，但不<strong>打断</strong>当前上下文 → <strong>popover</strong><br>需要，且<strong>必须先处理完</strong>才能继续 → <code>dialog</code></p></blockquote>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="⭐ 该用哪一个（记不住就问这句）"><table>
 <thead><tr>
 <th></th><th>能不能放交互内容</th><th>焦点管理</th>
 </tr></thead>
@@ -54,7 +54,7 @@
 <h2 id="s3">启用：DOM 由 JS 建，不用自己写<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
 <pre class="code" tabindex="0"><code class="language-js">const p = Popover.attach(按钮元素, { place: 'bottom', label: '标题' });</code></pre>
 <p><code>attach()</code> 会自动：把触发器包进新建的 <code>.popover-anchor</code>（定位上下文）、建出浮层本体并写好 <code>role</code> 与 <code>aria-label</code>。</p>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="启用：DOM 由 JS 建，不用自己写"><table>
 <thead><tr>
 <th>参数</th><th>取值</th>
 </tr></thead>
@@ -78,7 +78,7 @@ Popover.current;      // 当前开着的实例（没有则null）</code></pre>
     &lt;span class=&quot;popover__arrow&quot; aria-hidden=&quot;true&quot;&gt;&lt;/span&gt;
   &lt;/div&gt;
 &lt;/span&gt;</code></pre>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="内部结构（JS 生成，供你放内容）"><table>
 <thead><tr>
 <th>部件</th><th>说明</th>
 </tr></thead>
@@ -91,7 +91,7 @@ Popover.current;      // 当前开着的实例（没有则null）</code></pre>
 </table></div>
 <p>⚠️ <strong>关闭态用 <code>inert</code>，不是 <code>hidden</code></strong> —— <code>inert</code> 让内部元素<strong>不可聚焦</strong> （<code>hidden</code> 只是视觉隐藏，里面还能 Tab 到，这是常见错法）。</p>
 <h2 id="s5">🔴 四个最容易做错的地方<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="🔴 四个最容易做错的地方"><table>
 <thead><tr>
 <th>#</th><th>要求</th><th>做错的后果</th>
 </tr></thead>

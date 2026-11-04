@@ -51,7 +51,7 @@
 &lt;/div&gt;</code></pre>
 <p><strong>tab 必须是 <code>&lt;button&gt;</code></strong> —— APG 明确要求。用 <code>&lt;div role=&quot;tab&quot;&gt;</code> 键盘上根本 Tab 不到，也不响应 Enter/Space。</p>
 <h2 id="s3">键盘契约<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="键盘契约"><table>
 <thead><tr>
 <th>键</th><th>行为</th>
 </tr></thead>
@@ -67,7 +67,7 @@
 <p><strong>为什么要这样</strong>：否则 Tab 键会<strong>逐个穿过所有 tab</strong> —— 一排 5 个 tab 要按 5 次 Tab 才能进内容区。</p>
 <p><strong>更关键</strong>：那个 <code>&quot;0&quot;</code> <strong>必须跟着选中项走</strong>。只在初始化时设一次是最常见的 bug（用户激活第 3 个 tab 后，Tab 键还会回到第 1 个）。</p>
 <h2 id="s5">两种激活模式<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="两种激活模式"><table>
 <thead><tr>
 <th>模式</th><th>类</th><th>方向键</th><th>何时用</th>
 </tr></thead>

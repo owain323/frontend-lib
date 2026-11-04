@@ -479,7 +479,7 @@ th {
         哪怕会覆盖掉别人写的东西。
       </p>
 
-      <div class="table-wrap">
+      <div class="table-wrap" tabindex="0" role="region" aria-label="对照表">
         <table>
           <colgroup>
             <col style="width: 34%">
@@ -520,7 +520,7 @@ th {
         这套机制加上"准入控制"，让关键任务（姿态、点火）不会被普通计算饿死。
       </p>
 
-        <pre><code><span class="c-cmt"># 不是原文，是按手册重述的伪代码</span>
+        <pre tabindex="0"><code><span class="c-cmt"># 不是原文，是按手册重述的伪代码</span>
 if computer_overload():
     issue(1202)                  <span class="c-cmt"># 告警编号写入 AGC 计数区</span>
     <span class="c-cmt"># 不停机：停机会丢掉姿态信息，地面将失去唯一的实时数据源</span>
@@ -540,7 +540,7 @@ if computer_overload():
         包括读取真实的操作数、写入真实的寄存器地址。
       </p>
 
-        <pre><code><span class="c-cmt"># 一段能真正跑起来的最小例子</span>
+        <pre tabindex="0"><code><span class="c-cmt"># 一段能真正跑起来的最小例子</span>
 <span class="c-out">$</span> python3 -m agc --help
 <span class="c-out">$</span> ./yaAGC -t demo.agc        <span class="c-cmt"># 载入磁带并执行</span>
 <span class="c-out">AGC 0000 GO</span></code></pre>

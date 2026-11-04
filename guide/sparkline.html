@@ -40,7 +40,7 @@
 <p>在一行里显示&quot;最近走势&quot;。<strong>它是辅助，不是图表。</strong></p>
 <h2 id="s2">用法<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
 <pre class="code" tabindex="0"><code class="language-html">&lt;span class=&quot;sparkline&quot; data-spark=&quot;12,18,15,24,22,31,28&quot;&gt;&lt;/span&gt;</code></pre>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="用法"><table>
 <thead><tr>
 <th>属性</th><th>值</th><th>默认</th>
 </tr></thead>
@@ -69,7 +69,7 @@ Chart.update(container); // 重画某区域内全部</code></pre>
 <h2 id="s5">为什么自己写而不引库<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
 <p>调研了 GitHub 上几个零依赖方案，最小的 <code>mitjafelicijan/sparklines</code> 是 <strong>6390 字节 / 195 行 / gzip 1675 字节</strong>、<strong>BSD-2 许可</strong>（可商用）—— <strong>它做得很好，值得参考</strong>。</p>
 <p>但没有直接引，两个原因（都不是嫌它差）：</p>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="为什么自己写而不引库"><table>
 <thead><tr>
 <th></th><th>它</th><th>本库要求</th>
 </tr></thead>
@@ -94,7 +94,7 @@ Chart.update(container); // 重画某区域内全部</code></pre>
 <p>⇒ 拆出独立的 <code>.spark-anim</code> 专管动画。契约测试已改判据并锁住。</p>
 <h2 id="s10">🔴 MISSING != ZERO（最重要的一条）<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
 <p><strong>空值和 0 是两件事。</strong></p>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="🔴 MISSING != ZERO（最重要的一条）"><table>
 <thead><tr>
 <th>写法</th><th>含义</th><th>画成什么</th>
 </tr></thead>
@@ -111,7 +111,7 @@ Chart.update(container); // 重画某区域内全部</code></pre>
 <p><strong>实现要点</strong>：</p>
 <ul><li><code>parsePoints</code> 把空值 / <code>-</code> / <code>null</code> / <code>NaN</code> 都保留成 <code>null</code>（<strong>不是 0</strong>）</li><li><code>scale</code> 求最值时<strong>排除 null</strong>（否则 <code>Math.min(1, null, 3) === 1</code> 会把图压扁）</li><li><code>draw</code> 把序列切成<strong>连续段</strong>，每段画一条 path，<strong>段间留空</strong></li><li>柱状图：缺失点<strong>不画柱</strong>（画成 0 高度等于假装&quot;这里是 0&quot;）</li></ul>
 <h2 id="s11">边界情况（都实测过）<a class="anchor" href="#s11" aria-label="本节直链">#</a></h2>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="边界情况（都实测过）"><table>
 <thead><tr>
 <th>输入</th><th>行为</th>
 </tr></thead>

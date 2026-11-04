@@ -37,7 +37,7 @@
     <ul class="g-meta"><li><a href="../03-patterns/states/demo.html"><code>03-patterns/states/demo.html</code></a></li><li><a href="../03-patterns/states/states.css"><code>03-patterns/states/states.css</code></a></li></ul>
 <figure class="g-live"><figcaption class="g-live__cap"><span class="g-live__tag">在这页里直接跑</span>下面是 容器四态：empty / loading / error / success 的真实示例页，全套状态都在里面；<a href="../03-patterns/states/demo.html">单独打开</a>可以看到完整尺寸。</figcaption><iframe class="g-live__frame" src="../03-patterns/states/demo.html" title="容器四态：empty / loading / error / success 的可运行示例" loading="lazy"></iframe></figure><script src="live.js" defer></script>
     <article class="g-doc">
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="表格"><table>
 <thead><tr>
 <th>字段</th><th>内容</th>
 </tr></thead>
@@ -51,7 +51,7 @@
 </table></div>
 <hr>
 <h2 id="s2">四态各自必须有什么<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="四态各自必须有什么"><table>
 <thead><tr>
 <th>态</th><th>必须</th><th>不做会怎样</th>
 </tr></thead>
@@ -65,7 +65,7 @@
 <p>🔴 <strong>error 的可恢复性是硬要求。</strong> 只写&quot;出错了&quot;是死路。而且刷新往往解决不了问题（比如参数错了、文件格式不对）——必须给&quot;改了再试&quot;的路径。</p>
 <hr>
 <h2 id="s3">骨架屏 vs spinner：按结构是否已知选<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="骨架屏 vs spinner：按结构是否已知选"><table>
 <thead><tr>
 <th></th><th>骨架屏</th><th>spinner</th>
 </tr></thead>
@@ -78,7 +78,7 @@
 <p>🔴 <strong>别在结构未知时用骨架屏</strong>——那画出来的结构是在撒谎。</p>
 <p>骨架屏必须标 <code>aria-hidden=&quot;true&quot;</code>，否则屏幕阅读器会把它读成一堆无意义色块。</p>
 <h3 id="s4">形状变体（本文件自带一份，注意与 primitive 重复）<a class="anchor" href="#s4" aria-label="本节直链">#</a></h3>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="形状变体（本文件自带一份，注意与 primitive 重复）"><table>
 <thead><tr>
 <th>类</th><th>形状</th>
 </tr></thead>
@@ -100,7 +100,7 @@ fetch(...).then(r =&gt; { clearTimeout(t); showResult(r); });</code></pre>
 <hr>
 <h2 id="s6">reduced-motion 下：两个动画，处理相反<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
 <p>这是本组件最值得记住的一条。判断依据是<strong>去掉后是否损失信息</strong>：</p>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="reduced-motion 下：两个动画，处理相反"><table>
 <thead><tr>
 <th>动画</th><th>处理</th><th>理由</th>
 </tr></thead>
@@ -122,7 +122,7 @@ fetch(...).then(r =&gt; { clearTimeout(t); showResult(r); });</code></pre>
 <ol><li>每个会承载数据的容器，是否都写了 empty 态？</li><li>empty 态有没有说明&quot;为什么是空的&quot;？（&quot;还没有导入任何公司&quot; &gt; &quot;暂无数据&quot;）</li><li>empty 态有没有动作按钮？</li><li>loading 是骨架屏还是 spinner？选择依据是不是&quot;结构是否已知&quot;？</li><li>error 态有没有重试出口？</li><li>有没有做 300ms 延迟？</li><li>骨架屏有没有 <code>aria-hidden</code>？loading 容器有没有 <code>aria-busy</code>？</li></ol>
 <p>🔴 为什么不做自动门禁：启发式只能查&quot;有没有 empty 这个类&quot;，查不出&quot;empty 态有没有动作按钮&quot;—— 那才是真正容易漏的。做一个只能查到皮毛的脚本，会给出假绿。<strong>不检查比假绿诚实。</strong></p>
 <h2 id="s10">钩子（CSS 有，JS 需你自己加类）<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="钩子（CSS 有，JS 需你自己加类）"><table>
 <thead><tr>
 <th>类</th><th>作用</th><th>谁来加</th>
 </tr></thead>

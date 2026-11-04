@@ -542,6 +542,54 @@ const REPO = path.resolve(__dirname, '..');
                  note: (r.bad.length ? '🔴 ' + r.bad.join('、') : 'delta 都在格内') +
                        ' · 页面横向溢出 ' + r.over + 'px' };
       },
+
+      /* ⑮ 窄屏下横向滚动的 `.table` 必须能用键盘进入（WCAG 2.1.1）
+         ---------------------------------------------------------------
+         外部审计 F13：`.table` 是 `overflow:auto` + 70vh 限高的二维滚动容器，
+         但契约和 demo 里都没有 `tabindex` / `role="region"` / 可访问名。
+         axe 的 `scrollable-region-focusable`（serious）在 375px 命中 4 处、
+         320px 命中 5 处 —— 而 a11y 门禁固定在 1280×900，
+         **那个宽度下表格不溢出，规则根本不触发** ⇒ 一直是绿的。
+
+         ⇒ 判据放在这里，而不是指望 a11y 门禁：本判据专门把视口压到 320px，
+           只问"能滚的 `.table` 有没有键盘入口"。
+         ⚠️ 只看**真的会滚**的容器（scrollWidth > clientWidth）。
+            不滚的容器加 tabindex 反而是噪音（多一个空 Tab 停靠点）。
+         ⚠️ `aria-hidden="true"` 的对照块是有意从无障碍树里摘掉的，
+            不在此列；但它仍然要能被键盘滚 —— 由 ⑯ 单独判。 */
+      '⑮ 窄屏滚动的 .table 有键盘入口': async (p) => {
+        await p.setViewport({ width: 320, height: 640 });
+        await new Promise((r) => setTimeout(r, 200));
+        const r = await p.evaluate(() => {
+          const rows = [];
+          document.querySelectorAll('.table').forEach((el, i) => {
+            const scrolls = el.scrollWidth > el.clientWidth + 1;
+            if (!scrolls) return;
+            const name = (el.getAttribute('aria-label') || '').trim()
+              || (el.getAttribute('aria-labelledby') || '').trim();
+            rows.push({
+              i: i,
+              tabindex: el.getAttribute('tabindex'),
+              role: el.getAttribute('role'),
+              name: name,
+              hidden: el.getAttribute('aria-hidden') === 'true',
+              over: el.scrollWidth - el.clientWidth,
+            });
+          });
+          return rows;
+        });
+        const bad = r.filter((x) => !x.hidden
+          && (x.tabindex !== '0' || x.role !== 'region' || !x.name));
+        return {
+          ok: r.length > 0 && bad.length === 0,
+          note: r.length === 0
+            ? '🔴 320px 下一个会滚的 .table 都没有 ⇒ 判据无从生效（不是通过）'
+            : (bad.length
+              ? '🔴 ' + bad.map((x) => '#' + x.i + '(tabindex=' + x.tabindex
+                + ',role=' + x.role + ',name=' + (x.name || '空') + ')').join(' ')
+              : r.length + ' 个滚动容器都有 tabindex/role/可访问名'),
+        };
+      },
     },
   });
   process.exit(kit.report(r));

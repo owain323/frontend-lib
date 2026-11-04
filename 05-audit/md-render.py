@@ -93,7 +93,20 @@ def render(md_text: str) -> str:
     except ImportError:
         sys.exit('需要 markdown-it-py：pip install markdown-it-py')
     # commonmark 预设 = CommonMark 核心；table / strikethrough = GFM 扩展
-    return MarkdownIt('commonmark').enable('table').enable('strikethrough').render(md_text)
+    md = MarkdownIt('commonmark').enable('table').enable('strikethrough')
+    html = md.render(md_text)
+    # 🔴 代码块必须能被键盘进入。`.prose > pre` 是 `overflow-x:auto` 的滚动容器，
+    #    窄屏下横向滚动；**纯 CSS 无法让它进 Tab 序列**（WCAG 2.1.1）。
+    #    外部审计 F13 的窄屏补扫实测：320px 下 axe 的
+    #    `scrollable-region-focusable` 在 content.html 命中。
+    #    不加在 CSS 里是因为 CSS 没有这个能力，只能在产出的标记上加。
+    #
+    #    为什么用字符串替换而不是 add_render_rule：
+    #      markdown-it-py 的渲染钩子签名随版本变过（先写成了 (tokens, idx, options, env, slf)，
+    #      实测抛 `'dict' object has no attribute 'renderToken'`）。
+    #      而 `<pre>` 只可能由 fence 规则产出（正文里的 `<pre>` 会被转义成 &lt;pre&gt;），
+    #      一次确定性替换同样精确，且不绑 API 版本。
+    return html.replace('<pre>', '<pre tabindex="0">')
 
 
 # ------------------------------------------------------------------ 检查
@@ -330,7 +343,12 @@ def main():
         content=content,
         body=html,
     )
-    with open(out_path, 'w', encoding='utf-8') as f:
+    # 🔴 `newline='\n'` 不能省：Windows 上默认会把每个 \n 写成 \r\n，
+    #    于是同一份 .md 在 Windows 和 Linux 上生成出**字节不同**的产物，
+    #    跨机 diff 显示"整个文件都改了"，而 eol-gate 会直接判红。
+    #    实测（2026-11-04）：漏了这一条，重生成 content.html 之后
+    #    `eol-gate` 报「工作区侧 crlf」。生成器写盘一律显式指定行尾。
+    with open(out_path, 'w', encoding='utf-8', newline='\n') as f:
         f.write(page)
 
     kb = os.path.getsize(out_path) / 1024

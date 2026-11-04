@@ -10,6 +10,23 @@ npm install agentcss
 
 The npm package is `agentcss`; the repository is `frontend-lib`. They are different things: the package name is what you install, the repository name is where the source lives.
 
+### Module format: ESM-only
+
+The JS entry points (`esm/*.mjs`) are **ESM only** — `exports` has no `require` condition.
+
+| You write | Node **≥ 20.19 / ≥ 22.12** | Node 18 – 20.18 |
+|---|---|---|
+| `import 'agentcss'` | ✅ | ✅ |
+| `require('agentcss')` | ✅ (Node's built-in require(ESM)) | ❌ `ERR_REQUIRE_ESM` |
+
+- On older runtimes use `await import('agentcss')`, or consume the CSS entry points only
+  (`agentcss/tokens.css` etc. are not JS and work on any Node version).
+- The shipped `*.js` files under `02-primitives/**` and `03-patterns/**` are **classic
+  scripts** for `<script>` tags, not CommonJS modules — they attach to `window.*`.
+- `"type": "commonjs"` is deliberate: it describes how those classic scripts are
+  *parsed*. Flipping it to `module` would make bundlers re-interpret them as ESM,
+  which is a breaking change.
+
 ## Docs and live demos
 
 - **Every demo page, one index** — https://owain323.github.io/frontend-lib/

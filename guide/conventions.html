@@ -39,7 +39,7 @@
 <p>这些规则不属于任何一个组件：令牌怎么用、焦点环多大、动效多久、暗色怎么切、能不能写 <code>margin-left</code>。它们由 <code>01-tokens/</code> 里的几个全局文件实现，由一批门禁守住。本文是它们的<strong>唯一说明书</strong> —— 规则写在这里，判据在仓库里，两边一一对应。</p>
 <p>读法：如果你只想知道「我该写哪个变量」，看第一节和第二节；如果你想改这套东西，看第十一节，那里列了每条规则由什么挡住。</p>
 <h2 id="s2">一 · 令牌分三层，你只用中间层<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="一 · 令牌分三层，你只用中间层"><table>
 <thead><tr>
 <th>层</th><th>长什么样</th><th>谁写</th><th>谁用</th>
 </tr></thead>
@@ -51,7 +51,7 @@
 </table></div>
 <p><strong>为什么必须隔一层</strong>：暗色不是&quot;把颜色逐条改掉&quot;，而是<strong>换掉 raw 的值，语义层不动</strong>。组件里写 <code>--raw-*</code>，暗色就会漏掉它 —— 这也是 <code>dark-contrast.js</code> 会算两遍对比度的原因。组件与页面里<strong>写死 <code>#hex</code></strong> 一律不许（<code>hygiene.py</code> 判）。</p>
 <p>常用语义令牌，括号里是对当前纸底 / 表面的<strong>实算对比度</strong>（不是估的）：</p>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="一 · 令牌分三层，你只用中间层"><table>
 <thead><tr>
 <th>令牌</th><th>用途</th><th>对比度</th>
 </tr></thead>
@@ -69,7 +69,7 @@
 <p>⚠️ <code>--accent-soft</code> <strong>不要拿来当正文背景</strong>：它只保证&quot;能看见有一块色&quot;，不保证字读得清。</p>
 <h2 id="s3">二 · 间距、圆角、层级：只准踩台阶<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
 <p>间距是 8 档，前 3 档固定、后 5 档随视口缩放：</p>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="二 · 间距、圆角、层级：只准踩台阶"><table>
 <thead><tr>
 <th>令牌</th><th>值</th><th>说明</th>
 </tr></thead>
@@ -92,7 +92,7 @@
 }</code></pre>
 <ul><li><strong>只用 <code>:focus-visible</code>，不用 <code>:focus</code></strong>。前者只给键盘用户看，鼠标点击不冒框。用 <code>:focus</code> 的后果是&quot;点一下留个框&quot;，用户会以为界面卡住了。</li><li><strong>禁止 <code>outline: none</code> 而不给替代指示</strong> —— 这是无障碍事故，不是审美选择。真要自绘，用 <code>--focus-ring-width</code> / <code>--focus-ring-offset</code> / <code>--focus-ring-color</code> 三个令牌，别自己写死像素。</li><li>深底上（暗色、实心按钮）加一圈内白环 <code>--focus-ring-inset</code>，否则焦点环与背景糊在一起。</li><li>打开弹层再关掉，<strong>焦点必须回到触发它的元素</strong>上：<code>focus-return-check.js</code> 判这一条。</li></ul>
 <h2 id="s5">四 · 动效：三档时长，三条规定<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="四 · 动效：三档时长，三条规定"><table>
 <thead><tr>
 <th>令牌</th><th>值</th><th>用在哪</th>
 </tr></thead>
@@ -107,7 +107,7 @@
 <ol><li><strong>位移 / 缩放 / 旋转 —— 关</strong>。前庭不适的主要来源。</li><li><strong>真实进度（spinner、加载态）—— 留</strong>。停掉它，用户会以为没点上，从而重复提交；这比有动画更糟。目前登记的例外只有三处：<code>button</code>、<code>states</code>、<code>form-validation</code>。</li><li><strong>颜色 / 透明度 —— 可以缩短到 <code>--dur-fast</code> 保留</strong>，这一档不强制、也没有判据（写了却没判据的规则，比没有规则更糟）。</li></ol>
 <p>例外登记在 <code>ai/motion-policy.json</code>。<strong>声明了却没实现 ⇒ 红；实现了却没声明 ⇒ 红。</strong> 这条双向判据是它存在的全部意义。</p>
 <h2 id="s6">五 · 暗色：三种状态，组件一律不许自判<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="五 · 暗色：三种状态，组件一律不许自判"><table>
 <thead><tr>
 <th>使用者的意思</th><th>怎么表达</th>
 </tr></thead>
@@ -132,7 +132,7 @@
 <h2 id="s8">七 · 不用 <code>@layer</code>；<code>!important</code> 必须说得清<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
 <p>交付 CSS 里 <code>@layer</code> 是 <strong>0 处</strong>，这是决定，不是遗漏：目标环境里有 Chromium 97 的内核（见<a href="../SUPPORT.md">浏览器支持矩阵</a>），它不认识 <code>@layer</code> —— <strong>整层样式会直接消失</strong>。所以&quot;未分层&quot;是当前唯一安全的选择。<code>cascade-layer-gate.py</code> 把这条变成可判状态：一旦出现第一条 <code>@layer</code>，就要求三条前提的实测记录已落档，否则红。</p>
 <p><code>!important</code> <strong>每一处都必须能被归类</strong>，归不了类的 ⇒ 红。判据不是&quot;清零&quot; —— 清零会逼人删掉无障碍兜底。</p>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="七 · 不用 @layer；!important 必须说得清"><table>
 <thead><tr>
 <th>类别</th><th>为什么必须赢</th>
 </tr></thead>
@@ -154,7 +154,7 @@
 <ul><li>优先覆盖 <strong>语义令牌</strong>（第一节那张表）。</li><li>其次覆盖组件自己的槽位变量（如按钮的内边距），它们都以组件名为前缀。</li><li><strong>不要把 <code>!important</code> 当覆盖手段</strong>：赢了这一条，会把无障碍兜底一起压掉。</li><li>不要用更深的选择器去压（<code>.page .btn.btn--primary</code>）—— 那是把特异性当版本管理，下次改版必然打架。</li></ul>
 <h2 id="s11">十 · 涨跌：语义在令牌层，口径是全局的<a class="anchor" href="#s11" aria-label="本节直链">#</a></h2>
 <p>红绿有两个完全不同的来处，<strong>不许共用一个名字</strong>：</p>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="十 · 涨跌：语义在令牌层，口径是全局的"><table>
 <thead><tr>
 <th>令牌</th><th>语义</th><th>例子</th>
 </tr></thead>
@@ -175,7 +175,7 @@
 <p>挡住它的：<code>container-query-check.js</code>（10 条：两组件 × 槽窄/槽宽/未标记 × 两个方向 + 剥块降级）。</p>
 <h2 id="s13">十二 · 每条规则由什么挡住<a class="anchor" href="#s13" aria-label="本节直链">#</a></h2>
 <p>规则只有落到判据上才会被遵守。对应关系如下（文件都在 <code>05-audit/</code>）：</p>
-<div class="table"><table>
+<div class="table" tabindex="0" role="region" aria-label="十二 · 每条规则由什么挡住"><table>
 <thead><tr>
 <th>规则</th><th>判据</th>
 </tr></thead>

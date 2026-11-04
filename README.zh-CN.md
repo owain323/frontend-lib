@@ -60,6 +60,22 @@ npm install agentcss
 
 装出来的目录名就是 `agentcss`，`dist-tags.latest` 指向当前版本。
 
+### 模块格式：ESM-only（请先读这一条）
+
+`agentcss` 的 JS 入口（`esm/*.mjs`）**只有 ESM**，`exports` 里没有 `require` 条件。
+
+| 你的写法 | Node **≥ 20.19 / ≥ 22.12** | Node 18 ~ 20.18 |
+|---|---|---|
+| `import 'agentcss'` | ✅ | ✅ |
+| `require('agentcss')` | ✅（Node 自带的 require(ESM)） | ❌ `ERR_REQUIRE_ESM` |
+
+- 走 `require` 的旧环境请改用 `await import('agentcss')`，或只用 CSS 入口
+  （`agentcss/tokens.css` 这类**不是 JS**，任何 Node 版本都能直接引用）。
+- 包里的 `*.js`（`02-primitives/**`、`03-patterns/**`）是给 `<script>` 用的**经典脚本**，
+  不是 CommonJS 模块 —— 它们挂 `window.*`，不需要 bundler。
+- `type` 字段保持 `commonjs` 是**有意**的：它描述的是那批经典脚本的解析方式。
+  把它改成 `module` 会让 bundler 用 ESM 语义重新解析它们，属于破坏性变更。
+
 另外两条**同样真实可用**的路（内容与 registry 上那一份同源）：
 
 ```bash

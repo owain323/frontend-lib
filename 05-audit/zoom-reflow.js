@@ -90,6 +90,33 @@ function pages() {
   out.push(['docs-index', 'guide/index.html']);
   out.push(['docs-page', 'guide/button.html']);
   out.push(['docs-conventions', 'guide/conventions.html']);
+  /* 🔴 配方页从**文件系统**枚举，不写第二份清单（I-7）。
+   *
+   *   起因（外部审计 F1）：`04-recipes/longform/content.html` 在 320px 下
+   *   横向溢出 301px，而这道门禁**从来没测过它** —— 它的页面清单只有
+   *   40 个契约 demo + 3 个 guide 页，而契约只登记「组件 demo」。
+   *   配方目录里的单文件交付物和多状态页（longform 的 content/longform、
+   *   detail-page 的 full/null/partial、data-showcase）不归任何组件，
+   *   于是既不在契约里、也不在任何重排判据里。
+   *
+   *   为什么要扫**全部** html 而不是只补 bug 那一页：
+   *   只补一页等于"按已知事故点蹲守"，下一张配方页照样漏。
+   *   从目录枚举之后，新增配方页自动进视野；已经在契约里的 demo 按路径去重，
+   *   不会重复被测。 */
+  const seen = new Set(out.map(([, rel]) => rel));
+  const base = path.join(ROOT, '04-recipes');
+  const walk = (dir) => {
+    for (const n of fs.readdirSync(dir).sort()) {
+      const full = path.join(dir, n);
+      if (fs.statSync(full).isDirectory()) { walk(full); continue; }
+      if (!n.endsWith('.html')) continue;
+      const rel = path.relative(ROOT, full).replace(/\\/g, '/');
+      if (seen.has(rel)) continue;
+      seen.add(rel);
+      out.push(['recipe:' + rel.slice('04-recipes/'.length).replace(/\.html$/, ''), rel]);
+    }
+  };
+  walk(base);
   return out;
 }
 
