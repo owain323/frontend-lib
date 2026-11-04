@@ -239,5 +239,12 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: baseline-${{ runner.os }}
-          path: 10-review/shots/_baseline-*/
+          # 🔴 只传**本平台**那三套。
+          #   写成 `_baseline-*/` 时实测把仓库里已有的 win32 三套也打进了产物
+          #   （2026-11-04 run 41845757012：224 个条目里有 6 个目录、218 张 png，
+          #    其中 109 张是 win32）。下载的人若整目录覆盖，就会用
+          #   "这次 checkout 里的其他平台基线"盖掉本地刚录好的那套 ——
+          #   而它们看起来一样，坏起来无声。
+          #   本 job 只在 ubuntu 上跑（`runs-on: ubuntu-latest`），范围写死 linux 即可。
+          path: 10-review/shots/_baseline-linux*/
           retention-days: 14
