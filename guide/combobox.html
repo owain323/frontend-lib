@@ -41,7 +41,7 @@
 <h2 id="s2">⭐ 与 <code>select</code> 的区别<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
 <p>多了两件事：<strong>输入文字过滤</strong> + <strong>已选项标签</strong>。</p>
 <p>由此引出本组件最容易做错的两个点：</p>
-<div class="table" tabindex="0" role="region" aria-label="⭐ 与 select 的区别"><table>
+<div class="table" tabindex="0" role="region" aria-label="⭐ 与 select 的区别（可横向滚动）"><table>
 <thead><tr>
 <th>#</th><th>要求</th><th>做错的后果</th>
 </tr></thead>
@@ -59,7 +59,7 @@
   &lt;/div&gt;
   &lt;ul class=&quot;combo__list&quot; data-combo-list id=&quot;combo-list-1&quot; role=&quot;listbox&quot;&gt;…&lt;/ul&gt;
 &lt;/div&gt;</code></pre>
-<div class="table" tabindex="0" role="region" aria-label="结构"><table>
+<div class="table" tabindex="0" role="region" aria-label="结构（可横向滚动）"><table>
 <thead><tr>
 <th>部件</th><th>说明</th>
 </tr></thead>
@@ -84,7 +84,7 @@
 if (!list.id) list.id = 'combo-list-' + seq;</code></pre>
 <p>以前是&quot;<strong>只有调用方没给 <code>list.id</code> 时</strong>才递增序号&quot; ⇒ 调用方自己给了 id 的场景下， <strong>多个实例共用一个序号</strong> ⇒ <code>aria-controls</code> 指向同一个列表。所以：<strong>序号无条件递增</strong>，不是按需递增。</p>
 <h2 id="s7">成熟度：beta（一条行为债，如实列出）<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
-<div class="table" tabindex="0" role="region" aria-label="成熟度：beta（一条行为债，如实列出）"><table>
+<div class="table" tabindex="0" role="region" aria-label="成熟度：beta（一条行为债，如实列出）（可横向滚动）"><table>
 <thead><tr>
 <th>债</th><th>现在的后果</th>
 </tr></thead>

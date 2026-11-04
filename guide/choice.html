@@ -37,7 +37,7 @@
     <ul class="g-meta"><li><a href="../02-primitives/choice/demo.html"><code>02-primitives/choice/demo.html</code></a></li><li><a href="../02-primitives/choice/choice.css"><code>02-primitives/choice/choice.css</code></a></li></ul>
 <figure class="g-live"><figcaption class="g-live__cap"><span class="g-live__tag">在这页里直接跑</span>下面是 checkbox / radio / select 的真实示例页，全套状态都在里面；<a href="../02-primitives/choice/demo.html">单独打开</a>可以看到完整尺寸。</figcaption><iframe class="g-live__frame" src="../02-primitives/choice/demo.html" title="checkbox / radio / select 的可运行示例" loading="lazy"></iframe></figure><script src="live.js" defer></script>
     <article class="g-doc">
-<div class="table" tabindex="0" role="region" aria-label="表格"><table>
+<div class="table" tabindex="0" role="region" aria-label="数据表（可横向滚动）"><table>
 <thead><tr>
 <th>字段</th><th>内容</th>
 </tr></thead>
@@ -93,7 +93,7 @@
 <p>键盘行为（↑↓ 选择、Enter 确认、Esc 关闭）<strong>全部保留</strong>。</p>
 <p>select 用 <code>:focus</code> 不用 <code>:focus-visible</code>——和 input 一样，用户必须随时知道当前选的是哪个。</p>
 <p>结构（注意：这里的 <code>.select</code> 是<strong>原生 select 的外壳</strong>，与 <code>02-primitives/select/select.css</code> 里那个自定义下拉的 <code>.select</code> <strong>同名不同义</strong>，同页面同时用两个组件会互相覆盖，详见 <code>05-audit/css-ownership.json</code>）：</p>
-<div class="table" tabindex="0" role="region" aria-label="select：用原生的，别自做"><table>
+<div class="table" tabindex="0" role="region" aria-label="select：用原生的，别自做（可横向滚动）"><table>
 <thead><tr>
 <th>类</th><th>作用</th>
 </tr></thead>
@@ -112,7 +112,7 @@
 <h2 id="s9">🔴 结构选型：两种写法都安全<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
 <p>我曾把结构从「input 在 label 内」改成「input 与 label 平级 + for」，理由是怕<strong>双触发</strong>（input 铺满 label ⇒ 点击既命中 input 又冒泡到 label ⇒ 翻转两次）。</p>
 <p><strong>用 puppeteer 真实鼠标点击实测两种结构：</strong></p>
-<div class="table" tabindex="0" role="region" aria-label="🔴 结构选型：两种写法都安全"><table>
+<div class="table" tabindex="0" role="region" aria-label="🔴 结构选型：两种写法都安全（可横向滚动）"><table>
 <thead><tr>
 <th>结构</th><th>连点三次</th><th>结论</th>
 </tr></thead>
@@ -132,7 +132,7 @@
 <h2 id="s10">门禁<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
 <pre class="code" tabindex="0"><code class="language-bash">python3 05-audit/states.py 01-tokens 02-primitives 03-patterns 04-recipes</code></pre>
 <p>choice 形态查三项，全是 HIGH：</p>
-<div class="table" tabindex="0" role="region" aria-label="门禁"><table>
+<div class="table" tabindex="0" role="region" aria-label="门禁（可横向滚动）"><table>
 <thead><tr>
 <th>查</th><th>为什么 HIGH</th>
 </tr></thead>

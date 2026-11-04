@@ -37,7 +37,7 @@
     <ul class="g-meta"><li><a href="../docs/ACCESSIBILITY.md"><code>docs/ACCESSIBILITY.md</code></a></li><li>规则由 <code>01-tokens/</code> 实现，判据见文末对应表</li></ul>
     <article class="g-doc">
 <p><strong>目标等级：WCAG 2.2 Level AA。</strong> 本文按 <strong>成功准则（Success Criterion）逐条</strong>说明状态、证据来源与缺口 —— 不是&quot;我们很重视无障碍&quot;，而是&quot;哪一条过、哪一条没过、凭什么&quot;。</p>
-<div class="table" tabindex="0" role="region" aria-label="表格"><table>
+<div class="table" tabindex="0" role="region" aria-label="数据表（可横向滚动）"><table>
 <thead><tr>
 <th>项目</th><th>值</th>
 </tr></thead>
@@ -54,7 +54,7 @@
 <h2 id="s2">一 · 逐条状态<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
 <p>图例：<strong>✅ 通过</strong>（有判据且为绿）· <strong>◐ 部分</strong>（做了但有明确边界）· <strong>✗ 未验</strong>（没有证据）· <strong>— 不适用</strong>（本库不含该内容，理由写在括号里）</p>
 <h3 id="s3">1. 可感知<a class="anchor" href="#s3" aria-label="本节直链">#</a></h3>
-<div class="table" tabindex="0" role="region" aria-label="1. 可感知"><table>
+<div class="table" tabindex="0" role="region" aria-label="1. 可感知（可横向滚动）"><table>
 <thead><tr>
 <th>SC</th><th>名称</th><th>状态</th><th>证据 / 边界</th>
 </tr></thead>
@@ -73,7 +73,7 @@
 <tr><td>1.4.11</td><td>非文本对比度</td><td>✅</td><td>控件边框 / 焦点环 / 图表色阶单独实算</td></tr>
 <tr><td>1.4.12</td><td>文本间距</td><td>◐</td><td>组件不写死行高与段距（都用令牌），但<strong>未</strong>按&quot;行高 1.5 倍 / 段距 2 倍&quot;的极端注入逐组件验证</td></tr>
 <tr><td>1.4.13</td><td>内容悬停或聚焦</td><td>◐</td><td>tooltip 可 Esc 关闭、可悬停保持；<strong>未</strong>验证&quot;可选中提示内文字&quot;这一分支</td></tr>
-<tr><td>2.1.1</td><td>键盘</td><td>✅</td><td><code>keyboard-nav.js</code>：Tab 顺序、Enter/Space、Esc 关闭</td></tr>
+<tr><td>2.1.1</td><td>键盘</td><td>✅</td><td><code>keyboard-nav.js</code>：Tab 顺序、Enter/Space、Esc 关闭；<strong>滚动容器</strong>（<code>.table</code> / <code>&lt;pre&gt;</code> / 图框）在 320px 下可 Tab 进入 —— <code>table-check</code> ⑮ + <code>a11y-scan</code> 的 320px <code>scrollable-region-focusable</code> 补扫</td></tr>
 <tr><td>2.1.2</td><td>无键盘陷阱</td><td>✅</td><td><code>keyboard-nav.js</code>：浮层关闭后焦点可继续移动，不困在层内</td></tr>
 <tr><td>2.1.4</td><td>字符快捷键</td><td>—</td><td>库不注册单字符快捷键</td></tr>
 <tr><td>2.2.1</td><td>计时可调</td><td>◐</td><td>toast 自动消失时长可配但有上限；<strong>未</strong>提供&quot;暂停计时&quot;控件</td></tr>
@@ -109,7 +109,7 @@
 <hr>
 <h2 id="s4">二 · 证据是怎么来的（以及它盖不住什么）<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
 <h3 id="s5">自动化（可复跑，命令都在 <code>05-audit/</code>）<a class="anchor" href="#s5" aria-label="本节直链">#</a></h3>
-<div class="table" tabindex="0" role="region" aria-label="自动化（可复跑，命令都在 05-audit/）"><table>
+<div class="table" tabindex="0" role="region" aria-label="自动化（可复跑，命令都在 05-audit/）（可横向滚动）"><table>
 <thead><tr>
 <th>手段</th><th>覆盖</th><th>最近结果</th>
 </tr></thead>

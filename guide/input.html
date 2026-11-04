@@ -42,7 +42,7 @@
   &lt;input class=&quot;field__input&quot; id=&quot;q&quot; type=&quot;search&quot; inputmode=&quot;numeric&quot;&gt;
   &lt;span class=&quot;field__hint&quot;&gt;支持后四位模糊匹配&lt;/span&gt;
 &lt;/div&gt;</code></pre><p>写 <code>&lt;input class=&quot;input&quot;&gt;</code> <strong>不会报错、不会警告、控制台干净</strong> ——<br>它只是拿到浏览器默认样式：高度约 <strong>21px</strong>（本组件是 44px），<br>边框、圆角、聚焦环、错误态全部没有。<br>这类&quot;静默失效&quot;比报错更贵：你会以为是 HTML 写错了，或者以为库就该这样。</p></blockquote>
-<div class="table" tabindex="0" role="region" aria-label="表格"><table>
+<div class="table" tabindex="0" role="region" aria-label="数据表（可横向滚动）"><table>
 <thead><tr>
 <th>字段</th><th>内容</th>
 </tr></thead>
@@ -55,7 +55,7 @@
 </table></div>
 <hr>
 <h2 id="s2">五态（input 不是七态）<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
-<div class="table" tabindex="0" role="region" aria-label="五态（input 不是七态）"><table>
+<div class="table" tabindex="0" role="region" aria-label="五态（input 不是七态）（可横向滚动）"><table>
 <thead><tr>
 <th>状态</th><th>实现</th><th>不做会怎样</th>
 </tr></thead>
@@ -70,7 +70,7 @@
 <p><strong>input 没有 active 态</strong>——输入框不响应按压。这一条也写进了 <code>states.py</code> 的形态区分里。</p>
 <hr>
 <h2 id="s3">🔴 与 button 最关键的一处不同，别照抄<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
-<div class="table" tabindex="0" role="region" aria-label="🔴 与 button 最关键的一处不同，别照抄"><table>
+<div class="table" tabindex="0" role="region" aria-label="🔴 与 button 最关键的一处不同，别照抄（可横向滚动）"><table>
 <thead><tr>
 <th></th><th>button</th><th>input</th>
 </tr></thead>
@@ -101,7 +101,7 @@
 <p><strong>2. 不能只靠颜色表示错误（WCAG 1.4.1）</strong></p>
 <p>只把边框变红，色盲用户完全看不出哪里错了。本库给三条线索：红边框 + 叹号图标 + 错误文字。</p>
 <p><strong>3. <code>readonly</code> 和 <code>disabled</code> 是两回事</strong></p>
-<div class="table" tabindex="0" role="region" aria-label="三个容易踩的坑"><table>
+<div class="table" tabindex="0" role="region" aria-label="三个容易踩的坑（可横向滚动）"><table>
 <thead><tr>
 <th></th><th>disabled</th><th>readonly</th>
 </tr></thead>
@@ -120,7 +120,7 @@
 <pre class="code" tabindex="0"><code class="language-bash">python 05-audit/states.py 02-primitives/input/input.css</code></pre>
 <p>当前：零缺失（含 HIGH 五项全过）。 <code>states.py</code> 会把 <code>input/field</code> 类自动归到 input 形态，不查 <code>active</code>。</p>
 <h2 id="s8">备好的能力（demo 里没演示，但可以直接用）<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
-<div class="table" tabindex="0" role="region" aria-label="备好的能力（demo 里没演示，但可以直接用）"><table>
+<div class="table" tabindex="0" role="region" aria-label="备好的能力（demo 里没演示，但可以直接用）（可横向滚动）"><table>
 <thead><tr>
 <th>类</th><th>作用</th><th>什么时候用</th>
 </tr></thead>

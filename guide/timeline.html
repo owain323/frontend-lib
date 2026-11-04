@@ -52,7 +52,7 @@
   &lt;/li&gt;
 &lt;/ol&gt;</code></pre>
 <h2 id="s2">类<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
-<div class="table" tabindex="0" role="region" aria-label="类"><table>
+<div class="table" tabindex="0" role="region" aria-label="类（可横向滚动）"><table>
 <thead><tr>
 <th>类</th><th>作用</th>
 </tr></thead>
@@ -72,7 +72,7 @@
 <ul><li><strong>拿字符画圆点</strong> <code>content: &quot;●&quot;</code> 视觉上看不出区别，但那是一个<strong>文字</strong>：它会进 <code>textContent</code>、能被选中复制、也会被算进链接名（读屏念「圆点 季报披露」）。用 <code>content: &quot;&quot;</code> + 盒子画。</li><li><strong>最后一条也画连接线</strong> 列表下方会多出一截悬空的线，看起来像「还有一个事件没加载出来」。收尾靠选择器（<code>:not(:last-child)</code>），不靠给最后一条设透明边框 —— 透明边框在强制色里会显形。</li><li><strong>连接线用 <code>inset-block: 0</code></strong> 第一条的线会从条目顶端开始，在圆点上方留一小截 —— 同样像&quot;上面还有内容&quot;。线应该从<strong>自己的圆心</strong>画到下一个的圆心。</li><li><strong>圆点对齐整块的中心</strong> 正文一长，圆点就往下滑，同屏几条圆点高低不齐。要对齐的是<strong>首行行盒</strong>的中心。</li><li><strong>只给一条事件也套时间轴</strong> 那不是时间轴，是一段话。连接线和圆点只会让人以为还有下文。</li></ul>
 <h2 id="s5">为什么它值得是一个组件<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
 <p>四个必须一起做对的量，交给调用方&quot;记得做&quot;必然漏：</p>
-<div class="table" tabindex="0" role="region" aria-label="为什么它值得是一个组件"><table>
+<div class="table" tabindex="0" role="region" aria-label="为什么它值得是一个组件（可横向滚动）"><table>
 <thead><tr>
 <th>量</th><th>错了会怎样</th>
 </tr></thead>

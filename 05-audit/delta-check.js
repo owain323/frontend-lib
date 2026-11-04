@@ -209,9 +209,31 @@ function judgeCss(cssText) {
  *     这一类的共性：**可选文件被拆出去后，引用点会漏**。CSS 不报错，
  *     `data-market` 属性照样存在，只是没东西接它。静态判据能抓，就该静态抓。
  */
+/** 剥掉**不参与渲染的文本**：注释、样式表、代码示例。
+ *
+ *  🔴 实测（2026-11-04）：`04-recipes/longform/content.html` 重生成后，
+ *     引用了当前 tokens.css，里面有
+ *       「给 `<html data-market="intl">` …」的文档注释、
+ *       一段 `<pre>` 里的用法示例，
+ *     于是 ⑧ 判它「用了 data-market 却没引 market.css」——
+ *     **文案里的示例不是页面在用属性**。
+ *
+ *  这与 ⑥ 剥注释、`wiring-check` 剥 `<style>`/`<pre>` 是同一条规则（E319 类）：
+ *  判据的对象必须是**会参与渲染的结构**，不是"文本里出现过的字样"。
+ *  ⚠️ 不剥 `<script>`：脚本里 `dataset.market = 'intl'` 是**真的在用**，
+ *     漏掉它会放过"运行时切口径但没引 market.css"的页面。
+ */
+function stripNonLive(html) {
+  return String(html || '')
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<style\b[\s\S]*?<\/style>/gi, '')
+    .replace(/<pre\b[\s\S]*?<\/pre>/gi, '')
+    .replace(/<code\b[\s\S]*?<\/code>/gi, '');
+}
+
 function judgeMarketLinks(html) {
   const errs = [];
-  const code = String(html || '').replace(/<!--[\s\S]*?-->/g, '');
+  const code = stripNonLive(html);
   if (!/data-market/.test(code)) return errs;   // 与口径无关的页面不判
 
   const links = (code.match(/<link\b[^>]*>/gi) || [])
@@ -358,6 +380,26 @@ function selftest() {
     judgeMarketLinks('<link rel="stylesheet" href="../../01-tokens/tokens.css">').length === 0);
   add('⑧ html 注释里提到 data-market 不算使用',
     judgeMarketLinks('<!-- 支持 data-market="intl" -->' + LINK_OK).length === 0);
+  /* 🔴 2026-11-04 实测补的三条：content.html 重生成后引用了当前 tokens.css，
+     其中「给 `<html data-market="intl">` 就切口径」这类**文档文字**把自己判红了。
+     示例不是使用 —— 但要确认「剥示例」没把判据剥成永远绿。 */
+  add('⑧ <pre> 里的用法示例不算使用',
+    judgeMarketLinks('<pre><code>&lt;html data-market="intl"&gt;</code></pre>'
+      + LINK_OK).length === 0);
+  add('⑧ <code> 行内示例不算使用',
+    judgeMarketLinks('<p>给 <code>data-market="intl"</code> 就切</p>'
+      + LINK_OK).length === 0);
+  add('⑧ <style> 里的选择器不算使用',
+    judgeMarketLinks('<style>[data-market="intl"]{--dir-up:#2f6b3a}</style>'
+      + LINK_OK).length === 0);
+  add('⑧ 元反向：真标记仍然要被抓（剥示例没剥成瞎）',
+    judgeMarketLinks('<html data-market="intl">' + LINK_OK).length === 0
+      && judgeMarketLinks('<html data-market="intl">'
+        + '<link rel="stylesheet" href="../../01-tokens/tokens.css">').length === 1);
+  add('⑧ 脚本里切口径仍算使用（不剥 <script>）',
+    judgeMarketLinks('<script>document.documentElement.setAttribute('
+      + '\'data-market\',\'intl\')</script>'
+      + '<link rel="stylesheet" href="../../01-tokens/tokens.css">').length === 1);
 
   let bad = 0;
   for (const [n, ok] of R) {

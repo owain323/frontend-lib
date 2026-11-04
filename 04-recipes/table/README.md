@@ -69,7 +69,8 @@ var COLS = [
   窄屏下会横向滚动；**纯 CSS 无法让它被 Tab 到**，必须在标记上给入口：
 
   ```html
-  <div class="table table--financial" tabindex="0" role="region" aria-label="A 股样例数据">
+  <div class="table table--financial" tabindex="0" role="region"
+       aria-label="A 股样例数据（可横向滚动）">
     <table>…</table>
   </div>
   ```
@@ -77,6 +78,10 @@ var COLS = [
   三个属性缺一不可：`tabindex="0"`（进 Tab 序列）、`role="region"`（成为可命名地标）、
   `aria-label`（读屏要念出"这是什么表"）。少了它们的后果是：只用键盘的用户
   和部分读屏用户**看不到超出可视区的列**（WCAG 2.1.1）。
+  名字里带上 **「（可横向滚动）」**：只说"什么表"不告诉用户这里能滚，
+  焦点停上来时读屏不会提示还有更多列 —— 那正是这条规则要解决的问题。
+  图/图表容器同理，但名字应来自图注（`aria-labelledby` 指向 `<figcaption>`），
+  不要再手写一份同名文案（同一事实不留第二出处）。
   > 这条由两道门禁守着：`table-check.js` ⑮ 在 320px 下逐个量「会滚的容器有没有入口」，
   > `a11y-scan.js` 在同一个页面上补跑 320px 的 `scrollable-region-focusable`。
   > 桌面宽（1280）下表格不溢出，那条 axe 规则根本不会触发 —— 所以窄屏必须单独判。

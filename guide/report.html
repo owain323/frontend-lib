@@ -39,7 +39,7 @@
     <article class="g-doc">
 <p>给「有结论、有数据、有出处」的材料用的一套<strong>排版约定</strong>：实验报告、技术评估、产业跟踪、金融研究。它解决的不是&quot;怎么把字变好看&quot;，而是 <strong>同一份内容在三种不同目的的阅读场景下，各自该长什么样、又各自放弃了什么</strong>。</p>
 <h2 id="s2">它不是什么（边界先划清，免得当万能模板用）<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
-<div class="table" tabindex="0" role="region" aria-label="它不是什么（边界先划清，免得当万能模板用）"><table>
+<div class="table" tabindex="0" role="region" aria-label="它不是什么（边界先划清，免得当万能模板用）（可横向滚动）"><table>
 <thead><tr>
 <th>不是</th><th>说明</th>
 </tr></thead>
@@ -50,7 +50,7 @@
 </tbody>
 </table></div>
 <h2 id="s3">文件<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
-<div class="table" tabindex="0" role="region" aria-label="文件"><table>
+<div class="table" tabindex="0" role="region" aria-label="文件（可横向滚动）"><table>
 <thead><tr>
 <th>文件</th><th>说明</th>
 </tr></thead>
@@ -70,7 +70,7 @@
 report.css                   ← 本系统</code></pre>
 <h2 id="s5">一 · 共享基础：六个可变量<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
 <p>整套系统的行为由<strong>六个变量</strong>决定。换版式＝改这六个，不改选择器。</p>
-<div class="table" tabindex="0" role="region" aria-label="一 · 共享基础：六个可变量"><table>
+<div class="table" tabindex="0" role="region" aria-label="一 · 共享基础：六个可变量（可横向滚动）"><table>
 <thead><tr>
 <th>变量</th><th>管什么</th><th>默认</th>
 </tr></thead>
@@ -87,7 +87,7 @@ report.css                   ← 本系统</code></pre>
 <p><code>.rep__kicker</code>（眉题）· <code>.rep__meta</code>（作者/日期/版本）· <code>.rep__cap</code>（图表说明）· <code>.rep__source</code>（来源脚注）· <code>.rep__note</code>（编者注）· <code>.rep__risk</code>（风险披露）</p>
 <blockquote><p>⭐ 为什么钉死六种：报告里每多一种&quot;自创角色&quot;，读者的解读负担就多一分。<br>发现自己在写第七种时，应该回头用<strong>结构</strong>（列表、表格、引用）而不是字号表达。</p></blockquote>
 <p>导语有两个名字，<strong><code>.rep__standfirst</code> 与 <code>.rep__lede</code> 是同一条规则</strong>（分组选择器）：</p>
-<div class="table" tabindex="0" role="region" aria-label="一 · 共享基础：六个可变量"><table>
+<div class="table" tabindex="0" role="region" aria-label="一 · 共享基础：六个可变量（可横向滚动）"><table>
 <thead><tr>
 <th>类</th><th>说明</th>
 </tr></thead>
@@ -122,7 +122,7 @@ report.css                   ← 本系统</code></pre>
 &lt;/article&gt;</code></pre>
 <p><strong>只用两级标题</strong>：<code>h2</code> 是文章标题，<code>h3</code> 是小节。出现第四级通常意味着该拆的是<strong>文档</strong> 而不是再给一级字号 —— 所以 CSS 里刻意没有 <code>h4</code> 的规则，没定义就是没定义。</p>
 <h2 id="s7">二 · 三种版式的取舍<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
-<div class="table" tabindex="0" role="region" aria-label="二 · 三种版式的取舍"><table>
+<div class="table" tabindex="0" role="region" aria-label="二 · 三种版式的取舍（可横向滚动）"><table>
 <thead><tr>
 <th></th><th><code>rep--magazine</code></th><th><code>rep--technical</code></th><th><code>rep--finance</code></th>
 </tr></thead>
@@ -145,7 +145,7 @@ report.css                   ← 本系统</code></pre>
 .rep--technical .rep__cap--table::before { content: '表 ' counter(rep-tab) ' · '; }</code></pre>
 <p>写死编号会在改稿后全部错位；counter 由 CSS 自己维护。 <strong>图与表走两路独立计数</strong> —— &quot;图 3&quot;和&quot;表 3&quot;不是同一个东西。表格说明加 <code>rep__cap--table</code> 即可；同一个标记在 financial 版里不出编号，因为那是 <strong>profile 说了算，不是标记说了算</strong>。</p>
 <h2 id="s9">三 · 与 <code>04-recipes/analysis-report</code> 的分工<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
-<div class="table" tabindex="0" role="region" aria-label="三 · 与 04-recipes/analysis-report 的分工"><table>
+<div class="table" tabindex="0" role="region" aria-label="三 · 与 04-recipes/analysis-report 的分工（可横向滚动）"><table>
 <thead><tr>
 <th></th><th><code>analysis-report</code></th><th><code>report</code>（本系统）</th>
 </tr></thead>

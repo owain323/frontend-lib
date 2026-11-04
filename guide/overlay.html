@@ -37,7 +37,7 @@
     <ul class="g-meta"><li><a href="../03-patterns/overlay/demo.html"><code>03-patterns/overlay/demo.html</code></a></li><li><a href="../03-patterns/overlay/overlay.css"><code>03-patterns/overlay/overlay.css</code></a></li><li><a href="../03-patterns/overlay/overlay.js"><code>03-patterns/overlay/overlay.js</code></a></li></ul>
 <figure class="g-live"><figcaption class="g-live__cap"><span class="g-live__tag">在这页里直接跑</span>下面是 Toast / Dialog（反馈层） 的真实示例页，全套状态都在里面；<a href="../03-patterns/overlay/demo.html">单独打开</a>可以看到完整尺寸。</figcaption><iframe class="g-live__frame" src="../03-patterns/overlay/demo.html" title="Toast / Dialog（反馈层） 的可运行示例" loading="lazy"></iframe></figure><script src="live.js" defer></script>
     <article class="g-doc">
-<div class="table" tabindex="0" role="region" aria-label="表格"><table>
+<div class="table" tabindex="0" role="region" aria-label="数据表（可横向滚动）"><table>
 <thead><tr>
 <th>字段</th><th>内容</th>
 </tr></thead>
@@ -51,7 +51,7 @@
 <hr>
 <h2 id="s2">核心是一条判断，不是样式<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
 <h3 id="s3">类清单<a class="anchor" href="#s3" aria-label="本节直链">#</a></h3>
-<div class="table" tabindex="0" role="region" aria-label="类清单"><table>
+<div class="table" tabindex="0" role="region" aria-label="类清单（可横向滚动）"><table>
 <thead><tr>
 <th>类</th><th>作用</th>
 </tr></thead>
@@ -67,7 +67,7 @@
 </table></div>
 <p>⚠️ <strong>这张表曾经有三行是假的</strong>（2026-11-02 修）：<code>.overlay</code> 这个类全库没有任何 CSS 定义（真实的遮罩叫 <code>.dialog-backdrop</code>）、<code>.toast__icon</code> 与 <code>.dialog__body</code> 同样不存在。它们是从早期版本抄下来的名字 —— 照着写的人会得到&quot;样式没生效，但也不报错&quot;。</p>
 <p>⚠️ <strong>三种 toast 变体在本 demo 里没有演示</strong> —— 它们是给复用者的钩子，样式已备好，需要你自己触发。 <code>[data-state=&quot;valid&quot;]</code> 同理（见 <code>states/README.md</code>）。</p>
-<div class="table" tabindex="0" role="region" aria-label="类清单"><table>
+<div class="table" tabindex="0" role="region" aria-label="类清单（可横向滚动）"><table>
 <thead><tr>
 <th></th><th>toast</th><th>dialog</th>
 </tr></thead>
@@ -89,7 +89,7 @@
 <p>实现：监听 <code>keydown</code>，到边界时 <code>preventDefault()</code> 并折回。</p>
 <p><strong>并加一层保险</strong>：支持 <code>inert</code> 的浏览器上，把背景节点整体 <code>inert = true</code>—— 比 focus trap 更彻底（鼠标点击也失效）。不支持就靠 focus trap 兜。</p>
 <h4 id="s6">背景隔离的三条硬要求（外部审计后补的）<a class="anchor" href="#s6" aria-label="本节直链">#</a></h4>
-<div class="table" tabindex="0" role="region" aria-label="背景隔离的三条硬要求（外部审计后补的）"><table>
+<div class="table" tabindex="0" role="region" aria-label="背景隔离的三条硬要求（外部审计后补的）（可横向滚动）"><table>
 <thead><tr>
 <th>要求</th><th>为什么</th>
 </tr></thead>
@@ -113,7 +113,7 @@ document.body.style.paddingRight = (cur + sbw) + 'px';</code></pre>
 <p>写成 <code>= sbw + 'px'</code> 会把宿主原有的 <code>padding-right</code> 覆盖掉—— 宿主一有左右 padding，关掉弹层后排版就变了。</p>
 <p>滚动条消失后内容会横向跳一下——<strong>弹层&quot;闪&quot;的感觉大半来自这里。</strong> 最容易被忽略、也最容易被当成&quot;动画没做好&quot;。</p>
 <p><strong>不用 <code>scrollbar-gutter: stable</code></strong>（两种写法都在真机量过，都放弃）：</p>
-<div class="table" tabindex="0" role="region" aria-label="3. 滚动锁定 + 滚动条补偿"><table>
+<div class="table" tabindex="0" role="region" aria-label="3. 滚动锁定 + 滚动条补偿（可横向滚动）"><table>
 <thead><tr>
 <th>写法</th><th>流式内容</th><th><code>100vw</code> 元素</th><th>代价</th>
 </tr></thead>
@@ -140,7 +140,7 @@ document.body.style.paddingRight = (cur + sbw) + 'px';</code></pre>
 <p><strong>3 秒后悄悄消失 = 用户还没读完就等于没说。</strong> 错误要么不自动消失，要么给足时间 + 保留手动关闭。</p>
 <hr>
 <h2 id="s11">动效克制<a class="anchor" href="#s11" aria-label="本节直链">#</a></h2>
-<div class="table" tabindex="0" role="region" aria-label="动效克制"><table>
+<div class="table" tabindex="0" role="region" aria-label="动效克制（可横向滚动）"><table>
 <thead><tr>
 <th>属性</th><th>值</th><th>理由</th>
 </tr></thead>

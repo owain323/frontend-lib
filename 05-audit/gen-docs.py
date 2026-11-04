@@ -243,9 +243,14 @@ def render_table(rows, resolve_link, section=''):
     #   外部审计 F13 实测：375px 下 axe `scrollable-region-focusable` 命中 4 处，
     #   而 a11y 门禁固定 1280×900，那个宽度不溢出 ⇒ 一直绿。
     #   ⇒ 生成时统一带上 tabindex / role / 可访问名；名字取**所在小节标题**，
-    #     没有标题时退到"表格"。不要在 40+ 个页面里手写第二遍。
-    label = (section or '').strip() or '表格'
-    label = label.replace('"', '\"')[:60]
+    #     没有标题时退到"数据表"。不要在 40+ 个页面里手写第二遍。
+    #
+    #   名字写法跟仓库既有约定一致（见 04-recipes/app-shell 与 analysis-report，
+    #   以及 10-review/a11y-tree 里已存在的 `region "财务数据表（可横向滚动）"`）：
+    #   **内容名 + 「（可横向滚动）」**。只写内容名的话，屏幕阅读器用户
+    #   不会知道这里可以横向滚 —— 那正是 2.1.1 想解决的问题。
+    label = (section or '').strip()[:48] or '数据表'
+    label = (label + '（可横向滚动）').replace('"', '\"')
     out = ['<div class="table" tabindex="0" role="region" '
            'aria-label="%s"><table>' % label, '<thead><tr>']
     out.append(''.join(cell('th', c, i) for i, c in enumerate(head)))

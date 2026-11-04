@@ -37,7 +37,7 @@
     <ul class="g-meta"><li><a href="../03-patterns/content/demo.html"><code>03-patterns/content/demo.html</code></a></li><li><a href="../03-patterns/content/content.css"><code>03-patterns/content/content.css</code></a></li></ul>
 <figure class="g-live"><figcaption class="g-live__cap"><span class="g-live__tag">在这页里直接跑</span>下面是 content —— 内容渲染样式 的真实示例页，全套状态都在里面；<a href="../03-patterns/content/demo.html">单独打开</a>可以看到完整尺寸。</figcaption><iframe class="g-live__frame" src="../03-patterns/content/demo.html" title="content —— 内容渲染样式 的可运行示例" loading="lazy"></iframe></figure><script src="live.js" defer></script>
     <article class="g-doc">
-<div class="table" tabindex="0" role="region" aria-label="表格"><table>
+<div class="table" tabindex="0" role="region" aria-label="数据表（可横向滚动）"><table>
 <thead><tr>
 <th>字段</th><th>内容</th>
 </tr></thead>
@@ -58,7 +58,7 @@
 .prose &gt; pre &gt; code { ... }
 .prose &gt; table { ... }</code></pre>
 <p><strong>唯一的例外是 <code>.task-list-item</code>。</strong> 它不是我们发明的：GFM 的任务列表会把 <code>&lt;li&gt;</code> 渲染成 <code>&lt;li class=&quot;task-list-item&quot;&gt;&lt;input type=&quot;checkbox&quot; disabled&gt;</code>，类名由渲染器给出，我们只能去接。所以 <code>content.css</code> 里只有它是类选择器：</p>
-<div class="table" tabindex="0" role="region" aria-label="一句话原则"><table>
+<div class="table" tabindex="0" role="region" aria-label="一句话原则（可横向滚动）"><table>
 <thead><tr>
 <th>类</th><th>谁来加</th><th>我们做什么</th>
 </tr></thead>
@@ -71,7 +71,7 @@
 <p>唯一的自定义类名是 <code>.prose</code>——它不改变语义，只是&quot;这块是正文&quot;的标记。</p>
 <hr>
 <h2 id="s3">三层能力，不能混为一谈<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
-<div class="table" tabindex="0" role="region" aria-label="三层能力，不能混为一谈"><table>
+<div class="table" tabindex="0" role="region" aria-label="三层能力，不能混为一谈（可横向滚动）"><table>
 <thead><tr>
 <th>层</th><th>表格</th><th>删除线</th><th>任务列表</th>
 </tr></thead>
@@ -86,7 +86,7 @@
 <hr>
 <h2 id="s4">🔴 两个实测踩到的坑<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
 <h3 id="s5">1. 不同渲染器的输出<strong>不完全一致</strong><a class="anchor" href="#s5" aria-label="本节直链">#</a></h3>
-<div class="table" tabindex="0" role="region" aria-label="1. 不同渲染器的输出不完全一致"><table>
+<div class="table" tabindex="0" role="region" aria-label="1. 不同渲染器的输出不完全一致（可横向滚动）"><table>
 <thead><tr>
 <th>语法</th><th>GitHub/GFM</th><th>markdown-it 实测</th>
 </tr></thead>

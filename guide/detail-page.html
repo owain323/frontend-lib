@@ -41,7 +41,7 @@
 <h2 id="s2">为什么需要它<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
 <p>产品里&quot;同一类对象、字段多少不一&quot;是常态：有的字段齐全，有的只接了一半，有的还没接。常见做法是每遇到一种情况就改一版结构 —— 结果是同一类页面越改越不像，最后没人能说清&quot;这页到底应该长什么样&quot;。</p>
 <p>这张配方把结构钉死，把差异收进三个变量层：</p>
-<div class="table" tabindex="0" role="region" aria-label="为什么需要它"><table>
+<div class="table" tabindex="0" role="region" aria-label="为什么需要它（可横向滚动）"><table>
 <thead><tr>
 <th>允许变的</th><th>不许变的</th>
 </tr></thead>
@@ -52,7 +52,7 @@
 </tbody>
 </table></div>
 <h2 id="s3">三个变体<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
-<div class="table" tabindex="0" role="region" aria-label="三个变体"><table>
+<div class="table" tabindex="0" role="region" aria-label="三个变体（可横向滚动）"><table>
 <thead><tr>
 <th>文件</th><th>状态</th><th>关键点</th>
 </tr></thead>
@@ -93,7 +93,7 @@
 <h2 id="s5">三条结构规则<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
 <ol><li><strong>装饰层与内容层是平级兄弟</strong>，不是父子。装饰层必须 <code>pointer-events: none</code> 且不含内容 —— 否则它会吃掉点击、挤走内容。</li><li><strong>皮肤挂在 <code>section</code>（<code>.detail-page</code>）上，不挂 <code>body</code></strong>。同一页不同区块可以各自换肤，这是&quot;每块长得不一样但共用一套 CSS&quot;的结构前提。</li><li><strong>DOM 不许变</strong>。字段缺失是&quot;值缺失&quot;，不是&quot;节点缺失&quot;。</li></ol>
 <h2 id="s6">无数据态的三条硬规则<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
-<div class="table" tabindex="0" role="region" aria-label="无数据态的三条硬规则"><table>
+<div class="table" tabindex="0" role="region" aria-label="无数据态的三条硬规则（可横向滚动）"><table>
 <thead><tr>
 <th>规则</th><th>为什么</th>
 </tr></thead>

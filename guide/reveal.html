@@ -49,7 +49,7 @@
 &lt;section data-reveal=&quot;up&quot;&gt;…&lt;/section&gt;</code></pre>
 <p>不想自动接管，就手动调：<code>Reveal.enable()</code> / <code>Reveal.disable()</code> / <code>Reveal.replay()</code>。</p>
 <h2 id="s3">属性协议<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
-<div class="table" tabindex="0" role="region" aria-label="属性协议"><table>
+<div class="table" tabindex="0" role="region" aria-label="属性协议（可横向滚动）"><table>
 <thead><tr>
 <th>属性</th><th>作用</th><th>取值</th>
 </tr></thead>
@@ -62,7 +62,7 @@
 </table></div>
 <blockquote><p><code>data-reveal-repeat</code> 是本库与参考实现的<strong>不同之处</strong>：默认<strong>只播一次</strong>。<br>理由：产品页里内容&quot;滚出去再藏起来&quot;会让回看变成负担；<br>作品集那种一次性深度浏览的页面才需要重播，所以做成显式开启。</p></blockquote>
 <h2 id="s4">参数（不是随手定的）<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
-<div class="table" tabindex="0" role="region" aria-label="参数（不是随手定的）"><table>
+<div class="table" tabindex="0" role="region" aria-label="参数（不是随手定的）（可横向滚动）"><table>
 <thead><tr>
 <th>参数</th><th>值</th><th>为什么</th>
 </tr></thead>
@@ -77,7 +77,7 @@
 <h2 id="s5">三条硬约束<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
 <ol><li><strong>无 JS 必须全可见。</strong> 隐藏只在 <code>&lt;html data-reveal-ready&gt;</code> 存在时生效，而这个标记由引擎在接管<strong>之后</strong>才加。没有 JS / JS 报错 / 没有 <code>IntersectionObserver</code> ⇒ 内容就是普通内容：透明度 1、位置不偏。</li><li><strong>降级是分级的。</strong> <code>prefers-reduced-motion</code> 下位移与缩放<strong>关掉</strong>，内容直接出现（不做淡入）。全库那条 <code>0.01ms !important</code> 兜底会把一切灭掉，本文件用更具体的规则覆盖它 —— 因为&quot;关掉位移&quot;不等于&quot;关掉可见性&quot;。</li><li><strong>只用于区块级入场。</strong> 不要给表格行、列表项逐行加：那是扫读场景，用户要在半秒内横向比三行数字，逐行错峰会让比较变成&quot;等动画&quot;。</li></ol>
 <h2 id="s6">类名<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
-<div class="table" tabindex="0" role="region" aria-label="类名"><table>
+<div class="table" tabindex="0" role="region" aria-label="类名（可横向滚动）"><table>
 <thead><tr>
 <th>类名</th><th>是什么</th>
 </tr></thead>
@@ -91,7 +91,7 @@
 <p>有一种常见的加固做法：进场动画在跑的时候不要被打断，用 <code>getAnimations().some(a =&gt; a.playState === 'running')</code> 判断，说&quot;快速滚动时这条决定了顺滑还是闪&quot;。</p>
 <p><strong>那条针对的是 JS 驱动的动画</strong>（Web Animations API 重启动画会跳）。 CSS transition 被打断时是 <strong>retarget</strong>：从当前值继续插值，不重头再来。</p>
 <p><code>05-audit/motion-concurrency.js</code> 在真浏览器里量过，结论：</p>
-<div class="table" tabindex="0" role="region" aria-label="为什么没有「动画进行中不打断」的守卫（实测结论）"><table>
+<div class="table" tabindex="0" role="region" aria-label="为什么没有「动画进行中不打断」的守卫（实测结论）（可横向滚动）"><table>
 <thead><tr>
 <th>判据</th><th>实测</th>
 </tr></thead>
