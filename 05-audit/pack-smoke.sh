@@ -154,12 +154,15 @@ echo "  OK    每个 exports 入口都能被 Node 解析到真实文件，入口
 #   `node --check`（只判语法）。**"读文档的那一方"从来没有被测过。**
 #   ⇒ 把文档当消费者：抽出每个 agentcss 字面路径，逐个真解析。
 if ! node "$REPO_ROOT/05-audit/doc-imports.js" \
-        --consumer "$WORK/consumer" > "$WORK/docimports.txt" 2>&1; then
+        --consumer "$WORK/consumer" --pkg "$NAME" > "$WORK/docimports.txt" 2>&1; then
   echo "  FAIL  🔴 文档里的 import 路径照抄会失败："
   sed 's/^/        /' "$WORK/docimports.txt"
   exit 1
 fi
-sed 's/^/  /' "$WORK/docimports.txt" | tail -2
+# 🔴 别用 tail 截掉「扫了 N 份、抽出 N 条、真解析 N 条」那一行：
+#    05-audit/README.md 的门禁清单要求打印扫描规模，看到 0 就要怀疑。
+#    旧写法 `| tail -2` 只留下占位符说明和结论，读者无从判断视野是否变空。
+sed 's/^/  /' "$WORK/docimports.txt" | head -14
 
 # ---------- 5. 关键文件必须在（types 是对外承诺）----------
 MISS=""

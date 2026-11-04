@@ -282,7 +282,7 @@ dist/01-tokens/tokens.css          ← 拷这个
 那些注释是写给你看的取舍理由（为什么这么定、踩过什么坑），不是写给你浏览器看的。
 **注释让你看代码时处处撞墙；从源码目录引入的话，构建工具还会把那部分字节原样打进产物。**
 
-**一个冻结的上限。** 整套库受一份账本约束（[`05-audit/budget.json`](05-audit/budget.json)）：
+**一个冻结的上限。** 整套库受一份账本约束（[`05-audit/budget.json`](https://github.com/owain323/frontend-lib/blob/master/05-audit/budget.json)）：
 硬天花板 + 一份「常规新增组件不用改任何数字」的储备 + 一个只在体积下降时收紧的棘轮。
 规则、以及「什么情况才允许抬天花板」，在 [`docs/BUDGET.md`](docs/BUDGET.md)。
 
@@ -456,7 +456,7 @@ bash 05-audit/check-all.sh       # 全量门禁约 130 项，本机约 8 分钟
 `🔍` 是「在真实设备上人工试过一次，之后没人再看」——
 浏览器升级只会被前者发现。逐项结果、完整 UA 与复核方法见
 [`docs/LAYER-BASELINE.md`](docs/LAYER-BASELINE.md) 与
-[`10-review/webview/RESULTS.md`](10-review/webview/RESULTS.md)。
+[`10-review/webview/RESULTS.md`](https://github.com/owain323/frontend-lib/blob/master/10-review/webview/RESULTS.md)。
 
 ⚠️ 定位里写「移动 Web」指的是**设计取向**（触控优先、命中区不小于 44px），
 不代表已被自动化覆盖，更不代表页面在真机上就能用：

@@ -25,7 +25,7 @@
 > ⇒ 它支撑的结论是「我们在这 7 个环境里试过，结果如下」，
 > 不是「我们保证这 7 个环境一直能用」。
 > 逐项结果（7 行 × 15 项）、15 项全集与复核方法见
-> [`10-review/webview/RESULTS.md`](../10-review/webview/RESULTS.md)。
+> [`10-review/webview/RESULTS.md`](https://github.com/owain323/frontend-lib/blob/master/10-review/webview/RESULTS.md)。
 
 ---
 
@@ -146,7 +146,7 @@ Android 上 Chrome ≠ 系统 WebView ≠ 各家 App 内置 WebView。**入口�
 |---|---|
 | 数据怎么来的 | 在真实设备上打开 `10-review/webview/capability-probe.html`，把页面输出的结果贴进上表 |
 | 有没有原始记录 | 🔴 **没有入库**。当时探针把 JSON POST 回采集端，落的是本机文件，仓库里只留下转录进表格的结论 |
-| 逐项结果在哪看 | [`10-review/webview/RESULTS.md`](../10-review/webview/RESULTS.md) —— 7 行 × 15 项矩阵 |
+| 逐项结果在哪看 | [`10-review/webview/RESULTS.md`](https://github.com/owain323/frontend-lib/blob/master/10-review/webview/RESULTS.md) —— 7 行 × 15 项矩阵 |
 | 别人怎么复核 | 同上文件「怎么自己复核一行」：取 UA → 在目标设备复跑探针 → 比对 `N / 15` 与缺失项 |
 | 日期锚点 | 表格「测试日期」列写的是「见采集所在提交（git log）」；用 `git blame` + 该行 UA 的唯一片段定位 |
 | 有没有自动化守着 | **没有**。人工一次性实测，浏览器升级不会触发任何门禁 |

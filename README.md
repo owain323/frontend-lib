@@ -269,7 +269,7 @@ Two builds ship:
 The source tree keeps every comment — that is documentation, not payload.
 
 **One frozen ceiling.** The whole library is held to a single budget recorded in
-[`05-audit/budget.json`](05-audit/budget.json): a hard ceiling, a reserve that absorbs
+[`05-audit/budget.json`](https://github.com/owain323/frontend-lib/blob/master/05-audit/budget.json): a hard ceiling, a reserve that absorbs
 normal additions *without anyone editing a number*, and a ratchet that tightens the
 budget when the library shrinks. The rules — and what would have to be true to raise
 the ceiling — are in [`docs/BUDGET.md`](docs/BUDGET.md).
@@ -290,7 +290,7 @@ not — is in [`docs/STABILITY.md`](docs/STABILITY.md).
 - **Tested once** (`🔍`) means exactly that: one manual run on a real device, with a full UA and a per-capability result, but **no automated check watching it**. A browser update will not turn anything red. It never counts as verified, and the two never add up.
 - **Not claimed** means exactly that. A row that has not been tested is not written as supported.
 
-Mobile WebView support is where that distinction bites. Seven entry points have been probed by hand — per-capability results in [`10-review/webview/RESULTS.md`](10-review/webview/RESULTS.md) — while Android System WebView still has **no data at all**. None of the seven was checked for soft-keyboard, safe-area, scroll-bounce or 200 % text behaviour: "15/15 capabilities" is not "the page works on a phone".
+Mobile WebView support is where that distinction bites. Seven entry points have been probed by hand — per-capability results in [`10-review/webview/RESULTS.md`](https://github.com/owain323/frontend-lib/blob/master/10-review/webview/RESULTS.md) — while Android System WebView still has **no data at all**. None of the seven was checked for soft-keyboard, safe-area, scroll-bounce or 200 % text behaviour: "15/15 capabilities" is not "the page works on a phone".
 
 ## Theming
 

@@ -58,6 +58,7 @@ var fs = require('fs');
 var path = require('path');
 var cp = require('child_process');
 var url = require('url');
+var os = require('os');
 var Module = require('module');
 /* 星号语义只有一份（E31）。别在本文件里再写一遍正则。 */
 var pkgTarget = require('./_pkg-target.js');
@@ -330,6 +331,18 @@ function main(argv) {
   var bad = [];
   var unverified = [];
 
+  /* 🔴 零视野守卫（E315）：0/0 不是通过。
+     `exports: {}`（或所有键都因故无法构造说明符）时，下面 A/B/C 三段
+     全都空转：reqOk=0/0、esmOk=0/0、传递扫描 0 个文件 0 条引用，
+     bad 为空 ⇒ 旧版照样 RC=0，还打印「两套条件都能解析到真实文件，
+     入口内引用传递闭合」—— 一句彻头彻尾的假结论（I-10）。
+     ⇒ 没有输入就红，别让它走到结论那一行。 */
+  if (!built.specs.length) {
+    console.log('');
+    console.log('  🔴 零视野：exports 没产生任何可验证的说明符（0/0）⇒ 不判通过');
+    return 1;
+  }
+
   /* ---------- A. require 条件 ---------- */
   var reqOk = 0;
   var entryFiles = [];
@@ -489,13 +502,164 @@ function main(argv) {
   return 0;
 }
 
+/* ==========================================================================
+ * --selftest：反向控制。
+ *
+ * 🔴 为什么必须有这一段：本判据此前**只被 pack-smoke.sh 跑到**，没有任何
+ *    门禁证明它「注入坏样本会红」。第三轮外部审计补的四个盲区（两套条件、
+ *    传递闭包、动态 import、星号共用实现）都是**改判据**，没有一条自证。
+ *    直到 2026-11-04 才发现 `exports = {}` 时 0/0 全绿 —— 正是 I-10 的
+ *    「报告通过却什么都没检查」。
+ *
+ * ⭐ 全部用**临时 mini 真包**（系统 temp 目录，不碰仓库），直接调 main()：
+ *    这样验的是整条主流程（require.resolve + import.meta.resolve 子进程 +
+ *    传递闭包），不是只测某个纯函数。selftest-all 的判据 ③「跑完工作区
+ *    一字不变」因此天然成立。
+ * ========================================================================*/
+
+/** 造一个最小真包；返回 {tmp, consumer}，调用方负责 rmSync(tmp)。 */
+function miniPackage(exportsMap, files) {
+  var tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'agentcss-entryresolve-'));
+  var consumer = path.join(tmp, 'consumer');
+  var pkg = path.join(consumer, 'node_modules', 'agentcss');
+  fs.mkdirSync(path.join(pkg, 'esm'), { recursive: true });
+  fs.writeFileSync(path.join(pkg, 'package.json'),
+    JSON.stringify({ name: 'agentcss', version: '0.0.0', exports: exportsMap }));
+  Object.keys(files).forEach(function (rel) {
+    fs.writeFileSync(path.join(pkg, rel), files[rel]);
+  });
+  return { tmp: tmp, consumer: consumer, pkg: pkg };
+}
+
+/** 静音跑一遍 main，返回退出码。main 自己不 process.exit，可安全复用。
+ *  ⚠️ 异常返回 -1（不是 1）：反向控制断言「=== 1」，这样 main 崩了不会被
+ *     误记成「判据正确地把坏样本判红了」。 */
+function runQuiet(consumer) {
+  var orig = console.log;
+  var rc;
+  console.log = function () {};
+  try {
+    rc = main(['--consumer', consumer, '--pkg', 'agentcss']);
+  } catch (e) {
+    rc = -1;
+  } finally {
+    console.log = orig;
+  }
+  return rc;
+}
+
+function selftest() {
+  var bad = [];
+  var made = [];
+
+  function report(cond, name, detail) {
+    if (!cond) bad.push(name + (detail ? '（' + detail + '）' : ''));
+    console.log('  ' + (cond ? '[OK]  ' : '[FAIL]') + ' ' + name);
+  }
+  function mk(exportsMap, files) {
+    var m = miniPackage(exportsMap, files);
+    made.push(m.tmp);
+    return m;
+  }
+
+  var GOOD_EXPORTS = { '.': './esm/index.mjs', './esm/*.mjs': './esm/*.mjs' };
+  var GOOD_FILES = {
+    'esm/index.mjs': "import './b.mjs';\nexport const a = 1;\n",
+    'esm/b.mjs': 'export const b = 1;\n'
+  };
+
+  try {
+    /* ① 正向控制：合法包必须绿 */
+    report(runQuiet(mk(GOOD_EXPORTS, GOOD_FILES).consumer) === 0,
+      '合法包 ⇒ 绿（正向控制）');
+
+    /* ② 传递闭包：二层引用缺失必须红 */
+    report(runQuiet(mk(GOOD_EXPORTS, {
+      'esm/index.mjs': "import './missing.mjs';\n",
+      'esm/b.mjs': 'export const b = 1;\n'
+    }).consumer) === 1,
+      '入口里 import 不存在的文件 ⇒ 红（传递闭包，不是只扫一层）');
+
+    /* ③ 元反向：把同一处缺失文件补上，红必须消失 */
+    report(runQuiet(mk(GOOD_EXPORTS, GOOD_FILES).consumer) === 0,
+      '元反向：只把缺失文件补上 ⇒ 绿（红来自那条引用）');
+
+    /* ④ exports 目标指向不存在的文件 ⇒ 红。
+       ⚠️ 边界（这里踩过一次）：0.25.3 的「通配键二次拼 .mjs」是**文档写的
+          路径**与 exports 组合出来的事故，由 `doc-imports.js` 判；本判据
+          从包内文件反推说明符，天生构造不出那条坏路径。第一版把这条硬塞
+          进来当反例，实测本判据**绿**（它没抓错，是反例不属于它的视野），
+          自检因此报红 ⇒ 撤回。不许用自己抓不到的反例假装覆盖。 */
+    report(runQuiet(mk({ '.': './esm/nope.mjs', './esm/*.mjs': './esm/*.mjs' },
+      GOOD_FILES).consumer) === 1,
+      'exports 目标文件不存在 ⇒ 红');
+
+    /* ⑤ 第三轮审计①的补丁必须有牙：require 条件正常、import 条件映射
+          到不存在文件时，import.meta.resolve 仍会返回 file URL，
+          靠补的那一次 fs.existsSync 抓出来。 */
+    report(runQuiet(mk({
+      '.': { 'require': './esm/index.mjs', 'import': './esm/gone.mjs' }
+    }, GOOD_FILES).consumer) === 1,
+      'import 条件映射到不存在文件 ⇒ 红（existsSync 补丁有牙）');
+
+    /* ⑥ 元反向：import 条件目标改对 ⇒ 绿 */
+    report(runQuiet(mk({
+      '.': { 'require': './esm/index.mjs', 'import': './esm/index.mjs' }
+    }, GOOD_FILES).consumer) === 0,
+      '元反向：import 条件目标改对 ⇒ 绿');
+
+    /* ⑦ 零视野：0/0 必须红（这次修的那条） */
+    report(runQuiet(mk({}, GOOD_FILES).consumer) === 1,
+      '零视野：exports 不产生任何说明符 ⇒ 红（0/0 不算通过）');
+
+    /* ⑧ 包里没有 package.json ⇒ 红（原有的良性守卫仍有效） */
+    var noPkg = miniPackage(GOOD_EXPORTS, GOOD_FILES);
+    made.push(noPkg.tmp);
+    fs.unlinkSync(path.join(noPkg.pkg, 'package.json'));
+    report(runQuiet(noPkg.consumer) === 1,
+      '包里没有 package.json ⇒ 红');
+
+    /* ⑨ 纯函数：通配键必须展开到**每个**匹配文件，不能只采样一个 */
+    var built = specifiersFor('agentcss', GOOD_EXPORTS,
+      ['esm/index.mjs', 'esm/b.mjs', 'README.md']);
+    report(built.specs.length === 3,
+      '通配键对每个匹配文件都产出说明符（不是只验第一个）',
+      '实际 ' + built.specs.length + ' 条');
+
+    /* ⑩ 注释剥离不能把引号里的 // 当注释，吞掉后面的 import */
+    var stripped = stripJsComments(
+      "var u = 'https://x/y';\nimport './b.mjs';\n");
+    report(stripped.indexOf("import './b.mjs'") >= 0,
+      '引号里的 // 不被当注释、后面的 import 仍被扫到');
+  } catch (e) {
+    report(false, '反向控制可执行', String(e).slice(0, 140));
+  } finally {
+    made.forEach(function (tmp) {
+      try { fs.rmSync(tmp, { recursive: true, force: true }); } catch (e2) { /* 系统临时目录 */ }
+    });
+  }
+
+  console.log('  --- 合成判据共 ' +
+              (bad.length ? '有 ' + bad.length + ' 条失败' : '全绿') + ' ---');
+  if (bad.length) {
+    bad.forEach(function (x) { console.log('  🔴 ' + x); });
+    return 1;
+  }
+  console.log('  ⇒ 反向控制全绿');
+  return 0;
+}
+
 if (require.main === module) {
-  process.exit(main(process.argv.slice(2)));
+  var argv = process.argv.slice(2);
+  if (argv.indexOf('--selftest') >= 0) process.exit(selftest());
+  process.exit(main(argv));
 }
 
 module.exports = {
   specifiersFor: specifiersFor,
   resolveRelative: resolveRelative,
   stripJsComments: stripJsComments,
-  esmResolve: esmResolve
+  esmResolve: esmResolve,
+  main: main,
+  selftest: selftest
 };

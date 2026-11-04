@@ -746,6 +746,81 @@ function analyze(buf) {
  *  ⇒ 判据之前先自证"我量的是这个库的页面"，不是浏览器默认样式下的 HTML。
  *    失败重试一次（服务端的瞬时排队不值得报假红），仍然失败就明确报错。
  */
+/* 🔴 E303：iframe 「加载完」≠「打印时内容装得下」。
+   guide/live.js 在 iframe load 之后还会用 150ms / 700ms 两个定时器 +
+   ResizeObserver 反复把框高从 MIN(240px) 撑到内容高度。实测（2026-11-04，
+   /guide/button.html，794×1123）：
+       t=0    frame h=240  inner=240   sheets=0  ready=complete  ← about:blank 也算 complete
+       t=150  frame h=240  inner=2936  sheets=4  ready=complete  ← 旧判据在这里放行
+       t=300  frame h=2936 inner=2936  sheets=4                 ← 真正装得下
+   只看「readyState + 样式表」会在 t=150 放行，而此时打印产物只剩 240px 的
+   可视窗口 ⇒ 8 页 / 2321 runs 变成 4 页 / 1679 runs（E296 事故的同一组数字）。
+   ⇒ 判据必须落在**最终版面上**：框高要能容纳内容（页面自己声明 capped 的除外）。 */
+const FRAME_TOL = 6;   /* 与 guide/live.js 的 `after > answer + 6` 同一容差 */
+
+/** 只判定，不采集：喂合成 rows 就能验它有没有牙（反向控制见 selftest ⑭）。 */
+function frameReadiness(rows) {
+  const bad = [];
+  rows.forEach((r, i) => {
+    if (!r.ok || r.sheets === 0) { bad.push(i + ':文档或样式没就绪'); return; }
+    if (r.fonts !== 'loaded') { bad.push(i + ':字体没就绪'); return; }
+    /* 不是活标本、或页面已声明「窗口内可滚动」⇒ 高度由页面自己负责 */
+    if (!r.live) return;
+    /* 🔴 不许用 `capped` 豁免。第一版写了「页面声明窗口内可滚动 ⇒ 跳过」，
+       实测（2026-11-04 /guide/button.html）**从 t=0 起 data-capped 就是 "1"**
+       —— 因为内容 2936 > CAP 2200，而 live.js 的收尾修正又把框高改回内容高度
+       （t=300 时 h=2936=inner）。于是那道豁免让高度判据在真实页面上
+       **一次都没生效**，3 路并发全绿只是运气，不是修复。
+       ⇒ 一律要求「框装得下内容」。将来真出现内容 > MAX(9000) 被截断的页面，
+         让它红，逼维护者写明例外，而不是静默放过。 */
+    if (!(r.h >= r.inner - FRAME_TOL)) {
+      bad.push(i + ':活标本框高 ' + r.h + 'px 装不下内容 ' + r.inner
+        + 'px' + (r.capped ? '（且已标 capped，仍不许豁免）' : ''));
+    }
+  });
+  return { bad: bad.length, why: bad.join('；') };
+}
+
+/** 页面内：只触发一次加载，返回 iframe 总数。**不能**放进轮询里重复执行 ——
+   每次 setAttribute('src', src) 都会让 iframe 重新导航，反而永远等不到稳定。 */
+function primeFrames() {
+  const list = Array.from(document.querySelectorAll('iframe'));
+  const blank = (f) => {
+    try {
+      return !f.contentWindow || f.contentWindow.location.href === 'about:blank';
+    } catch (e) { return false; }
+  };
+  list.forEach((f) => { if (f.loading === 'lazy') { f.loading = 'eager'; } });
+  list.forEach((f) => {
+    const src = f.getAttribute('src');
+    if (src && blank(f)) { f.setAttribute('src', src); }
+  });
+  return list.length;
+}
+
+/** 页面内：只采集，不判定。判定统一走 Node 侧的 frameReadiness（I-7：一份真值）。
+    这个函数会被 puppeteer 序列化，因此必须自包含，不能引用模块级变量。 */
+function collectFrameRows() {
+  return Array.from(document.querySelectorAll('iframe')).map((f) => {
+    try {
+      const d = f.contentDocument;
+      return {
+        ok: !!(d && d.readyState === 'complete' && d.body),
+        sheets: d ? Array.from(d.styleSheets).filter((s) => s.href).length : 0,
+        fonts: d && d.fonts ? d.fonts.status : 'loaded',
+        live: f.classList.contains('g-live__frame'),
+        capped: f.dataset.capped === '1',
+        done: f.getAttribute('data-fit-done') || '',   /* 反向控制夹具用的显式信号 */
+        h: f.clientHeight,
+        inner: d ? Math.max(d.documentElement.scrollHeight, d.body.scrollHeight) : 0,
+      };
+    } catch (e) {
+      return { ok: false, sheets: 0, fonts: 'loading', live: false,
+        capped: false, h: 0, inner: 0 };
+    }
+  });
+}
+
 async function loadStyled(p, url) {
   let why = '';
   for (let attempt = 0; attempt < 2; attempt += 1) {
@@ -773,48 +848,23 @@ async function loadStyled(p, url) {
       loaded: Array.from(document.styleSheets).filter((s) => s.href).length,
     }));
 
-    /* 信号三（E296）：懒加载 iframe 必须真的加载完。
-       guide 的每个页面都把「可运行示例」嵌在 `<iframe loading="lazy">` 里，
-       而**打印产物包含它的内容**。并发 6 路时那个 iframe 可能整页没开始加载
-       ⇒ 打印版面直接腰斩。实测 guide-button/light：
-           基线 8 页 / 2321 runs  →  失败那次 4 页 / 1679 runs
-       而信号一二**看不见它**：顶层文档的 <link> 全都挂上了，判据照样"通过自检"，
-       然后拿一份少了一半的版面去跟基线比 ⇒ 报成"内容回归"，其实什么都没变。
-
-       ⇒ 先强制 eager 并触发加载，再等每个 frame 的 document 就绪且样式表挂上。
-         这不是放宽判据：真内容缺失时页数照样对不上，只是不再把
-         "iframe 没起来"算成"库改坏了"。 */
-    const fr = await p.evaluate(async () => {
-      const list = Array.from(document.querySelectorAll('iframe'));
-      const blank = (f) => {
-        try {
-          return !f.contentWindow || f.contentWindow.location.href === 'about:blank';
-        } catch (e) { return false; }
-      };
-      list.forEach((f) => { if (f.loading === 'lazy') { f.loading = 'eager'; } });
-      list.forEach((f) => {
-        const src = f.getAttribute('src');
-        if (src && blank(f)) { f.setAttribute('src', src); }
-      });
-      await Promise.all(list.map((f) => new Promise((res) => {
-        if (!blank(f)) { return res(true); }
-        let done = false;
-        const fin = (ok) => { if (!done) { done = true; res(ok); } };
-        f.addEventListener('load', () => fin(true), { once: true });
-        setTimeout(() => fin(false), 20000);
-      })));
-      const rows = list.map((f) => {
-        try {
-          const d = f.contentDocument;
-          const n = d ? Array.from(d.styleSheets).filter((s) => s.href).length : 0;
-          return { ok: !!(d && d.readyState === 'complete' && d.body), sheets: n };
-        } catch (e) { return { ok: false, sheets: 0 }; }
-      });
-      return {
-        count: list.length,
-        bad: rows.filter((r) => !r.ok || r.sheets === 0).length,
-      };
-    });
+    /* 信号三（E296 → E303）：iframe 必须加载完，且活标本框已撑到内容高度。
+       🔴 旧版只看「readyState + 样式表」，并且用 `blank(f)` 判是否要等 load：
+          iframe 一开始导航时 location 已经不是 about:blank ⇒ 直接跳过等待，
+          于是 t=150ms 那份"样式到了、框还是 240px"的版面被当成就绪（E303）。
+       ⇒ 改成在 Node 侧轮询：显式条件（装得下 / 已 capped），不是固定等待；
+         判定只有 frameReadiness 一份，采集与触发各自独立，不重复导航。 */
+    const expected = await p.evaluate(primeFrames);
+    let fr = { bad: 1, why: '还没采到 iframe' };
+    const deadline = Date.now() + 12000;
+    do {
+      const rows = await p.evaluate(collectFrameRows);
+      fr = rows.length !== expected
+        ? { bad: 1, why: '采到 ' + rows.length + ' 个 iframe，页面里有 ' + expected + ' 个' }
+        : frameReadiness(rows);
+      if (fr.bad === 0) break;
+      await new Promise((r) => setTimeout(r, 100));
+    } while (Date.now() < deadline);
 
     const bad = failedCss.length > 0 || (st.links > 0 && st.loaded === 0)
       || fr.bad > 0;
@@ -824,7 +874,7 @@ async function loadStyled(p, url) {
       ? (failedCss.length + ' 个样式表请求失败：' + failedCss.slice(0, 3).join(', '))
       : (st.links > 0 && st.loaded === 0)
         ? (st.links + ' 个 <link> 全部没挂上')
-        : (fr.bad + '/' + fr.count + ' 个内嵌 iframe 没加载完或没样式');
+        : (fr.bad + ' 个内嵌 iframe 没就绪：' + fr.why);
     await new Promise((r) => setTimeout(r, 500));
   }
   throw new Error('页面样式没落地（' + why + '）：' + url
@@ -1098,6 +1148,46 @@ const FIXTURES = {
     + '@media screen and (prefers-color-scheme: dark){:root{--fg:#e4e7ea;--bg:#14171a}}'
     + 'body{margin:0;padding:24px;background:var(--bg);color:var(--fg);font:16px/1.6 sans-serif}'
     + '</style><h1>暗色关在屏幕里</h1><p>打印回落到浅色令牌。</p>',
+
+  /* ---- ⑭（E303）：活标本 iframe 的「加载完」与「撑到内容高度」是两件事 ----
+     这组 fixture 复刻 guide/live.js 的行为：iframe load 之后才把框高设成内容高度，
+     一行是立即设，一行故意晚 800ms —— 后者就是并发下被推迟的那个窗口。 */
+  'frame.css': 'body{margin:0;color:#15181c;font:16px/1.6 sans-serif}'
+    + '.filler{height:3000px;background:#fff}',
+
+  /* ⚠️ 用 `srcdoc` 而不是 `src=xxx.html`：file:// 下两个不同文件的 iframe 被当跨域，
+     contentDocument 读不到 ⇒ 采到的全是 ok:false，判据会"因为看不见而报红"，
+     那不是我们要验的形态（第一次跑就踩到了）。srcdoc 与父页同源。 */
+  'fit-never.html': '<!DOCTYPE html><meta charset="utf-8">'
+    + '<link rel="stylesheet" href="frame.css">'
+    + '<iframe class="g-live__frame" srcdoc="'
+    + '<!DOCTYPE html><meta charset=utf-8><link rel=stylesheet href=frame.css>'
+    + '<div style=\'height:3000px\'>活标本内容占 3000 像素。</div>'
+    + '"></iframe>',
+  'fit-now.html': '<!DOCTYPE html><meta charset="utf-8">'
+    + '<link rel="stylesheet" href="frame.css">'
+    + '<iframe class="g-live__frame" srcdoc="'
+    + '<!DOCTYPE html><meta charset=utf-8><link rel=stylesheet href=frame.css>'
+    + '<div style=\'height:3000px\'>活标本内容占 3000 像素。</div>'
+    + '"></iframe>'
+    + '<script>var f=document.querySelector("iframe");'
+    /* 夹具的内容高度由 srcdoc 内联 style 固定为 3000px，框设 3200px 表示"已撑开"。
+       🔴 不要在 go() 里现量 scrollHeight：脚本同步执行时 iframe 布局还没建立，
+       会量到 150px 再固化 —— 那正是 live.js 注释里记的第一版坑，第一跑就踩到了。 */
+    + 'var go=function(){f.style.height="3200px";'
+    + 'f.setAttribute("data-fit-done","1");};'
+    + 'if(f.contentDocument&&f.contentDocument.readyState==="complete")go();'
+    + 'else f.addEventListener("load",go);</script>',
+  'fit-late.html': '<!DOCTYPE html><meta charset="utf-8">'
+    + '<link rel="stylesheet" href="frame.css">'
+    + '<iframe class="g-live__frame" srcdoc="'
+    + '<!DOCTYPE html><meta charset=utf-8><link rel=stylesheet href=frame.css>'
+    + '<div style=\'height:3000px\'>活标本内容占 3000 像素。</div>'
+    + '"></iframe>'
+    + '<script>var f=document.querySelector("iframe");'
+    + 'var go=function(){f.style.height="3200px";'
+    + 'f.setAttribute("data-fit-done","1");};'
+    + 'setTimeout(go,1200);</script>',
 };
 
 async function selftest() {
@@ -1306,6 +1396,64 @@ async function selftest() {
     }
     report(/页面样式没落地/.test(guardThrew),
       '⑬ 样式表全 404 ⇒ 报错而不是对裸 HTML 下结论');
+
+    /* ---- ⑭（E303）：iframe「加载完」≠「打印时内容装得下」----
+       事故形态（实测 t=150ms）：ready=complete、sheets=4，但框高 240px、
+       内容 2936px。E296 的旧判据只看前者 ⇒ 放行 ⇒ 打印产物腰斩。
+       先用合成 rows 证明新判据会红、并用元反证明这红来自"框高"维度；
+       再用真浏览器夹具证明 loadStyled 真的等到撑开之后才返回（不是碰运气）。 */
+    /* ⚠️ capped: true 是**真实形态**：guide/button.html 的活标本从 t=0 就带着
+       data-capped="1"。第一版把它当豁免，判据在真实页面上根本没生效。 */
+    const T150 = { ok: true, sheets: 4, fonts: 'loaded', live: true,
+      capped: true, done: '', h: 240, inner: 2936 };
+    const T300 = Object.assign({}, T150, { h: 2936 });
+    const oldReady = (r) => r.ok && r.sheets > 0;      /* E296 的旧判据 */
+    report(oldReady(T150) && frameReadiness([T150]).bad > 0,
+      '⑭ 事故形态（含 capped）：旧判据放行、新判据拦下',
+      'old=' + oldReady(T150) + ' newBad=' + frameReadiness([T150]).bad);
+    report(frameReadiness([T300]).bad === 0,
+      '⑭ capped 且框已撑到内容高度 ⇒ 绿（真实稳定态）');
+    /* 🔴 元反向：把判据换回"capped 即豁免"，同一份事故样本必须不再红 ——
+       证明"去掉豁免"是这条防线上唯一有牙的那一段。 */
+    const withCappedExemption = (r) => r.ok && r.sheets > 0 && r.fonts === 'loaded'
+      && (!r.live || r.capped || r.h >= r.inner - FRAME_TOL);
+    report(withCappedExemption(T150),
+      '⑭ 元反向：换回 capped 豁免 ⇒ 同一事故样本不再红（修复前就是这样）');
+    report(frameReadiness([Object.assign({}, T150, { live: false })]).bad === 0,
+      '⑭ 非活标本 iframe ⇒ 只验加载，不强加高度判据');
+    report(frameReadiness([Object.assign({}, T300, { fonts: 'loading' })]).bad > 0,
+      '⑭ 字体没就绪 ⇒ 红');
+    report(frameReadiness([Object.assign({}, T300, { ok: false })]).bad > 0,
+      '⑭ 文档没就绪 ⇒ 红');
+    report(oldReady(T150) && !oldReady({ ok: false, sheets: 0 }),
+      '⑭ 元反向：旧判据认得文档没就绪，却认不出框没撑开');
+
+    const vp = { width: 794, height: 1123, deviceScaleFactor: 1 };
+    /* 用"永不撑高"的夹具做中间态：它不依赖定时器竞态，任何时刻都稳定地
+       满足 oldReady 而违反 frameReadiness。fit-late 交给下面验证"会等到"。 */
+    const neverUrl = 'file:///' + dir.replace(/\\/g, '/') + '/fit-never.html';
+    const mid = await withPage(vp, async (p) => {
+      await p.goto(neverUrl, { waitUntil: 'load', timeout: 45000 });
+      return p.evaluate(collectFrameRows);
+    });
+    const midOld = mid.length === 1 && mid.every(oldReady);
+    const midNew = frameReadiness(mid).bad;
+    report(midOld && midNew > 0,
+      '⑭ 真浏览器：load 之后旧判据放行、新判据拦下',
+      'rows=' + JSON.stringify(mid));
+
+    for (const name of ['fit-now.html', 'fit-late.html']) {
+      const u = 'file:///' + dir.replace(/\\/g, '/') + '/' + name;
+      const rows = await withPage(vp, async (p) => {
+        await loadStyled(p, u);
+        return p.evaluate(collectFrameRows);
+      });
+      const ok = rows.length === 1 && rows[0].done === '1'
+        && rows[0].h >= rows[0].inner - FRAME_TOL;
+      report(ok, '⑭ 真浏览器：loadStyled 返回时 ' + name + ' 的框已装下内容',
+        'h=' + (rows[0] && rows[0].h) + ' inner=' + (rows[0] && rows[0].inner)
+        + ' done=' + (rows[0] && rows[0].done));
+    }
   } finally {
     try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) { /* 忽略 */ }
   }

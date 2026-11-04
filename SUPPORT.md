@@ -97,9 +97,9 @@ grep 一条都数不到），还有 `skip "…"`（这台机器跑不了的门�
 
 ### 试过一次的（🔍 人工实测，无回归保护）
 
-7 行数据来自在真实设备上打开 [`capability-probe.html`](10-review/webview/capability-probe.html)。
+7 行数据来自在真实设备上打开 [`capability-probe.html`](https://github.com/owain323/frontend-lib/blob/master/10-review/webview/capability-probe.html)。
 完整 UA 与逐项结论在 [`docs/LAYER-BASELINE.md`](docs/LAYER-BASELINE.md)；
-15 项能力分别是什么、怎么自己复跑一遍，在 [`10-review/webview/RESULTS.md`](10-review/webview/RESULTS.md)。
+15 项能力分别是什么、怎么自己复跑一遍，在 [`10-review/webview/RESULTS.md`](https://github.com/owain323/frontend-lib/blob/master/10-review/webview/RESULTS.md)。
 本节 7 行**全部是 `🔍`** —— 没有一行有自动化守着。
 
 | 入口 | UA 自述的环境 | 实测 | 缺什么 |

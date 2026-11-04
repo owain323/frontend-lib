@@ -47,13 +47,50 @@ xss-sink-gate.py — 每一个 HTML 注入点都必须**说得清它装的是什
 """
 
 import io
+import json
 import os
 import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC_DIRS = ['01-tokens', '02-primitives', '03-patterns', '04-recipes', '09-assets']
+PACKAGE = os.path.join(ROOT, 'package.json')
 SECURITY = os.path.join(ROOT, 'SECURITY.md')
+
+# 🔴 2026-11-04：原来手写 5 个目录，而文件头承诺的是「**每一个** HTML 注入点」。
+#    `esm/` / `adapters/` / `ai/` 不在那张清单里（当前确实没有注入点，属防御性缺口），
+#    将来在新增目录里写一处未标记的 innerHTML，门禁会安静地全绿。
+#    ⇒ 扫描面从 `package.json` 的 `files` 白名单推导（它已经是"包里有什么"的真值），
+#      不再维护第二份目录清单（I-7）。dist/ 是生成物：`build-dist --check` 保证它与源
+#      一致，且压缩时剥掉了 `@html-sink` 注释 ⇒ 扫源、不扫产物。
+GENERATED_DIRS = frozenset({'dist', 'types', 'docs'})
+
+
+def sourceDirs(entries, generated=GENERATED_DIRS):
+    """纯函数：白名单条目 → 要扫的源码目录。喂合成条目就能验（见 selftest）。"""
+    out = []
+    for e in entries:
+        if e.startswith('!') or not e.endswith('/'):
+            continue
+        d = e.rstrip('/')
+        if d in generated or d in out:
+            continue
+        out.append(d)
+    return out
+
+
+def source_dirs_from_package():
+    """返回 (dirs, errs)。视野为空 / 目录不存在一律带错，不许静默跳过。"""
+    try:
+        pkg = json.load(io.open(PACKAGE, encoding='utf-8'))
+    except Exception as exc:                                   # noqa: BLE001
+        return None, ['读不到 package.json：%s' % exc]
+    dirs = sourceDirs(pkg.get('files', []))
+    if not dirs:
+        return None, ['零视野：files 白名单里一个源码目录都没有 ⇒ 没检查']
+    missing = [d for d in dirs if not os.path.isdir(os.path.join(ROOT, d))]
+    if missing:
+        return None, ['白名单里的目录在磁盘上不存在：%s' % ', '.join(missing)]
+    return dirs, []
 
 SINK_RE = re.compile(r'\.(?:innerHTML|outerHTML)\s*(?:\+?=)|\.insertAdjacentHTML\s*\(')
 MARK_RE = re.compile(r'@html-sink\s+(raw-html|escaped|internal)\s*[—\-:：]?\s*(.*)')
@@ -286,12 +323,12 @@ def analyze(src, name, registry, guard=False):
     return errs, stats
 
 
-def collect():
+def collect(dirs):
     out = []
-    for d in SRC_DIRS:
+    for d in dirs:
         base = os.path.join(ROOT, d)
-        for root, dirs, names in os.walk(base):
-            dirs[:] = [x for x in dirs if x not in ('_attic', 'node_modules')]
+        for root, dirs_, names in os.walk(base):
+            dirs_[:] = [x for x in dirs_ if x not in ('_attic', 'node_modules')]
             for n in sorted(names):
                 if n.endswith('.js'):
                     out.append(os.path.join(root, n))
@@ -300,8 +337,14 @@ def collect():
 
 def check():
     registry, reg_err = security_registry()
-    files = collect()
+    scan_dirs, dir_errs = source_dirs_from_package()
+    if dir_errs:
+        for e in dir_errs:
+            print('  [FAIL] ' + e)
+        return 1
+    files = collect(scan_dirs)
     print('  === HTML 注入点 ===')
+    print('     扫描面（由 package.json 的 files 推导）：%s' % ', '.join(scan_dirs))
 
     if not files:
         print('  [FAIL] 扫到 0 个 JS 文件 —— 不是通过，是没检查')
@@ -403,6 +446,27 @@ def selftest():
         print('  [%s] %-26s 期望红 ⇒ 实际%s%s'
               % ('OK ' if ok else 'BAD', label, '红' if ok else '绿',
                  ('  ' + errs[0][1][:40]) if errs else ''))
+        if not ok:
+            bad += 1
+
+    # ---- 扫描面对齐（2026-11-04）：证明「每一个注入点」这句承诺有视野 ----
+    view_cases = [
+        ('扫描面自动含 esm/adapters/ai，排除 dist/types/docs',
+         sourceDirs(['01-tokens/', '02-primitives/', 'esm/', 'adapters/', 'ai/',
+                     'dist/', 'types/', 'docs/', '!ai/surface.baseline.json'])
+         == ['01-tokens', '02-primitives', 'esm', 'adapters', 'ai']),
+        ('白名单新增一个源码目录 ⇒ 自动进扫描面（不会静默漏）',
+         '10-new' in sourceDirs(['01-tokens/', '10-new/'])),
+        ('空白名单 ⇒ 0 个目录（门禁据此判红，不空转通过）',
+         sourceDirs([]) == []),
+        ('元反向：不排除生成物 ⇒ dist 会被算进扫描面',
+         'dist' in sourceDirs(['dist/'], generated=frozenset())),
+    ]
+    real_dirs, real_errs = source_dirs_from_package()
+    view_cases.append(('真实 package.json 的扫描面非空且目录都在',
+                       bool(real_dirs) and not real_errs))
+    for label, ok in view_cases:
+        print('  [%s] %s' % ('OK ' if ok else 'BAD', label))
         if not ok:
             bad += 1
 

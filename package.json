@@ -1,6 +1,6 @@
 {
   "name": "agentcss",
-  "version": "0.25.5",
+  "version": "0.25.6",
   "description": "移动 Web 组件库：CSS + 可选行为脚本，零第三方运行时依赖。样式用 bundler 引入，交互行为用 script 标签引入。",
   "keywords": [
     "css",
@@ -73,7 +73,17 @@
     "CODE_OF_CONDUCT.md",
     "CHANGELOG.md",
     "LICENSE",
-    "index.html"
+    "index.html",
+    "!**/*.bak",
+    "!**/*.tmp",
+    "!**/*.orig",
+    "!**/*.rej",
+    "!**/*.old",
+    "!**/*.pyc",
+    "!**/*.log",
+    "!**/.DS_Store",
+    "!**/Thumbs.db",
+    "!**/__parity_probe.js"
   ],
   "sideEffects": [
     "**/*.css",
@@ -86,9 +96,9 @@
     "gate:fast": "bash 05-audit/check-all.sh --fast",
     "gate:timing": "bash 05-audit/check-all.sh --timing",
     "ci:observe": "python3 05-audit/nightly-observe.py",
-            "ci:print-cost": "node 05-audit/print-pagination-cost.js",
-"ci:print-audit": "node 05-audit/print-content-audit.js --all",
-"ci:merge-exp": "node 05-audit/render-merge-experiment.js",
+    "ci:print-cost": "node 05-audit/print-pagination-cost.js",
+    "ci:print-audit": "node 05-audit/print-content-audit.js --all",
+    "ci:merge-exp": "node 05-audit/render-merge-experiment.js",
     "ci:zoom-merge": "node 05-audit/zoom-merge-experiment.js --all",
     "size:record": "python3 05-audit/size-baseline.py --record",
     "dist": "python3 05-audit/build-dist.py",

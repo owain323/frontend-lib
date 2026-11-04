@@ -193,6 +193,33 @@ def git_anchor_problems(cwd, tag, ver_now, min_version=MIN_SOURCE_COMMIT):
     return out
 
 
+def files_path_problems(files, root=ROOT):
+    """[4] 纯函数：返回 (错误列表, 包含项, 字面排除项, glob 排除项)。
+
+    🔴 2026-11-04：原判据对**所有** `!` 排除项都查「指向的东西存不存在」。
+    那对字面路径是对的（写了一条挡不住任何东西的排除，等于没写），
+    但对 `!**/*.bak` 这类 **glob 排除**是错的：它的语义恰恰是
+    「防将来可能出现的临时文件」，当前仓库里没有 .bak 才是常态。
+    ⇒ 字面项继续查存在；glob 项只按是否含通配符分类，不判当前存在。
+    glob 有没有真的挡住文件，由 `pack-hygiene-gate.py` ⑤ 与 A/B 探针验。
+    """
+    errs = []
+    includes = [f for f in files if not f.startswith('!')]
+    excludes = [f[1:] for f in files if f.startswith('!')]
+    missing = [f for f in includes
+               if not os.path.exists(os.path.join(root, f.rstrip('/')))]
+    if missing:
+        errs.append('files 里列了但**实际不存在**：' + ', '.join(missing))
+    literal = [f for f in excludes if '*' not in f and '?' not in f]
+    globbed = [f for f in excludes if '*' in f or '?' in f]
+    dead = [f for f in literal
+            if not os.path.exists(os.path.join(root, f.rstrip('/')))]
+    if dead:
+        errs.append('files 里的**排除项指向的东西不存在**（这条排除毫无意义）：'
+                    + ', '.join(dead))
+    return errs, includes, literal, globbed
+
+
 def main():
     print('  === 发布契约门禁 ===')
     print('')
@@ -300,24 +327,18 @@ def main():
     #      然后报「files 里列了但实际不存在」—— **判据本身错了**，
     #      它在惩罚一个正确的排除项。
     #   ⇒ 排除项的正确检查是：**它指向的东西确实存在**（否则这条排除毫无意义）。
-    includes = [f for f in files if not f.startswith('!')]
-    excludes = [f[1:] for f in files if f.startswith('!')]
-    missing = [f for f in includes
-               if not os.path.exists(os.path.join(ROOT, f.rstrip('/')))]
-    if missing:
-        print('      X files 里列了但**实际不存在**：%s' % ', '.join(missing))
-    dead_excludes = [f for f in excludes
-                     if not os.path.exists(os.path.join(ROOT, f.rstrip('/')))]
-    if dead_excludes:
-        print('      X files 里的**排除项指向的东西不存在**（这条排除毫无意义）：%s'
-              % ', '.join(dead_excludes))
-        missing = missing + dead_excludes
-    if missing:
+    ferrs, includes, literal, globbed = files_path_problems(files)
+    for e in ferrs:
+        print('      X ' + e)
+    if ferrs:
         print('      X files 路径有问题（详见上一行）')
         bad += 1
     else:
-        print('      OK 包含项 %d 个、排除项 %d 个，路径都存在'
-              % (len(includes), len(excludes)))
+        msg = ('      OK 包含项 %d 个、字面排除项 %d 个（路径都在）'
+               % (len(includes), len(literal)))
+        if globbed:
+            msg += '、glob 排除项 %d 个（防将来文件，不判当前存在）' % len(globbed)
+        print(msg)
 
 
     # ---------- ⑤ 描述里没有会漂移的数字 ----------
@@ -942,6 +963,25 @@ def _selftest():
     chk('反：有 prepack', mod(lambda p: p['scripts'].update(prepack='x')), True)
     chk('反：files 里有 "*"',
         mod(lambda p: None, files=OK_FILES + ['*']), True)
+
+    # ---- [4] files 路径：literal 排除要有牙，glob 排除不许误报 ----
+    chk('正：glob 排除项不判当前存在',
+        files_path_problems(['dist/', 'ai/', '!**/*.bak', '!**/*.tmp'])[0], False)
+    chk('正：字面排除指向真实文件',
+        files_path_problems(['dist/', '!dist/manifest.json'])[0], False)
+    chk('反：字面排除指向不存在的东西',
+        files_path_problems(['dist/', '!no-such-file.json'])[0], True)
+    chk('反：包含项不存在',
+        files_path_problems(['dist/', 'ghost/'])[0], True)
+    old_rule = [e[1:] for e in ['!**/*.bak']
+                if not os.path.exists(os.path.join(ROOT, e[1:].rstrip('/')))]
+    chk('元反向：旧规则（排除项一律查存在）会把合法 glob 排除误判',
+        old_rule, True)
+    _e2, _inc, lit, glb = files_path_problems(
+        ['dist/', '!dist/manifest.json', '!**/*.bak'])
+    chk('分类：字面 1 项、glob 1 项（不是把所有排除都放行）',
+        [] if (len(lit) == 1 and len(glb) == 1) else ['分类不对'], False)
+
     chk('反：README 包名不符',
         mod(lambda p: None, readme='npm install frontend-lib'), True)
     for label, rd in [

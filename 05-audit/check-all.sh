@@ -532,6 +532,12 @@ run "assets-catalog" $PY 05-audit/assets-catalog-gate.py
 # 🔴 「零第三方运行时依赖」是 README 的第一句承诺。2026-10-30 实测：此前**没有任何门禁
 #    读过 dependencies** —— 注入 lodash 后 doc-facts / dist:check / npm test 三道全部 RC=0。（WO-10）
 run "zero-dep" $PY 05-audit/zero-dep-gate.py
+# 🔴 lock-source（2026-11-04 新增）：`npm ci` 按 lockfile 的 resolved 直取，
+#   不看 `.npmrc` 钉的官方源。实测漏过一条 npmmirror（0.7.9 那次 91 处替换的漏网），
+#   而 `repo-hygiene` 只判「.npmrc 在不在」，从来没读过 lock 的内容。
+#   ⇒ 修一行只是把当前状态改对，这道门禁才防得住第 2 条悄悄回来。
+run "lock-source" $PY 05-audit/lockfile-source-gate.py
+run "lock-source-rev" $PY 05-audit/lockfile-source-gate.py --selftest
 # 令牌解析正确性：孤儿注释收尾符 / var() 引用缺失 / （full 模式）浏览器复核
 run "token-parse" $PY 05-audit/token-parse-gate.py --no-browser
 # 令牌受众：每个令牌都得登记「给谁用的」；孤儿不许是 internal、公开孤儿必须进受审名单
@@ -939,7 +945,11 @@ run "dist-js-parity" node 05-audit/dist-js-parity-gate.js
 #   2026-10-27 起 selftest-all **自己也会起服务**，所以这里保留一道的原因是
 #   避免同一条自检在一个 fast/full 里跑两遍（它要起浏览器，约 2-8 秒）；
 #   → selftest-all 的 SKIP 里同步改成了「已在本段注册」的措辞。
-run "dist-js-parity-rev" node 05-audit/dist-js-parity-gate.js --selftest
+# 🔴 @serial（E312）：这条自检会往 `dist/` 临时写 `__parity_probe.js` 再删。
+#   没标串行时它和 `dist-fresh`（build-dist --check）并发 ⇒ 后者撞上文件存在的
+#   窗口，报「孤儿产物 dist/__parity_probe.js」—— 代码没坏，是调度让判据互相看见。
+#   框架约定：写盘 / 独占资源的门禁必须 @serial（先独占跑完，再起并发组）。
+run "dist-js-parity-rev" @serial node 05-audit/dist-js-parity-gate.js --selftest
 # 🔴 a11y 的反向控制（0.8.9 接上 · 审计 P1-8）：
 #   `_a11y-reverse-control.js` 早就写好了 —— 注入 5 类典型违规
 #   （img 无 alt / input 无 label / id 重复 / tabindex 乱序 / 对比度过浅），
@@ -1266,6 +1276,16 @@ run "docs-site-rev" $PY 05-audit/docs-site-gate.py --selftest
 #   **md 里的路径一直没人管**。
 run "md-links"      $PY 05-audit/md-links.py
 run "md-links-rev"  $PY 05-audit/md-links.py --selftest
+# 🔴 pack-hygiene（2026-11-04 新增）：上面那道看的是**仓库这一棵树**，
+#   而装包的人只拿到 `files` 白名单里的文件。实测 0.25.5 真包里
+#   4 份文档共 8 个链接指向 05-audit/budget.json、10-review/webview/*，
+#   这些文件都不在包里 ⇒ 仓库视角全绿、包内全是死链（I-10 实证 6/7 同型）。
+#   清单只认 `npm pack --dry-run --json` 的真实输出，不自己解析白名单（I-7）。
+#   同一份清单还判 ⑤：包里不许有 `.bak` / `.tmp` 等临时文件 —— 第一次干跑真抓到
+#   `combobox.js.__reverse.bak`（反向控制留下的备份被按目录收进了包），
+#   现由 package.json 的 `!**/*.bak` 排除，这道判据验证排除没被撤掉。
+run "pack-hygiene"     $PY 05-audit/pack-hygiene-gate.py
+run "pack-hygiene-rev" $PY 05-audit/pack-hygiene-gate.py --selftest
 # 🔴 do-dont（2026-10-29 加）—— "每个组件都得说清什么时候不该用"
 #   起因：33 个组件里只有 11 个写了反例章，其余 22 个只有"✅ 这么用"。
 #   一份只写正例的文档，读者学不到边界；而反例恰恰是最容易写坏的一类内容：
