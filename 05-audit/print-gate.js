@@ -887,11 +887,40 @@ async function render(url, scheme) {
     await p.emulateMediaType('print');
     await p.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: scheme }]);
     await p.evaluate(() => (document.fonts ? document.fonts.ready.then(() => 1) : 1));
+    /* 🔴 E316：切到 print 媒体之后，iframe 内部会重新应用打印样式并重排。
+       原来「等布局静止」只量顶层 `body.scrollHeight` —— 而 iframe 的框高是
+       inline style 写死的，顶层高度从一开始就固定，**对 iframe 内部有没有
+       排完版完全没有视野**。⇒ 显式触发 iframe 内部的样式结算、字体就绪与
+       两帧重绘，再把静止判据的量测范围扩到 iframe 内部。 */
+    await p.evaluate(async () => {
+      const list = Array.from(document.querySelectorAll('iframe'));
+      for (const f of list) {
+        try {
+          const d = f.contentDocument;
+          if (!d) continue;
+          void d.documentElement.offsetWidth;          /* 强制样式结算 */
+          if (d.fonts) await d.fonts.ready;
+          await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+        } catch (e) { /* 跨域 iframe 不由这道判据负责 */ }
+      }
+    });
+    const layoutSignature = () => p.evaluate(() => {
+      const frames = Array.from(document.querySelectorAll('iframe')).map((f) => {
+        try {
+          const d = f.contentDocument;
+          if (!d) return 'no-doc';
+          return [f.clientHeight, d.documentElement.scrollHeight,
+            d.body ? d.body.scrollHeight : 0,
+            d.fonts ? d.fonts.status : 'na', d.readyState];
+        } catch (e) { return 'x-origin'; }
+      });
+      return document.body.scrollHeight + '|' + JSON.stringify(frames);
+    });
     /* 等布局静止：只等固定毫秒会在长页面上量到"还没排完"的版面 */
-    let prev = -1;
+    let prev = '';
     let stab = 0;
     for (let i = 0; i < 30; i += 1) {
-      const h = await p.evaluate(() => document.body.scrollHeight);
+      const h = await layoutSignature();
       if (h === prev) { stab += 1; if (stab >= 2) break; } else { stab = 0; prev = h; }
       await new Promise((r) => setTimeout(r, 120));
     }
@@ -908,6 +937,28 @@ async function render(url, scheme) {
 }
 
 /* ---------------------------------------------------------------- 判据 */
+
+/* 🔴 E316：产物侧自证。
+   `render()` 之前的所有就绪判据都量的是 **DOM 层**（文档、样式表、字体、
+   iframe 框高）。但 `page.pdf()` 由 Chromium 的打印合成器产出，在混合门禁
+   并发下，iframe 的渲染进程可能还没把内容合成进去 —— DOM 全绿、PDF 却少了
+   一半文字。实测两轮**文件内容完全相同**的全量：一轮 print 8 页/2321 runs，
+   一轮 4 页/1679 runs（guide-button light/dark 同时腰斩）。
+
+   ⇒ 不试图穷举时序，改为让**最终产物自己说话**：明显残缺就作废重渲染，
+     有限次数；重试用尽仍残缺就明确报"观测条件没稳住"，而不是伪装成内容回归。
+
+   `deficit()` 只认「页数与文字量**双双**明显少于基线」这一种形态。
+   内容变多、只少页数、只少文字量、颜色变化一律不重试 —— 那些可能是真回归，
+   重试把它们洗掉就等于放宽判据。第三参数仅供元反向注入，证明阈值有牙。 */
+const MAX_RENDER_TRIES = 3;
+const DEFICIT_RUN_RATIO = 0.95;
+
+function deficit(got, base, ratio) {
+  const r = ratio === undefined ? DEFICIT_RUN_RATIO : ratio;
+  if (!got || !base) return false;
+  return got.pages < base.pages && got.runs < base.runs * r;
+}
 
 function sameHist(a, b) {
   const ka = Object.keys(a).sort();
@@ -942,6 +993,13 @@ function judge(result, baseline) {
       }
       if (baseline && baseline.pages[name]) {
         const b = baseline.pages[name][scheme];
+        /* E316：重试用尽仍是残缺版面 ⇒ 说明观测条件没稳住，不是"内容改坏了"。
+           报错必须把两者分开，否则下一个人会去找一个不存在的回归。 */
+        if (got.renderTries >= MAX_RENDER_TRIES && deficit(got, b)) {
+          errs.push(tag + '：重渲染 ' + got.renderTries + ' 次仍是残缺版面（'
+            + got.pages + ' 页 / ' + got.runs + ' runs）'
+            + ' ⇒ 观测条件没稳住，不是内容回归');
+        }
         if (got.pages !== b.pages) {
           errs.push(tag + '：页数 ' + got.pages + ' ≠ 基线 ' + b.pages);
         }
@@ -1028,13 +1086,34 @@ async function main() {
   console.log('  === 结构类型（受管页面全集 ' + universe.length + ' 页，探针视口 393×852）===');
   for (const line of typeTable(universe, PAGES, TYPES)) console.log(line);
 
+  let baseline = null;
+  if (fs.existsSync(OUT)) {
+    try { baseline = JSON.parse(fs.readFileSync(OUT, 'utf8')); } catch (e) { baseline = null; }
+  }
+
   const result = {};
   for (const [name, url] of PAGES) {
     result[name] = {};
+    const want = (!update && baseline && baseline.pages) ? baseline.pages[name] : null;
     for (const scheme of ['light', 'dark']) {
-      const { pdf, overflow } = await render(BASE + url, scheme);
-      const a = analyze(pdf);
-      a.overflow = overflow;
+      let a = null;
+      let tries = 0;
+      for (;;) {
+        const { pdf, overflow } = await render(BASE + url, scheme);
+        a = analyze(pdf);
+        a.overflow = overflow;
+        tries += 1;
+        const b = want && want[scheme];
+        /* 🔴 E316：产物残缺 ⇒ 本页作废重来，不拿它去比基线。
+           限次 + 只认 deficit 形态：真回归不会被重试洗掉。 */
+        if (!deficit(a, b) || tries >= MAX_RENDER_TRIES) break;
+        console.log('  ! ' + name + '/' + scheme + ' 版面未就绪（'
+          + a.pages + ' 页 / ' + a.runs + ' runs，基线 '
+          + b.pages + ' 页 / ' + b.runs + '）⇒ 作废重渲染 '
+          + tries + '/' + MAX_RENDER_TRIES);
+        await new Promise((r) => setTimeout(r, 300));
+      }
+      a.renderTries = tries;
       result[name][scheme] = a;
       const line = '  ' + (name + '/' + scheme).padEnd(34)
         + ' pages=' + String(a.pages).padStart(2)
@@ -1043,11 +1122,6 @@ async function main() {
         + ' worst=' + a.worst.toFixed(2) + ':1';
       console.log(line);
     }
-  }
-
-  let baseline = null;
-  if (fs.existsSync(OUT)) {
-    try { baseline = JSON.parse(fs.readFileSync(OUT, 'utf8')); } catch (e) { baseline = null; }
   }
 
   const errs = tErrs.concat(judge(result, update ? null : baseline));
@@ -1454,6 +1528,52 @@ async function selftest() {
         'h=' + (rows[0] && rows[0].h) + ' inner=' + (rows[0] && rows[0].inner)
         + ' done=' + (rows[0] && rows[0].done));
     }
+
+    /* ---- ⑮（E316）：产物侧自证 + 限次重渲染 ---- */
+    const B = { pages: 8, runs: 2321 };
+    const CUT = { pages: 4, runs: 1679 };   /* 两轮全量里真实出现的那一组数字 */
+    report(deficit(CUT, B),
+      '⑮ 事故形态（4 页 / 1679 vs 8 页 / 2321）⇒ 判为残缺、触发重渲染');
+    report(!deficit(B, B), '⑮ 版面完整 ⇒ 不重渲染');
+    report(!deficit({ pages: 9, runs: 3000 }, B),
+      '⑮ 内容变多（真回归）⇒ 不重渲染，交给基线判据报错');
+    report(!deficit({ pages: 4, runs: 2321 }, B),
+      '⑮ 只少页数、文字量齐 ⇒ 不重渲染（可能只是分页变化）');
+    report(!deficit({ pages: 8, runs: 1800 }, B),
+      '⑮ 只少文字量、页数齐 ⇒ 不重渲染');
+    report(!deficit(CUT, null), '⑮ 没有基线 ⇒ 不重渲染');
+    report(!deficit(CUT, B, 0),
+      '⑮ 元反向：阈值调到 0 ⇒ 同一残缺样本不再触发（阈值有牙）');
+    report(deficit(CUT, B, 1) && !deficit({ pages: 4, runs: 2321 }, B, 1),
+      '⑮ 阈值边界：等于基线文字量时不触发');
+    report(MAX_RENDER_TRIES >= 2 && MAX_RENDER_TRIES <= 5,
+      '⑮ 重渲染有上限（不靠无限重试拖过去）');
+    /* 重试用尽必须仍红：合成一个"重试 3 次还是残缺"的 result，
+       judge() 除了原有页数/runs 差异，还要给出"观测条件没稳住"的定性。 */
+    const exhausted = {
+      'guide-button': {
+        light: Object.assign({}, CUT, { renderTries: MAX_RENDER_TRIES,
+          worst: 5.44, hist: {}, fontProblems: [], pagesWithoutText: 0, overflow: 0 }),
+        dark: Object.assign({}, CUT, { renderTries: MAX_RENDER_TRIES,
+          worst: 5.44, hist: {}, fontProblems: [], pagesWithoutText: 0, overflow: 0 }),
+      },
+    };
+    const exErrs = judge(exhausted,
+      { pages: { 'guide-button': { light: B, dark: B } } });
+    report(exErrs.some((e) => e.indexOf('观测条件没稳住') >= 0)
+      && exErrs.some((e) => e.indexOf('页数 4 ≠ 基线 8') >= 0),
+      '⑮ 重试用尽仍残缺 ⇒ 红，且把"没稳住"与"页数差"分开报',
+      exErrs.slice(0, 2).join(' / '));
+    report(!judge({
+      'guide-button': {
+        light: Object.assign({}, B, { renderTries: MAX_RENDER_TRIES,
+          worst: 5.44, hist: {}, fontProblems: [], pagesWithoutText: 0, overflow: 0 }),
+        dark: Object.assign({}, B, { renderTries: MAX_RENDER_TRIES,
+          worst: 5.44, hist: {}, fontProblems: [], pagesWithoutText: 0, overflow: 0 }),
+      },
+    }, { pages: { 'guide-button': { light: B, dark: B } } })
+      .some((e) => e.indexOf('观测条件没稳住') >= 0),
+    '⑮ 元反向：版面完整时，哪怕渲染次数用尽也不误报"没稳住"');
   } finally {
     try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) { /* 忽略 */ }
   }
