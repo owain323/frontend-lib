@@ -142,7 +142,7 @@ const drawerEl: HTMLElement = drawer.el;
 drawer.close();
 const dlg = Overlay.dialog({ title: '确认' });
 dlg.close();
-Overlay.toast({ text: '已保存' });
+Overlay.toast({ title: '已保存' });
 void drawerEl;
 
 /* ---------------- Tooltip / Popover ---------------- */

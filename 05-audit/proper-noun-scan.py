@@ -31,15 +31,19 @@ from _common import scannable_files  # noqa: E402
 # ============================================================================
 WHITELIST = {
     # 语言 / 平台
-    'JavaScript', 'TypeScript', 'CoffeeScript', 'WebAssembly',
+    'JavaScript', 'TypeScript', 'CoffeeScript', 'WebAssembly', 'SemVer',
     # 工具
     'GitHub', 'GitLab', 'Chrome', 'Firefox', 'Safari', 'Edge', 'Opera',
     'Webpack', 'Vite', 'Rollup', 'Babel', 'PostCSS', 'Prettier', 'ESLint',
     'Puppeteer', 'Playwright', 'Jest', 'Vitest', 'Bash', 'PowerShell',
     'DevTools', 'Node', 'Deno', 'Bun', 'React', 'Vue', 'Angular', 'Svelte',
     'TemporaryDirectory',   # Python tempfile 的 stdlib API（facts-gate 的自检用）
-    # 本库 public 类型名（types/index.d.ts 导出，docs/L10N.md 引用）
-    'BarText',
+    # 本库 public 类型名（types/index.d.ts 导出，docs/L10N.md / CHANGELOG 引用）
+    'BarText', 'DialogOptions', 'DrawerOpenOptions', 'DropdownOptions',
+    'NavOptions', 'PopoverOptions', 'ToastOptions', 'UploadOptions',
+    'PaginationLabels', 'UploadLabels', 'DrawerLabels', 'OverlayLabels',
+    'SelectLabels', 'ComboboxLabels', 'TreeLabels', 'DropdownLabels',
+    'DateRangeLabels', 'NavLabels', 'ModelViewerLabels',
     # PDF 规范里的字段名与常见字体名（print-gate 解析产物时会出现）
     'BaseFont', 'MediaBox', 'MicrosoftYaHei',
     # PDF 规范里的字典键与字体格式名（print-gate 解析产物时会出现）
