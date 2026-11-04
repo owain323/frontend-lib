@@ -16,6 +16,77 @@
 
 （无）
 
+## [0.26.0] - 2026-11-04
+
+这一版有两类改动：**修外部审计确认的缺陷**，以及**新增三个公开能力**
+（文案覆盖、HTML 净化钩子、toast 上限）。升级不需要改代码 ——
+新增能力都有默认值，且默认值与 0.25.6 行为一致。
+
+### Added
+
+- **文案本地化**：`labels` 可以覆盖用户可见 / 读屏会念到的文案。
+  逐实例入口 `Overlay.toast({ labels })`、`Drawer.open({ labels })`、
+  `Pagination.create(node, { labels })`、`new Upload(root, { labels })`、
+  `Select/Combobox/Dropdown/Tree/DateRange.create(root, { labels })`；
+  属性自动初始化的 `Tooltip` / `ModelViewer` 用模块级 `setLabels()`。
+  **不传时输出与 0.25.6 逐字相同**。`bar.draw` 的文案覆盖叫 `text`
+  （它的 `labels` 早就是 X 轴标签这个数据参数）。清单与已知剩余项见 `docs/L10N.md`。
+- **HTML 净化钩子**：`Popover.setSanitizer(fn)` / `Drawer.setSanitizer(fn)`，
+  也可逐次传 `sanitize`。默认**不改变行为**（仍按"调用方已净化"处理）——
+  静默自动净化会让既有页面里的 `<b>` / `<svg>` 突然消失。边界见 `SECURITY.md`。
+- **toast 同屏上限**：`Overlay.toast({ maxVisible })`，默认 4，`0` = 不限。
+  超出时摘掉**最旧的**一条（此前无上限，20 条并发提示会把屏幕铺满）。
+- `types/index.d.ts`：新增上列文案类型与 `ToastOptions` / `DialogOptions` /
+  `PopoverOptions` / `DrawerOpenOptions` / `UploadOptions` / `DropdownOptions` /
+  `NavOptions`；把 `ModelViewer` 从"构造函数"改正为 `{ update, refresh, setLabels }`
+  （按旧声明写 `new window.ModelViewer(el)` 会在运行时抛 TypeError）。
+
+### Fixed
+
+- `longform` 配方页：`.prose > img` 是**直接子代**选择器，而 Markdown 渲染出的图片
+  在 `<p>` 里 ⇒ `max-width:100%` 从未生效，600px 宽的图在 375px 视口横向溢出
+  246px、320px 溢出 301px。改为后代选择器（`> a` 在 0.9 踩过同一个坑，这次同一个坑换了标签）。
+- 可滚动的 `.table` / `.table-wrap` / `<pre>` / 图框在窄屏下**键盘进不去**
+  （WCAG 2.1.1）。补 `tabindex="0"` + `role="region"` + 「内容名（可横向滚动）」为名的
+  可访问名；图类用 `aria-labelledby` 指向 `<figcaption>`，不手写第二份文案。
+- 浏览器自动发现：Playwright 1.6x 的缓存目录名（`chrome-headless-shell-win64/` 等）
+  与代码里的候选**一个都不匹配**，此前靠系统 Chrome 兜底才跑得通。改为按可执行文件名
+  有界递归 + 读 `chromium.executablePath()`，并补 `%LOCALAPPDATA%` 路径。
+- 三处判据把"文本里出现过的字样"当成"当前生效的现状"：`contrast.py` 把注释里的旧色值
+  当真值、把 `@media dark` 块之后的浅色定义卷进暗色范围；`wiring-check.py` 把
+  `<style>` 里的 CSS 选择器当接线；`delta-check.js` 把 `<pre>` 里的用法示例当成
+  页面真的用了 `data-market`。三处都改成只看**会渲染 / 会执行**的结构。
+
+### Changed
+
+- 开发依赖 `puppeteer-core` 23 → 25（`npm audit` 从 9 high 到 0），CI 增加
+  `npm audit --omit=dev --audit-level=high`。
+- 根导出补显式 `import` 条件；README 讲清"运行时是 ESM、`engines>=18` 只代表语法可用，
+  `require()` 需要 Node ≥ 22.12"。
+
+### 新增 / 加强的门禁
+
+- `i18n-labels`：静态禁止「中文字面量直接进 `aria-label` / `textContent` / `el()` 文本位」，
+  并在真浏览器里传 `labels` 断言 DOM 真的变了、不传时仍是中文。
+- `md-inline-gate`：`md-render.py` 生成的单文件产物会把 `tokens.css` / `content.css`
+  整份内联成第二份副本，此前没有任何门禁守着它漂移（实测已落后 586 字符）。
+- `chrome-discovery-gate`：七种 Playwright 目录布局 × 两个入口 + 空目录不回落 + 旧写法元反向。
+- `a11y-scan` 增加 320px 的 `scrollable-region-focusable` 补扫 —— 一上线就抓出
+  `content` / `longform` / `analysis-report` / `scientific-plot` 四页真实违规。
+- `zoom-reflow` 的页面清单改为从文件系统枚举 `04-recipes/**/*.html`（43 → 49 页）——
+  上面那个 `.prose` 缺陷就活在不属于任何组件的配方页里。
+- `gen-behavior` 的扫描范围补上 `09-assets`：`bar` 的注入块否则是空的，
+  `flLabels is not defined` 只在浏览器门禁才炸。
+
+### 关于外部审计报告里的三条
+
+F8（demo 对比度）、F10（model-viewer 小溢出）、F12（缺 SemVer/废弃政策）经复核
+**不成立**：`.bad-err` / `.btn--naive` 都在 `.cmp__bad` 豁免容器内；本机 320px
+实测溢出 0；`STABILITY.md` / `DEPRECATIONS.md` / `deprecation-gate` 早已存在。
+没有为"关闭报告项"去改这三处。
+
+---
+
 ## [0.25.6] - 2026-11-04
 
 这一版**没有改组件、令牌、CSS 或运行时 JS**。改的是「装到手里的包可不可信」：

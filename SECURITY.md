@@ -44,10 +44,22 @@
 下面两处会把字符串**当 HTML 解析**。它们是**有意的 API**，不是疏漏 ——
 `popover` 要能放任意块级内容，`drawer` 要能放整页内容，只收文本就废了。
 
-| 文件 | 入口 | 谁负责净化 |
-|---|---|---|
-| `02-primitives/popover/popover.js` | `opts.html` | 调用方 |
-| `03-patterns/drawer/drawer.js` | `opt.content` | 调用方 |
+| 文件 | 入口 | 净化钩子 | 谁负责净化 |
+|---|---|---|---|
+| `02-primitives/popover/popover.js` | `opts.html` | `opts.sanitize` / `Popover.setSanitizer(fn)` | 调用方（或接钩子） |
+| `03-patterns/drawer/drawer.js` | `opt.content`（字符串） | `opt.sanitize` / `Drawer.setSanitizer(fn)` | 调用方（或接钩子） |
+
+**0.26.0 起有钩子，但默认不改变行为**：不传 `sanitize`、也不调 `setSanitizer()`
+时，两处仍然直接把字符串当 HTML 解析 —— 与 0.25.x 完全一致（静默"自动净化"
+会让既有页面里的 `<b>` / `<svg>` 突然消失，那也是一种破坏）。
+接 DOMPurify 只需一行：
+
+```js
+Popover.setSanitizer(function (html) { return DOMPurify.sanitize(html); });
+Drawer.setSanitizer(function (html) { return DOMPurify.sanitize(html); });
+```
+
+逐次覆盖优先于模块级：`Popover.attach(el, { html: s, sanitize: fn })`。
 
 **为什么本库不做净化**：净化需要一个 HTML 解析器或一份允许列表实现，而本库的目标是
 零运行时依赖 + Chromium 97 可用。给一个"看起来安全"的半吊子净化，比明确说

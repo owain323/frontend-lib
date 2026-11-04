@@ -201,8 +201,44 @@
     bottom: 'drawer--bottom'
   };
 
+
+  /* HTML 净化钩子（F6 / 0.26.0）。
+     🔴 默认**不改变任何行为**：没传 `sanitize` 也没有 `setSanitizer()` 时，
+        `opt.content` 仍然按"调用方已净化"处理（与 0.25.x 一致）。
+     ⇒ 想接入 DOMPurify 这类库：
+          Drawer.setSanitizer(function (html) { return DOMPurify.sanitize(html); });
+        或逐次传 `opt.sanitize` 覆盖（逐次优先于模块级）。
+     ⚠️ 钩子只处理**字符串入口**；传 Node 的入口本来就绕过了 HTML 解析。 */
+  var SANITIZER = null;
+
+  function setSanitizer(fn) {
+    SANITIZER = (typeof fn === 'function') ? fn : null;
+  }
+
+  function sanitizeHtml(html, perCall) {
+    var fn = (typeof perCall === 'function') ? perCall : SANITIZER;
+    return fn ? String(fn(String(html))) : String(html);
+  }
+
+  /* 读屏文案默认值（F2 / 0.26.0）。不传 `labels` 时行为逐字不变。 */
+  var DEFAULT_LABELS = { dialog: '抽屉', close: '关闭' };
+
+  /* ==== BEHAVIOR INJECT BEGIN: labels ==== */
+  var flLabels = function (defaults, src) {
+    src = src || {};
+    var out = {};
+    var k;
+    for (k in defaults) {
+      if (Object.prototype.hasOwnProperty.call(defaults, k)) {
+        out[k] = (src[k] === undefined || src[k] === null) ? defaults[k] : src[k];
+      }
+    }
+    return out;
+  };
+  /* ==== BEHAVIOR INJECT END: labels ==== */
   function open(opt) {
     opt = opt || {};
+    var L = flLabels(DEFAULT_LABELS, opt && opt.labels);
     var place = opt.place || 'right';
     var placeCls = PLACE_CLASS[place];
     if (!placeCls) placeCls = PLACE_CLASS.right;
@@ -226,7 +262,7 @@
     d.setAttribute('aria-modal', 'true');
     if (!d.id) d.id = 'drawer-' + (new Date()).getTime();
     if (opt.title) d.setAttribute('aria-labelledby', d.id + '-title');
-    else d.setAttribute('aria-label', opt.label || '抽屉');
+    else d.setAttribute('aria-label', opt.label || L.dialog);
     d.tabIndex = -1;              /* 焦点陷阱的兜底落点 */
 
     var head = document.createElement('div');
@@ -240,16 +276,18 @@
      导致上面所有 close.addEventListener 绑在函数上（静默失败）。 */
     closeBtn.className = 'drawer__close';
     closeBtn.type = 'button';
-    closeBtn.setAttribute('aria-label', '关闭');
+    closeBtn.setAttribute('aria-label', L.close);
     closeBtn.textContent = '\u00D7';
     head.appendChild(h);
     head.appendChild(closeBtn);
 
     var body = document.createElement('div');
     body.className = 'drawer__body';
-    /* @html-sink raw-html — `opt.content` 是有意的 HTML 入口，调用方负责净化；
-       登记在 SECURITY.md「HTML 入口（sink）」。 */
-    if (typeof opt.content === 'string') body.innerHTML = opt.content;
+    if (typeof opt.content === 'string') {
+      /* @html-sink raw-html — `opt.content` 是有意的 HTML 入口，调用方负责净化；
+         登记在 SECURITY.md「HTML 入口（sink）」。`sanitize` / `setSanitizer` 可挂钩。 */
+      body.innerHTML = sanitizeHtml(opt.content, opt.sanitize);
+    }
     else if (opt.content) body.appendChild(opt.content);
 
     d.appendChild(head);
@@ -374,5 +412,5 @@
     return { el: d, close: close };
   }
 
-  global.Drawer = { open: open };
+  global.Drawer = { open: open, setSanitizer: setSanitizer };
 })(typeof window !== 'undefined' ? window : globalThis);

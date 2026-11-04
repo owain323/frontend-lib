@@ -181,11 +181,12 @@
        （加了就是模态，语义就错了）。 */
     box.setAttribute('role', 'dialog');
     box.setAttribute('aria-label', opts.label || '');
+    var bodyHtml = sanitizeHtml(opts.html || '', opts.sanitize);
     /* @html-sink raw-html — `opts.html` 是有意的 HTML 入口，调用方负责净化；
-       登记在 SECURITY.md「HTML 入口（sink）」。 */
+       登记在 SECURITY.md「HTML 入口（sink）」。`sanitize` / `setSanitizer` 可挂钩。 */
     box.innerHTML =
       '<span class="popover__arrow" aria-hidden="true"></span>' +
-      '<div class="popover__body">' + (opts.html || '') + '</div>';
+      '<div class="popover__body">' + bodyHtml + '</div>';
 
     /* 箭头要指向触发元素的中心，而不是浮层的中心 */
     positionArrow(box, trigger);
@@ -294,6 +295,24 @@
     return api;
   }
 
+  /* HTML 净化钩子（F6 / 0.26.0）。
+     🔴 默认**不改变任何行为**：没传 `sanitize` 也没有 `setSanitizer()` 时，
+        `opts.html` 仍然按"调用方已净化"处理（与 0.25.x 一致）。
+     ⇒ 想接入 DOMPurify 这类库：
+          Popover.setSanitizer(function (html) { return DOMPurify.sanitize(html); });
+        或逐次传 `opts.sanitize` 覆盖（逐次优先于模块级）。
+     ⚠️ 钩子只处理**字符串入口**；传 Node 的入口本来就绕过了 HTML 解析。 */
+  var SANITIZER = null;
+
+  function setSanitizer(fn) {
+    SANITIZER = (typeof fn === 'function') ? fn : null;
+  }
+
+  function sanitizeHtml(html, perCall) {
+    var fn = (typeof perCall === 'function') ? perCall : SANITIZER;
+    return fn ? String(fn(String(html))) : String(html);
+  }
+
   /* 箭头对准触发元素中心（浮层可能比触发元素宽） */
   function positionArrow(box, trigger) {
     var arrow = box.querySelector('.popover__arrow');
@@ -321,5 +340,6 @@
     get current() { return current; },
   };
 
+  Popover.setSanitizer = setSanitizer;
   global.Popover = Popover;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -62,7 +62,7 @@ this.ui = el('div', 'mv__ui');
 this.ui.appendChild(this.makeIdle());
 n.appendChild(this.ui);
 
-this.btn = el('button', 'mv__btn', '加载 3D 模型');
+this.btn = el('button', 'mv__btn', LABELS.load);
 this.btn.type = 'button';
 this.btn.addEventListener('click', function () { self.load(); });
 this.ui.appendChild(this.btn);
@@ -70,23 +70,23 @@ this.ui.appendChild(this.btn);
 this.hint = el('p', 'mv__hint');
 
 var fname = el('code', null, this.src.split('/').pop() || '—');
-var strong = el('b', null, '点击后才下载');
-this.hint.appendChild(document.createTextNode('模型 '));
+var strong = el('b', null, LABELS.hintStrong);
+this.hint.appendChild(document.createTextNode(LABELS.hintBefore));
 this.hint.appendChild(fname);
-this.hint.appendChild(document.createTextNode(' 会'));
+this.hint.appendChild(document.createTextNode(LABELS.hintBetween));
 this.hint.appendChild(strong);
-this.hint.appendChild(document.createTextNode('，首屏不占流量。'));
+this.hint.appendChild(document.createTextNode(LABELS.hintTail));
 this.ui.appendChild(this.hint);
 
 if (!hasWebGL()) {
-this.fail('这台设备的浏览器不支持 WebGL，无法显示 3D 模型。');
+this.fail(LABELS.noWebGL);
 this.btn.disabled = true;
 }
 };
 
 Viewer.prototype.makeIdle = function () {
 var box = el('div', 'mv__stage');
-box.appendChild(el('div', 'mv__ph', '3D 模型'));
+box.appendChild(el('div', 'mv__ph', LABELS.placeholder));
 return box;
 };
 
@@ -95,14 +95,14 @@ if (this.timer) { clearTimeout(this.timer); this.timer = null; }
 this.state = 'error';
 this.ui.innerHTML = '';
 var s = el('div', 'mv__stage mv__stage--err');
-s.appendChild(el('div', 'mv__ph', '3D 模型'));
+s.appendChild(el('div', 'mv__ph', LABELS.placeholder));
 var p = el('p', 'mv__err', msg);
 s.appendChild(p);
 this.ui.appendChild(s);
 if (this.btn) this.ui.appendChild(this.btn);
 if (this.btn) {
 this.btn.disabled = false;
-this.btn.textContent = '重试';
+this.btn.textContent = LABELS.retry;
 }
 };
 
@@ -117,12 +117,12 @@ this.state = 'loading';
 
 this.ui.innerHTML = '';
 var stage = el('div', 'mv__stage');
-this.statusNode = el('p', 'mv__status', '正在准备…');
+this.statusNode = el('p', 'mv__status', LABELS.preparing);
 stage.appendChild(this.statusNode);
 this.ui.appendChild(stage);
 
 var t0 = (window.performance && performance.now) ? performance.now() : Date.now();
-this.status('正在准备 3D 引擎…');
+this.status(LABELS.preparingEngine);
 this.boot(null, t0, 0);
 
 var self0 = this;
@@ -205,7 +205,7 @@ xhr.open('GET', this.src, true);
 xhr.onprogress = function (e) {
 if (e.lengthComputable && e.total) {
 self1.lastBytes = e.total;
-self1.status('正在下载模型 ' + Math.round(e.loaded / e.total * 100) + '%');
+self1.status(LABELS.downloading(Math.round(e.loaded / e.total * 100)));
 }
 };
 xhr.onload = function () {
@@ -292,6 +292,30 @@ self.fail('模型加载失败：' + msg + '。请确认 ' + self.src + ' 已部�
 }
 };
 
+var LABELS = {
+load: '加载 3D 模型',
+placeholder: '3D 模型',
+retry: '重试',
+preparing: '正在准备…',
+preparingEngine: '正在准备 3D 引擎…',
+hintBefore: '模型 ',
+hintBetween: ' 会',
+hintStrong: '点击后才下载',
+hintTail: '，首屏不占流量。',
+downloading: function (pct) { return '正在下载模型 ' + pct + '%'; },
+noWebGL: '这台设备的浏览器不支持 WebGL，无法显示 3D 模型。'
+};
+
+function setLabels(patch) {
+if (!patch) return;
+for (var k in LABELS) {
+if (Object.prototype.hasOwnProperty.call(LABELS, k)
+&& patch[k] !== undefined && patch[k] !== null) {
+LABELS[k] = patch[k];
+}
+}
+}
+
 var ModelViewer = {
 
 update: function (root) {
@@ -316,6 +340,8 @@ list[i].__mv = new Viewer(list[i]);
 }
 },
 };
+
+ModelViewer.setLabels = setLabels;
 
 if (typeof window !== 'undefined') window.ModelViewer = ModelViewer;
 

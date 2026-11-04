@@ -295,6 +295,25 @@ return Array.prototype.slice.call(menu.querySelectorAll(FOCUSABLE));
 }
 
 function create(root, opt) {
+
+var DEFAULT_LABELS = {
+menu: '菜单'
+};
+
+var flLabels = function (defaults, src) {
+src = src || {};
+var out = {};
+var k;
+for (k in defaults) {
+if (Object.prototype.hasOwnProperty.call(defaults, k)) {
+out[k] = (src[k] === undefined || src[k] === null) ? defaults[k] : src[k];
+}
+}
+return out;
+};
+
+var L = flLabels(DEFAULT_LABELS, opt && opt.labels);
+
 opt = opt || {};
 var btn = root.querySelector('[data-dd-btn]') || root.querySelector('button');
 var menu = root.querySelector('[data-dd-menu]');
@@ -305,7 +324,7 @@ var active = -1;
 
 menu.setAttribute('role', 'menu');
 if (!menu.getAttribute('aria-label') && !menu.getAttribute('aria-labelledby')) {
-menu.setAttribute('aria-label', opt.label || '菜单');
+menu.setAttribute('aria-label', opt.label || L.menu);
 }
 Array.prototype.forEach.call(menu.querySelectorAll('li'), function (li) {
 

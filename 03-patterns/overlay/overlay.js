@@ -10,8 +10,9 @@
       demo 可以用现代语法（跑在用户浏览器上），库代码不行。
 
    API：
-     Overlay.toast({ title, desc, variant, duration })
+     Overlay.toast({ title, desc, variant, duration, maxVisible, labels })
      Overlay.dialog({ title, desc, actions, danger, initialFocus })
+     labels: 读屏文案覆盖（默认中文，不传时行为不变）
        → 返回 { el, close }
    ========================================================================= */
 (function (global) {
@@ -265,8 +266,36 @@
     warning: 'toast--warning'
   };
 
+  /* 读屏文案的**默认值**与合并规则（F2 / 0.26.0）。
+     🔴 只覆盖"会被读屏念出来或用户看得见"的文案；`throw new Error(...)`
+        这类是给调用方看的开发期信息，不在这里 —— 它们不经过 UI。
+     值可以是字符串，也可以是函数（动态文案，如 `第 N 页`）。
+     不传 `labels` 时行为与之前**逐字相同**（默认中文）。 */
+  var DEFAULT_LABELS = {
+    closeToast: '关闭提示'
+  };
+
+  /* ==== BEHAVIOR INJECT BEGIN: labels ==== */
+  var flLabels = function (defaults, src) {
+    src = src || {};
+    var out = {};
+    var k;
+    for (k in defaults) {
+      if (Object.prototype.hasOwnProperty.call(defaults, k)) {
+        out[k] = (src[k] === undefined || src[k] === null) ? defaults[k] : src[k];
+      }
+    }
+    return out;
+  };
+  /* ==== BEHAVIOR INJECT END: labels ==== */
+  /* 同屏最多几条 toast。超了就把**最旧的**直接摘掉 ——
+     否则 20 条并发提示会把屏幕铺满，且最后一条永远读不到。
+     0 / 负数表示不限制（调用方自己负责）。 */
+  var TOAST_LIMIT = 4;
+
   function toast(opts) {
     opts = opts || {};
+    var L = flLabels(DEFAULT_LABELS, opts && opts.labels);
 
     var region = document.querySelector('.toast-region');
     if (!region) {
@@ -314,7 +343,7 @@
     var closeBtn = document.createElement('button');
     closeBtn.className = 'toast__close';
     closeBtn.type = 'button';
-    closeBtn.setAttribute('aria-label', '关闭提示');
+    closeBtn.setAttribute('aria-label', L.closeToast);
     closeBtn.textContent = '×';
     el.appendChild(closeBtn);
 
@@ -331,6 +360,14 @@
     }
 
     closeBtn.addEventListener('click', close);
+    /* 同屏上限：先摘最旧的，再挂新的。
+       🔴 摘的时候**不走 close()** —— 它带 220ms 退场动画，
+          动画期间节点仍在 DOM 里，children.length 不减 ⇒ 这里会空转。
+          被摘掉的那条已经在屏幕外了，动画没有意义。 */
+    var max = (opts.maxVisible === undefined) ? TOAST_LIMIT : opts.maxVisible;
+    while (max > 0 && region.children.length >= max) {
+      region.removeChild(region.firstChild);
+    }
     region.appendChild(el);
 
     var timerId = auto > 0 ? setTimeout(close, auto) : null;

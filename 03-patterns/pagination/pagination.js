@@ -137,12 +137,39 @@
 
   /* ---------------------------------------------------------------------- */
 
-  function Pagination(node) {
+  /* 读屏文案默认值（F2 / 0.26.0）。值是字符串或函数；
+     不传 `labels` 时输出与之前逐字相同。 */
+  var DEFAULT_LABELS = {
+    nav: '分页',
+    prev: '上一页',
+    next: '下一页',
+    page: function (p, isCurrent) {
+      return '第 ' + p + ' 页' + (isCurrent ? '（当前页）' : '');
+    },
+    status: function (page, pages) { return '第 ' + page + ' 页 / 共 ' + pages + ' 页'; },
+    live: function (page, pages) { return '第 ' + page + ' 页，共 ' + pages + ' 页'; }
+  };
+
+  /* ==== BEHAVIOR INJECT BEGIN: labels ==== */
+  var flLabels = function (defaults, src) {
+    src = src || {};
+    var out = {};
+    var k;
+    for (k in defaults) {
+      if (Object.prototype.hasOwnProperty.call(defaults, k)) {
+        out[k] = (src[k] === undefined || src[k] === null) ? defaults[k] : src[k];
+      }
+    }
+    return out;
+  };
+  /* ==== BEHAVIOR INJECT END: labels ==== */
+  function Pagination(node, opts) {
     this.node = node;
+    this.labels = flLabels(DEFAULT_LABELS, opts && opts.labels);
     this.total = Math.max(1, parseInt(node.getAttribute('data-total') || '1', 10));
     this.size = Math.max(1, parseInt(node.getAttribute('data-page-size') || '20', 10));
     this.page = Math.max(1, parseInt(node.getAttribute('data-page') || '1', 10));
-    this.label = node.getAttribute('aria-label') || '分页';
+    this.label = node.getAttribute('aria-label') || this.labels.nav;
     this.pages = Math.max(1, Math.ceil(this.total / this.size));
     this.onChange = null;
 
@@ -301,7 +328,7 @@
   /** ⭐ 播报（依据第 2 条：改 textContent，不换元素） */
   Pagination.prototype.announce = function () {
     if (!this.liveNode) return;
-    this.liveNode.textContent = '第 ' + this.page + ' 页，共 ' + this.pages + ' 页';
+    this.liveNode.textContent = this.labels.live(this.page, this.pages);
   };
 
   Pagination.prototype.render = function () {
@@ -309,6 +336,7 @@
     var L = this.listNode;
     while (L.firstChild) L.removeChild(L.firstChild);
     var self = this;
+    var T = this.labels;
 
     function addBtn(text, ariaLabel, goto, disabled) {
       var li = el('li', 'pagination__item');
@@ -325,7 +353,7 @@
     }
 
     /* --- 上一页 / 首页 --- */
-    addBtn('‹', '上一页', 'prev', self.page <= 1);
+    addBtn('‹', T.prev, 'prev', self.page <= 1);
     /* --- 页码 --- */
     var win = pageWindow(self.page, self.pages, SLOTS);
     for (var i = 0; i < win.length; i++) {
@@ -347,7 +375,7 @@
       var b2 = el('button', 'pagination__link', String(p));
       b2.type = 'button';
       b2.setAttribute('data-goto', String(p));
-      b2.setAttribute('aria-label', '第 ' + p + ' 页' + (isCur ? '（当前页）' : ''));
+      b2.setAttribute('aria-label', T.page(p, isCur));
       if (isCur) {
         b2.setAttribute('aria-current', 'page');
         b2.setAttribute('aria-disabled', 'true');
@@ -356,22 +384,21 @@
       L.appendChild(li2);
     }
     /* --- 下一页 / 末页 --- */
-    addBtn('›', '下一页', 'next', self.page >= self.pages);
+    addBtn('›', T.next, 'next', self.page >= self.pages);
 
     /* --- 可见状态（"第 2 页 / 共 12 页"） --- */
     if (this.statusNode) {
-      this.statusNode.textContent =
-        '第 ' + self.page + ' 页 / 共 ' + self.pages + ' 页';
+      this.statusNode.textContent = T.status(self.page, self.pages);
     }
   };
 
   /* ---------------------------------------------------------------------- */
   var API = {
     /** 创建一个分页实例（返回实例以便绑定 onChange） */
-    create: function (node) {
+    create: function (node, opts) {
       if (!node) return null;
       if (node.__pg) return node.__pg;
-      node.__pg = new Pagination(node);
+      node.__pg = new Pagination(node, opts);
       return node.__pg;
     },
     /** 页面内所有 [data-pagination] */

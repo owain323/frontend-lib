@@ -246,6 +246,27 @@
   var uid = 0;
 
   function create(root, opt) {
+    /* 读屏文案默认值（F2 / 0.26.0）。不传 `labels` 时输出逐字不变。 */
+    var DEFAULT_LABELS = {
+      option: '选项',
+      placeholder: '请选择'
+    };
+
+    /* ==== BEHAVIOR INJECT BEGIN: labels ==== */
+    var flLabels = function (defaults, src) {
+      src = src || {};
+      var out = {};
+      var k;
+      for (k in defaults) {
+        if (Object.prototype.hasOwnProperty.call(defaults, k)) {
+          out[k] = (src[k] === undefined || src[k] === null) ? defaults[k] : src[k];
+        }
+      }
+      return out;
+    };
+    /* ==== BEHAVIOR INJECT END: labels ==== */
+  var L = flLabels(DEFAULT_LABELS, opt && opt.labels);
+
     opt = opt || {};
     var btn = root.querySelector('[data-select-btn]');
     var list = root.querySelector('[data-select-list]');
@@ -299,7 +320,7 @@
 
     list.setAttribute('role', 'listbox');
     if (isMulti) list.setAttribute('aria-multiselectable', 'true');
-    list.setAttribute('aria-label', opt.label || '选项');
+    list.setAttribute('aria-label', opt.label || L.option);
     btn.setAttribute('aria-haspopup', 'listbox');
     btn.setAttribute('aria-expanded', 'false');
     btn.setAttribute('aria-controls', list.id);
@@ -344,7 +365,7 @@
       for (var i = 0; i < options.length; i++) {
         if (hasValue(valueOfOpt(options[i]))) texts.push(optText(options[i]));
       }
-      return texts.length ? texts.join('、') : (opt.placeholder || '请选择');
+      return texts.length ? texts.join('、') : (opt.placeholder || L.placeholder);
     }
     /* ⚠️ 空列表也会被调用（初始化 / 清空后重绘）：必须能接住 undefined，
        老实现直接 o.querySelector 会抛 "Cannot read properties of undefined"。 */

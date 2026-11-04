@@ -171,8 +171,34 @@ top:    'drawer--top',
 bottom: 'drawer--bottom'
 };
 
+var SANITIZER = null;
+
+function setSanitizer(fn) {
+SANITIZER = (typeof fn === 'function') ? fn : null;
+}
+
+function sanitizeHtml(html, perCall) {
+var fn = (typeof perCall === 'function') ? perCall : SANITIZER;
+return fn ? String(fn(String(html))) : String(html);
+}
+
+var DEFAULT_LABELS = { dialog: '抽屉', close: '关闭' };
+
+var flLabels = function (defaults, src) {
+src = src || {};
+var out = {};
+var k;
+for (k in defaults) {
+if (Object.prototype.hasOwnProperty.call(defaults, k)) {
+out[k] = (src[k] === undefined || src[k] === null) ? defaults[k] : src[k];
+}
+}
+return out;
+};
+
 function open(opt) {
 opt = opt || {};
+var L = flLabels(DEFAULT_LABELS, opt && opt.labels);
 var place = opt.place || 'right';
 var placeCls = PLACE_CLASS[place];
 if (!placeCls) placeCls = PLACE_CLASS.right;
@@ -191,7 +217,7 @@ d.setAttribute('role', 'dialog');
 d.setAttribute('aria-modal', 'true');
 if (!d.id) d.id = 'drawer-' + (new Date()).getTime();
 if (opt.title) d.setAttribute('aria-labelledby', d.id + '-title');
-else d.setAttribute('aria-label', opt.label || '抽屉');
+else d.setAttribute('aria-label', opt.label || L.dialog);
 d.tabIndex = -1;
 
 var head = document.createElement('div');
@@ -203,15 +229,17 @@ h.textContent = opt.title || '';
 var closeBtn = document.createElement('button');
 closeBtn.className = 'drawer__close';
 closeBtn.type = 'button';
-closeBtn.setAttribute('aria-label', '关闭');
+closeBtn.setAttribute('aria-label', L.close);
 closeBtn.textContent = '\u00D7';
 head.appendChild(h);
 head.appendChild(closeBtn);
 
 var body = document.createElement('div');
 body.className = 'drawer__body';
+if (typeof opt.content === 'string') {
 
-if (typeof opt.content === 'string') body.innerHTML = opt.content;
+body.innerHTML = sanitizeHtml(opt.content, opt.sanitize);
+}
 else if (opt.content) body.appendChild(opt.content);
 
 d.appendChild(head);
@@ -311,5 +339,5 @@ if (opt.onClose) opt.onClose();
 return { el: d, close: close };
 }
 
-global.Drawer = { open: open };
+global.Drawer = { open: open, setSanitizer: setSanitizer };
 })(typeof window !== 'undefined' ? window : globalThis);

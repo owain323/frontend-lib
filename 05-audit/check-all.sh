@@ -793,6 +793,11 @@ done
 echo ""
 section "=== 浏览器门禁（需要 127.0.0.1:8000）==="
 echo ""
+# 用户可见文案必须可覆盖（外部审计 F2）：静态禁「中文字面量直接进 aria-label /
+# textContent / el() 文本位」，再在真浏览器里传 labels 断言 DOM 真的变了；
+# 同时断言**不传时仍是中文** —— 否则"覆盖生效"可能只是把测试串写死了。
+run "i18n-labels"     node 05-audit/i18n-labels-gate.js
+run "i18n-labels-rev" node 05-audit/i18n-labels-gate.js --selftest
 # 令牌在真浏览器里的计算值复核（fast 模式只跑静态的一半，这里补全）
 # @component：同一个脚本的**浏览器那一半**
 #   （静态半在 line 150 用 `--no-browser`；这里跑完整版，需要 :8000）

@@ -80,8 +80,42 @@
     remove: 'M4.2 4.2l7.6 7.6M11.8 4.2l-7.6 7.6'
   };
 
-  var STATE_TEXT = { pending: '待上传', done: '已完成', error: '失败' };
+  /* 读屏 / 状态文案默认值（F2 / 0.26.0）。
+     值可以是字符串或函数；不传 `labels` 时输出与之前逐字相同。 */
+  var DEFAULT_LABELS = {
+    pending: '待上传',
+    done: '已完成',
+    error: '失败',
+    remove: function (name) { return '移除 ' + name; },
+    uploading: function (pct) { return '上传中 ' + Math.round(pct) + '%'; },
+    countMax: function (n) { return '最多 ' + n + ' 个文件'; },
+    sizeMax: function (limit) { return '超过 ' + limit; },
+    type: '类型不支持',
+    folder: '请拖入文件，不支持文件夹',
+    none: function (reason) { return reason ? '未添加任何文件：' + reason : '未添加任何文件'; },
+    noDrop: '当前浏览器不支持拖放，请点「选择文件」',
+    noDropShort: '当前浏览器不支持拖放，请点选择文件',
+    summary: function (added, total, rejected) {
+      var s = '已添加 ' + added + ' 个文件，共 ' + total + ' 个';
+      if (rejected) s += '；' + rejected + ' 个未通过校验';
+      return s;
+    },
+    removed: function (name, rest) { return '已移除 ' + name + '，还剩 ' + rest + ' 个'; }
+  };
 
+  /* ==== BEHAVIOR INJECT BEGIN: labels ==== */
+  var flLabels = function (defaults, src) {
+    src = src || {};
+    var out = {};
+    var k;
+    for (k in defaults) {
+      if (Object.prototype.hasOwnProperty.call(defaults, k)) {
+        out[k] = (src[k] === undefined || src[k] === null) ? defaults[k] : src[k];
+      }
+    }
+    return out;
+  };
+  /* ==== BEHAVIOR INJECT END: labels ==== */
   /* ---------------------------------------------------------------- 工具 */
 
   /**
@@ -183,6 +217,7 @@
     var opt = opts || {};
 
     this.root = root;
+    this.labels = flLabels(DEFAULT_LABELS, opt && opt.labels);
     this.input = root.querySelector('.upload__input');
     this.list = root.querySelector('.upload__list');
     this.status = root.querySelector('.upload__status');
@@ -299,15 +334,15 @@
       for (var i = 0; i < incoming.length; i++) {
         var f = incoming[i];
         if (maxFiles && keep.length >= maxFiles) {
-          rejected.push({ file: f, reason: 'count', text: '最多 ' + maxFiles + ' 个文件' });
+          rejected.push({ file: f, reason: 'count', text: this.labels.countMax(maxFiles) });
           continue;
         }
         if (this.maxSize && f.size > this.maxSize) {
-          rejected.push({ file: f, reason: 'size', text: '超过 ' + humanSize(this.maxSize) });
+          rejected.push({ file: f, reason: 'size', text: this.labels.sizeMax(humanSize(this.maxSize)) });
           continue;
         }
         if (!matchesAccept(f, accept)) {
-          rejected.push({ file: f, reason: 'type', text: '类型不支持' });
+          rejected.push({ file: f, reason: 'type', text: this.labels.type });
           continue;
         }
         keep.push(f);
@@ -336,7 +371,7 @@
       if (dirCount) {
         r.rejected.push({
           file: { name: dirCount + ' 个文件夹', size: 0 },
-          reason: 'dir', text: '请拖入文件，不支持文件夹'
+          reason: 'dir', text: this.labels.folder
         });
       }
 
@@ -344,7 +379,7 @@
         /* 一个都没收：仍要把拒收项画出来，否则用户"拖了没反应" */
         this.rejected = r.rejected;
         this.render();
-        this.announce(r.rejected.length ? '未添加任何文件：' + r.rejected[0].text : '未添加任何文件');
+        this.announce(this.labels.none(r.rejected.length ? r.rejected[0].text : ''));
         flEmit(this.root, 'fl-upload', {
           files: currentFiles(this.input), added: 0, rejected: r.rejected
         });
@@ -354,9 +389,9 @@
       if (!writeFiles(this.input, r.keep)) {
         /* 见文件头：宁可明说不可用，也不能装作收下了 */
         this.rejected = [{ file: r.keep[0], reason: 'unsupported',
-          text: '当前浏览器不支持拖放，请点「选择文件」' }];
+          text: this.labels.noDrop }];
         this.render();
-        this.announce('当前浏览器不支持拖放，请点选择文件');
+        this.announce(this.labels.noDropShort);
         return false;
       }
 
@@ -441,7 +476,7 @@
       /* 状态词给读屏（图标是 aria-hidden）—— 也是色盲用户的第二条线索 */
       var sr = document.createElement('span');
       sr.className = 'upload__status';
-      sr.textContent = STATE_TEXT[state] || '';
+      sr.textContent = this.labels[state] || '';
       mark.appendChild(sr);
 
       var name = document.createElement('span');
@@ -477,12 +512,12 @@
         var rm = document.createElement('button');
         rm.className = 'upload__remove';
         rm.type = 'button';
-        rm.setAttribute('aria-label', '移除 ' + (file.name || ''));
+        rm.setAttribute('aria-label', this.labels.remove(file.name || ''));
         rm.appendChild(iconEl('remove'));
         rm.addEventListener('click', function () { self.removeAt(index); });
         li.appendChild(rm);
 
-        if (pct != null && pct >= 0) meta.textContent = '上传中 ' + Math.round(pct) + '%';
+        if (pct != null && pct >= 0) meta.textContent = self.labels.uploading(pct);
       }
 
       return li;
@@ -536,7 +571,7 @@
           mark.appendChild(iconEl('done'));
           var sr = document.createElement('span');
           sr.className = 'upload__status';
-          sr.textContent = STATE_TEXT.done;
+          sr.textContent = this.labels.done;
           mark.appendChild(sr);
         }
         if (meta && f) meta.textContent = humanSize(f.size);
@@ -557,7 +592,7 @@
       }
       this.paintProgress(bar, pct);
       /* 进度也写成文本：**信息不能只在图形里**，否则强制色/色盲下丢失 */
-      if (meta) meta.textContent = '上传中 ' + Math.round(pct) + '%';
+      if (meta) meta.textContent = this.labels.uploading(pct);
     },
 
     /* ================================================================ 移除 */
@@ -579,7 +614,7 @@
 
       this.rebind();      /* 索引整体前移，旧闭包里的 i 已过期 */
       this.syncCount();
-      this.announce('已移除 ' + (removed.name || '文件') + '，还剩 ' + rest.length + ' 个');
+      this.announce(this.labels.removed(removed.name || '文件', rest.length));
       flEmit(this.root, 'fl-upload', {
         files: rest, added: 0, removed: removed, rejected: []
       });
@@ -620,9 +655,7 @@
 
     summary: function (added, rejected) {
       var total = currentFiles(this.input).length;
-      var s = '已添加 ' + added + ' 个文件，共 ' + total + ' 个';
-      if (rejected) s += '；' + rejected + ' 个未通过校验';
-      return s;
+      return this.labels.summary(added, total, rejected);
     },
 
     /* ================================================================ 销毁 */

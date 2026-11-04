@@ -196,11 +196,30 @@ return true;
 var uid = 0;
 
 function create(root, opt) {
+
+var DEFAULT_LABELS = {
+tree: '树形视图'
+};
+
+var flLabels = function (defaults, src) {
+src = src || {};
+var out = {};
+var k;
+for (k in defaults) {
+if (Object.prototype.hasOwnProperty.call(defaults, k)) {
+out[k] = (src[k] === undefined || src[k] === null) ? defaults[k] : src[k];
+}
+}
+return out;
+};
+
+var L = flLabels(DEFAULT_LABELS, opt && opt.labels);
+
 opt = opt || {};
 root.classList.add('tree');
 if (!root.getAttribute('role')) root.setAttribute('role', 'tree');
 if (!root.getAttribute('aria-label') && !root.getAttribute('aria-labelledby')) {
-root.setAttribute('aria-label', opt.label || '树形视图');
+root.setAttribute('aria-label', opt.label || L.tree);
 }
 
 var items = [];

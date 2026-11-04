@@ -125,6 +125,21 @@ var flDismissable = function (opts) {
 
   var uid = 0;
 
+  /* 读屏文案默认值（F2 / 0.26.0）。
+     本组件是 `attach(el, text)` 形式、没有逐实例 opts，
+     所以文案用**模块级**设置：`Tooltip.setLabels({ region: 'Tooltip' })`。 */
+  var LABELS = { region: '组件提示' };
+
+  function setLabels(patch) {
+    if (!patch) return;
+    for (var k in LABELS) {
+      if (Object.prototype.hasOwnProperty.call(LABELS, k)
+        && patch[k] !== undefined && patch[k] !== null) {
+        LABELS[k] = patch[k];
+      }
+    }
+  }
+
   function ensureStyle() {
     if (document.getElementById('tooltip-css')) return;
     /* 说明：样式由页面通过 <link> 引入；这里只做"有没有"的提示，
@@ -149,7 +164,7 @@ var flDismissable = function (opts) {
        而在读屏用户"到达"它之前它通常是空的
        ⇒ 光靠内容拿不到名字 ⇒ 必须显式给 aria-label。
        label 用通用措辞，具体内容由 aria-live 负责播报。 */
-    r.setAttribute('aria-label', '组件提示');
+    r.setAttribute('aria-label', LABELS.region);
     r.style.cssText =
       'position:absolute;width:1px;height:1px;padding:0;margin:-1px;' +
       'overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0';
@@ -280,5 +295,5 @@ var flDismissable = function (opts) {
     el.setAttribute('data-tooltip', text);
   }
 
-  global.Tooltip = { attach: attach };
+  global.Tooltip = { attach: attach, setLabels: setLabels };
 })(typeof window !== 'undefined' ? window : globalThis);

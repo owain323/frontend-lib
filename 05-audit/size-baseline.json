@@ -16,6 +16,10 @@
       "gzip": 1645,
       "raw": 3768
     },
+    "01-tokens/behavior/labels.js": {
+      "gzip": 1189,
+      "raw": 2222
+    },
     "01-tokens/behavior/roving.js": {
       "gzip": 3001,
       "raw": 7225
@@ -81,16 +85,16 @@
       "raw": 7168
     },
     "02-primitives/combobox/combobox.js": {
-      "gzip": 6973,
-      "raw": 19521
+      "gzip": 7255,
+      "raw": 20205
     },
     "02-primitives/date-range/date-range.css": {
       "gzip": 2248,
       "raw": 6188
     },
     "02-primitives/date-range/date-range.js": {
-      "gzip": 4607,
-      "raw": 12069
+      "gzip": 4931,
+      "raw": 12910
     },
     "02-primitives/delta/delta.css": {
       "gzip": 2812,
@@ -109,8 +113,8 @@
       "raw": 7960
     },
     "02-primitives/popover/popover.js": {
-      "gzip": 5009,
-      "raw": 12462
+      "gzip": 5410,
+      "raw": 13414
     },
     "02-primitives/progress/progress.css": {
       "gzip": 4382,
@@ -121,8 +125,8 @@
       "raw": 4540
     },
     "02-primitives/select/select.js": {
-      "gzip": 9148,
-      "raw": 25412
+      "gzip": 9381,
+      "raw": 26034
     },
     "02-primitives/separator/separator.css": {
       "gzip": 1310,
@@ -145,8 +149,8 @@
       "raw": 21009
     },
     "02-primitives/upload/upload.js": {
-      "gzip": 10001,
-      "raw": 28344
+      "gzip": 10422,
+      "raw": 29633
     },
     "03-patterns/accordion/accordion.css": {
       "gzip": 7171,
@@ -165,16 +169,16 @@
       "raw": 6016
     },
     "03-patterns/drawer/drawer.js": {
-      "gzip": 5813,
-      "raw": 14373
+      "gzip": 6415,
+      "raw": 15909
     },
     "03-patterns/dropdown/dropdown.css": {
       "gzip": 1929,
       "raw": 4044
     },
     "03-patterns/dropdown/dropdown.js": {
-      "gzip": 7947,
-      "raw": 21534
+      "gzip": 8176,
+      "raw": 22120
     },
     "03-patterns/form-validation/form-validation.css": {
       "gzip": 4992,
@@ -205,16 +209,16 @@
       "raw": 13135
     },
     "03-patterns/overlay/overlay.js": {
-      "gzip": 11502,
-      "raw": 31287
+      "gzip": 12252,
+      "raw": 33059
     },
     "03-patterns/pagination/pagination.css": {
       "gzip": 3407,
       "raw": 7834
     },
     "03-patterns/pagination/pagination.js": {
-      "gzip": 7361,
-      "raw": 18244
+      "gzip": 7694,
+      "raw": 19187
     },
     "03-patterns/reveal/reveal.css": {
       "gzip": 1769,
@@ -241,16 +245,16 @@
       "raw": 3538
     },
     "03-patterns/tooltip/tooltip.js": {
-      "gzip": 4965,
-      "raw": 11674
+      "gzip": 5192,
+      "raw": 12194
     },
     "03-patterns/tree/tree.css": {
       "gzip": 1958,
       "raw": 4058
     },
     "03-patterns/tree/tree.js": {
-      "gzip": 6417,
-      "raw": 17481
+      "gzip": 6656,
+      "raw": 18067
     },
     "04-recipes/analysis-report/analysis-report.css": {
       "gzip": 3387,
@@ -282,6 +286,6 @@
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 340019,
-  "total_raw": 855921
+  "total_gzip": 345249,
+  "total_raw": 868474
 }

@@ -39,22 +39,22 @@
 | 标签 / 徽章 | `02-primitives/badge/badge.css` | 141 | — | 有状态标记就要（"已披露""停牌"） |
 | 卡片 | `02-primitives/card/card.css` | 283 | — | 有分组内容就要 |
 | 单选 / 多选 | `02-primitives/choice/choice.css` | 434 | — | 单选 / 多选就要 |
-| 下拉选择 | `02-primitives/select/select.css` | 151 | **必需 631** (`select.js`) | 原生 select 的外观或交互不够用就要 |
-| 可搜索选择 | `02-primitives/combobox/combobox.css` | 223 | **必需 480** (`combobox.js`) | 选项多到要搜索，或要选多个并留成标签就要 |
+| 下拉选择 | `02-primitives/select/select.css` | 151 | **必需 652** (`select.js`) | 原生 select 的外观或交互不够用就要 |
+| 可搜索选择 | `02-primitives/combobox/combobox.css` | 223 | **必需 503** (`combobox.js`) | 选项多到要搜索，或要选多个并留成标签就要 |
 | 开关 | `02-primitives/switch/switch.css` | 429 | — | 有"立即生效的设置"就要 |
 | 分隔线 | `02-primitives/separator/separator.css` | 73 | — | 要分开内容块就要 |
 | 加载骨架 | `02-primitives/skeleton/skeleton.css` | 114 | — | 数据还没到、先把版式占住就要 |
 | 进度条 / 环 | `02-primitives/progress/progress.css` | 228 | — | 有耗时过程要给进度就要 |
-| 浮层气泡 | `02-primitives/popover/popover.css` | 187 | **必需 325** (`popover.js`) | 要一段信息贴着触发元素浮出来就要 |
-| 日期区间 | `02-primitives/date-range/date-range.css` | 206 | **必需 310** (`date-range.js`) | 要选起止日期就要 |
+| 浮层气泡 | `02-primitives/popover/popover.css` | 187 | **必需 345** (`popover.js`) | 要一段信息贴着触发元素浮出来就要 |
+| 日期区间 | `02-primitives/date-range/date-range.css` | 206 | **必需 332** (`date-range.js`) | 要选起止日期就要 |
 | 标签页 | `03-patterns/tabs/tabs.css` | 172 | **必需 316** (`tabs.js`) | 同层级内容切换就要 |
 | 折叠面板 | `03-patterns/accordion/accordion.css` | 453 | **必需 389** (`accordion.js`) | 长表单分段就要 |
-| 动作菜单 | `03-patterns/dropdown/dropdown.css` | 135 | **必需 555** (`dropdown.js`) | 要一组动作（新建 / 导出 / 删除）就要 |
-| 文字提示 | `03-patterns/tooltip/tooltip.css` | 89 | **必需 284** (`tooltip.js`) | 图标按钮或缩写需要一句话解释就要 |
-| 分页 | `03-patterns/pagination/pagination.css` | 195 | **必需 401** (`pagination.js`) | 数据多到要翻页就要 |
-| 树形 | `03-patterns/tree/tree.css` | 122 | **必需 464** (`tree.js`) | 层级数据（文件 / 组织 / 分类）要展开就要 |
-| 侧边抽屉 | `03-patterns/drawer/drawer.css` | 145 | **必需 378** (`drawer.js`) | 要从侧边滑出面板就要 |
-| 弹窗 / 吐司 | `03-patterns/overlay/overlay.css` | 338 | **必需 697** (`overlay.js`) | 需要弹层（吐司 / 模态）就要 |
+| 动作菜单 | `03-patterns/dropdown/dropdown.css` | 135 | **必需 575** (`dropdown.js`) | 要一组动作（新建 / 导出 / 删除）就要 |
+| 文字提示 | `03-patterns/tooltip/tooltip.css` | 89 | **必需 299** (`tooltip.js`) | 图标按钮或缩写需要一句话解释就要 |
+| 分页 | `03-patterns/pagination/pagination.css` | 195 | **必需 428** (`pagination.js`) | 数据多到要翻页就要 |
+| 树形 | `03-patterns/tree/tree.css` | 122 | **必需 484** (`tree.js`) | 层级数据（文件 / 组织 / 分类）要展开就要 |
+| 侧边抽屉 | `03-patterns/drawer/drawer.css` | 145 | **必需 416** (`drawer.js`) | 要从侧边滑出面板就要 |
+| 弹窗 / 吐司 | `03-patterns/overlay/overlay.css` | 338 | **必需 734** (`overlay.js`) | 需要弹层（吐司 / 模态）就要 |
 | 状态（空 / 加载 / 错 / 成功） | `03-patterns/states/states.css` | 269 | — | **凡是会异步取数就要** |
 | 表单校验 | `03-patterns/form-validation/form-validation.css` | 274 | — | 提交前要校验就要 |
 | 列表增删 | `03-patterns/list/list.css` | 162 | 可选 201 (`flip.js`，FLIP 增删动画，纯增强) | 列表会动态增删就要 |
@@ -63,15 +63,15 @@
 | delta | `02-primitives/delta/delta.css` | 113 | — |  |
 | metric | `02-primitives/metric/metric.css` | 157 | — |  |
 | timeline | `02-primitives/timeline/timeline.css` | 152 | — | 有一串按时间排的事件（公告 / 大事记 / 版本记录）就要 |
-| upload | `02-primitives/upload/upload.css` | 490 | 可选 676 (`upload.js`，拖放 / 文件列表 / 校验；没有它基础形态照常工作) |  |
+| upload | `02-primitives/upload/upload.css` | 490 | 可选 709 (`upload.js`，拖放 / 文件列表 / 校验；没有它基础形态照常工作) |  |
 | reveal | `03-patterns/reveal/reveal.css` | 93 | 可选 175 (`reveal.js`，入场动效，纯增强；没有它内容直接可见) |  |
 | analysis-report | `04-recipes/analysis-report/analysis-report.css` | 226 | — |  |
 | app-shell | `04-recipes/app-shell/app-shell.css` | 588 | **必需 289** (`shell-nav.js`) |  |
 | detail-page | `04-recipes/detail-page/detail-page.css` | 190 | — |  |
 | report | `04-recipes/report/report.css` | 369 | — |  |
 | table | `04-recipes/table/table.css` | 409 | — |  |
-| bar | `09-assets/bar/bar.css` | 181 | **必需 324** (`bar.js`) |  |
-| model-viewer | `09-assets/model-viewer/model-viewer.css` | 143 | **必需 432** (`model-viewer.js`) |  |
+| bar | `09-assets/bar/bar.css` | 181 | **必需 348** (`bar.js`) |  |
+| model-viewer | `09-assets/model-viewer/model-viewer.css` | 143 | **必需 464** (`model-viewer.js`) |  |
 | scientific-plot | `09-assets/scientific-plot/scientific-plot.css` | 141 | **必需 604** (`scientific-plot.js`) |  |
 | sparkline | `09-assets/sparkline/sparkline.css` | 158 | **必需 508** (`sparkline.js`) |  |
 

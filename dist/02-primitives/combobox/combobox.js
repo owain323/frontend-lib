@@ -119,6 +119,28 @@ return true;
 var uid = 0;
 
 function create(root, opt) {
+
+var DEFAULT_LABELS = {
+suggest: '建议',
+input: '输入',
+noMatch: function (q) { return '没有匹配「' + q + '」的选项'; },
+empty: '暂无可选'
+};
+
+var flLabels = function (defaults, src) {
+src = src || {};
+var out = {};
+var k;
+for (k in defaults) {
+if (Object.prototype.hasOwnProperty.call(defaults, k)) {
+out[k] = (src[k] === undefined || src[k] === null) ? defaults[k] : src[k];
+}
+}
+return out;
+};
+
+var L = flLabels(DEFAULT_LABELS, opt && opt.labels);
+
 opt = opt || {};
 var input = root.querySelector('[data-combo-input]');
 var list = root.querySelector('[data-combo-list]');
@@ -147,14 +169,14 @@ var activeIdx = -1;
 var shown = [];
 
 list.setAttribute('role', 'listbox');
-list.setAttribute('aria-label', opt.label || '建议');
+list.setAttribute('aria-label', opt.label || L.suggest);
 input.setAttribute('role', 'combobox');
 input.setAttribute('aria-autocomplete', 'list');
 input.setAttribute('aria-expanded', 'false');
 input.setAttribute('aria-controls', list.id);
 if (!input.id) input.id = 'combo-input-' + seq;
 if (!input.getAttribute('aria-label') && !root.querySelector('label[for="' + input.id + '"]')) {
-input.setAttribute('aria-label', opt.label || '输入');
+input.setAttribute('aria-label', opt.label || L.input);
 }
 
 function esc(s) {
@@ -190,7 +212,7 @@ return String(s).replace(/[&<>"]/g, function (c) {
       if (!shown.length) {
         /* @html-sink escaped — 插值只有 q，且过了 esc() */
         list.innerHTML = '<li class="combo__empty" role="presentation">' +
-          (q ? '没有匹配「' + esc(q) + '」的选项' : '暂无可选') + '</li>';
+          (q ? L.noMatch(esc(q)) : L.empty) + '</li>';
         return;
       }
       var ql = q.toLowerCase();

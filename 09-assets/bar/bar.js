@@ -95,9 +95,35 @@
    *        并且只画（画布内的那一部分），不能画到坐标系外面去
    *     ③ **标注跟着堆叠顶端走**：标签写的是**该列合计**，不是第一个系列的值
    */
+  /* 可见文案默认值（F2 / 0.26.0）。
+     ⚠️ 这里用 `opt.text` 而不是 `labels` —— `bar.draw` 的 `labels`
+        早就是「X 轴标签」这个**数据**参数，改名是破坏性变更。
+        同类情况全库只此一处，已在 docs/L10N.md 写明。 */
+  var DEFAULT_TEXT = {
+    series: function (i) { return '系列 ' + i; },
+    clipped: function (n, isStack, max) {
+      return '有 ' + n + ' 个' + (isStack ? '类目的合计' : '数据')
+        + '超出量程（上限 ' + max + '），已按上限截断显示。';
+    }
+  };
+
+  /* ==== BEHAVIOR INJECT BEGIN: labels ==== */
+  var flLabels = function (defaults, src) {
+    src = src || {};
+    var out = {};
+    var k;
+    for (k in defaults) {
+      if (Object.prototype.hasOwnProperty.call(defaults, k)) {
+        out[k] = (src[k] === undefined || src[k] === null) ? defaults[k] : src[k];
+      }
+    }
+    return out;
+  };
+  /* ==== BEHAVIOR INJECT END: labels ==== */
   function draw(opt) {
     opt = opt || {};
     var host = opt.host;
+    var T = flLabels(DEFAULT_TEXT, opt && opt.text);
     if (!host) throw new Error('bar.draw: 缺少 host');
     if (opt.max === undefined || opt.max === null) {
       /* 🔴 铁律三：不替调用方决定量程。
@@ -286,7 +312,7 @@
         /* 🔴 用 textContent，不用 innerHTML —— 系列名来自调用方的数据 */
         li.appendChild(sw);
         var tx = document.createElement('span');
-        tx.textContent = se.name || ('系列 ' + (si + 1));
+        tx.textContent = se.name || T.series(si + 1);
         li.appendChild(tx);
         legendEl.appendChild(li);
       });
@@ -302,9 +328,7 @@
     } else if (clipped.length) {
       var p2 = document.createElement('p');
       p2.className = 'bar__note';
-      p2.textContent = '有 ' + clipped.length + ' 个' +
-                       (mode === 'stack' ? '类目的合计' : '数据') +
-                       '超出量程（上限 ' + max + '），已按上限截断显示。';
+      p2.textContent = T.clipped(clipped.length, mode === 'stack', max);
       host.appendChild(p2);
     }
 

@@ -32,7 +32,38 @@ error: 'M8 1.7a6.3 6.3 0 1 0 0 12.6A6.3 6.3 0 0 0 8 1.7zM8 4.9v3.4M8 11.1v.5',
 remove: 'M4.2 4.2l7.6 7.6M11.8 4.2l-7.6 7.6'
 };
 
-var STATE_TEXT = { pending: '待上传', done: '已完成', error: '失败' };
+var DEFAULT_LABELS = {
+pending: '待上传',
+done: '已完成',
+error: '失败',
+remove: function (name) { return '移除 ' + name; },
+uploading: function (pct) { return '上传中 ' + Math.round(pct) + '%'; },
+countMax: function (n) { return '最多 ' + n + ' 个文件'; },
+sizeMax: function (limit) { return '超过 ' + limit; },
+type: '类型不支持',
+folder: '请拖入文件，不支持文件夹',
+none: function (reason) { return reason ? '未添加任何文件：' + reason : '未添加任何文件'; },
+noDrop: '当前浏览器不支持拖放，请点「选择文件」',
+noDropShort: '当前浏览器不支持拖放，请点选择文件',
+summary: function (added, total, rejected) {
+var s = '已添加 ' + added + ' 个文件，共 ' + total + ' 个';
+if (rejected) s += '；' + rejected + ' 个未通过校验';
+return s;
+},
+removed: function (name, rest) { return '已移除 ' + name + '，还剩 ' + rest + ' 个'; }
+};
+
+var flLabels = function (defaults, src) {
+src = src || {};
+var out = {};
+var k;
+for (k in defaults) {
+if (Object.prototype.hasOwnProperty.call(defaults, k)) {
+out[k] = (src[k] === undefined || src[k] === null) ? defaults[k] : src[k];
+}
+}
+return out;
+};
 
 function humanSize(n) {
 if (typeof n !== 'number' || n < 0) return '';
@@ -110,6 +141,7 @@ function Upload(root, opts) {
 var opt = opts || {};
 
 this.root = root;
+this.labels = flLabels(DEFAULT_LABELS, opt && opt.labels);
 this.input = root.querySelector('.upload__input');
 this.list = root.querySelector('.upload__list');
 this.status = root.querySelector('.upload__status');
@@ -209,15 +241,15 @@ var accept = this.input.getAttribute('accept');
 for (var i = 0; i < incoming.length; i++) {
 var f = incoming[i];
 if (maxFiles && keep.length >= maxFiles) {
-rejected.push({ file: f, reason: 'count', text: '最多 ' + maxFiles + ' 个文件' });
+rejected.push({ file: f, reason: 'count', text: this.labels.countMax(maxFiles) });
 continue;
 }
 if (this.maxSize && f.size > this.maxSize) {
-rejected.push({ file: f, reason: 'size', text: '超过 ' + humanSize(this.maxSize) });
+rejected.push({ file: f, reason: 'size', text: this.labels.sizeMax(humanSize(this.maxSize)) });
 continue;
 }
 if (!matchesAccept(f, accept)) {
-rejected.push({ file: f, reason: 'type', text: '类型不支持' });
+rejected.push({ file: f, reason: 'type', text: this.labels.type });
 continue;
 }
 keep.push(f);
@@ -231,7 +263,7 @@ var r = this._validate(incoming);
 if (dirCount) {
 r.rejected.push({
 file: { name: dirCount + ' 个文件夹', size: 0 },
-reason: 'dir', text: '请拖入文件，不支持文件夹'
+reason: 'dir', text: this.labels.folder
 });
 }
 
@@ -239,7 +271,7 @@ if (!r.keep.length) {
 
 this.rejected = r.rejected;
 this.render();
-this.announce(r.rejected.length ? '未添加任何文件：' + r.rejected[0].text : '未添加任何文件');
+this.announce(this.labels.none(r.rejected.length ? r.rejected[0].text : ''));
 flEmit(this.root, 'fl-upload', {
 files: currentFiles(this.input), added: 0, rejected: r.rejected
 });
@@ -249,9 +281,9 @@ return false;
 if (!writeFiles(this.input, r.keep)) {
 
 this.rejected = [{ file: r.keep[0], reason: 'unsupported',
-text: '当前浏览器不支持拖放，请点「选择文件」' }];
+text: this.labels.noDrop }];
 this.render();
-this.announce('当前浏览器不支持拖放，请点选择文件');
+this.announce(this.labels.noDropShort);
 return false;
 }
 
@@ -317,7 +349,7 @@ mark.appendChild(iconEl(state === 'done' ? 'done' : state === 'error' ? 'error' 
 
 var sr = document.createElement('span');
 sr.className = 'upload__status';
-sr.textContent = STATE_TEXT[state] || '';
+sr.textContent = this.labels[state] || '';
 mark.appendChild(sr);
 
 var name = document.createElement('span');
@@ -346,12 +378,12 @@ this.paintProgress(bar0, pct);
 var rm = document.createElement('button');
 rm.className = 'upload__remove';
 rm.type = 'button';
-rm.setAttribute('aria-label', '移除 ' + (file.name || ''));
+rm.setAttribute('aria-label', this.labels.remove(file.name || ''));
 rm.appendChild(iconEl('remove'));
 rm.addEventListener('click', function () { self.removeAt(index); });
 li.appendChild(rm);
 
-if (pct != null && pct >= 0) meta.textContent = '上传中 ' + Math.round(pct) + '%';
+if (pct != null && pct >= 0) meta.textContent = self.labels.uploading(pct);
 }
 
 return li;
@@ -396,7 +428,7 @@ mark.innerHTML = '';
 mark.appendChild(iconEl('done'));
 var sr = document.createElement('span');
 sr.className = 'upload__status';
-sr.textContent = STATE_TEXT.done;
+sr.textContent = this.labels.done;
 mark.appendChild(sr);
 }
 if (meta && f) meta.textContent = humanSize(f.size);
@@ -417,7 +449,7 @@ li.insertBefore(bar, rmBtn || null);
 }
 this.paintProgress(bar, pct);
 
-if (meta) meta.textContent = '上传中 ' + Math.round(pct) + '%';
+if (meta) meta.textContent = this.labels.uploading(pct);
 },
 
 removeAt: function (i) {
@@ -435,7 +467,7 @@ if (li && li.parentNode) li.parentNode.removeChild(li);
 
 this.rebind();
 this.syncCount();
-this.announce('已移除 ' + (removed.name || '文件') + '，还剩 ' + rest.length + ' 个');
+this.announce(this.labels.removed(removed.name || '文件', rest.length));
 flEmit(this.root, 'fl-upload', {
 files: rest, added: 0, removed: removed, rejected: []
 });
@@ -467,9 +499,7 @@ this._announceTimer = global.setTimeout(function () { el.textContent = msg; }, 6
 
 summary: function (added, rejected) {
 var total = currentFiles(this.input).length;
-var s = '已添加 ' + added + ' 个文件，共 ' + total + ' 个';
-if (rejected) s += '；' + rejected + ' 个未通过校验';
-return s;
+return this.labels.summary(added, total, rejected);
 },
 
 destroy: function () {

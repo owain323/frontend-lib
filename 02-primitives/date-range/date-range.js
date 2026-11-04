@@ -119,6 +119,28 @@
   }
 
   function create(root, opt) {
+    /* 校验文案默认值（F2 / 0.26.0）。不传 `labels` 时输出逐字不变。 */
+    /* ==== BEHAVIOR INJECT BEGIN: labels ==== */
+    var flLabels = function (defaults, src) {
+      src = src || {};
+      var out = {};
+      var k;
+      for (k in defaults) {
+        if (Object.prototype.hasOwnProperty.call(defaults, k)) {
+          out[k] = (src[k] === undefined || src[k] === null) ? defaults[k] : src[k];
+        }
+      }
+      return out;
+    };
+    /* ==== BEHAVIOR INJECT END: labels ==== */
+    var DEFAULT_LABELS = {
+        requiredEnd: '请填写结束日期。',
+        requiredStart: '请填写开始日期。',
+        order: function (f, t) { return '开始日期不能晚于结束日期（当前：' + f + ' → ' + t + '）。'; },
+        min: function (min) { return '开始日期不能早于 ' + min + '。'; },
+        max: function (max) { return '结束日期不能晚于 ' + max + '。'; }
+    };
+    var L = flLabels(DEFAULT_LABELS, opt && opt.labels);
     opt = opt || {};
     var from = root.querySelector('[data-dr-from]');
     var to = root.querySelector('[data-dr-to]');
@@ -158,14 +180,14 @@
     function validate() {
       var f = from.value, t = to.value;
       if (!f && !t) { setError(''); paintSummary(''); return true; }
-      if (f && !t) { setError('请填写结束日期。'); return false; }
-      if (!f && t) { setError('请填写开始日期。'); return false; }
+      if (f && !t) { setError(L.requiredEnd); return false; }
+      if (!f && t) { setError(L.requiredStart); return false; }
       if (f > t) {
-        setError('开始日期不能晚于结束日期（当前：' + f + ' → ' + t + '）。');
+        setError(L.order(f, t));
         return false;
       }
-      if (opt.min && f < opt.min) { setError('开始日期不能早于 ' + opt.min + '。'); return false; }
-      if (opt.max && t > opt.max) { setError('结束日期不能晚于 ' + opt.max + '。'); return false; }
+      if (opt.min && f < opt.min) { setError(L.min(opt.min)); return false; }
+      if (opt.max && t > opt.max) { setError(L.max(opt.max)); return false; }
       setError('');
       paintSummary(f + ' → ' + t + '（' + days(f, t) + ' 天）');
       return true;

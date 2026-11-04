@@ -27,9 +27,30 @@ e.setAttribute(k, String(attrs[k]));
 return e;
 }
 
+var DEFAULT_TEXT = {
+series: function (i) { return '系列 ' + i; },
+clipped: function (n, isStack, max) {
+return '有 ' + n + ' 个' + (isStack ? '类目的合计' : '数据')
++ '超出量程（上限 ' + max + '），已按上限截断显示。';
+}
+};
+
+var flLabels = function (defaults, src) {
+src = src || {};
+var out = {};
+var k;
+for (k in defaults) {
+if (Object.prototype.hasOwnProperty.call(defaults, k)) {
+out[k] = (src[k] === undefined || src[k] === null) ? defaults[k] : src[k];
+}
+}
+return out;
+};
+
 function draw(opt) {
 opt = opt || {};
 var host = opt.host;
+var T = flLabels(DEFAULT_TEXT, opt && opt.text);
 if (!host) throw new Error('bar.draw: 缺少 host');
 if (opt.max === undefined || opt.max === null) {
 
@@ -187,7 +208,7 @@ sw.className = 'bar__legend-swatch ' + SERIES_CLS[si % SERIES_STYLES] +
 
 li.appendChild(sw);
 var tx = document.createElement('span');
-tx.textContent = se.name || ('系列 ' + (si + 1));
+tx.textContent = se.name || T.series(si + 1);
 li.appendChild(tx);
 legendEl.appendChild(li);
 });
@@ -202,9 +223,7 @@ host.appendChild(p);
 } else if (clipped.length) {
 var p2 = document.createElement('p');
 p2.className = 'bar__note';
-p2.textContent = '有 ' + clipped.length + ' 个' +
-(mode === 'stack' ? '类目的合计' : '数据') +
-'超出量程（上限 '+ max + '），已按上限截断显示。';
+p2.textContent = T.clipped(clipped.length, mode === 'stack', max);
 host.appendChild(p2);
 }
 

@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
   "generatedBy": "05-audit/gen-ai-contract.py",
-  "libraryVersion": "0.25.6",
+  "libraryVersion": "0.26.0",
   "$comment": "机器可读的组件契约。slots = BEM 元素名（在本库里元素名就是插槽名），states.enum = 组件会在 DOM 上写出的 data-* 取值，states.legacyClass = 仍未收敛到 data 属性的历史状态类（INVARIANT I-8 未达标）。printPolicy = 这个组件在纸上会发生什么（空数组 = 原样保留）；pagination = 内容是否被分页裁过（server 不许与 expand 同时出现，否则展开的只是当前一页）。",
   "maturityCriteria": {
     "alpha": "缺 demo.html 或缺 05-audit 下的专属门禁 ⇒ 还没被机器验证过，不要用",

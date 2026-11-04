@@ -156,8 +156,27 @@ error:   'toast--error',
 warning: 'toast--warning'
 };
 
+var DEFAULT_LABELS = {
+closeToast: '关闭提示'
+};
+
+var flLabels = function (defaults, src) {
+src = src || {};
+var out = {};
+var k;
+for (k in defaults) {
+if (Object.prototype.hasOwnProperty.call(defaults, k)) {
+out[k] = (src[k] === undefined || src[k] === null) ? defaults[k] : src[k];
+}
+}
+return out;
+};
+
+var TOAST_LIMIT = 4;
+
 function toast(opts) {
 opts = opts || {};
+var L = flLabels(DEFAULT_LABELS, opts && opts.labels);
 
 var region = document.querySelector('.toast-region');
 if (!region) {
@@ -203,7 +222,7 @@ el.appendChild(timer);
 var closeBtn = document.createElement('button');
 closeBtn.className = 'toast__close';
 closeBtn.type = 'button';
-closeBtn.setAttribute('aria-label', '关闭提示');
+closeBtn.setAttribute('aria-label', L.closeToast);
 closeBtn.textContent = '×';
 el.appendChild(closeBtn);
 
@@ -220,6 +239,11 @@ if (el.parentNode) el.parentNode.removeChild(el);
 }
 
 closeBtn.addEventListener('click', close);
+
+var max = (opts.maxVisible === undefined) ? TOAST_LIMIT : opts.maxVisible;
+while (max > 0 && region.children.length >= max) {
+region.removeChild(region.firstChild);
+}
 region.appendChild(el);
 
 var timerId = auto > 0 ? setTimeout(close, auto) : null;

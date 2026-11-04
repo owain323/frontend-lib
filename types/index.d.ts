@@ -62,6 +62,101 @@ export interface Destroyable {
 }
 
 /* ============================================================================
+ * 本地化文案（0.26.0）
+ *
+ * 所有组件默认输出中文；传 `labels` 可覆盖**用户可见 / 读屏会念到**的文案。
+ * 值可以是字符串，也可以是函数（动态文案，如 `第 N 页`）。
+ * 不传时行为与 0.25.x **逐字相同**。
+ *
+ * ⚠️ 开发期错误信息（`throw new Error('…')`）不在覆盖范围内 ——
+ *    它们面向调用方，不经过 UI，详见 docs/L10N.md。
+ * ========================================================================== */
+export interface PaginationLabels {
+  nav?: string;
+  prev?: string;
+  next?: string;
+  page?(page: number, isCurrent: boolean): string;
+  status?(page: number, pages: number): string;
+  live?(page: number, pages: number): string;
+}
+
+export interface UploadLabels {
+  pending?: string;
+  done?: string;
+  error?: string;
+  remove?(name: string): string;
+  uploading?(pct: number): string;
+  countMax?(n: number): string;
+  sizeMax?(limit: string): string;
+  type?: string;
+  folder?: string;
+  none?(reason: string): string;
+  noDrop?: string;
+  noDropShort?: string;
+  summary?(added: number, total: number, rejected: number): string;
+  removed?(name: string, rest: number): string;
+}
+
+export interface DrawerLabels {
+  dialog?: string;
+  close?: string;
+}
+
+export interface OverlayLabels {
+  closeToast?: string;
+}
+
+export interface SelectLabels {
+  option?: string;
+  placeholder?: string;
+}
+
+export interface ComboboxLabels {
+  suggest?: string;
+  input?: string;
+  noMatch?(query: string): string;
+  empty?: string;
+}
+
+export interface TreeLabels {
+  tree?: string;
+}
+
+export interface DropdownLabels {
+  menu?: string;
+}
+
+export interface DateRangeLabels {
+  requiredEnd?: string;
+  requiredStart?: string;
+  order?(from: string, to: string): string;
+  min?(min: string): string;
+  max?(max: string): string;
+}
+
+export interface NavLabels {
+  open?: string;
+  close?: string;
+}
+
+/** ⚠️ `bar` 用 `text` 而不是 `labels`：`labels` 早就是「X 轴标签」这个数据参数 */
+export interface BarText {
+  series?(index: number): string;
+  clipped?(n: number, isStack: boolean, max: number): string;
+}
+
+export interface ModelViewerLabels {
+  load?: string;
+  placeholder?: string;
+  hintBefore?: string;
+  hintBetween?: string;
+  hintStrong?: string;
+  hintTail?: string;
+  downloading?(pct: number): string;
+  noWebGL?: string;
+}
+
+/* ============================================================================
  * select —— 单选下拉
  * ========================================================================== */
 export interface SelectOption {
@@ -80,6 +175,8 @@ export interface SelectOptions {
   value?: string;
   placeholder?: string;
   disabled?: boolean;
+  /** 读屏 / 占位文案覆盖（默认中文） */
+  labels?: SelectLabels;
   /**
    * ⭐ 变更回调。**两个参数**，不是数组。
    *   runtime：`opt.onChange(selected, 显示文本)`
@@ -129,6 +226,8 @@ export interface ComboboxOptions {
   max?: number;
   placeholder?: string;
   disabled?: boolean;
+  /** 读屏 / 空态文案覆盖（默认中文） */
+  labels?: ComboboxLabels;
   /** 变更回调（传已选的 value 数组） */
   onChange?(values: string[]): void;
   /**
@@ -197,6 +296,8 @@ export interface DateRangeOptions {
   /** 是否允许手动输入 */
   editable?: boolean;
   disabled?: boolean;
+  /** 校验文案覆盖（默认中文） */
+  labels?: DateRangeLabels;
   /**
    * ⭐ 变更回调。**第一个参数是对象，第二个是布尔**。
    *   runtime：`opt.onChange({ from, to, valid }, valid)`
@@ -270,6 +371,8 @@ export interface Dropdown {
 export interface TreeOptions {
   /** 无障碍名（读屏会读它） */
   label?: string;
+  /** 读屏文案覆盖（默认中文）—— `label` 优先级更高 */
+  labels?: TreeLabels;
 }
 
 /* ============================================================================
@@ -340,7 +443,7 @@ export interface PaginationApi {
   /** 为一个 `[data-pagination]` 节点建实例；同一节点重复调用返回同一个。
    *  ⚠️ 实例成员未在本文件收窄（源码里只挂了内部状态），需要时读
    *  `03-patterns/pagination/README.md`。 */
-  create(node: HTMLElement): object | null;
+  create(node: HTMLElement, opts?: { labels?: PaginationLabels }): object | null;
   /** 扫描并初始化（默认整个 document） */
   update(root?: HTMLElement): void;
   /** 总条数 ÷ 每页条数 → 页数（至少 1） */
@@ -353,22 +456,69 @@ export interface DismissableOverlay {
   close(): void;
 }
 
+export interface ToastOptions {
+  title?: string;
+  desc?: string;
+  variant?: 'success' | 'error' | 'warning';
+  /** 毫秒；`0` = 不自动消失。不传时 error 为 0、其余 4000 */
+  duration?: number;
+  /** 同屏上限；超了摘掉最旧的。不传默认 4，`0` = 不限 */
+  maxVisible?: number;
+  /** 关闭按钮的读屏文案（默认「关闭提示」） */
+  labels?: OverlayLabels;
+}
+
+export interface DialogAction {
+  text: string;
+  value?: string;
+  /** 视觉/语义变体（源码按 `actions` 的 `kind` 判定，未知值退回默认） */
+  kind?: 'primary' | 'danger' | 'ghost';
+  onClick?(): void;
+}
+
+export interface DialogOptions {
+  title?: string;
+  desc?: string;
+  actions?: DialogAction[];
+  danger?: boolean;
+  /** 初始焦点落点；不传落在对话框容器上 */
+  initialFocus?: HTMLElement;
+}
+
 export interface OverlayApi {
-  /** 顶部提示条。参数形状见 `03-patterns/overlay/README.md` */
-  toast(opts: object): void;
+  /** 顶部提示条 */
+  toast(opts: ToastOptions): { el: HTMLElement; close(): void };
   /** 模态对话框 —— 返回句柄，可编程关闭 */
-  dialog(opts: object): DismissableOverlay;
+  dialog(opts: DialogOptions): DismissableOverlay;
 }
 
 export interface TooltipApi {
   /** 给元素挂一个提示。`place` 决定方向（源码默认值以 README 为准） */
   attach(el: HTMLElement, text: string, place?: string): void;
+  /** 覆盖 live region 的读屏名（默认「组件提示」） */
+  setLabels(patch: { region?: string }): void;
+}
+
+export interface PopoverOptions {
+  /** 有意的 HTML 入口 —— **调用方负责净化**，或接 `sanitize` / `setSanitizer` */
+  html?: string;
+  /** 浮层方向 */
+  place?: 'top' | 'bottom' | 'start' | 'end';
+  /** 无障碍名 */
+  label?: string;
+  /** 逐次净化钩子（优先于模块级 `setSanitizer`） */
+  sanitize?(html: string): string;
+  onOpen?(): void;
+  onClose?(): void;
 }
 
 export interface PopoverApi {
-  attach(trigger: HTMLElement, opts?: object): void;
+  attach(trigger: HTMLElement, opts?: PopoverOptions): void;
   closeAll(): void;
-  readonly current: unknown;
+  /** 当前打开的那个浮层的元素；没有则为 null（不是 unknown） */
+  readonly current: HTMLElement | null;
+  /** 模块级净化钩子：`Popover.setSanitizer(DOMPurify.sanitize)`；传 null 取消 */
+  setSanitizer(fn: ((html: string) => string) | null): void;
 }
 
 export interface TocApi {
@@ -470,7 +620,16 @@ export interface BarApi {
     host: HTMLElement;
     /** 🔴 必填：本库铁律三，量程不得自动适配（漏了会抛错，不会悄悄自适应） */
     max: number;
-    series?: unknown[];
+    series?: Array<{ name?: string; values: number[]; cls?: string }>;
+    /** X 轴标签（**数据**，不是文案覆盖） */
+    labels?: string[];
+    /** 可见文案覆盖 —— 因为 `labels` 已被 X 轴占用，这里叫 `text` */
+    text?: BarText;
+    /** 图表整体的无障碍名（默认「柱状图」） */
+    ariaLabel?: string;
+    /** 自定义说明段落（给了就不再自动生成截断提示） */
+    note?: string;
+    threshold?: number;
     height?: number;
     mode?: 'group' | 'stack';
   }): void;
@@ -499,21 +658,61 @@ export interface UploadInstance {
 }
 
 /* ============================================================================
+ * 其余组件的选项（0.26.0 补齐：原本这些入口都写成 `opts?: object`，
+ *   TS 放行一切、拼错键名也不会报错 —— 等于没有类型）
+ * ========================================================================== */
+export interface DropdownOptions {
+  /** 菜单的无障碍名（默认「菜单」） */
+  label?: string;
+  labels?: DropdownLabels;
+}
+
+export interface NavOptions {
+  labels?: NavLabels;
+  onOpen?(): void;
+  onClose?(): void;
+}
+
+export interface DrawerOpenOptions {
+  place?: 'left' | 'right' | 'top' | 'bottom';
+  title?: string;
+  /** 无标题时的无障碍名（默认「抽屉」） */
+  label?: string;
+  /** 有意的 HTML 入口（字符串）—— 调用方负责净化，或接 `sanitize` */
+  content?: string | Node;
+  /** 逐次净化钩子（优先于模块级 `Drawer.setSanitizer`） */
+  sanitize?(html: string): string;
+  labels?: DrawerLabels;
+  actions?: Array<{ text: string; kind?: 'primary' | 'danger' | 'ghost'; onClick?(): void }>;
+}
+
+export interface UploadOptions {
+  /** 单文件大小上限（字节），0 = 不限 */
+  maxSize?: number;
+  /** 文件数上限，0 = 不限 */
+  maxFiles?: number;
+  labels?: UploadLabels;
+}
+
+/* ============================================================================
  * 全局命名空间（组件脚本是 IIFE，挂到 window）
  * ========================================================================== */
 export interface FrontendLibGlobal {
   DateRange: DateRangeStatics;
   Select: { create(root: HTMLElement, opt: SelectOptions): Select };
   Combobox: { create(root: HTMLElement, opt: ComboboxOptions): Combobox };
-  Dropdown: { create(root: HTMLElement, opt?: object): Dropdown };
+  Dropdown: { create(root: HTMLElement, opt?: DropdownOptions): Dropdown };
   Tree: { create(root: HTMLElement, opt?: TreeOptions): Tree };
   /** construct 形态：`new window.Accordion(root, opts)` */
   Accordion: new (root: HTMLElement, opts?: AccordionOptions) => AccordionInstance;
   /** construct 形态：`new window.Tabs(root, opts)` */
   Tabs: new (root: HTMLElement, opts?: object) => TabsInstance;
-  Nav: { attach(root: HTMLElement, opts?: object): NavInstance };
+  Nav: { attach(root: HTMLElement, opts?: NavOptions): NavInstance };
   Pagination: PaginationApi;
-  Drawer: { open(opt?: object): DismissableOverlay };
+  Drawer: {
+    open(opt?: DrawerOpenOptions): DismissableOverlay;
+    setSanitizer(fn: ((html: string) => string) | null): void;
+  };
   Overlay: OverlayApi;
   Tooltip: TooltipApi;
   Popover: PopoverApi;
@@ -524,14 +723,20 @@ export interface FrontendLibGlobal {
   Theme: ThemeApi;
   Chart: ChartApi;
   ChartAdapter: ChartAdapterApi;
-  /** construct 形态：`new window.ModelViewer(node)` */
-  ModelViewer: new (node: HTMLElement) => ModelViewerInstance;
+  /** 🔴 不是构造函数：运行时就挂在 window 上的是 `{ update, refresh, setLabels }`。
+   *  之前声明成 `new (node)` ⇒ TS 允许 `new window.ModelViewer(el)`，
+   *  运行时直接 `TypeError: ModelViewer is not a constructor`。 */
+  ModelViewer: {
+    update(root?: HTMLElement): void;
+    refresh(root?: HTMLElement): void;
+    setLabels(patch: ModelViewerLabels): void;
+  };
   Bar: BarApi;
   ScientificPlot: ScientificPlotApi;
   /** construct 形态：`new window.ShellNav(root, opts)` */
   ShellNav: new (root: HTMLElement, opts?: object) => ShellNavInstance;
   /** construct 形态：`new window.Upload(root, opts)` */
-  Upload: new (root: HTMLElement, opts?: object) => UploadInstance;
+  Upload: new (root: HTMLElement, opts?: UploadOptions) => UploadInstance;
 }
 
 declare global {

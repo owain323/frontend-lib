@@ -376,6 +376,38 @@ python3 05-audit/prefix-build.py --prefix fl
 
 ---
 
+## 文案本地化（0.26.0 起）
+
+**库默认输出中文；`labels` 可覆盖用户可见 / 读屏会念到的文案。**
+
+```js
+Pagination.create(node, { labels: { prev: 'Previous', next: 'Next' } });
+Overlay.toast({ title: 'Saved', labels: { closeToast: 'Dismiss' } });
+Tooltip.setLabels({ region: 'Tooltip' });          // 模块级（属性初始化，无逐实例 opts）
+```
+
+- 值可以是字符串或函数（动态量用函数：`page(p, isCurrent)`、`uploading(pct)`）。
+- **不传时输出与 0.25.x 逐字相同** —— 升级补丁版本不会换掉界面语言。
+- `bar.draw` 是唯一例外：`labels` 已是「X 轴标签」这个**数据**参数，
+  它的文案覆盖叫 `text`。
+- 开发期错误信息（`throw new Error`）**不在覆盖范围**，它们不经过 UI。
+
+逐组件的键名、以及**已知仍未覆盖**的几处，见 `docs/L10N.md`。
+门禁：`05-audit/i18n-labels-gate.js`（静态禁硬编码 + 真浏览器验证覆盖生效、默认值不变）。
+
+### HTML 净化钩子
+
+`popover` / `drawer` 的字符串 HTML 入口可以接净化器：
+
+```js
+Popover.setSanitizer(function (html) { return DOMPurify.sanitize(html); });
+Drawer.setSanitizer(function (html) { return DOMPurify.sanitize(html); });
+```
+
+默认**不改变行为**（仍按"调用方已净化"处理），理由与责任边界见 `SECURITY.md`。
+
+---
+
 ## 破坏性变更怎么走
 
 公开**名字**（令牌名 / 类名 / 全局与类型成员 / 事件名）的移除走**登记制**：

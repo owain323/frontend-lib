@@ -99,6 +99,18 @@ if (k >= 0) shared.stack.splice(k, 1);
 
 var uid = 0;
 
+var LABELS = { region: '组件提示' };
+
+function setLabels(patch) {
+if (!patch) return;
+for (var k in LABELS) {
+if (Object.prototype.hasOwnProperty.call(LABELS, k)
+&& patch[k] !== undefined && patch[k] !== null) {
+LABELS[k] = patch[k];
+}
+}
+}
+
 function ensureStyle() {
 if (document.getElementById('tooltip-css')) return;
 
@@ -115,7 +127,7 @@ r.setAttribute('role', 'tooltip');
 r.setAttribute('aria-live', 'polite');
 r.setAttribute('aria-atomic', 'true');
 
-r.setAttribute('aria-label', '组件提示');
+r.setAttribute('aria-label', LABELS.region);
 r.style.cssText =
 'position:absolute;width:1px;height:1px;padding:0;margin:-1px;'+
 'overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0';
@@ -211,5 +223,5 @@ el.setAttribute('aria-describedby', cur ? (cur + ' ' + id) : id);
 el.setAttribute('data-tooltip', text);
 }
 
-global.Tooltip = { attach: attach };
+global.Tooltip = { attach: attach, setLabels: setLabels };
 })(typeof window !== 'undefined' ? window : globalThis);

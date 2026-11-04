@@ -148,10 +148,11 @@ box.setAttribute('inert', '');
 
 box.setAttribute('role', 'dialog');
 box.setAttribute('aria-label', opts.label || '');
+var bodyHtml = sanitizeHtml(opts.html || '', opts.sanitize);
 
 box.innerHTML =
 '<span class="popover__arrow" aria-hidden="true"></span>'+
-'<div class="popover__body">'+ (opts.html || '') + '</div>';
+'<div class="popover__body">'+ bodyHtml + '</div>';
 
 positionArrow(box, trigger);
 anchor.appendChild(box);
@@ -230,6 +231,17 @@ el: box,
 return api;
 }
 
+var SANITIZER = null;
+
+function setSanitizer(fn) {
+SANITIZER = (typeof fn === 'function') ? fn : null;
+}
+
+function sanitizeHtml(html, perCall) {
+var fn = (typeof perCall === 'function') ? perCall : SANITIZER;
+return fn ? String(fn(String(html))) : String(html);
+}
+
 function positionArrow(box, trigger) {
 var arrow = box.querySelector('.popover__arrow');
 if (!arrow) return;
@@ -256,5 +268,6 @@ closeAll: function () { if (current) current.close(); },
 get current() { return current; },
 };
 
+Popover.setSanitizer = setSanitizer;
 global.Popover = Popover;
 })(typeof window !== 'undefined' ? window : globalThis);
