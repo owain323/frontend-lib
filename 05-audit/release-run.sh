@@ -163,13 +163,21 @@ do_probe() {
 }
 
 do_verify() {
-  local n r p rc c i=0 step="${WAIT_STEP:-10}" tries="${WAIT_TRIES:-18}"
+  local n r p rc c i=0 step="${WAIT_STEP:-10}" tries="${WAIT_TRIES:-42}"
   # 🔴 先等 registry 索引（2026-11 加 · v0.24.2 现场打出来的）
   #   npm publish 返回 0 之后，**版本端点还要几十秒才可见**。
   #   回执在 publish 之后立刻跑，于是拿到 npm=absent ⇒ 报"发布未完成"。
   #   实际是发布成功、回执错判 —— 一次**假红**，而且出现在最不该出错的地方。
   #   ⇒ 只在"absent"上等（present 立刻返回；unreadable 说明网络/接口有问题，
   #      等下去也不会变，直接判环境不可用）。
+  #   🔴 预算 170s → 420s（2026-11-05 实测打出来的）：
+  #     0.26.0 那次 publish 在 08:15:34 返回成功，registry 直到 08:18:40 才索引到
+  #     —— 用了 186 秒，而当时的上界是 17×10=170 秒。回执在 08:18:38 放弃，
+  #     比真相早两秒，于是"包已经发出去、回执写 absent"。重跑一次要 14 分钟，
+  #     而且会让人误以为要重新发布（同版本发不了）。
+  #     ⇒ 上界必须**明显大于**观测到的最大值，不能贴着它设。
+  #     420 秒 = 6×观测值：索引慢是**常态**（npm 自己就说最终一致），
+  #     而这里的代价只是"多等一会儿"，误判的代价是"回执说谎"。
   #   ⚠️ 用"尝试次数"而不是"累计秒数"做上界：`WAIT_STEP=0` 时（自检用）
   #      累计秒数永远不涨 ⇒ 死循环。这种写法在自检里才会暴露。
   while [ "$i" -lt "$tries" ]; do
@@ -178,14 +186,18 @@ do_verify() {
     [ "$n" = "unreadable" ] && break
     i=$((i + 1))
     [ "$i" -ge "$tries" ] && break
-    log "  registry 还没索引到 $PKG@$VER（第 $i 次重试 / 上限 ${tries}）"\
-" —— npm 发布是最终一致的，继续等"
+    log "  registry 还没索引到 $PKG@$VER（第 $i 次等待 / 上限 ${tries} 次，"\
+"每 ${step}s，共 $((tries * step))s）—— npm 发布是最终一致的，继续等"
     sleep "$step"
   done
   if [ "$n" = "unreadable" ]; then
     log "  registry 不可达 ⇒ 无法出回执"
     exit 2
   fi
+  # 放弃时要写清"等了多久"——否则读日志的人无法判断是"刚查一次就说没有"
+  # 还是"等满了预算还是没有"，而这两种情况的处置完全不同。
+  [ "$n" = "absent" ] && \
+    log "  ⇒ 等满 $((i * step))s 仍未索引到 $PKG@$VER（不是没发布，是还没可见）"
   r="$(release_state)"; rc=$?
   [ "$rc" = "2" ] && { log "  gh 不可用 ⇒ 无法出回执"; exit 2; }
   p="unknown"
@@ -291,7 +303,7 @@ PY
       PATH="$tmp/bin:$PATH" bash "$tmp/05-audit/release-run.sh" probe 2>/dev/null
   }
   # 🔴 WAIT_STEP / WAIT_TRIES / STUB_FLIP 三个都必须显式传：
-  #   · 不传步长 ⇒ 走默认 18×10s，flaky 那一例要跑 180 秒（CI 实测 171s）；
+  #   · 不传步长 ⇒ 走默认 42×10s，flaky 那一例要跑 420 秒（自检会慢到不可接受）；
   #   · 不传 STUB_FLIP ⇒ 桩退回哨兵 `/nonexistent`，而**非 root 的 Linux**
   #     写不进去 ⇒ flip 永远不翻转 ⇒ "等到 present"那条必然失败。
   #     Windows 与 WSL-as-root 恰好可写，所以本地全绿、CI 红 ——
@@ -320,7 +332,7 @@ PY
   }
 
   # 「不许出现」也是一条判据：unreadable 时**不该**去重试，
-  # 否则"网断了"会被 18×10s 拖成三分钟，最后还是同一个结论。
+  # 否则"网断了"会被 42×10s 拖成七分钟，最后还是同一个结论。
   chk_not() {
     local ok=1
     total=$((total + 1))
@@ -374,7 +386,10 @@ PY
   #    "网断了"等下去不会变，重试只会把 3 分钟浪费在同一个结论上。
   out="$(verify_stub unreachable present 200 '')"; rc=$?
   chk '回执：registry 不可达 ⇒ rc=2' 2 "$rc" "$out" 'registry 不可达'
-  chk_not '回执：不可达时不重试（不等索引延迟）' 2 "$rc" "$out" '第 1 次重试'
+  # ⚠️ 断言串必须与日志**逐字对应**：日志文案一改，这条反向控制就会永远为真
+  #    （"输出里没有'第 1 次重试'" ⇒ 因为它现在叫"第 1 次等待"）。
+  #    2026-11-05 改文案时同步改了这里；两处要一起动。
+  chk_not '回执：不可达时不重试（不等索引延迟）' 2 "$rc" "$out" '第 1 次等待'
 
   # 🔴 E292：`command rm` 跳过平台注入的 rm 包装（它把删除改成送回收站）。
   command rm -rf "$tmp"
