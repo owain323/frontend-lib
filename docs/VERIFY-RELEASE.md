@@ -180,7 +180,7 @@ provenance 不是从第一个版本就有的。实测 `0.10.0` 的 attestation �
 | 发生了什么 | 仓库提交历史被重写一次，用于移除早期版本里误留的真实项目代号与本机用户名 |
 | 受影响范围 | **`0.26.0` 及更早**的 provenance 里记录的 `gitCommit` |
 | 具体表现 | 那个 SHA 在重写后的仓库里**不再是任何分支的祖先**；`git cat-file -p <sha>` 会报 `Not a valid object` |
-| 仍然成立的部分 | npm 上的 attestation 本身**没有被改动**（sigstore 签名是不可变的）。它仍然能证明：这个 tarball 由 `owain323/frontend-lib` 的 `release.yml` 在某个提交上构建 |
+| 仍然成立的部分 | npm 上的 attestation 本身**没有被改动**（sigstore 签名是不可变的）。它仍然能证明：这个 tarball 由本仓库的 `release.yml` 在某个提交上构建 |
 | 从什么时候恢复正常 | `0.27.0` 起，provenance 的 `gitCommit` 与仓库历史一致 |
 | GitHub 侧 | 旧提交会以**不可达对象**状态保留一段时间，知道 SHA 仍能按地址访问；之后由平台 GC。仓库已无任何 ref 指向它们 |
 
