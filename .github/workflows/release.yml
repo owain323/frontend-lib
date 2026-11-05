@@ -46,6 +46,10 @@ on:
         description: '只录本平台（Linux）的视觉基线，不发布'
         type: boolean
         default: false
+      dist_tag_rm:
+        description: '删除一个 dist-tag（填 tag 名，如 probe-2fa；空=不做）'
+        type: string
+        default: ''
 
 permissions:
   contents: write     # 建 GitHub Release
@@ -248,3 +252,46 @@ jobs:
           #   本 job 只在 ubuntu 上跑（`runs-on: ubuntu-latest`），范围写死 linux 即可。
           path: 10-review/shots/_baseline-linux*/
           retention-days: 14
+
+  # ==========================================================================
+  # dist-tag-cleanup —— 删除一个 dist-tag（一次性运维）
+  # ==========================================================================
+  # 为什么需要它：npm 2026-07 起的策略把"包管理类删除"从
+  # **granular token + bypass 2FA** 手里拿走了（403，见 internal/ERRORS.md E327），
+  # 而 npm 的网页里根本没有 dist-tag 管理入口（/package/<pkg>/dist-tags 是 404，
+  # Versions 页的 Current Tags 只有只读表格）。
+  #
+  # 剩下唯一不需要账号密码/一次性口令的合法通道就是 **trusted publishing**：
+  #   · npm 包设置 → Trusted Publisher → GitHub Actions，
+  #     workflow 填 `release.yml`，勾上 "Allow npm dist-tag"
+  #   · 本 job 用 OIDC 换凭证（`id-token: write`），不碰任何长期令牌
+  #
+  # 🔴 只在 `workflow_dispatch` 且填了 tag 名时才跑：打 tag 发版**不会**走到这里。
+  # 🔴 不要给 setup-node 传 registry-url —— 那会写一条空的 `_authToken=${NODE_AUTH_TOKEN}`，
+  #    npm 会先撞 ENEEDAUTH，根本轮不到 OIDC。
+  dist-tag-cleanup:
+    name: 删除 dist-tag（trusted publishing，不发布）
+    if: github.event_name == 'workflow_dispatch' && inputs.dist_tag_rm != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write     # OIDC 必需
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: 升级 npm（trusted publishing 需要 >= 11.5.1）
+        run: |
+          set -eu
+          npm install -g npm@latest
+          npm --version
+      - name: 删除 dist-tag
+        env:
+          TAG_TO_REMOVE: ${{ inputs.dist_tag_rm }}
+        run: |
+          set -eu
+          echo "删除 agentcss 上的 dist-tag：$TAG_TO_REMOVE"
+          npm dist-tag rm agentcss "$TAG_TO_REMOVE" --registry=https://registry.npmjs.org/
+      - name: 复查（打印剩余 tags）
+        run: npm dist-tag ls agentcss --registry=https://registry.npmjs.org/
