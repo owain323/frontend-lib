@@ -722,11 +722,17 @@ def workflow_problems(text):
     if 'contents: write' not in text:
         out.append('缺 `contents: write` ⇒ 建不了 Release')
     # ---- 不许退回长期令牌（E325：7 天到期 ⇒ 发布断在半路）-----------------
-    if 'secrets.NPM_TOKEN' in text or 'NODE_AUTH_TOKEN' in text:
+    # 🔴 判据必须认「**作为 YAML 键**出现」，不能认裸词。
+    #   2026-11-05 第二次咬到自己：为了**检查**令牌不存在，发布前置断言里
+    #   必须写 `if [ -n "${NODE_AUTH_TOKEN:-}" ]` —— 裸词匹配会把这段防御
+    #   判成违规，于是"写了检查"反而让门禁红。
+    #   ⇒ 违规形态只有一种：`NODE_AUTH_TOKEN:` 作为键（后面跟着值）。
+    if (re.search(r'(?m)^\s*NODE_AUTH_TOKEN\s*:', text)
+            or re.search(r'\$\{\{\s*secrets\.NPM_TOKEN\s*\}\}', text)):
         out.append('仍在用长期令牌（NPM_TOKEN / NODE_AUTH_TOKEN）⇒ '
                    '令牌会到期，且 2027-01 起连直接发布权都失效；应走 OIDC')
     # ---- registry-url 会写空 _authToken，npm 先撞 ENEEDAUTH -----------------
-    if 'registry-url' in text:
+    if re.search(r'(?m)^\s*registry-url\s*:', text):
         out.append('给 setup-node 传了 `registry-url` ⇒ 会写一行空 `_authToken`，'
                    'npm 先撞 ENEEDAUTH，轮不到 OIDC')
     # ---- Node 22 自带的 npm 10.x 不支持 trusted publishing ------------------
@@ -1088,6 +1094,13 @@ def _selftest():
         False)
     chk('正：注释里提到 NPM_TOKEN 不算违规',
         workflow_problems(GOOD_WF + NL + '# 历史上用过 NPM_TOKEN，已废弃'), False)
+    # 🔴 这条防的是「防御代码被判成违规」：为了检查令牌不存在，
+    #    前置断言里必须写出变量名。它不含冒号，不是 YAML 键。
+    chk('正：断言代码里出现 NODE_AUTH_TOKEN 变量名不算违规',
+        workflow_problems(GOOD_WF + NL +
+                          '      - run: |' + NL +
+                          '          if [ -n "${NODE_AUTH_TOKEN:-}" ]; then' + NL +
+                          '            exit 1' + NL + '          fi'), False)
 
     bad += _tag_anchor_selftest()
     bad += _publish_entry_selftest()

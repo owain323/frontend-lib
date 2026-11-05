@@ -173,12 +173,41 @@ jobs:
             node 05-audit/dist-js-parity-gate.js
           '
 
-      - name: 发布到 npm（OIDC / provenance，无长期令牌）
-        if: steps.probe.outputs.npm != 'present'
+      # 🔴 OIDC 全链路**没法在不发布的前提下真验证**（trusted publishing 的
+      #   凭证交换只在 publish 那一刻发生，dry-run 不走那条路）。
+      #   ⇒ 退一步：把「能提前查的三件事」查掉，让首次真实发版失败时
+      #     报错指向原因，而不是一句难懂的 ENEEDAUTH。
+      #   三件事：npm 够不够新 / 有没有残留 token / .npmrc 有没有 _authToken。
+      - name: 发布前置断言（OIDC 路径必须干净）
         run: |
           set -eu
-          echo "npm=$(npm --version) —— trusted publishing 需要 >= 11.5.1"
-          npm publish --provenance --access public
+          V=$(npm --version)
+          echo "npm=$V  node=$(node --version)"
+          node -e '
+            const v = process.argv[1].split(".").map(Number);
+            const need = [11, 5, 1];
+            const ok = v[0] > need[0] ||
+              (v[0] === need[0] && (v[1] > need[1] ||
+              (v[1] === need[1] && v[2] >= need[2])));
+            if (!ok) {
+              console.error("::error::npm " + process.argv[1] +
+                " 太旧：trusted publishing 需要 >= 11.5.1");
+              process.exit(1);
+            }
+          ' "$V"
+          if [ -n "${NODE_AUTH_TOKEN:-}" ]; then
+            echo "::error::NODE_AUTH_TOKEN 存在 —— 它会盖过 OIDC，先去掉再发"
+            exit 1
+          fi
+          T=$(npm config get //registry.npmjs.org/:_authToken 2>/dev/null || true)
+          case "$T" in
+            ''|undefined|null) echo "OK 没有 _authToken 残留" ;;
+            *) echo "::error::.npmrc 里有 _authToken（值不回显）—— OIDC 用不上"; exit 1 ;;
+          esac
+
+      - name: 发布到 npm（OIDC / provenance，无长期令牌）
+        if: steps.probe.outputs.npm != 'present'
+        run: npm publish --provenance --access public
 
       - name: 建 GitHub Release（正文取自 CHANGELOG 对应一节）
         if: steps.probe.outputs.release != 'present'

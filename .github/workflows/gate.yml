@@ -36,6 +36,14 @@ name: gate
 on:
   pull_request:
     branches: [master]
+  # 🔴 2026-11-05 加：master 直推也要跑「快门禁」。
+  #   加之前只有 PR / nightly / 手动 —— 而这个仓库一直是**直推 master**，
+  #   等于日常提交**完全没有 CI 保护**，全靠本地记得跑。
+  #   实测代价：公开仓库 Actions 不计费；quick 在 Linux 上约 3–4 分钟。
+  #   ⚠️ 只跑 quick：contract 与三引擎矩阵留给 PR / nightly，
+  #      否则每次 push 白烧 20 分钟，人就会开始忽略红灯。
+  push:
+    branches: [master]
   schedule:
     # nightly：每天 UTC 03:17（错开整点，避开所有机器的高峰）
     - cron: '17 3 * * *'
@@ -116,6 +124,24 @@ jobs:
       - name: 类型契约（正例必过 + 反例必挂）
         run: python3 05-audit/tsc-gate.py
 
+      # 🔴 私有词表**不进仓库**（它本身就含真实代号），所以 CI 上默认缺席。
+      #   缺席时 leak-scan 会打印「⚠️ 私有词表未加载（0 条）⇒ 本次未覆盖」，
+      #   而 check-all 照样可能全绿 —— 那就是**判据变弱但没人知道**。
+      #   ⇒ 两条：① 有 secret 就用；② 没有就显式打一条 notice，别假装覆盖了。
+      - name: 载入私有词表（可选，缺失时明示未覆盖）
+        env:
+          FL_TERMS: ${{ secrets.FL_PRIVATE_TERMS }}
+        run: |
+          set -eu
+          if [ -n "${FL_TERMS:-}" ]; then
+            mkdir -p internal
+            printf '%s\n' "$FL_TERMS" > internal/private-terms.txt
+            n=$(grep -vcE '^[[:space:]]*(#|$)' internal/private-terms.txt || true)
+            echo "私有词表已载入：${n} 条（内容不回显）"
+          else
+            echo "::notice title=leak 判据不完整::仓库 secret FL_PRIVATE_TERMS 未配置 —— 真实代号/用户名那一类在 CI 上不覆盖（本地跑仍覆盖）。配置方式见 CONTRIBUTING「私有词表」一节。"
+          fi
+
       - name: 静态门禁
         # 🔴🔴 0.8.9 改：不再手挑门禁清单，改为调用 `MODE=fast bash 05-audit/check-all.sh`。
         #
@@ -162,6 +188,8 @@ jobs:
   # ==================================================================
   contract:
     name: API 契约（运行时 ↔ 类型 ↔ 文档）
+    # push 只跑 quick：契约要装 Chromium，12 分钟，留给 PR / nightly。
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
@@ -203,7 +231,8 @@ jobs:
   #    唯独漏了真正的目标平台 —— **优先级排错了**。
   browsers:
     name: 浏览器矩阵（${{ matrix.name }}）
-    if: github.event_name != 'pull_request'
+    # PR 不跑（省额度）；push 也不跑（只留 quick）；nightly / 手动跑全矩阵。
+    if: github.event_name != 'pull_request' && github.event_name != 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:

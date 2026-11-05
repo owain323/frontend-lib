@@ -48,15 +48,24 @@ npm run gate:pre-commit # 提交前：五道秒级判据（实测约 7s）
 只比本平台那套）。条数、耗时、并发效率一律以**本轮门禁打印的结果**为准。
 只想确认没改坏静态契约的话用 `gate:fast`，几秒到几分钟。
 
-### 全量为什么**不**在 CI 上跑（这不是缺口，是结论）
+### CI 跑什么、不跑什么（边界，不是缺口）
 
 `.github/workflows/gate.yml` 分三层：`quick`（`MODE=fast`，静态 + 视觉）、
-`contract`（API 契约，需 Chromium）、`browsers`（nightly，三引擎矩阵）。
+`contract`（API 契约，需 Chromium）、`browsers`（三引擎矩阵）。
 **没有任何一处是 `MODE=full`**，而且不该有 —— 实测在 Linux runner 上跑全量会
 FAIL 10+ 道（字体渲染不同 ⇒ 视觉 diff 必然不一致；路径/编码不同 ⇒ 体积类误报；
 shallow clone ⇒ 依赖 git 状态的判据语义不同；浏览器版本不同 ⇒ 截图基线不匹配）。
 
 **一个长期红的 CI 比没有 CI 更糟**：大家会习惯性忽略它，真正的新问题也一起被忽略。
+
+触发面（2026-11-05 调整）：
+
+| 事件 | 跑哪些 | 为什么 |
+|---|---|---|
+| 直推 `master` | 只 `quick` | 这个仓库一直是直推，之前**完全没有 CI 保护**；quick 约 3–4 分钟，能挡住"本地没跑就推" |
+| PR | `quick` + `contract` | 合并前要契约 |
+| nightly / 手动 | 全部三个 job | 三引擎矩阵成本高，不该每次 push 都烧 |
+
 所以边界是：
 
 - **CI 负责**：跨平台可靠的那部分（静态契约、类型、API 形态、单引擎行为）
@@ -64,6 +73,25 @@ shallow clone ⇒ 依赖 git 状态的判据语义不同；浏览器版本不同
 
 `browsers` job 已覆盖三引擎的组件行为契约，但它**不替代**本机全量：
 它不跑视觉基线（基线按平台分集）、不跑 RTL/响应式/无障碍全量。
+
+### 私有词表（维护者；缺失时 leak 判据会变弱）
+
+`leak-scan` 的「真实代号 / 用户名」两类要靠一份**不随包分发**的词表才能生效。
+它放在 `internal/private-terms.txt`（已被 `.gitignore` 挡住，也不在 `package.json`
+的 `files` 里）。文件不在时，脚本会打印：
+
+```
+⚠️ 私有词表未加载（0 条）⇒ 真实代号 / 用户名判据**本次未覆盖**
+```
+
+**这不是通过**。本地开发把它放回去即可；CI 上因为拿不到这个文件，需要：
+
+1. GitHub 仓库 → Settings → Secrets and variables → Actions → 新建
+   `FL_PRIVATE_TERMS`，值就是词表全文（多行）；
+2. `gate.yml` 的 `quick` job 会把它写进 `internal/private-terms.txt` 再跑门禁；
+3. 没配时日志里会有一条 `::notice`，明确写着"这一类在 CI 上不覆盖"。
+
+⚠️ 不要把词表直接提交进仓库 —— 那等于把要防的东西本身公开了。
 
 ### 失败时先读哪里
 
