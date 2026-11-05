@@ -30,7 +30,7 @@
 | JS 成员不消失 | `Select.open()`、`AccordionOptions.duration` 这类名字 | `deprecation-gate.py` ⑦ + `api-contract-gate.py`（d.ts ↔ 运行时**实测**比对） |
 | 声明的名字真的存在 | 不许出现"文档里有、代码里没有"的幻觉 API | `gen-ai-contract.py --check`、`dead-class-gate.py` |
 | 行为事件名不消失 | `fl:select` 这类事件名 | 只记在基线里，**没有运行时探针**（见 §6） |
-| CLI 子命令与 `--json` 形状 | `agentcss ai <cmd> --json` 的 11 个子命令、失败也是 JSON | `ai-layer-gate.js` ⑥′⑥″ |
+| CLI 子命令与 `--json` 形状 | `agentcss ai <cmd> --json` 的 14 个子命令、失败也是 JSON | `ai-layer-gate.js` ⑥′⑥″、`facts-gate.py`（计数从 `ai/cli.js` 现算） |
 | 契约文件字段 | `ai/components.json` / `pitfalls*.json` / `behaviors.json` | `gen-ai-contract --check`、`ai-layer-gate` ⑦ |
 | 文件路径 | `02-primitives/button/button.css` 这类 `<link>` 直接指向的路径 | `dist-parity-check`、`pack-smoke.sh`、`assets-catalog-gate.py` |
 | 体积承诺 | 全库生效 CSS ≤ 172 KB，常规增长不涨价 | `perf-gate.py` + `budget-selftest.py`（见 [BUDGET.md](BUDGET.md)） |
