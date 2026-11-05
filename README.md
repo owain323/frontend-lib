@@ -31,6 +31,8 @@ The JS entry points (`esm/*.mjs`) are **ESM only** — `exports` has no `require
 
 - **Every demo page, one index** — https://owain323.github.io/frontend-lib/
 - **Component documentation with search** — https://owain323.github.io/frontend-lib/guide/
+- **How this project is organized** — [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+  (what each layer is, how the automated checks work — in plain language)
 
 Both are generated from `ai/components.json` and the per-component `README.md`
 files, so a page cannot quietly go missing from the index when a component is

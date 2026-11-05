@@ -15,6 +15,8 @@
 
 - **全部示例页，一个索引** —— https://owain323.github.io/frontend-lib/
 - **带搜索的组件文档** —— https://owain323.github.io/frontend-lib/guide/
+- **这个项目是怎么组成的** —— [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+  （四层组件、自动检查系统，用平话讲）
 
 两者都由 `ai/components.json` 与各组件的 `README.md` **生成**：
 新增组件时索引不会悄悄漏掉它，文档页里的每条链接都指向真实存在的文件。
