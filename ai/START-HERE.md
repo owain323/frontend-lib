@@ -94,8 +94,9 @@
 npm ci                 # 按锁文件安装（首次）
 npm test               # 单元测试
 npm run test:types     # 类型契约：正例必过 + 反例必挂
-npm run gate:fast      # 快速档（约 3–4 分钟：126 道，浏览器类判据占大头）
-npm run gate           # 全量检查（含浏览器，提交前跑）
+npm run gate:pre-commit # 提交前档（约 7 秒：契约 / 页面 / 文案 / 行为核心 / 类型）
+npm run gate:fast      # 静态层全部（约 4 分钟，不含浏览器类判据）
+npm run gate           # 全量（含浏览器与视觉基线；**发版前**跑，不是提交前）
 node ai/cli.js check <doc.json>   # 校验契约文档（计划：节点类型 / 组件档位）
 node ai/cli.js check <页面.html>  # 校验产物（类名 / 结构 / 版式必有件）
 node ai/cli.js shot  <页面.html> --out shot-{width}.png --width=390,1440 --full
