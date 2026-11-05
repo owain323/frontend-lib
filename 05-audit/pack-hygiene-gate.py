@@ -53,6 +53,12 @@ import sys
 from urllib.parse import unquote
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# `npm pack --json` 的读法只有一处（_npm_pack.py）。
+# 为什么不在本文件里 json.loads：npm 12 会在清单之外再写点东西，
+# 而"stdout 里只有一个 JSON"从来不是 npm 的承诺。
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _npm_pack as npm_pack  # noqa: E402
 LINK_RE = re.compile(r'\[[^\]]*\]\(([^)\s]+)\)')
 SKIP_URL = ('http://', 'https://', 'mailto:', '#', 'data:', 'tel:', '//')
 PLACEHOLDER = ('<', '>', '${', '*', '{')
@@ -119,20 +125,13 @@ def contentErrs(files, suffixes=TRANSIENT_SUFFIX, names=TRANSIENT_NAMES):
 
 def pack_files():
     """真实干跑的文件清单。失败一律带错，不许静默退回白名单解析。"""
-    cmd = 'npm pack --dry-run --json --ignore-scripts'
+    data, err = npm_pack.run(ROOT)
+    if err:
+        return None, ['npm pack 读不出清单：%s' % err]
     try:
-        r = subprocess.run(cmd, cwd=ROOT, shell=True, capture_output=True,
-                           text=True, timeout=180)
-    except Exception as exc:                                   # noqa: BLE001
-        return None, ['npm pack 执行失败：%s' % exc]
-    if r.returncode != 0:
-        return None, ['npm pack 返回 %d：%s'
-                      % (r.returncode, (r.stderr or '').strip()[:300])]
-    try:
-        data = json.loads(r.stdout)
         fs = set(f['path'] for f in data[0]['files'])
     except Exception as exc:                                   # noqa: BLE001
-        return None, ['npm pack 输出解析失败：%s' % exc]
+        return None, ['npm pack 清单结构不认识：%s' % exc]
     if not fs:
         return None, ['零视野：npm pack 报告 0 个文件 ⇒ 没检查']
     return fs, []

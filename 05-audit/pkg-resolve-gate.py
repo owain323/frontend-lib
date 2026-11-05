@@ -42,6 +42,9 @@ import tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NPM = shutil.which('npm') or shutil.which('npm.cmd') or 'npm'
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _npm_pack as npm_pack  # noqa: E402
 NODE = shutil.which('node') or 'node'
 TSC = os.path.join(ROOT, 'node_modules', 'typescript', 'bin', 'tsc')
 
@@ -93,14 +96,10 @@ def run(cmd, cwd=None):
 
 def pack_manifest(root):
     """用 npm 自己的 --dry-run --json 拿"到底哪些文件会发出去"。"""
-    rc, out = run([NPM, 'pack', '--dry-run', '--json'], cwd=root)
-    if rc != 0:
-        return None, 'npm pack --dry-run 失败（rc=%d）：%s' % (rc, out.strip()[:300])
-    try:
-        data = json.loads(out[out.index('['):])
-        return data[0], None
-    except Exception as e:
-        return None, '解析 npm pack 输出失败：%s' % e
+    data, err = npm_pack.run(root, ignore_scripts=False)
+    if err:
+        return None, err
+    return data[0], None
 
 
 def stage(root, manifest, dest):

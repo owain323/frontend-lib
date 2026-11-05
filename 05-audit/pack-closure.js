@@ -1020,6 +1020,24 @@ function selftest() {
     rp('反：files 不是数组', [{ files: {} }], true);
     rp('反：files 是空数组', [{ files: [] }], true);
     rp('反：files 元素缺 path', [{ files: [{ size: 1 }] }], true);
+
+    /* npm 12 在 stdout 尾部加 notice —— 这是一次真实发布事故的逐字复刻。 */
+    (function () {
+      var clean = JSON.stringify([{ name: 'agentcss', version: '0.27.0',
+        files: [{ path: 'package.json' }] }], null, 2);
+      var noisy = clean + '\nnpm notice New minor version of npm available!\n'
+        + 'npm notice Changelog: https://example.invalid\n';
+      var got = readPackList(extractPackJson(noisy));
+      if (got.errors.length) {
+        bad++;
+        console.log('      X 尾部带 npm notice 时必须仍读得出清单（' + got.errors[0] + '）');
+      } else if (got.list.length !== 1) {
+        bad++;
+        console.log('      X 尾部带 notice 时清单被读歪了：' + got.list.length + ' 条');
+      } else {
+        console.log('      OK 尾部带 npm notice 时仍读得出清单');
+      }
+    })();
   })();
 
   /* ---------- 目录模式：必须与清单模式**同语义** ----------
@@ -1222,6 +1240,50 @@ function selftest() {
 /* ==========================================================================
  * ④ 入口
  * ========================================================================*/
+/* npm 只承诺 `--json` 会给出 JSON，**没承诺它是 stdout 的全部**。
+   npm 12 在 CI 上会在清单后面再写两行 `npm notice` ⇒ `JSON.parse(整体)` 报
+   `Extra data` ⇒ 本门禁降级成"未判定"（一行 SKIP，在一屏 PASS 里几乎看不见）。
+   2026-11-06 的 v0.27.0 发布现场就是这个：另外两道直接红了，这一道**装绿**。
+   ⇒ 从文本里**找**那个数组，按结构认（有 files），不按位置认。 */
+function scanJsonEnd(text, start) {
+  var stack = [];
+  var inStr = false;
+  var esc = false;
+  for (var i = start; i < text.length; i++) {
+    var c = text.charAt(i);
+    if (inStr) {
+      if (esc) { esc = false; continue; }
+      if (c === '\\') { esc = true; continue; }
+      if (c === '"') { inStr = false; }
+      continue;
+    }
+    if (c === '"') { inStr = true; continue; }
+    if (c === '[' || c === '{') { stack.push(c); continue; }
+    if (c === ']' || c === '}') {
+      var top = stack.pop();
+      if ((c === ']' && top !== '[') || (c === '}' && top !== '{')) return -1;
+      if (stack.length === 0) return i + 1;
+    }
+  }
+  return -1;
+}
+
+function extractPackJson(text) {
+  var s = String(text || '');
+  try { return JSON.parse(s); } catch (e) { /* 下面按结构找 */ }
+  for (var i = 0; i < s.length; i++) {
+    var ch = s.charAt(i);
+    if (ch !== '[' && ch !== '{') continue;
+    var end = scanJsonEnd(s, i);
+    if (end < 0) continue;
+    var v;
+    try { v = JSON.parse(s.slice(i, end)); } catch (e) { continue; }
+    if (Array.isArray(v) && v.length && v[0] && Array.isArray(v[0].files)) return v;
+    if (v && Array.isArray(v.files)) return [v];
+  }
+  return null;
+}
+
 /**
  * 校验 `npm pack --dry-run --json` 的输出结构，返回文件清单。
  *
@@ -1336,12 +1398,10 @@ function main(argv) {
       console.log('        ⇒ 清单没拿到 = **无法判定**包内闭包（不是"闭包坏了"）。退出码 3。');
       return 3;
     }
-    var parsed;
-    try {
-      parsed = JSON.parse(r.stdout);
-    } catch (e) {
+    var parsed = extractPackJson(r.stdout);
+    if (parsed === null) {
       console.log('  [1] 取包内清单');
-      console.log('      X npm 输出的不是 JSON：' + String(r.stdout).slice(0, 120));
+      console.log('      X npm 输出里找不到 pack 清单：' + String(r.stdout).slice(0, 120));
       diagnostics(r);
       console.log('        ⇒ 读不出清单 = 无法判定（退出码 3），不是"闭包坏了"。');
       return 3;
