@@ -31,7 +31,7 @@ RootWebArea "timeline · 时间轴"
         time "10-31"
       listitem "10-31 0.21.0 发现层" [level=1]
         time "10-31"
-    paragraph "timeline--compact 只做两件事：条目间距从 --sp-4 收到 --sp-2 ，时间挪回标题同一行。**"
+    paragraph "timeline--compact 只做两件事：条目间距从 --sp-4 收到 --sp-2 ，时间挪回标题同一行。 它"
     heading "反例：拿字符画圆点" [level=2]
     heading "错：content: "●"" [level=3]
     list

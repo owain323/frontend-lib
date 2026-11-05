@@ -166,7 +166,7 @@ min-height: 100dvh;   /* 正解 */</code></pre>
 <h2 id="s14">无障碍<a class="anchor" href="#s14" aria-label="本节直链">#</a></h2>
 <ul><li>侧栏是 <code>&lt;nav aria-label=&quot;主导航&quot;&gt;</code>：页面上可能还有第二个 <code>&lt;nav&gt;</code>（页内目录），两个都没有名字时读屏只会说&quot;导航、导航&quot;。判据：<code>a11y-ax.js</code>。</li><li>当前页用 <code>aria-current=&quot;page&quot;</code>，<strong>不是</strong> <code>class=&quot;active&quot;</code> —— 前者是读屏能听到的状态，后者只是 CSS 钩子。</li><li>标记当前页用三条线索：竖条、底色、字重。灰度打印和色盲下都分得出来。</li><li>强制色下 <code>inset</code> 阴影会被整个移除，所以另有一段 media 把&quot;当前项&quot;换成实色边框；所有项统一预留 3px 透明边框，避免当前项的文字比其它项右移。</li><li>顶栏与侧栏的链接都有 44px 命中区（<code>--sz-touch</code>）。</li></ul>
 <h2 id="s15">反例<a class="anchor" href="#s15" aria-label="本节直链">#</a></h2>
-<ul><li><strong>❌ 侧栏 <code>position: fixed</code> + 主区 <code>margin-inline-start</code></strong> —— 看起来能用，但侧栏被摘出 grid 流，主区宽度靠<strong>手抄的数字</strong>维持（改侧栏宽就要改两处）；<code>inset-inline-start</code> 与 <code>margin-inline-start</code> 只要有一处漏改，RTL 下侧栏跑到右边、主区仍在右边留白。**</li></ul>
+<ul><li><strong>❌ 侧栏 <code>position: fixed</code> + 主区 <code>margin-inline-start</code></strong> —— 看起来能用，但侧栏被摘出 grid 流，主区宽度靠<strong>手抄的数字</strong>维持（改侧栏宽就要改两处）；<code>inset-inline-start</code> 与 <code>margin-inline-start</code> 只要有一处漏改，RTL 下侧栏跑到右边、主区仍在右边留白。</li></ul>
 <p>正确的做法见上面「侧栏为什么是 <code>sticky</code> 而不是 <code>fixed</code>」。</p>
 <ul><li><strong>❌ 窄屏把侧栏 <code>display: none</code> 之后就不管了</strong> —— 导航消失了，用户在手机上除了当前页哪儿也去不了。要么引 <code>shell-nav.js</code>（本目录就有），要么明确接受&quot;窄屏只有当前页&quot;（只读看板可以接受，但那要是<strong>决定</strong>，不是疏忽）。</li></ul>
 <p>⚠️ 别自己写 <code>transform: translateX(-100%)</code> 的抽屉。看起来只是&quot;滑出来&quot;，实际要做的是<strong>焦点陷阱 / 焦点归位 / 背景 <code>inert</code> / 锁滚动 / Esc</strong> 五件事。自己写必然漏两件，而漏掉的那两件在鼠标用户眼里完全正常 —— 只有键盘和读屏用户会被困在一个关不掉的抽屉里。</p>

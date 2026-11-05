@@ -340,8 +340,26 @@ try {
     ['diff', [fDoc, fDoc2]],
     ['patch', [fDoc, fPat]],
     ['components', []], ['assets', []], ['tokens', []], ['tree', []],
-    ['profile', []], ['capabilities', []], ['pitfalls', ['--component=table']]
+    ['profile', []], ['capabilities', []], ['pitfalls', ['--component=table']],
+    /* ⚠️ 文件名带 pid：`scaffold` 拒绝覆盖已存在的文件（防手滑），
+       固定文件名会让**第二次运行**起就红 —— 一道只在干净机器上绿的门禁，
+       等于把"跑过一遍"变成失败原因。 */
+    ['scaffold', ['report/finance', '--out', path.join(T, 'fl-ai-scaffold-' + process.pid + '.html')]]
   ];
+  /* 🔴 覆盖断言：`CMDS` 里有、这里没有、也不在豁免表里 ⇒ 红。
+     没有这一条，加第 15 个子命令时这条门禁会**静默少测一个**，
+     而标题上的数字还会跟着变，看起来永远是对的。 */
+  var EXEMPT = {
+    shot: '要真实浏览器，由 html-check-gate.js ⑨ 覆盖',
+    pdf: '要真实浏览器，由 pdf 相关门禁覆盖'
+  };
+  var cliMod = require(path.join(AI, 'cli.js'));
+  var uncovered = Object.keys(cliMod.CMDS).filter(function (c) {
+    return !jsonCases.some(function (x) { return x[0] === c; }) && !EXEMPT[c];
+  });
+  expect(uncovered.length === 0,
+    '⑥‴ 每个子命令要么有 --json 用例、要么在豁免表里写明理由',
+    '没覆盖：' + uncovered.join(' ') + '（共 ' + Object.keys(cliMod.CMDS).length + ' 个子命令）');
   var broken = [];
   jsonCases.forEach(function (c) {
     var r = run([c[0]].concat(c[1], ['--json']));
@@ -445,6 +463,251 @@ try {
   expect(cDoc && leaked.length === 0,
     '⑦⁶ components --json 只挂核心翻车点，写作类不越界',
     cDoc ? leaked.join(' / ') : 'components --json 不是 JSON');
+})();
+
+// ------------------------------------------------- ①′ schema 登记与磁盘必须一一对应
+/* 为什么要有这一条：`SCHEMAS` 是**手写**的名字→文件表，而 `ai/*.schema.json`
+   是磁盘上的事实。两处一旦漂移，就会出现：
+     · 磁盘上有、SCHEMAS 里没有 ⇒ 那份契约**没有任何命令能校验**（behaviors 当年就是这样）
+     · SCHEMAS 里有、磁盘上没有 ⇒ 命令一调就抛 ENOENT，而报错来自 readJSON 深处
+   以前 ① 的标题写着"八份 schema"，实现其实只扫了 4 份 —— 标题比代码说得大。
+   现在：预扫遍历目录（validate.js 自己 glob），这里判"登记集合 == 磁盘集合"。 */
+(function () {
+  var cli = require(path.join(AI, 'cli.js'));
+  var onDisk = fs.readdirSync(AI).filter(function (f) {
+    return /\.schema\.json$/.test(f);
+  }).sort();
+  var registered = Object.keys(cli.SCHEMAS).map(function (k) {
+    return cli.SCHEMAS[k];
+  }).sort();
+  var unregistered = onDisk.filter(function (f) { return registered.indexOf(f) < 0; });
+  var missing = registered.filter(function (f) { return onDisk.indexOf(f) < 0; });
+  expect(unregistered.length === 0 && missing.length === 0,
+    '①′ 磁盘上的 schema 与 CLI 登记的 schema 一一对应（共 ' + onDisk.length + ' 份）',
+    ('未登记：' + (unregistered.join(' ') || '无') +
+     ' / 登记了但不存在：' + (missing.join(' ') || '无')));
+})();
+
+// ------------------------------------------------- ①″ 白名单里的每个关键字都有正负例
+/* 为什么要有这一条：`uniqueItems` 与 `not` 挂在白名单上很久却**没有实现**，
+   `validate({type:'array',uniqueItems:true},[1,1])` 返回 ok:true ——
+   白名单只保证"允许出现"，不保证"真的校验"。
+   这组用例就是白名单的**契约**：新加一个关键字却没写用例，这道门禁直接红。 */
+(function () {
+  /* 这些键不约束数据（元信息 / 容器），单独列出来，免得被当成"漏了用例" */
+  var META = ['$schema', '$id', '$comment', 'title', 'definitions',
+              'invariants', 'opRequirements'];
+  var CASES = {
+    type: [{ s: { type: 'string' }, d: 'x', want: true },
+           { s: { type: 'string' }, d: 1, want: false }],
+    required: [{ s: { type: 'object', required: ['a'] }, d: { a: 1 }, want: true },
+               { s: { type: 'object', required: ['a'] }, d: {}, want: false }],
+    properties: [{ s: { type: 'object', properties: { a: { type: 'string' } } }, d: { a: 'x' }, want: true },
+                 { s: { type: 'object', properties: { a: { type: 'string' } } }, d: { a: 1 }, want: false }],
+    additionalProperties: [{ s: { type: 'object', properties: { a: {} }, additionalProperties: false }, d: { a: 1 }, want: true },
+                           { s: { type: 'object', properties: { a: {} }, additionalProperties: false }, d: { b: 1 }, want: false }],
+    patternProperties: [{ s: { type: 'object', patternProperties: { '^x': { type: 'number' } } }, d: { x1: 1 }, want: true },
+                        { s: { type: 'object', patternProperties: { '^x': { type: 'number' } } }, d: { x1: 's' }, want: false }],
+    items: [{ s: { type: 'array', items: { type: 'number' } }, d: [1], want: true },
+            { s: { type: 'array', items: { type: 'number' } }, d: ['s'], want: false }],
+    enum: [{ s: { enum: ['a'] }, d: 'a', want: true },
+           { s: { enum: ['a'] }, d: 'b', want: false }],
+    const: [{ s: { const: 1 }, d: 1, want: true },
+            { s: { const: 1 }, d: 2, want: false }],
+    pattern: [{ s: { type: 'string', pattern: '^a' }, d: 'ab', want: true },
+              { s: { type: 'string', pattern: '^a' }, d: 'b', want: false }],
+    minLength: [{ s: { type: 'string', minLength: 2 }, d: 'ab', want: true },
+                { s: { type: 'string', minLength: 2 }, d: 'a', want: false }],
+    maxLength: [{ s: { type: 'string', maxLength: 2 }, d: 'ab', want: true },
+                { s: { type: 'string', maxLength: 2 }, d: 'abc', want: false }],
+    minimum: [{ s: { type: 'number', minimum: 1 }, d: 1, want: true },
+              { s: { type: 'number', minimum: 1 }, d: 0, want: false }],
+    maximum: [{ s: { type: 'number', maximum: 1 }, d: 1, want: true },
+              { s: { type: 'number', maximum: 1 }, d: 2, want: false }],
+    minItems: [{ s: { type: 'array', minItems: 1 }, d: [1], want: true },
+               { s: { type: 'array', minItems: 1 }, d: [], want: false }],
+    maxItems: [{ s: { type: 'array', maxItems: 1 }, d: [1], want: true },
+               { s: { type: 'array', maxItems: 1 }, d: [1, 1], want: false }],
+    uniqueItems: [{ s: { type: 'array', uniqueItems: true }, d: [1, 2], want: true },
+                  { s: { type: 'array', uniqueItems: true }, d: [1, 1], want: false },
+                  /* 深比较：两个不同的对象字面量，内容相同也算重复 */
+                  { s: { type: 'array', uniqueItems: true }, d: [{ a: 1 }, { a: 1 }], want: false },
+                  { s: { type: 'array', uniqueItems: true }, d: [{ a: 1 }, { a: 2 }], want: true }],
+    allOf: [{ s: { allOf: [{ type: 'string' }] }, d: 'x', want: true },
+            { s: { allOf: [{ type: 'string' }] }, d: 1, want: false }],
+    anyOf: [{ s: { anyOf: [{ type: 'string' }, { type: 'number' }] }, d: 'x', want: true },
+            { s: { anyOf: [{ type: 'string' }, { type: 'number' }] }, d: true, want: false }],
+    oneOf: [{ s: { oneOf: [{ type: 'string' }, { type: 'number' }] }, d: 'x', want: true },
+            /* 两条都满足 ⇒ oneOf 必须红（这正是它和 anyOf 的区别） */
+            { s: { oneOf: [{ type: 'number' }, { minimum: 0 }] }, d: 1, want: false }],
+    not: [{ s: { not: { const: 1 } }, d: 2, want: true },
+          { s: { not: { const: 1 } }, d: 1, want: false }],
+    $ref: [{ s: { definitions: { t: { type: 'string' } }, $ref: '#/definitions/t' }, d: 'x', want: true },
+           { s: { definitions: { t: { type: 'string' } }, $ref: '#/definitions/t' }, d: 1, want: false }]
+  };
+
+  var unimplemented = validate.SUPPORTED_KEYWORDS.filter(function (k) {
+    return META.indexOf(k) < 0 && !CASES[k];
+  });
+  expect(unimplemented.length === 0,
+    '①″ 白名单里每个关键字都有正/负契约用例（' + Object.keys(CASES).length + ' 个）',
+    '缺用例：' + unimplemented.join(' '));
+
+  var wrong = [];
+  Object.keys(CASES).forEach(function (kw) {
+    CASES[kw].forEach(function (c, i) {
+      var r = validate.validate(c.s, c.d);
+      if (r.ok !== c.want) {
+        wrong.push(kw + '#' + i + '（期望 ' + (c.want ? '通过' : '拒绝') +
+          '，实际 ' + (r.ok ? '通过' : '拒绝') + '）');
+      }
+    });
+  });
+  expect(wrong.length === 0, '①‴ 每个关键字的正/负例都判对了', wrong.join(' / '));
+})();
+
+// ------------------------------------------------- ⑧ 参数协议（枚举 / 退出码 / 错误形状）
+/* 为什么单开一节：这三件事是**无人值守调用**的全部控制流。
+   0.26.0 的实测（本轮外部评审 F1）：
+     ai tokens --set=not-a-theme --json   → stdout 是字面量 `undefined`，退出码 0
+     ai tree   --set=not-a-theme --json   → 同上
+     ai components --maturity=not-a-level → []，退出码 0
+   对人是"没输出"，对 Agent 是**错误结论**：它会读成"这个库没有 beta 组件"。
+   另有：`ai tree --set=zzz --cat=nope` 报 kind=usage，消息是
+   `Cannot read properties of undefined` —— 内部崩溃冒充用法错误。 */
+(function () {
+  var cp = require('child_process');
+  var cliPath = path.join(AI, 'cli.js');
+  var cliMod = require(cliPath);
+  function runCli(args) {
+    return cp.spawnSync(process.execPath, [cliPath].concat(args), { encoding: 'utf8' });
+  }
+  function parsed(r) {
+    try { return JSON.parse(r.stdout); } catch (e) { return null; }
+  }
+
+  /* ⑧¹ 退出码表：数值必须是**互不相同的语义**，不是"非 0 就行" */
+  var E = cliMod.EXIT;
+  expect(E.findings === 1 && E.usage === 2 && E['no-chrome'] === 3
+    && E.render === 4 && E['over-budget'] === 5 && E.internal === 6,
+    '⑧¹ 退出码表：1 判定 / 2 用法 / 3 环境 / 4 渲染 / 5 预算 / 6 内部',
+    JSON.stringify(E));
+
+  /* ⑧² 每个枚举：非法值、空值、重复、吞掉下一个开关 —— 四条负例都要报 usage(2) */
+  var ENUMS = cliMod.ENUMS;
+  var bad = [];
+  Object.keys(ENUMS).forEach(function (name) {
+    var allowed = typeof ENUMS[name] === 'function' ? ENUMS[name]() : ENUMS[name];
+    if (!allowed.length) { bad.push(name + '：合法值是空集'); return; }
+    if (allowed.indexOf('not-a-real-value') >= 0) { bad.push(name + '：夹具值撞上真实取值'); }
+    [['--' + name + '=not-a-real-value'], ['--' + name + '='],
+     ['--' + name + '=' + allowed[0], '--' + name + '=' + allowed[0]],
+     ['--' + name, '--json']].forEach(function (argv) {
+      var r = runCli(['components', '--json'].concat(argv));
+      /* components 用不到 set/cat/recipe —— 但**参数解析发生在命令之前**，
+         所以非法枚举必须照样被拒。这正是"统一入口"的意义。 */
+      var d = parsed(r);
+      if (r.status !== E.usage) {
+        bad.push(name + ' ' + JSON.stringify(argv) + ' ⇒ 退出码 ' + r.status + '（应 2）');
+      } else if (!d || d.ok !== false || !d.error || d.error.kind !== 'usage') {
+        bad.push(name + ' ' + JSON.stringify(argv) + ' ⇒ 错误形状不对：' + String(r.stdout).slice(0, 60));
+      }
+    });
+  });
+  expect(bad.length === 0, '⑧² 每个枚举的非法/空/重复/吞开关四条负例都以 usage(2) 拒绝',
+    bad.join(' / '));
+
+  /* ⑧³ 合法值仍然能用（负例都过了但功能被拦死，同样是坏） */
+  var okCase = [];
+  [['tokens', '--set=' + (ENUMS.set()[0])],
+   ['tree', '--set=' + (ENUMS.set()[0])],
+   ['tree', '--cat=' + (ENUMS.cat()[0])],
+   ['components', '--maturity=' + (ENUMS.maturity()[0])],
+   ['profile'],
+   ['capabilities'],
+   ['pitfalls', '--component=table']
+  ].forEach(function (argv) {
+    var r = runCli(argv.concat(['--json']));
+    if (r.status !== 0) okCase.push(argv.join(' ') + ' ⇒ ' + r.status);
+  });
+  expect(okCase.length === 0, '⑧³ 合法取值的正常路径仍然是退出码 0', okCase.join(' / '));
+
+  /* ⑧⁴ 失败只有一种形状：`{ok:false, command, error:{kind,message}}`。
+     以前 `pdf` 发的是 `{ok:false, code, message}`（顶层 code），
+     其它子命令发 error 对象 —— 同一个 CLI 两种形状，调用方只能写两个分支。 */
+  var shapeBad = [];
+  [['tokens', '--set=nope', '--json'],
+   ['components', '--maturity=nope', '--json'],
+   ['check', path.join(AI, 'no-such-file.json'), '--json'],
+   ['profile', 'zzz', '--json'],
+   ['pdf', '--json']].forEach(function (argv) {
+    var r = runCli(argv);
+    var d = parsed(r);
+    if (!d) { shapeBad.push(argv.join(' ') + ' ⇒ stdout 不是 JSON'); return; }
+    if (d.ok !== false) { shapeBad.push(argv.join(' ') + ' ⇒ ok 不是 false'); return; }
+    if (!d.error || !d.error.kind || !d.error.message) {
+      shapeBad.push(argv.join(' ') + ' ⇒ 缺 error.{kind,message}（实际：' + Object.keys(d).join(',') + '）');
+    }
+    if (d.code !== undefined || d.message !== undefined) {
+      shapeBad.push(argv.join(' ') + ' ⇒ 还在发顶层 code/message（两套形状并存）');
+    }
+  });
+  expect(shapeBad.length === 0, '⑧⁴ 所有失败路径都是同一种形状且 stdout 可解析',
+    shapeBad.join(' / '));
+
+  /* ⑧⁸ 帮助路径：`--help` 在**任何位置**、带不带 `ai` 前缀都必须通。
+     这条是补测出来的：给 switch 加"未知开关拒收"时，
+     `agentcss ai check --help` 被当成"`check` 不认识 --help"报错 ——
+     而手册里写的正是带 `ai` 的写法。**文档里最靠前的用法必须能用。** */
+  var helpBad = [];
+  [['--help'], ['help'], ['check', '--help'], ['ai', 'check', '--help'],
+   ['ai', 'shot', '-h'], ['components', '--help']].forEach(function (argv) {
+    var r = runCli(argv);
+    if (r.status !== 0) helpBad.push(argv.join(' ') + ' ⇒ ' + r.status);
+    else if (!/退出码/.test(r.stdout)) helpBad.push(argv.join(' ') + ' ⇒ 没打印帮助');
+  });
+  expect(helpBad.length === 0, '⑧⁵ `--help` 在任意位置、带不带 `ai` 前缀都打印帮助并退 0',
+    helpBad.join(' / '));
+
+  /* ⑧⁶ 开关表覆盖：`CMDS` 里有、`FLAGS` 里没有 ⇒ 那条命令的未知开关就不会被拒。
+     没有这一条，加第 15 个子命令时"拒收未知开关"会**静默失效**。 */
+  var noFlags = Object.keys(cliMod.CMDS).filter(function (c) {
+    return !Object.prototype.hasOwnProperty.call(cliMod.FLAGS, c);
+  });
+  expect(noFlags.length === 0, '⑧⁶ 每个子命令都在 FLAGS 表里登记了自己认识的开关',
+    '缺登记：' + noFlags.join(' '));
+
+  /* ⑧⁷ 反证：无关开关必须被拒，不能"认得就管、不认得就忽略" */
+  var foreign = [];
+  [['components', '--set=dark'], ['tokens', '--maturity=beta'],
+   ['profile', '--recipe=report/finance'], ['diff', '--json', 'x.json', 'y.json', '--schema=contract']]
+    .forEach(function (argv) {
+      var r = runCli(argv);
+      if (r.status !== E.usage) foreign.push(argv.join(' ') + ' ⇒ ' + r.status);
+    });
+  expect(foreign.length === 0, '⑧⁷ 与本命令无关的开关以 usage(2) 拒绝，不静默忽略',
+    foreign.join(' / '));
+
+  /* ⑧⁹ `out(undefined)` 必须当场失败，不许输出字面量 `undefined` 还退 0。
+     🔴 这条兜底的价值在于**未来**：任何新写的分支忘了判断就把 undefined 交给 out()，
+        都会变成 internal(6)，而不是一个「看起来成功」的空输出。
+     0.26.0 的 `ai tokens --set=<拼错的>` 正是这个形状。 */
+  var outRun = cp.spawnSync(process.execPath, ['-e',
+    'process.argv.push("--json"); require(' + JSON.stringify(cliPath) + ')._out(undefined)'],
+    { encoding: 'utf8' });
+  var outDoc = parsed(outRun);
+  expect(outRun.status === E.internal && outDoc && outDoc.ok === false
+    && outDoc.error && outDoc.error.kind === 'internal',
+    '⑧⁹ out(undefined) ⇒ 退出码 6 + internal（不输出字面量 undefined）',
+    'status=' + outRun.status + ' stdout=' + String(outRun.stdout).slice(0, 60));
+
+  /* ⑧⁸ 判定不通过 ≠ 工具出错：`check` 有 findings 时是 1，不是 2 也不是 6 */
+  var tmpBad = path.join(require('os').tmpdir(), 'fl-ai-cli-bad.html');
+  fs.writeFileSync(tmpBad, '<!doctype html><html lang="zh"><head><meta charset="utf-8">'
+    + '</head><body><img src="x.png"></body></html>');
+  var rb = runCli(['check', tmpBad]);
+  expect(rb.status === E.findings,
+    '⑧⁸ 页面有错 ⇒ 退出码 1（是结论，不是工具坏了）', '实际 ' + rb.status);
 })();
 
 // ---------------------------------------------------------------- 汇总

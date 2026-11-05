@@ -243,7 +243,7 @@ rail 下硬塞一个 `.shell__side-label` 会被 CSS 藏掉（兜底，防止它
 
 - **❌ 侧栏 `position: fixed` + 主区 `margin-inline-start`** —— 看起来能用，但侧栏被摘出
   grid 流，主区宽度靠**手抄的数字**维持（改侧栏宽就要改两处）；`inset-inline-start`
-  与 `margin-inline-start` 只要有一处漏改，RTL 下侧栏跑到右边、主区仍在右边留白。**
+  与 `margin-inline-start` 只要有一处漏改，RTL 下侧栏跑到右边、主区仍在右边留白。
 
   正确的做法见上面「侧栏为什么是 `sticky` 而不是 `fixed`」。
 

@@ -20,6 +20,29 @@ fi
 [ -z "${NODE_DIR:-}" ] && NODE_DIR=node
 [ -x "$NODE_DIR/node" ] && export PATH="$NODE_DIR:$PATH"
 
+# 🔴 前置探测（2026-11-05 加 · 本轮外部评审 F6）
+#   评审在另一台机器上跑 fast 档，拿到 8 条失败，其中 5 条是 `WinError 2`
+#   —— python 调 node 时找不到可执行文件，日志里是一段 Python traceback。
+#   于是"产品坏了"和"这台机器没把 node 放进 PATH"看起来一模一样。
+#
+#   这里一次性探清楚，**整体退出 3（未判定）而不是 1（失败）**：
+#   一条判据都没跑起来，不能算产品的错。
+if ! command -v node >/dev/null 2>&1; then
+  printf '\n  ✗ 这台机器上找不到 `node` —— 一道判据都没跑，因此是"未判定"，不是"失败"。\n'
+  printf '    当前 PATH 里没有 node；NODE_DIR=%s\n' "${NODE_DIR}"
+  printf '    两种补法（任选其一）：\n'
+  printf '      · 把 node 装进 PATH\n'
+  printf '      · NODE_DIR=/path/to/node-dir bash 05-audit/check-all.sh\n'
+  exit 3
+fi
+if ! command -v npm >/dev/null 2>&1; then
+  printf '  ⚠ 找不到 `npm`：pack-closure / pack-hygiene 会各自报"未判定"，其余照跑。\n'
+fi
+printf '  node %s · npm %s · python %s\n' \
+  "$(node --version 2>/dev/null || echo '?')" \
+  "$(npm --version 2>/dev/null || echo '?')" \
+  "$("$PY" --version 2>&1 | sed 's/^Python //')"
+
 # 行为脚本的依赖解析路径
 # 优先用环境变量（运行者指定），否则向上探测。
 if [ -z "${NODE_MODULES:-}" ]; then
@@ -1302,6 +1325,17 @@ run "md-inline-rev" $PY 05-audit/md-inline-gate.py --selftest
 #   **md 里的路径一直没人管**。
 run "md-links"      $PY 05-audit/md-links.py
 run "md-links-rev"  $PY 05-audit/md-links.py --selftest
+# 🔴 prose（2026-11-05 加 · 本轮外部评审点名的那一类）
+#   现有的判据都在看**结构**：类名、对比度、可访问性、链接、包闭包。
+#   没有一条看"这段话读起来是不是完整的"，于是四类缺陷全程静默：
+#     · `04-recipes/app-shell/demo.html` 把 `**两个每个人都会踩的坑**` 直接显示出来
+#     · 首页摘要被 `purpose[:56]` 切成「会计正负是 ta」「颜色在」
+#     · 首页因此括号不配平（切在 `（…` 中间）
+#     · `guide/app-shell.html` 的可见文本里有一个孤零零的 `**`（源头是 README 里
+#       一处没闭合的加粗 —— 渲染器不认，就原样漏到页面上）
+#   每条都能被注入证伪（`--selftest` 四类注入 + 正例 + 隐藏区域不误报）。
+run "prose"         $PY 05-audit/prose-gate.py
+run "prose-rev"     $PY 05-audit/prose-gate.py --selftest
 # 🔴 pack-hygiene（2026-11-04 新增）：上面那道看的是**仓库这一棵树**，
 #   而装包的人只拿到 `files` 白名单里的文件。实测 0.25.5 真包里
 #   4 份文档共 8 个链接指向 05-audit/budget.json、10-review/webview/*，

@@ -23,7 +23,12 @@ npx agentcss ai shot <page.html> --out shot-{width}.png --width=390,1440 --full
 npx agentcss ai pdf <page.html> --out page.pdf             # zero deps: your Chrome
 ```
 
-Every subcommand accepts `--json`; failures print `{"ok":false,...}` and exit non-zero.
+Every subcommand accepts `--json`. On failure it prints *one* JSON document —
+`{"ok":false,"command":"…","error":{"kind":"…","message":"…"}}` — so a pipeline can
+never mistake an error for data. Exit codes are one table for the whole CLI:
+`0` pass · `1` the thing you checked is bad (a verdict, not a tool failure) ·
+`2` bad flag or value (unknown flag, unknown enum value, empty value, repeated flag) ·
+`3` environment missing · `4` render failed · `5` over budget · `6` tool bug.
 `check <page.html>` is static (no network, no browser) and reports undefined class names,
 stylesheets that were never linked, missing `img alt` / table name / `th scope`, skipped
 heading levels and the per-layout obligations in `ai/recipes.json`. `shot` drives your

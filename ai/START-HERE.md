@@ -73,7 +73,7 @@
 
 | 信号 | 怎么看 |
 |---|---|
-| 成熟度 | `ai/components.json` 的 `maturity` 是**算出来的**（判据在 `ai/components.meta.json`），不是人写的 |
+| 成熟度 | `ai/components.json` 的 `maturity` 是**算出来的**（判据在 `ai/components.meta.json`），不是人写的。它判的是**机制完整**：有 demo、有专属门禁、没有旧 `.is-*` 状态类、没有行为债。**它不判**视觉质量、真实模型生成效果、真机表现 —— `40/40 stable` 不等于 `40/40 好看`，更不等于有人在生产里用过 |
 | 有没有 demo | 组件目录下有 `demo.html` 就能直接跑起来对照 |
 | 有没有门禁守 | `05-audit/check-all.sh`（`npm run gate`）一次跑全，逐项打印 `PASS`/`FAIL`/`SKIP` |
 | 浏览器支持 | README「浏览器支持」表：桌面 Chrome/Edge/Firefox 已验证（自动化）；iOS Safari / 微信 / 企微 / QQ 等 7 个入口**人工实测过能力探针**（`🔍`，无回归保护）；**Android 系统 WebView 无数据** |
@@ -94,7 +94,7 @@
 npm ci                 # 按锁文件安装（首次）
 npm test               # 单元测试
 npm run test:types     # 类型契约：正例必过 + 反例必挂
-npm run gate:fast      # 静态检查（约 45 秒，改代码时跑）
+npm run gate:fast      # 快速档（约 3–4 分钟：126 道，浏览器类判据占大头）
 npm run gate           # 全量检查（含浏览器，提交前跑）
 node ai/cli.js check <doc.json>   # 校验契约文档（计划：节点类型 / 组件档位）
 node ai/cli.js check <页面.html>  # 校验产物（类名 / 结构 / 版式必有件）
@@ -103,6 +103,21 @@ node ai/cli.js shot  <页面.html> --out shot-{width}.png --width=390,1440 --ful
 node ai/cli.js scaffold report/finance --out report.html
                                   # 生成最小壳（正确骨架 + 必有件位置），不含内容
 ```
+
+**退出码可以直接分支**（全部子命令同一套）：
+
+| 码 | 含义 | 你该做什么 |
+|---|---|---|
+| 0 | 通过 | — |
+| 1 | **判定不通过**（页面/文档确实有错） | 读 `findings` / `errors`，改产物 |
+| 2 | 用法错误（开关名、取值、重复、空值） | 改调用 |
+| 3 | 环境不具备（没有浏览器 / 没有 node） | 换机器或跳过，别改代码 |
+| 4 | 渲染失败 | 看 message |
+| 5 | 超出预算（产物是完整的） | 拆文档或放宽预算 |
+| 6 | 工具内部错误 | 报 bug，别改自己的参数 |
+
+> `1` 和 `2` 分开是有原因的：把「页面有 3 个错」和「`--profile` 拼错了」都返回 1，
+> 自动修复循环会去改**错的那一边**。
 
 **计划与产物是两件事，判据不重叠**：
 

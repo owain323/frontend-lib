@@ -4,7 +4,7 @@
 RootWebArea "应用外壳 · app-shell"
   main
     heading "应用外壳 · app-shell" [level=1]
-    paragraph "工具型页面的骨架：左边一列常驻导航、上面一条工具栏、右边是主区。 它存在的理由不是"少写几个 div"，而是**两个每个"
+    paragraph "工具型页面的骨架：左边一列常驻导航、上面一条工具栏、右边是主区。 它存在的理由不是"少写几个 div"，而是 两个每个人"
     heading "1 · 标准三段式" [level=2]
     heading "应付账款 · 2025 年度" [level=2]
     navigation "主导航"

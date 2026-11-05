@@ -32,7 +32,11 @@ var path = require('path');
 var AI_DIR = __dirname;
 
 // ---------------------------------------------------------------- 能力白名单
-// ⚠️ 改这个表 = 改工具的能力边界。加关键字 ⇒ 必须同时实现它，否则别加。
+// ⚠️ 改这个表 = 改工具的能力边界。
+//   🔴 表里有的关键字**必须真的实现**：白名单只负责"允许出现"，
+//      不负责"校验它"。两者不一致 ⇒ schema 里写了、校验器当没看见 ⇒ **静默假绿**。
+//      （本轮审计 F4：`uniqueItems` / `not` 在表里挂了很久但没实现，
+//        `validate({type:'array',uniqueItems:true},[1,1])` 返回 ok:true。）
 var SUPPORTED_KEYWORDS = [
   '$schema', '$id', '$comment', '$ref', 'definitions', 'title',
   'type', 'required', 'properties', 'additionalProperties', 'patternProperties',
@@ -57,15 +61,30 @@ function isPlainObject(v) {
  */
 // 哪些键的"值"本身还是 schema
 var SUBSCHEMA_KEYS = [
-  'items', 'additionalProperties', 'patternProperties', 'allOf', 'anyOf',
+  'items', 'additionalProperties', 'allOf', 'anyOf',
   'oneOf', 'not', 'propertyNames', 'contains', 'if', 'then', 'else'
 ];
-// 哪些键是"名字 → schema"的容器（它们的**键**是字段名，不是关键字）
-var CONTAINER_KEYS = ['properties', 'definitions', '$defs', 'dependentSchemas'];
+/* 哪些键是"名字 → schema"的容器：它们的**键**不是关键字。
+   🔴 `patternProperties` 必须在这里，不能当普通子 schema ——
+      它的键是**正则**（`^--[a-z][a-z0-9-]*$`），
+      当成关键字检查就会报"用了没实现的关键字"，而 schema 本身完全合法。
+      这个错 0.26.0 就有，只是预扫当时只覆盖 4 份文件、碰巧都没用 patternProperties
+      ⇒ 直到本轮把预扫扩到全部 8 份才暴露（`tokens.audience` 第一个撞上）。 */
+var CONTAINER_KEYS = ['properties', 'definitions', '$defs', 'dependentSchemas',
+                      'patternProperties'];
+
+/* 扫哪些文件：**目录里现找**，不手写清单。
+   手写清单必漂 —— 0.26.0 时 `ai/` 下有 8 份 schema，这里只列了 4 份
+   （behaviors / deprecations / tokensAudience / tokensTree 从来没被扫过），
+   于是那四份里出现未知关键字也不会有人知道。 */
+function schemaFiles() {
+  return fs.readdirSync(AI_DIR).filter(function (f) {
+    return /\.schema\.json$/.test(f);
+  }).sort();
+}
 
 function assertSchemasUseOnlySupported() {
-  var files = ['contract.schema.json', 'components.schema.json',
-               'tokens.schema.json', 'patch.schema.json'];
+  var files = schemaFiles();
   var unknown = [];
 
   function checkNode(schema, f, ptr) {
@@ -116,6 +135,27 @@ function typeOk(expected, value) {
   if (expected === 'null') return value === null;
   if (expected === 'integer') return typeof value === 'number' && value % 1 === 0;
   return true;
+}
+
+/* JSON Schema 的"相等"是**深比较**：`{a:1}` 与 `{a:1}` 是两个对象但相等。
+   用 `===` 判重会把重复项全放过，而且是静默的。 */
+function deepEqual(a, b) {
+  if (a === b) return true;
+  if (Array.isArray(a) || Array.isArray(b)) {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+    for (var i = 0; i < a.length; i++) if (!deepEqual(a[i], b[i])) return false;
+    return true;
+  }
+  if (isPlainObject(a) && isPlainObject(b)) {
+    var ka = Object.keys(a), kb = Object.keys(b);
+    if (ka.length !== kb.length) return false;
+    for (var j = 0; j < ka.length; j++) {
+      if (!Object.prototype.hasOwnProperty.call(b, ka[j])) return false;
+      if (!deepEqual(a[ka[j]], b[ka[j]])) return false;
+    }
+    return true;
+  }
+  return false;
 }
 
 function resolveRef(root, ref) {
@@ -178,6 +218,18 @@ function validate(schema, data, root, ptr, errors) {
     if (schema.maxItems !== undefined && data.length > schema.maxItems) {
       errors.push({ path: ptr, msg: '元素多于 ' + schema.maxItems + ' 个' });
     }
+    /* `uniqueItems: true` = 元素两两不相等。O(n²) 深比较 —— 这里的数据都是
+       几十个以内，可读性比复杂度重要；真要上千个再换哈希。 */
+    if (schema.uniqueItems === true) {
+      for (var ui = 0; ui < data.length; ui++) {
+        for (var uj = ui + 1; uj < data.length; uj++) {
+          if (deepEqual(data[ui], data[uj])) {
+            errors.push({ path: ptr + '/' + uj,
+              msg: '第 ' + uj + ' 个元素与第 ' + ui + ' 个重复（uniqueItems）' });
+          }
+        }
+      }
+    }
     if (schema.items) {
       data.forEach(function (v, i) {
         validate(schema.items, v, root, ptr + '/' + i, errors);
@@ -226,6 +278,13 @@ function validate(schema, data, root, ptr, errors) {
     }).length;
     if (n !== 1) {
       errors.push({ path: ptr, msg: '必须恰好满足 oneOf 中的一条，实际满足 ' + n + ' 条' });
+    }
+  }
+  /* `not`：**必须不**满足里面的约束。子校验用独立的 errors 数组 ——
+     借用外层数组的话，"不满足 not" 会被记成"满足了"的错，方向正好反了。 */
+  if (schema.not !== undefined) {
+    if (validate(schema.not, data, root, ptr, []).length === 0) {
+      errors.push({ path: ptr, msg: '不应满足 not 里的约束（实际满足了）' });
     }
   }
   return errors;

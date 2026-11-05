@@ -35,9 +35,72 @@
   不含内容。三个壳都由门禁跑一遍 `ai check --recipe=<自己>`。
 - **`ai/recipes.json`** —— 版式"必有件"的机器可读事实：能从标记判定的写进
   `requires`（少一件就报错），判不了的写进 `unchecked`（只打印，不判过）。
+- **`prose-gate`** —— 检查页面的**可见文本**：未渲染的 `**加粗**` / 反引号 / `](链接)`、
+  整页括号不配平（通常是把 `（…）` 切断），以及生成器是否切在语义边界上。
+  自带反向控制：四类注入必须全部抓到，注释与代码块里的同样字符不许误报。
+- **诊断可分辨**：`npm pack` 失败时 `pack-closure` 会打印 npm/node 版本、cwd、
+  stdout/stderr 尾，并区分"产品失败（package.json 坏了）"与"清单没拿到（无法判定）"；
+  `check-all.sh` 在 `node` 不在 PATH 时一次性说明并整体退出 `3`，
+  而不是让 5 道 python 门禁各抛一个 `WinError 2` 堆栈。
+
+### Changed
+
+- **退出码统一成一套，并且可以按码分支。** 以前同一个 `--profile` 写错，
+  `pdf` 给 2、其它子命令给 1；而 `1` 同时表示"页面有错"和"工具崩了"。
+  现在全 CLI 一张表：
+
+  | 码 | 含义 |
+  |---|---|
+  | 0 | 通过 |
+  | **1** | **判定不通过**（页面/文档确实有错 —— 是结论，不是工具坏了） |
+  | **2** | 用法错误（开关名、取值、重复、空值） |
+  | 3 | 环境不具备（没有浏览器 / 没有 node） |
+  | 4 | 渲染失败 |
+  | 5 | 超出预算（产物完整） |
+  | 6 | 工具内部错误 |
+
+  失败的 JSON 也统一成**一种形状**：`{"ok":false,"command","error":{"kind","message"}}`
+  （`pdf` 以前发的是顶层 `code`/`message`，调用方得写两个分支）。
+- **枚举开关的非法值一律报错，不再退化成"空结果"。** 以前：
+
+  ```
+  ai tokens --set=not-a-theme --json      → stdout 是字面量 undefined，退出码 0
+  ai tree   --set=not-a-theme --json      → 同上
+  ai components --maturity=not-a-level    → []，退出码 0
+  ```
+
+  对 Agent 这不是"没输出"，而是**错误的控制流**：它会把拼错的参数读成
+  "这个库没有 beta 组件"，然后据此写结论。现在非法值 / 空值 / 同一个开关给两次
+  / 开关后面吞掉另一个开关，全部 `2` 退出，并在 message 里列出合法取值。
+  合法取值**从数据现算**（`profiles.json` 的 `allowedMaturity`、`tokens.json` 的
+  `sets`、`tokens.tree.json` 的 `meta.categories`、`recipes.json` 的版式），
+  不在这里另抄一份。
+- **与本命令无关的开关不再被静默忽略。** `ai components --set=dark` 以前退出码 0、
+  什么都不说 —— 调用方会以为"按 dark 过滤过了"。现在每个子命令声明自己认识的开关
+  （`ai/cli.js` 的 `FLAGS` 表），不认识的给 `2`。
+- **`ai check <page.html> --profile` / `--medium` 明确报错**：这两个开关只对
+  `doc.json` 有效。以前静默忽略 ⇒ 调用方以为"按 strict 档查过了"。
 
 ### Fixed
 
+- **Schema 校验器实现了 `uniqueItems` 与 `not`。** 这两个关键字一直挂在
+  "已实现"白名单里却没有实现：`validate({type:'array',uniqueItems:true},[1,1])`
+  返回 `ok:true`，`validate({type:'number',not:{const:1}},1)` 同样。
+  白名单只保证"允许出现"，不保证"真的校验" —— 现在逐个关键字都有正/负契约用例，
+  新加关键字却不写用例，门禁直接红。
+- **能力预扫从 4 份 schema 扩到全部 8 份。** 以前只扫 contract/components/tokens/patch，
+  `behaviors` / `deprecations` / `tokensAudience` / `tokensTree` 从来没被扫过 ——
+  它们里面出现未知关键字也不会有人知道。扩上去当场撞出一个真 bug：
+  `patternProperties` 的**键是正则**，被当成关键字检查，于是
+  `tokensAudience` 报"用了没实现的关键字"（schema 本身完全合法）。
+- **生成器不再按字符硬切句子。** 首页摘要以前是 `purpose[:56]`，于是
+  `delta` 结尾是「会计正负是 ta」、`timeline` 是「颜色在」，首页还因此括号不配平。
+  现在按语义边界切（句末标点 > 分句边界 > 硬切 + 省略号），并且括号必须配平。
+  `aria-label` 里的小节名走同一条规则 —— 读屏会把它逐字念出来。
+- **可见文本里不再有未渲染的 Markdown。** 修了 5 处：
+  `timeline` / `drawer` / `app-shell` 的 `**加粗**`，`responsive-demo` 与
+  `report` 页里的反引号代码；另有 `guide/app-shell.html` 的一个孤立 `**`
+  （源头是 `04-recipes/app-shell/README.md` 里一处没闭合的加粗）。
 - **`md-render.py` 产出的表格补 `scope="col"` 与可访问名称**
   （取最近一节的小节标题作 `aria-label`）。此前每一份从 Markdown 出来的页面
   都缺这两件 —— GFM 的表格语法里没有它们可写，而缺了不会报错，

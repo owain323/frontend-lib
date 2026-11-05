@@ -253,7 +253,19 @@ const EXPECTED = [
   expect(run(['check', warnOnly]).status === 0, '⑧ CLI：只有警告 ⇒ 退出码 0',
     String(run(['check', warnOnly]).status));
   expect(run(['check', warnOnly, '--strict']).status === 1, '⑧ CLI：--strict ⇒ 退出码 1');
-  expect(run(['check', finFile, '--recipe=report/nope']).status === 1, '⑧ CLI：未知版式 ⇒ 退出码 1');
+  /* 退出码现在是全 CLI 一套：1 = 判定不通过，2 = 用法错误。
+     「版式名写错」属于用法错误 —— 以前它和"页面有错"都是 1，
+     调用方没法按码区分"该改页面"还是"该改参数"。 */
+  expect(run(['check', finFile, '--recipe=report/nope']).status === 2,
+    '⑧ CLI：未知版式 ⇒ 退出码 2（用法错误，不是判定不通过）',
+    String(run(['check', finFile, '--recipe=report/nope']).status));
+  expect(run(['check', finFile, '--profile=strict']).status === 2,
+    '⑧ CLI：HTML 检查传 --profile ⇒ 退出码 2（这个开关只对 doc.json 有效，不许静默忽略）');
+  expect(run(['check', finFile, '--medium=paper']).status === 2,
+    '⑧ CLI：HTML 检查传 --medium ⇒ 退出码 2');
+  /* 枚举开关给两次 = 用错，不许静默取第一个 */
+  expect(run(['check', finFile, '--recipe=report/finance', '--recipe=report/magazine']).status === 2,
+    '⑧ CLI：同一个枚举开关给两次 ⇒ 退出码 2');
   expect(run(['check', path.join(ROOT, 'index.html')]).status === 0, '⑧ CLI：正常页面 ⇒ 退出码 0');
   expect(run(['check', '--list-recipes']).status === 0,
     '⑧ CLI：`check --list-recipes` 不需要文件参数（它自己就是一次完整调用）');
@@ -262,7 +274,7 @@ const EXPECTED = [
      而不是被 HTML 分派悄悄接走。 */
   const notJson = tmp('shape.json', '<!doctype html><html lang="zh-CN"></html>');
   const jsonRun = run(['check', notJson]);
-  expect(jsonRun.status === 1 && /不是合法 JSON/.test(jsonRun.stderr || ''),
+  expect(jsonRun.status === 2 && /不是合法 JSON/.test(jsonRun.stderr || ''),
     '⑧ CLI：.json 仍走文档模型校验（没有被 HTML 分派抢走）',
     jsonRun.stdout + jsonRun.stderr);
 

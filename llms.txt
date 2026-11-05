@@ -42,9 +42,15 @@ Print / PDF: `--medium=paper` is the obligation switch — only then are `printP
 and `pageBudget` enforced. Per-component paper behaviour lives in
 `ai/components.json` → `printPolicy`. `@page` is owned by the exporter, not the library.
 
-Every subcommand accepts `--json`. On failure it prints
-`{"ok":false,"command":"…","error":{"kind":"…","message":"…"}}` and exits non-zero,
-so a pipeline can never mistake an error for data.
+Every subcommand accepts `--json`. On failure it prints *one* JSON document —
+`{"ok":false,"command":"…","error":{"kind":"…","message":"…"}}` — and exits non-zero,
+so a pipeline can never mistake an error for data. There is exactly one failure shape;
+the `kind` values map to exit codes: `1` verdict-negative (`findings`), `2` bad usage,
+`3` environment missing, `4` render failed, `5` over budget, `6` tool bug.
+
+Enum flags (`--set`, `--cat`, `--maturity`, `--profile`, `--medium`, `--recipe`) reject
+an unknown value, an empty value, and a repeated occurrence with exit `2`. Flags a
+subcommand does not understand are rejected too — they are never silently ignored.
 
 `pitfalls` needs `agentcss@0.21.0+`: `npx` resolves the *published* version, which can lag
 this repository. If a subcommand is missing, check `npx agentcss --version` first.

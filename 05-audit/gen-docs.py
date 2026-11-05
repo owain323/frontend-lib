@@ -249,7 +249,9 @@ def render_table(rows, resolve_link, section=''):
     #   以及 10-review/a11y-tree 里已存在的 `region "财务数据表（可横向滚动）"`）：
     #   **内容名 + 「（可横向滚动）」**。只写内容名的话，屏幕阅读器用户
     #   不会知道这里可以横向滚 —— 那正是 2.1.1 想解决的问题。
-    label = (section or '').strip()[:48] or '数据表'
+    # 小节标题进 aria-label 也要按语义边界切 —— 读屏会把它逐字念出来，
+    # 「财务数据表（可横」这种断法比不写更糟。
+    label = short_text((section or '').strip(), 48, ellipsis=False).rstrip('。：:') or '数据表'
     label = (label + '（可横向滚动）').replace('"', '\"')
     out = ['<div class="table" tabindex="0" role="region" '
            'aria-label="%s"><table>' % label, '<thead><tr>']
@@ -1281,6 +1283,54 @@ def render_404(comps, ver):
     return ROOT_404 % {'fav': FAVICON, 'base': esc(site_base()), 'n': len(comps)}
 
 
+# ---------------------------------------------------------------- 文案截短
+# 句末 / 分句边界。顺序即优先级。
+_END_PUNCT = '。！？'   # 分号不算句末：摘要以「；」结尾等于话没说完
+_CLAUSE_PUNCT = '，,、；; 　'
+
+
+def _balance(s):
+    """把未闭合的 `（` / `(` 及其后文切掉 —— 读者不该看到半个括号。"""
+    for op, cl in (('（', '）'), ('(', ')')):
+        # 必须循环：切掉最后一层之后，外层可能仍然不配平
+        # （`（第一层（第二层` 切一次还剩一个 `（`）。
+        while s.count(op) > s.count(cl):
+            k = s.rfind(op)
+            if k <= 0:
+                break
+            s = s[:k]
+    return s
+
+
+def short_text(text, limit, ellipsis=True):
+    """按**语义边界**截短，不留半句。
+
+    为什么不能用 `s[:56]`：0.26.0 的首页就是这么生成的，
+    `delta` 的摘要结尾是「会计正负是 ta」、`timeline` 是「颜色在」——
+    肉眼可见的残句，而且就长在**首页**上。它不影响功能，
+    但它把「这套东西很精致」这句话自己划掉了。
+
+    规则（按优先级）：
+      ① 不超长 ⇒ 原样返回（只修括号）
+      ② limit 内有句末标点 ⇒ 切在**最后一个**句末标点之后（句子完整、信息最多）
+      ③ 没有句末但有分句边界 ⇒ 切在边界，去掉尾部的逗号/空格，补「…」
+      ④ 都没有（一长串中文）⇒ 切在 limit，补「…」
+    """
+    t = ' '.join(str(text or '').split())
+    if not t:
+        return ''
+    if len(t) <= limit:
+        return _balance(t)
+    cut = max([i + 1 for i, ch in enumerate(t[:limit]) if ch in _END_PUNCT] or [0])
+    if cut:
+        return t[:cut]
+    for i in range(min(limit, len(t)) - 1, 0, -1):
+        if t[i] in _CLAUSE_PUNCT:
+            core = _balance(t[:i]).rstrip(_CLAUSE_PUNCT)
+            return core + ('…' if ellipsis else '')
+    return _balance(t[:limit]) + ('…' if ellipsis else '')
+
+
 def render_root_index(comps, page_ids, ver):
     """根 `index.html` —— **只链包内真实存在的页面**。
 
@@ -1297,7 +1347,7 @@ def render_root_index(comps, page_ids, ver):
         title = title_of(readme_of(c['dir']), c['id'])
         rows_by_tier.setdefault(c['tier'], []).append(
             '<li><a href="%s">%s</a><span class="r__p">%s</span></li>'
-            % (esc(demo), esc(title), esc(c['purpose'][:56])))
+            % (esc(demo), esc(title), esc(short_text(c['purpose'], 56))))
     blocks = []
     for _d, slug, label, desc in TIERS:
         rows = rows_by_tier.get(slug)

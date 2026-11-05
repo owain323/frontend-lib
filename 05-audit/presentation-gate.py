@@ -63,13 +63,17 @@ CRITERIA = [
 
 
 def find_node():
+    """找 node 可执行文件；找不到返回 None（由调用方判为"未判定"）。
+
+    以前直接 `return 'node'`：在 Windows 上 subprocess 会抛
+    `FileNotFoundError: [WinError 2]`，一路冒到顶层变成 traceback，
+    check-all 把它当**产品失败**记一笔（本轮外部评审就是这么看到 5 条 WinError 2）。
+    """
     d = os.environ.get('NODE_DIR')
-    if d and os.path.isfile(os.path.join(d, 'node')):
-        return os.path.join(d, 'node')
-    d = os.environ.get('NODE_DIR')
-    if d and os.path.isfile(os.path.join(d, 'node.exe')):
-        return os.path.join(d, 'node.exe')
-    return 'node'
+    for name in ('node', 'node.exe'):
+        if d and os.path.isfile(os.path.join(d, name)):
+            return os.path.join(d, name)
+    return shutil.which('node')
 
 
 def run_check(adapter_dir, deck_path, node):
@@ -175,11 +179,17 @@ def main():
             fails += 1
 
     node = find_node()
+    if not node:
+        # 🔴 以前这里 `return 0` —— 打出 SKIP 却算 PASS，是标准的假绿
+        #    （check-all 的三态：0 通过 / 1 失败 / 3 未判定）。
+        print('  [UNVERIFIED] 这台机器上没有 node —— 适配层判据没跑。')
+        print('              补法：把 node 放进 PATH，或 NODE_DIR=<node 所在目录>')
+        return 3
     try:
         subprocess.run([node, '-v'], capture_output=True, timeout=30)
-    except Exception:
-        print('  SKIP（缺 node：装好 node 后才会跑）')
-        return 0
+    except Exception as e:
+        print('  [UNVERIFIED] node 找到了但跑不起来（%s）：%s' % (node, e))
+        return 3
 
     # ---- A. 合规 deck 必须过 ----
     rc, out = run_check(ADAPTER, os.path.join(FIXTURES, 'deck-ok.json'), node)

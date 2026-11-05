@@ -17,7 +17,7 @@
  * ----------------------------------------------------------------------------
  *   agentcss ai check      <doc.json> [--profile=strict]
  *   agentcss ai check      <page.html> [--recipe=report/finance] [--strict]
- *   agentcss ai validate   <file.json> --schema=contract|components|tokens|tokensAudience|tokensTree|deprecations|patch
+ *   agentcss ai validate   <file.json> --schema=<名字>（见 SCHEMAS，当前 8 份）
  *   agentcss ai diff       <a.json> <b.json>
  *   agentcss ai patch      <doc.json> <patch.json> [-o out.json]
  *   agentcss ai components [--maturity=stable] [--json]
@@ -50,37 +50,99 @@ function pad(s, n) {
   return out;
 }
 
-function readJSON(file) {
-  var txt = fs.readFileSync(file, 'utf8');
+/* 读 JSON。`fromUser` 区分「调用方给我的文件」与「包内自带的文件」——
+   这两类读失败的性质完全不同，退出码也不同：
+     · 用户文件读不到/不是 JSON ⇒ usage（2）：改调用参数就能解决
+     · 包内文件读不到          ⇒ internal（6）：包坏了，是工具/打包的问题
+   不带这个区分时，两者都被顶层兜底成 internal（6），
+   于是"你指错了文件"被报成"工具内部错误"—— 调用方会去查工具的 bug。 */
+function readJSON(file, fromUser) {
+  var txt;
+  try {
+    txt = fs.readFileSync(file, 'utf8');
+  } catch (e) {
+    var miss = new Error((fromUser ? '读不到 ' : '包内文件读不到 ') + file
+      + '（' + (e.code || e.message) + '）');
+    miss.kind = fromUser ? 'usage' : 'internal';
+    throw miss;
+  }
   try {
     return JSON.parse(txt);
   } catch (e) {
-    throw new Error(file + ' 不是合法 JSON：' + e.message);
+    var malformed = new Error(file + ' 不是合法 JSON：' + e.message);
+    malformed.kind = fromUser ? 'usage' : 'internal';
+    throw malformed;
   }
 }
 
 function out(obj) {
-  process.stdout.write(JSON.stringify(obj, null, 2) + '\n');
+  /* 🔴 `JSON.stringify(undefined)` 返回的是 **undefined**（不是字符串），
+     拼上 '\n' 之后 stdout 得到字面量 `undefined`，退出码还是 0。
+     0.26.0 的 `ai tokens --set=<拼错的>` 就是这么"成功"的：
+     调用方的 JSON.parse 拿到 `undefined` 三个字，报一个跟真实原因无关的解析错。
+     枚举校验已经把已知那条路堵死，这里再加一道兜底 —— 任何**未来**的
+     "忘了判断就 out()" 都会当场变成 internal（退出码 6），而不是一个假成功。 */
+  var txt = JSON.stringify(obj, null, 2);
+  if (txt === undefined) {
+    fail('internal', '要输出的对象是 undefined —— 这是工具的问题（没有结果却走到了输出）');
+  }
+  process.stdout.write(txt + '\n');
 }
 
 var CURRENT_CMD = '';
 
-/* 🔴 失败也必须能被机器读。
-   以前 die() 只往 stderr 写一行中文，`--json` 的调用方拿到的是
-   退出码 1 + 空 stdout —— 它分不清「参数写错了」和「进程崩了」。
-   现在：带 --json 时，失败输出一个**单一 JSON 文档**，与成功路径一样可解析。 */
-function die(msg) {
+/* 🔴 退出码表只有这一份 —— 调用方要能**按码分支**，不必按子命令写 switch。
+ *
+ *   0  通过
+ *   1  判定不通过（页面/文档确实有错，跑完了，结论是不合格）
+ *   2  用法错误（参数名、取值、组合不对）
+ *   3  环境不具备（没有浏览器、node 不在 PATH）
+ *   4  渲染失败（超时、读不出、视口没设成）
+ *   5  超出预算（产出了完整文件，只是超了页数）
+ *   6  工具内部错误（是工具的 bug，不是你的输入错）
+ *
+ * 为什么 2/3/4/5 是这个数：`pdf` 早就这么发（CHANGELOG 里公开过
+ * 「2 用法 / 3 没浏览器 / 4 渲染失败 / 5 超预算」）。把它们收敛成全 CLI 唯一一套，
+ * 而不是新增一套再共存 —— 两套码必然漂移。
+ *
+ * ⚠️ **1 只表示"判定不通过"**，不表示工具坏了。以前 `die()` 用 1，
+ *    于是"参数写错"和"页面有 3 个错"拿到同一个码：调用方要么去改页面（改错方向），
+ *    要么去改参数（也改错方向）。这是本轮审计点名的第一个问题。
+ */
+var EXIT = {
+  findings: 1,
+  usage: 2,
+  'no-chrome': 3, env: 3,
+  render: 4, timeout: 4, unreadable: 4, viewport: 4,
+  'over-budget': 5,
+  internal: 6
+};
+
+/* 🔴 失败也必须能被机器读，且**只有一种形状**：
+     { ok:false, command, error:{ kind, message }, ...上下文 }
+   以前 `pdf` 发 `{ok:false, code, message}`、其它子命令发 `{ok:false, error:{...}}`
+   —— 同一个 CLI 的失败有两种形状，调用方要么写两个分支，要么只看 ok。
+   现在 kind 的取值就是上面那张退出码表的键，`kind` → 码是确定的。 */
+function fail(kind, msg, extra) {
+  var k = EXIT[kind] === undefined ? 'internal' : kind;
   if (isJson()) {
-    out({
-      ok: false,
-      command: CURRENT_CMD || null,
-      error: { kind: 'usage', message: String(msg) }
-    });
-    process.exit(1);
+    var doc = { ok: false, command: CURRENT_CMD || null,
+                error: { kind: k, message: String(msg) } };
+    if (extra) for (var ek in extra) {
+      if (Object.prototype.hasOwnProperty.call(extra, ek)) doc[ek] = extra[ek];
+    }
+    out(doc);
+  } else {
+    process.stderr.write('[FAIL] ' + msg + '\n');
+    if (k === 'internal') {
+      process.stderr.write('        这是工具内部错误，不是你参数写错了'
+        + '（退出码 ' + EXIT.internal + '）\n');
+    }
   }
-  process.stderr.write('[FAIL] ' + msg + '\n');
-  process.exit(1);
+  process.exit(EXIT[k]);
 }
+
+function die(msg) { fail('usage', msg); }
 
 /** 是否要求 JSON 输出。`--json` / `--json=true` 都认，`--json=false` 不认。 */
 function isJson() {
@@ -110,6 +172,80 @@ function flag(name, def) {
   return v;
 }
 
+/* ---------------------------------------------------------------- 枚举参数
+   🔴 非法取值**必须报错**，不许退化成"空结果"。
+   0.26.0 的实测（本轮审计 F1）：
+     ai tokens --set=not-a-theme --json     → stdout 是字面量 `undefined`，退出码 0
+     ai tree   --set=not-a-theme --json     → 同上
+     ai components --maturity=not-a-level   → `[]`，退出码 0
+   对人是"没输出"，对 Agent 是**错误的控制流**：它会把拼错的参数读成
+   "这个库没有 beta 组件"，再据此写出错误的结论，而且全程没有报错。
+
+   取值**不在本文件里重抄**：
+     · maturity 的词表来自 profiles.json 的 allowedMaturity（三档取并集）
+     · set / cat 来自 tokens.json / tokens.tree.json 的键与 meta.categories
+   抄一份就会漂 —— 组件升到 stable 后，这里还留着 beta，判据就恒真。 */
+var ENUMS = {
+  set: function () {
+    return Object.keys(readJSON(path.join(AI, 'tokens.json')).sets);
+  },
+  cat: function () {
+    return readJSON(path.join(AI, 'tokens.tree.json')).meta.categories;
+  },
+  maturity: function () {
+    var p = readJSON(path.join(AI, 'profiles.json')).profiles;
+    var seen = [];
+    Object.keys(p).forEach(function (k) {
+      (p[k].allowedMaturity || []).forEach(function (m) {
+        if (seen.indexOf(m) < 0) seen.push(m);
+      });
+    });
+    return seen;
+  },
+  profile: ['creative', 'standard', 'strict'],
+  medium: ['screen', 'paper'],
+  /* 版式清单来自 `ai/recipes.json`（由 `check-html.js` 读取并校验形状），
+     不在这里重抄 —— 加一个版式只改一个地方。 */
+  recipe: function () {
+    var r = require('./check-html.js').readRecipes();
+    return r ? Object.keys(r.recipes) : [];
+  }
+};
+
+function enumValues(name) {
+  var src = ENUMS[name];
+  if (!src) return null;
+  return typeof src === 'function' ? src() : src;
+}
+
+/* 同一个枚举开关出现两次 ⇒ 报错。`--set=light --set=dark` 以前**静默取第一个**：
+   调用方以为切到了 dark，拿到的却是 light，而且没有任何迹象。 */
+function flagCount(name) {
+  var eq = '--' + name + '=', bare = '--' + name, n = 0;
+  for (var i = 0; i < process.argv.length; i++) {
+    var a = process.argv[i];
+    if (a === bare || a.indexOf(eq) === 0) n++;
+  }
+  return n;
+}
+
+/* 读一个枚举开关；没给返回 null。给了就一定是合法值，否则当场退出（非 0）。 */
+function enumFlag(name) {
+  var v = flag(name, null);
+  if (v === null) return null;
+  var allowed = enumValues(name);
+  if (!allowed) fail('internal', '枚举 ' + name + ' 没有登记在 ENUMS 里');
+  var hint = '（可用：' + allowed.join(' | ') + '）';
+  var n = flagCount(name);
+  if (n > 1) die('--' + name + ' 给了 ' + n + ' 次。只认一个值 —— 想对比就分两次调用' + hint);
+  if (v === true) die('--' + name + ' 后面要跟取值' + hint);
+  if (String(v) === '') die('--' + name + '= 是空值' + hint);
+  if (allowed.indexOf(String(v)) < 0) {
+    die('--' + name + '=' + v + ' 不是合法值' + hint);
+  }
+  return String(v);
+}
+
 // ---------------------------------------------------------------- check
 function cmdCheck(args) {
   var file = args[0];
@@ -132,12 +268,18 @@ function cmdCheck(args) {
   if (wantHtml === true || wantHtml === 'true' || hasRecipe || /\.html?$/i.test(file)) {
     return cmdCheckHtml(file);
   }
-  var doc = readJSON(file);
-  var profile = flag('profile', doc.profile || 'standard');
+  var doc = readJSON(file, true);
+  /* 档位优先取命令行，其次取文档自己声明的，最后 standard。
+     ⚠️ 枚举校验必须在**取值之后**做：「文档里写了什么」也要是合法档位。 */
+  var profile = enumFlag('profile') || doc.profile || 'standard';
+  if (enumValues('profile').indexOf(String(profile)) < 0) {
+    die('文档的 profile 字段是 ' + JSON.stringify(profile)
+      + '，不是合法档位（可用：' + enumValues('profile').join(' | ') + '）');
+  }
   /* 介质是**与档位正交**的第二根轴：
      strict+paper 与 creative+paper 都必须合法，做成第四个 profile 会把两维压成一维。
      默认 screen ⇒ 今天所有调用零成本；paper 才追加打印义务。 */
-  var medium = flag('medium', 'screen');
+  var medium = enumFlag('medium') || 'screen';
   var r = validate.validateDoc(doc, { profile: profile, medium: medium });
   var json = isJson();
 
@@ -170,8 +312,18 @@ function cmdCheck(args) {
    不必为了拿一份结论去 fork 一个进程、再去解析中文输出。 */
 function cmdCheckHtml(file) {
   var checkHtml = require('./check-html.js');
-  var recipe = flag('recipe', null);
-  if (recipe === true) die('--recipe 后面要跟版式名（可用：ai check --list-recipes）');
+  /* 🔴 `--profile` / `--medium` 是**文档模型**的轴，对一页 HTML 没有任何意义。
+     以前它们被静默忽略 ⇒ `check page.html --profile=strict` 退出码 0，
+     调用方以为"按 strict 档查过了"。**善意的忽略就是假绿。** */
+  if (flag('profile', null) !== null) {
+    die('--profile 只对 doc.json 有效（HTML 用 --recipe 指定版式）');
+  }
+  if (flag('medium', null) !== null) {
+    die('--medium 只对 doc.json 有效（HTML 用 --recipe 指定版式）');
+  }
+  /* `enumFlag` 已经把"没给值 / 空值 / 非法值 / 给两次"都挡在外面了，
+     这里拿到的要么是 null，要么是合法版式名。 */
+  var recipe = enumFlag('recipe');
   var listRecipes = flag('list-recipes', false);
   if (listRecipes === true || listRecipes === 'true') {
     var all = checkHtml.readRecipes();
@@ -261,7 +413,7 @@ function cmdValidate(args) {
   if (!SCHEMAS[which]) die('未知 schema：' + which);
   validate.assertSchemasUseOnlySupported();
   var schema = readJSON(path.join(AI, SCHEMAS[which]));
-  var data = readJSON(file);
+  var data = readJSON(file, true);
   var r = validate.validate(schema, data);
   if (isJson()) {
     out({ ok: r.ok, schema: which, file: file, errors: r.errors || [] });
@@ -287,7 +439,7 @@ function cmdValidate(args) {
 function cmdDiff(args) {
   var fa = args[0], fb = args[1];
   if (!fa || !fb) die('用法：ai diff <改动前.json> <改动后.json>');
-  var a = readJSON(fa), b = readJSON(fb);
+  var a = readJSON(fa, true), b = readJSON(fb, true);
   var na = a.nodes || {}, nb = b.nodes || {};
   var added = [], removed = [], changed = [], moved = [];
 
@@ -338,8 +490,8 @@ function cmdDiff(args) {
 function cmdPatch(args) {
   var fdoc = args[0], fpatch = args[1];
   if (!fdoc || !fpatch) die('用法：ai patch <doc.json> <patch.json> [-o out.json]');
-  var doc = readJSON(fdoc);
-  var p = readJSON(fpatch);
+  var doc = readJSON(fdoc, true);
+  var p = readJSON(fpatch, true);
   var r = patch.apply(doc, p);
 
   if (!r.ok) {
@@ -480,7 +632,7 @@ function cmdPitfalls(args) {
 // ---------------------------------------------------------------- 列表类
 function cmdComponents(args) {
   var doc = readJSON(path.join(AI, 'components.json'));
-  var m = flag('maturity', null);
+  var m = enumFlag('maturity');
   var list = doc.components.filter(function (c) {
     return !m || c.maturity === m;
   });
@@ -666,7 +818,7 @@ function cmdAssets(args) {
 
 function cmdTokens(args) {
   var doc = readJSON(path.join(AI, 'tokens.json'));
-  var set = flag('set', null);
+  var set = enumFlag('set');
   if (isJson()) {
     out(set ? doc.sets[set] : doc);
     process.exit(0);
@@ -688,8 +840,8 @@ function cmdTokens(args) {
 
 function cmdTree(args) {
   var doc = readJSON(path.join(AI, 'tokens.tree.json'));
-  var set = flag('set', null);
-  var cat = flag('cat', null);
+  var set = enumFlag('set');
+  var cat = enumFlag('cat');
   if (isJson()) {
     out(cat && set ? doc.sets[set][cat] : (set ? doc.sets[set] : doc));
     process.exit(0);
@@ -717,7 +869,14 @@ function cmdTree(args) {
   process.exit(0);
 }
 
-function cmdProfile() {
+function cmdProfile(args) {
+  /* 多余的位置参数以前被**静默忽略**：`ai profile zzz` 打印三档、退出码 0，
+     调用方会以为"zzz 这一档存在"。只拒绝位置参数，开关照收（`--json`）。 */
+  var extra = (args || []).filter(function (a) { return String(a).charAt(0) !== '-'; });
+  if (extra.length) {
+    die('ai profile 不接受位置参数（收到 ' + extra.join(' ')
+      + '）。想查某一档的行为，用 ai check <doc.json> --profile=<档位>');
+  }
   var doc = readJSON(path.join(AI, 'profiles.json'));
   if (isJson()) { out(doc); process.exit(0); }
   process.stdout.write('  === 三档 Profile ===\n\n');
@@ -738,22 +897,12 @@ function cmdProfile() {
 }
 
 // ---------------------------------------------------------------- pdf
-/* 退出码与其它子命令分开：调用方（CI / 编辑器）要能分清
-   ① 参数写错 ② 这台机器上没有浏览器 ③ 渲染失败 ④ 超预算。
-   合成一个 1 的话，"没有 Chrome"会被当成"页面有错"去查，方向就错了。 */
-var PDF_EXIT = {
-  usage: 2, 'no-chrome': 3, render: 4, timeout: 4, unreadable: 4, 'over-budget': 5
-};
-
+/* 退出码用全局那一套（顶部 `EXIT`）：2 用法 / 3 没浏览器 / 4 渲染失败 / 5 超预算。
+   这几条**先于其它子命令**定下来、也早在 CHANGELOG 里公开过 ——
+   所以收敛方向是「其它子命令向它看齐」，不是再定义一套。 */
 function cmdPdf(args) {
-  /* ⚠️ pdf 的参数错误一律退出 2（与 PDF_EXIT.usage 一致），**不能走 die()** ——
-     die() 退出 1，而 1 在这套约定里表示"进程/未分类失败"。
-     两种用法错误给两个退出码，调用方就没法按码分支了。 */
-  function bad(msg) {
-    if (isJson()) out({ ok: false, command: 'pdf', code: 'usage', message: msg });
-    else process.stderr.write('  [FAIL] ' + msg + '\n');
-    process.exit(PDF_EXIT.usage);
-  }
+  /* 用法错误一律 usage（退出码 2），与全 CLI 其它子命令同一个出口。 */
+  function bad(msg) { die(msg); }
   var src = args[0];
   if (!src) {
     bad('用法：agentcss pdf <页面.html|URL> --out <file.pdf> '
@@ -804,17 +953,21 @@ function cmdPdf(args) {
     chrome: r.chrome || null,
     ms: r.ms || null
   };
+  if (!r.ok) {
+    /* 失败时**保留上下文**（产物路径 / 页数 / 预算）：
+       超预算这一类的产物是完整的，把这些字段丢掉等于让调用方再猜一次。 */
+    if (r.code === 'over-budget' && !isJson()) {
+      process.stderr.write('         （预算超了不是渲染出错，产物是完整的）\n');
+    }
+    fail(r.code || 'render', r.message, {
+      out: r.out || null,
+      pages: r.pages === undefined ? null : r.pages,
+      budget: r.budget === undefined ? null : r.budget
+    });
+  }
   if (isJson()) {
     out(report);
-    process.exit(r.ok ? 0 : (PDF_EXIT[r.code] || 4));
-  }
-  if (!r.ok) {
-    process.stderr.write('  [FAIL] ' + r.message + '\n');
-    if (r.code === 'over-budget') {
-      process.stderr.write('         （退出码 ' + (PDF_EXIT[r.code] || 4)
-        + '：预算超了不是渲染出错，产物是完整的）\n');
-    }
-    process.exit(PDF_EXIT[r.code] || 4);
+    process.exit(0);
   }
   process.stdout.write('  OK  ' + r.out + '\n');
   process.stdout.write('      ' + r.pages + ' 页 · ' + report.paperSize + ' · '
@@ -894,19 +1047,15 @@ function cmdScaffold(args) {
 }
 
 // ---------------------------------------------------------------- shot
-/* ⚠️ 退出码与 pdf 共用一套（2 用法 / 3 没浏览器 / 4 渲染失败）：
+/* shot 的 code 与 pdf 同一批语义（usage / no-chrome / render / timeout），
+   多一点 viewport（视口没设成 = 渲染失败）。都走顶部那张全局 `EXIT` ——
    调用方按码分支时，不该因为换了个子命令就得记第二张表。 */
-var SHOT_EXIT = { usage: 2, 'no-chrome': 3, render: 4, timeout: 4, viewport: 4 };
 
 function cmdShot(args) {
   var shot = require('./shot.js');
   var src = args[0];
 
-  function bad(msg) {
-    if (isJson()) out({ ok: false, command: 'shot', code: 'usage', message: msg });
-    else process.stderr.write('  [FAIL] ' + msg + '\n');
-    process.exit(SHOT_EXIT.usage);
-  }
+  function bad(msg) { die(msg); }
 
   if (!src) {
     bad('用法：agentcss shot <页面.html|URL> --out <file.png> [--width=390,1440] [--height=900] '
@@ -976,12 +1125,12 @@ function cmdShot(args) {
 
     if (isJson()) {
       out(r);
-      process.exitCode = r.ok ? 0 : (SHOT_EXIT[r.code] || 4);
+      process.exitCode = r.ok ? 0 : (EXIT[r.code] || EXIT.render);
       return;
     }
     if (!r.ok) {
       process.stderr.write('  [FAIL] ' + r.message + '\n');
-      process.exitCode = SHOT_EXIT[r.code] || 4;
+      process.exitCode = EXIT[r.code] || EXIT.render;
       return;
     }
     r.shots.forEach(function (s) {
@@ -1004,13 +1153,47 @@ function cmdShot(args) {
     }
     process.exitCode = 0;
   }).catch(function (e) {
-    if (isJson()) out({ ok: false, command: 'shot', code: 'render', message: String(e && e.message || e) });
-    else process.stderr.write('  [FAIL] ' + String(e && e.message || e) + '\n');
-    process.exitCode = 4;
+    fail('render', String(e && e.message || e));
   });
 }
 
 // ---------------------------------------------------------------- 分发
+/* 🔴 每个命令认识哪些开关，**只在这一处声明**。
+   为什么要声明：以前无关开关被静默忽略 ——
+   `ai components --set=dark` 退出码 0、什么都不说，
+   调用方会以为"按 dark 过滤过了"。**善意的忽略就是假绿**，
+   而 Agent 不会去核对"这个开关到底生效没有"。
+   `json` / `h` 是所有命令共有的（输出格式与帮助）。 */
+var GLOBAL_FLAGS = ['json', 'h', 'help'];
+
+var FLAGS = {
+  check: ['profile', 'medium', 'recipe', 'strict', 'list-recipes', 'html'],
+  validate: ['schema'],
+  diff: [],
+  patch: ['o'],
+  components: ['maturity'],
+  assets: [],
+  tokens: ['set'],
+  tree: ['set', 'cat'],
+  profile: [],
+  capabilities: [],
+  pitfalls: ['component', 'scope', 'tag'],
+  pdf: ['out', 'paper', 'margin', 'max-pages', 'chrome'],
+  scaffold: ['out', 'css-prefix'],
+  shot: ['out', 'width', 'height', 'full', 'scale', 'wait', 'chrome']
+};
+
+function rejectUnknownFlags(cmd, allowed) {
+  for (var i = 2; i < process.argv.length; i++) {
+    var a = process.argv[i];
+    if (a.charAt(0) !== '-' || a === '-' || a === '--') continue;
+    var name = a.replace(/^--?/, '').split('=')[0];
+    if (allowed.indexOf(name) >= 0) continue;
+    die('`' + cmd + '` 不认识开关 ' + (a.charAt(1) === '-' ? '--' : '-') + name
+      + '（本命令支持：' + allowed.join(' / ') + '）');
+  }
+}
+
 var CMDS = {
   check: cmdCheck,
   validate: cmdValidate,
@@ -1028,21 +1211,19 @@ var CMDS = {
   shot: cmdShot
 };
 
-function main() {
-  var argv = process.argv.slice(2);
-  /* `agentcss ai shot --help` 是最自然的第一条命令 —— 让它等价于 `--help`，
-     而不是被当成"缺参数"报错（那等于让人先猜参数再去翻文档）。 */
-  if (argv.length > 1 && (argv[1] === '--help' || argv[1] === '-h')) argv = ['--help'];
-  if (!argv.length || argv[0] === 'help' || argv[0] === '--help') {
-    process.stdout.write(
+/* 帮助正文单独成函数：`main()` 里有三处要打印它
+   （无参数 / 显式 help / 任意位置的 --help），复制三份必然漂。 */
+function usage() {
+  process.stdout.write(
       'agentcss ai —— 独立校验入口（零依赖、不联网、不依赖任何模型）\n\n' +
       '  ai check        <doc.json> [--profile=creative|standard|strict] [--medium=screen|paper] [--json]\n' +
       '  ai check        <page.html> [--recipe=<版式>] [--strict] [--list-recipes] [--json]\n' +
       '                  产物检查：类名有没有定义、引没引到样式表、图/表/标题缺不缺件\n' +
-      '  ai validate     <file.json> --schema=contract|components|tokens|tokensAudience|tokensTree|deprecations|patch [--json]\n' +
+      '  ai validate     <file.json> --schema='
+        + Object.keys(SCHEMAS).join('|') + ' [--json]\n' +
       '  ai diff         <改动前.json> <改动后.json> [--json]   按语义 id 比对\n' +
       '  ai patch        <doc.json> <patch.json> [-o out.json] [--json]\n' +
-      '  ai components   [--maturity=stable|beta|alpha] [--json]\n' +
+      '  ai components   [--maturity=' + enumValues('maturity').join('|') + '] [--json]\n' +
       '  ai assets       [--json]   组件之外的资产：布局 / 微行为核 / 示例页 / 适配器\n' +
       '  ai tokens       [--set=light|dark] [--json]\n' +
       '  ai tree         [--set=light|dark] [--cat=color] [--json]\n' +
@@ -1061,8 +1242,23 @@ function main() {
       '  打印：`--medium=paper` 才会校验 printPolicy 与 pageBudget；默认 screen 零成本。\n' +
       '  每个组件的纸面行为：ai/components.json 的 printPolicy。\n' +
       '\n' +
-      '  每个子命令都支持 --json；失败时输出 {ok:false, command, error} 并以非 0 退出。\n' +
+      '  每个子命令都支持 --json；失败时输出 {ok:false, command, error:{kind, message}}。\n' +
+      '\n' +
+      '  退出码（全 CLI 同一套，kind 与码一一对应）：\n' +
+      '    0  通过\n' +
+      '    1  判定不通过（页面/文档确实有错 —— 是结论，不是工具坏了）\n' +
+      '    2  用法错误（参数名、取值、组合不对）\n' +
+      '    3  环境不具备（没有浏览器 / node 不在 PATH）\n' +
+      '    4  渲染失败（超时、读不出、视口没设成）\n' +
+      '    5  超出预算（产物是完整的，只是超了页数）\n' +
+      '    6  工具内部错误（是工具的问题，不是你参数写错）\n' +
       '  前缀 `ai` 可写可不写：`agentcss ai components` 与 `agentcss components` 等价。\n');
+}
+
+function main() {
+  var argv = process.argv.slice(2);
+  if (!argv.length || argv[0] === 'help' || argv[0] === '--help' || argv[0] === '-h') {
+    usage();
     process.exit(0);
   }
   var name = argv.shift();
@@ -1079,15 +1275,34 @@ function main() {
       die('`agentcss ai` 后面要跟子命令（可用：' + Object.keys(CMDS).join(' / ') + '）');
     }
   }
+  if (argv.indexOf('--help') >= 0 || argv.indexOf('-h') >= 0) {
+    usage();
+    process.exit(0);
+  }
   CURRENT_CMD = name;
   var fn = CMDS[name];
   if (!fn) die('未知子命令：' + name + '（可用：' + Object.keys(CMDS).join(' / ') + '）');
+  /* 未知开关在**调用命令之前**拒掉：命令内部各自判断的话，
+     遇到不认识的开关就只剩"忽略"和"崩"两种选择。 */
+  rejectUnknownFlags(name, GLOBAL_FLAGS.concat(FLAGS[name] || []));
   try {
     fn(argv);
   } catch (e) {
-    die(e.message);
+    /* 🔴 这里是**兜底**：走到这儿说明是工具自己的 bug（TypeError / 读不到自带的文件）。
+       以前一律 `die(e.message)` ⇒ kind 恒为 'usage'、退出码 1。
+       实测（0.26.0）：`ai tree --set=zzz --cat=nope` 报的是
+         {"ok":false,"error":{"kind":"usage","message":"Cannot read properties of undefined (reading 'nope')"}}
+       —— 调用方看到 kind=usage，会去改自己的参数，而真正该改的是工具。
+       现在：kind=internal、退出码 6、并且带一行为"这是工具的问题"。 */
+    fail((e && e.kind) || 'internal', (e && e.message) || String(e));
   }
 }
 
 if (require.main === module) main();
-module.exports = { CMDS: CMDS };
+/* 导出给门禁做**反漂移**用：
+   · `SCHEMAS` —— 判"磁盘上每份 *.schema.json 都已登记"，以及"登记的都存在"
+   · `ENUMS`   —— 判"每个枚举开关的取值都来自数据，不是手抄"
+   门禁直接 require 本文件拿真值，**不复制一份清单**（I-7）。 */
+module.exports = { CMDS: CMDS, SCHEMAS: SCHEMAS, ENUMS: ENUMS, EXIT: EXIT, FLAGS: FLAGS,
+                   /* 只给门禁验「输出 undefined 必须当场失败」这条兜底 */
+                   _out: out };

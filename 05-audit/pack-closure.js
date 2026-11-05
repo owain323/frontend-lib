@@ -1230,6 +1230,36 @@ function selftest() {
  *    结构一变就是 `TypeError: Cannot read properties of undefined`，
  *    而报错信息对"哪里变了"毫无帮助。这里显式校验并给出可诊断的原因。
  */
+/* 🔴 清单拿不到时要能**区分三种失败**，否则日志没法读：
+     ① 产品失败：包内容不对（这份门禁真正要判的东西）
+     ② 环境失败：这台机器的 npm 跑不起来 / 输出结构不认识
+     ③ 未判定：清单没拿到 ⇒ 既不能判通过，也不能报"闭包坏了"
+   本轮外部评审正是卡在这里：`pack-closure` 在并发门禁里失败、单跑通过，
+   而当时的输出只有一行 `exit 1`，没有 stderr、没有 npm 版本 ⇒ 无法定位（F6）。
+
+   诊断内容固定为：npm 版本 / node 版本 / cwd / stdout 尾 / stderr 尾。
+   全部**截断**后输出 —— 完整 stderr 有时上千行，贴出来反而没人看。 */
+function diagnostics(r) {
+  function tail(x, n) {
+    var t = String(x || '').replace(/\s+$/, '');
+    if (!t) return '（空）';
+    var lines = t.split(/\r?\n/);
+    return lines.slice(-n).join('\n        ');
+  }
+  function ver(cmd) {
+    try {
+      var v = cp.spawnSync(cmd, ['--version'], { encoding: 'utf8', shell: true });
+      return (v.stdout || v.stderr || '').trim().split(/\r?\n/)[0] || '（拿不到）';
+    } catch (e) { return '（拿不到：' + e.message + '）'; }
+  }
+  console.log('        ── 诊断（这一段的用途是让下一个人不用重跑就能定位）');
+  console.log('        npm ' + ver('npm') + ' · node ' + ver('node'));
+  console.log('        cwd ' + ROOT);
+  console.log('        status=' + r.status + ' signal=' + (r.signal || 'null'));
+  console.log('        stdout 尾：' + tail(r.stdout, 6));
+  console.log('        stderr 尾：' + tail(r.stderr, 6));
+}
+
 function readPackList(parsed) {
   function bad(msg) { return { list: [], errors: [msg], meta: {} }; }
   if (!Array.isArray(parsed)) {
@@ -1287,8 +1317,24 @@ function main(argv) {
     if (r.status !== 0) {
       console.log('  [1] 取包内清单');
       console.log('      X `npm pack --dry-run --json` 跑不起来（exit ' + r.status + '）');
-      console.log('        ⇒ 这不是"检查不通过"，是清单来源没拿到；不许当通过。');
-      return 1;
+      diagnostics(r);
+      /* 分类的唯一依据：**package.json 本身能不能解析**。
+         能解析 ⇒ 产品定义没坏，是这台机器的 npm 出了问题 ⇒ 未判定（3）。
+         解析不了 ⇒ 产品真的坏了 ⇒ 失败（1）。
+         不分类的后果：npm 抽风会被记成"包闭包坏了"，然后有人去改本来没错的代码。 */
+      var pkgBroken = false;
+      try {
+        JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
+      } catch (e) {
+        pkgBroken = true;
+        console.log('      X package.json 解析不了：' + e.message);
+      }
+      if (pkgBroken) {
+        console.log('        ⇒ package.json 本身坏了，这是产品问题。');
+        return 1;
+      }
+      console.log('        ⇒ 清单没拿到 = **无法判定**包内闭包（不是"闭包坏了"）。退出码 3。');
+      return 3;
     }
     var parsed;
     try {
@@ -1296,7 +1342,9 @@ function main(argv) {
     } catch (e) {
       console.log('  [1] 取包内清单');
       console.log('      X npm 输出的不是 JSON：' + String(r.stdout).slice(0, 120));
-      return 1;
+      diagnostics(r);
+      console.log('        ⇒ 读不出清单 = 无法判定（退出码 3），不是"闭包坏了"。');
+      return 3;
     }
     pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
 
@@ -1306,7 +1354,8 @@ function main(argv) {
       got.errors.slice(0, 5).forEach(function (e) { console.log('      X ' + e); });
       console.log('        ⇒ 清单结构不认识。这不是"检查不通过"，是清单没读出来 ——');
       console.log('          npm 换了 --json 结构时应当先修本门禁，而不是让它变成 TypeError。');
-      return 1;
+      console.log('          ⇒ 无法判定（退出码 3）。');
+      return 3;
     }
     if (got.meta.name && got.meta.name !== pkg.name) {
       console.log('  [1] 取包内清单');
