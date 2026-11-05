@@ -559,6 +559,10 @@ run "token-split" $PY 05-audit/split-tokens.py
 run "token-split-rev" $PY 05-audit/split-tokens.py --selftest
 # 机器可读契约层：schema 只用了实现过的关键字 / Profile 有鉴别力 / Patch 可回放
 run "ai-layer"  node 05-audit/ai-layer-gate.js
+# 产物侧判据：`ai check <page.html>` 自己有没有牙 ——
+#   正例（本库 12 个示例页）0 误报 / 反例逐条命中（集合相等）/
+#   逐条关掉判据后对应命中必须消失（元反向）/ `ai shot` 的真实视口与两次逐字节一致。
+run "html-check" node 05-audit/html-check-gate.js
 # CI 工作流配置：**真 YAML 解析**（不是正则）—— timeout-minutes 必须是整数、
 #   run 引用的脚本必须存在、每个 job 必须装依赖
 run "workflow"   node 05-audit/workflow-gate.js

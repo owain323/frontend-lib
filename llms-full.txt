@@ -16,10 +16,19 @@ npx agentcss ai pitfalls --json --component=table
 npx agentcss ai tokens --json --set=dark
 npx agentcss ai tree --json --set=dark --cat=color
 npx agentcss ai validate <file> --schema=components --json
-npx agentcss ai check <doc.json> --profile=strict --json
+npx agentcss ai check <doc.json> --profile=strict --json   # the plan
+npx agentcss ai check <page.html> --json                   # the artifact
+npx agentcss ai scaffold report/finance --out report.html  # skeleton only
+npx agentcss ai shot <page.html> --out shot-{width}.png --width=390,1440 --full
+npx agentcss ai pdf <page.html> --out page.pdf             # zero deps: your Chrome
 ```
 
 Every subcommand accepts `--json`; failures print `{"ok":false,...}` and exit non-zero.
+`check <page.html>` is static (no network, no browser) and reports undefined class names,
+stylesheets that were never linked, missing `img alt` / table name / `th scope`, skipped
+heading levels and the per-layout obligations in `ai/recipes.json`. `shot` drives your
+installed Chrome over a debugging pipe: the viewport is exactly the width you asked for,
+and it reports horizontal overflow plus JS errors.
 
 ## 2 · Components (40)
 

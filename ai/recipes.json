@@ -1,0 +1,86 @@
+{
+  "schemaVersion": "1.0.0",
+  "$comment": [
+    "版式的「必有件」—— 只收**能从标记本身判定**的那几条。",
+    "每一条都对应 04-recipes/report/README.md 里「三种版式的取舍」表中的一格；",
+    "那张表是这套系统存在的理由：同一份内容换一个阅读目的，该留什么、该放弃什么。",
+    "",
+    "🔴 为什么有的写在 requires、有的写在 unchecked：",
+    "  requires  = 有标记可查（少一个类就是确定的缺件），因此可以直接判红；",
+    "  unchecked = 说得清但判不了（「方法要写明」是内容判断），因此**只打印、不判过**。",
+    "  把后者塞进 requires 只能靠关键词匹配，那会造出一种「看起来在检查」的假绿 ——",
+    "  这套库宁可写「这条没查」，也不写「查过了」。"
+  ],
+  "recipes": {
+    "report/finance": {
+      "label": "report · 金融研究版",
+      "root": ".rep.rep--finance",
+      "css": "04-recipes/report/report.css",
+      "doc": "04-recipes/report/README.md",
+      "why": "给要快速比数字的人看：行长最短、字号小一档，靠关键数字条先给结论。",
+      "requires": [
+        {
+          "selector": ".rep__keyline",
+          "label": "关键数字条",
+          "why": "这一版的读者先看数、后看论证；没有数字条，标题下面就是一大段文字，等于放弃了它唯一的长处。"
+        },
+        {
+          "selector": ".rep__risk",
+          "label": "风险披露",
+          "why": "金融口径的结论必须带约束条件。少了它，页面读起来像建议，而不是分析。"
+        }
+      ],
+      "unchecked": [
+        {
+          "label": "长论证不超过两屏",
+          "why": "篇幅是内容判断，没有可查的标记。超过两屏的推理在这一版里会被跳过 —— 那是作者该拆的，不是工具能判的。"
+        }
+      ]
+    },
+    "report/technical": {
+      "label": "report · 科研技术版",
+      "root": ".rep.rep--technical",
+      "css": "04-recipes/report/report.css",
+      "doc": "04-recipes/report/README.md",
+      "why": "给要逐条核对的人看：行长最窄、行距最松，图与表自动编号。",
+      "requires": [
+        {
+          "selector": ".rep__source",
+          "label": "来源脚注",
+          "why": "这一版的读者会顺着结论回查原始材料；没有来源，逐条核对就无从开始。"
+        }
+      ],
+      "unchecked": [
+        {
+          "label": "方法写明",
+          "why": "「写了方法」没有可查的标记：它可能是一节、也可能是一段。判它需要读懂内容，工具不假装能判。"
+        }
+      ]
+    },
+    "report/magazine": {
+      "label": "report · 杂志编辑版",
+      "root": ".rep.rep--magazine",
+      "css": "04-recipes/report/report.css",
+      "doc": "04-recipes/report/README.md",
+      "why": "给通读一遍的人看：行长最宽、不编号，靠版面节奏而不是编号导航。",
+      "requires": [
+        {
+          "selector": ".rep__pull",
+          "label": "引语块",
+          "why": "这一版靠「停顿」制造节奏；没有引语块，长文会变成一整片同样密度的灰。"
+        },
+        {
+          "selector": ".rep__fig--wide",
+          "label": "出血宽图",
+          "why": "宽图是这一版唯一的视觉重音。全篇只有正文列宽的图，读起来和别的版式没有区别。"
+        }
+      ],
+      "unchecked": [
+        {
+          "label": "审计级追溯",
+          "why": "这一版**有意放弃**了图/表编号（没有编号就引用不了「第几图」）。它不是缺件，是取舍；不作判据。"
+        }
+      ]
+    }
+  }
+}

@@ -144,7 +144,7 @@ ORDER = ['button', 'input', 'badge', 'card', 'choice', 'select', 'combobox',
 START = '### 第 3 步：只抄你真正要用的组件'
 # 🔴 结束标记必须**含 `##`**，否则会匹配到正文里出现的同一串字。
 #    （第一版漏了 `##` ⇒ ValueError: substring not found）
-END = '## 抄完先做这三件事'
+END = '## 抄完先做这几件事'
 
 
 def measure():

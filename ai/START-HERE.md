@@ -61,7 +61,9 @@
 | 令牌名与取值 | `node ai/cli.js tokens --mode=dark`、`node ai/cli.js tree`（分层视图） |
 | 组件真实长什么样 | 该组件目录下的 `demo.html` |
 | 英文一页速览 | `llms.txt` / `llms-full.txt`（发现层；本文件是中文详版） |
-| 页面怎么搭 | `04-recipes/` 下的示例 |
+| 页面怎么搭 | `04-recipes/` 下的示例；要写报告/长文就先 `node ai/cli.js scaffold list` |
+| 写完了对不对 | `node ai/cli.js check <页面.html>`（类名/结构/版式必有件） |
+| 写完好不看 | `node ai/cli.js shot <页面.html> --out shot-{width}.png --width=390,1440 --full` |
 | 令牌怎么改 | README「主题定制」（覆盖 CSS 变量，不需重新编译） |
 
 **类名即 API**（`.btn`、`.btn--primary`）。改样式改**令牌**，不要改类名，
@@ -94,8 +96,23 @@ npm test               # 单元测试
 npm run test:types     # 类型契约：正例必过 + 反例必挂
 npm run gate:fast      # 静态检查（约 45 秒，改代码时跑）
 npm run gate           # 全量检查（含浏览器，提交前跑）
-node ai/cli.js check <doc.json>   # 校验契约文档（读 JSON，不解析原始 HTML）
+node ai/cli.js check <doc.json>   # 校验契约文档（计划：节点类型 / 组件档位）
+node ai/cli.js check <页面.html>  # 校验产物（类名 / 结构 / 版式必有件）
+node ai/cli.js shot  <页面.html> --out shot-{width}.png --width=390,1440 --full
+                                  # 截图（真实视口），顺带报横向溢出与 JS 报错
+node ai/cli.js scaffold report/finance --out report.html
+                                  # 生成最小壳（正确骨架 + 必有件位置），不含内容
 ```
+
+**计划与产物是两件事，判据不重叠**：
+
+| 查什么 | 命令 | 能发现 | 发现不了 |
+|---|---|---|---|
+| 计划（doc.json） | `check <doc.json>` | 节点类型、组件是否在档位内、介质义务 | 写出来的 HTML 对不对 |
+| 产物（.html） | `check <页面.html>` | 类名未定义 / 引错样式表 / 缺 alt、caption、scope / 标题跳级 / 版式缺件 | 页面**好看不好看**（那要 `shot` 看一眼） |
+
+> 两个命令都**不联网、不启动浏览器**；`shot` 用你机器上已装的 Chrome/Edge，
+> 不打包浏览器（理由同 `ai pdf`）。
 
 改动本库**自身**时的分层（决定该动哪一层）：
 
@@ -112,7 +129,8 @@ node ai/cli.js check <doc.json>   # 校验契约文档（读 JSON，不解析原
 
 有人问过要不要把 `ai/*.json` 包成一个 MCP server。结论是**不做**：
 
-1. 十一个子命令**全是只读查询** —— MCP 版本只是换一层传输，一个新能力都没有。
+1. 十四个子命令**全是本机命令**（读契约 / 校验文件 / 调本机浏览器）——
+   MCP 版本只是换一层传输，一个新能力都没有。
 2. 它会是**第二份真值**：命令怎么调、参数叫什么、返回什么形状，都得再写一遍。
    CLI 改了 server 没改，就多一处只有用户能发现的错（`--json` 那次已经踩过同类）。
 3. 用户要多信任一个常驻进程（安装、权限、升级），而 CLI 离线、可审计、跑完即退。

@@ -14,7 +14,35 @@
 
 ## [Unreleased]
 
-（无）
+### Added
+
+- **`ai check <page.html>` —— 校验产物，而不只是计划。**
+  此前 `ai check` 只吃 `doc.json`（节点类型、组件档位），管不到"写出来的那一页"。
+  新增 16 条判据，查的都是**不会报错、只会静默失效**的东西：
+  类名库里没有 / 类名库里有但这页没引到定义它的样式表（指名到文件）/
+  引的样式表一个都读不到 / `<img>` 缺 `alt` / 表没有可访问名称 /
+  `th` 缺 `scope` / id 重复 / 标题跳级 / 表单控件没有可读名称 /
+  `target="_blank"` 缺 `rel="noopener"` / 缺 `lang`、`charset`、`viewport`。
+  纯静态：不联网、不启动浏览器。按扩展名分派，`check x.json` 的行为不变。
+- **`ai shot <page.html> --out shot-{width}.png` —— 出 PNG。**
+  用 Chrome 的调试管道（不开端口、不打包浏览器）把视口**设成**要的宽度，
+  再截图。为什么不用 `--window-size`：Windows 上窗口有最小宽度，
+  `--window-size=390` 实际按 500px 排版、只按 390 裁一刀 —— 图是好的，
+  内容不对，且不报错。输出里同时给出横向溢出（指名元素）、内容高度与 JS 报错。
+  同一台机器、同样参数两次逐字节一致（门禁验的就是这条）。
+- **`ai scaffold <版式> --out page.html` —— 三个最小壳**（`report/finance`、
+  `report/technical`、`report/magazine`）：只给正确的骨架与必有件的位置，
+  不含内容。三个壳都由门禁跑一遍 `ai check --recipe=<自己>`。
+- **`ai/recipes.json`** —— 版式"必有件"的机器可读事实：能从标记判定的写进
+  `requires`（少一件就报错），判不了的写进 `unchecked`（只打印，不判过）。
+
+### Fixed
+
+- **`md-render.py` 产出的表格补 `scope="col"` 与可访问名称**
+  （取最近一节的小节标题作 `aria-label`）。此前每一份从 Markdown 出来的页面
+  都缺这两件 —— GFM 的表格语法里没有它们可写，而缺了不会报错，
+  只会让读屏用户听到一串没有表头的数字。
+- `04-recipes/longform/content.html` 随之重生成（差 4 行，纯属性）。
 
 ## [0.26.0] - 2026-11-04
 

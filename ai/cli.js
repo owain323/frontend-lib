@@ -16,6 +16,7 @@
  * 用法
  * ----------------------------------------------------------------------------
  *   agentcss ai check      <doc.json> [--profile=strict]
+ *   agentcss ai check      <page.html> [--recipe=report/finance] [--strict]
  *   agentcss ai validate   <file.json> --schema=contract|components|tokens|tokensAudience|tokensTree|deprecations|patch
  *   agentcss ai diff       <a.json> <b.json>
  *   agentcss ai patch      <doc.json> <patch.json> [-o out.json]
@@ -23,6 +24,8 @@
  *   agentcss ai tokens     [--set=light|dark] [--json]
  *   agentcss ai profile    列出三档及其差异
  *   agentcss ai capabilities
+ *   agentcss ai scaffold   <版式> --out <page.html>
+ *   agentcss ai shot       <page.html> --out <png> [--width=390,1440] [--full]
  * ============================================================================
  */
 'use strict';
@@ -110,7 +113,19 @@ function flag(name, def) {
 // ---------------------------------------------------------------- check
 function cmdCheck(args) {
   var file = args[0];
-  if (!file) die('用法：ai check <doc.json> [--profile=creative|standard|strict] [--medium=screen|paper]');
+  if (!file) {
+    die('用法：ai check <doc.json> [--profile=creative|standard|strict] [--medium=screen|paper]\n'
+      + '      ai check <page.html> [--recipe=<版式>] [--strict]');
+  }
+  /* 🔴 产物与计划是两种东西，判据也不重叠：
+       · `.json` → 文档模型（组件在不在档位里、节点类型对不对）
+       · `.html` → 写出来的那一页（类名有没有定义、结构缺不缺件）
+     用扩展名分派，是因为调用方最容易做对的一件事就是"把文件名给对"。
+     显式 `--html` 留给没有扩展名/扩展名不是 html 的临时文件。 */
+  var wantHtml = flag('html', false);
+  if (wantHtml === true || wantHtml === 'true' || /\.html?$/i.test(file)) {
+    return cmdCheckHtml(file);
+  }
   var doc = readJSON(file);
   var profile = flag('profile', doc.profile || 'standard');
   /* 介质是**与档位正交**的第二根轴：
@@ -139,6 +154,81 @@ function cmdCheck(args) {
     r.warnings.forEach(function (w) {
       process.stdout.write('       ' + w.path + '  ' + w.msg + '\n');
     });
+  }
+  process.exit(r.ok ? 0 : 1);
+}
+
+// ------------------------------------------------------- check（产物 / HTML）
+/* ⚠️ 判据全在 `ai/check-html.js` 里，这里只负责"把结果说人话"和退出码。
+   分开的理由：门禁（05-audit/html-check-gate.js）要能直接 require 判据，
+   不必为了拿一份结论去 fork 一个进程、再去解析中文输出。 */
+function cmdCheckHtml(file) {
+  var checkHtml = require('./check-html.js');
+  var recipe = flag('recipe', null);
+  if (recipe === true) die('--recipe 后面要跟版式名（可用：ai check --list-recipes）');
+  var listRecipes = flag('list-recipes', false);
+  if (listRecipes === true || listRecipes === 'true') {
+    var all = checkHtml.readRecipes();
+    if (!all) die('ai/recipes.json 读不到 —— 这份包不完整');
+    if (isJson()) { out(all); process.exit(0); }
+    process.stdout.write('  === 可校验的版式 ===\n\n');
+    Object.keys(all.recipes).forEach(function (k) {
+      var r = all.recipes[k];
+      process.stdout.write('  ' + pad(k, 20) + r.label + '\n');
+      process.stdout.write('       ' + r.root + '  必有件 ' + r.requires.length + ' 条'
+        + (r.unchecked && r.unchecked.length
+          ? ' · 另有 ' + r.unchecked.length + ' 条只能人工判' : '') + '\n');
+    });
+    process.exit(0);
+  }
+  /* `--strict` 把警告当失败。默认不这么做：警告里有一类是"页面自己的类名"，
+     那在单文件页面上完全合法，不该把一页正常的报告判死。 */
+  var strictFlag = flag('strict', false);
+  var r = checkHtml.checkPage(file, {
+    recipe: recipe || null,
+    strict: strictFlag === true || strictFlag === 'true'
+  });
+
+  if (r.code === 'unreadable') die(r.message);
+  if (r.code === 'unknown-recipe') die(r.message);
+
+  if (isJson()) {
+    out(r);
+    process.exit(r.ok ? 0 : 1);
+  }
+
+  process.stdout.write('  === 页面检查（' + r.file + '）===\n');
+  process.stdout.write('  ' + r.rules.length + ' 条判据 · 本地样式表 ' + r.sources.localSheets
+    + ' 个 · 库内类名 ' + r.sources.libraryClasses
+    + '（' + r.sources.libraryCssFiles + ' 个 CSS）'
+    + (r.recipe ? ' · 版式 ' + r.recipe : '') + '\n\n');
+
+  r.findings.forEach(function (f) {
+    process.stdout.write('  [' + (f.level === 'error' ? 'FAIL' : 'WARN') + '] '
+      + pad(f.line + ' 行', 8) + pad(f.rule, 18) + f.msg + '\n');
+    process.stdout.write('         ' + checkHtml.RULES[f.rule].hint + '\n');
+  });
+
+  if (r.skipped.length) {
+    process.stdout.write('\n  ⚠️ 未判定（**不计入通过**）：\n');
+    r.skipped.forEach(function (s) {
+      process.stdout.write('     · ' + s.rule + ' —— ' + s.why + '\n');
+    });
+  }
+  if (r.notes.length) {
+    process.stdout.write('\n  ⚠️ 这一版还有判不了的部分（只提示，不判过）：\n');
+    r.notes.forEach(function (n) {
+      process.stdout.write('     · ' + n.label + ' —— ' + n.why + '\n');
+    });
+  }
+
+  process.stdout.write('\n');
+  if (r.ok) {
+    process.stdout.write('  OK  ' + r.rules.length + ' 条判据没有发现问题（'
+      + r.counts.error + ' 错误 / ' + r.counts.warn + ' 警告）\n');
+  } else {
+    process.stdout.write('  FAIL  ' + r.counts.error + ' 个错误 / '
+      + r.counts.warn + ' 个警告\n');
   }
   process.exit(r.ok ? 0 : 1);
 }
@@ -747,6 +837,173 @@ function cmdCapabilities() {
   process.exit(0);
 }
 
+// ---------------------------------------------------------------- scaffold
+function cmdScaffold(args) {
+  var scaffold = require('./scaffold.js');
+  var id = args[0];
+
+  if (!id || id === 'list') {
+    if (isJson()) { out({ ok: true, command: 'scaffold', recipes: scaffold.list() }); process.exit(0); }
+    process.stdout.write('  === 可生成的壳 ===\n\n');
+    scaffold.list().forEach(function (r) {
+      process.stdout.write('  ' + pad(r.id, 20) + r.label + '\n');
+    });
+    process.stdout.write('\n  用法：agentcss ai scaffold <版式> --out <page.html>\n');
+    process.exit(0);
+  }
+
+  var outFile = flag('out', null);
+  if (!outFile || outFile === true) {
+    die('用法：ai scaffold ' + id + ' --out <page.html> [--css-prefix=<样式表前缀>]');
+  }
+  var prefix = flag('css-prefix', null);
+  if (prefix === true) die('--css-prefix 后面要跟路径（例：node_modules/agentcss）');
+
+  var r = scaffold.render(id, { cssPrefix: prefix === null ? undefined : prefix });
+  if (!r.ok) die(r.message);
+
+  var abs = path.resolve(outFile);
+  if (fs.existsSync(abs)) {
+    /* 不覆盖：壳是用来改的，覆盖掉一份正在写的页面比报错更贵。
+       真要覆盖就自己删 —— 这一步不该由工具代做。 */
+    die('目标文件已存在：' + abs + '\n  壳不会覆盖已有文件（它可能正在被改）。'
+      + '换一个 --out，或先删掉它。');
+  }
+  fs.mkdirSync(path.dirname(abs), { recursive: true });
+  fs.writeFileSync(abs, r.html, 'utf8');
+
+  if (isJson()) {
+    out({
+      ok: true, command: 'scaffold', recipe: r.id, out: abs,
+      bytes: Buffer.byteLength(r.html), requires: r.requires
+    });
+    process.exit(0);
+  }
+  process.stdout.write('  OK  已写出 ' + abs + '（' + Buffer.byteLength(r.html) + ' 字节）\n');
+  process.stdout.write('      版式 ' + r.id + ' · 必有件 ' + r.requires.length + ' 条'
+    + (r.requires.length ? '：' + r.requires.join(' ') : '') + '\n');
+  process.stdout.write('      下一步：agentcss ai check ' + outFile + ' --recipe=' + r.id + '\n');
+  process.stdout.write('      再下一步：agentcss ai shot ' + outFile + ' --out shot-{width}.png --width=390,1440 --full\n');
+  process.exit(0);
+}
+
+// ---------------------------------------------------------------- shot
+/* ⚠️ 退出码与 pdf 共用一套（2 用法 / 3 没浏览器 / 4 渲染失败）：
+   调用方按码分支时，不该因为换了个子命令就得记第二张表。 */
+var SHOT_EXIT = { usage: 2, 'no-chrome': 3, render: 4, timeout: 4, viewport: 4 };
+
+function cmdShot(args) {
+  var shot = require('./shot.js');
+  var src = args[0];
+
+  function bad(msg) {
+    if (isJson()) out({ ok: false, command: 'shot', code: 'usage', message: msg });
+    else process.stderr.write('  [FAIL] ' + msg + '\n');
+    process.exit(SHOT_EXIT.usage);
+  }
+
+  if (!src) {
+    bad('用法：agentcss shot <页面.html|URL> --out <file.png> [--width=390,1440] [--height=900] '
+      + '[--full] [--scale=2] [--wait=800] [--chrome=<path>] [--json]');
+  }
+  var outFile = flag('out', null);
+  if (!outFile || outFile === true) bad('缺 --out（多宽度时用 {width} 占位，例：shot-{width}.png）');
+
+  var wRaw = flag('width', null);
+  var widths = [1440];
+  if (wRaw === true) bad('--width 后面要跟数字（多个用逗号分隔，例：390,1440）');
+  if (typeof wRaw === 'string') {
+    widths = wRaw.split(',').map(function (s) { return s.trim(); })
+      .filter(Boolean).map(function (s) { return /^\d+$/.test(s) ? Number(s) : NaN; });
+    if (!widths.length || widths.some(function (n) { return !isFinite(n); })) {
+      bad('--width 只接受整数，收到 ' + JSON.stringify(wRaw));
+    }
+  }
+
+  var hRaw = flag('height', null);
+  if (hRaw === true) bad('--height 后面要跟数字（例：900）');
+  if (typeof hRaw === 'string' && !/^\d+$/.test(hRaw)) {
+    bad('--height 只接受整数，收到 ' + JSON.stringify(hRaw));
+  }
+
+  var scaleRaw = flag('scale', null);
+  if (scaleRaw === true) bad('--scale 后面要跟数字（1 / 2）');
+  if (typeof scaleRaw === 'string' && !/^\d+(\.\d+)?$/.test(scaleRaw)) {
+    bad('--scale 只接受数字，收到 ' + JSON.stringify(scaleRaw));
+  }
+
+  var waitRaw = flag('wait', null);
+  if (waitRaw === true) bad('--wait 后面要跟毫秒数');
+  if (typeof waitRaw === 'string' && !/^\d+$/.test(waitRaw)) {
+    bad('--wait 只接受整数毫秒，收到 ' + JSON.stringify(waitRaw));
+  }
+
+  var chrome = flag('chrome', null);
+  if (chrome === true) bad('--chrome 后面要跟可执行文件路径');
+
+  var fullFlag = flag('full', false);
+  var full = fullFlag === true || fullFlag === 'true';
+
+  shot.shoot({
+    src: src,
+    out: outFile,
+    widths: widths,
+    height: hRaw === null ? undefined : Number(hRaw),
+    full: full,
+    scale: scaleRaw === null ? undefined : Number(scaleRaw),
+    wait: waitRaw === null ? undefined : Number(waitRaw),
+    chrome: chrome === null ? undefined : chrome
+  }).then(function (r) {
+    /* 🔴 视口必须等于请求的宽度。不等就说明"设视口"这一步没生效
+       （正是 `--screenshot --window-size` 那条老路会静默发生的失败）。
+       这时候不能把图交出去：一张宽度不对的图比没有图更误导。 */
+    if (r.ok) {
+      var wrong = r.shots.filter(function (s) { return s.viewport !== null && s.viewport !== s.width; });
+      if (wrong.length) {
+        r.ok = false;
+        r.code = 'viewport';
+        r.message = '视口没有设成请求的宽度：' + wrong.map(function (s) {
+          return '要 ' + s.width + ' 实际 ' + s.viewport;
+        }).join('；') + '\n  这类图看起来是对的，实际是另一个宽度下的排版。';
+      }
+    }
+
+    if (isJson()) {
+      out(r);
+      process.exitCode = r.ok ? 0 : (SHOT_EXIT[r.code] || 4);
+      return;
+    }
+    if (!r.ok) {
+      process.stderr.write('  [FAIL] ' + r.message + '\n');
+      process.exitCode = SHOT_EXIT[r.code] || 4;
+      return;
+    }
+    r.shots.forEach(function (s) {
+      process.stdout.write('  OK  ' + s.out + '\n');
+      process.stdout.write('      ' + s.png.width + '×' + s.png.height + ' px'
+        + ' · 视口宽 ' + s.width + ' · 内容高 ' + s.scrollHeight
+        + ' · ' + Math.round(s.bytes / 1024) + ' KB · ' + s.ms + ' ms'
+        + (s.truncatedAt ? ' · 🔴 已截断到 ' + s.png.height + '（原 ' + s.truncatedAt + '）' : '') + '\n');
+      if (s.overflowCount) {
+        process.stdout.write('      ⚠️ 这个宽度下横向溢出 ' + s.overflowCount + ' 处'
+          + '（页面宽 ' + s.scrollWidth + ' > 视口 ' + s.viewport + '）：' + s.overflow.join('、') + '\n');
+      }
+    });
+    if (r.consoleErrors.length) {
+      process.stdout.write('\n  ⚠️ 页面里有 ' + r.consoleErrors.length + ' 条 JS 报错 ——'
+        + '图可能看起来是空的：\n');
+      r.consoleErrors.slice(0, 5).forEach(function (e) {
+        process.stdout.write('     · ' + e + '\n');
+      });
+    }
+    process.exitCode = 0;
+  }).catch(function (e) {
+    if (isJson()) out({ ok: false, command: 'shot', code: 'render', message: String(e && e.message || e) });
+    else process.stderr.write('  [FAIL] ' + String(e && e.message || e) + '\n');
+    process.exitCode = 4;
+  });
+}
+
 // ---------------------------------------------------------------- 分发
 var CMDS = {
   check: cmdCheck,
@@ -760,15 +1017,22 @@ var CMDS = {
   profile: cmdProfile,
   capabilities: cmdCapabilities,
   pitfalls: cmdPitfalls,
-  pdf: cmdPdf
+  pdf: cmdPdf,
+  scaffold: cmdScaffold,
+  shot: cmdShot
 };
 
 function main() {
   var argv = process.argv.slice(2);
+  /* `agentcss ai shot --help` 是最自然的第一条命令 —— 让它等价于 `--help`，
+     而不是被当成"缺参数"报错（那等于让人先猜参数再去翻文档）。 */
+  if (argv.length > 1 && (argv[1] === '--help' || argv[1] === '-h')) argv = ['--help'];
   if (!argv.length || argv[0] === 'help' || argv[0] === '--help') {
     process.stdout.write(
       'agentcss ai —— 独立校验入口（零依赖、不联网、不依赖任何模型）\n\n' +
       '  ai check        <doc.json> [--profile=creative|standard|strict] [--medium=screen|paper] [--json]\n' +
+      '  ai check        <page.html> [--recipe=<版式>] [--strict] [--list-recipes] [--json]\n' +
+      '                  产物检查：类名有没有定义、引没引到样式表、图/表/标题缺不缺件\n' +
       '  ai validate     <file.json> --schema=contract|components|tokens|tokensAudience|tokensTree|deprecations|patch [--json]\n' +
       '  ai diff         <改动前.json> <改动后.json> [--json]   按语义 id 比对\n' +
       '  ai patch        <doc.json> <patch.json> [-o out.json] [--json]\n' +
@@ -782,6 +1046,11 @@ function main() {
       '  ai pdf          <页面.html|URL> --out <file.pdf> [--paper=a4|letter|a5|a3|legal]\n' +
       '                  [--margin="18mm 15mm"] [--max-pages=N] [--chrome=<path>] [--json]\n' +
       '                  HTML → PDF。零依赖（用你机器上已装的 Chrome），@page 由导出方给。\n' +
+      '  ai scaffold     <版式> --out <page.html> [--css-prefix=<前缀>] [--json]\n' +
+      '                  生成最小壳（正确的骨架 + 必有件位置），不含内容。`list` 看有哪些版式。\n' +
+      '  ai shot         <页面.html|URL> --out <shot-{width}.png> [--width=390,1440] [--height=900]\n' +
+      '                  [--full] [--scale=2] [--wait=800] [--chrome=<path>] [--json]\n' +
+      '                  HTML → PNG（真实视口，不是"按窗口宽度裁一刀"）。会报横向溢出与 JS 报错。\n' +
       '\n' +
       '  打印：`--medium=paper` 才会校验 printPolicy 与 pageBudget；默认 screen 零成本。\n' +
       '  每个组件的纸面行为：ai/components.json 的 printPolicy。\n' +

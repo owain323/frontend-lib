@@ -87,6 +87,49 @@ body {{
 
 
 # ------------------------------------------------------------------ 渲染
+def _plain(s: str) -> str:
+    """去掉标签与实体，压掉空白。只用于**生成属性值**，不用于展示。"""
+    import html as _html
+    s = re.sub(r'<[^>]*>', '', s)
+    s = _html.unescape(s)
+    return re.sub(r'\s+', ' ', s).strip()
+
+
+def _attr(s: str) -> str:
+    import html as _html
+    return _html.escape(s, quote=True)
+
+
+def _table_semantics(html: str) -> str:
+    r"""给 GFM 表格补两样 Markdown 表达不了、但语义上必需的东西。
+
+    🔴 为什么必须在渲染器里补，而不是"让作者写在 Markdown 里"：
+      GFM 的表格语法**没有** caption，也没有 th 的 scope —— 无标记可写。
+      于是每一份从 Markdown 出来的页面都天然缺这两件，而缺了不会报错，
+      只会让读屏用户听到"一张没有名字的表"和一串没有表头关联的数字
+      （`ai check <page.html>` 的 table-name / th-scope 两条判据正是查这个）。
+
+      ① th 一律 scope="col"：GFM 的 th 只出现在表头行，没有行表头这种形态，
+         所以这不是猜测，是语法决定的；
+      ② 表格没有名字时，用**最近的小节标题**当 aria-label：
+         它是这一节里读者唯一能用来指认"这张表是什么"的文字。
+         标题之前的表格拿不到名字 —— 那就让它空着，由 ai check 报出来，
+         比编一个 "表格 1" 更像话（后者对读屏用户是纯噪声）。
+    """
+    last = {'text': ''}
+
+    def sub(m):
+        if m.group(1):
+            last['text'] = _plain(m.group(2))
+            return m.group(0)
+        name = last['text']
+        if not name:
+            return m.group(0)
+        return '<table aria-label="%s">' % _attr(name[:80])
+
+    return re.sub(r'<h([1-6])[^>]*>(.*?)</h\1>|<table>', sub, html, flags=re.S)
+
+
 def render(md_text: str) -> str:
     try:
         from markdown_it import MarkdownIt
@@ -106,7 +149,11 @@ def render(md_text: str) -> str:
     #      实测抛 `'dict' object has no attribute 'renderToken'`）。
     #      而 `<pre>` 只可能由 fence 规则产出（正文里的 `<pre>` 会被转义成 &lt;pre&gt;），
     #      一次确定性替换同样精确，且不绑 API 版本。
-    return html.replace('<pre>', '<pre tabindex="0">')
+    html = html.replace('<pre>', '<pre tabindex="0">')
+    # 表格语义：th 的 scope + 表的可访问名称（见 _table_semantics）。
+    # 同样是确定性替换，理由同上：只可能由 table 规则产出。
+    html = _table_semantics(html)
+    return html.replace('<th>', '<th scope="col">')
 
 
 # ------------------------------------------------------------------ 检查

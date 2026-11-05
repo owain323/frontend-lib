@@ -21,8 +21,22 @@ npx agentcss ai tokens --json --set=dark
 npx agentcss ai pitfalls --json --component=table
 npx agentcss ai validate ai/components.json --schema=components --json
 npx agentcss ai check page.json --profile=strict --json
+npx agentcss ai check page.html --json               # check the page you actually wrote
+npx agentcss ai scaffold report/finance --out report.html   # minimal shell (skeleton, no content)
+npx agentcss ai shot page.html --out shot-{width}.png --width=390,1440 --full
+                                                    # PNG at exact viewport widths
 npx agentcss ai pdf page.html --out page.pdf --max-pages=8   # HTML → PDF (zero deps: uses your Chrome)
 ```
+
+`check <doc.json>` and `check <page.html>` answer **different** questions: the JSON one
+validates the *plan* (node kinds, component maturity, paper obligations), the HTML one
+validates the *artifact* — class names that the library does not define, stylesheets that
+were never linked, missing `img alt` / table name / `th scope`, skipped heading levels,
+and the per-layout obligations in `ai/recipes.json`. Both are static: no network, no browser.
+
+`shot` drives your installed Chrome over a debugging pipe (no port, no bundled browser) so
+the viewport is **exactly** the width you asked for, and reports horizontal overflow plus
+JS errors. Same machine + same flags ⇒ byte-identical PNG (that is what the gate checks).
 
 Print / PDF: `--medium=paper` is the obligation switch — only then are `printPolicy`
 and `pageBudget` enforced. Per-component paper behaviour lives in
@@ -35,8 +49,9 @@ so a pipeline can never mistake an error for data.
 `pitfalls` needs `agentcss@0.21.0+`: `npx` resolves the *published* version, which can lag
 this repository. If a subcommand is missing, check `npx agentcss --version` first.
 
-There is **no MCP server**: the CLI is the whole interface (read-only queries, no daemon,
-no second copy of the contract to keep in sync). See `ai/START-HERE.md` §7.
+There is **no MCP server**: the CLI is the whole interface (no daemon, no network,
+no second copy of the contract to keep in sync). `scaffold` and `shot` write only the file
+you name; every other subcommand is a read-only query. See `ai/START-HERE.md` §7.
 
 ## Use it in a page
 
