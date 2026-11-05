@@ -170,6 +170,34 @@ registry `integrity` 与 attestation `subject` 全部一致——产物是对的
 后果：包已经发出去了，回执却写 `npm=absent`，要再跑一遍 14 分钟的门禁才能拿到绿。
 ⇒ 现在的 420 秒是实测量级的 6 倍：慢只是多等，错判是回执说谎。
 
+### 5.1.1 事后改包（dist-tag 等）：走 trusted publishing，不要走令牌
+
+发布完成后要改**包管理类**的状态（例如删一个 dist-tag），**不要**想着用发布令牌去做：
+
+- 勾了「绕过两步验证」的细粒度令牌（GAT）自 2026-07 起只能发布写，做包管理删除会被
+  `403 Granular access tokens that bypass two-factor authentication may not perform this action` 挡住；
+- npm 网页里**没有** dist-tag 管理入口（`/package/<pkg>/dist-tags` 是 404，
+  Versions 的 Current Tags 只有只读表格）；
+- 剩下唯一合法的口子是 **trusted publishing**：它的 Allowed actions 里明确有 `npm dist-tag`。
+
+本仓的落地方式（一次性运维，不影响发版）：
+
+1. npm 包设置 → Trusted Publisher → GitHub Actions，
+   仓库标识（`owner/repo`，见 `package.json` 的 `repository`）与 `release.yml`，
+   勾 `npm publish` 与 `npm dist-tag`；
+2. `release.yml` 里的 `dist-tag-cleanup` job：只在 `workflow_dispatch` 且填了
+   `dist_tag_rm` 时跑；`id-token: write` 换 OIDC 凭证；先 `npm i -g npm@latest`
+   （OIDC 需 ≥ 11.5.1）；**不要**给 `setup-node` 传 `registry-url`
+   （它会写一条空的 `_authToken` 行，值指向 `NODE_AUTH_TOKEN`，先撞 ENEEDAUTH，轮不到 OIDC）；
+3. 触发：
+
+```bash
+gh workflow run release.yml -f dist_tag_rm=<tag 名>
+```
+
+2026-11-05 实测：run 41997717147 success，`probe-2fa` 删除后只剩 `latest`。
+这条作业**不会**被 tag 推送触发（条件是 `github.event_name == 'workflow_dispatch'` 且输入非空）。
+
 ### 5.2 站点链（主分支触发）
 
 | 态 | 含义 | 探测方式 |
