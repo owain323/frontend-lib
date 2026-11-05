@@ -113,17 +113,23 @@ function flag(name, def) {
 // ---------------------------------------------------------------- check
 function cmdCheck(args) {
   var file = args[0];
+  /* 这两个开关**自己就能构成一次调用**（`ai check --list-recipes`），
+     所以必须在"必须有文件"之前处理 —— 否则它会被当成文件名去读。 */
+  var lr = flag('list-recipes', false);
+  if (lr === true || lr === 'true') return cmdCheckHtml(null);
   if (!file) {
     die('用法：ai check <doc.json> [--profile=creative|standard|strict] [--medium=screen|paper]\n'
-      + '      ai check <page.html> [--recipe=<版式>] [--strict]');
+      + '      ai check <page.html> [--recipe=<版式>] [--strict] [--list-recipes]');
   }
   /* 🔴 产物与计划是两种东西，判据也不重叠：
        · `.json` → 文档模型（组件在不在档位里、节点类型对不对）
        · `.html` → 写出来的那一页（类名有没有定义、结构缺不缺件）
      用扩展名分派，是因为调用方最容易做对的一件事就是"把文件名给对"。
-     显式 `--html` 留给没有扩展名/扩展名不是 html 的临时文件。 */
+     显式 `--html` 留给没有扩展名/扩展名不是 html 的临时文件；
+     `--recipe` 同理（版式判据只对页面有意义）。 */
   var wantHtml = flag('html', false);
-  if (wantHtml === true || wantHtml === 'true' || /\.html?$/i.test(file)) {
+  var hasRecipe = flag('recipe', null) !== null;
+  if (wantHtml === true || wantHtml === 'true' || hasRecipe || /\.html?$/i.test(file)) {
     return cmdCheckHtml(file);
   }
   var doc = readJSON(file);

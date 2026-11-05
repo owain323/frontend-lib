@@ -220,6 +220,29 @@ const EXPECTED = [
   }
   expect(shellBad.length === 0, '⑦ 三个壳各自通过自己的版式判据', shellBad.join('\n'));
 
+  /* 版式清单必须两边一致：`scaffold` 能生成的，`recipes.json` 必须能判。
+     少一边就是那种"给了壳但没有判据（或反过来）"的静默漏洞。 */
+  const rec = check.readRecipes();
+  const recIds = Object.keys(rec.recipes).sort().join(',');
+  const scIds = scaffold.list().map((x) => x.id).sort().join(',');
+  expect(recIds === scIds, '⑦ recipes.json 与 scaffold 的版式清单一致', recIds + ' ≠ ' + scIds);
+
+  /* 选择器必须真的在对应样式表里定义 —— 否则改名之后判据恒真（永远报缺件，
+     或者永远不报），而这两种都不会自己冒出来。 */
+  const drift = [];
+  for (const id of Object.keys(rec.recipes)) {
+    const one = rec.recipes[id];
+    let defined;
+    try { defined = new Set(check.classesInCss(fs.readFileSync(path.join(ROOT, one.css), 'utf8'))); }
+    catch (e) { drift.push(id + '：读不到 ' + one.css); continue; }
+    for (const sel of [one.root].concat(one.requires.map((x) => x.selector))) {
+      for (const c of String(sel).split('.').filter(Boolean)) {
+        if (!defined.has(c)) drift.push(id + '：' + sel + '（' + c + ' 不在 ' + one.css + '）');
+      }
+    }
+  }
+  expect(drift.length === 0, '⑦ recipes.json 里的选择器都在对应样式表里定义', drift.join('\n'));
+
   /* ---------------------------------------------------------------- ⑧ CLI */
   const cli = path.join(AI, 'cli.js');
   function run(args) {
@@ -232,6 +255,8 @@ const EXPECTED = [
   expect(run(['check', warnOnly, '--strict']).status === 1, '⑧ CLI：--strict ⇒ 退出码 1');
   expect(run(['check', finFile, '--recipe=report/nope']).status === 1, '⑧ CLI：未知版式 ⇒ 退出码 1');
   expect(run(['check', path.join(ROOT, 'index.html')]).status === 0, '⑧ CLI：正常页面 ⇒ 退出码 0');
+  expect(run(['check', '--list-recipes']).status === 0,
+    '⑧ CLI：`check --list-recipes` 不需要文件参数（它自己就是一次完整调用）');
   /* 旧路径不能被扩展名分派弄坏：`.json` 仍然走文档模型校验 —— 拿一份
      "扩展名是 .json、内容是 HTML" 的文件去撞，它必须报"不是合法 JSON"，
      而不是被 HTML 分派悄悄接走。 */
