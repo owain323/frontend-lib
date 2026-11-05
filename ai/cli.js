@@ -402,7 +402,7 @@ var SCHEMAS = {
   patch: 'patch.schema.json',
   /* behaviors 是稳定性承诺里的核心契约（微行为矩阵），
      它的 schema 文件一直都在，但这里漏登记 ⇒ `--schema=behaviors` 报
-     "未知 schema"，等于这份契约**没有任何工具能校验**（E298）。 */
+     "未知 schema"，等于这份契约**没有任何工具能校验**。 */
   behaviors: 'behaviors.schema.json'
 };
 
@@ -919,7 +919,7 @@ function cmdPdf(args) {
   var budget = flag('max-pages', null);
   if (budget === true) bad('--max-pages 后面要跟数字（不设 = 无界）');
   /* 先按字符串校验再转数字：让报错里出现**使用者打进去的那串字符**。
-     直接 Number() 再报错时，`abc` 已经变成 NaN，报「收到 NaN/null」是在念实现细节（E264）。 */
+     直接 Number() 再报错时，`abc` 已经变成 NaN，报「收到 NaN/null」是在念实现细节。 */
   if (budget !== null && !/^\d+$/.test(String(budget))) {
     bad('--max-pages 必须是 ≥1 的整数，收到 ' + JSON.stringify(String(budget)));
   }

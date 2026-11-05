@@ -121,9 +121,17 @@ _T0=$(date +%s)
 # 动机：全量 143 道要几分钟。改一个按钮就等几分钟，
 #       等于**开发流程在替我承担不必要的等待**。
 # 分层：
+#   MODE=precommit 提交前档：只跑五道秒级判据（7s）—— 见 _precommit_has
 #   MODE=fast      只跑静态检查（秒级）—— 跳过「组件层」
 #   MODE=component 只跑「组件层」（需浏览器 / 重型外部工具，分钟级）
 #   MODE=full      全量（收尾、发版前）
+#
+# 🔴 为什么要有 precommit 这一档（2026-11-05）：
+#   实测 fast 是 228s —— push 前跑没问题，**每次 commit 跑不现实**。
+#   不现实的结果不是"少跑一点"，而是"这次先不跑"，最后等于没有门禁。
+#   ⇒ 把「改一行就可能破、且秒级能出结果」的五道单独成档，配 pre-commit hook。
+#   ⚠️ precommit 绿只代表"可以提交"，**不代表可以发版**：
+#      浏览器判据、视觉基线、打包闭包都不在这一档。
 #
 # 🔴 层怎么判（0.8.9 改 · 外部审计 P2-6）：
 #   按优先级三级判定，都是**机械可判**的，没有硬编码名单：
@@ -162,6 +170,10 @@ for _arg in "$@"; do
     --fast)      MODE=fast ;;
     --component) MODE=component ;;
     --full)      MODE=full ;;
+    # 提交前档（2026-11-05）：只跑「改一行就可能破、且秒级能出结果」的五道。
+    # 它不是 fast 的子集语义（fast = 纯静态层），而是**按名字挑**的一小组；
+    # 判据在 _precommit_has()，不要在这里再写一份名单。
+    --pre-commit) MODE=precommit ;;
     # 计时日志同样要能用**参数**传：`TIMING=/tmp/x bash …` 在 Windows 的
     # cmd.exe 里会崩（和 MODE 是同一个原因）。默认路径见 --timing 无值时。
     --timing)    TIMING="${TMPDIR:-/tmp}/gate-timing.txt" ;;
@@ -183,7 +195,7 @@ _PAR_DEFAULT=$_NCORE
 [ "$_PAR_DEFAULT" -lt 2 ] && _PAR_DEFAULT=2
 # ---------- 分层判定（0.8.9）------------------------------------------------
 _ran=0        # 本轮**真的执行了**的门禁数
-_skipped=0    # 本轮**按层跳过**的门禁数
+_skipped=0    # 本轮**按档/层跳过**的门禁数
 _nojudge=0    # 本轮**跑了但判不了**的门禁数（rc=3，见 _print）
 # 独占门禁（@serial）：会**写工作树**（临时改组件文件再还原）。
 # 🔴 为什么它们不能和别的门禁并发：并发会把"改到一半的文件"喂给正在读的判据 ——
@@ -218,6 +230,23 @@ _should_skip() { # _should_skip <层>  → 0 表示本轮该跳过
   case "$MODE" in
     fast)      [ "$1" = component ] && return 0 ;;
     component) [ "$1" = static ]    && return 0 ;;
+  esac
+  return 1
+}
+# ---------- 提交前档：按**名字**挑，不按层 ----------
+# 为什么需要第三档：fast 是 228s，push 前跑没问题，**每次 git commit 跑不现实**
+#   ⇒ 人就会「这次先不跑」，最后等于没有门禁。
+# 挑这五道的理由：它们覆盖「改一行就可能破」且都在秒级 ——
+#   ① ai-layer    CLI 契约（枚举/退出码/错误协议）
+#   ② html-check  页面结构（可访问名称/表格/链接）
+#   ③ prose       文案完整性（残句/半词/未渲染 Markdown）
+#   ④ unit        行为核的纯函数
+#   ⑤ tsc         类型
+# ⚠️ 它们**不能替代** fast/full：浏览器判据、视觉基线、打包闭包都不在这里。
+#    precommit 绿只是"可以提交"，不是"可以发版"。
+_precommit_has() { # _precommit_has <名字> → 0 表示这一档要跑
+  case "$1" in
+    ai-layer|html-check|prose|unit|tsc) return 0 ;;
   esac
   return 1
 }
@@ -459,6 +488,12 @@ section() { # section 标题 —— 也进队列，保证日志顺序与源码�
 
 run() {  # run <名字> <命令...>
   local name="$1"; shift
+  # ---------- 提交前档（按名字过滤，先于分层） ----------
+  # 🔴 必须在 _enqueue 之前返回：一旦排进队列，它就会真的执行。
+  if [ "$MODE" = "precommit" ] && ! _precommit_has "$name"; then
+    skip "$name" "不在提交前档（见 _precommit_has）"
+    return 0
+  fi
   # ---------- 分层 ----------
   local _layer
   _layer=$(_layer_of "$@")
@@ -681,8 +716,8 @@ echo ""
 #   （需要服务的门禁都已被判为 component 层并跳过）。
 #   ⇒ 不再无条件起服务：否则 fast 也会占 8000 端口，
 #     与用户本地的 dev server 抢端口、且让"秒级"档多花约 1 秒。
-if [ "$MODE" = "fast" ]; then
-  echo "=== 跳过本地静态服务（MODE=fast 是纯静态层）==="
+if [ "$MODE" = "fast" ] || [ "$MODE" = "precommit" ]; then
+  echo "=== 跳过本地静态服务（MODE=$MODE 不需要浏览器）==="
 else
 echo "=== 启动本地静态服务（Python 与浏览器门禁都要用）==="
 # 🔴 修：门禁脚本**自己保证**服务在跑。
@@ -1490,7 +1525,7 @@ flush_all
 # ---------------------------------------------------------------------------
 if [ "$MODE" != "full" ]; then
   echo ""
-  echo "（分层模式：$MODE —— 收尾前请跑 MODE=full）"
+  echo "（当前档：$MODE —— 收尾前请跑 MODE=full）"
 fi
 # 🔴 E153：有未判定项时不许说"全部通过" —— 那正是最坏的一种假绿。
 if [ "$fail" -eq 0 ] && [ "$_nojudge" -eq 0 ]; then
@@ -1504,9 +1539,9 @@ fi
 #   之前 fast 静默丢弃约一半门禁、日志里 0 行 SKIP ⇒
 #   看到"全部通过"会误以为**全部**都跑过了（跳过不是通过 —— 它是一条真话）。
 if [ "$_nojudge" -gt 0 ]; then
-  echo "本轮：执行 $_ran 道 · 按层跳过 $_skipped 道 · 未判定 $_nojudge 道（MODE=$MODE）"
+  echo "本轮：执行 $_ran 道 · 按档/层跳过 $_skipped 道 · 未判定 $_nojudge 道（MODE=$MODE）"
 else
-  echo "本轮：执行 $_ran 道 · 按层跳过 $_skipped 道（MODE=$MODE）"
+  echo "本轮：执行 $_ran 道 · 按档/层跳过 $_skipped 道（MODE=$MODE）"
 fi
 if [ "$MODE" != "full" ]; then
   echo "       收尾与发版前请跑 MODE=full（$_ran + $_skipped 道全部执行）。"

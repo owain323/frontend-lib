@@ -202,7 +202,7 @@ function paperSpec(name) {
   return PAPERS[k] ? { key: k, ...PAPERS[k] } : null;
 }
 
-/** 注入到 `<head>` 末尾（**必须在使用者样式之后**，否则同特异性被覆盖 —— E254）。 */
+/** 注入到 `<head>` 末尾（**必须在使用者样式之后**，否则同特异性被覆盖）。 */
 function injectSheet(html, css) {
   const style = '<style id="agentcss-paper" data-agentcss="paper">' + css + '</style>';
   if (/<\/head\s*>/i.test(html)) return html.replace(/<\/head\s*>/i, style + '</head>');
@@ -256,7 +256,7 @@ function exportPdf(o) {
     if (!Number.isInteger(b) || b < 1) {
       /* ⚠️ 用 String() 而不是 JSON.stringify：`JSON.stringify(NaN)` 是 `"null"`，
          于是 `--max-pages=abc` 会报「收到 null」—— 使用者据这句话会去查一个
-         根本不存在的 null（实测踩过，见 E264）。 */
+         根本不存在的 null（实测踩过）。 */
       return { ok: false, code: 'usage',
         message: '--max-pages 必须是 ≥1 的整数，收到 ' + String(o.budget) };
     }

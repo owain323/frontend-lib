@@ -12,6 +12,10 @@
 - **次版本**：新增组件 / 新增能力（下游不改代码也能升级）
 - **修订号**：修 bug、修文案（下游无需任何改动）
 
+> **关于历史条目里的 `E123` 这类编号**：那是 0.26.0 及更早版本沿用的
+> 内部失误台账索引，台账本身不随包分发。从 0.27.0 起，本文件只描述
+> **改了什么、影响谁**，不再引用内部编号 —— 读者不需要一份查不到的索引。
+
 ## [Unreleased]
 
 ### Added
@@ -232,7 +236,7 @@ F8（demo 对比度）、F10（model-viewer 小溢出）、F12（缺 SemVer/废�
   按真值更正，历史段落只加注记、不改写。
 
 上述每一项都跑了正向、反向控制与真实发布包验证；发布前全量门禁 0 FAIL。
-新增的失误与纠正规则登记在内部 `ERRORS.md`（不随包分发）。
+新增的失误与纠正规则登记在内部失误台账（不随包分发）。
 
 ---
 
@@ -426,7 +430,7 @@ README 里「想知道我们踩过哪些坑」的指向，从内部文件改到�
 
 ### 修复：9 处指向不存在文件的引用
 
-`ERRORS.md`（在内部目录，不入库）、`docs/ROADMAP.md`、`docs/GUIDANCE.md` 被
+内部失误台账（不入库）、`docs/ROADMAP.md`、`docs/GUIDANCE.md` 被
 README / CONTRIBUTING / 05-audit/README 引用，但文件不存在。
 现在全部改指向真实文件，或去掉编号（内部条号对外部读者没有意义）。
 
@@ -1430,7 +1434,7 @@ G0d 前提：G4 的替换真的改到了文件
 现在：
 
 - 词表统一走 `terms`（原来 outsider-audit 自己抄了一份，与 leak-scan 口径不同）
-- 真实代号与用户名模式搬进 `internal/private-terms.txt`
+- 真实代号与用户名模式移出公开树
   （`.gitignore` 里，也不在 npm `files` 里 ⇒ 不进包）
 - 读不到时**不假装扫过**：`terms.private_status()` 由三道扫描器打印
   「私有词表未加载 ⇒ 本次未覆盖」
@@ -2175,7 +2179,7 @@ Actions → release → Run workflow → 勾 `shoot_baseline`，
 ### 文档对齐
 
 - `CONTRIBUTING.md`：补「全量为什么**不**在 CI 上跑」的完整理由与责任边界；
-  补 `rc=3` 三态表；补「失败时先读 `internal/tmp/selftest-fail-*.log`」。
+  补 `rc=3` 三态表；补「失败时先读本地门禁日志」。
 - `docs/A11Y-MANUAL-PROTOCOL.md`：结果表补 `accordion` / `drawer` / `dropdown`
   三行 —— 三个 beta 组件此前一个都不在表内，而「beta 升 stable」的判据之一
   就是行为零欠账，人工读屏是唯一的用户侧证据。**状态仍写「未执行」**：

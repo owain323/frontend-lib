@@ -195,6 +195,60 @@ def process_pat():
 
 
 # ============================================================================
+# 内部台账编号：`E123` 形态
+# ----------------------------------------------------------------------------
+# 这类编号指向一份**不随包分发**的内部台账 ⇒ 外部读者拿到的是一个查不到的索引。
+# 属于「过程痕迹」，不是产品信息：读者要知道「改了什么、影响谁」，
+# 不需要知道它在维护者的第几条失误里。
+#
+# 🔴 必须排除十六进制颜色：`#6E747E` 里的 `E747` **前面是数字**。
+#    实测（2026-11-05）：裸 `E\d{3}` 把颜色令牌 `#6E747E` 改成了 `#6E`，
+#    一个颜色被静默改坏 —— 判据咬错人比不咬更坏。
+#    所以边界是「前面不能是 [0-9A-Za-z#_-]，后面不能是字母数字」。
+# ============================================================================
+INTERNAL_ID_RE = r'(?<![0-9A-Za-z#_\-])E\d{3}(?![0-9A-Za-z])'
+
+
+def internal_id_pat():
+    return re.compile(INTERNAL_ID_RE)
+
+
+def _version_tuple(s):
+    try:
+        return tuple(int(x) for x in s.split('.'))
+    except Exception:
+        return (0, 0, 0)
+
+
+def current_version():
+    """package.json 的版本。读不到时返回 '0.0.0'（宁可多扫，不可漏扫）。"""
+    try:
+        with io.open(os.path.join(_ROOT, 'package.json'), encoding='utf-8') as f:
+            return json.load(f).get('version', '0.0.0')
+    except Exception:
+        return '0.0.0'
+
+
+def changelog_future(text):
+    """只返回 CHANGELOG 里**尚未发布**的段落（Unreleased + 版本号 > 当前）。
+
+    为什么不是整份豁免：整份豁免等于「从今往后写什么都行」。
+    为什么不是整份都扫：0.26.0 及更早的条目是历史，改写历史才是篡改。
+    ⇒ 判据的边界正好落在「以后」。
+    """
+    cur = _version_tuple(current_version())
+    keep = []
+    for block in re.split(r'\n(?=## \[)', text):
+        if block.startswith('## [Unreleased]'):
+            keep.append(block)
+            continue
+        m = re.match(r'## \[(\d+)\.(\d+)\.(\d+)\]', block)
+        if m and _version_tuple('.'.join(m.groups())) > cur:
+            keep.append(block)
+    return '\n'.join(keep)
+
+
+# ============================================================================
 # 🆕 过程痕迹：说的是「谁怎么发现的」，而不是「这东西是什么」
 # ----------------------------------------------------------------------------
 # 与 COLLAB_TRACE 的区别：那类泄漏的是**人**，这类泄漏的是**流程与账号**。

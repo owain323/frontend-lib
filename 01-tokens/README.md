@@ -257,7 +257,7 @@ node ai/cli.js tree   [--set=light|dark] [--cat=color]   # 第二种
    （`contrast` / `gen-ai-contract` / `gen-tokens-tree` / `token-audience` /
    `theme-sync`）。真实事故：一条 `@layer` 让六个工具同时读错，且都没有报错。
 3. 选择器是 `:root[data-market="intl"]` (0,2,0)，**不是** `:where(...)` (0) ——
-   `:where()` 抢不过 `:root` 的 (0,1,0)，写了等于没写（E135）。
+   `:where()` 抢不过 `:root` 的 (0,1,0)，写了等于没写。
 
 > 精简档（`tierA-tokens.css`）**不含**这段交换：它是一份 `<style>` 内的
 > 令牌快照，没有配套文件可引。要国际口径就自己补一条规则 ——

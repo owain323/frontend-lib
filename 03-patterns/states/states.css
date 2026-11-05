@@ -137,7 +137,7 @@
        ⇒ 减少动态效果的用户照样看到闪烁的微光；
      · 与 `02-primitives/skeleton/skeleton.css` 同特异性 ⇒ 谁后加载谁定生死。
 
-   即"要不要尊重减少动态效果"取决于 CSS 顺序。与 E254 同类。
+   即"要不要尊重减少动态效果"取决于 CSS 顺序。与同类。
    ⚠️ 这里与 skeleton.css 是**两份实现**（已登记在 css-ownership.json），
       修的时候两边都要看。 */
 @media (prefers-reduced-motion: no-preference) {

@@ -194,7 +194,7 @@
     }
 
     function paintSummary(s) {
-      /* 🔴 不拼 innerHTML（E299）：`s` 来自两个 <input> 的 value，
+      /* 🔴 不拼 innerHTML：`s` 来自两个 <input> 的 value，
          而 `type=date` 在 Chromium 97 旧内核会回退成文本输入 ⇒ value 可为任意串。 */
       if (!summary) return;
       summary.textContent = '';

@@ -289,7 +289,7 @@ body[data-scroll-locked] { overflow: hidden; }
       隐藏遮罩会把弹窗里的字一起吞掉（静默截断）。实测：屏幕开着 dialog 时
       打印，遮罩是 `position: fixed; inset: 0; rgba(21,24,28,.4)`，整页 40% 黑。
    ⚠️ 必须写在这个文件里：写进 tokens.css 会被这里同特异性的 `position: fixed`
-      盖掉 —— 规则写了、不生效、不报错（E254；由 print-policy-gate L3 抓到）。
+      盖掉 —— 规则写了、不生效、不报错（由 print-policy-gate L3 抓到）。
    ========================================================================= */
 @media print {
   .dialog-backdrop {

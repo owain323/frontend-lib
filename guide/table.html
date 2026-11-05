@@ -157,7 +157,7 @@
 <ul><li><code>num--up</code> / <code>num--down</code> 会让 <code>table</code> 有<strong>四组</strong>颜色类，调用方每次都要记&quot;这列用哪组&quot;；</li><li><code>data-polarity=&quot;market&quot;</code> 是把语义塞进一个属性，表格得替数据判断&quot;这列是涨跌&quot;，而它并不知道 —— 调用方才知道。</li></ul>
 <p>⇒ 方向是<strong>独立语义</strong>，所以它就该是独立原子。表格只负责对齐（<code>td.num</code>），不负责判色。</p>
 <p>⚠️ <strong>不要两套一起用</strong>：<code>&lt;td class=&quot;num num--pos&quot;&gt;&lt;span class=&quot;delta delta--up&quot;&gt;</code> 会让同一格同时受两套颜色支配，谁赢取决于选择器权重 —— 那是最难查的一类 bug。 <code>table-check</code> 的判据 ⑬ 会挡住给 <code>table.css</code> 添 <code>num--up</code> / <code>num--down</code> 的做法。</p>
-<h3 id="s13">零值：两边都不许有符号（0.12.1 修，E145）<a class="anchor" href="#s13" aria-label="本节直链">#</a></h3>
+<h3 id="s13">零值：两边都不许有符号（0.12.1 修）<a class="anchor" href="#s13" aria-label="本节直链">#</a></h3>
 <p><code>format: 'signed-percent'</code> 的正号由类名触发，而旧实现判的是 <code>v &lt; 0</code> ⇒ <code>v === 0</code> 落进 else 分支得到 <code>num--pos</code>，渲染成「<strong>+0.0%</strong>」—— 一个没变化的数被念成&quot;涨了&quot;。四舍五入处同样复现：<code>0.0004</code> 在 1 位精度下也印成「+0.0%」。</p>
 <p>⇒ 规则只有一条：<strong>符号必须跟打印出来的数字同号</strong>。先算出将要打印的数值，再按它定符号；等于 0 既不加 <code>+</code> 也不加 <code>−</code> （这与 <code>delta--flat</code> 是同一个契约）。<code>table-check</code> 判据 ⑫ 守着它，并且要求页面上<strong>必须存在</strong>零值样本 —— 删掉零值行不能算通过。</p>
 <h2 id="s14">反例<a class="anchor" href="#s14" aria-label="本节直链">#</a></h2>

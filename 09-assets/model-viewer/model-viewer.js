@@ -116,7 +116,7 @@
     this.ui.appendChild(this.btn);
 
     this.hint = el('p', 'mv__hint');
-    /* 🔴 文件名来自 `src`，可能是调用方拼出来的 URL（E299）。
+    /* 🔴 文件名来自 `src`，可能是调用方拼出来的 URL。
        原来用 innerHTML 直接拼 ⇒ `<img onerror>` 这类值会被解析成节点。
        改成 textContent 组装：`<code>` 与 `<b>` 仍然存在，但文本永远只是文本。 */
     var fname = el('code', null, this.src.split('/').pop() || '—');

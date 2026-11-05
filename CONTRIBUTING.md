@@ -27,7 +27,20 @@
 npm ci                 # 按锁文件装（验证 lockfile 真能装）
 npm run gate           # 全量：含浏览器类
 npm run gate:fast      # 只跑静态层，不用装浏览器
+npm run gate:pre-commit # 提交前：五道秒级判据（实测约 7s）
 ```
+
+三档不是"快慢"的区别，是**判断边界**的区别：
+
+| 档 | 什么时候跑 | 能证明什么 |
+|---|---|---|
+| `gate:pre-commit` | 每次 `git commit` 前 | 契约 / 页面结构 / 文案 / 行为核心 / 类型没被改坏 |
+| `gate:fast` | push 前 | 加上静态层的全部判据（不含浏览器） |
+| `gate` | 收尾、发版前 | 全部，含浏览器、视觉基线、打包闭包 |
+
+`gate:pre-commit` 走绿只说明"可以提交"，**不说明可以发版**。想让它自动跑，
+把 `bash 05-audit/check-all.sh --pre-commit` 写进 `.git/hooks/pre-commit` 即可；
+本仓不替使用者装 hook —— 提交节奏是个人选择。
 
 全量的门禁条数由 `05-audit/check-all.sh` 实算，**不在文档里写死** —— 新增一道门禁
 就会变，写下来的第二天就是第二个会漂的真值（I-7）。默认 `min(核数, 6)` 路并发；
@@ -55,7 +68,7 @@ shallow clone ⇒ 依赖 git 状态的判据语义不同；浏览器版本不同
 ### 失败时先读哪里
 
 `selftest-all` 报红时，除屏幕上那 4 行摘要，**完整子输出会落盘**到
-`internal/tmp/selftest-fail-<脚本名>.log`（`internal/` 已被忽略，不进仓库）。
+`internal/tmp/selftest-fail-<脚本名>.log`（`internal/` 是本地忽略目录，不进仓库）。
 不可复现的红最需要这个 —— 摘要往往不够定位。
 
 只想验一条反向控制时，用 `SKIP_SELFTESTS="a.py,b.py" python3 05-audit/selftest-all.py`

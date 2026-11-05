@@ -94,6 +94,7 @@
   "scripts": {
     "test": "node --test 05-audit/unit.test.mjs 05-audit/behavior-cores.test.mjs",
     "gate": "bash 05-audit/check-all.sh",
+    "gate:pre-commit": "bash 05-audit/check-all.sh --pre-commit",
     "gate:fast": "bash 05-audit/check-all.sh --fast",
     "gate:timing": "bash 05-audit/check-all.sh --timing",
     "ci:observe": "python3 05-audit/nightly-observe.py",

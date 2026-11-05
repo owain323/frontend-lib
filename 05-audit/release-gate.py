@@ -590,7 +590,31 @@ def main():
             bad += len(wp)
         else:
             print('      OK tag 触发 · id-token 就位 · --provenance · '
-                  'tag==version · secret 缺失有明确报错')
+                  'tag==version · 无长期令牌 · OIDC')
+    print('')
+
+    # [14] 站点发布范围
+    #   为什么放在发布契约里：Pages 是**交付面**之一，和 npm 包同属"外人能拿到什么"。
+    #   事故（2026-11-05）：10-review/ 一直被 rsync 进 _site，
+    #   目录请求是 404（没有索引），但**具体文件全部 200** ——
+    #   440 张评审截图 / 无障碍树 / 真机探针挂在公网，且每次部署多传 72 MB。
+    print('  [14] 站点发布范围（只发产品面）')
+    pg = read_text('.github/workflows/pages.yml')
+    if pg is None:
+        print('      （没有 pages.yml —— 跳过）')
+    else:
+        must_exclude = ['10-review/', 'internal/', '05-audit/',
+                        'benchmark/', 'type-tests/']
+        miss = [d for d in must_exclude if ("--exclude '%s'" % d) not in pg]
+        if miss:
+            for d in miss:
+                print('      X rsync 没有排除 %s ⇒ 内部产物会被发到公网' % d)
+            bad += len(miss)
+        elif "--exclude '*.tgz'" not in pg:
+            print("      X rsync 没有排除 *.tgz ⇒ 本地旧包会被发到站点上")
+            bad += 1
+        else:
+            print('      OK 评审留档 / 门禁 / 基准 / 类型测试 / 旧包都不上站')
     print('')
 
     if bad:
@@ -655,13 +679,37 @@ def publish_problems(pkg, files, readme):
 #  6 个反样本（每个都必须被抓）+ 4 个正样本（不许误报）
 # ---------------------------------------------------------------------------
 
-def workflow_problems(text):
-    """发版工作流必须具备的五件事。→ [问题描述]，空列表 = 通过。
+def _code_only(text):
+    """去掉 YAML 注释后的配置文本。
 
-    为什么是这五条而不是"有没有这个文件"：
+    🔴 为什么必须去注释（2026-11-05 实测踩到）：
+       本仓 `release.yml` 的注释里**必须**写「不要传 registry-url」「值指向
+       NODE_AUTH_TOKEN」这类解释 —— 全文匹配会把解释本身判成违规，
+       于是"写清楚了为什么不能这么做"反而让门禁红。
+       判据要看的是**配置**，不是说明。
+    """
+    out = []
+    for line in text.split('\n'):
+        s = line.lstrip()
+        if s.startswith('#'):
+            continue
+        i = line.find(' #')
+        out.append(line[:i] if i >= 0 else line)
+    return '\n'.join(out)
+
+
+def workflow_problems(text):
+    """发版工作流必须具备的八件事。→ [问题描述]，空列表 = 通过。
+
+    为什么是这八条而不是"有没有这个文件"：
       文件存在但缺任意一条，等于**看起来自动化了、实际上发不出可信的包** ——
       这比手工发布更危险，因为没人会再去核对。
+
+    2026-11-05 起凭据模型换成 trusted publishing（OIDC）：
+      前五条是"能不能发、发得可信不可信"，后三条是**不许退回长期令牌**。
+      后三条不是风格偏好 —— 每一条都对应一次实测事故（E325 / E327）。
     """
+    text = _code_only(text)
     out = []
     if 'tags:' not in text or 'v*' not in text:
         out.append('没在 tag（v*）上触发 ⇒ 打标签不会发版')
@@ -671,10 +719,19 @@ def workflow_problems(text):
         out.append('`npm publish` 没有 `--provenance` ⇒ 包没有来源签名')
     if 'package.json' not in text or 'GITHUB_REF_NAME' not in text:
         out.append('没有校验 tag 与 package.json 版本一致 ⇒ 可能发出错版本号的包')
-    if 'secrets.NPM_TOKEN' not in text:
-        out.append('没引用 NPM_TOKEN secret ⇒ 发不出去（且报错会是难懂的 401）')
     if 'contents: write' not in text:
         out.append('缺 `contents: write` ⇒ 建不了 Release')
+    # ---- 不许退回长期令牌（E325：7 天到期 ⇒ 发布断在半路）-----------------
+    if 'secrets.NPM_TOKEN' in text or 'NODE_AUTH_TOKEN' in text:
+        out.append('仍在用长期令牌（NPM_TOKEN / NODE_AUTH_TOKEN）⇒ '
+                   '令牌会到期，且 2027-01 起连直接发布权都失效；应走 OIDC')
+    # ---- registry-url 会写空 _authToken，npm 先撞 ENEEDAUTH -----------------
+    if 'registry-url' in text:
+        out.append('给 setup-node 传了 `registry-url` ⇒ 会写一行空 `_authToken`，'
+                   'npm 先撞 ENEEDAUTH，轮不到 OIDC')
+    # ---- Node 22 自带的 npm 10.x 不支持 trusted publishing ------------------
+    if 'npm install -g npm@latest' not in text:
+        out.append('没升级 npm ⇒ Node 22 自带 10.x，trusted publishing 需要 >= 11.5.1')
     return out
 
 
@@ -1002,18 +1059,35 @@ def _selftest():
         'jobs:', '  publish:', '    steps:',
         '      - run: |', '          TAG="${GITHUB_REF_NAME#v}"',
         "          PKG=$(node -p \"require('./package.json').version\")",
+        '      - run: npm install -g npm@latest',
         '      - run: npm publish --provenance --access public',
-        '        env:', '          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}',
     ])
-    chk('正：工作流五条齐备', workflow_problems(GOOD_WF), False)
+    chk('正：工作流八条齐备（OIDC）', workflow_problems(GOOD_WF), False)
     chk('反：去掉 --provenance',
         workflow_problems(GOOD_WF.replace('--provenance ', '')), True)
     chk('反：去掉 id-token',
         workflow_problems(GOOD_WF.replace('  id-token: write' + NL, '')), True)
     chk('反：不校验 tag 与版本',
         workflow_problems(GOOD_WF.replace("require('./package.json')", 'x')), True)
-    chk('反：没引用 NPM_TOKEN',
-        workflow_problems(GOOD_WF.replace('{{ secrets.NPM_TOKEN }}', 'token')), True)
+    # 🔴 下面三条是**回归**判据：谁把长期令牌/旧写法加回来，必须在这里红
+    chk('反：退回 NODE_AUTH_TOKEN',
+        workflow_problems(GOOD_WF + NL + '        env:' + NL +
+                          '          NODE_AUTH_TOKEN: x'), True)
+    chk('反：退回 secrets.NPM_TOKEN',
+        workflow_problems(GOOD_WF + NL + '          TOKEN: ${{ secrets.NPM_TOKEN }}'),
+        True)
+    chk('反：给 setup-node 传 registry-url',
+        workflow_problems(GOOD_WF + NL + "          registry-url: 'https://r/'"), True)
+    chk('反：忘了升级 npm',
+        workflow_problems(GOOD_WF.replace('      - run: npm install -g npm@latest' + NL, '')),
+        True)
+    # 🔴 这两条防的是**判据咬注释**：解释"为什么不能传 registry-url"是合法的，
+    #    本仓的 release.yml 正是这么写的 —— 全文匹配会让它自己红。
+    chk('正：注释里解释 registry-url 不算违规',
+        workflow_problems(GOOD_WF + NL + '# 契约：不要给 setup-node 传 registry-url'),
+        False)
+    chk('正：注释里提到 NPM_TOKEN 不算违规',
+        workflow_problems(GOOD_WF + NL + '# 历史上用过 NPM_TOKEN，已废弃'), False)
 
     bad += _tag_anchor_selftest()
     bad += _publish_entry_selftest()

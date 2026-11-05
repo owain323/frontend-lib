@@ -132,7 +132,7 @@ pack-smoke.sh            # npm pack → 装进空项目 → 解析入口
 
 工作流按这个顺序落地：
 
-1. 校验 tag 名 == `package.json.version`，检查 `NPM_TOKEN`；
+1. 校验 tag 名 == `package.json.version`，并确认 npm 足够新（OIDC 需 ≥ 11.5.1）；
 2. `npm ci`；
 3. **probe**（只读）：输出 `npm=… release=… provenance=…`；
 4. `publish:check`；
@@ -197,6 +197,22 @@ gh workflow run release.yml -f dist_tag_rm=<tag 名>
 
 2026-11-05 实测：run 41997717147 success，`probe-2fa` 删除后只剩 `latest`。
 这条作业**不会**被 tag 推送触发（条件是 `github.event_name == 'workflow_dispatch'` 且输入非空）。
+
+### 5.1.2 发版本身的凭据：OIDC，没有任何长期令牌
+
+发版与上面的包管理动作共用同一套信任关系：npm 侧把 `release.yml` 登记为
+trusted publisher（`Status: Valid`），工作流用 `id-token: write` 现换一次短期凭证。
+**仓库里不再有任何 npm 令牌 secret**，也没有 7 天/90 天到期的东西会悄悄断掉发布。
+
+两条硬约束（都实测踩过，`release-gate.py` 的 `workflow_problems` 逐条守着）：
+
+1. `setup-node` **不传** `registry-url` —— 它会写一行空的 `_authToken`（值指向
+   `NODE_AUTH_TOKEN`），npm 先撞 `ENEEDAUTH`，根本轮不到 OIDC；
+2. 必须 `npm install -g npm@latest` —— Node 22 自带 npm 10.x，OIDC 需要 ≥ 11.5.1。
+
+`workflow_problems` 同时**反向**断言：谁把 `NPM_TOKEN` / `NODE_AUTH_TOKEN` /
+`registry-url` 加回来，门禁立刻红。这不是风格检查——长期令牌模型在 2027-01
+会连直接发布权一起失效，留着它只是把断点推迟到下一次发版。
 
 ### 5.2 站点链（主分支触发）
 

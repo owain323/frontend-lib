@@ -308,7 +308,7 @@ function recordAndReport(name) {
 /* 逐个校验 models/ 下的全部记录（不重跑，只查形状与完整性）。
  * 🔴 判据：坏记录 ⇒ RC=1；**零记录 ⇒ RC=3（SKIP / UNVERIFIED）**。
  *    零记录不算失败（当前就是零），但也**不许**被读成"模型已验证"。
- *    E153：原来是 RC=0 —— 而 check-all 只看退出码 ⇒ 日志里显示 PASS。
+ *    原来是 RC=0 —— 而 check-all 只看退出码 ⇒ 日志里显示 PASS。
  *    那正是"门禁说它没跑、报告说它通过"。改用第三态 3，汇总里显示 SKIP 并单独计数。 */
 function checkRecords() {
   var dir = path.join(BM, 'models');
@@ -384,7 +384,7 @@ function checkRecords() {
     process.stdout.write('  ⇒ ' + bad + ' / ' + files.length + ' 份记录不合法\n');
     return 1;
   }
-  /* 🔴 E153：只有参考解法时，不许说"模型记录合法"。
+  /* 🔴 只有参考解法时，不许说"模型记录合法"。
    *   `reference.json` 的 model 字段明写"参考解法（不是模型）"，而旧汇总行把它
    *   数成「1 份模型记录形状合法」⇒ 日志读起来像"模型已经验过了"。
    *   管线自洽是**真的**；模型效果是**没有数据**的。两者必须分开说。 */

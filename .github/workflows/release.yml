@@ -26,12 +26,21 @@
 #        本地发不出这个签名 —— 本机不是受信任的构建环境。
 #     ② 把 tag、版本号、CHANGELOG、Release 四者绑成一次原子动作。
 #
-# 前置条件（**控制台层，只能人工做一次**）
+# 凭据模型：trusted publishing（OIDC），**没有任何长期令牌**
 # ---------------------------------------------------------------------------
-#   仓库 Settings → Secrets and variables → Actions 新建 `NPM_TOKEN`
-#   （npmjs.com → Access Tokens → Automation token）。
-#   缺这个 secret 时下面的"检查 secret"步骤会给出明确报错，
-#   而不是让 `npm publish` 回一句 401 让人猜。
+#   前置条件（控制台层，只能人工做一次）：
+#     npm 包设置 → Trusted Publisher → GitHub Actions
+#       repository: 见 package.json 的 repository 字段
+#       workflow:   release.yml
+#       权限:       npm publish
+#   npm 侧状态应为 `Valid`。本工作流不在任何地方读 secret ——
+#   `id-token: write` 让 npm CLI 用 GitHub 的 OIDC 令牌现换一次短期凭证。
+#
+#   🔴 两条不能碰的约束（都实测踩过）：
+#     ① **不要给 setup-node 传 `registry-url`**。它会写一行空的 `_authToken`
+#        （值指向 `NODE_AUTH_TOKEN`），npm 先撞 ENEEDAUTH，根本轮不到 OIDC。
+#     ② Node 22 自带的 npm 是 10.x，**不支持 trusted publishing**（要 >= 11.5.1）。
+#        所以下面必须显式升级 npm，并把版本打进日志。
 # ============================================================================
 
 name: release
@@ -86,7 +95,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          registry-url: 'https://registry.npmjs.org'
+          # 🔴 故意不传 registry-url：见文件头 ①。传了会写空 _authToken。
+
+      # 🔴 trusted publishing 要 npm >= 11.5.1，Node 22 自带 10.x。
+      #   版本必须打进日志：失败时"到底是 CLI 太旧还是 OIDC 没配好"要能一眼分开。
+      - name: 升级 npm（trusted publishing 需要 >= 11.5.1）
+        run: |
+          set -eu
+          npm install -g npm@latest
+          echo "npm=$(npm --version)  node=$(node --version)"
 
       # 🔴 必须在门禁**之前**装：视觉基线是在这套字体下录的。
       #   不装的话 CJK/阿拉伯文整段变方框，像素比对必然全红，
@@ -118,15 +135,6 @@ jobs:
           echo "tag=$TAG  package.json=$PKG"
           if [ "$TAG" != "$PKG" ]; then
             echo "::error::tag v$TAG 与 package.json 的 $PKG 不一致 —— 拒绝发布（发出去的包会带着错的版本号）"
-            exit 1
-          fi
-
-      - name: 检查 NPM_TOKEN
-        env:
-          TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          if [ -z "${TOKEN:-}" ]; then
-            echo "::error::缺少仓库 secret NPM_TOKEN。到 Settings → Secrets and variables → Actions 添加（Automation token）。"
             exit 1
           fi
 
@@ -165,11 +173,12 @@ jobs:
             node 05-audit/dist-js-parity-gate.js
           '
 
-      - name: 发布到 npm（带 provenance）
+      - name: 发布到 npm（OIDC / provenance，无长期令牌）
         if: steps.probe.outputs.npm != 'present'
-        run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -eu
+          echo "npm=$(npm --version) —— trusted publishing 需要 >= 11.5.1"
+          npm publish --provenance --access public
 
       - name: 建 GitHub Release（正文取自 CHANGELOG 对应一节）
         if: steps.probe.outputs.release != 'present'

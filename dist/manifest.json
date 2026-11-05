@@ -8,7 +8,7 @@
   ],
   "totals": {
     "sourceFiles": 80,
-    "sourceBytes": 991277,
+    "sourceBytes": 991209,
     "distGzip": 116023
   },
   "files": [
@@ -204,9 +204,9 @@
     },
     {
       "source": "01-tokens/tokens.core.css",
-      "sourceSha256": "86379968299b2047210ee2f1ede1d69809bed588efd398c11a5f8ee41259f427",
-      "sourceBytes": 49762,
-      "sourceGzip": 18589,
+      "sourceSha256": "bd017f45ba5a3599e5836555d228d71314d912c1dfd524eb44d50e43746442f2",
+      "sourceBytes": 49751,
+      "sourceGzip": 18581,
       "outputs": [
         {
           "path": "dist/01-tokens/tokens.core.css",
@@ -218,9 +218,9 @@
     },
     {
       "source": "01-tokens/tokens.css",
-      "sourceSha256": "30d86f096ead23e8ca9c8e30f8598897dcc07ae29eb2ab61d3ca5423305eb273",
-      "sourceBytes": 58924,
-      "sourceGzip": 22436,
+      "sourceSha256": "3f330057aa3ecd5e80ab89f95ff7bccbced323c9b4576b050871459f6a2ed8c8",
+      "sourceBytes": 58905,
+      "sourceGzip": 22424,
       "outputs": [
         {
           "path": "dist/01-tokens/tokens.css",
@@ -345,9 +345,9 @@
     },
     {
       "source": "02-primitives/date-range/date-range.js",
-      "sourceSha256": "7fb171806dbdf9b71550862e4b00bef78bb54843a7fb7e993f1609276bb76810",
-      "sourceBytes": 12910,
-      "sourceGzip": 4931,
+      "sourceSha256": "57680fa51ba21ef74736e36270481ef6a8dd6da80dfe6fb09e04f86da8ad0ddb",
+      "sourceBytes": 12900,
+      "sourceGzip": 4925,
       "outputs": [
         {
           "path": "dist/02-primitives/date-range/date-range.js",
@@ -747,9 +747,9 @@
     },
     {
       "source": "03-patterns/overlay/overlay.css",
-      "sourceSha256": "4ed8fd2dacc35ebcae9b72bbefda0555248bffbe8a1ae0d62ca4e0b02ccd7e05",
-      "sourceBytes": 13135,
-      "sourceGzip": 5507,
+      "sourceSha256": "d14939bdce9e38914f59e34c838682efa0845d8193ab6718b20b1e7fd5152f8c",
+      "sourceBytes": 13128,
+      "sourceGzip": 5500,
       "outputs": [
         {
           "path": "dist/03-patterns/overlay/overlay.css",
@@ -834,9 +834,9 @@
     },
     {
       "source": "03-patterns/states/states.css",
-      "sourceSha256": "34a34325394353f8f8f0910e0e1326d3d8663741007d3d4963b1f96e50622828",
-      "sourceBytes": 11195,
-      "sourceGzip": 4474,
+      "sourceSha256": "e84c6c46096b1db1eddc4ccbc54f660b5e32a89843bd407f506c9a4c30a8653c",
+      "sourceBytes": 11189,
+      "sourceGzip": 4469,
       "outputs": [
         {
           "path": "dist/03-patterns/states/states.css",
@@ -1034,9 +1034,9 @@
     },
     {
       "source": "09-assets/bar/bar.css",
-      "sourceSha256": "f5c54448b1b8bf12903b2924f66421a77b15c828dac159fd9416f2d379f6b640",
-      "sourceBytes": 6668,
-      "sourceGzip": 3256,
+      "sourceSha256": "f5ce5c838b3ab660e9562e9024fc48d98dfa9b32a6b0ee0a65e9241c4cce58ed",
+      "sourceBytes": 6663,
+      "sourceGzip": 3251,
       "outputs": [
         {
           "path": "dist/09-assets/bar/bar.css",
@@ -1092,9 +1092,9 @@
     },
     {
       "source": "09-assets/model-viewer/model-viewer.js",
-      "sourceSha256": "7385e9c9568905fe08cb368875e2e96f97f1f6b26bc0b9a548e3cd9724b49892",
-      "sourceBytes": 19531,
-      "sourceGzip": 7853,
+      "sourceSha256": "0fe7a2f590cb9aee97614d92100188e3f14507c63670a42fe4165b445e116396",
+      "sourceBytes": 19521,
+      "sourceGzip": 7846,
       "outputs": [
         {
           "path": "dist/09-assets/model-viewer/model-viewer.js",

@@ -29,10 +29,16 @@ jobs:
       - name: Assemble site
         run: |
           mkdir -p _site
+          # 🔴 只发**产品面**。以下目录故意排除：
+          #   10-review/ —— 评审留档（440 张截图 + 无障碍树 + 真机探针），72 MB。
+          #     没有索引页时目录请求是 404，但**每个具体文件都能下载**（实测 200）
+          #     ⇒ 等于把内部评审资产挂到公网，还拖慢每次部署。
+          #   *.tgz —— 本地打过的旧包，任何一份都不该出现在站点上。
           rsync -a \
             --exclude '.git/' --exclude '.github/' --exclude 'node_modules/' \
             --exclude 'internal/' --exclude '_site/' \
             --exclude '05-audit/' --exclude 'benchmark/' --exclude 'type-tests/' \
+            --exclude '10-review/' --exclude '*.tgz' \
             ./ _site/
           touch _site/.nojekyll
           du -sh _site

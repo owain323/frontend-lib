@@ -71,6 +71,9 @@ PATTERNS = [
         r'(?<![A-Za-z0-9_])[A-Z]:[/' + re.escape(chr(92)) + r'][A-Za-z0-9_.-]+[/'
         + re.escape(chr(92)) + r']')),
     ('内部代号', re.compile('|'.join(re.escape(w) for w in terms.HARD_BAN), re.I)),
+    # 内部失误台账编号（E123）：指向一份不随包分发的台账 ⇒ 读者拿到的是死索引。
+    # 边界与豁免见 terms.internal_id_pat / changelog_future。
+    ('内部台账编号', terms.internal_id_pat()),
     ('自有域名', terms.self_identity_pat()),
     ('内部流程', terms.process_pat()),
     # 回环与通配地址不是泄漏（本地测试的正常写法）
@@ -148,6 +151,52 @@ EXTS = ('.js', '.ts', '.tsx', '.py', '.html', '.css', '.md', '.json',
         '.sh', '.mjs', '.yml', '.yaml', '.txt', '.tpl')
 
 
+def _selftest():
+    """「内部台账编号」判据的正反例 —— 纯内存，不碰工作区文件。
+
+    为什么必须自带：这条判据的边界很窄（要放过颜色、放过历史），
+    任何一次"顺手放宽"都会让它变成永远绿。反例必须在这里红。
+    """
+    bad = 0
+
+    def chk(label, got, want):
+        nonlocal bad
+        ok = got == want
+        print('  %s %-44s %s' % ('OK ' if ok else '🔴 ', label, got))
+        if not ok:
+            bad += 1
+
+    p = terms.internal_id_pat()
+    # ---- 正例：真实编号形态 ----
+    chk('正：括号内编号（E137）', bool(p.search('（E137）')), True)
+    chk('正：行首编号 E254（…', bool(p.search('E254（去掉前缀）')), True)
+    chk('正：句中「见 E299」', bool(p.search('见 E299 的说明')), True)
+    chk('正：大写无括号 E145', bool(p.search('修，E145：')), True)
+    # ---- 反例：十六进制颜色与标识符，一个都不许咬 ----
+    chk('反：颜色 #6E747E', bool(p.search('#6E747E')), False)
+    chk('反：颜色 #2E343C', bool(p.search('#2E343C')), False)
+    chk('反：标识符 parts_E123_x', bool(p.search('parts_E123_x')), False)
+    chk('反：小写 e137', bool(p.search('e137')), False)
+
+    # ---- changelog_future：历史豁免、未来必扫 ----
+    cur = terms.current_version()
+    parts = cur.split('.')
+    fut = '%s.%s.0' % (parts[0], int(parts[1]) + 1)
+    txt = ('## [Unreleased]\n\n- E999\n\n'
+           '## [%s]\n\n- E998\n\n'
+           '## [%s]\n\n- E997\n' % (cur, fut))
+    got = terms.changelog_future(txt)
+    chk('正：Unreleased 段被扫', 'E999' in got, True)
+    chk('正：更高版本段被扫', 'E997' in got, True)
+    chk('反：已发布段被豁免', 'E998' in got, False)
+
+    if bad:
+        print('  🔴 %d 条不符合预期' % bad)
+        return 1
+    print('  判据自检通过（10 条）')
+    return 0
+
+
 def main():
     print('  === 敏感信息扫描 ===')
     print('  ' + terms.private_status())
@@ -174,7 +223,12 @@ def main():
                 hits.setdefault(name, []).append((rel, len(found)))
             continue
         for name, pat in PATTERNS:
-            found = pat.findall(t)
+            src = t
+            # CHANGELOG 只判「以后」：0.26.0 及更早的条目是历史，
+            # 改写历史才是篡改；但新写的条目不许再引内部编号。
+            if name == '内部台账编号' and rel == 'CHANGELOG.md':
+                src = terms.changelog_future(t)
+            found = pat.findall(src)
             # ⭐ 过滤合法前缀（软件安装位置）——
             #    正则没法可靠表达「排除含空格的目录名」，只能在匹配后判断。
             if name.startswith('盘符'):
@@ -288,4 +342,7 @@ def main():
 
 
 if __name__ == '__main__':
+    if '--selftest' in sys.argv:
+        print('  === leak-scan 判据自检 ===')
+        sys.exit(_selftest())
     sys.exit(main())
