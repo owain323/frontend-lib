@@ -170,3 +170,12 @@
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+
+/* Ctrl+P 可能落在淡入首帧；纸不是时间线。本块必须排在动画块之后（同特异性靠顺序）。 */
+@media print {
+  .tabs__panel--enter {
+    animation: none;
+    transition: none;
+    opacity: 1;
+  }
+}

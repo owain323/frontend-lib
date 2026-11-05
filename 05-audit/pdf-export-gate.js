@@ -5,41 +5,28 @@
  * ============================================================================
  * 🔴 为什么需要一道**新的**门禁，而不是给 print-gate 加几条
  * ============================================================================
- * `print-gate` 判的是「页面在 print 媒体下印出来好不好」（用 puppeteer 的
- * `page.pdf()`）—— 那是**我们自己**的渲染路径。
- * 使用者用的是 `agentcss pdf`（Chrome 命令行 `--print-to-pdf`），是**另一条**路。
- *
- * 两条路的差异是真实的，不是实现细节：
- *   · `@page` 由谁给：print-gate 用 CDP 的 margin 参数；导出器注入 `@page`
- *   · 底色：CDP 默认不印（`printBackground:false`）；命令行默认**印**
- *
- * 所以「print-gate 全绿」完全不能推出「`agentcss pdf` 能用」。
- * 一个功能没有判据 = 它在下一轮改动里随时会碎，而且没人知道。
+ * `print-gate` 与 `agentcss pdf` 都用 CDP，但参数与 `@page` 来源不同：
+ *   · print-gate 自己传 margin；导出器给本地 HTML 注入 `@page`
+ *   · print-gate 默认不印底色；导出器显式 printBackground:true
+ * 所以一道门禁不能代替另一道，导出器还要独自证明就绪、原子替换与失败语义。
  *
  * ============================================================================
  * 判据（每条都能单独红）
  * ============================================================================
- *   E1  真产出    退出码 0、文件以 `%PDF-` 开头、页数 ≥1
- *   E2  确定性    同一输入导两次：页数与字节数相同（异步渲染没排完会变）
- *   E3  纸幅       `--paper=letter` → 612×792pt；a4 → 595×842pt；两者不同
- *   E4  预算通过   页数 = 预算 ⇒ 退出码 0
- *   E5  预算超限   页数 > 预算 ⇒ 退出码 **5**、三條出路齐全、产物仍然保留
- *   E6  打印规则   引了 tokens.css 的页面比不引的多出隐藏面板的文字
- *   E7  边距生效   60mm 的页数 > 10mm 的页数（否则 `--margin` 是个摆设）
- *   E8  无浏览器   明确报错（退出码 3、提到 Chrome、没有堆栈）
- *   E9  参数校验   非法边距 / 未知纸幅 ⇒ 退出码 2（不是"导出一份奇怪的东西"）
- *   E10 默认输出   不给 `--out` 时落在同名 .pdf
- *   E11 产物合格   交给 print-gate 的分析器：字体引用链闭环、每页有文本算子
- *   E12 解析一致   导出器与测试侧的 Chrome 定位结果必须是同一个文件
+ *   E1–E13  真产物 / 确定性 / 纸幅 / 预算 / 打印规则 / 边距 / 参数 / 页树
+ *   E14     ready-selector 等到延迟新增内容进入 PDF（比较文字 runs）
+ *   E15     真实金融长文每页都有文字，抓透明面板与空白尾页
+ *   E16     浏览器失败时 ok:false，已有 PDF 的 SHA-256 不变
+ *   E17     ready 永不出现时有界 timeout，旧产物仍不变
+ *   E18     非法 wait / 空 selector / 非法 CSS 都是 usage
+ *   E19     浏览器进程起不来 ⇒ 结构化失败，而不是未处理的 EPIPE 崩溃
+ *   E20     强杀留下的临时 HTML：下次导出清旧的，不碰新的
  *
- * ⚠️ 这些判据**不覆盖**：
- *   · 视觉正确（底色位置、表格边框粗细）—— 要栅格化比对，不在本文件范围
- *   · 远程 URL 的 `@page`：我们拿不到远程页面的字节，**不注入**，只警告。
- *     E3/E7 因此只对本地文件成立（这正是"注入"这件事的边界）
+ * ⚠️ 不覆盖视觉像素比对；远程 URL 也不注入 `@page`，纸幅由页面自己决定。
  *
  * 用法：
- *   node 05-audit/pdf-export-gate.js            # 全部判据（约 12s，自带夹具，不需要服务器）
- *   node 05-audit/pdf-export-gate.js --selftest # 只跑"必须红"的那几条（约 2s）
+ *   node 05-audit/pdf-export-gate.js            # 全部判据，自带夹具，不需要服务器
+ *   node 05-audit/pdf-export-gate.js --selftest # 失败保护、超时与非法参数
  */
 'use strict';
 
@@ -266,6 +253,110 @@ function main() {
     check('E13 端到端：50 页文档 · 预算 40 ⇒ 报超预算（不是"无法判定"）',
       rOver.status === 5, 'rc=' + rOver.status
         + ' 提到无法判定=' + /无法判定/.test(String(rOver.stderr)));
+
+    if (!only) {
+      /* E14：等待不是看耗时，而是看延迟新增的文字 run 是否真的进入 PDF。 */
+      const delayed = path.join(FIX, '03-delayed.html');
+      const rEarly = cli(['pdf', delayed, '--out', out('early.pdf'), '--wait-ms=0', '--json']);
+      const rReady = cli(['pdf', delayed, '--out', out('ready.pdf'), '--wait-ms=0',
+        '--ready-selector=#late-ready', '--json']);
+      const jReady = jsonOf(rReady);
+      const earlyRuns = pdfRuns(out('early.pdf'));
+      const readyRuns = pdfRuns(out('ready.pdf'));
+      check('E14 ready-selector 等到延迟内容进入 PDF',
+        rEarly.status === 0 && rReady.status === 0 && !!jReady
+        && jReady.readySelector === '#late-ready' && jReady.waitMs === 0
+        && earlyRuns > 0 && readyRuns >= earlyRuns + 5,
+        'runs early=' + earlyRuns + ' ready=' + readyRuns);
+
+      /* E15：真实长金融文档同时抓“透明面板”与“全空白尾页”。
+         print-gate 的 PDF 分析器逐页要求文字算子，不能只验 %PDF- 与总页数。 */
+      const finance = path.join(ROOT, 'examples', 'finance-report', 'index.html');
+      const rFinance = cli(['pdf', finance, '--out', out('finance.pdf'), '--json']);
+      const jFinance = jsonOf(rFinance);
+      const financeAudit = spawnSync(process.execPath, [GATE, '--pdf', out('finance.pdf')],
+        { encoding: 'utf8', timeout: 60000 });
+      let aFinance = null;
+      try { aFinance = JSON.parse(financeAudit.stdout); } catch (e) { /* 下方判红 */ }
+      check('E15 真实金融长文：完整 PDF 且每页都有文字',
+        rFinance.status === 0 && !!jFinance && jFinance.ok
+        && financeAudit.status === 0 && !!aFinance
+        && aFinance.pages === jFinance.pages && aFinance.fontProblems.length === 0,
+        aFinance ? '页=' + aFinance.pages + ' runs=' + aFinance.runs
+          + ' 字体问题=' + aFinance.fontProblems.length : '分析器输出无法解析');
+    }
+
+    /* E16：旧实现最危险的假成功 —— 浏览器失败，旧 PDF 却被当成本次产物。 */
+    const staleOut = out('stale.pdf');
+    const made = cli(['pdf', panelOn, '--out', staleOut, '--wait-ms=0', '--json']);
+    const digest = () => require('crypto').createHash('sha256')
+      .update(fs.readFileSync(staleOut)).digest('hex');
+    const before = made.status === 0 && fs.existsSync(staleOut) ? digest() : '';
+    const failed = pdfMod.exportPdf({ src: panelOn, out: staleOut,
+      chrome: process.execPath, waitMs: 0, timeoutMs: 10000 });
+    const after = fs.existsSync(staleOut) ? digest() : '';
+    check('E16 浏览器失败：非零结论且旧 PDF 逐字节保留',
+      made.status === 0 && !!before && !failed.ok && failed.code === 'render'
+      && before === after, 'code=' + failed.code + ' hash不变=' + (before === after));
+
+    /* E17：永远不出现的 ready 元素必须有界失败，而且不能碰旧产物。 */
+    const timed = pdfMod.exportPdf({ src: panelOn, out: staleOut,
+      readySelector: '#never-ready', waitMs: 0, timeoutMs: 1000 });
+    check('E17 ready-selector 永不出现：有界 timeout 且旧文件不变',
+      !timed.ok && timed.code === 'timeout' && digest() === before,
+      'code=' + timed.code + ' ms=' + timed.ms + ' hash不变=' + (digest() === before));
+
+    /* E19：浏览器起不来时，命令管道会以 EPIPE 结束。没有 error 监听的话
+       Node **直接抛出** —— 调用方看到的是堆栈，而不是一份结构化结论。
+       这条用"指向不存在的可执行文件"端到端复现，判的是结论形状。 */
+    fs.mkdirSync(path.join(dir, 'no-chrome'), { recursive: true });
+    const renderer = spawnSync(process.execPath,
+      [path.join(ROOT, 'ai', 'pdf-renderer.js')], {
+        input: JSON.stringify({
+          src: panelOn, target: require('url').pathToFileURL(panelOn).href,
+          chrome: path.join(dir, 'no-chrome', 'chrome-does-not-exist'),
+          profile: path.join(dir, 'no-chrome', 'profile'),
+          stagedPdf: path.join(dir, 'no-chrome.pdf'),
+          waitMs: 0, readySelector: null, timeoutMs: 5000,
+        }),
+        encoding: 'utf8', timeout: 20000,
+      });
+    let jNoChrome = null;
+    try { jNoChrome = JSON.parse(renderer.stdout); } catch (e) { /* 下方判红 */ }
+    const crashed = /Unhandled 'error' event|EPIPE/.test(String(renderer.stderr));
+    check('E19 浏览器进程起不来：结构化失败，不是 EPIPE 崩溃',
+      renderer.status === 0 && !!jNoChrome && jNoChrome.ok === false
+      && jNoChrome.code === 'render' && !crashed,
+      'rc=' + renderer.status + ' code=' + (jNoChrome && jNoChrome.code)
+      + ' 未捕获堆栈=' + crashed);
+
+    /* E20：硬杀（Ctrl+C / 断电）会留下 `.agentcss-print-*.html`，finally 跑不到。
+       下次导出要顺手清掉**陈旧**残留，但不能碰刚生成的（可能是并发导出）。 */
+    const sweepDir = path.join(dir, 'sweep');
+    fs.mkdirSync(sweepDir, { recursive: true });
+    const sweepSrc = path.join(sweepDir, 'page.html');
+    fs.writeFileSync(sweepSrc, '<!doctype html><html lang="zh-CN"><head>'
+      + '<meta charset="utf-8"><title>sweep</title></head><body><p>SWEEP</p></body></html>');
+    const staleTmp = path.join(sweepDir, '.agentcss-print-0000000000000-dead.html');
+    const freshTmp = path.join(sweepDir, '.agentcss-print-0000000000001-live.html');
+    fs.writeFileSync(staleTmp, 'stale');
+    fs.writeFileSync(freshTmp, 'fresh');
+    const sevenHoursAgo = (Date.now() - 7 * 3600 * 1000) / 1000;
+    fs.utimesSync(staleTmp, sevenHoursAgo, sevenHoursAgo);
+    const rSweep = cli(['pdf', sweepSrc, '--out', out('sweep.pdf'), '--wait-ms=0', '--json']);
+    check('E20 硬杀留下的临时 HTML：清旧的、不碰新的',
+      rSweep.status === 0 && !fs.existsSync(staleTmp) && fs.existsSync(freshTmp),
+      'rc=' + rSweep.status + ' 陈旧已删=' + !fs.existsSync(staleTmp)
+        + ' 新的保留=' + fs.existsSync(freshTmp));
+
+    /* E18：新参数的用法错误必须走统一 usage，不许悄悄按默认值导出。 */
+    const badWait = cli(['pdf', panelOn, '--out', out('bad-wait.pdf'), '--wait-ms=-1']);
+    const badReady = cli(['pdf', panelOn, '--out', out('bad-ready.pdf'), '--ready-selector=']);
+    const badCss = cli(['pdf', panelOn, '--out', out('bad-css.pdf'),
+      '--wait-ms=0', '--ready-selector=[']);
+    check('E18 非法 wait / 空 selector / 非法 CSS ⇒ 退出码 2',
+      badWait.status === 2 && badReady.status === 2 && badCss.status === 2,
+      'wait=' + badWait.status + ' empty=' + badReady.status + ' css=' + badCss.status);
 
     console.log('');
     console.log('  ' + (bad ? '❌ 有 ' + bad + ' 条没通过' : '✅ 全部通过')

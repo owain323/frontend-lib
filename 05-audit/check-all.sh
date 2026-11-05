@@ -921,13 +921,14 @@ run "print-policy-rev" node 05-audit/print-policy-gate.js --selftest
 run "print-content"     node 05-audit/print-content-audit.js
 run "print-content-rev" node 05-audit/print-content-audit.js --selftest
 # 导出路径：`agentcss pdf` 真的能产出一份合格的 PDF 吗。
-#   为什么不能只靠 print-gate：那边判的是 **CDP `page.pdf()`**（我们自己的渲染），
-#   使用者用的是 **Chrome 命令行 `--print-to-pdf`**（另一条路）。两条路的 @page
-#   来源与底色默认都不同 ⇒ print-gate 全绿推不出导出能用。
-#   15 条：真产出 / 确定性 / 纸幅 / 预算两向 / 打印规则到产物 / 边距生效 /
+#   为什么不能只靠 print-gate：那边判的是 **Puppeteer `page.pdf()`**（测试渲染），
+#   使用者走的是 **agentcss 共享 CDP 客户端 → `Page.printToPDF`**（产品导出）。
+#   两条路的 @page 来源、就绪条件、底色与输出保护不同 ⇒ print-gate 全绿推不出导出能用。
+#   26 项：真产出 / 确定性 / 纸幅 / 预算两向 / 打印规则到产物 / 边距生效 /
 #          无浏览器 / 零候选 / 参数校验 / 报错回显原始输入 / 默认输出 /
-#          产物过分析器 / Chrome 定位一致。
-#   ⚠️ 它会起 6 次 Chrome（约 10s），**不依赖静态服务**（全走 file://）。
+#          产物过分析器 / Chrome 定位一致 / 页树一致 / 延迟就绪 / 长文逐页文本 /
+#          失败保留旧文件 / 有界超时 / 崩溃结论形状 / 临时文件清理 / 新参数校验。
+#   ⚠️ 它会多次启动 Chrome（约 40s），**不依赖静态服务**（全走 file://）。
 run "pdf-export"     node 05-audit/pdf-export-gate.js
 run "pdf-export-rev" node 05-audit/pdf-export-gate.js --selftest
 # 🔴 chrome-discovery（2026-11-04 加 · 起因是外部审计 F5）

@@ -58,7 +58,7 @@
 | 组件清单与成熟度 | `node ai/cli.js components --maturity=stable` |
 | 某个组件踩过的坑 | `node ai/cli.js pitfalls --component=<id>`（数据在 `ai/pitfalls.json`） |
 | 写文案 / 做演示 / 发页面时的坑 | `node ai/cli.js pitfalls --scope=writing`（数据在 `ai/pitfalls-writing.json`，不挂组件） |
-| 令牌名与取值 | `node ai/cli.js tokens --mode=dark`、`node ai/cli.js tree`（分层视图） |
+| 令牌名与取值 | `node ai/cli.js tokens --set=dark`、`node ai/cli.js tree`（分层视图） |
 | 组件真实长什么样 | 该组件目录下的 `demo.html` |
 | 英文一页速览 | `llms.txt` / `llms-full.txt`（发现层；本文件是中文详版） |
 | 页面怎么搭 | `04-recipes/` 下的示例；要写报告/长文就先 `node ai/cli.js scaffold list` |

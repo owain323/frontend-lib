@@ -16,14 +16,14 @@
  * 所以它只能由"产出这份文件的人"给 —— 这正是本文件存在的理由。
  *
  * ============================================================================
- * 🔴 为什么用 Chrome 的命令行，而不是 puppeteer
+ * 🔴 为什么走共享 CDP 管道，而不是 Puppeteer 或 Chrome 一次性命令行
  * ============================================================================
- * 本库的承诺是**零运行时依赖**（package.json 里 dependencies 是空的）。
- * 为了一个"5% 的人才会用"的导出功能塞一个 ~300 MB 的浏览器包，
- * 等于让 95% 的人为 5% 的人付安装代价 —— 那是这条承诺唯一的实质内容。
+ * 本库保持**零运行时依赖**，使用机器上已装好的 Chrome/Chromium/Edge。
+ * `cdp.js` 复用截图已有的调试管道：能等加载、字体和指定元素，再 printToPDF。
+ * 一次性 `--print-to-pdf` 无法表达就绪条件，也无法可靠区分新旧产物。
  *
- * 所以：`--print-to-pdf` 走使用者**已经装好的** Chrome/Chromium/Edge。
- * 找不到就**明确报错**（`no-chrome`），绝不静默降级成一个空文件。
+ * 浏览器只写同目录暂存文件；确认本次成功后才原子替换最终 PDF。任何失败都
+ * 明确返回错误并保留旧文件，绝不把上一次产物当成本次成功。
  *
  * ============================================================================
  * ⚠️ 一条必须写下来的观测差异
@@ -202,6 +202,26 @@ function paperSpec(name) {
   return PAPERS[k] ? { key: k, ...PAPERS[k] } : null;
 }
 
+/* 硬杀（Ctrl+C / 断电 / 被任务管理器结束）会留下 `.agentcss-print-*.html`：
+   finally 没机会跑。下次导出前顺手清掉**同目录**里超过 6 小时的残留。
+   门槛设长是为了不碰另一个正在导出的进程留下的文件（单次导出是秒级）。 */
+const STALE_TMP_MS = 6 * 3600 * 1000;
+
+function sweepStaleTemplates(dir) {
+  let names;
+  try { names = fs.readdirSync(dir); } catch (e) { return 0; }
+  var removed = 0;
+  const cutoff = Date.now() - STALE_TMP_MS;
+  for (const n of names) {
+    if (!/^\.agentcss-print-.*\.html$/.test(n)) continue;
+    const p = path.join(dir, n);
+    try {
+      if (fs.statSync(p).mtimeMs < cutoff) { fs.unlinkSync(p); removed += 1; }
+    } catch (e) { /* 别处正在用 / 已删 */ }
+  }
+  return removed;
+}
+
 /** 注入到 `<head>` 末尾（**必须在使用者样式之后**，否则同特异性被覆盖）。 */
 function injectSheet(html, css) {
   const style = '<style id="agentcss-paper" data-agentcss="paper">' + css + '</style>';
@@ -230,7 +250,9 @@ function isRemote(src) {
  * @param {string} [o.margin]       CSS margin 简写（默认 18mm 15mm）
  * @param {number} [o.budget]       页数上限；超了返回 over-budget
  * @param {string} [o.chrome]       Chrome 可执行文件
- * @param {number} [o.timeoutMs]
+ * @param {number} [o.waitMs]       就绪后的额外等待，0–60000（默认 800）
+ * @param {string} [o.readySelector] 等待一个打印媒体下可见的 CSS 元素
+ * @param {number} [o.timeoutMs]    总预算，1000–600000（默认 60000）
  * @returns {object} `{ok:true, ...}` 或 `{ok:false, code, message, ...}`
  */
 function exportPdf(o) {
@@ -254,12 +276,22 @@ function exportPdf(o) {
   if (o.budget !== undefined && o.budget !== null) {
     const b = Number(o.budget);
     if (!Number.isInteger(b) || b < 1) {
-      /* ⚠️ 用 String() 而不是 JSON.stringify：`JSON.stringify(NaN)` 是 `"null"`，
-         于是 `--max-pages=abc` 会报「收到 null」—— 使用者据这句话会去查一个
-         根本不存在的 null（实测踩过）。 */
       return { ok: false, code: 'usage',
         message: '--max-pages 必须是 ≥1 的整数，收到 ' + String(o.budget) };
     }
+  }
+  const waitMs = o.waitMs === undefined ? 800 : Number(o.waitMs);
+  if (!Number.isInteger(waitMs) || waitMs < 0 || waitMs > 60000) {
+    return { ok: false, code: 'usage',
+      message: '--wait-ms 必须是 0–60000 的整数，收到 ' + String(o.waitMs) };
+  }
+  if (o.readySelector !== undefined && o.readySelector !== null
+      && (typeof o.readySelector !== 'string' || !o.readySelector.trim())) {
+    return { ok: false, code: 'usage', message: '--ready-selector 必须是非空 CSS 选择器' };
+  }
+  const timeoutMs = o.timeoutMs === undefined ? 60000 : Number(o.timeoutMs);
+  if (!Number.isInteger(timeoutMs) || timeoutMs < 1000 || timeoutMs > 600000) {
+    return { ok: false, code: 'usage', message: 'timeoutMs 必须是 1000–600000 的整数' };
   }
 
   const chrome = resolveChrome(o.chrome);
@@ -267,94 +299,106 @@ function exportPdf(o) {
 
   const outAbs = path.resolve(o.out);
   fs.mkdirSync(path.dirname(outAbs), { recursive: true });
+  const staging = fs.mkdtempSync(path.join(path.dirname(outAbs), '.agentcss-pdf-'));
+  const profile = path.join(staging, 'profile');
+  fs.mkdirSync(profile);
+  const stagedPdf = path.join(staging, 'output.pdf');
 
   /* 本地文件才注入 @page：远程页面我们拿不到它的字节，硬注入等于假装改了它。 */
   let target = o.src;
   let tmpHtml = null;
-  if (!isRemote(o.src)) {
-    const srcAbs = path.resolve(o.src);
-    if (!fs.existsSync(srcAbs)) {
-      return { ok: false, code: 'usage', message: '找不到输入文件：' + srcAbs };
-    }
-    const html = fs.readFileSync(srcAbs, 'utf8');
-    /* ⚠️ 临时文件必须落在**同一个目录**：换成系统临时目录，页面里的
-       `./tokens.css` / `/02-primitives/...` 会全部 404，而产物看起来"只是没样式"。 */
-    tmpHtml = path.join(path.dirname(srcAbs),
-      '.agentcss-print-' + process.pid + '-' + Date.now().toString(36) + '.html');
-    fs.writeFileSync(tmpHtml, injectSheet(html, cssFor(spec, margin)), 'utf8');
-    target = pathToFileURL(tmpHtml).href;
-  }
-
-  const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'agentcss-chrome-'));
-  const args = [
-    '--headless=new',
-    '--disable-gpu',
-    '--disable-extensions',
-    '--no-first-run',
-    '--no-default-browser-check',
-    /* 每次一个新 profile：使用者可能正开着 Chrome，共用 profile 会抢锁 */
-    '--user-data-dir=' + profile,
-    /* 页眉页脚（日期 / 标题 / 1/2）默认是开的，必须显式关掉 */
-    '--no-pdf-header-footer',
-    '--print-to-pdf-no-header',
-    '--print-to-pdf=' + outAbs,
-    target,
-  ];
-  /* 容器里以 root 跑才需要关沙箱 —— 默认不开，也不替使用者决定 */
-  if (process.env.AGENTCSS_NO_SANDBOX === '1') args.unshift('--no-sandbox');
-
-  let res;
+  let rendered = null;
+  let buf = null;
+  let info = null;
   try {
-    res = spawnSync(chrome.path, args, {
-      timeout: o.timeoutMs || 60000,
-      encoding: 'utf8',
-      windowsHide: true,
-      stdio: ['ignore', 'pipe', 'pipe'],
+    if (!isRemote(o.src)) {
+      const srcAbs = path.resolve(o.src);
+      if (!fs.existsSync(srcAbs)) {
+        return { ok: false, code: 'usage', message: '找不到输入文件：' + srcAbs };
+      }
+      const html = fs.readFileSync(srcAbs, 'utf8');
+      sweepStaleTemplates(path.dirname(srcAbs));
+      /* 与输入同目录，页面里的相对样式、字体和图片才不会失效。 */
+      tmpHtml = path.join(path.dirname(srcAbs),
+        '.agentcss-print-' + process.pid + '-' + Date.now().toString(36) + '.html');
+      fs.writeFileSync(tmpHtml, injectSheet(html, cssFor(spec, margin)), 'utf8');
+      target = pathToFileURL(tmpHtml).href;
+    }
+
+    /* 公共 API 保持同步；异步 CDP 只在独立 Node 子进程中运行。 */
+    const res = spawnSync(process.execPath, [path.join(__dirname, 'pdf-renderer.js')], {
+      input: JSON.stringify({
+        src: o.src, target: target, chrome: chrome.path, profile: profile,
+        stagedPdf: stagedPdf, waitMs: waitMs,
+        readySelector: o.readySelector === undefined ? null : o.readySelector,
+        timeoutMs: timeoutMs,
+      }),
+      timeout: timeoutMs + 10000,
+      encoding: 'utf8', windowsHide: true, maxBuffer: 1024 * 1024,
+      stdio: ['pipe', 'pipe', 'pipe'],
     });
+    if (res.error && res.error.code === 'ETIMEDOUT') {
+      return { ok: false, code: 'timeout', out: outAbs, ms: Date.now() - t0,
+        message: 'PDF 导出子进程没有按时退出；最终文件未被改写' };
+    }
+    if (res.error || res.status !== 0) {
+      return { ok: false, code: 'render', out: outAbs, ms: Date.now() - t0,
+        message: 'PDF 导出子进程失败：' + String(res.error || ('退出码 ' + res.status))
+          + (res.stderr ? '\n  ' + String(res.stderr).slice(-800) : '') };
+    }
+    try { rendered = JSON.parse(res.stdout); } catch (e) { /* 下方按工具失败处理 */ }
+    if (!rendered) {
+      return { ok: false, code: 'render', out: outAbs, ms: Date.now() - t0,
+        message: 'PDF 导出子进程没有返回合法结果；最终文件未被改写' };
+    }
+    if (!rendered.ok) {
+      /* 子进程的 stagedPdf 在 finally 里已被删掉 —— 不要把它交出去，
+         否则调用方会拿到一个"看着像产物、其实不存在"的路径。 */
+      const { stagedPdf: _staged, ...rest } = rendered;
+      return { ...rest, out: outAbs, chrome: chrome.path, ms: Date.now() - t0 };
+    }
+    if (!fs.existsSync(stagedPdf)) {
+      return { ok: false, code: 'render', out: outAbs, chrome: chrome.path, ms: Date.now() - t0,
+        message: '浏览器报告成功但没有生成本次暂存 PDF；最终文件未被改写' };
+    }
+
+    /* 文件头与页树都先在暂存文件上验证，通过后才接触最终路径。 */
+    buf = fs.readFileSync(stagedPdf);
+    if (buf.length < 5 || buf.slice(0, 5).toString('latin1') !== '%PDF-') {
+      return { ok: false, code: 'render', out: outAbs, chrome: chrome.path, ms: Date.now() - t0,
+        message: '本次暂存产物不是 PDF（' + buf.length + ' 字节）；最终文件未被改写' };
+    }
+    info = pages.inspect(buf);
+    if (info.pages < 1) {
+      return { ok: false, code: 'unreadable', out: outAbs, chrome: chrome.path, ms: Date.now() - t0,
+        message: '暂存 PDF 没有可读页对象；最终文件未被改写' };
+    }
+    try { fs.renameSync(stagedPdf, outAbs); } catch (e) {
+      return { ok: false, code: 'render', out: outAbs, chrome: chrome.path, ms: Date.now() - t0,
+        message: '新 PDF 已生成，但无法替换输出文件：' + e.message + '。旧文件未被主动改写' };
+    }
   } finally {
-    /* 清理必须**同步**做完：CLI 随后就 process.exit，挂一个 setTimeout
-       等于每次导出都在系统临时目录里留一个 Chrome profile（实测漏了 6 个才发现）。
-       删不掉不算错（Windows 上偶发 EBUSY），但不能因为删不掉就不删。 */
     if (tmpHtml) { try { fs.unlinkSync(tmpHtml); } catch (e) { /* 已删 */ } }
-    try { fs.rmSync(profile, { recursive: true, force: true, maxRetries: 3 }); }
-    catch (e) { /* 交给系统清理 */ }
+    try { fs.rmSync(staging, { recursive: true, force: true, maxRetries: 3 }); }
+    catch (e) { /* Windows 偶发 EBUSY，交给系统清理 */ }
   }
-
-  const ms = Date.now() - t0;
-  const stderr = String((res && res.stderr) || '').slice(-800);
-  if (res && res.error && res.error.code === 'ETIMEDOUT') {
-    return { ok: false, code: 'timeout', message: 'Chrome 在 '
-      + Math.round((o.timeoutMs || 60000) / 1000) + 's 内没有结束（页面可能有死循环或等待网络）', ms };
-  }
-  if (!fs.existsSync(outAbs)) {
-    return { ok: false, code: 'render', ms,
-      message: 'Chrome 没有产出文件（退出码 ' + (res ? res.status : '?') + '）'
-        + (stderr ? '\n  ' + stderr.trim().split('\n').slice(-4).join('\n  ') : '') };
-  }
-
-  const buf = fs.readFileSync(outAbs);
-  if (buf.length < 5 || buf.slice(0, 5).toString('latin1') !== '%PDF-') {
-    return { ok: false, code: 'render',
-      message: '产出的文件不是 PDF（' + buf.length + ' 字节）—— 通常是页面加载失败', ms };
-  }
-
-  const info = pages.inspect(buf);
   const injected = !isRemote(o.src);
   const base = {
-    out: outAbs, bytes: buf.length, pdf: buf, ms,
-    /* 远程页面没注入 @page ⇒ `paper` 只能是 null：报 "a4" 是在陈述一个
-       没有发生的事实（实测远程导出是 612×792）。真实纸幅看 `mediaBox`。 */
+    out: outAbs, bytes: buf.length, pdf: buf, ms: Date.now() - t0,
     paper: injected ? spec.key : null,
     margin: injected ? margin : null, chrome: chrome.path,
     pages: info.pages, mediaBox: info.mediaBox,
-    injected: injected,
+    injected: injected, waitMs: waitMs,
+    readySelector: o.readySelector || null,
+    jsErrors: rendered.jsErrors || [],
   };
 
-  /* 页数两套说法不一致 ⇒ 不判预算，也不假装通过 */
-  if (!info.agree && o.budget !== undefined && o.budget !== null) {
+  /* 两套读法不一致时，连"这份 PDF 有几页"都不可信 —— 无论有没有预算。
+     只在设了预算时才检查，会让"没设预算"的调用方拿到一个可能是错页数的 ok:true。 */
+  if (!info.agree) {
     return { ...base, ok: false, code: 'unreadable',
       message: 'PDF 里 `/Type /Page` 数出 ' + info.pages + ' 页、页树 `/Count` 说 '
-        + info.countFromTree + ' 页 —— 两套说法不一致，无法判定预算' };
+        + info.countFromTree + ' 页 —— 两套说法不一致，页数不可信' };
   }
 
   if (o.budget !== undefined && o.budget !== null && info.pages > o.budget) {
@@ -393,4 +437,5 @@ module.exports = {
   /* 只为可测性导出：浏览器发现逻辑必须在"没有系统 Chrome"的机器上也能被验证，
      否则它只会在 CI 上坏、而开发机永远绿。 */
   chromeCandidates,
+  sweepStaleTemplates,
 };

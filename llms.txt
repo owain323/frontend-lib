@@ -25,7 +25,9 @@ npx agentcss ai check page.html --json               # check the page you actual
 npx agentcss ai scaffold report/finance --out report.html   # minimal shell (skeleton, no content)
 npx agentcss ai shot page.html --out shot-{width}.png --width=390,1440 --full
                                                     # PNG at exact viewport widths
-npx agentcss ai pdf page.html --out page.pdf --max-pages=8   # HTML → PDF (zero deps: uses your Chrome)
+npx agentcss ai pdf page.html --out page.pdf --max-pages=8 --ready-selector="#report-ready"
+                                                    # waits for load + fonts + visible async content;
+                                                    # zero deps; failed renders preserve an old PDF
 ```
 
 `check <doc.json>` and `check <page.html>` answer **different** questions: the JSON one

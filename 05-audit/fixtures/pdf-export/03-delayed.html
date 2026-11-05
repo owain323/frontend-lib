@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>PDF 延迟与动画夹具</title>
+<style>
+  @keyframes arrive { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  #animated { animation: arrive 2s both; }
+  p { font: 18px/1.6 sans-serif; }
+</style>
+</head>
+<body>
+<p>EARLY_MARKER</p>
+<p id="animated">ANIMATION_FINAL_MARKER</p>
+<p id="waiting">WAITING_MARKER</p>
+<script>
+setTimeout(function () {
+  var ready = document.createElement('section');
+  ready.id = 'late-ready';
+  ready.innerHTML = '<h1>LATE_READY_MARKER</h1>'
+    + '<p>LATE_ROW_ONE_MARKER</p><p>LATE_ROW_TWO_MARKER</p>'
+    + '<p>LATE_ROW_THREE_MARKER</p><p>LATE_ROW_FOUR_MARKER</p>';
+  document.body.appendChild(ready);
+}, 1200);
+</script>
+</body>
+</html>

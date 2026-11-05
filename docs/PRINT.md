@@ -258,9 +258,9 @@ node 05-audit/print-gate.js --pdf 某文件.pdf
 | `print-content-audit.js` | 该印的在不在？（屏幕可见 → 纸上消失？） | 它只在浏览器里量，不读 PDF |
 | `agentcss pdf` + `pdf-export-gate.js` | **导出成文件**这条路能用吗？（§八） | 它不做视觉比对 |
 
-前四个判的是"浏览器里按 Ctrl+P"，最后一个判的是"导出一份文件" ——
-**这是两条不同的渲染路径**（CDP `page.pdf()` vs Chrome 命令行 `--print-to-pdf`），
-`@page` 的来源与底色默认都不同。所以前者全绿推不出后者能用，两边各有各的判据。
+前四个判的是"浏览器里按 Ctrl+P"，最后一个判的是"导出一份文件"。两者都走 CDP，
+但 `@page` 来源、就绪条件、底色参数与输出保护不同；打印策略全绿推不出导出链没有
+旧文件假成功或异步漏内容，所以两边各有各的判据。
 
 `printPolicy` 是**有限枚举**，每个值对应一组能在浏览器里量的断言：
 
@@ -352,19 +352,35 @@ node 05-audit/print-policy-gate.js --selftest  # 反向控制
 npx agentcss pdf report.html --out report.pdf          # 默认 A4 / 18mm 15mm
 npx agentcss pdf report.html --out report.pdf --paper=letter --margin="20mm"
 npx agentcss pdf report.html --out report.pdf --max-pages=8
+npx agentcss pdf report.html --out report.pdf --ready-selector="#report-ready" --wait-ms=0
 ```
 
 `--paper` 支持 `a4` / `letter` / `a5` / `a3` / `legal`。边距是 CSS 简写
 （`18mm`、`"18mm 15mm"`、四段都认）。这两个参数靠**注入一条 `@page` 规则**实现，
 注入位置在使用者样式之后 —— 否则同特异性会被盖掉（同一个病）。
 
-零运行时依赖：用使用者机器上**已装好的** Chrome / Chromium / Edge。
-找不到就明确报错（退出码 3），不静默降级成空文件。指定位置：
+零运行时依赖：用使用者机器上**已装好的** Chrome / Chromium / Edge，经共享 CDP
+管道调用 `Page.printToPDF`，不打包 Puppeteer。找不到浏览器明确报错（退出码 3）：
 
 ```bash
 npx agentcss pdf report.html --out report.pdf --chrome="C:/Program Files/Google/Chrome/Application/chrome.exe"
 # 或环境变量 AGENTCSS_CHROME / CHROME_PATH
 ```
+
+#### 就绪、失败与旧文件保护
+
+导出顺序是：页面 `load` → `document.fonts.ready` → 可选可见元素 → 额外等待 →
+固定动画终态 → PDF。`--wait-ms` 默认 `800`，可设 `0`，上限 `60000`；它只是额外缓冲，
+**不是任意异步数据已经完成的证明**。动态报告应在数据与图表都渲染完后显示一个元素，
+再传 `--ready-selector="#report-ready"`；只存在但 `display:none`、不可见或没有尺寸不算就绪。
+
+整个导出默认有 60 秒总预算，超时退出码为 `4`。非法 CSS 选择器、空值与非法等待
+都是用法错误（退出码 `2`）。未捕获的页面 JS 异常会放进 JSON 的 `jsErrors` 供复核，
+普通 `console.error` 不会擅自让导出失败。
+
+浏览器只写暂存 PDF；确认本次成功后才原子替换输出文件。浏览器崩溃、就绪超时、
+非法选择器或产物校验失败时，**已有 PDF 保持不变，结论明确为失败**。超页数预算不同：
+完整的新 PDF 会保留，退出码 `5`，由作者决定如何拆改，绝不静默截断。
 
 ### 8.2 页数预算：超了报错，不替你截断
 
@@ -422,8 +438,8 @@ npx agentcss ai check doc.json --medium=paper
 ### 8.5 这条路谁守着
 
 ```bash
-node 05-audit/pdf-export-gate.js            # E1–E12 + 三条反向，约 11s，不需要静态服务
-node 05-audit/pdf-export-gate.js --selftest # 只跑"必须红"的几条，约 0.3s
+node 05-audit/pdf-export-gate.js            # E1–E20，不需要静态服务，约 40s
+node 05-audit/pdf-export-gate.js --selftest # 旧文件保护 / 超时 / 崩溃结论 / 非法参数
 ```
 
 | 判据 | 它问什么 | 实测抓到过什么 |
@@ -436,15 +452,27 @@ node 05-audit/pdf-export-gate.js --selftest # 只跑"必须红"的几条，约 0
 | E7 | `--margin` 真的影响页数吗 | 不注入 `@page` 时 60mm 与 10mm 页数相同 |
 | E8/E9″ | 没有浏览器时说人话吗；报错回显原始输入吗 | 退出码不对 / `abc` 被报成 `null` |
 | E11 | 产物本身合格吗（字体链 / 每页有文本） | 交给 `print-gate --pdf` 的分析器判，不重复实现解析 |
+| E13 | 页树 `/Count` 与 `/Type /Page` 数一致吗 | 分段页树按"第一个"取 ⇒ 50 页读成 8 页 |
+| E14 | ready-selector 等到的是内容，不只是耗时吗 | 延迟新增行的文字 runs 必须增加（48 → 143） |
+| E15 | 真实金融长文每页都有内容吗 | 透明面板与全空白尾页；现为 7 页、每页有文字 |
+| E16 | 浏览器失败会冒用旧 PDF 吗 | 旧文件 SHA-256 必须不变，结论必须失败 |
+| E17 | 就绪条件永不出现会无限等吗 | 有界 timeout，且不碰旧文件 |
+| E18 | 新参数写错会静默按默认值导出吗 | 非法 wait / 空值 / 非法 CSS 都是退出码 2 |
+| E19 | 浏览器起不来时给的是结论还是堆栈 | 去掉管道 error 监听 ⇒ 进程以 EPIPE 崩溃 |
+| E20 | 强杀留下的临时 HTML 会一直堆着吗 | 下次导出清掉 6 小时前的残留，刚生成的不碰 |
 
 🔴 E3 与 E7 是同一件事的两面：`@page` 注入是这套东西唯一的技术前提。
 把它改坏，门禁必须红 —— 实测过：注释掉注入那行，E3 报
 `a4=612×792pt`（回落成 Letter），E7 报 `10mm=2 页 / 60mm=2 页`。
 
+E14–E20 则保证“导出链说成功”与“这份产物真是本次、完整、可用”不会脱节。
+
 ### 8.6 不覆盖什么
 
 - **远程 URL 不注入 `@page`**：拿不到远程页面的字节，硬注入等于假装改了它。
   这类导出会明确打印"（远程页面：未注入 @page）"，纸幅由页面自己的 CSS 决定。
-- **视觉正确**：底色位置、边框粗细、图片裁切 —— 要栅格化比对，没做。
-- **页眉页脚 / 页码**：`--no-pdf-header-footer` 已关掉 Chrome 的默认页眉页脚，
-  但本工具不生成自己的。需要页码请用 `@page` + `counter(page)` 自己写。
+- **跨机器像素基线**：库内不把字体光栅化差异当成回归；正式交付仍需对实际 PDF
+  逐页栅格化，检查空白、裁切、边框与图表，并做一次实体打印打样。
+- **页眉页脚 / 页码**：导出器显式 `displayHeaderFooter:false`，本工具不生成自己的。
+  需要页码时用浏览器打印对话框的页眉页脚选项，或在自有 CDP/Puppeteer 层提供
+  `headerTemplate` / `footerTemplate`；不要假设 `@page + counter(page)` 在 Chrome 可用。

@@ -436,6 +436,25 @@ async function legL3(page, rules) {
     if (why) fail('L3', r.owner + ' 的 ' + r.selector + '（' + r.policy + '）：' + why);
     n += prints.length;
   }
+
+  /* 打印组件不能靠导出器 finish 动画才可见；直接 Ctrl+P 也必须稳定。
+     这两条检查的是浏览器真实计算样式，不是 CSS 里有没有写过规则。 */
+  const stable = await page.evaluate(() => {
+    const panel = document.querySelector('.tabs__panel--enter');
+    const body = document.querySelector('.page');
+    if (!panel || !body) return null;
+    const p = getComputedStyle(panel);
+    const b = getComputedStyle(body);
+    return { opacity: p.opacity, animation: p.animationName,
+      minHeight: b.minHeight, paddingEnd: b.paddingBlockEnd };
+  });
+  if (!stable || stable.opacity !== '1' || stable.animation !== 'none') {
+    fail('L3', 'tabs 淡入面板在 print 媒体下仍可能透明：' + JSON.stringify(stable));
+  }
+  if (!stable || stable.minHeight !== '0px' || stable.paddingEnd !== '0px') {
+    fail('L3', '页面骨架在 print 媒体下仍带屏幕高度/末尾留白：' + JSON.stringify(stable));
+  }
+  n += 2;
   await page.emulateMediaType('screen');
   return n;
 }

@@ -8,8 +8,8 @@
   ],
   "totals": {
     "sourceFiles": 80,
-    "sourceBytes": 991209,
-    "distGzip": 116023
+    "sourceBytes": 991896,
+    "distGzip": 116059
   },
   "files": [
     {
@@ -146,15 +146,15 @@
     },
     {
       "source": "01-tokens/page.css",
-      "sourceSha256": "be3b657102cfa5f7c19a858315e1c0851f0b4670a4f0409d4e9b10b8bfb91685",
-      "sourceBytes": 19774,
-      "sourceGzip": 8269,
+      "sourceSha256": "753e6ed533f4c9b8ac8ea402a877ee35ddd08c5b6a49ed4e0866a333be6006cb",
+      "sourceBytes": 20231,
+      "sourceGzip": 8504,
       "outputs": [
         {
           "path": "dist/01-tokens/page.css",
           "kind": "minified",
-          "bytes": 2208,
-          "gzip": 753
+          "bytes": 2264,
+          "gzip": 773
         }
       ]
     },
@@ -848,15 +848,15 @@
     },
     {
       "source": "03-patterns/tabs/tabs.css",
-      "sourceSha256": "ed8efb7b44f3d422b95647b5fe29e722b693f1229cff11f86c2fb7eeae774e37",
-      "sourceBytes": 6008,
-      "sourceGzip": 2704,
+      "sourceSha256": "e647c3d64e21994b81fec76da3893d34dda4f51b010b8a228330e069a17d1318",
+      "sourceBytes": 6238,
+      "sourceGzip": 2800,
       "outputs": [
         {
           "path": "dist/03-patterns/tabs/tabs.css",
           "kind": "minified",
-          "bytes": 1942,
-          "gzip": 712
+          "bytes": 2020,
+          "gzip": 728
         }
       ]
     },

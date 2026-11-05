@@ -333,10 +333,11 @@ Every component carries a contract covering focus order, keyboard operation, ARI
 
 ```bash
 npm ci
-npm run gate        # full gate run
-npm run gate:fast   # fast layer
-npm test            # unit and behaviour-core tests
-npm run dist        # rebuild dist/
+npm test                  # unit and behaviour-core tests
+npm run gate:pre-commit   # ~7s: the five checks a one-line change can break
+npm run gate:fast         # static layer, no browser needed
+npm run gate              # full run: browsers, visual baselines, pack closure
+npm run dist              # rebuild dist/
 ```
 
 ## License

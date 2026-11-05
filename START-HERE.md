@@ -47,7 +47,7 @@
 | 进度条 / 环 | `02-primitives/progress/progress.css` | 228 | — | 有耗时过程要给进度就要 |
 | 浮层气泡 | `02-primitives/popover/popover.css` | 187 | **必需 345** (`popover.js`) | 要一段信息贴着触发元素浮出来就要 |
 | 日期区间 | `02-primitives/date-range/date-range.css` | 206 | **必需 332** (`date-range.js`) | 要选起止日期就要 |
-| 标签页 | `03-patterns/tabs/tabs.css` | 172 | **必需 316** (`tabs.js`) | 同层级内容切换就要 |
+| 标签页 | `03-patterns/tabs/tabs.css` | 181 | **必需 316** (`tabs.js`) | 同层级内容切换就要 |
 | 折叠面板 | `03-patterns/accordion/accordion.css` | 453 | **必需 389** (`accordion.js`) | 长表单分段就要 |
 | 动作菜单 | `03-patterns/dropdown/dropdown.css` | 135 | **必需 575** (`dropdown.js`) | 要一组动作（新建 / 导出 / 删除）就要 |
 | 文字提示 | `03-patterns/tooltip/tooltip.css` | 89 | **必需 299** (`tooltip.js`) | 图标按钮或缩写需要一句话解释就要 |

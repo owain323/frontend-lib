@@ -907,7 +907,7 @@ function cmdPdf(args) {
   if (!src) {
     bad('用法：agentcss pdf <页面.html|URL> --out <file.pdf> '
       + '[--paper=a4|letter|a5|a3|legal] [--margin="18mm 15mm"] '
-      + '[--max-pages=N] [--chrome=<path>] [--json]');
+      + '[--max-pages=N] [--wait-ms=800] [--ready-selector=<CSS>] [--chrome=<path>] [--json]');
   }
   var remote = /^https?:\/\//i.test(src);
   var outFile = flag('out', null);
@@ -923,6 +923,13 @@ function cmdPdf(args) {
   if (budget !== null && !/^\d+$/.test(String(budget))) {
     bad('--max-pages 必须是 ≥1 的整数，收到 ' + JSON.stringify(String(budget)));
   }
+  var waitRaw = flag('wait-ms', null);
+  if (waitRaw === true) bad('--wait-ms 后面要跟 0–60000 的整数毫秒');
+  if (typeof waitRaw === 'string' && !/^\d+$/.test(waitRaw)) {
+    bad('--wait-ms 必须是 0–60000 的整数，收到 ' + JSON.stringify(waitRaw));
+  }
+  var ready = flag('ready-selector', null);
+  if (ready === true || ready === '') bad('--ready-selector 必须是非空 CSS 选择器');
   var chrome = flag('chrome', null);
   if (chrome === true) bad('--chrome 后面要跟可执行文件路径');
 
@@ -932,6 +939,8 @@ function cmdPdf(args) {
     paper: flag('paper', pdfExport.DEFAULT_PAPER),
     margin: flag('margin', pdfExport.DEFAULT_MARGIN),
     budget: budget === null ? null : Number(budget),
+    waitMs: waitRaw === null ? undefined : Number(waitRaw),
+    readySelector: ready,
     chrome: chrome
   });
 
@@ -951,6 +960,9 @@ function cmdPdf(args) {
     bytes: r.bytes || null,
     injected: r.injected === undefined ? null : r.injected,
     chrome: r.chrome || null,
+    waitMs: r.waitMs === undefined ? null : r.waitMs,
+    readySelector: r.readySelector || null,
+    jsErrors: r.jsErrors || [],
     ms: r.ms || null
   };
   if (!r.ok) {
@@ -973,6 +985,11 @@ function cmdPdf(args) {
   process.stdout.write('      ' + r.pages + ' 页 · ' + report.paperSize + ' · '
     + (r.margin ? '边距 ' + r.margin : '边距由页面决定')
     + ' · ' + r.bytes + ' 字节 · ' + r.ms + ' ms\n');
+  process.stdout.write('      就绪：加载与字体完成 + 额外等待 ' + r.waitMs + ' ms'
+    + (r.readySelector ? ' + 可见元素 ' + r.readySelector : '') + '\n');
+  if (r.jsErrors && r.jsErrors.length) {
+    process.stdout.write('      ⚠️ 页面有 ' + r.jsErrors.length + ' 条未捕获 JS 异常，请核对内容\n');
+  }
   process.stdout.write('      预算 ' + (r.budget === null ? '未设（无界）' : r.budget + ' 页')
     + ' · ' + (r.injected
       ? '纸幅 ' + r.paper
@@ -1178,7 +1195,7 @@ var FLAGS = {
   profile: [],
   capabilities: [],
   pitfalls: ['component', 'scope', 'tag'],
-  pdf: ['out', 'paper', 'margin', 'max-pages', 'chrome'],
+  pdf: ['out', 'paper', 'margin', 'max-pages', 'wait-ms', 'ready-selector', 'chrome'],
   scaffold: ['out', 'css-prefix'],
   shot: ['out', 'width', 'height', 'full', 'scale', 'wait', 'chrome']
 };
@@ -1231,8 +1248,9 @@ function usage() {
       '  ai profile      [--json]   列出三档及其差异\n' +
       '  ai capabilities [--json]   列出可协商的能力\n' +
       '  ai pdf          <页面.html|URL> --out <file.pdf> [--paper=a4|letter|a5|a3|legal]\n' +
-      '                  [--margin="18mm 15mm"] [--max-pages=N] [--chrome=<path>] [--json]\n' +
-      '                  HTML → PDF。零依赖（用你机器上已装的 Chrome），@page 由导出方给。\n' +
+      '                  [--margin="18mm 15mm"] [--max-pages=N] [--wait-ms=800]\n' +
+      '                  [--ready-selector=<CSS>] [--chrome=<path>] [--json]\n' +
+      '                  等加载、字体与就绪元素后导出；失败不改写旧 PDF。零依赖，@page 由导出方给。\n' +
       '  ai scaffold     <版式> --out <page.html> [--css-prefix=<前缀>] [--json]\n' +
       '                  生成最小壳（正确的骨架 + 必有件位置），不含内容。`list` 看有哪些版式。\n' +
       '  ai shot         <页面.html|URL> --out <shot-{width}.png> [--width=390,1440] [--height=900]\n' +

@@ -421,7 +421,7 @@ python -m http.server 8000          # 在仓库根起静态服务
 
 ```bash
 python -m http.server 8000 &     # 🔴 必须先起静态服务：一部分门禁要真浏览器渲染
-bash 05-audit/check-all.sh       # 全量门禁约 130 项，本机约 8 分钟
+bash 05-audit/check-all.sh       # 全量门禁；条数以本轮输出为准，本机约 10 分钟
 ```
 
 每一项的输出是 `PASS` / `FAIL` / `SKIP`，末尾给出失败条数与退出码（全绿为 0）。
@@ -518,14 +518,15 @@ bash 05-audit/check-all.sh       # 全量门禁约 130 项，本机约 8 分钟
 
 ```bash
 node ai/cli.js components --maturity=stable   # 列出达到 stable 的组件
-node ai/cli.js tokens --mode=dark             # 列出暗色令牌
-node ai/cli.js check  doc.json                # 校验一份**契约文档**（读 JSON）
+node ai/cli.js tokens --set=dark              # 列出暗色令牌
+node ai/cli.js check  doc.json                # 校验契约计划（读 JSON）
+node ai/cli.js check  page.html               # 静态检查真实页面（读 HTML）
 node ai/cli.js diff   a.json b.json           # 两份契约文档按语义 id 比对
 ```
 
-> ⚠️ `check` / `diff` 吃的是 **JSON 契约文档**，**不解析原始 HTML**。
-> 想校验一个真实页面，请先用契约格式描述它，或直接跑 `npm run gate`
-> （那里有真浏览器，能验的是渲染结果而不是源文件文本）。
+> `check` 按计划与产物分流：JSON 查节点、组件档位和打印义务；HTML 查类名、
+> 样式表链接与页面结构。两者都是静态检查，不启动浏览器。`diff` 只吃 JSON；
+> 真浏览器的渲染回归由 `npm run gate` 负责。
 
 - `ai/components.json` / `ai/tokens.json` 由源码**生成**（`--check` 已接门禁）
   ⇒ 改了源码忘记重新生成就红。真值只有一份，不靠"记得同步"。
@@ -556,16 +557,19 @@ node ai/cli.js diff   a.json b.json           # 两份契约文档按语义 id �
 ## 开发
 
 ```bash
-npm ci                 # 按锁文件安装
-npm test               # 单元测试（约 100ms）
-npm run test:types     # 类型契约：正例必过 + 反例必挂
-npm run gate:fast      # 静态检查（约 45 秒）
-npm run gate           # 全量检查（含浏览器）
+npm ci                    # 按锁文件安装
+npm test                  # 单元测试（约 1 秒）
+npm run test:types        # 类型契约：正例必过 + 反例必挂
+npm run gate:pre-commit   # 提交前档：5 道最容易被一行改动打破的判据（约 7 秒）
+npm run gate:fast         # 静态层：不装浏览器也能跑（约 3.5 分钟）
+npm run gate              # 全量：含浏览器、视觉基线与打包闭包（约 10 分钟）
 npm run ai -- check path/to/doc.json     # 机器可读契约的命令行（读 JSON 文档）
 npm run benchmark                        # 兼容性基准
 ```
 
-改代码时跑 `gate:fast` 即可；**提交前**再跑一次 `gate`。
+三档是**递进**关系，不是三选一：改代码时 `gate:pre-commit` 随手跑，
+推送前 `gate:fast`，发版前 `gate`。**提交前档绿 ≠ 可发版** ——
+它只覆盖"改一行就可能破"的那几道。
 
 类型声明在 `types/index.d.ts`。改动它之前先看 `API.md` 的「稳定程度约定」。
 

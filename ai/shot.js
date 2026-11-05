@@ -34,9 +34,9 @@
 var fs = require('fs');
 var os = require('os');
 var path = require('path');
-var { spawn } = require('child_process');
 var { pathToFileURL } = require('url');
 var pdf = require('./pdf.js');
+var connect = require('./cdp.js').connect;
 
 var DEFAULT_WIDTHS = [1440];
 var DEFAULT_HEIGHT = 900;
@@ -44,114 +44,6 @@ var DEFAULT_WAIT = 800;
 /* 整页截图的高度上限。PNG 面积是 W×H×scale²，超了内存与耗时都会失控；
    截断**不静默**：结果里带 truncatedAt，人/Agent 能看见。 */
 var MAX_FULL_HEIGHT = 10000;
-
-/** 极简 CDP 客户端：一个子进程、两个 fd、以 \0 分隔的 JSON。 */
-function connect(chromePath, profile) {
-  var child = spawn(chromePath, [
-    '--headless=new',
-    '--disable-gpu',
-    '--disable-extensions',
-    '--no-first-run',
-    '--no-default-browser-check',
-    /* 滚动条会占掉 15px 视口，且它本身不是页面内容 */
-    '--hide-scrollbars',
-    '--remote-debugging-pipe',
-    '--user-data-dir=' + profile,
-    'about:blank'
-  ], {
-    /* fd 0/1/2 给普通输出，3 = 命令（Chrome 读），4 = 事件（Chrome 写） */
-    stdio: ['ignore', 'pipe', 'pipe', 'pipe', 'pipe'],
-    windowsHide: true
-  });
-
-  var buf = Buffer.alloc(0);
-  var pending = Object.create(null);
-  var waiters = [];
-  var listeners = [];
-  var nextId = 0;
-  var dead = null;
-
-  function dispatch(msg) {
-    if (msg.id !== undefined && pending[msg.id]) {
-      var p = pending[msg.id];
-      delete pending[msg.id];
-      clearTimeout(p.timer);
-      if (msg.error) p.reject(new Error(p.method + '：' + (msg.error.message || JSON.stringify(msg.error))));
-      else p.resolve(msg.result);
-      return;
-    }
-    if (!msg.method) return;
-    for (var L = 0; L < listeners.length; L++) {
-      if (listeners[L].method === msg.method) listeners[L].fn(msg.params, msg.sessionId);
-    }
-    for (var i = waiters.length - 1; i >= 0; i--) {
-      var w = waiters[i];
-      if (w.method === msg.method && (!w.sessionId || w.sessionId === msg.sessionId)) {
-        waiters.splice(i, 1);
-        clearTimeout(w.timer);
-        w.resolve(msg.params);
-      }
-    }
-  }
-
-  child.stdio[4].on('data', function (chunk) {
-    buf = Buffer.concat([buf, chunk]);
-    var i;
-    while ((i = buf.indexOf(0)) >= 0) {
-      var raw = buf.subarray(0, i).toString('utf8');
-      buf = buf.subarray(i + 1);
-      var msg = null;
-      try { msg = JSON.parse(raw); } catch (e) { continue; }
-      dispatch(msg);
-    }
-  });
-  child.stdio[1].on('data', function () { /* 吞掉：Chrome 的正常输出没有信息量 */ });
-  child.stdio[2].on('data', function () { /* 同上；错误通过 CDP 的 error 字段回来 */ });
-  child.on('error', function (e) { dead = e; });
-  child.on('exit', function (code) {
-    dead = dead || new Error('Chrome 提前退出（退出码 ' + code + '）');
-    Object.keys(pending).forEach(function (k) {
-      clearTimeout(pending[k].timer);
-      pending[k].reject(dead);
-    });
-    pending = Object.create(null);
-    waiters.splice(0).forEach(function (w) { clearTimeout(w.timer); w.reject(dead); });
-  });
-
-  function send(method, params, sessionId, timeoutMs) {
-    return new Promise(function (resolve, reject) {
-      if (dead) return reject(dead);
-      var id = ++nextId;
-      var timer = setTimeout(function () {
-        delete pending[id];
-        reject(new Error(method + ' 超时（' + (timeoutMs || 15000) + 'ms 没有回应）'));
-      }, timeoutMs || 15000);
-      pending[id] = { resolve: resolve, reject: reject, timer: timer, method: method };
-      child.stdio[3].write(JSON.stringify({
-        id: id, method: method, params: params || {}, sessionId: sessionId
-      }) + '\0');
-    });
-  }
-
-  function waitEvent(method, sessionId, timeoutMs) {
-    return new Promise(function (resolve, reject) {
-      var timer = setTimeout(function () {
-        var at = waiters.findIndex(function (w) { return w.method === method && w.sessionId === sessionId; });
-        if (at >= 0) waiters.splice(at, 1);
-        reject(new Error('等 ' + method + ' 超时（' + (timeoutMs || 15000) + 'ms）'));
-      }, timeoutMs || 15000);
-      waiters.push({ method: method, sessionId: sessionId, resolve: resolve, reject: reject, timer: timer });
-    });
-  }
-
-  return {
-    send: send, waitEvent: waitEvent,
-    /* 常驻监听：异常/控制台消息可能在任意时刻到达，用一次性 waiter 会漏掉第二条起的所有 */
-    on: function (method, fn) { listeners.push({ method: method, fn: fn }); },
-    close: function () { try { child.kill(); } catch (e) { /* 已退出 */ } },
-    child: child
-  };
-}
 
 /** 页面在某个宽度下的量：溢出多少、谁溢出、有多高。 */
 var PROBE_JS = [
