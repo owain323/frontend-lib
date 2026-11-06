@@ -42,11 +42,12 @@
 
 ```bash
 git tag -a v0.24.2 -m "source-commit: <40 位提交 SHA>"
-git push origin v0.24.2      # 只推这一个，不要 git push --tags
+git push --atomic origin master v0.24.2   # 提交与 tag 一起推；不要 git push --tags
 ```
 
 - 必须是 **annotated tag**：轻量 tag 没有 message，也就没有可核的声明。
 - `source-commit` 必须是**完整 40 位**：短 SHA 有歧义空间，而这条记录的全部价值就是"没有歧义地指认一个提交"。
+- **提交与 tag 一次推完（`--atomic`）**：分两次推的时候，「提交已经在 master、tag 还没到」的那一瞬间，`release [10]` 必然红 —— 它要求 tag 指向的提交已被远端分支包含。核验记录不该以一次假红为代价。
 - 发布门禁会核三件事：tag 消息里的声明 == tag 实际指向的提交；该提交被至少一个远端分支包含；tag 内 `VERSION` 与当前版本一致。
 - 从 `0.24.2` 起这是**硬性要求**；更早的 tag 没有该字段是历史事实，门禁对它们走兼容判据（只核"是否属于某个远端分支"）。
 - 它**不能**证明"这个提交是当时最合适的发布提交"。那条判断属于人，不属于门禁。
