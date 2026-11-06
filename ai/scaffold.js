@@ -93,11 +93,11 @@ var VARIANTS = {
     kicker: '行业跟踪 · 金融研究版',
     standfirst: '导语：先说结论与它成立的条件，再说依据。读者读完这一段就该知道要不要往下看。',
     before: '    <!-- 关键数字条：这一版的读者先看数、后看论证（ai/recipes.json: rep__keyline） -->\n'
-      + '    <div class="rep__keyline">\n'
-      + '      <div><b>读数一</b><span>—</span></div>\n'
-      + '      <div><b>读数二</b><span>—</span></div>\n'
-      + '      <div><b>读数三</b><span>—</span></div>\n'
-      + '    </div>\n',
+      + '    <dl class="rep__keyline">\n'
+      + '      <div><dt>读数一</dt><dd>—</dd></div>\n'
+      + '      <div><dt>读数二</dt><dd>—</dd></div>\n'
+      + '      <div><dt>读数三</dt><dd>—</dd></div>\n'
+      + '    </dl>\n',
     body: '',
     after: '    <!-- 风险披露：这一版必须有（ai/recipes.json: rep__risk） -->\n'
       + '    <p class="rep__risk">风险披露：把结论的适用条件、数据口径与不确定性写在这里。'

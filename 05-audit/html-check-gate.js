@@ -211,6 +211,14 @@ const EXPECTED = [
   expect(unknown.code === 'unknown-recipe' && /report\/nope/.test(unknown.message),
     '⑥ 未知版式 ⇒ 明确报错（不静默放行）', JSON.stringify(unknown));
 
+  /* 🔴 结构判据：`ai check` 只看**类名**，看不见「类名对了、里面的标签写错」。
+     2026-11-06 实测过：壳里原本是 <b>/<span>，16 条判据全绿，
+     页面上四个读数却挤成一行 —— 因为组件只给 dt/dd 上样式。
+     ⇒ 壳的「关键数字条」必须用 dl/dt/dd。 */
+  const klBlock = (fin.html.match(/<dl class="rep__keyline">[\s\S]*?<\/dl>/) || [''])[0];
+  expect(/<dt>/.test(klBlock) && /<dd>/.test(klBlock),
+    '⑥ 关键数字条用 dl/dt/dd（组件只给 dt/dd 上样式）', klBlock || '(壳里没有 keyline)');
+
   /* ------------------------------------------- ⑦ 三个壳都必须能过自己的版式 */
   const shellBad = [];
   for (const item of scaffold.list()) {
