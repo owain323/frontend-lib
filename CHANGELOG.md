@@ -18,6 +18,29 @@
 
 ## [Unreleased]
 
+## [0.27.2] - 2026-11-06
+
+### Added
+
+- **`package.json` 多了 `companions` 字段：明确声明「本项目自己的兄弟仓库」。**
+  起因很具体：README 想链到只做适配、不含组件的插件包
+  [`dsh-plugin-agentcss`](https://github.com/owain323/dsh-plugin-agentcss)，
+  而仓库自检里的「自有域名」判据只放过本仓地址 ⇒ 一条正常外链被判成泄漏。
+  放开的方式是**逐个声明**，不是放宽判据：声明的地址放行，同一账号下
+  **没声明**的仓库照旧红，裸名字（没有 `https://`）等于没声明。
+  这三条边界各自有正反例，跑 `leak-scan --selftest` 能看到。
+  与使用者无关 —— 不含任何运行时改动，所以按修订号发。
+
+### Changed
+
+- 两份 README 的「文档」区补了一条：`ai/` 是给自动化用的命令行入口
+  （`ai components` / `ai scaffold` / `ai check` / `ai pdf` / `ai shot`），
+  并给出上面那个适配包的位置。
+- `CONTRIBUTING.md` 新增一节「想在文档里链到兄弟仓库：先声明 `companions`」，
+  写清三条边界（只认 `https://` 地址 / 声明一个放一个 / 豁免的是地址，不是账号名）。
+
+---
+
 ## [0.27.1] - 2026-11-06
 
 ### Added

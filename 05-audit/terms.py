@@ -285,6 +285,20 @@ def process_trace_pat():
 #    不是泄漏 —— npm 页面与依赖扫描器靠它定位源码，删了就点不开。
 REPO_FIELDS = ('repository', 'homepage', 'bugs')
 
+# ⭐ 配套仓库：本仓库**明确声明**的兄弟仓（例如只做适配、不含组件的插件包）。
+#    为什么要有这个字段：README 里想链过去，而 `self_urls()` 只从
+#    repository/homepage/bugs 推导 ⇒ 指向第二个仓库的地址不在豁免里，
+#    「自有域名」判据当场红。
+#
+#    🔴 为什么不干脆放宽判据（例如"只要是 github.com 就放过"）：
+#       那是把豁免开到整片域名上，等于让任何账号的仓库地址都能溜进来 ——
+#       门禁会变成永远绿。这里要的是**逐个声明**：声明一个放一个，
+#       没声明的照旧红（`leak-scan --selftest` 有反例守着）。
+#
+#    ⚠️ 只收 `https://` 开头的字符串。写一个裸名字（`"companions": ["foo"]`）
+#       等于没声明 —— 名字不是地址，判据没法用。
+COMPANION_FIELD = 'companions'
+
 
 _SELF_URLS = None
 
@@ -356,6 +370,76 @@ def _field_values(text):
     return out
 
 
+def companion_values(text):
+    """从 package.json 文本里取 `companions` 的所有**地址**取值。
+
+    接受三种写法（都要求值本身是 `https://` 地址）：
+        "companions": ["https://…", …]
+        "companions": {"任意名字": "https://…", …}
+        "companions": "https://…"
+    裸名字一律丢弃 —— 名字不是地址，收进来只会变成过宽的豁免。
+    `git+https://…` 这种写法也认（`repository` 字段的惯例），归一后返回。
+    """
+    try:
+        data = json.loads(text)
+    except Exception:
+        return []
+    v = data.get(COMPANION_FIELD)
+    if isinstance(v, str):
+        vals = [v]
+    elif isinstance(v, list):
+        vals = [x for x in v if isinstance(x, str)]
+    elif isinstance(v, dict):
+        vals = [x for x in v.values() if isinstance(x, str)]
+    else:
+        return []
+    out = []
+    for x in vals:
+        u = x[4:] if x.startswith('git+') else x
+        if u.startswith('https://') and len(u) >= 8:
+            out.append(u)
+    return out
+
+
+def _url_forms(v):
+    """一个取值能派生的全部写法：原样 / 去 `git+` 与 `.git` / GitHub 简写。
+
+    ⚠️ 简写只加**带前缀**的形态（`github:owner/repo`、`github.com/owner/repo`），
+       不加裸 `owner/repo` —— 那会把任何"两段路径"都放过（E8）。
+    """
+    out = {v}
+    u = v.replace('git+', '')
+    if u.endswith('.git'):
+        u = u[:-4]
+    out.add(u)
+    m = re.search(r'github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)', u)
+    if m:
+        owner, repo = m.group(1), m.group(2)
+        out.add('github:%s/%s' % (owner, repo))
+        out.add('github.com/%s/%s' % (owner, repo))
+    return out
+
+
+def companion_urls():
+    """本仓库**声明过**的配套仓库地址（归一后的完整 URL，不含简写形态）。
+
+    给自检用：让"声明过的放行 / 没声明的照旧红"这对正反例
+    直接读声明，而不是在测试里抄一份地址（抄一份 = 第二份真值）。
+    """
+    try:
+        with io.open(os.path.join(_ROOT, 'package.json'), encoding='utf-8') as f:
+            text = f.read()
+    except Exception:
+        return []
+    out = []
+    for v in companion_values(text):
+        u = v.replace('git+', '')
+        if u.endswith('.git'):
+            u = u[:-4]
+        out.append(u)
+    return out
+
+
 def self_urls():
     """本仓库的自指地址（从 package.json 读，不抄第二份）。
 
@@ -379,23 +463,15 @@ def self_urls():
     try:
         with io.open(os.path.join(_ROOT, 'package.json'),
                      encoding='utf-8') as f:
-            vals = _field_values(f.read())
+            text = f.read()
+        # 🔴 配套仓库也是"本项目自己的地址"，但必须**声明**过才算
+        #    （见 COMPANION_FIELD 的注释：不声明就照旧红）。
+        vals = _field_values(text) + companion_values(text)
     except Exception:
         vals = []
     out = set()
     for v in vals:
-        out.add(v)
-        u = v.replace('git+', '')
-        if u.endswith('.git'):
-            u = u[:-4]
-        out.add(u)
-        # 从完整 URL 推出 GitHub 简写形态（只认 github.com 的）
-        m = re.search(r'github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)',
-                      u)
-        if m:
-            owner, repo = m.group(1), m.group(2)
-            out.add('github:%s/%s' % (owner, repo))
-            out.add('github.com/%s/%s' % (owner, repo))
+        out |= _url_forms(v)
     _SELF_URLS = sorted(
         # 🔴 只收**像 URL** 的取值（0.8.9 修）：
         #   `repository` 是 `{type, url}` 字典，而 `_field_values` 会把

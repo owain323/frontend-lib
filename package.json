@@ -1,6 +1,6 @@
 {
   "name": "agentcss",
-  "version": "0.27.1",
+  "version": "0.27.2",
   "description": "移动 Web 组件库：CSS + 可选行为脚本，零第三方运行时依赖。样式用 bundler 引入，交互行为用 script 标签引入。",
   "keywords": [
     "css",
@@ -128,6 +128,9 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/owain323/frontend-lib.git"
+  },
+  "companions": {
+    "dsh-plugin-agentcss": "https://github.com/owain323/dsh-plugin-agentcss"
   },
   "keywords_note": "零依赖是本库的核心约束：安装它不会给使用者的 node_modules 增加任何一个包",
   "publishConfig": {

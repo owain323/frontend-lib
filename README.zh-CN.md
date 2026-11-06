@@ -17,8 +17,13 @@
 - **带搜索的组件文档** —— https://owain323.github.io/frontend-lib/guide/
 - **这个项目是怎么组成的** —— [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
   （四层组件、自动检查系统，用平话讲）
+- **给 AI 直接调** —— `ai/` 是一套 CLI，把同一份规则暴露成命令
+  （`ai components` / `ai scaffold` / `ai check` / `ai pdf` / `ai shot`）。
+  DeepSeek Harness 的适配包在
+  [dsh-plugin-agentcss](https://github.com/owain323/dsh-plugin-agentcss)：
+  它不含任何组件定义，只调用本包。
 
-两者都由 `ai/components.json` 与各组件的 `README.md` **生成**：
+上面两个文档站都由 `ai/components.json` 与各组件的 `README.md` **生成**：
 新增组件时索引不会悄悄漏掉它，文档页里的每条链接都指向真实存在的文件。
 
 ## 它解决什么问题

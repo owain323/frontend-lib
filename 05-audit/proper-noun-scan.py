@@ -34,6 +34,9 @@ WHITELIST = {
     'JavaScript', 'TypeScript', 'CoffeeScript', 'WebAssembly', 'SemVer',
     # 工具
     'GitHub', 'GitLab', 'Chrome', 'Firefox', 'Safari', 'Edge', 'Opera',
+    # 宿主/产品名（2026-11-06 补）：README 里指向适配包时要点名宿主，
+    # 它是产品名，不是内部代号。只放这一个词，不放它背后的团队/组织名。
+    'DeepSeek',
     'Webpack', 'Vite', 'Rollup', 'Babel', 'PostCSS', 'Prettier', 'ESLint',
     'Puppeteer', 'Playwright', 'Jest', 'Vitest', 'Bash', 'PowerShell',
     'DevTools', 'Node', 'Deno', 'Bun', 'React', 'Vue', 'Angular', 'Svelte',

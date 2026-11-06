@@ -152,15 +152,21 @@ EXTS = ('.js', '.ts', '.tsx', '.py', '.html', '.css', '.md', '.json',
 
 
 def _selftest():
-    """「内部台账编号」判据的正反例 —— 纯内存，不碰工作区文件。
+    """判据的正反例 —— 除 companions 一节外都是纯内存。
 
-    为什么必须自带：这条判据的边界很窄（要放过颜色、放过历史），
-    任何一次"顺手放宽"都会让它变成永远绿。反例必须在这里红。
+    为什么必须自带：这几条判据的边界都很窄（要放过颜色、放过历史、
+    放过**声明过的**配套仓库），任何一次"顺手放宽"都会让它们变成永远绿。
+    反例必须在这里红。
+
+    ⚠️ companions 一节要读 package.json（声明本身是数据，不抄第二份），
+       这是唯一碰工作区文件的地方；读不出来按**失败**处理，不跳过。
     """
     bad = 0
+    checks = [0]
 
     def chk(label, got, want):
         nonlocal bad
+        checks[0] += 1
         ok = got == want
         print('  %s %-44s %s' % ('OK ' if ok else '🔴 ', label, got))
         if not ok:
@@ -190,10 +196,32 @@ def _selftest():
     chk('正：更高版本段被扫', 'E997' in got, True)
     chk('反：已发布段被豁免', 'E998' in got, False)
 
+    # ---- companions：**声明过的**配套仓库放行，没声明的照旧红 ----
+    # 为什么这对反例必须存在：README 想链到兄弟仓（只做适配、不含组件的插件包），
+    # 而 `self_urls()` 原先只认本仓 ⇒ 一条正常的外链被判成"自有域名泄漏"。
+    # 放开的正确方式是**逐个声明**；一旦有人把判据改成"只要是 github.com 都放过"，
+    # 下面的反例就会从 1 变成 0 —— 这条断言就是那道闸。
+    comps = terms.companion_urls()
+    ipat = terms.self_identity_pat()
+    m = re.search(r'github\.com/([A-Za-z0-9_.-]+)/', comps[0]) if comps else None
+    if m:
+        owner = m.group(1)
+        chk('正：声明过的配套仓库地址',
+            len(terms.hits_outside_repo_field('见 ' + comps[0], ipat)), 0)
+        chk('反：同账号下没声明的仓库',
+            len(terms.hits_outside_repo_field(
+                '见 https://github.com/%s/not-declared-repo' % owner, ipat)), 1)
+        chk('反：裸名字不算声明（要求 https 地址）',
+            terms.companion_values('{"companions":["%s"]}' % owner), [])
+    else:
+        # 🔴 读不出声明就**判失败**，不是跳过：跳过等于这条判据从没验过。
+        print('  🔴 找不到可用的 companions 声明 —— 豁免判据没有被验证')
+        bad += 1
+
     if bad:
         print('  🔴 %d 条不符合预期' % bad)
         return 1
-    print('  判据自检通过（10 条）')
+    print('  判据自检通过（%d 条）' % checks[0])
     return 0
 
 
