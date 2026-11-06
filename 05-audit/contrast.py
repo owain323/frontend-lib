@@ -36,7 +36,7 @@ import _common  # 🔴 统一排除产物目录（见 _common.py）
 import re
 import sys as _sys, os as _os
 _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
-from _css import declared_tokens, resolve_vars  # noqa: E402
+from _css import declared_tokens, resolve_vars, strip_media  # noqa: E402
 import json
 
 
@@ -102,6 +102,10 @@ def load_tokens(path, mode='light'):
     #      要按 **CSS 层叠语义**取整份文件：后面出现的覆盖前面出现的
     #      （暗色 raw 覆盖浅色 raw），语义令牌的 `var()` 解析时就用最终值。
     #    这与浏览器行为一致 —— 同一份 `:root`，暗色只是覆盖了一层。
+    # 🔴 屏幕判据不看纸面值（2026-11）：`tokens.css` 末尾有 `@media print`
+    #    的墨阶块。`mode='dark'` 会取整份文件，于是把纸面的 `#1f2328` 当成
+    #    暗色令牌，再和暗色的纸底比 ⇒ 一串 1.x:1 的假红。剥掉它。
+    css = strip_media(css, 'print')
     _m = re.search(r'@media[^{]*prefers-color-scheme:\s*dark', css)
     i = _m.start() if _m else -1
     if i < 0 or mode == 'dark':

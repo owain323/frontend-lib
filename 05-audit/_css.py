@@ -335,3 +335,35 @@ def mask_comments(css):
             out.append(css[i:j])
             i = j
     return ''.join(out)
+
+
+def strip_media(css, keyword='print'):
+    """删掉 `@media … keyword … { … }` 整块（按花括号配平，不按位置切分）。
+
+    🔴 为什么需要它（2026-11）
+    `tokens.css` 末尾多了一段 `@media print` 的纸面墨阶：`--text-secondary`
+    在纸上压到 `#1f2328`、`--success` 压到 `#1c4526`。而 `contrast.py` 与
+    `dark-gate.py` 的切分方式是「浅色取 `@media prefers-color-scheme: dark`
+    之前、暗色取之后」—— 暗色那半截**包含了 print 段**，于是把纸面值当成
+    暗色令牌，再和暗色的纸底 (#14171A) 比 ⇒ 报出一串 1.33:1 / 1.78:1 的假红。
+
+    屏幕判据只该看屏幕值。纸面值由 `print-gate`（读真实 PDF）管 ——
+    两套判据各管一个介质，混在一起两边都不准。
+    """
+    out, i = [], 0
+    pat = _re.compile(r'@media[^{]*\b' + _re.escape(keyword) + r'\b[^{]*\{')
+    while True:
+        m = pat.search(css, i)
+        if not m:
+            out.append(css[i:])
+            break
+        out.append(css[i:m.start()])
+        j, depth = m.end(), 1
+        while j < len(css) and depth:
+            if css[j] == '{':
+                depth += 1
+            elif css[j] == '}':
+                depth -= 1
+            j += 1
+        i = j
+    return ''.join(out)

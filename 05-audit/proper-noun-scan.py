@@ -33,7 +33,7 @@ WHITELIST = {
     # 语言 / 平台
     'JavaScript', 'TypeScript', 'CoffeeScript', 'WebAssembly', 'SemVer',
     # 工具
-    'GitHub', 'GitLab', 'Chrome', 'Firefox', 'Safari', 'Edge', 'Opera',
+    'GitHub', 'GitLab', 'Chrome', 'Firefox', 'Safari', 'Edge', 'Opera', 'LaserJet',
     # 宿主/产品名（2026-11-06 补）：README 里指向适配包时要点名宿主，
     # 它是产品名，不是内部代号。只放这一个词，不放它背后的团队/组织名。
     'DeepSeek',

@@ -72,7 +72,7 @@
 | table | `04-recipes/table/table.css` | 409 | — |  |
 | bar | `09-assets/bar/bar.css` | 181 | **必需 348** (`bar.js`) |  |
 | model-viewer | `09-assets/model-viewer/model-viewer.css` | 143 | **必需 464** (`model-viewer.js`) |  |
-| scientific-plot | `09-assets/scientific-plot/scientific-plot.css` | 141 | **必需 604** (`scientific-plot.js`) |  |
+| scientific-plot | `09-assets/scientific-plot/scientific-plot.css` | 184 | **必需 604** (`scientific-plot.js`) |  |
 | sparkline | `09-assets/sparkline/sparkline.css` | 158 | **必需 508** (`sparkline.js`) |  |
 
 ### 🔴 这些组件的 JS 是**必需的**（不是增强）

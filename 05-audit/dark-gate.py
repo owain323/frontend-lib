@@ -25,7 +25,7 @@ import os
 import re
 import sys as _sys, os as _os
 _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
-from _css import declared_tokens, resolve_vars  # noqa: E402
+from _css import declared_tokens, resolve_vars, strip_media  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SEP = os.sep
@@ -61,6 +61,8 @@ def parse(path):
     src = open(path, encoding='utf-8').read()
     # 去掉注释，避免把说明里的数字当值
     src = re.sub(r'/\*.*?\*/', lambda m: '\n' * m.group(0).count('\n'), src, flags=re.S)
+    # 屏幕判据不看纸面值：剥掉 @media print（详见 _css.strip_media 的说明）
+    src = strip_media(src, 'print')
     _m = re.search(r'@media[^{]*prefers-color-scheme:\s*dark', src)
     if not _m:
         return {}, {}

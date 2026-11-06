@@ -9,51 +9,51 @@
 
 实测两笔账，一笔不省：
 
-- `tokens` 源码版 gzip **21.9 KB** → min 版 **2.9 KB**（省 87%）——
+- `tokens` 源码版 gzip **23.4 KB** → min 版 **3.0 KB**（省 87%）——
   源码多的那部分**全是注释**（全库 CSS 有 69% 是注释，字节口径），而注释是给维护者的，不是给浏览器的。
-- tokens 的 min 版 2.9 KB **比任何一个组件自己都贵** ⇒
+- tokens 的 min 版 3.0 KB **比任何一个组件自己都贵** ⇒
   "只用一个组件"的真实起步价就是它。不公开这张表，等于让人盲买。
 
 ## 二、明码标价
 
 | 档 | 组件 | tokens（必付） | CSS | JS | **合计** | 源码版合计 | 差 |
 |---|---|---:|---:|---:|---:|---:|---:|
-| primitive | `badge` | 2.9 KB | 0.5 KB | — | **3.4 KB** | 24.6 KB | −21.2 KB |
-| primitive | `button` | 2.9 KB | 1.0 KB | — | **3.9 KB** | 28.3 KB | −24.4 KB |
-| primitive | `card` | 2.9 KB | 0.9 KB | — | **3.9 KB** | 26.0 KB | −22.1 KB |
-| primitive | `choice` | 2.9 KB | 1.1 KB | — | **4.1 KB** | 28.1 KB | −24.0 KB |
-| primitive | `combobox` | 2.9 KB | 1.0 KB | 5.7 KB | **9.6 KB** | 31.8 KB | −22.2 KB |
-| primitive | `date-range` | 2.9 KB | 0.8 KB | 2.8 KB | **6.6 KB** | 28.9 KB | −22.3 KB |
-| primitive | `delta` | 2.9 KB | 0.3 KB | — | **3.2 KB** | 24.6 KB | −21.4 KB |
-| primitive | `input` | 2.9 KB | 1.0 KB | — | **4.0 KB** | 25.8 KB | −21.8 KB |
-| primitive | `metric` | 2.9 KB | 0.5 KB | — | **3.4 KB** | 25.1 KB | −21.7 KB |
-| primitive | `popover` | 2.9 KB | 0.8 KB | 2.3 KB | **6.1 KB** | 29.7 KB | −23.6 KB |
-| primitive | `progress` | 2.9 KB | 0.8 KB | — | **3.7 KB** | 26.2 KB | −22.5 KB |
-| primitive | `select` | 2.9 KB | 0.8 KB | 4.3 KB | **8.1 KB** | 33.1 KB | −25.0 KB |
-| primitive | `separator` | 2.9 KB | 0.2 KB | — | **3.2 KB** | 23.2 KB | −20.0 KB |
-| primitive | `skeleton` | 2.9 KB | 0.5 KB | — | **3.4 KB** | 23.8 KB | −20.4 KB |
-| primitive | `switch` | 2.9 KB | 0.8 KB | — | **3.7 KB** | 30.2 KB | −26.5 KB |
-| primitive | `timeline` | 2.9 KB | 0.5 KB | — | **3.4 KB** | 25.1 KB | −21.7 KB |
-| primitive | `upload` | 2.9 KB | 1.4 KB | 4.5 KB | **8.8 KB** | 39.7 KB | −30.9 KB |
-| pattern | `accordion` | 2.9 KB | 1.3 KB | 1.8 KB | **6.0 KB** | 36.4 KB | −30.4 KB |
-| pattern | `content` | 2.9 KB | 1.0 KB | — | **4.0 KB** | 26.8 KB | −22.9 KB |
-| pattern | `drawer` | 2.9 KB | 0.8 KB | 2.8 KB | **6.6 KB** | 30.8 KB | −24.3 KB |
-| pattern | `dropdown` | 2.9 KB | 0.8 KB | 3.6 KB | **7.3 KB** | 31.8 KB | −24.5 KB |
-| pattern | `form-validation` | 2.9 KB | 0.8 KB | — | **3.7 KB** | 26.8 KB | −23.1 KB |
-| pattern | `list` | 2.9 KB | 0.6 KB | — | **3.5 KB** | 24.3 KB | −20.8 KB |
-| pattern | `nav` | 2.9 KB | 1.2 KB | 2.6 KB | **6.8 KB** | 33.0 KB | −26.2 KB |
-| pattern | `overlay` | 2.9 KB | 1.2 KB | 3.8 KB | **7.9 KB** | 39.2 KB | −31.3 KB |
-| pattern | `pagination` | 2.9 KB | 0.8 KB | 2.8 KB | **6.5 KB** | 32.7 KB | −26.3 KB |
-| pattern | `reveal` | 2.9 KB | 0.3 KB | 1.2 KB | **4.4 KB** | 26.4 KB | −22.0 KB |
-| pattern | `states` | 2.9 KB | 0.9 KB | — | **3.8 KB** | 26.3 KB | −22.5 KB |
-| pattern | `tabs` | 2.9 KB | 0.7 KB | 2.0 KB | **5.7 KB** | 29.2 KB | −23.5 KB |
-| pattern | `tooltip` | 2.9 KB | 0.5 KB | 2.0 KB | **5.4 KB** | 28.7 KB | −23.3 KB |
-| pattern | `tree` | 2.9 KB | 0.6 KB | 3.1 KB | **6.6 KB** | 30.3 KB | −23.7 KB |
+| primitive | `badge` | 3.0 KB | 0.5 KB | — | **3.5 KB** | 26.1 KB | −22.6 KB |
+| primitive | `button` | 3.0 KB | 1.0 KB | — | **4.0 KB** | 29.8 KB | −25.8 KB |
+| primitive | `card` | 3.0 KB | 0.9 KB | — | **4.0 KB** | 27.5 KB | −23.5 KB |
+| primitive | `choice` | 3.0 KB | 1.1 KB | — | **4.2 KB** | 29.6 KB | −25.4 KB |
+| primitive | `combobox` | 3.0 KB | 1.0 KB | 5.7 KB | **9.7 KB** | 33.3 KB | −23.6 KB |
+| primitive | `date-range` | 3.0 KB | 0.8 KB | 2.8 KB | **6.7 KB** | 30.4 KB | −23.7 KB |
+| primitive | `delta` | 3.0 KB | 0.3 KB | — | **3.3 KB** | 26.1 KB | −22.8 KB |
+| primitive | `input` | 3.0 KB | 1.0 KB | — | **4.1 KB** | 27.3 KB | −23.2 KB |
+| primitive | `metric` | 3.0 KB | 0.5 KB | — | **3.5 KB** | 26.6 KB | −23.1 KB |
+| primitive | `popover` | 3.0 KB | 0.8 KB | 2.3 KB | **6.1 KB** | 31.2 KB | −25.0 KB |
+| primitive | `progress` | 3.0 KB | 0.8 KB | — | **3.8 KB** | 27.7 KB | −23.9 KB |
+| primitive | `select` | 3.0 KB | 0.8 KB | 4.3 KB | **8.2 KB** | 34.6 KB | −26.4 KB |
+| primitive | `separator` | 3.0 KB | 0.2 KB | — | **3.3 KB** | 24.7 KB | −21.4 KB |
+| primitive | `skeleton` | 3.0 KB | 0.5 KB | — | **3.5 KB** | 25.3 KB | −21.8 KB |
+| primitive | `switch` | 3.0 KB | 0.8 KB | — | **3.8 KB** | 31.7 KB | −27.9 KB |
+| primitive | `timeline` | 3.0 KB | 0.5 KB | — | **3.5 KB** | 26.6 KB | −23.1 KB |
+| primitive | `upload` | 3.0 KB | 1.4 KB | 4.5 KB | **8.9 KB** | 41.2 KB | −32.3 KB |
+| pattern | `accordion` | 3.0 KB | 1.3 KB | 1.8 KB | **6.1 KB** | 37.9 KB | −31.7 KB |
+| pattern | `content` | 3.0 KB | 1.0 KB | — | **4.0 KB** | 28.3 KB | −24.3 KB |
+| pattern | `drawer` | 3.0 KB | 0.8 KB | 2.8 KB | **6.7 KB** | 32.3 KB | −25.6 KB |
+| pattern | `dropdown` | 3.0 KB | 0.8 KB | 3.6 KB | **7.4 KB** | 33.3 KB | −25.9 KB |
+| pattern | `form-validation` | 3.0 KB | 0.8 KB | — | **3.8 KB** | 28.3 KB | −24.4 KB |
+| pattern | `list` | 3.0 KB | 0.6 KB | — | **3.6 KB** | 25.8 KB | −22.1 KB |
+| pattern | `nav` | 3.0 KB | 1.2 KB | 2.6 KB | **6.9 KB** | 34.4 KB | −27.5 KB |
+| pattern | `overlay` | 3.0 KB | 1.2 KB | 3.8 KB | **8.0 KB** | 40.7 KB | −32.7 KB |
+| pattern | `pagination` | 3.0 KB | 0.8 KB | 2.8 KB | **6.6 KB** | 34.2 KB | −27.6 KB |
+| pattern | `reveal` | 3.0 KB | 0.3 KB | 1.2 KB | **4.5 KB** | 27.9 KB | −23.4 KB |
+| pattern | `states` | 3.0 KB | 0.9 KB | — | **3.9 KB** | 27.7 KB | −23.8 KB |
+| pattern | `tabs` | 3.0 KB | 0.7 KB | 2.0 KB | **5.8 KB** | 30.7 KB | −24.9 KB |
+| pattern | `tooltip` | 3.0 KB | 0.5 KB | 2.0 KB | **5.5 KB** | 30.2 KB | −24.7 KB |
+| pattern | `tree` | 3.0 KB | 0.6 KB | 3.1 KB | **6.7 KB** | 31.8 KB | −25.1 KB |
 
 ## 三、全库
 
-- 全部组件都用上（min，含 tokens 一份）：**72.6 KB**
-- 源码版（带注释）全库 gzip：386.7 KB
+- 全部组件都用上（min，含 tokens 一份）：**72.7 KB**
+- 源码版（带注释）全库 gzip：389.4 KB
 
 > ⚠️ 源码版那个数字**不是**要付的钱：它包含我们的注释（全库 CSS 有 69% 是注释，字节口径）。
 > 它的用途只有一个 —— 让人看清"dist 到底省了多少"。

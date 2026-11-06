@@ -122,8 +122,29 @@ async function render(o) {
     }, sid, left());
     if (animations.exceptionDetails) throw new Error('固定打印动画失败');
 
+    /* 🔴 printBackground 必须是 false（2026-11-06 改）
+       ------------------------------------------------------------------
+       它原来是 true，理由是 `print-gate` 的一条实测注释：「Chromium 在
+       printBackground:false 时会改写文字颜色」。怕设计色被改掉，所以选 true。
+
+       但那条观察来自 Puppeteer 的 `page.pdf()`，**不适用于本文件的 CDP 直调**：
+       实测 #15181c / #4f555e / #606770 三个颜色原样保留，一个都没被改写
+       （Chromium 的"改写"只救快要看不见的颜色：实测 #808080 → #2C2C2C，
+       #606770 是 5.33:1，它判定"看得见"，不动）。用不成立的观测支撑了一个
+       代价很大的决策。
+
+       代价是：`.page { background: var(--paper) }` 的 #f6f7f8 跟着上纸，
+       整个正文区铺一层 7.4% 的网点（600dpi 下每 64 点 4.8 个黑点）。
+       纸的白被用掉了 —— 白的地方不白，黑的地方就不显黑。
+       实测：改前纯白像素只占 24.7%（众数 246 = #f6f7f8），改后 95.7%（众数 255）。
+
+       ⚠️ 关掉背景之后，靠底纹表达的东西会一起消失（代码块、表头底纹、
+          提示框）。这是有意的：纸上不该用底色表达信息，改用线。
+          对应规则在 tokens.css 的「纸面墨阶」与各组件的 @media print 里。
+       ⚠️ 不要为了"保住某个背景"改回 true —— 那会把整页一起赔进去。
+          单个元素确实需要实心态时，用边框或描边，不用 background。 */
     var printed = await browser.send('Page.printToPDF', {
-      printBackground: true,
+      printBackground: false,
       preferCSSPageSize: true,
       displayHeaderFooter: false,
       marginTop: 0, marginBottom: 0, marginLeft: 0, marginRight: 0

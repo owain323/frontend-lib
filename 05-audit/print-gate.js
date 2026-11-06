@@ -22,7 +22,7 @@
  * ============================================================================
  * 判据
  * ============================================================================
- *   ① 每个页面 × 每个屏幕配色，产物里**每一段文字**对白纸的对比度 ≥ 4.5:1
+ *   ① 每个页面 × 每个屏幕配色，产物里**每一段文字**对白纸的对比度 ≥ 7:1
  *   ② 暗色与浅色两次打印的**文字颜色分布完全相同**（打印不该认识屏幕主题）
  *   ③ 页数与基线一致（分页没被改坏）
  *   ④ 文字 run 数与基线一致（内容没被裁掉 / 没多出空白）
@@ -152,7 +152,29 @@ const TYPES = {
   code: { metric: 'preChars', what: '代码块', within: 0.9 },
 };
 
-const MIN_CONTRAST = 4.5;
+/* ============================================================================
+ * 对比度门槛 = 7，不是 4.5
+ * ============================================================================
+ * 🔴 这里原来是 4.5 —— 那是 **WCAG 对屏幕**的 AA 门槛（SC 1.4.3）。
+ *    它一路绿灯放过了 #606770（对白纸 5.33:1），而那个灰在 600dpi 激光上
+ *    的覆盖率只有 90.8%：每 11 个点留 1 个白点。白点落在 9pt 汉字的横画里，
+ *    眼睛读到的是"缺墨"。（实测数据写在 tokens.css 的「纸面墨阶」一节。）
+ *
+ *    也就是说：**判据设对了方向，设错了量级** —— 屏幕的"看得见"不等于
+ *    纸上的"还站得住"。这是本仓最难发现的一类假绿：门禁全绿，纸上不能看。
+ *
+ * 🔴 依据
+ *    · 印刷排版学（legibility.info）：印刷品最低 Michelson 对比度 0.7，
+ *      而 WCAG 4.5:1 只对应 Michelson 0.6；7:1 对应 0.8。
+ *    · WCAG 2.2 SC 1.4.6（Contrast Enhanced）：打印件建议 7:1，小字更高。
+ *    · 配套改动：`tokens.css` 的 `@media print` 把三级文字压到
+ *      #000 / #1f2328 / #33383f（纸上覆盖率均为 100%），
+ *      所以这条门槛提高之后**没有页面会因此变红** —— 顺序不能反：
+ *      先有墨阶，再提门槛；反过来就是拿一条所有人都过的判据自我安慰。
+ *
+ * ⚠️ 4.5 仍然适用于**屏幕**的 `dark-gate` / 对比度判据，不要一起去改。
+ */
+const MIN_CONTRAST = 7;
 
 /* ============================================================================
  * 结构类型：在真实 DOM 上算，不在文档里写
@@ -199,6 +221,25 @@ const PROBE = () => {
     canvas: document.querySelectorAll('canvas').length,
     svg: document.querySelectorAll('svg').length,
     img: document.querySelectorAll('img').length,
+    /* 位图在纸上的有效分辨率（⑮）。
+       `naturalWidth` 是位图的真实像素宽；`getBoundingClientRect().width`
+       是 CSS px，打印按 96px = 1in 映射（本仓 `@page` 没有缩放），
+       所以 dpi = naturalWidth / (宽度 / 96)。
+       ⚠️ 这假设 **打印宽度 == 屏幕 CSS 宽度**。库里没有任何
+          `@media print` 改图片宽度，所以成立；一旦以后有人加了
+          "打印时把图缩到 80mm"这种规则，这里会高估，需要跟着改。
+       ⚠️ SVG（`<svg>`）不是位图，矢量在纸上无限清，不参与这条。 */
+    imgDpi: Array.from(document.querySelectorAll('img')).map((im) => {
+      const r = im.getBoundingClientRect();
+      const inW = r.width / 96;
+      const px = im.naturalWidth || 0;
+      return {
+        name: (im.currentSrc || im.src || '').split('/').pop().slice(0, 40),
+        px,
+        mm: Math.round(r.width / 96 * 25.4),
+        dpi: inW > 0.01 && px > 0 ? Math.round(px / inW) : 0,
+      };
+    }),
     mediaCount: document.querySelectorAll('canvas,svg,img').length,
     controls: document.querySelectorAll('input,select,textarea').length,
   };
@@ -290,6 +331,26 @@ function typeStat(cfg, universe, pages) {
  * ⑥ 每个类型至少 1 页在集合里  ⑦ 代表必须落在"度量最大那一档"  ⑧ 页面必须在全集里
  * 纯函数：喂合成样本就能验判据有没有牙（见 selftest）。
  */
+/**
+ * ⑮ 位图分辨率：纯函数，喂合成样本就能验判据有没有牙（见 selftest）。
+ * 返回 `[[页面名, imgDpi 条目], …]`，只收"有像素但打出来不够清"的。
+ * ⚠️ `dpi === 0` 表示量不出来（宽度为 0 或 naturalWidth 为 0），不判失败 ——
+ *    那多半是懒加载或装饰图，报出来只是噪音。
+ */
+function dpiErrs(pages, universe, min) {
+  const out = [];
+  const byUrl = {};
+  for (const r of universe) byUrl[r.url] = r;
+  for (const pair of pages) {
+    const row = byUrl[pair[1]];
+    const list = row && row.m && row.m.imgDpi ? row.m.imgDpi : [];
+    for (const im of list) {
+      if (im.dpi > 0 && im.dpi < min) out.push([pair[0], im]);
+    }
+  }
+  return out;
+}
+
 function typeErrs(pages, universe, types) {
   const errs = [];
   const byUrl = {};
@@ -1086,6 +1147,29 @@ async function main() {
   console.log('  === 结构类型（受管页面全集 ' + universe.length + ' 页，探针视口 393×852）===');
   for (const line of typeTable(universe, PAGES, TYPES)) console.log(line);
 
+  /* ---- ⑮ 位图在纸上的有效分辨率（警告级） ----------------------------
+     🔴 为什么是警告，不是失败
+       存量页面里的截图是 1x 的（实测满配样张 320×200 打在 65mm 上 = 125 dpi，
+       只有 300dpi 底线的四成）。判失败会让受管页面里带截图的一批立刻变红，
+       而"把图换成高清版"不是改 CSS 能解决的 —— 那是素材问题。
+       ⇒ 先把它变成**可见的警告**，配 `--strict` 才升级为失败。
+       这条判据的价值在"不再无人知晓"，不在于今天就全绿。
+
+     ⚠️ 已知局限：dpi 由「屏幕 CSS 宽度」推算，见 PROBE 里 imgDpi 的注释。
+        页面若在 @media print 里改图片宽度，这里会高估。 */
+  const dpiRows = dpiErrs(PAGES, universe, 300);
+  if (dpiRows.length) {
+    console.log('  === 位图分辨率（⑮ 警告级，底线 300 dpi）===');
+    for (const [name, im] of dpiRows.slice(0, 12)) {
+      console.log('  ⚠ ' + name + '：' + im.name + ' ' + im.px + 'px 打在 '
+        + im.mm + 'mm 上 ⇒ ' + im.dpi + ' dpi');
+    }
+    if (dpiRows.length > 12) console.log('  ⚠ …另有 ' + (dpiRows.length - 12) + ' 处');
+    if (argv.indexOf('--strict') >= 0) {
+      tErrs.push('⑮ ' + dpiRows.length + ' 张位图低于 300 dpi（--strict 下判失败）');
+    }
+  }
+
   let baseline = null;
   if (fs.existsSync(OUT)) {
     try { baseline = JSON.parse(fs.readFileSync(OUT, 'utf8')); } catch (e) { baseline = null; }
@@ -1313,11 +1397,14 @@ async function selftest() {
      * ------------------------------------------------------------- */
     const U = [
       { url: '/weak.html', types: ['wide'],
-        m: { maxOverflow: 100, controls: 0 } },
+        m: { maxOverflow: 100, controls: 0,
+          imgDpi: [{ name: 'shot-1x.png', px: 320, mm: 70, dpi: 116 }] } },
       { url: '/worst.html', types: ['wide', 'form', 'table'],
-        m: { maxOverflow: 370, controls: 13 } },
+        m: { maxOverflow: 370, controls: 13,
+          imgDpi: [{ name: 'shot-2x.png', px: 1200, mm: 100, dpi: 305 },
+            { name: 'lazy.png', px: 0, mm: 0, dpi: 0 }] } },
       { url: '/mid.html', types: ['form'],
-        m: { maxOverflow: 0, controls: 2 } },
+        m: { maxOverflow: 0, controls: 2, imgDpi: [] } },
     ];
     const T = {
       wide: { metric: 'maxOverflow', what: '横向溢出风险', within: 0.9 },
@@ -1327,6 +1414,15 @@ async function selftest() {
 
     report(typeErrs(full, U, T).length === 0, '⑦ 全集全覆盖 ⇒ 类型判据全绿',
       'errs=' + typeErrs(full, U, T).length);
+
+    /* ⑭ 位图分辨率：只咬"有像素但不够清"的，放过量不出来的（dpi=0） */
+    const d300 = dpiErrs(full, U, 300);
+    report(d300.length === 1 && d300[0][1].name === 'shot-1x.png',
+      '⑮ 116dpi 的图被判出，305dpi 的图与懒加载图放过', 'hits=' + d300.length);
+    report(dpiErrs(full, U, 100).length === 0,
+      '⑮ 反向：门槛降到 100 ⇒ 同一批样本全过（判据不是恒红）');
+    report(dpiErrs([['gone', '/not-managed.html']], U, 300).length === 0,
+      '⑮ 反向：页面不在全集里 ⇒ 不误报（那是 ⑧ 的事）');
 
     /* ⑥：一页 form 都不放 ⇒ 点名"集合里 0 页"，并说清全集里有几页 */
     const noFormAtAll = [['weak', '/weak.html']];

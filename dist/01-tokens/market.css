@@ -1,1 +1,1 @@
-:root[data-market="intl"], [data-market="intl"] {--dir-up:var(--raw-dir-down);--dir-down:var(--raw-dir-up);}
+:root[data-market="intl"], [data-market="intl"] {--dir-up:var(--raw-dir-down);--dir-down:var(--raw-dir-up);}@media print {:root[data-market="intl"], [data-market="intl"] {--dir-up:#1c4526;--dir-down:#7d1c11;}}

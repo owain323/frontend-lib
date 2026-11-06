@@ -8,8 +8,8 @@
   ],
   "totals": {
     "sourceFiles": 80,
-    "sourceBytes": 991896,
-    "distGzip": 116059
+    "sourceBytes": 998552,
+    "distGzip": 116311
   },
   "files": [
     {
@@ -132,15 +132,15 @@
     },
     {
       "source": "01-tokens/market.css",
-      "sourceSha256": "91508d42d5adf766ab5bd79af5f2b90ef459a577a72806758dece566d25b5880",
-      "sourceBytes": 2974,
-      "sourceGzip": 1509,
+      "sourceSha256": "d936e4d19d16bbc667b887a9a7d484be7537244c1449b0f169f21ecd94a048f5",
+      "sourceBytes": 3662,
+      "sourceGzip": 1826,
       "outputs": [
         {
           "path": "dist/01-tokens/market.css",
           "kind": "minified",
-          "bytes": 109,
-          "gzip": 87
+          "bytes": 210,
+          "gzip": 123
         }
       ]
     },
@@ -218,15 +218,15 @@
     },
     {
       "source": "01-tokens/tokens.css",
-      "sourceSha256": "3f330057aa3ecd5e80ab89f95ff7bccbced323c9b4576b050871459f6a2ed8c8",
-      "sourceBytes": 58905,
-      "sourceGzip": 22424,
+      "sourceSha256": "a648f0519c9e6dc6f15fb8081da040a40472455578650dfc74b7550d22b7fa46",
+      "sourceBytes": 62621,
+      "sourceGzip": 23937,
       "outputs": [
         {
           "path": "dist/01-tokens/tokens.css",
           "kind": "minified",
-          "bytes": 12337,
-          "gzip": 3006
+          "bytes": 12632,
+          "gzip": 3102
         }
       ]
     },
@@ -1020,15 +1020,15 @@
     },
     {
       "source": "04-recipes/tierA-tokens.css",
-      "sourceSha256": "f4da451979c9a755fc5a5c25ebb9e7d1ffd447061e57e87c09f8ba47b2415fbd",
-      "sourceBytes": 5342,
-      "sourceGzip": 2083,
+      "sourceSha256": "ef6c2ed8c52d888c9aeac8ebb9a0d0dec36407e2c39e5ccc743b278aad41abc0",
+      "sourceBytes": 5327,
+      "sourceGzip": 2067,
       "outputs": [
         {
           "path": "dist/04-recipes/tierA-tokens.css",
           "kind": "minified",
-          "bytes": 3340,
-          "gzip": 1342
+          "bytes": 3325,
+          "gzip": 1328
         }
       ]
     },
@@ -1107,15 +1107,15 @@
     },
     {
       "source": "09-assets/scientific-plot/scientific-plot.css",
-      "sourceSha256": "8bde50ffe24aaf920f6260f940266458b1459e413417f8b26776a209fc774623",
-      "sourceBytes": 3948,
-      "sourceGzip": 1611,
+      "sourceSha256": "bc08a8cbbd4b583186fb2420bdbd1118d49465fe5de370a99f339b0a65f5be7b",
+      "sourceBytes": 6215,
+      "sourceGzip": 2514,
       "outputs": [
         {
           "path": "dist/09-assets/scientific-plot/scientific-plot.css",
           "kind": "minified",
-          "bytes": 1912,
-          "gzip": 591
+          "bytes": 2725,
+          "gzip": 725
         }
       ]
     },

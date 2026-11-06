@@ -46,3 +46,18 @@
   --dir-up:   var(--raw-dir-down);
   --dir-down: var(--raw-dir-up);
 }
+
+/* ---------- 打印：交换关系保留，两端都换成纸面能打实的深色 ----------
+   🔴 为什么这段必须存在
+   上面那条规则用的是 `--raw-dir-*`（原始层），而 tokens.css 的 print 段
+   压深的是 `--dir-up` / `--dir-down`（语义层）—— 两者在不同的层，
+   压深**传不到这里**。实测：`[data-market="intl"]` 容器里的涨跌数字
+   仍然以 #c0392b 上纸，对比度 5.44:1，过不了 7:1。
+   交换关系不变（涨绿跌红），只是把两端换成与 print 段同一组深色。 */
+@media print {
+  :root[data-market="intl"],
+  [data-market="intl"] {
+    --dir-up:   #1c4526;
+    --dir-down: #7d1c11;
+  }
+}

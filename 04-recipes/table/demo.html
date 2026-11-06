@@ -24,6 +24,10 @@
 .tb-demo th { font-weight: 500; color: var(--text-secondary); font-size: var(--fs-xs); }
 /* 反例专用：把库自动生成的 +/− 关掉，只留颜色（这就是"只靠红绿"） */
 .tb-bad .num--pos::before, .tb-bad .num--neg::before { content: none; }
+/* 反例区块在纸上换成中性色：它演示的是"只靠红绿"，而纸面本来就没有红绿。
+   不能 `display:none` —— 那会违反 printPolicy 对 table 的 expand 契约
+   （判据会报"屏幕可见 → 纸上消失"）。保留结构、只去掉颜色语义。 */
+@media print { .tb-bad .num--pos, .tb-bad .num--neg { color: var(--text-primary); } }
 </style>
 </head>
 <body class="page">
