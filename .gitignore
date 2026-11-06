@@ -125,3 +125,6 @@ __pycache__/
 
 # 工作区工具目录（会话记忆等），与 `internal/` 同类：不入库，但不该让 git status 变脏
 .workbuddy/
+
+# 导出器被硬杀时留下的临时 HTML（E20：下次导出会清 6 小时前的）
+.agentcss-print-*.html
