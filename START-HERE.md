@@ -68,7 +68,7 @@
 | analysis-report | `04-recipes/analysis-report/analysis-report.css` | 226 | — |  |
 | app-shell | `04-recipes/app-shell/app-shell.css` | 588 | **必需 289** (`shell-nav.js`) |  |
 | detail-page | `04-recipes/detail-page/detail-page.css` | 190 | — |  |
-| report | `04-recipes/report/report.css` | 402 | — |  |
+| report | `04-recipes/report/report.css` | 418 | — |  |
 | table | `04-recipes/table/table.css` | 409 | — |  |
 | bar | `09-assets/bar/bar.css` | 181 | **必需 348** (`bar.js`) |  |
 | model-viewer | `09-assets/model-viewer/model-viewer.css` | 143 | **必需 464** (`model-viewer.js`) |  |

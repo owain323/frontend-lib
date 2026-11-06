@@ -197,7 +197,7 @@ def bump(new):
             print('⚠️  docs/ACCESSIBILITY.md 里没找到「声明适用版本」行 —— '
                   'doc-facts-gate 会红，先修判据或修文档')
 
-    # ④ CHANGELOG：若新版本还没有条目，就在**第一个已有版本文档前**插骨架
+    # ④ CHANGELOG：把 [Unreleased] 的内容**归入**新版本，Unreleased 清空
     cl = read(FILES['changelog'])
     if changelog_latest() != new:
         import _changelog as CL
@@ -206,26 +206,33 @@ def bump(new):
         # 🔴 标题格式 = Keep a Changelog（0.8.9 改）：
         #     `## [x.y.z] - YYYY-MM-DD`。原来是自创的 `## x.y.z — date`，
         #     工具链解析不了（审计 P1-3）。
-        head = ('## [%s] - %s\n\n'
-                '### TODO · 这一版改了什么\n\n'
-                '（写清楚「改了什么 / 为什么」，有反向控制就写上）\n\n'
-                '---\n\n') % (new, today)
-        # 🔴 位置（0.8.9 修）：插到**第一个已有版本条目前** =
-        #    `## [Unreleased]` 段之后。
-        #    之前是"插到文件开头" ⇒ 新条目会跑到 `# Changelog` 与
-        #    `## [Unreleased]` **之前**，同时破坏两条 Keep a Changelog 约定
-        #    （单一 H1 在最前 / Unreleased 在最上）。
-        _m = CL.HEADING.search(cl)
-        if _m:
-            cl = cl[:_m.start()] + head + cl[_m.start():]
+        empty_skeleton = ('## [%s] - %s\n\n'
+                          '### TODO · 这一版改了什么\n\n'
+                          '（写清楚「改了什么 / 为什么」，有反向控制就写上）\n\n'
+                          '---\n\n') % (new, today)
+        # 🔴🔴 2026-11-06 修（0.27.3 事故）：
+        #     旧逻辑只**插入一个 TODO 骨架**，不搬 Unreleased 的内容。
+        #     结果是发布后 `## [0.27.3]` 段里只有 TODO，而所有真实改动
+        #     都留在 `## [Unreleased]` 里 —— GitHub Release 正文（取该段）
+        #     就是一句"（写清楚改了什么）"，npm 包里的 CHANGELOG 同样。
+        #     ⇐ 发布链上"我说什么系统就是什么"的核心卖点，被一个插入位置毁了。
+        #     正确语义：Unreleased 是"待发"，发版时它的内容 **属于** 新版本。
+        u = CL.UNRELEASED.search(cl)
+        if u:
+            rest = cl[u.end():]
+            _nxt = re.search(r'^## ', rest, re.M)
+            released = (rest[:_nxt.start()] if _nxt else rest).strip()
+            remainder = rest[_nxt.start():] if _nxt else ''
+            block = ('## [%s] - %s\n\n%s\n\n---\n\n' % (new, today, released)
+                     if released else empty_skeleton)
+            cl = cl[:u.start()] + '## [Unreleased]\n\n' + block + remainder
         else:
-            _u = CL.UNRELEASED.search(cl)
-            if _u:
-                _nxt = re.search(r'^## ', cl[_u.end():], re.M)
-                _pos = _u.end() + (_nxt.start() if _nxt else 0)
-                cl = cl[:_pos] + '\n' + head + cl[_pos:]
+            # 没有 Unreleased 段（历史仓）：插到第一个已有版本条目前
+            _m = CL.HEADING.search(cl)
+            if _m:
+                cl = cl[:_m.start()] + empty_skeleton + cl[_m.start():]
             else:
-                cl = cl.rstrip('\n') + '\n\n' + head
+                cl = cl.rstrip('\n') + '\n\n' + empty_skeleton
         write(FILES['changelog'], cl)
 
     print('✅ 已改：%s → %s' % (old, new))

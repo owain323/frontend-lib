@@ -202,6 +202,17 @@
   padding: 0;
 }
 
+/* 🔴 图必须被容器约束（内容不许溢出）。
+   `.prose img` 早有这三条，`.rep__fig` 漏了 ⇒ 1920px 截图在纸上按原始像素铺开、
+   溢出页面（2026-11-06 实体打样实测）。取证见 CHANGELOG 0.27.4。 */
+.rep__fig img,
+.rep__fig > svg,
+.rep__fig > picture > img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
 /* 包表格的图容器：表题在上、表在中间、脚注在下。
    🔴 它存在的主要理由是**分页**（见下方 @media print），但类本身必须在
       打印块之外有定义 —— 否则 `print-policy-gate` 的 L0 会判"隐藏了一个
@@ -211,6 +222,11 @@
 .rep__fig--table {
   margin: var(--sp-5) 0;
 }
+
+/* 🔴 表题必须跟着表走：父容器 allow-break 后，表题会被留在上一页、表格推到
+   下一页（读者先看到「表 1 · …」翻页才有表）。break-inside 管不了兄弟块。
+   放 print 块外是因为 break-* 只对分页生效 —— 顺带免一条 printPolicy 认领。 */
+.rep__fig--table > .rep__cap--table { break-after: avoid; }
 
 .rep__cap {
   margin: var(--sp-2) 0 0;

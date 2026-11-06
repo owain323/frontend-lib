@@ -929,7 +929,7 @@ run "print-content-rev" node 05-audit/print-content-audit.js --selftest
 #          产物过分析器 / Chrome 定位一致 / 页树一致 / 延迟就绪 / 长文逐页文本 /
 #          失败保留旧文件 / 有界超时 / 崩溃结论形状 / 临时文件清理 / 新参数校验。
 #   ⚠️ 它会多次启动 Chrome（约 40s），**不依赖静态服务**（全走 file://）。
-run "pdf-export"     node 05-audit/pdf-export-gate.js
+run "pdf-export"     @serial node 05-audit/pdf-export-gate.js
 # 🔴 @serial：这条自检要起 17 次 Chrome。并发时浏览器启动被别的门禁拖慢，
 # E17（ready-selector 永不出现）会从 code=timeout 变成 code=render ——
 # 判据没错，是"慢"被读成了"错"。实测：并行跑必红，单跑必绿。
