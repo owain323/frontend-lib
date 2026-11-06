@@ -26,7 +26,7 @@
 | primitive | `date-range` | 3.1 KB | 0.8 KB | 2.8 KB | **6.7 KB** | 31.2 KB | −24.5 KB |
 | primitive | `delta` | 3.1 KB | 0.3 KB | — | **3.3 KB** | 26.9 KB | −23.6 KB |
 | primitive | `input` | 3.1 KB | 1.0 KB | — | **4.1 KB** | 28.1 KB | −24.0 KB |
-| primitive | `metric` | 3.1 KB | 0.5 KB | — | **3.5 KB** | 27.4 KB | −23.9 KB |
+| primitive | `metric` | 3.1 KB | 0.5 KB | — | **3.5 KB** | 27.4 KB | −23.8 KB |
 | primitive | `popover` | 3.1 KB | 0.8 KB | 2.3 KB | **6.2 KB** | 32.0 KB | −25.8 KB |
 | primitive | `progress` | 3.1 KB | 0.8 KB | — | **3.8 KB** | 28.5 KB | −24.6 KB |
 | primitive | `select` | 3.1 KB | 0.8 KB | 4.3 KB | **8.2 KB** | 35.4 KB | −27.2 KB |
@@ -39,8 +39,8 @@
 | pattern | `content` | 3.1 KB | 1.0 KB | — | **4.1 KB** | 29.1 KB | −25.0 KB |
 | pattern | `drawer` | 3.1 KB | 0.8 KB | 2.8 KB | **6.7 KB** | 33.1 KB | −26.4 KB |
 | pattern | `dropdown` | 3.1 KB | 0.8 KB | 3.6 KB | **7.4 KB** | 34.1 KB | −26.6 KB |
-| pattern | `form-validation` | 3.1 KB | 0.8 KB | — | **3.8 KB** | 29.0 KB | −25.2 KB |
-| pattern | `list` | 3.1 KB | 0.6 KB | — | **3.6 KB** | 26.6 KB | −22.9 KB |
+| pattern | `form-validation` | 3.1 KB | 0.8 KB | — | **3.8 KB** | 29.1 KB | −25.2 KB |
+| pattern | `list` | 3.1 KB | 0.6 KB | — | **3.7 KB** | 26.6 KB | −22.9 KB |
 | pattern | `nav` | 3.1 KB | 1.2 KB | 2.6 KB | **6.9 KB** | 35.2 KB | −28.3 KB |
 | pattern | `overlay` | 3.1 KB | 1.2 KB | 3.8 KB | **8.0 KB** | 41.5 KB | −33.5 KB |
 | pattern | `pagination` | 3.1 KB | 0.8 KB | 2.8 KB | **6.6 KB** | 35.0 KB | −28.4 KB |
@@ -53,7 +53,7 @@
 ## 三、全库
 
 - 全部组件都用上（min，含 tokens 一份）：**72.8 KB**
-- 源码版（带注释）全库 gzip：390.9 KB
+- 源码版（带注释）全库 gzip：391.2 KB
 
 > ⚠️ 源码版那个数字**不是**要付的钱：它包含我们的注释（全库 CSS 有 69% 是注释，字节口径）。
 > 它的用途只有一个 —— 让人看清"dist 到底省了多少"。

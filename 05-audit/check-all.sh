@@ -930,7 +930,10 @@ run "print-content-rev" node 05-audit/print-content-audit.js --selftest
 #          失败保留旧文件 / 有界超时 / 崩溃结论形状 / 临时文件清理 / 新参数校验。
 #   ⚠️ 它会多次启动 Chrome（约 40s），**不依赖静态服务**（全走 file://）。
 run "pdf-export"     node 05-audit/pdf-export-gate.js
-run "pdf-export-rev" node 05-audit/pdf-export-gate.js --selftest
+# 🔴 @serial：这条自检要起 17 次 Chrome。并发时浏览器启动被别的门禁拖慢，
+# E17（ready-selector 永不出现）会从 code=timeout 变成 code=render ——
+# 判据没错，是"慢"被读成了"错"。实测：并行跑必红，单跑必绿。
+run "pdf-export-rev" @serial node 05-audit/pdf-export-gate.js --selftest
 # 🔴 chrome-discovery（2026-11-04 加 · 起因是外部审计 F5）
 #   浏览器发现写死了 Playwright 的旧目录布局（chrome-linux/chrome、chrome-win/chrome.exe），
 #   而新版是 chrome-linux64/chrome、chrome-headless-shell-<平台>/chrome-headless-shell；

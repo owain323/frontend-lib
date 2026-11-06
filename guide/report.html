@@ -115,13 +115,24 @@ report.css                   ← 本系统</code></pre>
           &lt;div id=&quot;chart&quot;&gt;&lt;/div&gt;
           &lt;figcaption class=&quot;rep__cap&quot;&gt;图说&lt;/figcaption&gt;
         &lt;/figure&gt;
+        &lt;!-- 表也放图容器里：表题在上、表在中、源注在下 --&gt;
+        &lt;figure class=&quot;rep__fig rep__fig--table&quot;&gt;
+          &lt;p class=&quot;rep__cap rep__cap--table&quot;&gt;表 1 · 单位与口径&lt;/p&gt;
+          &lt;div class=&quot;table&quot;&gt;…&lt;/div&gt;
+          &lt;p class=&quot;rep__source&quot;&gt;来源：…&lt;/p&gt;
+        &lt;/figure&gt;
       &lt;/section&gt;
     &lt;/div&gt;
     &lt;aside class=&quot;rep__aside&quot;&gt;短提醒 / 次要读数&lt;/aside&gt;
   &lt;/div&gt;
 &lt;/article&gt;</code></pre>
 <p><strong>只用两级标题</strong>：<code>h2</code> 是文章标题，<code>h3</code> 是小节。出现第四级通常意味着该拆的是<strong>文档</strong> 而不是再给一级字号 —— 所以 CSS 里刻意没有 <code>h4</code> 的规则，没定义就是没定义。</p>
-<h2 id="s7">二 · 三种版式的取舍<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
+<h3 id="s7"><code>.rep__fig--table</code>：为什么表格要单独一个修饰符<a class="anchor" href="#s7" aria-label="本节直链">#</a></h3>
+<p><code>.rep__fig</code> 在纸上是 <code>break-inside: avoid</code>（图不能被拆开）。但<strong>包表格的图容器不该继承这条</strong>：表格自己有行级 <code>avoid</code> 和表头重复，本来就能安全跨页；而整块 <code>avoid</code> 会让 <strong>放得下的表也被推到下一页</strong> —— 实测 p1 还剩 200pt、表只有 179pt，仍然整块跳走，留一页空白。</p>
+<p>两条声明特异性相同、靠加载顺序决出 <code>auto</code>（tokens.css 先、report.css 后），所以必须写在<strong>同一个元素</strong>上：</p>
+<pre class="code" tabindex="0"><code class="language-html">&lt;figure class=&quot;rep__fig rep__fig--table&quot;&gt;…&lt;/figure&gt;</code></pre>
+<p>⚠️ 不能用 <code>.print-allow-break</code> 代替：那条规则在 <code>tokens.css</code> 里，会被 <code>report.css</code> 同一特异性的 <code>.rep__fig { break-inside: avoid }</code> 盖掉 —— 写了、不生效、不报错。</p>
+<h2 id="s8">二 · 三种版式的取舍<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
 <div class="table" tabindex="0" role="region" aria-label="二 · 三种版式的取舍（可横向滚动）"><table>
 <thead><tr>
 <th></th><th><code>rep--magazine</code></th><th><code>rep--technical</code></th><th><code>rep--finance</code></th>
@@ -139,12 +150,12 @@ report.css                   ← 本系统</code></pre>
 </table></div>
 <p>三种取舍都是<strong>真取舍</strong>，不是文案差异 —— 每一条都有门禁判据盯着：</p>
 <ul><li>正文行长按<strong>各版自身字号</strong>换算成 em 后必须严格递减（42 &gt; 34 &gt; 30）</li><li>文章标题字号必须真的随 profile 变化（金融版明显小于另两版）</li><li>金融版正文字号必须小于另两版；科研版行距比必须最松</li><li>编号必须是&quot;该编号的有、不该编号的没有&quot;（technical 的正文小节有、文章标题与边注标题没有）</li></ul>
-<h3 id="s8">编号：为什么用 CSS counter<a class="anchor" href="#s8" aria-label="本节直链">#</a></h3>
+<h3 id="s9">编号：为什么用 CSS counter<a class="anchor" href="#s9" aria-label="本节直链">#</a></h3>
 <pre class="code" tabindex="0"><code class="language-css">.rep--technical .rep__sec &gt; h3::before { content: counter(rep-sec) ' · '; }
 .rep--technical .rep__cap::before      { content: '图 ' counter(rep-fig) ' · '; }
 .rep--technical .rep__cap--table::before { content: '表 ' counter(rep-tab) ' · '; }</code></pre>
 <p>写死编号会在改稿后全部错位；counter 由 CSS 自己维护。 <strong>图与表走两路独立计数</strong> —— &quot;图 3&quot;和&quot;表 3&quot;不是同一个东西。表格说明加 <code>rep__cap--table</code> 即可；同一个标记在 financial 版里不出编号，因为那是 <strong>profile 说了算，不是标记说了算</strong>。</p>
-<h2 id="s9">三 · 与 <code>04-recipes/analysis-report</code> 的分工<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
+<h2 id="s10">三 · 与 <code>04-recipes/analysis-report</code> 的分工<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
 <div class="table" tabindex="0" role="region" aria-label="三 · 与 04-recipes/analysis-report 的分工（可横向滚动）"><table>
 <thead><tr>
 <th></th><th><code>analysis-report</code></th><th><code>report</code>（本系统）</th>
@@ -156,16 +167,16 @@ report.css                   ← 本系统</code></pre>
 </tbody>
 </table></div>
 <p><strong>两者不互相替代。</strong> 如果只需要一种固定版式，用 <code>analysis-report</code> 更省事；需要&quot;同一批内容按不同目的重新排&quot;时，用本系统。</p>
-<h2 id="s10">四 · 🔴 本轮明确不做<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
+<h2 id="s11">四 · 🔴 本轮明确不做<a class="anchor" href="#s11" aria-label="本节直链">#</a></h2>
 <ol><li><strong>分页 PDF / 印刷分页</strong>：<code>@page</code> 页边距、页眉页脚、页码、跨页不断行、孤行寡行控制 —— 全部不在本版范围内，它需要 <code>@page</code>、实物打样与 PDF 引擎验证。 CSS 里只有 <code>@media print</code> 的<strong>最小保障</strong>（隐藏边注、图表与表格不跨撕裂），那是&quot;不更糟&quot;，<strong>不是&quot;能出版&quot;</strong>。门禁里有一条<strong>反向判据</strong>盯着这件事：<code>report.css</code> 一旦出现 <code>@page</code> 或 <code>break-after: page</code> 就报红 —— 谁偷偷做了一半，谁这条就红。</li><li><strong>自动目录、脚注尾注、交叉引用、参考文献样式</strong>：编号只做到&quot;写第几就显示第几&quot;，再往上的引用维护（&quot;详见第 3 图&quot;自动跟随）不支持。</li><li><strong>Markdown / 文档输入、CMS、多语言排版（竖排、RTL）</strong>：不是本系统的目标。</li></ol>
-<h2 id="s11">五 · 已知限制（实测记录，不是&quot;也许&quot;）<a class="anchor" href="#s11" aria-label="本节直链">#</a></h2>
+<h2 id="s12">五 · 已知限制（实测记录，不是&quot;也许&quot;）<a class="anchor" href="#s12" aria-label="本节直链">#</a></h2>
 <ul><li><strong>边注列只有 14em（252px）</strong>：正文 + 边注共享库的标准页宽 832px，取库默认的 <code>--measure-aside</code>（32em=576px）会把正文压到 <strong>220px ≈ 12em</strong>（一行 12 字，读不了）。 ⇒ 就地收窄到 14em，正文恢复到 30em。<strong>代价：边注装不下大图表</strong> —— 大图请放进正文流，不要塞进边注。</li><li><p><strong>宽图 / 宽表要走 <code>--wide</code> 通道</strong>：正文行长（<code>--rep-measure</code>）默认施加在所有内容块上，图也不例外 —— 一张 1800 宽的折线图被压到 420px 时，图里的刻度字会跟着缩到 6px。需要看清细节时给 <code>figure</code> 加 <code>rep__fig--wide</code>、给表格容器加 <code>rep__wide</code>：</p><pre class="code" tabindex="0"><code>  &lt;figure class=&quot;rep__fig rep__fig--wide&quot;&gt;…&lt;/figure&gt;
   &lt;div class=&quot;table rep__wide&quot;&gt;…&lt;/div&gt;</code></pre><p>两者是<strong>同一个开关</strong>（<code>.rep__fig--wide, .rep__wide { max-width: none }</code>）。 ⚠️ 它只放宽到<strong>正文列</strong>为止，不越过边注 —— 越过边注是整页版式的事，不是一张图的事。 ⚠️ 0.11.2 之前这个类<strong>是空的</strong>：当时正文列整体被 <code>max-width</code> 压着，子元素再宽也越不过父容器。现在行长改施加在内容块上，通道才真的通。</p></li><li><strong>边注折叠在 62rem</strong> 以下：窄屏没有边注，只有正文流。</li><li><strong>CSS counter 的具体数字无法被自动断言</strong>：<code>::before</code> 的生成文字既不在 DOM 里，也不在无障碍树里（实测 <code>accessibility.snapshot()</code> 抓不到）。门禁能验证的是「规则命中 + 用对了哪一路计数器 + 生成框真的占了像素」， <strong>数字本身（&quot;图 1&quot;里的 1）属于未验证项</strong>，不拿绿色冒充。</li></ul>
-<h2 id="s12">六 · 门禁<a class="anchor" href="#s12" aria-label="本节直链">#</a></h2>
+<h2 id="s13">六 · 门禁<a class="anchor" href="#s13" aria-label="本节直链">#</a></h2>
 <pre class="code" tabindex="0"><code class="language-bash">node 05-audit/report-check.js      # 单独跑
 bash 05-audit/check-all.sh         # 全量</code></pre>
 <p><code>report-check.js</code> 复用 <code>contract-kit.js</code>（通用 7 类判据）<strong>加 17 条本系统专属判据</strong>，全部读<strong>计算值/几何</strong>而不是 CSS 文本 —— 因为&quot;写了 ≠ 生效&quot;在本系统上翻过车： <code>.rep h2 / .rep h3</code>（特异度 0,1,1）曾经压过 <code>.rep__title</code>（0,1,0），使 <code>--rep-title-fs</code> 静默失效、三套版式的标题被钉死在同一个字号。</p>
-<h2 id="s13">反例<a class="anchor" href="#s13" aria-label="本节直链">#</a></h2>
+<h2 id="s14">反例<a class="anchor" href="#s14" aria-label="本节直链">#</a></h2>
 <ul><li>❌ <strong>拿它做分页 PDF / 印刷分页</strong> —— 页边距、页眉页脚、页码、跨页控制<strong>一律没有</strong>，也不假装有。需要印刷排版，用专门的工具链</li><li>❌ <strong>靠改选择器换版式</strong> —— 换版式只改那六个变量（<code>--rep-measure</code> / <code>--rep-body-fs</code> / <code>--rep-title-fs</code> / <code>--rep-lead-fs</code> / <code>--rep-body-lh</code> / <code>--rep-sec-num</code>），不改选择器</li><li>❌ <strong>再发明第七种字体角色</strong> —— 六个角色（眉题 / 元信息 / 图表说明 / 来源 / 编者注 / 风险披露）是<strong>不多不少</strong>的；多一种，读者就要重新学一遍&quot;这行字是什么身份&quot;</li><li>❌ <strong>把它当 CMS 或模板引擎</strong> —— 没有内容管理、没有模板继承、没有构建步骤，只有 CSS</li><li>❌ <strong>自己写表格样式</strong> —— 复用 <code>table.css</code>；两份表格样式在换主题时必然分叉</li></ul>
 <hr>
     </article>
@@ -176,7 +187,7 @@ bash 05-audit/check-all.sh         # 全量</code></pre>
   </main>
   <aside class="g-side">
     <p class="g-side__title" id="toc-title">本页目录</p>
-    <ul class="g-toc"><li><a href="#s2">它不是什么（边界先划清，免得当万能模板用）</a></li><li><a href="#s3">文件</a></li><li><a href="#s4">依赖</a></li><li><a href="#s5">一 · 共享基础：六个可变量</a></li><li><a href="#s7">二 · 三种版式的取舍</a></li><li><a href="#s9">三 · 与 04-recipes/analysis-report 的分工</a></li><li><a href="#s10">四 · 🔴 本轮明确不做</a></li><li><a href="#s11">五 · 已知限制（实测记录，不是&quot;也许&quot;）</a></li><li><a href="#s12">六 · 门禁</a></li><li><a href="#s13">反例</a></li></ul>
+    <ul class="g-toc"><li><a href="#s2">它不是什么（边界先划清，免得当万能模板用）</a></li><li><a href="#s3">文件</a></li><li><a href="#s4">依赖</a></li><li><a href="#s5">一 · 共享基础：六个可变量</a></li><li><a href="#s8">二 · 三种版式的取舍</a></li><li><a href="#s10">三 · 与 04-recipes/analysis-report 的分工</a></li><li><a href="#s11">四 · 🔴 本轮明确不做</a></li><li><a href="#s12">五 · 已知限制（实测记录，不是&quot;也许&quot;）</a></li><li><a href="#s13">六 · 门禁</a></li><li><a href="#s14">反例</a></li></ul>
   </aside>
 </div>
 <footer class="g-foot">
