@@ -350,7 +350,9 @@ function legL2(lib, rules) {
 }
 
 /* L3：声明 → 生效（真浏览器 + print 媒体） */
-function readStates(sel) {
+function readStates(arg) {
+  const sel = arg.sel;
+  const allowSels = arg.allowSels || [];
   const els = Array.prototype.slice.call(document.querySelectorAll(sel));
   return els.map(function (el) {
     const cs = getComputedStyle(el);
@@ -365,8 +367,15 @@ function readStates(sel) {
       height: Math.round(r.height),
       text: (el.textContent || '').replace(/\s+/g, ' ').trim().length,
       /* 退出开关：同一个选择器可以有多个标本，
-         带 .print-allow-break 的那个本来就该是 auto（那是它的全部用途）。 */
-      allowBreak: el.classList.contains('print-allow-break'),
+         带 .print-allow-break 的那个本来就该是 auto（那是它的全部用途）。
+         🔴 还要认「被别的 allow-break 声明命中」：`.rep__fig--table` 同时带
+            `.rep__fig` 类，两条声明特异性相同、靠加载顺序决出 auto。按元素看，
+            它确实是 auto，只是不由 `.rep__fig` 这条声明决定 —— 不排除的话
+            L3 会把一个**正确**的结果判成 FAIL（2026-11-06 实测）。 */
+      allowBreak: el.classList.contains('print-allow-break')
+        || allowSels.some(function (x) {
+          try { return el.matches(x); } catch (e) { return false; }
+        }),
     };
   });
 }
@@ -420,13 +429,16 @@ function judge(policy, prints, screens) {
 async function legL3(page, rules) {
   const screens = {};
   await page.emulateMediaType('screen');
-  for (const r of rules) screens[r.selector] = await page.evaluate(readStates, r.selector);
+  const allowSels = rules.filter((r) => r.policy === 'allow-break').map((r) => r.selector);
+  for (const r of rules) {
+    screens[r.selector] = await page.evaluate(readStates, { sel: r.selector, allowSels: allowSels });
+  }
   await page.emulateMediaType('print');
   // 等一帧：print 媒体下 grid/flex 的重排不是同步的
   await new Promise((res) => setTimeout(res, 120));
   let n = 0;
   for (const r of rules) {
-    const prints = await page.evaluate(readStates, r.selector);
+    const prints = await page.evaluate(readStates, { sel: r.selector, allowSels: allowSels });
     if (!prints.length) {
       fail('L3', r.owner + ' 的 ' + r.selector + ' 在标本页上命中 0 个元素 —— '
         + '没有标本就没有证据（去 05-audit/fixtures/print-policy/probe.html 补）');

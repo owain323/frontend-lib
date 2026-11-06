@@ -15,31 +15,42 @@
 
   h1 { font-size: 15pt; margin: 0 0 2mm; }
   .lead { font-size: 10pt; color: var(--text-secondary); margin: 0 0 6mm; line-height: 1.6; }
-  .figure { margin: 0 0 7mm; }
-  .figure__cap { font-size: 8pt; color: var(--text-tertiary); margin: 1.5mm 0 0; }
+  /* ⚠️ 这里**不定义图框和图注** —— 它们必须来自 04-recipes/report/report.css。
+     夹具一旦自造 `.figure` / `.figure__cap`，"纸上看到的就是库的输出"这句话
+     就不成立了：2026-11-06 打样时图框用了自造的 #b6bcc4 + 0.5pt，
+     纸面覆盖率 52%，几乎不可见，而库里的规则根本没参与。 */
   .splot { width: 100%; height: auto; display: block; }
   .shots { display: flex; gap: 6mm; align-items: flex-start; }
-  .shots figure { margin: 0; flex: 0 0 70mm; }
-  /* 第二张故意放到 120mm，和第一张形成 dpi 对照（116 vs 68） */
-  .shots figure:last-child { flex: 0 0 100mm; }
-  .shots img { width: 100%; height: auto; display: block; border: 0.5pt solid #b6bcc4; }
+  /* 两张**同宽**：纸面上的差别只能来自素材分辨率，不能来自尺寸 ——
+     否则"为什么这张更清楚"会有两个变量，说不清。 */
+  .shots .rep__fig { margin: 0; flex: 0 0 76mm; }
+  .shots img { width: 100%; height: auto; display: block; }
   .spark-row { display: flex; gap: 8mm; margin: 0 0 6mm; }
   .spark-item { flex: 1 1 0; }
   .spark-item b { display: block; font-size: 9pt; }
   .spark-item em { display: block; font-size: 12pt; font-style: normal; font-variant-numeric: tabular-nums; }
   .spark-wrap { display: block; margin-top: 1mm; }
   .sparkline { display: block; width: 100%; }
+  /* 页面级排版决定，不是绕过库：库的块距（--sp-5）在 A4 上偏大，
+     三块内容 + 一张表必然溢出到第 2 页（实测 p1 余 65mm，表格要 63mm），
+     留下大半张空白。样张只有一页时，读的人才对得上"同一张纸上的比较"。 */
+  @media print {
+    .rep__fig { margin: 3mm 0; }
+    .rep h1 { margin-bottom: 1.5mm; }
+    .lead { margin-bottom: 3mm; }
+    .spark-row { margin-bottom: 3mm; }
+  }
 </style>
 </head>
 <body>
 <main class="page rep">
   <h1>满配样张：表格 · 矢量图 · 位图</h1>
   <p class="lead">
-    这一页把四种"上纸会变样"的东西放在一起：三线表、矢量折线（含误差带与网格）、
-    迷你趋势图、以及一张截图。目的是让每一类的问题在同一张纸上暴露出来。
+    四类"上纸会变样"的东西同页：三线表、矢量折线、迷你趋势图、两张位图。
+    位图分两类，纸上的分辨率要求不同 —— 连续调 300 dpi 够，线条艺术要 600 dpi。
   </p>
 
-  <div class="figure">
+  <figure class="rep__fig">
     <svg class="splot" viewBox="0 0 680 240" role="img" aria-label="阻尼振荡位移随时间变化">
       <g class="splot__grid">
         <line x1="60" y1="40"  x2="650" y2="40"/>
@@ -73,8 +84,8 @@
         <text class="splot__anno" x="246" y="233">模型残差</text>
       </g>
     </svg>
-    <p class="figure__cap">图 1 · 矢量绘制。网格线与区间带的填充深浅，是屏幕上唯一能看出"轻"的地方。</p>
-  </div>
+    <p class="rep__cap">图 1 · 矢量绘制。网格线与区间带的填充深浅，是屏幕上唯一能看出"轻"的地方。</p>
+  </figure>
 
   <div class="spark-row">
     <div class="spark-item"><b>样式表体积</b><em>148 KB</em>
@@ -85,19 +96,19 @@
       <span class="spark-wrap"><span class="sparkline" data-spark="48,52,50,56,58,61,62"></span></span></div>
   </div>
 
-  <div class="figure shots">
-    <figure>
-      <img src="shot-320.png" alt="模型截图片段">
-      <p class="figure__cap">图 2 · 320×200 px，纸宽 65mm（125 dpi）。</p>
+  <div class="shots">
+    <figure class="rep__fig">
+      <img src="shot-heat-960.png" alt="损失热力图">
+      <p class="rep__cap">图 2 · 热力图 960×600 ⇒ <b>321 dpi</b></p>
     </figure>
-    <figure>
-      <img src="shot-320.png" alt="模型截图片段（放大）">
-      <p class="figure__cap">图 3 · 同一张图，纸宽 93mm（87 dpi）。</p>
+    <figure class="rep__fig">
+      <img src="shot-ui-1920.png" alt="界面截图">
+      <p class="rep__cap">图 3 · 截图 1920×1200 ⇒ <b>642 dpi</b></p>
     </figure>
   </div>
 
-  <div class="figure">
-    <p class="figure__cap" style="margin:0 0 1.5mm">表 1 · 同一份样式表在三种加载方式下的耗时（n=30）</p>
+  <figure class="rep__fig rep__fig--table">
+    <p class="rep__cap rep__cap--table" style="margin:0 0 1.5mm">表 1 · 同一份样式表在三种加载方式下的耗时（单位 ms，n=30，冷启动，每次清缓存）</p>
     <div class="table table--academic" tabindex="0" role="region" aria-label="加载耗时（可横向滚动）">
       <table aria-label="同一份样式表在三种加载方式下的耗时">
         <thead><tr><th scope="col">加载方式</th><th scope="col" class="num">FCP 中位数</th><th scope="col" class="num">p95</th><th scope="col">备注</th></tr></thead>
@@ -108,8 +119,8 @@
         </tbody>
       </table>
     </div>
-    <p class="figure__cap">单位：ms。冷启动，每次清缓存。</p>
-  </div>
+  </figure>
+
 </main>
 
 <script src="../../../09-assets/sparkline/sparkline.js"></script>

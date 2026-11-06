@@ -197,6 +197,11 @@
   --border-control:   var(--raw-border-control); /* 3.19 / 3.42 AA Large */
   --border-decor:     var(--raw-border-decor); /* 1.18 纯装饰，WCAG 不强制 */
   --border-decor-str: var(--raw-border-decor-str); /* 1.49 装饰，需要更强分隔时用 */
+  /* 纸面 hairline（图框、需要"一条实线"的细线）。
+     屏幕上它等于正文色 —— 屏幕上没有"半色调"这回事，1px 就是 1px 实线。
+     `@media print` 里重定义为 `#000`：纸面上 ≤0.5pt 的线必须 100% 覆盖，
+     否则会被网点屏打成断续的虚边（见 docs/PRINT.md 5.2.2）。 */
+  --rule-hair:        var(--raw-text-primary);
 
   /* ---------------------------------------------------------------- 语义色
      全部实测 >= 5.6 AA（vs 纸底）。可当文字用，也可当底色用。
@@ -772,6 +777,7 @@
   --info: var(--raw-info);
   --info-bg: var(--raw-info-bg);
   --paper: var(--raw-paper);
+  --rule-hair: var(--raw-text-primary);
   --scrim: var(--raw-scrim);
   --scrollbar-thumb: var(--raw-scrollbar-thumb);
   --scrollbar-thumb-hov: var(--raw-scrollbar-thumb-hov);
@@ -851,6 +857,7 @@
   --info: var(--raw-info);
   --info-bg: var(--raw-info-bg);
   --paper: var(--raw-paper);
+  --rule-hair: var(--raw-text-primary);
   --scrim: var(--raw-scrim);
   --scrollbar-thumb: var(--raw-scrollbar-thumb);
   --scrollbar-thumb-hov: var(--raw-scrollbar-thumb-hov);

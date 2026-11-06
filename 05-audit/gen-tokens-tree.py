@@ -73,6 +73,7 @@ EXPLICIT = {
 COLOR = {
     '--paper', '--surface', '--surface-sunken', '--surface-raised',
     '--text-primary', '--text-secondary', '--text-tertiary',
+    '--rule-hair',
     '--text-on-accent', '--text-on-solid',
     '--accent', '--accent-hover', '--accent-soft',
     '--danger', '--danger-hover', '--danger-bg',

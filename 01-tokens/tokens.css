@@ -183,6 +183,11 @@
   --border-control:   var(--raw-border-control); /* 3.19 / 3.42 AA Large */
   --border-decor:     var(--raw-border-decor); /* 1.18 纯装饰，WCAG 不强制 */
   --border-decor-str: var(--raw-border-decor-str); /* 1.49 装饰，需要更强分隔时用 */
+  /* 纸面 hairline（图框、需要"一条实线"的细线）。
+     屏幕上它等于正文色 —— 屏幕上没有"半色调"这回事，1px 就是 1px 实线。
+     `@media print` 里重定义为 `#000`：纸面上 ≤0.5pt 的线必须 100% 覆盖，
+     否则会被网点屏打成断续的虚边（见 docs/PRINT.md 5.2.2）。 */
+  --rule-hair:        var(--raw-text-primary);
 
   /* ---------------------------------------------------------------- 语义色
      全部实测 >= 5.6 AA（vs 纸底）。可当文字用，也可当底色用。
@@ -816,6 +821,7 @@
   --info: var(--raw-info);
   --info-bg: var(--raw-info-bg);
   --paper: var(--raw-paper);
+  --rule-hair: var(--raw-text-primary);
   --scrim: var(--raw-scrim);
   --scrollbar-thumb: var(--raw-scrollbar-thumb);
   --scrollbar-thumb-hov: var(--raw-scrollbar-thumb-hov);
@@ -894,6 +900,7 @@
   --info: var(--raw-info);
   --info-bg: var(--raw-info-bg);
   --paper: var(--raw-paper);
+  --rule-hair: var(--raw-text-primary);
   --scrim: var(--raw-scrim);
   --scrollbar-thumb: var(--raw-scrollbar-thumb);
   --scrollbar-thumb-hov: var(--raw-scrollbar-thumb-hov);
@@ -1124,16 +1131,27 @@ input[type="submit"],
          #33383f   Y=0.039  覆盖 100%（打满，再浅就开始掉点）
        三档在纸上**都是纯黑**，层级改由字号 / 字重 / 位置承担。
        这就是"换载体"：屏幕靠灰分层，纸靠尺寸与位置分层。
+
+       ⚠️ 2026-11-06 实体打样后改成**三档同值 #000**。
+       原来留了 #000 / #1f2328 / #33383f 三个近似值，纸上实测：
+       7.4pt 的 #33383f 与 #000 的墨量完全一样（都是 100% 覆盖），
+       但"看起来浅"—— 于是有人会以为还能再调深一点，其实已经到底了。
+       三个不同值只会制造"我调过了"的错觉。**纸上不分级，就是不分级。**
        ====================================================================== */
     --paper:            #fff;
     --surface:          #fff;
     --surface-sunken:   #fff;
     --surface-raised:   #fff;
     --text-primary:     #000;
-    --text-secondary:   #1f2328;
-    --text-tertiary:    #33383f;
-    --border-decor:     #8f959d;   /* 覆盖 75%：1px 的线在纸上不断 */
-    --border-decor-str: #5f646c;   /* 覆盖 88%：需要更强分隔时用 */
+    --text-secondary:   #000;      /* 纸上三档同值，见上 */
+    --text-tertiary:    #000;
+    --border-decor:     #8f959d;   /* 覆盖 73%：表格内部线，纸上淡但连续 */
+    --border-decor-str: #5f646c;   /* 覆盖 91%：需要更强分隔时用 */
+    /* 🔴 hairline：图框、需要"一条实线"的地方。
+       0.5pt 的线在 600dpi 下只有 4 个点厚 —— 覆盖率低于 60% 就会被打成
+       半色调虚边（实体打样实测：#b5bcc3 + 0.7pt = 52% 覆盖，纸上几乎看不见）。
+       这类线必须 100% 覆盖 ⇒ 只能是纯黑。 */
+    --rule-hair:        #000;
 
     /* 语义色也要压深 —— 它们同样承载正文（错误提示、负值、警告段）。
        原来 #c0392b 是 5.44:1、#8a5a00 是 5.93:1，过不了纸面的 7:1。
@@ -1152,8 +1170,18 @@ input[type="submit"],
     --dir-up:           #7d1c11;
     --dir-down:         #1c4526;
 
-    --text-on-accent: #15181c;
-    --text-on-solid:  #15181c;
+    /* 强调色：最容易漏的一个。
+       #1b4d8f 的对比度是 8.4:1 —— **过得了 7:1 的门槛**，所以对比度判据不会
+       报它。但它的相对亮度是 0.075，纸面覆盖率 96%：一是有轻微针孔，
+       二是黑白输出后变成比正文还浅的灰，"强调"反而比正文弱。
+       2026-11-06 打样里三条迷你趋势图就是蓝的，纸上成了三道浅灰。
+       纸上的强调靠字重/位置/线宽/线型，不靠色相。 */
+    --accent:           #000;
+    --accent-hover:     #000;
+    --accent-soft:      var(--paper);   /* 屏幕是浅底，纸上没有"底" */
+
+    --text-on-accent: #000;
+    --text-on-solid:  #000;
   }
 
   /* 使用者控制器：加 .no-print 的元素不上纸。全库唯一的 !important ——

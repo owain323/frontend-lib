@@ -202,6 +202,15 @@
   padding: 0;
 }
 
+/* 包表格的图容器：表题在上、表在中间、脚注在下。
+   🔴 它存在的主要理由是**分页**（见下方 @media print），但类本身必须在
+      打印块之外有定义 —— 否则 `print-policy-gate` 的 L0 会判"隐藏了一个
+      库里不存在的东西"，而那正是过去 .overlay 那个 bug 的形状。
+   顺带把块距收一档：表格自身有边距，图容器的 sp-5 会显得空。 */
+.rep__fig--table {
+  margin: var(--sp-4) 0;
+}
+
 .rep__cap {
   margin: var(--sp-2) 0 0;
   /* 🔴 technical profile 会在这里加"图 N ·"前缀（见下） */
@@ -360,10 +369,33 @@
   .rep__grid { display: block; }
   .rep__fig,
   .rep table { break-inside: avoid; }
+  /* 🔴 包表格的图容器不要整块 avoid。
+     表格自己有行级 avoid（`tr`）+ 表头重复（`thead`），已经能安全跨页；
+     整块 avoid 的代价是**放得下的表也被推到下一页**：实测 p1 余 200pt、
+     表只有 179pt，仍然整块跳到第 2 页，留一页空白。
+     用户侧写法：`<figure class="rep__fig rep__fig--table">`。 */
+  .rep__fig--table { break-inside: auto; }
   .rep__pull { border-inline-start-width: 2px; }
   /* 孤行寡行：段首/段尾不要只留一行在另一页。
      ⚠️ 必须带 `.rep` 前缀 —— 裸 `p` / `li` 会改掉宿主页面所有段落，
         那是 `bleed-gate` 的硬红线（组件只影响自己）。
      其他配方 / 使用者的页面要这一条，自己写同样的三行即可。 */
   .rep p, .rep li, .rep blockquote { orphans: 2; widows: 2; }
+
+  /* --------- 图框：纸面必须是一条实线 ---------
+     🔴 2026-11-06 实体打样：图框用 `--border-decor` + 0.5pt，纸上几乎不可见。
+        原因不是"颜色浅"，是**覆盖率**：0.5pt 在 600dpi 下只有 4 个点厚，
+        73% 覆盖 ⇒ 每 4 个点留 1 个白点 ⇒ 打出来是半色调虚边。
+        0.7pt + #b5bcc3（52%）更糟，等于没有。
+
+     所以图框走 `--rule-hair`（纸面纯黑，100% 覆盖），并且：
+       · 用 `outline` 不用 `border` —— border 会撑大盒子，100% 宽的图会溢出
+       · 0.5pt 是下限：再细的线在激光上会被纸纹吃掉
+       · 只限 `.rep__fig` 内的图，不改宿主页面里的裸 `img`（bleed-gate 红线） */
+  .rep__fig img,
+  .rep__fig > svg,
+  .rep__fig > picture > img {
+    outline: 0.5pt solid var(--rule-hair);
+    outline-offset: 0;
+  }
 }

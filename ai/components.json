@@ -2370,6 +2370,11 @@
           "why": "边注是并排布局的产物；纸上没有第二栏，留着会被挤成 12em 一行"
         },
         {
+          "selector": ".rep__fig--table",
+          "policy": "allow-break",
+          "why": "包表格的图容器。表格自己有行级 keep-together 与表头重复，能安全跨页；整块 avoid 的代价是「放得下的表也被推到下一页」——实测 p1 余 200pt、表只有 179pt，仍然整块跳走，留一页空白。用法：<figure class=\"rep__fig rep__fig--table\">。"
+        },
+        {
           "selector": ".rep__fig",
           "policy": "keep-together",
           "why": "图与图注同页；高于一整页时 avoid 会被静默忽略"
@@ -2386,6 +2391,7 @@
         "rep__cap",
         "rep__cap--table",
         "rep__fig",
+        "rep__fig--table",
         "rep__fig--wide",
         "rep__grid",
         "rep__keyline",

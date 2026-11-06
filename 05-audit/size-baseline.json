@@ -53,12 +53,12 @@
       "raw": 4647
     },
     "01-tokens/tokens.core.css": {
-      "gzip": 18581,
-      "raw": 49751
+      "gzip": 18775,
+      "raw": 50144
     },
     "01-tokens/tokens.css": {
-      "gzip": 23937,
-      "raw": 62621
+      "gzip": 24754,
+      "raw": 64482
     },
     "01-tokens/typography.css": {
       "gzip": 3390,
@@ -273,19 +273,19 @@
       "raw": 5797
     },
     "04-recipes/report/report.css": {
-      "gzip": 6611,
-      "raw": 16470
+      "gzip": 7235,
+      "raw": 17787
     },
     "04-recipes/table/table.css": {
       "gzip": 7361,
       "raw": 18560
     },
     "04-recipes/tierA-tokens.css": {
-      "gzip": 2067,
-      "raw": 5327
+      "gzip": 2055,
+      "raw": 5337
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 347398,
-  "total_raw": 873653
+  "total_gzip": 349021,
+  "total_raw": 877234
 }

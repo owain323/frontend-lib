@@ -80,7 +80,7 @@ and it reports horizontal overflow plus JS errors.
 | `analysis-report` | `report` | recipe | stable | 8.4 KB | — | 组合型研究报告页面：正文与辅助栏并排，窄屏自然退回单栏 | `empty-layout-min-height` |
 | `app-shell` | `shell` | recipe | stable | 24.9 KB | `shell-nav.js` | 应用外壳：侧栏 + 顶栏 + 主区三段式；sticky 侧栏自滚、min-wi… | `empty-layout-min-height` `fixture-demo-split-truth` |
 | `detail-page` | `detail-page` | recipe | stable | 5.7 KB | — | 实体详情页骨架：字段齐全 / 部分缺失 / 无数据三种状态同构，无数据是一等状态 | `empty-layout-min-height` |
-| `report` | `rep` | recipe | stable | 16.1 KB | — | 报告版式系统 v1：共享基础 + 三套版式（杂志/科研技术/金融研究），只换一… | — |
+| `report` | `rep` | recipe | stable | 17.4 KB | — | 报告版式系统 v1：共享基础 + 三套版式（杂志/科研技术/金融研究），只换一… | — |
 | `table` | `table` | recipe | stable | 18.1 KB | — | 数据表格：排序/加载/空/错误四态；三种用途预设（财务/学术/统计） | `single-scroll-container` `empty-state-no-decoration` `table-overflow-wrapper` `text-injection-xss` |
 
 ## 3 · Known failure modes (32)
@@ -133,7 +133,7 @@ Each one has actually shipped at least once. Full text: `npx agentcss ai pitfall
 
 ## 4 · Tokens
 
-Light 112 / dark 35. Two exports, same values:
+Light 113 / dark 35. Two exports, same values:
 
 - `ai/tokens.json` — DTCG shape (`$value` / `$type`), feed to design tools
 - `ai/tokens.tree.json` — grouped, `value` / `type` without `$`, feed to build tools

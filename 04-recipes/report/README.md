@@ -83,6 +83,12 @@ report.css                   ← 本系统
           <div id="chart"></div>
           <figcaption class="rep__cap">图说</figcaption>
         </figure>
+        <!-- 表也放图容器里：表题在上、表在中、源注在下 -->
+        <figure class="rep__fig rep__fig--table">
+          <p class="rep__cap rep__cap--table">表 1 · 单位与口径</p>
+          <div class="table">…</div>
+          <p class="rep__source">来源：…</p>
+        </figure>
       </section>
     </div>
     <aside class="rep__aside">短提醒 / 次要读数</aside>
@@ -92,6 +98,22 @@ report.css                   ← 本系统
 
 **只用两级标题**：`h2` 是文章标题，`h3` 是小节。出现第四级通常意味着该拆的是**文档**
 而不是再给一级字号 —— 所以 CSS 里刻意没有 `h4` 的规则，没定义就是没定义。
+
+### `.rep__fig--table`：为什么表格要单独一个修饰符
+
+`.rep__fig` 在纸上是 `break-inside: avoid`（图不能被拆开）。但**包表格的图容器不该继承这条**：
+表格自己有行级 `avoid` 和表头重复，本来就能安全跨页；而整块 `avoid` 会让
+**放得下的表也被推到下一页** —— 实测 p1 还剩 200pt、表只有 179pt，仍然整块跳走，留一页空白。
+
+两条声明特异性相同、靠加载顺序决出 `auto`（tokens.css 先、report.css 后），
+所以必须写在**同一个元素**上：
+
+```html
+<figure class="rep__fig rep__fig--table">…</figure>
+```
+
+⚠️ 不能用 `.print-allow-break` 代替：那条规则在 `tokens.css` 里，会被 `report.css`
+同一特异性的 `.rep__fig { break-inside: avoid }` 盖掉 —— 写了、不生效、不报错。
 
 ## 二 · 三种版式的取舍
 

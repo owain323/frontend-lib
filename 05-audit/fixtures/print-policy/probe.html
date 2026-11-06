@@ -190,7 +190,7 @@
 </div>
 
 <!-- ============ report / analysis-report ============ -->
-<div class="fx"><b>.rep__aside → omit ／ .rep__fig → keep-together ／ .rep table → keep-together</b>
+<div class="fx"><b>.rep__aside → omit ／ .rep__fig → keep-together ／ .rep__fig--table → allow-break ／ .rep table → keep-together</b>
   <div class="rep">
     <div class="rep__grid">
       <div class="rep__main">
@@ -199,7 +199,10 @@
           <svg width="160" height="60" role="img" aria-label="报告插图"><rect width="160" height="60" fill="none" stroke="currentColor"/></svg>
           <figcaption>报告插图</figcaption>
         </figure>
-        <table><thead><tr><th>科目</th><th>金额</th></tr></thead><tbody><tr><td>营业成本</td><td>812.40</td></tr></tbody></table>
+        <figure class="rep__fig rep__fig--table">
+          <p class="rep__cap">表 1 · 科目与金额</p>
+          <table><thead><tr><th>科目</th><th>金额</th></tr></thead><tbody><tr><td>营业成本</td><td>812.40</td></tr></tbody></table>
+        </figure>
       </div>
       <aside class="rep__aside"><p>边注：屏幕上的第二栏，纸上没有位置。</p></aside>
     </div>

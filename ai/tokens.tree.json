@@ -62,6 +62,10 @@
           "value": "#f6f7f8",
           "type": "color"
         },
+        "rule-hair": {
+          "value": "#15181c",
+          "type": "color"
+        },
         "scrim": {
           "value": "rgba(21, 24, 28, 0.4)",
           "type": "color"
@@ -693,6 +697,7 @@
     "--r-xs": "radius/xs",
     "--ring-size": "size/ring-size",
     "--ring-thickness": "size/ring-thickness",
+    "--rule-hair": "color/rule-hair",
     "--sans": "fontFamily/sans",
     "--scrim": "color/scrim",
     "--scrollbar-radius": "size/scrollbar-radius",
@@ -746,7 +751,7 @@
     "--z-toast": "zIndex/toast"
   },
   "meta": {
-    "lightCount": 112,
+    "lightCount": 113,
     "darkCount": 35,
     "categories": [
       "breakpoint",
