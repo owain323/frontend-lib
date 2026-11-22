@@ -1,5 +1,9 @@
 # frontend-lib
 
+> **本仓库是只读快照。** 开发已迁到 [`owain323/agentcss`](https://github.com/owain323/agentcss)，
+> npm 包名仍是 [`agentcss`](https://www.npmjs.com/package/agentcss)。
+> 本仓库冻结在 v0.27.4，代码、issue、PR 都在新仓库。
+
 [English](README.md) · 中文
 
 移动 Web 组件库。CSS 样式 + 可选行为脚本，**零第三方运行时依赖**。
