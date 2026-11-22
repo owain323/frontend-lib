@@ -1,8 +1,8 @@
 # agentcss
 
-> **Read-only snapshot.** Development continues in a separate repository that is not public yet;
+> **Read-only snapshot.** Development continues in [owain323/agentcss](https://github.com/owain323/agentcss);
 > the shipped artefact is the npm package [`agentcss`](https://www.npmjs.com/package/agentcss)
-> (docs: [marketing page](https://owain323.github.io/frontend-lib/)).
+> (docs: [marketing page](https://owain323.github.io/agentcss/)).
 > This tree is frozen at v0.27.4 — no issues or pull requests are handled here anymore.
 
 Mobile-web components in plain CSS, with optional behaviour scripts. **Zero third-party runtime dependencies** — installing it adds nothing to your `node_modules` that ships to the browser.
