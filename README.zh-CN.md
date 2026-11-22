@@ -1,8 +1,9 @@
 # frontend-lib
 
-> **本仓库是只读快照。** 开发已迁到 [`owain323/agentcss`](https://github.com/owain323/agentcss)，
-> npm 包名仍是 [`agentcss`](https://www.npmjs.com/package/agentcss)。
-> 本仓库冻结在 v0.27.4，代码、issue、PR 都在新仓库。
+> **本仓库是只读快照。** 后续开发在另一个尚未公开的仓库里继续；
+> 对外可用的成品是 npm 包 [`agentcss`](https://www.npmjs.com/package/agentcss)
+> （文档站点：[演示页](https://owain323.github.io/frontend-lib/)）。
+> 本树冻结在 v0.27.4，这里不再处理 issue 与 PR。
 
 [English](README.md) · 中文
 
