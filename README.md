@@ -1,8 +1,9 @@
 # agentcss
 
-> **Read-only snapshot.** Development has moved to [`owain323/agentcss`](https://github.com/owain323/agentcss);
-> the npm package is still [`agentcss`](https://www.npmjs.com/package/agentcss).
-> This repository is frozen at v0.27.4 — code, issues and pull requests live in the new repository.
+> **Read-only snapshot.** Development continues in a separate repository that is not public yet;
+> the shipped artefact is the npm package [`agentcss`](https://www.npmjs.com/package/agentcss)
+> (docs: [marketing page](https://owain323.github.io/frontend-lib/)).
+> This tree is frozen at v0.27.4 — no issues or pull requests are handled here anymore.
 
 Mobile-web components in plain CSS, with optional behaviour scripts. **Zero third-party runtime dependencies** — installing it adds nothing to your `node_modules` that ships to the browser.
 
@@ -12,7 +13,7 @@ Mobile-web components in plain CSS, with optional behaviour scripts. **Zero thir
 npm install agentcss
 ```
 
-The npm package is `agentcss`. The source now lives in [`owain323/agentcss`](https://github.com/owain323/agentcss) — this repository is a frozen snapshot of an older tree.
+The npm package is `agentcss`; this repository is a frozen snapshot of an older tree, kept online so existing links and demos keep working.
 
 ### Module format: ESM-only
 
