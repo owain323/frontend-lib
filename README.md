@@ -1,5 +1,9 @@
 # agentcss
 
+> **Read-only snapshot.** Development has moved to [`owain323/agentcss`](https://github.com/owain323/agentcss);
+> the npm package is still [`agentcss`](https://www.npmjs.com/package/agentcss).
+> This repository is frozen at v0.27.4 — code, issues and pull requests live in the new repository.
+
 Mobile-web components in plain CSS, with optional behaviour scripts. **Zero third-party runtime dependencies** — installing it adds nothing to your `node_modules` that ships to the browser.
 
 [中文说明](README.zh-CN.md)
@@ -8,7 +12,7 @@ Mobile-web components in plain CSS, with optional behaviour scripts. **Zero thir
 npm install agentcss
 ```
 
-The npm package is `agentcss`; the repository is `frontend-lib`. They are different things: the package name is what you install, the repository name is where the source lives.
+The npm package is `agentcss`. The source now lives in [`owain323/agentcss`](https://github.com/owain323/agentcss) — this repository is a frozen snapshot of an older tree.
 
 ### Module format: ESM-only
 
